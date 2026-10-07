@@ -6,15 +6,18 @@ from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
 from math import isclose
 from types import MappingProxyType
-from typing import Any
+from typing import Any, cast
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config
+from .commutation import CommutationAnalysis, analyze_commutation
 from .pass_manager import (
     OPTIMIZATION_PIPELINE,
+    AnalysisSpec,
     PassFunction,
     PassManager,
     PassRegistry,
+    PassSpec,
 )
 from .routing import (
     CouplingMap,
@@ -24,21 +27,90 @@ from .routing import (
 )
 from .zero_state_reset import remove_zero_state_resets
 
-_SELF_INVERSE = {"x", "y", "z", "h", "cx", "cy", "cz", "swap", "ccx", "cswap"}
-_ROTATION_PARAM = {
-    "rx": "theta",
-    "ry": "theta",
-    "rz": "theta",
-    "phase": "theta",
-    "u1": "theta",
-    "rxx": "theta",
-    "ryy": "theta",
-    "rzz": "theta",
-    "crx": "theta",
-    "cry": "theta",
-    "crz": "theta",
-    "cphase": "theta",
-}
+# The opcodes the pipeline treats as their own inverse. `i` is deliberately absent
+# even though the operator schema declares it self-inverse: `remove_identity_gates`
+# deletes it one pass earlier, so including it here would add a candidate that can
+# never reach these passes. The difference is reported, not closed, by
+# `benchmarks/compiler_inverse_cancellation.py`.
+_SELF_INVERSE = frozenset(
+    {"x", "y", "z", "h", "cx", "cy", "cz", "swap", "ccx", "cswap"}
+)
+
+# The opcodes whose single angle parameter is `theta`, which is the parameter their
+# adjoint negates. Measured to be exactly the schema's `negate_parameters` opcodes.
+_ROTATION_PARAM: Mapping[str, str] = MappingProxyType(
+    {
+        "rx": "theta",
+        "ry": "theta",
+        "rz": "theta",
+        "phase": "theta",
+        "u1": "theta",
+        "rxx": "theta",
+        "ryy": "theta",
+        "rzz": "theta",
+        "crx": "theta",
+        "cry": "theta",
+        "crz": "theta",
+        "cphase": "theta",
+    }
+)
+
+
+# The two opcode tables above and the commutation partition below are the facts the
+# optimization passes read, and they are registered as analyses rather than reached
+# as module globals. The tables follow from the operator schema instead of from the
+# program, so they are declared program-independent: the manager computes each once
+# and carries it for the rest of the run. Nothing about the values changes here; what
+# changes is that a pass now says which facts it reads, and a caller can hand the
+# same pass a different registry rather than editing this module.
+def _self_inverse_opcodes(_program: CircuitIR) -> frozenset[str]:
+    """Every opcode whose declared adjoint is itself, as the pipeline uses the term."""
+
+    return _SELF_INVERSE
+
+
+def _rotation_parameters(_program: CircuitIR) -> Mapping[str, str]:
+    """Every opcode whose single angle parameter its adjoint negates, to that name."""
+
+    return _ROTATION_PARAM
+
+
+def _commutation_blocks(program: CircuitIR) -> CommutationAnalysis:
+    """The commuting blocks of ``program``, one ordered partition per qubit."""
+
+    return analyze_commutation(program)
+
+
+_BUILTIN_ANALYSES: Mapping[str, AnalysisSpec] = MappingProxyType(
+    {
+        "self_inverse_opcodes": AnalysisSpec(
+            _self_inverse_opcodes, program_independent=True
+        ),
+        "rotation_parameters": AnalysisSpec(
+            _rotation_parameters, program_independent=True
+        ),
+        # A function of the program, so it is recomputed from the program a round
+        # actually produced and no pass may claim to preserve it.
+        "commutation_blocks": AnalysisSpec(_commutation_blocks),
+    }
+)
+"""The analyses the built-in passes declare, by name."""
+
+
+def _rotation_table(analyses: Mapping[str, object] | None) -> Mapping[str, str]:
+    """The rotation-parameter table a pass was handed, or this module's own."""
+
+    if analyses is None:
+        return _ROTATION_PARAM
+    return cast(Mapping[str, str], analyses["rotation_parameters"])
+
+
+def _self_inverse_table(analyses: Mapping[str, object] | None) -> frozenset[str]:
+    """The self-inverse opcode set a pass was handed, or this module's own."""
+
+    if analyses is None:
+        return _SELF_INVERSE
+    return cast(frozenset[str], analyses["self_inverse_opcodes"])
 
 
 def _as_ir(circuit_or_ir: Any) -> CircuitIR:
@@ -76,14 +148,17 @@ def _replace_param(instruction: Instruction, key: str, value: Any) -> Instructio
     )
 
 
-def remove_identity_gates(ir: CircuitIR) -> CircuitIR:
+def remove_identity_gates(
+    ir: CircuitIR, analyses: Mapping[str, object] | None = None
+) -> CircuitIR:
     """Remove explicit identity gates and zero-angle rotations."""
 
+    rotations = _rotation_table(analyses)
     instructions = []
     for instruction in ir:
         if instruction.name in {"i", "id"}:
             continue
-        param_name = _ROTATION_PARAM.get(instruction.name)
+        param_name = rotations.get(instruction.name)
         if param_name is not None and _is_zero(instruction.params.get(param_name)):
             continue
         instructions.append(instruction)
@@ -154,15 +229,18 @@ class _WireLocalProgram:
         return iter(self._instructions.values())
 
 
-def merge_self_inverse(ir: CircuitIR) -> CircuitIR:
+def merge_self_inverse(
+    ir: CircuitIR, analyses: Mapping[str, object] | None = None
+) -> CircuitIR:
     """Remove identical self-inverse gates adjacent on their wires."""
 
+    self_inverse = _self_inverse_table(analyses)
     program = _WireLocalProgram()
     for instruction in ir:
         position = program.last_touching(instruction.wires)
         previous = None if position is None else program[position]
         if (
-            instruction.name in _SELF_INVERSE
+            instruction.name in self_inverse
             and previous is not None
             and previous.name == instruction.name
             and previous.wires == instruction.wires
@@ -176,12 +254,15 @@ def merge_self_inverse(ir: CircuitIR) -> CircuitIR:
     return replace(ir, instructions=tuple(program))
 
 
-def merge_adjacent_rotations(ir: CircuitIR) -> CircuitIR:
+def merge_adjacent_rotations(
+    ir: CircuitIR, analyses: Mapping[str, object] | None = None
+) -> CircuitIR:
     """Merge rotations adjacent on their wires."""
 
+    rotations = _rotation_table(analyses)
     program = _WireLocalProgram()
     for instruction in ir:
-        param_name = _ROTATION_PARAM.get(instruction.name)
+        param_name = rotations.get(instruction.name)
         position = program.last_touching(instruction.wires)
         previous = None if position is None else program[position]
         if (
@@ -242,6 +323,10 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
 # one_qubit_synthesis. An eager import in this direction would therefore be a
 # cycle, so each is bound through a wrapper that imports it at call time. The four
 # remaining passes are defined here and need no wrapper.
+#
+# Each wrapper that needs one forwards the analyses it was handed rather than
+# reading this module's tables itself, so a pass in another module reads the same
+# declared facts as the passes defined here.
 def _remove_diagonal_gates_before_measure(ir: CircuitIR) -> CircuitIR:
     from .diagonal_before_measure import remove_diagonal_gates_before_measure
 
@@ -254,10 +339,12 @@ def _merge_inverse_pairs(ir: CircuitIR) -> CircuitIR:
     return merge_inverse_pairs(ir)
 
 
-def _cancel_commuting_self_inverse(ir: CircuitIR) -> CircuitIR:
+def _cancel_commuting_self_inverse(
+    ir: CircuitIR, analyses: Mapping[str, object] | None = None
+) -> CircuitIR:
     from .commutation_cancellation import cancel_commuting_self_inverse
 
-    return cancel_commuting_self_inverse(ir)
+    return cancel_commuting_self_inverse(ir, analyses)
 
 
 def _collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
@@ -280,13 +367,58 @@ BUILTIN_PASSES: Mapping[str, PassFunction] = MappingProxyType(
         "collapse_one_qubit_runs": _collapse_one_qubit_runs,
     }
 )
-"""Maps every name in `OPTIMIZATION_PIPELINE` to the function that implements it."""
+"""Maps every name in `OPTIMIZATION_PIPELINE` to the function that implements it.
+
+Every binding is callable with one program argument, which is what
+`PassRegistry.resolve` returns and what a caller that does not care about analyses
+calls. A binding that declares analyses through `_BUILTIN_PASS_SPECS` also accepts
+the resolved facts as a second argument, and the manager passes them.
+"""
+
+
+# What each built-in pass declares about the pipeline: the analyses it reads and the
+# ones it leaves valid. The two opcode tables are program-independent and every
+# reader asserts it preserves its own, which is what lets the manager compute them
+# once for a whole fixed-point run instead of once per round. `commutation_blocks`
+# is a function of the program, so it is declared read and never preserved.
+_BUILTIN_PASS_SPECS: Mapping[str, PassSpec] = MappingProxyType(
+    {
+        "remove_zero_state_resets": PassSpec(remove_zero_state_resets),
+        "remove_diagonal_gates_before_measure": PassSpec(
+            _remove_diagonal_gates_before_measure
+        ),
+        "remove_identity_gates": PassSpec(
+            remove_identity_gates,
+            uses=("rotation_parameters",),
+            preserves=("rotation_parameters",),
+        ),
+        "merge_self_inverse": PassSpec(
+            merge_self_inverse,
+            uses=("self_inverse_opcodes",),
+            preserves=("self_inverse_opcodes",),
+        ),
+        "merge_inverse_pairs": PassSpec(_merge_inverse_pairs),
+        "merge_adjacent_rotations": PassSpec(
+            merge_adjacent_rotations,
+            uses=("rotation_parameters",),
+            preserves=("rotation_parameters",),
+        ),
+        "cancel_commuting_self_inverse": PassSpec(
+            _cancel_commuting_self_inverse,
+            uses=("self_inverse_opcodes", "commutation_blocks"),
+            preserves=("self_inverse_opcodes",),
+        ),
+        "collapse_one_qubit_runs": PassSpec(_collapse_one_qubit_runs),
+    }
+)
+"""What each built-in pass declares, by name. Every function identity matches
+`BUILTIN_PASSES`; a registry refuses a spec whose function is a different object."""
 
 
 def default_pass_registry() -> PassRegistry:
     """The registry that resolves exactly the built-in optimization passes."""
 
-    return PassRegistry(BUILTIN_PASSES)
+    return PassRegistry(BUILTIN_PASSES, _BUILTIN_PASS_SPECS, _BUILTIN_ANALYSES)
 
 
 def optimize(circuit_or_ir: Any) -> CircuitIR:

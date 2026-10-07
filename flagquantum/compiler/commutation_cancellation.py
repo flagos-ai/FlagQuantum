@@ -45,6 +45,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from types import MappingProxyType
+from typing import cast
 
 from ..core.ir import CircuitIR, Instruction
 from ..core.operator_schema import canonical_opcode
@@ -52,18 +53,37 @@ from .commutation import CommutationAnalysis, analyze_commutation
 from .pipeline import _SELF_INVERSE
 
 
-def _is_cancellable(instruction: Instruction) -> bool:
+def _self_inverse_table(analyses: Mapping[str, object] | None) -> frozenset[str]:
+    """The self-inverse opcode set this pass was handed, or the pipeline's own.
+
+    The pass reads the fact rather than the pipeline's module global so that a
+    caller can hand it a registry with a different `self_inverse_opcodes` and
+    change what this pass removes without editing either module. Called with no
+    facts it falls back to the same table the analysis returns, so the two routes
+    cannot disagree about the default.
+    """
+
+    if analyses is None:
+        return _SELF_INVERSE
+    return cast(frozenset[str], analyses["self_inverse_opcodes"])
+
+
+def _is_cancellable(
+    instruction: Instruction, self_inverse: frozenset[str] = _SELF_INVERSE
+) -> bool:
     """Whether ``instruction`` is one this pass may remove in a proven pair."""
 
     return (
         instruction.matrix is None
-        and canonical_opcode(instruction.name) in _SELF_INVERSE
+        and canonical_opcode(instruction.name) in self_inverse
         and not instruction.params
     )
 
 
 def cancellable_positions(
-    instructions: Sequence[Instruction], analysis: CommutationAnalysis
+    instructions: Sequence[Instruction],
+    analysis: CommutationAnalysis,
+    self_inverse: frozenset[str] = _SELF_INVERSE,
 ) -> Mapping[tuple[str, tuple[int, ...], tuple[int, ...]], tuple[int, ...]]:
     """Group the cancellable positions of a program, keyed by block membership.
 
@@ -77,7 +97,7 @@ def cancellable_positions(
 
     groups: dict[tuple[str, tuple[int, ...], tuple[int, ...]], list[int]] = {}
     for position, instruction in enumerate(instructions):
-        if not _is_cancellable(instruction):
+        if not _is_cancellable(instruction, self_inverse):
             continue
         signature = analysis.signature(position, instruction.wires)
         if signature is None:
@@ -87,7 +107,10 @@ def cancellable_positions(
     return MappingProxyType({key: tuple(value) for key, value in groups.items()})
 
 
-def _repeats_an_opcode(instructions: Sequence[Instruction]) -> bool:
+def _repeats_an_opcode(
+    instructions: Sequence[Instruction],
+    self_inverse: frozenset[str] = _SELF_INVERSE,
+) -> bool:
     """Whether some self-inverse opcode appears twice on the same wires.
 
     A short circuit, not a semantic one. A circuit that does not repeat one of
@@ -103,7 +126,7 @@ def _repeats_an_opcode(instructions: Sequence[Instruction]) -> bool:
 
     seen: set[tuple[str, tuple[int, ...]]] = set()
     for instruction in instructions:
-        if not _is_cancellable(instruction):
+        if not _is_cancellable(instruction, self_inverse):
             continue
         key = (canonical_opcode(instruction.name), instruction.wires)
         if key in seen:
@@ -112,20 +135,35 @@ def _repeats_an_opcode(instructions: Sequence[Instruction]) -> bool:
     return False
 
 
-def cancel_commuting_self_inverse(ir: CircuitIR) -> CircuitIR:
+def cancel_commuting_self_inverse(
+    ir: CircuitIR, analyses: Mapping[str, object] | None = None
+) -> CircuitIR:
     """Remove self-inverse instructions separated only by proven commuters.
 
     Returns ``ir`` unchanged when no group offers a pair, which keeps the pass
     cheap on a circuit that has nothing to give and makes it idempotent: the
     surviving members of an odd group are one instruction apart in no block with
     each other, so a second application finds no new pair.
+
+    Args:
+        ir: The program to transform.
+        analyses: The facts the pass declared it reads, as the pass manager hands
+            them: ``self_inverse_opcodes`` and ``commutation_blocks``. When it is
+            ``None`` the facts are read from the modules that own them, which is
+            what a direct caller gets.
     """
 
     instructions = tuple(ir)
-    if not _repeats_an_opcode(instructions):
+    self_inverse = _self_inverse_table(analyses)
+    if not _repeats_an_opcode(instructions, self_inverse):
         return ir
 
-    groups = cancellable_positions(instructions, analyze_commutation(ir))
+    blocks = (
+        analyze_commutation(ir)
+        if analyses is None
+        else cast(CommutationAnalysis, analyses["commutation_blocks"])
+    )
+    groups = cancellable_positions(instructions, blocks, self_inverse)
     removed: set[int] = set()
     for positions in groups.values():
         removed.update(positions[: len(positions) - len(positions) % 2])

@@ -10,8 +10,10 @@ instructions commute, and which instructions form one commuting block on a qubit
 
 Qiskit splits this over `CommutationChecker`, a shipped 3264-line rule table, and
 `CommutationAnalysis`, an `AnalysisPass` that writes `property_set`. Neither shape
-transfers. FlagQuantum has no pass manager and no property bag, so the analysis
-here is a function of the IR that returns a value; and a generated table is a rule
+transfers. FlagQuantum has no property bag, so the analysis here is a function of
+the IR that returns a value -- which is what lets `pass_manager` register it under
+the name `commutation_blocks` and hand it to the pass that declared it reads it,
+without this module knowing that registry exists; and a generated table is a rule
 source of record, which would have to be trusted, where the rules below are a rule
 source of proof.
 

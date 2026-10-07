@@ -10,6 +10,9 @@ a name resolves to a pass, and a built-in name cannot be taken.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from types import MappingProxyType
+
 import pytest
 
 import flagquantum as fq
@@ -62,6 +65,12 @@ class _DropsEverything:
     def __call__(self, program: CircuitIR) -> CircuitIR:
         self.calls += 1
         return CircuitIR(n_wires=program.n_wires, instructions=())
+
+
+def _noop(program: CircuitIR) -> CircuitIR:
+    """A pass that returns its input, for tests that only build a declaration."""
+
+    return program
 
 
 def _registry_with(name: str, function: object) -> pass_manager.PassRegistry:
@@ -426,18 +435,23 @@ def test_every_built_in_binding_agrees_with_the_module_that_implements_it() -> N
 
 
 def test_a_built_in_binding_is_callable_with_one_program_argument() -> None:
-    # The manager calls a pass as `function(ir)`. A binding that needed a second
-    # argument, or that was a closure over something else, would fail here.
+    # `PassRegistry.resolve` returns a binding a caller that does not care about
+    # analyses may call with one program argument. A binding that *needed* a second
+    # argument, or that was a closure over something else, would fail here. The
+    # manager is free to pass the facts a binding declared it reads, and does.
     program = _ir(Instruction(name="h", wires=(0,)))
     manager = pass_manager.PassManager(pipeline.default_pass_registry())
 
     for name in pipeline.BUILTIN_PASSES:
+        assert isinstance(pipeline.BUILTIN_PASSES[name](program), CircuitIR), name
         assert isinstance(manager.run(program, (name,)), CircuitIR), name
 
 
 def test_the_inline_passes_stay_in_the_module_that_owns_their_tables() -> None:
     # These three share `_SELF_INVERSE`, `_ROTATION_PARAM`, and `_WireLocalProgram`,
-    # which are `pipeline`'s; a move would duplicate them.
+    # which are `pipeline`'s; a move would duplicate them. The two tables are also
+    # what the registered analyses return, so the module that owns the table is the
+    # module that owns the fact.
     for name in (
         "remove_identity_gates",
         "merge_self_inverse",
@@ -453,3 +467,487 @@ def test_optimize_and_compile_agree_with_the_manager() -> None:
 
     assert _names(pipeline.optimize(program)) == []
     assert _names(pipeline.compile(program)) == []
+
+
+# The analysis half. A pass used to reach into whichever module happened to hold
+# the fact it needed, so nothing could say what a pass read, a fact could be
+# computed twice in one round, and no pass could be handed a different fact without
+# editing the module that held it. These tests pin the four properties that
+# replaces: the fact has a name, the name is resolved before anything runs, a
+# program-independent fact is computed once for a whole run, and asking for a fact
+# is what computes it.
+
+
+def _declared_analysis_names() -> set[str]:
+    """Every analysis the default registry's own pass specs declare."""
+
+    registry = pipeline.default_pass_registry()
+    declared: set[str] = set()
+    for name in registry.names:
+        spec = registry.spec(name)
+        declared.update(spec.uses)
+        declared.update(spec.preserves)
+    return declared
+
+
+def test_every_analysis_a_pass_declares_resolves_in_the_default_registry() -> None:
+    registry = pipeline.default_pass_registry()
+
+    for name in registry.names:
+        spec = registry.spec(name)
+        for analysis_name in (*spec.uses, *spec.preserves):
+            registry.analysis_order(analysis_name)
+
+
+def test_the_registry_registers_exactly_the_analyses_the_passes_declare() -> None:
+    # A fact nobody reads is machinery with no consumer, and a fact a pass reads
+    # without it being registered is a resolution that fails at run time. Both
+    # directions are refused here rather than in a review.
+    registry = pipeline.default_pass_registry()
+
+    assert set(registry.analysis_names) == _declared_analysis_names()
+
+
+def test_the_two_opcode_tables_are_the_program_independent_analyses() -> None:
+    # Only an analysis whose value follows from the schema rather than from the
+    # program may be carried across a transformation, and only these two are. The
+    # program handed in differs from the values returned, which is the point.
+    program = _ir(Instruction(name="h", wires=(0,)))
+    registry = pipeline.default_pass_registry()
+
+    manager = pass_manager.PassManager(registry)
+    independent = {
+        name
+        for name in registry.analysis_names
+        if registry.analysis(name).program_independent
+    }
+
+    assert independent == {"self_inverse_opcodes", "rotation_parameters"}
+    assert manager.analyze(program, "self_inverse_opcodes") == pipeline._SELF_INVERSE
+    assert manager.analyze(program, "rotation_parameters") == pipeline._ROTATION_PARAM
+
+
+def test_an_analysis_that_needs_another_is_resolved_after_it() -> None:
+    registry = (
+        pass_manager.PassRegistry()
+        .with_analysis("leaf", lambda program: "leaf")
+        .with_analysis(
+            "middle",
+            lambda program, facts: ("middle", facts["leaf"]),
+            requires=("leaf",),
+        )
+        .with_analysis(
+            "top",
+            lambda program, facts: ("top", facts["middle"]),
+            requires=("middle",),
+        )
+    )
+
+    assert registry.analysis_order("top") == ("leaf", "middle", "top")
+
+
+def test_a_cycle_in_the_analysis_declarations_is_refused() -> None:
+    registry = (
+        pass_manager.PassRegistry()
+        .with_analysis("a", lambda program, facts: facts["b"], requires=("b",))
+        .with_analysis("b", lambda program, facts: facts["a"], requires=("a",))
+    )
+
+    with pytest.raises(pass_manager.PassRegistryError, match="cycle"):
+        registry.analysis_order("a")
+
+
+def test_a_program_independent_analysis_may_not_rest_on_a_program_derived_one() -> None:
+    # A carried value stays true only if everything it was computed from stays
+    # true, so the claim is refused rather than trusted.
+    registry = (
+        pass_manager.PassRegistry()
+        .with_analysis("blocks", lambda program: program)
+        .with_analysis(
+            "cached_blocks",
+            lambda program, facts: facts["blocks"],
+            requires=("blocks",),
+            program_independent=True,
+        )
+    )
+
+    with pytest.raises(pass_manager.PassRegistryError, match="program-independent"):
+        registry.analysis_order("cached_blocks")
+
+
+def test_a_program_dependent_analysis_cannot_be_declared_preserved() -> None:
+    registry = pipeline.default_pass_registry().with_pass(
+        "extension.example.claims",
+        lambda program: program,
+        preserves=("commutation_blocks",),
+    )
+    manager = pass_manager.PassManager(registry)
+    program = _ir(Instruction(name="h", wires=(0,)))
+
+    with pytest.raises(pass_manager.PassRegistryError, match="preserve"):
+        manager.run(program, ("extension.example.claims",))
+
+
+def test_a_reader_of_a_carried_fact_must_declare_it_preserves_it() -> None:
+    # The manager caches a program-independent fact for the whole run; a reader
+    # that did not vouch for it would be relying on the cache silently.
+    registry = pipeline.default_pass_registry().with_pass(
+        "extension.example.reads",
+        lambda program, _facts: program,
+        uses=("self_inverse_opcodes",),
+    )
+    manager = pass_manager.PassManager(registry)
+    program = _ir(Instruction(name="h", wires=(0,)))
+
+    with pytest.raises(pass_manager.PassRegistryError, match="preserves"):
+        manager.run(program, ("extension.example.reads",))
+
+
+def test_an_unregistered_declared_analysis_is_refused_before_any_pass_runs() -> None:
+    first = _NoOp()
+    registry = (
+        pipeline.default_pass_registry()
+        .with_pass("extension.example.first", first)
+        .with_pass(
+            "extension.example.asking",
+            lambda program, facts: program,
+            uses=("nowhere_registered",),
+        )
+    )
+    manager = pass_manager.PassManager(registry)
+    program = _ir(Instruction(name="h", wires=(0,)))
+
+    with pytest.raises(pass_manager.PassRegistryError) as excinfo:
+        manager.run(program, ("extension.example.first", "extension.example.asking"))
+
+    assert "extension.example.asking" in str(excinfo.value)
+    assert first.calls == 0
+
+
+def _snooping_pass(program: CircuitIR, facts: object) -> CircuitIR:
+    """A pass that reads a fact it never declared, which the manager refuses."""
+
+    assert isinstance(facts, Mapping)
+    facts["commutation_blocks"]
+    return program
+
+
+def test_a_reader_cannot_reach_a_fact_it_did_not_declare() -> None:
+    registry = pipeline.default_pass_registry().with_pass(
+        "extension.example.snooping",
+        _snooping_pass,
+        uses=("self_inverse_opcodes",),
+        preserves=("self_inverse_opcodes",),
+    )
+    manager = pass_manager.PassManager(registry)
+
+    with pytest.raises(pass_manager.PassRegistryError, match="not declared"):
+        manager.run(
+            _ir(Instruction(name="h", wires=(0,))), ("extension.example.snooping",)
+        )
+
+
+def test_a_carried_fact_is_computed_once_for_a_whole_fixed_point_run() -> None:
+    # `x(0) x(0) reset(0)` is the program that needs a second round, so one round
+    # would not tell the two behaviours apart. The opcode table is asked for once
+    # even though the sequence reads it in three passes across two rounds.
+    program = _ir(
+        Instruction(name="x", wires=(0,)),
+        Instruction(name="x", wires=(0,)),
+        _reset(0),
+    )
+    manager = pass_manager.PassManager(pipeline.default_pass_registry())
+
+    calls = manager.calls(program, pass_manager.OPTIMIZATION_PIPELINE)
+
+    assert calls["self_inverse_opcodes"] == 1
+    assert calls["rotation_parameters"] == 1
+    assert (
+        _names(manager.to_fixed_point(program, pass_manager.OPTIMIZATION_PIPELINE))
+        == []
+    )
+
+
+def test_a_program_derived_fact_is_computed_again_for_the_next_program() -> None:
+    # A program-independent fact is carried because its value cannot change; a fact
+    # that is a function of the program must not be, or the second program in a run
+    # would be answered with the first one's blocks. Two readers separated by a
+    # growing pass put two different programs in front of the same analysis run.
+    seen: list[object] = []
+
+    def reader(program: CircuitIR, facts: Mapping[str, object]) -> CircuitIR:
+        seen.append(facts["commutation_blocks"])
+        return program
+
+    registry = (
+        pipeline.default_pass_registry()
+        .with_pass("extension.example.blocks", reader, uses=("commutation_blocks",))
+        .with_pass("extension.example.grow", _grow)
+    )
+    manager = pass_manager.PassManager(registry)
+    sequence = (
+        "extension.example.grow",
+        "extension.example.blocks",
+        "extension.example.grow",
+        "extension.example.blocks",
+    )
+    program = _ir(
+        Instruction(name="cx", wires=(0, 1)),
+        Instruction(name="rz", wires=(0,), params={"theta": 0.4}),
+        Instruction(name="cx", wires=(0, 1)),
+    )
+
+    calls = manager.calls(program, sequence)
+
+    assert len(seen) == 2
+    assert calls["commutation_blocks"] == 2
+
+
+def test_a_declared_fact_is_not_computed_when_the_reader_short_circuits() -> None:
+    # `cancel_commuting_self_inverse` declares `commutation_blocks` and reads it
+    # only after the repeat check passes. A circuit with no repeat costs no
+    # commutation analysis at all, which is the short circuit the lazy resolution
+    # exists to preserve.
+    no_repeat = _ir(
+        Instruction(name="x", wires=(0,)), Instruction(name="h", wires=(1,))
+    )
+    repeated = _ir(
+        Instruction(name="cx", wires=(0, 1)),
+        Instruction(name="rz", wires=(0,), params={"theta": 0.4}),
+        Instruction(name="cx", wires=(0, 1)),
+    )
+    manager = pass_manager.PassManager(pipeline.default_pass_registry())
+
+    quiet = manager.calls(no_repeat, ("cancel_commuting_self_inverse",))
+    loud = manager.calls(repeated, ("cancel_commuting_self_inverse",))
+
+    assert "commutation_blocks" not in quiet
+    assert loud["commutation_blocks"] == 1
+
+
+def test_the_manager_answers_an_analysis_the_way_the_pass_reads_it() -> None:
+    from flagquantum.compiler.commutation import analyze_commutation
+
+    program = _ir(
+        Instruction(name="cx", wires=(0, 1)),
+        Instruction(name="rz", wires=(0,), params={"theta": 0.4}),
+        Instruction(name="cx", wires=(0, 1)),
+    )
+    manager = pass_manager.PassManager(pipeline.default_pass_registry())
+
+    assert manager.analyze(program, "commutation_blocks") == analyze_commutation(
+        program
+    )
+
+
+def test_a_replaced_fact_changes_what_a_pass_removes_without_touching_the_pass() -> (
+    None
+):
+    # The replacement demonstration: `merge_self_inverse` is not modified, only
+    # the registry it is handed, and the fact it reads changes what it removes.
+    narrowed = pass_manager.AnalysisSpec(
+        lambda program: frozenset(pipeline._SELF_INVERSE - {"x"}),
+        program_independent=True,
+    )
+    registry = pass_manager.PassRegistry(
+        pipeline.BUILTIN_PASSES,
+        pipeline._BUILTIN_PASS_SPECS,
+        {**pipeline._BUILTIN_ANALYSES, "self_inverse_opcodes": narrowed},
+    )
+    program = _ir(Instruction(name="x", wires=(0,)), Instruction(name="x", wires=(0,)))
+
+    default = pass_manager.PassManager(pipeline.default_pass_registry())
+    replaced = pass_manager.PassManager(registry)
+
+    assert _names(default.run(program, ("merge_self_inverse",))) == []
+    assert _names(replaced.run(program, ("merge_self_inverse",))) == ["x", "x"]
+    # And the pass object itself is the same one in both registries.
+    assert registry.resolve("merge_self_inverse") is pipeline.merge_self_inverse
+
+
+def test_a_replaced_rotation_table_changes_what_remove_identity_gates_removes() -> None:
+    # The same demonstration for the other carried fact, and for a pass defined in
+    # the module rather than in another one: the table says which opcode's single
+    # angle is `theta`, so narrowing it to nothing stops the zero-angle removal.
+    narrowed = pass_manager.AnalysisSpec(
+        lambda program: MappingProxyType({}), program_independent=True
+    )
+    registry = pass_manager.PassRegistry(
+        pipeline.BUILTIN_PASSES,
+        pipeline._BUILTIN_PASS_SPECS,
+        {**pipeline._BUILTIN_ANALYSES, "rotation_parameters": narrowed},
+    )
+    program = _ir(
+        Instruction(name="i", wires=(0,)),
+        Instruction(name="rx", wires=(0,), params={"theta": 0.0}),
+    )
+
+    default = pass_manager.PassManager(pipeline.default_pass_registry())
+    replaced = pass_manager.PassManager(registry)
+
+    # The explicit identity gate is removed either way; only the zero-angle
+    # rotation depends on the table.
+    assert _names(default.run(program, ("remove_identity_gates",))) == []
+    assert _names(replaced.run(program, ("remove_identity_gates",))) == ["rx"]
+
+
+def test_a_replaced_self_inverse_set_changes_what_the_cancellation_pass_removes() -> (
+    None
+):
+    # A pass whose fact lives in another module reads the declared one too, so the
+    # replacement route reaches it without editing `commutation_cancellation`.
+    narrowed = pass_manager.AnalysisSpec(
+        lambda program: frozenset(pipeline._SELF_INVERSE - {"cx"}),
+        program_independent=True,
+    )
+    registry = pass_manager.PassRegistry(
+        pipeline.BUILTIN_PASSES,
+        pipeline._BUILTIN_PASS_SPECS,
+        {**pipeline._BUILTIN_ANALYSES, "self_inverse_opcodes": narrowed},
+    )
+    # `cx(0, 1) z(0) cx(0, 1)` is a bare `z(0)` only because the two `cx` cancel
+    # across a proven commuting gap, and `cx` is exactly what was dropped.
+    program = _ir(
+        Instruction(name="cx", wires=(0, 1)),
+        Instruction(name="z", wires=(0,)),
+        Instruction(name="cx", wires=(0, 1)),
+    )
+
+    default = pass_manager.PassManager(pipeline.default_pass_registry())
+    replaced = pass_manager.PassManager(registry)
+
+    assert _names(default.run(program, ("cancel_commuting_self_inverse",))) == ["z"]
+    assert _names(replaced.run(program, ("cancel_commuting_self_inverse",))) == [
+        "cx",
+        "z",
+        "cx",
+    ]
+    # The registry binds the pipeline's wrapper rather than the pass itself, because
+    # the pass imports `pipeline` and an eager import in this direction is a cycle.
+    # What matters is that the wrapper forwards the facts, so the replacement route
+    # reaches a pass in another module without editing either one.
+    assert registry.resolve("cancel_commuting_self_inverse") is (
+        pipeline._cancel_commuting_self_inverse
+    )
+    assert pipeline.BUILTIN_PASSES["cancel_commuting_self_inverse"] is (
+        pipeline._cancel_commuting_self_inverse
+    )
+
+
+def test_a_declared_name_list_is_validated() -> None:
+    # A declaration is the whole record of what a pass reads and vouches for, so a
+    # duplicated name or a name that is not a string is refused where it is written
+    # rather than at the point a resolution walks it.
+    with pytest.raises(pass_manager.PassRegistryError, match="twice"):
+        pass_manager.PassSpec(
+            _noop, uses=("rotation_parameters", "rotation_parameters")
+        )
+    with pytest.raises(pass_manager.PassRegistryError, match="requires"):
+        pass_manager.AnalysisSpec(_noop, requires=("",))
+
+
+def test_a_declaration_that_names_itself_is_refused() -> None:
+    # `_validated_declaration` is given the kind of declaration, not a registered
+    # name, so the literal self-reference it catches is a name equal to that kind.
+    # The case a reader would actually write -- an analysis requiring its own
+    # registered name, or a pass naming itself in `uses` -- is caught one step
+    # later by the resolution walk, and both messages name the offending entry.
+    with pytest.raises(pass_manager.PassRegistryError, match="cannot declare itself"):
+        pass_manager.PassSpec(_noop, uses=("a pass",))
+    with pytest.raises(pass_manager.PassRegistryError, match="cannot declare itself"):
+        pass_manager.AnalysisSpec(_noop, requires=("an analysis",))
+
+
+def test_an_analysis_that_requires_its_own_name_is_refused_as_a_cycle() -> None:
+    # The declaration itself is accepted: an analysis cannot know its registered
+    # name, so the refusal has to come from the walk that sees the name.
+    spec = pass_manager.AnalysisSpec(_noop, requires=("loop",))
+    registry = pass_manager.PassRegistry().with_analysis(
+        "loop", _noop, requires=spec.requires
+    )
+
+    assert spec.requires == ("loop",)
+    assert registry.analysis("loop").requires == ("loop",)
+    with pytest.raises(pass_manager.PassRegistryError, match="cycle"):
+        registry.analysis_order("loop")
+
+
+def test_a_pass_that_names_its_own_registered_name_is_refused() -> None:
+    registry = pass_manager.PassRegistry().with_pass(
+        "extension.example.self", _noop, uses=("extension.example.self",)
+    )
+
+    with pytest.raises(pass_manager.PassRegistryError) as raised:
+        registry.resolve_sequence(("extension.example.self",))
+
+    # Both the declaring pass and the name it could not resolve are in the message,
+    # which is the difference between a usable refusal and a puzzle. Asserting the
+    # joining text is what pins the connection: the name alone appears either way.
+    assert "pass 'extension.example.self' declares 'extension.example.self'" in str(
+        raised.value
+    )
+    assert "unknown analysis" in str(raised.value)
+
+
+def test_an_analysis_declares_its_dependencies() -> None:
+    with pytest.raises(pass_manager.PassRegistryError, match="twice"):
+        pass_manager.AnalysisSpec(_noop, requires=("leaf", "leaf"))
+    with pytest.raises(pass_manager.PassRegistryError, match="requires"):
+        pass_manager.AnalysisSpec(_noop, requires=("",))
+
+
+def test_a_spec_whose_function_is_a_different_object_than_the_pass_is_refused() -> None:
+    # `resolve` returns one function and the manager calls another; a registry that
+    # allowed those to differ would run a pass under a name it is not bound to.
+    registry = pipeline.default_pass_registry()
+
+    with pytest.raises(pass_manager.PassRegistryError, match="different function"):
+        pass_manager.PassRegistry(
+            pipeline.BUILTIN_PASSES,
+            {
+                **pipeline._BUILTIN_PASS_SPECS,
+                "merge_self_inverse": pass_manager.PassSpec(lambda program: program),
+            },
+            pipeline._BUILTIN_ANALYSES,
+        )
+    assert registry.resolve("merge_self_inverse") is pipeline.merge_self_inverse
+
+
+def _bump_rx(program: CircuitIR) -> CircuitIR:
+    """Add one to an `rx` angle, leaving the instruction count alone.
+
+    A same-length rewrite: the count comparison the fixed point used to make read
+    this as "nothing changed" and returned a program the sequence would still edit.
+    """
+
+    instructions = []
+    for instruction in program:
+        if instruction.name == "rx" and instruction.params["theta"] < 2.0:
+            params = dict(instruction.params)
+            params["theta"] = params["theta"] + 1.0
+            instruction = Instruction(
+                name=instruction.name, wires=instruction.wires, params=params
+            )
+        instructions.append(instruction)
+    return CircuitIR(n_wires=program.n_wires, instructions=tuple(instructions))
+
+
+def test_a_same_length_rewrite_earns_another_round() -> None:
+    program = _ir(Instruction(name="rx", wires=(0,), params={"theta": 0.0}))
+    counted = _NoOp()
+    registry = (
+        pass_manager.PassRegistry()
+        .with_pass("extension.example.bump", _bump_rx)
+        .with_pass("extension.example.count", counted)
+    )
+    manager = pass_manager.PassManager(registry)
+
+    # The default bound is one round per instruction plus one, which assumes a
+    # round removes something; a same-length rewrite needs the bound raised.
+    result = manager.to_fixed_point(
+        program, ("extension.example.bump", "extension.example.count"), max_rounds=5
+    )
+
+    assert result.instructions[0].params["theta"] == 2.0
+    # Two rounds that moved the angle, and one that found it where it left it.
+    assert counted.calls == 3

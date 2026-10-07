@@ -424,8 +424,26 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     # This pass alone frees the two rotations rather than merging them; the merge
     # is `merge_adjacent_rotations`, which the sequence places after it.
     assert _names(routed(probe)) == ["rz", "rz"]
-    # And the composition point still names no analysis directly: it resolves names.
-    assert "analyze_commutation" not in ast.dump(tree)
+    # The composition point names the analysis once, to register it, and never
+    # computes it: `analyze_commutation` may appear as an import and as the body of
+    # the one function that is registered as the `commutation_blocks` analysis, and
+    # nowhere else. A pass that reached for it directly would be a second route to
+    # the same fact, which is what the registry replaced.
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "analyze_commutation"
+    ]
+    assert len(calls) == 1
+    registered = [
+        name
+        for name, spec in module._BUILTIN_ANALYSES.items()
+        if getattr(spec.function, "__name__", None) == "_commutation_blocks"
+    ]
+    assert registered == ["commutation_blocks"]
+    assert module._BUILTIN_ANALYSES["commutation_blocks"].program_independent is False
 
 
 def test_the_analysis_is_asked_for_once_per_call() -> None:
