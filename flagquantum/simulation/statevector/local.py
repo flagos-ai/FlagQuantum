@@ -836,7 +836,18 @@ def _execute_statevector_program(
             owns_output = True
             continue
         if isinstance(step, _StatevectorSwapSequenceStep):
-            output = _apply_swap_sequence(output, step.swaps, circuit.n_qubits)
+            from .swap_sequence_dispatch import _try_apply_cataloged_swap_sequence
+
+            dispatched = _try_apply_cataloged_swap_sequence(
+                output,
+                swaps=step.swaps,
+                n_qubits=circuit.n_qubits,
+            )
+            output = (
+                dispatched
+                if dispatched is not None
+                else _apply_swap_sequence(output, step.swaps, circuit.n_qubits)
+            )
             owns_output = True
             continue
         if isinstance(step, _StatevectorRXRZLoopStep):
@@ -998,6 +1009,18 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         enable_cpu_swap_sequence = bool(
             output.device.type == "cpu" and _cpu_swap_sequence_fusion_enabled()
         )
+        from .swap_sequence_dispatch import _swap_sequence_dispatch_enabled
+
+        enable_triton_swap_sequence = bool(
+            output.is_cuda
+            and output.dtype == torch.complex64
+            and _swap_sequence_dispatch_enabled()
+        )
+        swap_sequence_fusion_bounds = (
+            (2, None)
+            if enable_cpu_swap_sequence
+            else (4, 8) if enable_triton_swap_sequence else None
+        )
         enable_cpu_cz_graph = (
             output.device.type == "cpu" and _cpu_cz_graph_fusion_enabled()
         )
@@ -1071,6 +1094,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             native_rotation_clifford_fusion_enabled(),
             "cpu_swap_sequence",
             enable_cpu_swap_sequence,
+            "triton_swap_sequence",
+            enable_triton_swap_sequence,
             "cpu_hadamard_controlled_phase",
             enable_cpu_hadamard_controlled_phase,
             "cpu_cx_rzz_swap",
@@ -1107,7 +1132,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     enable_cpu_native_clifford_matching
                 ),
                 enable_cpu_native_rotation_clifford_fusion=native_rotation_clifford_fusion_enabled(),
-                enable_cpu_swap_sequence=enable_cpu_swap_sequence,
+                swap_fusion_bounds=swap_sequence_fusion_bounds,
                 enable_cpu_hadamard_controlled_phase=(
                     enable_cpu_hadamard_controlled_phase
                 ),
