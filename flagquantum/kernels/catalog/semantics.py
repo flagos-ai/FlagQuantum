@@ -117,6 +117,16 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "reversible_computing",
     ),
     _semantic(
+        "FQK-SV-014",
+        "statevector.apply.swap_sequence.local",
+        "statevector",
+        "Apply four through eight ordered local SWAP gates in one state pass.",
+        "circuit_simulation",
+        "qft",
+        "circuit_routing",
+        "circuit_optimization",
+    ),
+    _semantic(
         "FQK-GR-001",
         "gradient.vjp.adjoint_1q.local",
         "gradient",
