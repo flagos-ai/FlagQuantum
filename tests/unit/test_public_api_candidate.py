@@ -199,7 +199,7 @@ def test_candidate_stable_core_stays_within_reviewed_root_budget() -> None:
     assert openqasm_import_contract["implementation_authorized"] is True
     assert set(openqasm_import_contract["root_additions"]) == {"from_openqasm"}
     assert set(openqasm_import_contract["root_additions"]) <= final_core
-    assert len(final_core) == 37
+    assert len(final_core) == 38
     assert len(final_core) <= rules["root_export_budget"]
     assert {"Circuit", "Module", "ExecutionOptions", "ExecutionPlan"} <= final_core
     assert {"plan", "run", "train", "ExecutionResult", "TrainingResult"} <= final_core

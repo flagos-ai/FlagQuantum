@@ -38,6 +38,7 @@ process.
 - [The batch parameter-shift profile reads the opcode declaration](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md)
 - [`fq.gradient` and the reported gradient method](FQ-GRADIENT-API-20261002.md)
 - [The density-matrix output](FQ-DENSITY-MATRIX-OUTPUT-20261006.md)
+- [The von Neumann entropy output](FQ-VN-ENTROPY-OUTPUT-20261101.md)
 - [Compiler boundary responsibility split](FQ-COMPILER-BOUNDARY-SPLIT-20260930.md)
 - [Pauli algebra and quantum_info ownership boundary](FQ-PAULI-QUANTUM-INFO-BOUNDARY-20260930.md)
 - [Quafu credential presence fails closed before submission](FQ-QUAFU-CREDENTIAL-FAIL-CLOSED-20260930.md)

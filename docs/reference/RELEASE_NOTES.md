@@ -37,6 +37,25 @@ are otherwise unchanged.
   circuit's dtype the way `Circuit.density_matrix` already did, so the two no longer
   disagree by the `complex64` rounding floor on a `complex128` circuit. See
   [the density-matrix output change](../api-changes/FQ-DENSITY-MATRIX-OUTPUT-20261006.md).
+- Added the stable `fq.vn_entropy(qubits, *, log_base=None, name=None)` output
+  request and the `ExecutionResult.vn_entropy` property, so an execution can be asked
+  for the von Neumann entropy of a named subsystem instead of the caller having to
+  diagonalise a reduced state by hand. At least one qubit is required and the
+  selection may be any subset rather than a contiguous run; `log_base=None` answers in
+  nats and `log_base=2` in bits, under the same `log_base` keyword PennyLane's
+  `qml.vn_entropy` accepts.
+  Every execution mode that holds a state answers the same number: dense modes reduce
+  and diagonalise, while `mps` and `tensor_network` modes contract the named sites out
+  of the state they already hold, and the `mps` route reads the canonical form's
+  Schmidt values directly when the selection is a leading run, so `fq.vn_entropy([0])`
+  answers where `fq.density_matrix([0])` is refused by the amplitude ceiling. Entropy
+  is not a sampled quantity, so `shots=` is refused and `mode='stabilizer'` is refused
+  by name; a noise model carrying a readout rule is refused because readout confusion
+  acts on outcomes after the state. A base with no logarithm is refused rather than
+  answered by accident: `0`, a negative base, `1`, and a non-finite base each raise a
+  sentence naming the reason, where PennyLane 0.45.1 returns the natural logarithm,
+  `nan`, `inf`, and `nan` respectively. See
+  [the von Neumann entropy output change](../api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md).
 - Added `optimization_level` to `flagquantum.compiler.optimize` and
   `flagquantum.compiler.compile`. It is keyword-only and defaults to `2`, which is
   the pass composition those entry points already ran, so a caller that does not
