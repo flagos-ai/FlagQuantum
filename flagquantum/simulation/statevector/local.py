@@ -20,7 +20,7 @@ from .batching import (
     _cpu_statevector_batch_chunk_size_for,
     _execute_statevector_batch_windows,
     _gate_parameters,
-    _rotation_region_angles,
+    _prepare_batched_rotation_matrices,
     _statevector_batch_input,
 )
 from .clifford_matching import (
@@ -35,7 +35,7 @@ from .controlled_phase import (
     _controlled_phase_graph_factors_cpu,
 )
 from .cz_graph import _apply_cz_graph_cpu, _cached_cz_graph_signs, _cz_graph_signs_cpu
-from .dense_fusion_cpu import _apply_cx_rzz_swap_sequence, _apply_swap_sequence
+from .dense_fusion_cpu import _apply_cx_rzz_swap_sequence
 from .execution_metrics import initial_runtime_metrics
 from .fixed_layer_cpu import (
     apply_native_fixed_one_qubit_layer,
@@ -76,15 +76,12 @@ from .operations import (
     _apply_rx_rz_loop,
     _apply_single_qubit_fixed,
     _apply_single_wire_matrix,
-    _batched_rotation_sequence_matrices,
-    _batched_rx_ry_rz_matrices,
     _compile_statevector_program,
     _cpu_cross_wire_diagonal_fusion_enabled,
     _cpu_cx_rzz_swap_fusion_enabled,
     _cpu_cx_sequence_gather_enabled,
     _cpu_disjoint_single_wire_fusion_enabled,
     _cpu_single_wire_elementwise_enabled,
-    _cpu_swap_sequence_fusion_enabled,
     _cx_sequence_permutation_index,
     _diagonal_region,
     _fused_gate_matrix,
@@ -232,73 +229,6 @@ def _controlled_phase_graph_factors(
             )
         circuit._statevector_fused_matrices[key] = cached
     return cached, graph_wires
-
-
-def _prepare_batched_rotation_matrices(
-    circuit: Circuit,
-    program: Sequence[_StatevectorProgramStep],
-    state: torch.Tensor,
-    parameter_bindings: tuple[torch.Tensor, ...] | None,
-) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
-    matrix_steps = tuple(
-        region
-        for step in program
-        for region in (
-            step.regions
-            if isinstance(
-                step,
-                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
-            )
-            else (step,)
-        )
-    )
-    rx_ry_rz_steps = tuple(
-        step
-        for step in matrix_steps
-        if isinstance(step, _StatevectorFusedGateStep)
-        and tuple(item.name for item in step.instructions) == ("rx", "ry", "rz")
-        and len(step.wires) == 1
-    )
-    rx_ry_rz_matrices: dict[int, torch.Tensor] = {}
-    if rx_ry_rz_steps:
-        region_angles = _rotation_region_angles(
-            circuit, rx_ry_rz_steps, state, parameter_bindings
-        )
-        if region_angles is not None:
-            matrices = _batched_rx_ry_rz_matrices(region_angles).to(dtype=state.dtype)
-            rx_ry_rz_matrices = {
-                id(step): matrices[index] for index, step in enumerate(rx_ry_rz_steps)
-            }
-
-    rotation_matrices: dict[int, torch.Tensor] = {}
-    rotation_patterns = {
-        tuple(item.name for item in step.instructions)
-        for step in matrix_steps
-        if isinstance(step, _StatevectorFusedGateStep)
-        and len(step.instructions) >= 2
-        and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
-    }
-    for names in rotation_patterns:
-        rotation_steps = tuple(
-            step
-            for step in matrix_steps
-            if isinstance(step, _StatevectorFusedGateStep)
-            and tuple(item.name for item in step.instructions) == names
-        )
-        region_angles = _rotation_region_angles(
-            circuit, rotation_steps, state, parameter_bindings
-        )
-        if region_angles is None:
-            continue
-        matrices = _batched_rotation_sequence_matrices(
-            region_angles,
-            names=names,
-            dtype=state.dtype,
-        )
-        rotation_matrices.update(
-            {id(step): matrices[index] for index, step in enumerate(rotation_steps)}
-        )
-    return rx_ry_rz_matrices, rotation_matrices
 
 
 def _use_elementwise_single_wire(
@@ -845,7 +775,13 @@ def _execute_statevector_program(
             owns_output = True
             continue
         if isinstance(step, _StatevectorSwapSequenceStep):
-            output = _apply_swap_sequence(output, step.swaps, circuit.n_qubits)
+            from .swap_sequence_dispatch import _apply_swap_sequence_step
+
+            output = _apply_swap_sequence_step(
+                output,
+                swaps=step.swaps,
+                n_qubits=circuit.n_qubits,
+            )
             owns_output = True
             continue
         if isinstance(step, _StatevectorRXRZLoopStep):
@@ -868,6 +804,19 @@ def _execute_statevector_program(
             continue
         instruction = step.instruction
         name = canonical_opcode(instruction.name)
+        if name in {"ccx", "cswap"}:
+            from .reversible_3q_dispatch import _try_apply_cataloged_reversible_3q
+
+            first_qubit, second_qubit, third_qubit = instruction.wires
+            dispatched = _try_apply_cataloged_reversible_3q(
+                output,
+                qubits=(first_qubit, second_qubit, third_qubit),
+                n_qubits=circuit.n_qubits,
+                opcode=name,
+            )
+            if dispatched is not None:
+                output = dispatched
+                continue
         if name in {"x", "cx", "swap"}:
             output = _apply_fixed_permutation(
                 output, name, instruction.wires, circuit.n_qubits
@@ -877,6 +826,28 @@ def _execute_statevector_program(
                 output, name, instruction.wires[0], circuit.n_qubits
             )
         else:
+            if name in {"rxx", "ryy", "rzz"}:
+                parameters = _gate_parameters(
+                    circuit,
+                    instruction,
+                    output,
+                    parameter_bindings,
+                )
+                if parameters is not None:
+                    from .pauli_rotation_dispatch import (
+                        _try_apply_cataloged_pauli_rotation,
+                    )
+
+                    dispatched = _try_apply_cataloged_pauli_rotation(
+                        output,
+                        parameters[:, 0],
+                        qubits=instruction.wires,
+                        n_qubits=circuit.n_qubits,
+                        opcode=name,
+                    )
+                    if dispatched is not None:
+                        output = dispatched
+                        continue
             matrix = _gate_matrix(
                 instruction,
                 bsz=output.shape[0],
@@ -1008,9 +979,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         enable_cpu_cross_wire_diagonal = (
             output.device.type == "cpu" and _cpu_cross_wire_diagonal_fusion_enabled()
         )
-        enable_cpu_swap_sequence = bool(
-            output.device.type == "cpu" and _cpu_swap_sequence_fusion_enabled()
-        )
+        from .swap_sequence_dispatch import _swap_sequence_policy
+
+        (
+            enable_cpu_swap_sequence,
+            enable_triton_swap_sequence,
+            swap_sequence_fusion_bounds,
+        ) = _swap_sequence_policy(output)
         enable_cpu_cz_graph = (
             output.device.type == "cpu" and _cpu_cz_graph_fusion_enabled()
         )
@@ -1084,6 +1059,8 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             native_rotation_clifford_fusion_enabled(),
             "cpu_swap_sequence",
             enable_cpu_swap_sequence,
+            "triton_swap_sequence",
+            enable_triton_swap_sequence,
             "cpu_hadamard_controlled_phase",
             enable_cpu_hadamard_controlled_phase,
             "cpu_cx_rzz_swap",
@@ -1120,7 +1097,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     enable_cpu_native_clifford_matching
                 ),
                 enable_cpu_native_rotation_clifford_fusion=native_rotation_clifford_fusion_enabled(),
-                enable_cpu_swap_sequence=enable_cpu_swap_sequence,
+                swap_fusion_bounds=swap_sequence_fusion_bounds,
                 enable_cpu_hadamard_controlled_phase=(
                     enable_cpu_hadamard_controlled_phase
                 ),

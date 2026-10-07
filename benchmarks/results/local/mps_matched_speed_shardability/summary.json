@@ -1,0 +1,873 @@
+{
+  "acceptance_configuration": "matched_speed_8192sites_chi64",
+  "artifact_class": "auxiliary_report",
+  "benchmark": "mps_matched_speed_shardability",
+  "calibrated_metric": "wall_seconds",
+  "claim_evidence_type": "development_smoke",
+  "cross_check_metrics": [
+    "end_to_end_seconds",
+    "forward_seconds"
+  ],
+  "fit_residuals": {
+    "1": {
+      "fitted_seconds_per_site": 0.0003697325738175384,
+      "measured_seconds_per_site": 0.00036976504443666803,
+      "relative_residual": 8.781419341324885e-05
+    },
+    "16": {
+      "fitted_seconds_per_site": 0.000305486592977369,
+      "measured_seconds_per_site": 0.0003059411816451835,
+      "relative_residual": 0.0014858694908934356
+    },
+    "8": {
+      "fitted_seconds_per_site": 0.0003097696583667136,
+      "measured_seconds_per_site": 0.0003092825990797694,
+      "relative_residual": -0.0015748033946734474
+    }
+  },
+  "fits": {
+    "1": {
+      "intercept_seconds": 0.2605185476131735,
+      "r_squared": 0.9999255158600204,
+      "slope_seconds_per_site": 0.00036976504443666803
+    },
+    "16": {
+      "intercept_seconds": 0.37897157653545344,
+      "r_squared": 0.9998658590972295,
+      "slope_seconds_per_site": 0.0003059411816451835
+    },
+    "8": {
+      "intercept_seconds": 0.2510874945049484,
+      "r_squared": 0.999597657433311,
+      "slope_seconds_per_site": 0.0003092825990797694
+    }
+  },
+  "fraction_of_shardable_ceiling": {
+    "1": 1.0,
+    "16": 0.9462268152357848,
+    "8": 0.9869856544696856
+  },
+  "ladder_fingerprint": "58f88d24d1c08846a2e3ecc7c7989570dc2a3ae06372b21d21b689ff3c855b47",
+  "max_abs_relative_residual": 0.0015748033946734474,
+  "measured_speedup": {
+    "1": 1.0,
+    "16": 1.1452249750227717,
+    "8": 1.1780390251005846
+  },
+  "non_release_evidence": true,
+  "note": "The serial fraction is fitted from the per-site slopes alone and never from an intercept, so a per-call overhead that grows the intercept without touching the slope cannot move it. The split is reported as the least-squares solution over every world the sweep measured, with the residual of each world and the two-point solves carried beside it, because a two-point solve passes through its own points by construction and only the worlds it was not solved from can say whether the two-term form fits. The workload reaches almost none of its own ceiling in the least shardable direction and that is a property of the workload, not of the implementation: at world 16 the arithmetic permits at most 1.2103x against one device, and the measured leg delivered 1.1452x, which is 0.9462 of that ceiling. The cross-check metrics are carried so the split is a property of the workload rather than of one way of timing it. Every probe record the fit reads is committed beside this file at the digest listed for it under 'sources', so the fit can be recomputed and not merely believed.",
+  "points": [
+    {
+      "median_end_to_end_seconds": 0.444838197901845,
+      "median_forward_seconds": 0.3221614845097065,
+      "median_wall_seconds": 0.45691594295203686,
+      "n_sites": 512,
+      "rung": "matched_speed_512sites_chi64",
+      "seconds_end_to_end_seconds": [
+        0.448842,
+        0.444838,
+        0.444643,
+        0.456493,
+        0.443831,
+        0.444731,
+        0.452995,
+        0.44774,
+        0.451208,
+        0.442176
+      ],
+      "seconds_forward_seconds": [
+        0.326458,
+        0.324269,
+        0.320834,
+        0.325628,
+        0.320426,
+        0.322161,
+        0.32609,
+        0.32244,
+        0.319693,
+        0.319475
+      ],
+      "seconds_wall_seconds": [
+        0.458618,
+        0.455695,
+        0.454957,
+        0.466167,
+        0.456916,
+        0.454913,
+        0.465284,
+        0.458215,
+        0.461453,
+        0.456243
+      ],
+      "world": 1
+    },
+    {
+      "median_end_to_end_seconds": 0.622784586623311,
+      "median_forward_seconds": 0.49786470271646976,
+      "median_wall_seconds": 0.6403997521847486,
+      "n_sites": 1024,
+      "rung": "matched_speed_1024sites_chi64",
+      "seconds_end_to_end_seconds": [
+        0.631751,
+        0.640211,
+        0.628228,
+        0.622239,
+        0.617248,
+        0.617821,
+        0.626812,
+        0.636024,
+        0.617127,
+        0.622785
+      ],
+      "seconds_forward_seconds": [
+        0.505147,
+        0.514144,
+        0.503261,
+        0.502546,
+        0.497865,
+        0.488618,
+        0.492347,
+        0.499914,
+        0.491714,
+        0.495336
+      ],
+      "seconds_wall_seconds": [
+        0.650399,
+        0.656843,
+        0.645398,
+        0.6404,
+        0.636609,
+        0.636258,
+        0.643287,
+        0.652473,
+        0.633634,
+        0.639705
+      ],
+      "world": 1
+    },
+    {
+      "median_end_to_end_seconds": 0.9885043147951365,
+      "median_forward_seconds": 0.8567769136279821,
+      "median_wall_seconds": 1.0187876801937819,
+      "n_sites": 2048,
+      "rung": "matched_speed_2048sites_chi64",
+      "seconds_end_to_end_seconds": [
+        0.982277,
+        0.972659,
+        0.996984,
+        0.994819,
+        0.991833,
+        0.99659,
+        0.985259,
+        0.995656,
+        0.988504,
+        0.983733
+      ],
+      "seconds_forward_seconds": [
+        0.851203,
+        0.847447,
+        0.868625,
+        0.86414,
+        0.86136,
+        0.864264,
+        0.855326,
+        0.859904,
+        0.856777,
+        0.856129
+      ],
+      "seconds_wall_seconds": [
+        1.013253,
+        1.002662,
+        1.027216,
+        1.02486,
+        1.022919,
+        1.027301,
+        1.016378,
+        1.025479,
+        1.018788,
+        1.01456
+      ],
+      "world": 1
+    },
+    {
+      "median_end_to_end_seconds": 1.699285527691245,
+      "median_forward_seconds": 1.569193871691823,
+      "median_wall_seconds": 1.7581468652933836,
+      "n_sites": 4096,
+      "rung": "matched_speed_4096sites_chi64",
+      "seconds_end_to_end_seconds": [
+        1.690828,
+        1.709607,
+        1.728428,
+        1.712343,
+        1.794964,
+        1.706052,
+        1.699286,
+        1.697759,
+        1.694935,
+        1.682706
+      ],
+      "seconds_forward_seconds": [
+        1.569194,
+        1.577004,
+        1.596383,
+        1.581363,
+        1.665034,
+        1.574146,
+        1.568537,
+        1.567094,
+        1.564863,
+        1.552529
+      ],
+      "seconds_wall_seconds": [
+        1.749808,
+        1.767437,
+        1.788762,
+        1.771465,
+        1.854661,
+        1.764608,
+        1.758147,
+        1.757158,
+        1.75509,
+        1.742961
+      ],
+      "world": 1
+    },
+    {
+      "median_end_to_end_seconds": 3.1793765984475613,
+      "median_forward_seconds": 3.0446283537894487,
+      "median_wall_seconds": 3.297253282740712,
+      "n_sites": 8192,
+      "rung": "matched_speed_8192sites_chi64",
+      "seconds_end_to_end_seconds": [
+        3.264073,
+        3.212123,
+        3.164818,
+        3.251122,
+        3.171951,
+        3.158131,
+        3.16588,
+        3.284615,
+        3.192628,
+        3.179377
+      ],
+      "seconds_forward_seconds": [
+        3.131928,
+        3.079928,
+        3.033146,
+        3.118428,
+        3.040133,
+        3.025945,
+        3.033051,
+        3.149711,
+        3.060861,
+        3.044628
+      ],
+      "seconds_wall_seconds": [
+        3.385727,
+        3.329634,
+        3.282877,
+        3.368857,
+        3.290769,
+        3.273678,
+        3.283224,
+        3.402219,
+        3.311672,
+        3.297253
+      ],
+      "world": 1
+    },
+    {
+      "median_end_to_end_seconds": 0.4083299357444048,
+      "median_forward_seconds": 0.3786789868026972,
+      "median_wall_seconds": 0.4163832273334265,
+      "n_sites": 512,
+      "rung": "matched_speed_512sites_chi64",
+      "seconds_end_to_end_seconds": [
+        0.408148,
+        0.402231,
+        0.419326,
+        0.413889,
+        0.418169,
+        0.412566,
+        0.408752,
+        0.40833,
+        0.40139,
+        0.403399
+      ],
+      "seconds_forward_seconds": [
+        0.378679,
+        0.372606,
+        0.388804,
+        0.382132,
+        0.387096,
+        0.384976,
+        0.380911,
+        0.377498,
+        0.371367,
+        0.373806
+      ],
+      "seconds_wall_seconds": [
+        0.416794,
+        0.409271,
+        0.425817,
+        0.420195,
+        0.424354,
+        0.419862,
+        0.414939,
+        0.416383,
+        0.407716,
+        0.412554
+      ],
+      "world": 8
+    },
+    {
+      "median_end_to_end_seconds": 0.5647244863212109,
+      "median_forward_seconds": 0.5420205611735582,
+      "median_wall_seconds": 0.5742701943963766,
+      "n_sites": 1024,
+      "rung": "matched_speed_1024sites_chi64",
+      "seconds_end_to_end_seconds": [
+        0.56751,
+        0.572668,
+        0.560111,
+        0.568055,
+        0.554565,
+        0.55802,
+        0.570312,
+        0.564724,
+        0.572667,
+        0.549179
+      ],
+      "seconds_forward_seconds": [
+        0.547091,
+        0.547369,
+        0.532271,
+        0.546626,
+        0.533659,
+        0.535895,
+        0.549075,
+        0.542021,
+        0.550815,
+        0.526552
+      ],
+      "seconds_wall_seconds": [
+        0.575729,
+        0.588504,
+        0.571027,
+        0.576633,
+        0.564268,
+        0.567767,
+        0.580159,
+        0.57427,
+        0.583563,
+        0.558762
+      ],
+      "world": 8
+    },
+    {
+      "median_end_to_end_seconds": 0.8765180688351393,
+      "median_forward_seconds": 0.8519209139049053,
+      "median_wall_seconds": 0.8910385277122259,
+      "n_sites": 2048,
+      "rung": "matched_speed_2048sites_chi64",
+      "seconds_end_to_end_seconds": [
+        0.873277,
+        0.894863,
+        0.877582,
+        0.876518,
+        0.890944,
+        0.871769,
+        0.899157,
+        0.874133,
+        0.871053,
+        0.883006
+      ],
+      "seconds_forward_seconds": [
+        0.848471,
+        0.872353,
+        0.851921,
+        0.853097,
+        0.867261,
+        0.848204,
+        0.875489,
+        0.851812,
+        0.848,
+        0.859972
+      ],
+      "seconds_wall_seconds": [
+        0.888383,
+        0.912026,
+        0.894178,
+        0.890858,
+        0.906943,
+        0.888526,
+        0.919137,
+        0.891039,
+        0.887496,
+        0.8987
+      ],
+      "world": 8
+    },
+    {
+      "median_end_to_end_seconds": 1.4583254531025887,
+      "median_forward_seconds": 1.4351525232195854,
+      "median_wall_seconds": 1.4837451037019491,
+      "n_sites": 4096,
+      "rung": "matched_speed_4096sites_chi64",
+      "seconds_end_to_end_seconds": [
+        1.458325,
+        1.469868,
+        1.463671,
+        1.450761,
+        1.473405,
+        1.457437,
+        1.454525,
+        1.461275,
+        1.452498,
+        1.463582
+      ],
+      "seconds_forward_seconds": [
+        1.435153,
+        1.446215,
+        1.440637,
+        1.427717,
+        1.451284,
+        1.43296,
+        1.42979,
+        1.439256,
+        1.430021,
+        1.442225
+      ],
+      "seconds_wall_seconds": [
+        1.483745,
+        1.497373,
+        1.49412,
+        1.476973,
+        1.500586,
+        1.483265,
+        1.480444,
+        1.486911,
+        1.479018,
+        1.489761
+      ],
+      "world": 8
+    },
+    {
+      "median_end_to_end_seconds": 2.6577274054288864,
+      "median_forward_seconds": 2.633337901905179,
+      "median_wall_seconds": 2.798933831974864,
+      "n_sites": 8192,
+      "rung": "matched_speed_8192sites_chi64",
+      "seconds_end_to_end_seconds": [
+        2.750661,
+        2.644089,
+        2.723834,
+        3.3513,
+        6.720632,
+        2.928798,
+        2.657727,
+        2.649516,
+        2.644783,
+        2.647809
+      ],
+      "seconds_forward_seconds": [
+        2.728547,
+        2.619898,
+        2.691008,
+        3.290791,
+        6.692609,
+        2.902924,
+        2.633338,
+        2.625934,
+        2.621642,
+        2.626645
+      ],
+      "seconds_wall_seconds": [
+        2.798934,
+        2.691198,
+        2.881518,
+        3.395981,
+        6.770452,
+        2.976576,
+        2.704558,
+        2.80806,
+        2.690417,
+        2.693843
+      ],
+      "world": 8
+    },
+    {
+      "median_end_to_end_seconds": 0.5139291156083345,
+      "median_forward_seconds": 0.49346140027046204,
+      "median_wall_seconds": 0.5197897348552942,
+      "n_sites": 512,
+      "rung": "matched_speed_512sites_chi64",
+      "seconds_end_to_end_seconds": [
+        0.517912,
+        0.538147,
+        0.507787,
+        0.531386,
+        0.513929,
+        0.466241,
+        0.498187,
+        0.524893,
+        0.514328,
+        0.498487
+      ],
+      "seconds_forward_seconds": [
+        0.497813,
+        0.520258,
+        0.488724,
+        0.510484,
+        0.493461,
+        0.447674,
+        0.478442,
+        0.502899,
+        0.496433,
+        0.480168
+      ],
+      "seconds_wall_seconds": [
+        0.524814,
+        0.545814,
+        0.516858,
+        0.538337,
+        0.520819,
+        0.47195,
+        0.504721,
+        0.539285,
+        0.51979,
+        0.50578
+      ],
+      "world": 16
+    },
+    {
+      "median_end_to_end_seconds": 0.686192886903882,
+      "median_forward_seconds": 0.6684514842927456,
+      "median_wall_seconds": 0.6948013603687286,
+      "n_sites": 1024,
+      "rung": "matched_speed_1024sites_chi64",
+      "seconds_end_to_end_seconds": [
+        0.679985,
+        0.670168,
+        0.624852,
+        0.682846,
+        0.686193,
+        0.694926,
+        0.703072,
+        0.710463,
+        0.717783,
+        0.6985
+      ],
+      "seconds_forward_seconds": [
+        0.65716,
+        0.650443,
+        0.606312,
+        0.662204,
+        0.668451,
+        0.676596,
+        0.683497,
+        0.692499,
+        0.698982,
+        0.67983
+      ],
+      "seconds_wall_seconds": [
+        0.689735,
+        0.678489,
+        0.6348,
+        0.69143,
+        0.694801,
+        0.704556,
+        0.71138,
+        0.719218,
+        0.727346,
+        0.708142
+      ],
+      "world": 16
+    },
+    {
+      "median_end_to_end_seconds": 1.0041187815368176,
+      "median_forward_seconds": 0.9836812559515238,
+      "median_wall_seconds": 1.0171911139041185,
+      "n_sites": 2048,
+      "rung": "matched_speed_2048sites_chi64",
+      "seconds_end_to_end_seconds": [
+        1.004119,
+        1.014382,
+        1.034393,
+        1.021671,
+        1.001904,
+        0.976847,
+        0.981919,
+        1.010865,
+        0.977453,
+        1.005157
+      ],
+      "seconds_forward_seconds": [
+        0.983776,
+        0.995827,
+        1.015226,
+        0.998974,
+        0.980979,
+        0.956394,
+        0.961778,
+        0.991331,
+        0.959698,
+        0.983681
+      ],
+      "seconds_wall_seconds": [
+        1.017191,
+        1.028079,
+        1.049635,
+        1.0358,
+        1.014863,
+        0.990086,
+        0.996126,
+        1.024803,
+        0.991136,
+        1.018886
+      ],
+      "world": 16
+    },
+    {
+      "median_end_to_end_seconds": 1.615608872845769,
+      "median_forward_seconds": 1.5965938307344913,
+      "median_wall_seconds": 1.6398426238447428,
+      "n_sites": 4096,
+      "rung": "matched_speed_4096sites_chi64",
+      "seconds_end_to_end_seconds": [
+        1.62416,
+        1.616634,
+        1.615102,
+        1.630447,
+        1.663292,
+        1.591804,
+        1.598935,
+        1.617458,
+        1.615609,
+        1.590048
+      ],
+      "seconds_forward_seconds": [
+        1.604344,
+        1.598298,
+        1.596594,
+        1.607367,
+        1.643458,
+        1.570924,
+        1.578646,
+        1.599705,
+        1.595415,
+        1.572467
+      ],
+      "seconds_wall_seconds": [
+        1.648508,
+        1.639843,
+        1.640782,
+        1.653601,
+        1.686265,
+        1.614305,
+        1.622432,
+        1.640375,
+        1.639131,
+        1.612905
+      ],
+      "world": 16
+    },
+    {
+      "median_end_to_end_seconds": 2.8365960586816072,
+      "median_forward_seconds": 2.8154941760003567,
+      "median_wall_seconds": 2.8791314847767353,
+      "n_sites": 8192,
+      "rung": "matched_speed_8192sites_chi64",
+      "seconds_end_to_end_seconds": [
+        2.836596,
+        2.849187,
+        2.821462,
+        2.856288,
+        2.836913,
+        2.94074,
+        2.823591,
+        2.812261,
+        2.781801,
+        2.851669
+      ],
+      "seconds_forward_seconds": [
+        2.816599,
+        2.82713,
+        2.799939,
+        2.837079,
+        2.815494,
+        2.921595,
+        2.804562,
+        2.789999,
+        2.760153,
+        2.828169
+      ],
+      "seconds_wall_seconds": [
+        2.87954,
+        3.003612,
+        2.863037,
+        2.900477,
+        2.879131,
+        2.982191,
+        2.866027,
+        2.854504,
+        2.82376,
+        2.893058
+      ],
+      "world": 16
+    }
+  ],
+  "protocol": {
+    "measured_steps": 10,
+    "timing_unit": "one full forward-and-reverse sharded MPS training step, measured end to end on the ranks it is sharded across",
+    "warmup_steps": 2
+  },
+  "rank_series": "rank0",
+  "release_gate_allowed": false,
+  "release_world": 16,
+  "release_world_ceiling_speedup": 1.2103070390553239,
+  "release_world_fraction_of_ceiling": 0.9462268152357848,
+  "release_world_sizes": [
+    16
+  ],
+  "release_world_speedup": 1.1452249750227717,
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.mps_shardability_calibration.v1",
+  "serial_fraction": 0.8146523972125517,
+  "serial_seconds_per_site": 0.00030120352758802437,
+  "shardable_ceiling_speedup": {
+    "1": 1.0,
+    "16": 1.2103070390553239,
+    "8": 1.1935725912182111
+  },
+  "shardable_fraction": 0.18534760278744844,
+  "shardable_seconds_per_site": 6.852904622951407e-05,
+  "single_device_seconds_per_site": 0.0003697325738175384,
+  "sources": [
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w1.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w1.json",
+      "rung": "matched_speed_512sites_chi64",
+      "sha256": "ff5ec7d049b506bf9c5640a0ee37681c5ed76f19a9bfd3fa9f3834dfa8d4c678",
+      "world": 1
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w1.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w1.json",
+      "rung": "matched_speed_1024sites_chi64",
+      "sha256": "4bc5d1e93a26dda1bc6700318f96b821226c092a5bfb2df08c421f039eb4e98e",
+      "world": 1
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w1.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w1.json",
+      "rung": "matched_speed_2048sites_chi64",
+      "sha256": "652506512608dd516d3476626839301fd66cc4390478b856a809ec9d399d101b",
+      "world": 1
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w1.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w1.json",
+      "rung": "matched_speed_4096sites_chi64",
+      "sha256": "901c58ed424a25555ee23a55b50640c3e6215495d1829d58257ecc2bae4f56ff",
+      "world": 1
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w1.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w1.json",
+      "rung": "matched_speed_8192sites_chi64",
+      "sha256": "c08dffcc045ce6b2156f56204ddd5e84f7fa30b00ab509a58f40f499709058eb",
+      "world": 1
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w8.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w8.json",
+      "rung": "matched_speed_512sites_chi64",
+      "sha256": "cf72df264e4c25b76ad01a2eda563dd2b78d6dc755e876f4febd970b00447abf",
+      "world": 8
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w8.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w8.json",
+      "rung": "matched_speed_1024sites_chi64",
+      "sha256": "5e96061d5dc7936575b1cf30ebd8815b51bc429eddbc28893a90910c57df94f9",
+      "world": 8
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w8.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w8.json",
+      "rung": "matched_speed_2048sites_chi64",
+      "sha256": "6ac4444beb22c961867256da4a3ccec60dc24117c46eecf1fe28858a39f4780f",
+      "world": 8
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w8.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w8.json",
+      "rung": "matched_speed_4096sites_chi64",
+      "sha256": "e4c36883224f2c0bf4bd92d0b6f9f6e898cfe45d2b47e96b4b45fb73fb3c4de1",
+      "world": 8
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w8.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w8.json",
+      "rung": "matched_speed_8192sites_chi64",
+      "sha256": "4baf4c4b7d6fb55f2a0c5bc3a0c805ad049f003efc1f5dad80c3dc0e88cfe467",
+      "world": 8
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w16.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_512sites_chi64_w16.json",
+      "rung": "matched_speed_512sites_chi64",
+      "sha256": "26d0bc68aee024466955bc9cee9865032d94ab9e1494e18dc4c83e696a29057c",
+      "world": 16
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w16.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_1024sites_chi64_w16.json",
+      "rung": "matched_speed_1024sites_chi64",
+      "sha256": "2b086c26cd82fe40e1e873421817245d73dbd7c19ae0f417b2c895326c8daa6d",
+      "world": 16
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w16.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_2048sites_chi64_w16.json",
+      "rung": "matched_speed_2048sites_chi64",
+      "sha256": "ab32cf488e38b0a8f2d293f5b35eadb5c368e49ab36f639b4d9cfe42cc44801d",
+      "world": 16
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w16.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_4096sites_chi64_w16.json",
+      "rung": "matched_speed_4096sites_chi64",
+      "sha256": "523060f9988ef9c100fe9a78eecbf5413d22c16242d10c452853ca4cbe6b77ff",
+      "world": 16
+    },
+    {
+      "committed_path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w16.json",
+      "path": "benchmarks/results/local/mps_matched_speed_shardability/matched_speed_8192sites_chi64_w16.json",
+      "rung": "matched_speed_8192sites_chi64",
+      "sha256": "3b08bcb7c1f5c60f9749bd72f5d08dd02d5430d7c33299e0037303b4acb0266e",
+      "world": 16
+    }
+  ],
+  "two_point_serial_fraction_spread": 0.002823435399648133,
+  "two_point_solves": {
+    "16": {
+      "serial_fraction": 0.8158863635114546,
+      "serial_seconds_per_site": 0.0003016862574590845,
+      "shardable_seconds_per_site": 6.807878697758353e-05
+    },
+    "8": {
+      "serial_fraction": 0.8130629281118065,
+      "serial_seconds_per_site": 0.00030064224974306954,
+      "shardable_seconds_per_site": 6.912279469359849e-05
+    }
+  },
+  "widest_world": 16,
+  "worlds": [
+    1,
+    8,
+    16
+  ]
+}

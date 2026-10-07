@@ -1,0 +1,634 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# `parameter_shift_hessian` answers a second derivative with the first-order rule
+# read twice. A gate whose generator has frequencies `{f_1, ..., f_n}` has an
+# expectation value that is a trigonometric polynomial in those frequencies, so
+# its first derivative is a fixed linear combination of the evaluations at
+# `base + s_i` and its mixed second derivative is the same combination applied
+# to itself, evaluated at `base + s_i + s_j`. The coefficients therefore come
+# from `OperatorSchema.shift_rule` and from nowhere else: there is no second
+# table of second-order coefficients in the repository that could drift away
+# from the first.
+#
+# That is the whole architectural claim, and it is the reason this contract has
+# no coefficient columns. A contract that restated the second-order coefficients
+# would be a second source of truth for a value the declaration already owns,
+# and the gate would then be checking a copy against a copy. What is recorded
+# here instead is the *shape* of the composed rule -- how many declared terms
+# each parameter contributes, how many distinct displaced circuits that produces
+# per matrix cell, and how far the resulting matrix lands from a route that
+# shares no code with it.
+#
+# The independent route is Richardson central differences of `fq.run` alone. Two
+# analytic routes are deliberately not counted as independent evidence: the
+# composed rule and a second application of the declared rule are the same
+# statement written twice, so their agreement would prove only that the code is
+# self-consistent. The gate computes all three anyway, and reports the composed
+# rule's distance from the difference route as the correctness claim.
+#
+# The result is a Hessian and not a method of `fq.gradient`. `fq.gradient`'s four
+# routes and its reported method are owned by
+# `contracts/gradient-api-v1-candidate.json`, and `hessian` is deliberately not
+# among the accepted method values: a second derivative is not a fifth way to
+# compute a first one. The gate requires that refusal to still fire.
+schema = "flagquantum_parameter_shift_hessian_contract_v1"
+maturity = "development_evidence"
+implementation = "flagquantum/gradients.py"
+declaration_source = "flagquantum/core/operator_schema.py"
+authorization = [
+    "docs/api-changes/FQ-PARAMETER-SHIFT-HESSIAN-20261030.md",
+]
+
+# The declaration this route reads, so the gate can prove it read the same one.
+declaration_vocabulary = [
+    "OPERATOR_SCHEMAS",
+    "OperatorSchema.parameters",
+    "OperatorSchema.parameter_frequencies",
+    "OperatorSchema.differentiable",
+    "OperatorSchema.shift_rule",
+]
+
+[scope]
+# The one symbol this contract is about. It is a module-level entry point, not a
+# Stable Core root export, so adding it changes no frozen public surface and
+# needs no rule 8 authorization.
+provided = ["fq.gradients.parameter_shift_hessian"]
+# Named absences, so a later reader can tell an unimplemented neighbour from an
+# oversight.
+not_provided = [
+    "a second-order route on the `fq` root surface",
+    "a Hessian field on `fq.GradientResult`",
+    "third and higher derivatives",
+    "the metric tensor and the quantum natural gradient",
+    "a second-order rule for an opcode whose first-order rule is refused",
+    "a second-order rule read from a table of its own",
+]
+
+[protocol]
+composition = "declared_first_order_rule_composed_with_itself"
+coefficient_source = "declared_rule"
+# Two term pairs that land on the same displaced circuit are summed, so a cell
+# costs the number of distinct displacements and not the number of term pairs.
+distinct_displacement_merging = true
+# A displacement whose collected coefficients cancel is dropped. It changes no
+# value, so keeping it would only make an evaluation count depend on arithmetic
+# that happens to cancel.
+zero_coefficient_displacement_evaluated = false
+result_shape = "parameters_shape_twice"
+result_detached = true
+# Every cell is evaluated independently, so the two halves of the matrix agree
+# through floating-point summation order rather than bit for bit.
+symmetry = "up_to_floating_point_summation_order"
+# `stabilizer` is the sixth execution mode and it cannot serve an
+# expectation-valued observable at all, so it is outside this route's reach
+# rather than a mode this route refuses on its own terms.
+serving_modes = [
+    "auto",
+    "statevector",
+    "mps",
+    "tensor_network",
+    "density_matrix",
+]
+excluded_mode = "stabilizer"
+
+[rules]
+implementation_is_reachable_from_the_module_surface = true
+implementation_is_absent_from_the_root_surface = true
+coefficients_come_only_from_the_declared_rule = true
+parameter_count_drives_every_evaluation = true
+result_carries_no_autograd_graph = true
+result_shape_is_the_parameter_shape_twice = true
+result_dtype_and_device_follow_the_parameters = true
+hessian_is_not_an_accepted_gradient_method = true
+first_order_entry_point_keeps_its_own_cost = true
+no_silent_fallback = true
+
+[exactness]
+independent_route = "richardson_central_differences_of_fq_run"
+# The difference route is a fourth-order central stencil: halve the base step
+# three times, then apply two Richardson levels.
+difference_step = 0.01
+difference_levels = 3
+difference_order = 2
+# Every cell of every opcode row must land inside this distance of the
+# difference route. It is a bound rather than a measurement, so it is asserted
+# in the same direction the error can move: an implementation that gets worse
+# fails, and one that gets better also passes.
+agreement_bound = 1e-09
+# A reference that came out at zero would make the comparison vacuous, so the
+# smallest cell magnitude over the whole sweep has a floor as well.
+minimum_cell_magnitude = 1e-03
+qubits = 3
+# `agreement_bound` is a statement about a *pair* of routes at a *declared*
+# execution precision. `fq.run` resolves an unset `precision` to `complex64`, so
+# an unqualified circuit returns `float32` expectations, and this sweep is three
+# orders of magnitude finer than that. The witness program therefore pins the
+# precision, and both readings the pinning changes are recorded next to the
+# bound so that neither can be quoted as the bound.
+#
+# Those two readings are `float32` quantities, and which bits a `float32`
+# contraction lands on is a property of the platform's reduction order rather
+# than of the composed rule. The same cell reads `1.7544981051331732e-07` for the
+# implementation and `0.030165275765790034` for the reference route on x86_64
+# Linux, and `1.828972331918699e-07` and `0.02846986220942621` on arm64 macOS:
+# 4% apart, which is six orders coarser than the tolerance a recorded bit pattern
+# would have to be asserted within. Recording either machine's bits would make
+# the gate measure the machine, so each reading is recorded as the decade it must
+# fall in -- the portable part of the claim -- and the gate additionally requires
+# that decade to lie above `agreement_bound`, which is the property the record
+# exists to establish: the bound is not true at the executor default, and this
+# file says so rather than relying on the witness to hide it.
+program_dtype = "complex128"
+default_program_dtype_witness = ["u2", "mps"]
+# The implementation alone, driven by `float32` losses, measured against the
+# pinned reference. This is what a user who builds an unqualified circuit sees:
+# two orders of magnitude above the bound. It is second-order error amplification
+# through `complex64`, not a defect in the composed rule, and it is why the
+# documented example above asks for `float64` parameters.
+default_program_dtype_implementation_deviation_decade = -7
+# The same cell when the reference route is also taken at the executor default.
+# A fourth-order central stencil with a `1e-02` base step cancels catastrophically
+# in `float32`, so this reading measures the stencil and not the implementation,
+# five decades above the line before it.
+default_program_dtype_reference_deviation_decade = -2
+# Off-axis preparation, so no cell of the reference is degenerate by symmetry.
+fixed_rotations = [0.9, 1.4, 0.6, 1.1]
+# One evaluation point per parameter position, reused by every opcode row.
+evaluation_points = [0.31, 0.72, -0.41, 0.55]
+
+# How many distinct displaced circuits one matrix cell costs, as a function of
+# the number of declared terms each of the two parameters contributes. The gate
+# measures every row on a witness program built from real opcodes.
+[[cell]]
+position = "diagonal"
+declared_terms = [2, 2]
+evaluations = 3
+witness = ["rz"]
+
+[[cell]]
+position = "diagonal"
+declared_terms = [4, 4]
+evaluations = 7
+witness = ["crx"]
+
+[[cell]]
+position = "off_diagonal"
+declared_terms = [2, 2]
+evaluations = 4
+witness = ["rz", "rz"]
+
+[[cell]]
+position = "off_diagonal"
+declared_terms = [2, 4]
+evaluations = 8
+witness = ["rz", "crx"]
+
+[[cell]]
+position = "off_diagonal"
+declared_terms = [4, 4]
+evaluations = 16
+witness = ["crx", "crx"]
+
+# Every way the route refuses, with the fragment its message must contain. The
+# gate builds each program and requires the refusal, so a refusal that stops
+# firing is a failure rather than a silent acceptance.
+[[refusal]]
+case = "empty_parameters"
+exception = "ValidationError"
+message_phrase = "parameters must not be empty"
+trigger = "the parameter tensor has no elements"
+
+[[refusal]]
+case = "complex_parameters"
+exception = "ValidationError"
+message_phrase = "parameters must be real floating-point values"
+trigger = "the parameter tensor is complex or integral"
+
+[[refusal]]
+case = "non_finite_parameters"
+exception = "ValidationError"
+message_phrase = "parameters must be finite"
+trigger = "the parameter tensor contains a non-finite element"
+
+[[refusal]]
+case = "not_a_tensor"
+exception = "TypeError"
+message_phrase = "parameters must be a torch.Tensor"
+trigger = "the parameters are a plain sequence"
+
+[[refusal]]
+case = "one_input_controls_no_occurrence"
+exception = "ValueError"
+message_phrase = "must control exactly one gate parameter; found 0"
+trigger = "a parameter is never read by the circuit"
+
+[[refusal]]
+case = "one_input_controls_two_occurrences"
+exception = "ValueError"
+message_phrase = "must control exactly one gate parameter; found 2"
+trigger = "one input is read by two gate parameters"
+
+[[refusal]]
+case = "scaled_angle"
+exception = "ValueError"
+message_phrase = "does not enter rz.theta as its angle"
+trigger = "a parameter is multiplied before it becomes a gate angle"
+
+[[refusal]]
+case = "structure_changes_with_the_parameter"
+exception = "ValueError"
+message_phrase = "changes circuit structure; parameter shift requires a static circuit"
+trigger = "a gate is present only for some parameter values"
+
+[[refusal]]
+case = "custom_matrix"
+exception = "ValueError"
+message_phrase = "parameter shift does not support custom matrices"
+trigger = "a channel opcode carries an explicit matrix"
+
+[[refusal]]
+case = "loss_is_not_scalar"
+exception = "ValidationError"
+message_phrase = "loss_fn must return one scalar tensor"
+trigger = "the loss returns a tensor with more than one element"
+
+[[refusal]]
+case = "stabilizer_mode"
+exception = "CapabilityError"
+message_phrase = "cannot serve measurement kind(s) expectation_ps"
+trigger = "the loss executes in the stabilizer mode, which samples outcomes"
+
+[verification]
+contract = "tests/unit/test_parameter_shift_hessian_contract.py"
+expansion_tests = [
+    "tests/test_native_circuit.py",
+    "tests/test_gradient_api.py",
+    "tests/integration/test_gradient_modes.py",
+    "tests/unit/test_parameter_shift_coverage_contract.py",
+]
+implementation_symbol = "flagquantum.gradients.parameter_shift_hessian"
+# Strings the implementation must still contain. They are a tamper check on the
+# surface this contract names, not a substitute for the measurements below.
+census = [
+    "def parameter_shift_hessian(",
+    "def _composed_shift_terms(",
+    '"parameter_shift_hessian",',
+]
+
+# One row per registered opcode, measured against the declaration. `admitted` is
+# whether this route can differentiate the opcode's parameters at all, which is
+# exactly the opcode's own `differentiable` flag; `shift_terms` is how many terms
+# `OperatorSchema.shift_rule` returns for each parameter, in declaration order.
+[[opcode]]
+name = "amplitude_damping"
+declared_parameters = ["gamma"]
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no frequency, so it declares no derivative rule"
+
+[[opcode]]
+name = "bit_flip"
+declared_parameters = ["probability"]
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no frequency, so it declares no derivative rule"
+
+[[opcode]]
+name = "ccx"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "cphase"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "crx"
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+shift_terms = [4]
+admitted = true
+
+[[opcode]]
+name = "cry"
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+shift_terms = [4]
+admitted = true
+
+[[opcode]]
+name = "crz"
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+shift_terms = [4]
+admitted = true
+
+[[opcode]]
+name = "cswap"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "cx"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "cy"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "cz"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "depolarizing"
+declared_parameters = ["probability"]
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no frequency, so it declares no derivative rule"
+
+[[opcode]]
+name = "h"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "i"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "phase"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "phase_flip"
+declared_parameters = ["probability"]
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no frequency, so it declares no derivative rule"
+
+[[opcode]]
+name = "rx"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "rxx"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "ry"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "ryy"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "rz"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "rzz"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "s"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "sdg"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "swap"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "sx"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "sxdg"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "t"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "tdg"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "u1"
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+shift_terms = [2]
+admitted = true
+
+[[opcode]]
+name = "u2"
+declared_parameters = ["phi", "lbd"]
+declared_frequencies = [[1.0], [1.0]]
+shift_terms = [2, 2]
+admitted = true
+
+[[opcode]]
+name = "u3"
+declared_parameters = ["theta", "phi", "lbd"]
+declared_frequencies = [[1.0], [1.0], [1.0]]
+shift_terms = [2, 2, 2]
+admitted = true
+
+[[opcode]]
+name = "x"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "y"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "z"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+# Evaluations for one admitted opcode at its own declared width: the diagonal
+# cells plus every off-diagonal cell, both read from the two rules above. The
+# gate measures these by counting loss evaluations, so a row that disagrees with
+# what the implementation charges is a failure.
+[[cost]]
+opcode = "cphase"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "crx"
+declared_terms = [4]
+diagonal_evaluations = 7
+total_evaluations = 7
+
+[[cost]]
+opcode = "cry"
+declared_terms = [4]
+diagonal_evaluations = 7
+total_evaluations = 7
+
+[[cost]]
+opcode = "crz"
+declared_terms = [4]
+diagonal_evaluations = 7
+total_evaluations = 7
+
+[[cost]]
+opcode = "phase"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "rx"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "rxx"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "ry"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "ryy"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "rz"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "rzz"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "u1"
+declared_terms = [2]
+diagonal_evaluations = 3
+total_evaluations = 3
+
+[[cost]]
+opcode = "u2"
+declared_terms = [2, 2]
+diagonal_evaluations = 6
+total_evaluations = 14
+
+[[cost]]
+opcode = "u3"
+declared_terms = [2, 2, 2]
+diagonal_evaluations = 9
+total_evaluations = 33

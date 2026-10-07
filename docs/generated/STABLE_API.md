@@ -33,6 +33,8 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.experimental` | Stable | executable contract |
 | `fq.from_openqasm` | Stable | executable contract |
 | `fq.gradient` | Stable | executable contract |
+| `fq.jacobian` | Stable | executable contract |
+| `fq.jvp` | Stable | executable contract |
 | `fq.plan` | Stable | executable contract |
 | `fq.probabilities` | Stable | executable contract |
 | `fq.restore_job` | Stable | executable contract |
@@ -41,4 +43,5 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.submit` | Stable | executable contract |
 | `fq.train` | Stable | executable contract |
 | `fq.twin` | Stable | executable contract |
+| `fq.vjp` | Stable | executable contract |
 | `fq.vn_entropy` | Stable | executable contract |

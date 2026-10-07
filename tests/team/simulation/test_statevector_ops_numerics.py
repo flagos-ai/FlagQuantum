@@ -12,6 +12,7 @@ import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
 from flagquantum import Circuit
 from flagquantum.core import Instruction
 from flagquantum.simulation.native_cpu import native_cpu_one_qubit_layer_available
+from flagquantum.simulation.statevector.batching import _rotation_region_angles
 from flagquantum.simulation.statevector.cz_graph import (
     _apply_cz_graph_cpu,
     _cz_graph_signs_cpu,
@@ -27,7 +28,6 @@ from flagquantum.simulation.statevector.index_basis import (
 from flagquantum.simulation.statevector.local import (
     _batched_kronecker_product,
     _cpu_disjoint_dense_max_wires,
-    _rotation_region_angles,
 )
 from flagquantum.simulation.statevector.operations import (
     _apply_cross_wire_diagonal_cpu,

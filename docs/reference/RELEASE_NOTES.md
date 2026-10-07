@@ -99,6 +99,22 @@ are otherwise unchanged.
   result reports whether backward replayed it. See
   [the gradient API change](../api-changes/FQ-GRADIENT-API-20261002.md) and the
   [gradient methods example](../../examples/gradient_methods/README.md).
+- Added the stable `fq.jacobian(program, parameters)`,
+  `fq.jvp(program, parameters, tangents)`, and
+  `fq.vjp(program, parameters, cotangents)` entry points for a program that
+  returns several values, so that no single scalar gradient is defined.
+  `fq.jacobian` returns every partial derivative shaped
+  `(*program_output.shape, *parameters.shape)`, `fq.jvp` applies it forward as
+  `J @ tangents`, and `fq.vjp` applies it in reverse as `cotangents @ J`. None
+  of the three takes a `method`: there is no shift rule for a vector output and
+  no displacement to report, so all three are autograd-only and a program whose
+  output carries no PyTorch graph is refused rather than answered with a zero
+  derivative. A tangent must be shaped exactly like `parameters` and a cotangent
+  exactly like the program output, because a broadcast direction would
+  differentiate along a different parameterization. All three serve
+  `statevector`, `mps`, and `tensor_network` mode and return the parameter dtype
+  and device. See
+  [the vector-derivative API change](../api-changes/FQ-VECTOR-DERIVATIVES-20261026.md).
 - Added the stable `fq.from_openqasm(source)` entry point, which reads back the
   OpenQASM 2 and OpenQASM 3 text
   `flagquantum.compiler.openqasm.emit_openqasm` writes. It reports the imported

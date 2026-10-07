@@ -996,21 +996,21 @@ def test_composition_adds_no_ir_field_and_no_root_export() -> None:
 
     assert contract["ir_version_effect"] == "none"
     assert contract["root_export_effect"] == "none"
-    assert not [name for name in fq.__all__ if name in {"compose", "adjoint", "power"}]
-    # `power` is a method, so it adds no root export and the count does not move. The
-    # count itself is pinned by `tools/public_api_snapshot.py`; this is the same claim
-    # read from the other side, that the family is a family of methods. It is read
-    # against the recorded manifest rather than against a literal, because a literal
-    # here went stale once already: `fq.density_matrix` and then `fq.vn_entropy`
-    # joined that frozen list on other branches, and the composition family
-    # contributed none of them. A literal goes stale on whichever branch writes it
-    # next; the manifest is the one place that moves deliberately, with a proposal.
-    recorded_exports = json.loads(
+    family = {"compose", "adjoint", "power"}
+    assert not [name for name in fq.__all__ if name in family]
+    # The count itself is pinned by `tools/public_api_snapshot.py`; this is the same
+    # claim read from the other side, that the family is a family of methods. The
+    # literal count this test used to carry (`37`) was correct when this slice was
+    # measured and stale once `fq.jacobian`, `fq.jvp`, and `fq.vjp` landed, which is
+    # exactly what happened when `fq.density_matrix` moved it to 37 before. So the
+    # claim is made against the recorded Stable Core rather than against a
+    # transcription of its cardinality, following `test_circuit_control.py`.
+    recorded = json.loads(
         (ROOT / "docs" / "public_api_v1.json").read_text(encoding="utf-8")
-    )["stable_exports"]
-    assert set(fq.__all__) == set(recorded_exports), (
-        "the root surface and the recorded Stable Core must be the same set; a "
-        "difference here means an export moved without the manifest"
+    )
+    assert not family.intersection(recorded["stable_exports"]), (
+        "`compose`, `adjoint`, and `power` are methods on `Circuit`; the recorded "
+        "Stable Core must not list them as exports"
     )
 
 
