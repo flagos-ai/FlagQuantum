@@ -359,7 +359,7 @@ the absence `symbol:flagquantum.qec.reichardt_code` and
 family and its logical operators from two polynomials rather than declaring
 either, and the eighth is `flagquantum.qec.reed_muller_code`, which is the
 first record here written on the Boolean cube rather than on a lattice or on a
-group and the first whose two family distances are not equal. Beside the seven records there is now a route that is not a family at
+group and the first whose two family distances are not equal. Beside the eight records there is now a route that is not a family at
 all: `flagquantum.qec.qldpc_code` takes an arbitrary pair of parity-check matrices
 and derives the logical operators for it, which is the general case of what the
 bicycle family does for its own pair, so a code with no record here reaches a

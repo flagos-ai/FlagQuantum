@@ -66,8 +66,9 @@ frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary wir
 indices; a `StabilizerCode` is a value that declares its distance, wire layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
-layout. `RepetitionCode`, `RotatedSurfaceCode`, `SteaneCode`, `triangular_colour_code`,
-`toric_code` and `ZxxzSurfaceCode` are the six records that implement it.
+layout. Eight records implement it: `RepetitionCode`, `RotatedSurfaceCode`,
+`SteaneCode`, `triangular_colour_code`, `toric_code`, `ZxxzSurfaceCode`,
+`bivariate_bicycle_code` and `reed_muller_code`.
 
 `CssCode` is the second way into that protocol, and it is the way in for a code
 this package does not declare. It takes the four CSS blocks as plain sequences of
@@ -148,9 +149,9 @@ families remain absent as *records* and have no matrix route either. The qLDPC
 case went the other way: `qldpc_code` takes a caller's own parity-check matrix pair
 and derives its logical operators, so the general form of what
 `bivariate_bicycle_code` was already doing for its own pair is now reachable
-directly, and four routes arrive at a record without the caller writing the
-matrices' consequences down -- the colour patch, the torus, the bicycle family and
-a caller's own pair. What the
+directly, and five routes arrive at a record without the caller writing the
+matrices' consequences down -- the colour patch, the torus, the bicycle family, the
+punctured Reed-Muller family on the Boolean cube and a caller's own pair. What the
 colour record changes about the layer above it is the shape of a check: a face on
 the triangular patch's edge spans four qubits and a face in its bulk spans six, so
 `triangular_colour_code` is the record whose checks reach weight six, and its two
