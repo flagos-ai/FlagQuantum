@@ -564,7 +564,7 @@ pass rather than only the numbers:
 | `0` | None. The program is returned unchanged. |
 | `1` | Reset and identity removal, self-inverse and inverse-pair cancellation, adjacent-rotation merging, one-qubit run folding. |
 | `2` | Everything `1` runs, plus diagonal-gate removal before measurement and rotation merging across a proven commuting gap. |
-| `3` | Declared and reserved. `CompilationError`, because the unitary-synthesis stage Qiskit's level 3 moves into the optimization loop has no counterpart here yet. |
+| `3` | Declared and reserved. `CompilationError`, because the unitary-synthesis stage Qiskit's level 3 moves into the optimization loop needs a target basis and `optimize` has none. |
 
 `2` is the default and the level every earlier release effectively ran, so a
 caller that names no level receives the program it used to receive; level `0`
@@ -575,12 +575,19 @@ program that had nothing to optimize is still distinguishable from one that was
 never offered to the optimizer at all.
 
 Level 3 is refused rather than approximated. Qiskit's level 3 differs from its
-level 2 by moving `UnitarySynthesis` into the fixed-point loop, and this package's
-synthesis entry points are not passes over a `CircuitIR`: they answer about one
-gate or one amplitude vector and are reached by module path. Answering a request
-for level 3 with a level-2 program would be a silent downgrade of exactly the kind
-this repository forbids, and narrowing the ladder later is a breaking change while
-widening it is not, so the refusal is the version that can be corrected cheaply.
+level 2 by moving `UnitarySynthesis` into the fixed-point loop, and that pass can
+never be a stage of this ladder: it rewrites each instruction it cannot keep into
+a *target's* native gates, so it needs a target basis, while `optimize` is
+target-independent by contract and is handed no target. The capability is in the
+package and not in this entry point --
+[`native_gate_legalization.legalize_native_gates`](native_gate_legalization.py)
+performs that same rewrite against a `TargetCapabilitySnapshot` -- so "write the
+missing pass" is not the work that would unblock level 3, and the refusal says so
+rather than leaving a reader to look for a pass that already exists. Answering a
+request for level 3 with a level-2 program would be a silent downgrade of exactly
+the kind this repository forbids, and narrowing the ladder later is a breaking
+change while widening it is not, so the refusal is the version that can be
+corrected cheaply.
 A value that is not an integer is refused for the same reason: `True` and `2.0`
 both compare equal to an implemented level, so accepting them would let an
 unvalidated value select a pass set.

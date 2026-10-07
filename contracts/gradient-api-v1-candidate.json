@@ -4,15 +4,42 @@
   "approval": {
     "approved_at": "2026-10-02",
     "approved_by": "API owner via explicit user directive",
-    "approval_record": "docs/api-changes/FQ-GRADIENT-API-20261002.md"
+    "approval_record": "docs/api-changes/FQ-GRADIENT-API-20261002.md",
+    "amendment_records": [
+      "docs/api-changes/FQ-VECTOR-DERIVATIVES-20261026.md"
+    ]
   },
   "implementation_authorized": true,
   "root_additions": [
-    "gradient"
+    "gradient",
+    "jacobian",
+    "jvp",
+    "vjp"
   ],
   "root_removals": [],
   "signatures": {
-    "gradient": "(program: 'Callable[[Tensor], Any]', parameters: 'Tensor', loss: 'Callable[[Any], Tensor] | None' = None, *, method: 'str' = 'auto', step: 'float | None' = None, directions: 'int' = 1, generator: 'Generator | None' = None) -> 'GradientResult'"
+    "gradient": "(program: 'Callable[[Tensor], Any]', parameters: 'Tensor', loss: 'Callable[[Any], Tensor] | None' = None, *, method: 'str' = 'auto', step: 'float | None' = None, directions: 'int' = 1, generator: 'Generator | None' = None) -> 'GradientResult'",
+    "jacobian": "(program: 'Callable[[Tensor], Tensor]', parameters: 'Tensor') -> 'Tensor'",
+    "jvp": "(program: 'Callable[[Tensor], Tensor]', parameters: 'Tensor', tangents: 'Tensor') -> 'Tensor'",
+    "vjp": "(program: 'Callable[[Tensor], Tensor]', parameters: 'Tensor', cotangents: 'Tensor') -> 'Tensor'"
+  },
+  "vector_derivatives": {
+    "entry_points": [
+      "jacobian",
+      "jvp",
+      "vjp"
+    ],
+    "program_output_contract": "a real, non-empty torch.Tensor; a complex output is refused because no FlagQuantum entry point defines a Wirtinger convention",
+    "jacobian_result_shape": "(*program_output.shape, *parameters.shape)",
+    "jvp_result_shape": "program_output.shape",
+    "vjp_result_shape": "parameters.shape",
+    "dtype_rule": "every result is in the dtype of parameters, never of the program output",
+    "direction_shape_rule": "tangents must be shaped like parameters and cotangents like the program output; a direction that only broadcasts is refused",
+    "method_argument": "absent, because the family has one exact route and no approximation to report",
+    "no_dependence_is_refused": true,
+    "second_order_failure_is_refused": true,
+    "primal_is_not_returned_by_jvp_or_vjp": true,
+    "replaces_a_second_implementation": false
   },
   "declared_methods": [
     "auto",
@@ -39,7 +66,9 @@
     "no_silent_fallback": true,
     "result_type_is_not_a_root_export": true,
     "result_type_is_not_a_stable_export": true,
-    "second_gradient_implementation": false
+    "second_gradient_implementation": false,
+    "vector_derivatives_return_tensors_not_a_result_object": true,
+    "vector_derivatives_share_the_forward_pass": true
   },
   "qubit_naming_migration": "docs/api-changes/FQ-QUBIT-NAMING-20260913.md"
 }

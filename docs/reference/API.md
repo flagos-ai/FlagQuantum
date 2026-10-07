@@ -17,6 +17,7 @@ tests, and rendered in the
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
 | Reuse a program inside another | `Circuit.compose` | The receiving circuit, extended in place |
 | Undo a program | `Circuit.adjoint` | A new circuit that inverts the block |
+| Repeat a program | `Circuit.power` | A new circuit holding the program `k` times |
 | Condition a program on added control qubits | `Circuit.control` | A wider new circuit whose block runs only when every control is set |
 | Save or load OpenQASM text | `flagquantum.compiler.openqasm.emit_openqasm`, `fq.from_openqasm` | Imported program plus its measurement mapping |
 | Optimize a program | `flagquantum.compiler.optimize` | `fq.CircuitIR` |
@@ -26,6 +27,7 @@ tests, and rendered in the
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
 | Train | `fq.train` | `fq.TrainingResult` |
 | Differentiate a program and report the method | `fq.gradient` | Derivative, method, exactness, step |
+| Differentiate several outputs at once | `fq.jacobian`, `fq.jvp`, `fq.vjp` | Every partial derivative, or one directional product |
 | Package for a target | `flagquantum.deployment.create_deployment_package` | Sealed deployment package |
 
 ## Build and execute
@@ -95,6 +97,34 @@ unitary inverse — a noise channel, a mid-circuit measurement or reset, or a
 classically conditioned gate — raises `flagquantum.errors.CapabilityError` naming
 the operation instead of being dropped from the inverse.
 
+`Circuit.power(k)` returns the circuit that applies the receiver's program `k`
+times, for an integer `k`. The block being raised is left usable, and the result
+carries the same qubit count, batch size, device, and dtype:
+
+```python
+block = fq.Circuit(2).rx(0, 0.3).cx(0, 1)
+[(item.name, item.params) for item in block.power(2).to_ir().instructions]
+# [('rx', {'theta': 0.3}), ('cx', {}), ('rx', {'theta': 0.3}), ('cx', {})]
+```
+
+The definition is the repetition, and it is exact for every instruction, so
+`power` accepts a gate with no angle, a custom `Circuit.unitary(...)` operation,
+and a noise channel. One rewrite shortens the common case: when the receiver is
+exactly one instruction that declares exactly one parameter, `k` multiplies that
+parameter instead of repeating the gate, and the emitted program is the same
+operator with one instruction. Measured, 12 of the 35 registered opcodes take
+that form; the other 23 repeat. `power(1)` copies the program rather than
+multiplying by one, so a symbolic parameter or a trainable angle stays the same
+object. `power(0)` is the empty program of the same shape, which keeps
+`p.power(a).power(b) == p.power(a * b)` true at `a = 0`.
+
+A negative exponent is `adjoint().power(-k)`, so `block.power(-1)` undoes the
+block, and a noise channel under a negative exponent raises the same
+`flagquantum.errors.CapabilityError` that `adjoint` raises. `k` must be an
+integer: a fractional power is a matrix root, which the IR has no form for, so
+`power(0.5)` raises `TypeError` rather than approximating. Requests that would
+emit more than 4096 instructions are refused with `ValueError` naming the count.
+
 `Circuit.control(n_controls, ctrl_qubits)` returns a new circuit in which the block runs
 only when every one of the control qubits it adds is set:
 
@@ -117,9 +147,9 @@ controlled form — a noise channel, a mid-circuit measurement or reset, or a
 classically conditioned gate — raises `flagquantum.errors.CapabilityError` naming the
 operation rather than being approximated.
 
-Together, `compose`, `adjoint`, and `control` express the block-reuse idiom: a sub-program
-is placed where it is needed, conditioned on the qubits that decide whether it runs, and
-the same sub-program undone is placed after it.
+Together, the four members express the block-reuse idiom: a sub-program is placed where it
+is needed, repeated `k` times where repetition is what is wanted, conditioned on the qubits
+that decide whether it runs, and the same sub-program undone is placed after it.
 
 `fq.run(...) -> fq.ExecutionResult` is the single recommended execution entry
 point. `ExecutionOptions` owns backend-neutral execution configuration;
@@ -255,9 +285,12 @@ the program unchanged, `1` cancels and merges without commuting across a gate, a
 `2` -- the default, and the behaviour of every release before the parameter
 existed -- additionally removes diagonal gates before a measurement and merges
 rotations across a proven commuting gap. Level `3` is declared and reserved and
-raises `CompilationError`, because the unitary-synthesis stage it would add has no
-pass-over-IR counterpart in this package yet. Any other value is refused the same
-way. The level that ran is recorded in `optimized_ir.metadata["optimization"]`.
+raises `CompilationError`: the unitary-synthesis stage it would add needs a target
+basis to rewrite into, and `optimize` is target-independent. Target-aware unitary
+synthesis is the separate entry point
+`flagquantum.compiler.native_gate_legalization.legalize_native_gates(program,
+snapshot=...)`. Any other value is refused the same way. The level that ran is
+recorded in `optimized_ir.metadata["optimization"]`.
 
 For target-aware compilation, provide an explicit coupling map:
 
@@ -400,6 +433,50 @@ assert torch.allclose(
     fq.gradient(build_circuit, parameters, loss_in("statevector")).gradient,
 )
 ```
+
+### Differentiate several outputs at once
+
+`fq.gradient` needs one scalar. A program returning a probability vector or one
+expectation value per qubit has no single scalar gradient, so three entry points
+answer for the whole vector instead:
+
+```python
+def two_expectations(parameters):
+    result = fq.run(
+        build_circuit(parameters),
+        outputs=[fq.expectation(fq.Z(0)), fq.expectation(fq.Z(1))],
+    )
+    return torch.stack(list(result.expectations))
+
+jacobian = fq.jacobian(two_expectations, parameters)
+forward = fq.jvp(two_expectations, parameters, tangent)
+reverse = fq.vjp(two_expectations, parameters, cotangent)
+```
+
+`fq.jacobian` returns every partial derivative, shaped
+`(*program_output.shape, *parameters.shape)`. `fq.jvp` applies that derivative to
+a parameter direction, returning `J @ tangent` shaped like the output, and
+`fq.vjp` applies it to an output direction, returning `cotangent @ J` shaped like
+the parameters. The two products are adjoint -- `<Jv, c>` equals `<v, J^T c>`,
+which is the identity a training step relies on when a scalar objective is
+assembled from several measured values. `fq.jvp` costs two backward sweeps
+whatever the output size; `fq.vjp` costs one whatever the parameter count;
+`fq.jacobian` costs one per output element.
+
+A direction must be shaped exactly like the tensor it is paired with. A tangent
+that merely broadcasts to the parameter shape is refused, because broadcasting
+would differentiate along a different parameterization and the result would look
+right for the wrong reason.
+
+None of the three takes a `method`. There is no shift rule for a vector output
+and no displacement to read off a result, so all three are autograd-only, and a
+program whose output carries no PyTorch graph is refused rather than answered
+with a zero derivative. `fq.jvp` needs the program differentiated twice and is
+refused with `CapabilityError` where an executor cannot build a graph of a graph.
+A complex program output is refused too: no entry point here defines a Wirtinger
+convention, so rather than guess one, take a real value such as an expectation.
+Every result is detached and carries the dtype and device of `parameters`, so a
+second derivative needs an explicit route rather than a nest of these calls.
 
 ## Optimize without a gradient
 
