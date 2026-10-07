@@ -218,6 +218,50 @@ def _basis_entry(entry: object, dimension: int, dtype: torch.dtype) -> torch.Ten
     return entry
 
 
+def _choi_eigenvalues(
+    matrix: torch.Tensor, dtype: torch.dtype
+) -> tuple[torch.Tensor, torch.Tensor, float]:
+    """Return a Choi matrix's eigenvalues, its eigenvectors, and the tolerance.
+
+    Both callers of this read the same spectrum -- one asks whether the smallest
+    eigenvalue is negative, the other keeps the eigenvectors of the non-zero ones
+    -- so the eigenproblem and, more importantly, the tolerance rule are stated
+    once. A second copy of the rule would be a second answer to what a zero Choi
+    eigenvalue is, and the two answers would disagree exactly on the rank-deficient
+    channels the rule exists for.
+
+    The tolerance is relative to the matrix's own spectral scale rather than
+    absolute, for the reason the certificate documents: the deviation of a
+    legitimate rank-deficient channel's smallest eigenvalue from zero grows with
+    the channel's scale, so no absolute number admits every correct channel and
+    refuses the transpose map.
+
+    A map whose Choi matrix is not Hermitian is refused here rather than answered,
+    because every question this spectrum is asked about such a matrix -- positivity,
+    a Kraus representation -- presumes the map takes Hermitian states to Hermitian
+    states, and a generator does not.
+    """
+
+    adjoint = matrix.conj().transpose(0, 1)
+    # ``eigh`` reads one triangle, so the matrix is symmetrized rather than handed
+    # over as it stands: the eigenvalues must describe the same matrix the
+    # Hermiticity check below measures.
+    eigenvalues, eigenvectors = torch.linalg.eigh((matrix + adjoint) / 2)
+    scale = float(eigenvalues.abs().max())
+    tolerance = _CHOI_TOLERANCE_IN_EPSILON * float(torch.finfo(dtype).eps) * scale
+    deviation = float(torch.max(torch.abs(matrix - adjoint)))
+    if deviation > tolerance:
+        raise ValueError(
+            "this map does not preserve Hermiticity: its Choi matrix is "
+            f"{deviation:.3e} away from Hermitian, above this certificate's "
+            f"{tolerance:.3e} tolerance at a Choi scale of {scale:.3e}, so it "
+            "has no positivity to report. Complete positivity is a property of "
+            "maps that take Hermitian states to Hermitian states, and a "
+            "generator is not one of them."
+        )
+    return eigenvalues, eigenvectors, tolerance
+
+
 def _same_factor(left: Factor | None, right: Factor | None) -> bool:
     if left is None or right is None:
         return left is right
@@ -741,25 +785,109 @@ class SuperOperator:
         """
 
         _, dtype = self._require_summary()
-        matrix = self.choi(max_bytes=max_bytes)
-        adjoint = matrix.conj().transpose(0, 1)
-        # ``eigvalsh`` reads one triangle, so the matrix is symmetrized rather than
-        # handed over as it stands: the eigenvalues must describe the same matrix
-        # the Hermiticity check below measures.
-        eigenvalues = torch.linalg.eigvalsh((matrix + adjoint) / 2)
-        scale = float(eigenvalues.abs().max())
-        tolerance = _CHOI_TOLERANCE_IN_EPSILON * float(torch.finfo(dtype).eps) * scale
-        deviation = float(torch.max(torch.abs(matrix - adjoint)))
-        if deviation > tolerance:
-            raise ValueError(
-                "this map does not preserve Hermiticity: its Choi matrix is "
-                f"{deviation:.3e} away from Hermitian, above this certificate's "
-                f"{tolerance:.3e} tolerance at a Choi scale of {scale:.3e}, so it "
-                "has no positivity to report. Complete positivity is a property of "
-                "maps that take Hermitian states to Hermitian states, and a "
-                "generator is not one of them."
-            )
+        eigenvalues, _, tolerance = _choi_eigenvalues(
+            self.choi(max_bytes=max_bytes), dtype
+        )
         return float(eigenvalues.min()) >= -tolerance
+
+    def kraus(
+        self, *, max_bytes: int = DEFAULT_DENSE_MATRIX_BYTES
+    ) -> tuple[torch.Tensor, ...]:
+        """Return Kraus operators that reproduce this map.
+
+        A completely positive map *is* a Kraus list, and the Choi matrix is where
+        that list is read off: ``J = sum_k |v_k><v_k|`` scaled by the eigenvalues,
+        so the eigenvectors of :meth:`choi` unstacked back into ``d`` x ``d``
+        matrices are the operators, each weighted by the square root of its
+        eigenvalue. Nothing is fitted and nothing is iterated to convergence; the
+        decomposition is a read-off of the spectrum :meth:`is_completely_positive`
+        reads, sharing that method's tolerance rather than choosing a second one.
+        This is the inverse of :meth:`from_kraus` on the level of maps, so a channel
+        that arrived as a Kraus list, a matrix, a term list or a Lindblad route can
+        leave as one.
+
+        The index convention is measured rather than assumed, because a transposed
+        reading is a different map that is easy to mistake for this one. The
+        eigenvector is unstacked and then transposed, and the unstacked form without
+        that transpose moves the population the wrong way on amplitude damping: its
+        ``[0, 0]`` entry is exactly ``-gamma * rho[1, 1]`` away from the map's own
+        action, measured at 2.625e-01 on the owning suite's fixture at
+        ``gamma = 0.4``, while this form agrees with :meth:`apply` to 5.594e-17.
+
+        The list is a Kraus representation and not a canonical one. The Choi
+        eigenvectors are defined up to a phase, and up to any unitary mixing inside a
+        degenerate eigenvalue, so two calls agree as operators but an individual
+        operator's phase is arbitrary. What is canonical is the count -- the Choi
+        rank, at most ``d**2`` and often far below it, so a unitary channel returns
+        one operator rather than a padded list -- and the map the list denotes. The
+        terms are ordered by descending eigenvalue, so the operator carrying the most
+        weight comes first, and the order inside one degenerate eigenvalue is
+        whatever the eigenproblem returned.
+
+        Args:
+            max_bytes: The byte ceiling, inherited from :meth:`choi` because the
+                decomposition is read off that matrix.
+
+        Returns:
+            The Kraus operators as ``(d, d)`` complex matrices in this map's dtype,
+            on the CPU, at most ``d**2`` of them and at least one.
+
+        Raises:
+            ValueError: If the materialized Choi matrix would exceed ``max_bytes``,
+                if it is not Hermitian, or if the map is not completely positive --
+                the last naming the negative eigenvalue, because then no Kraus list
+                denotes this map and returning the closest one would silently
+                substitute a different map.
+
+        Examples:
+            The completely dephasing channel is not unitary, so it takes two
+            operators: its two projectors, each with weight one.
+
+            >>> import torch
+            >>> from flagquantum.operators import SuperOperator
+            >>> zero = torch.tensor([[1.0, 0.0], [0.0, 0.0]], dtype=torch.complex128)
+            >>> one = torch.tensor([[0.0, 0.0], [0.0, 1.0]], dtype=torch.complex128)
+            >>> dephasing = SuperOperator.from_kraus((zero, one))
+            >>> operators = dephasing.kraus()
+            >>> len(operators)
+            2
+            >>> sum(operator.conj().T @ operator for operator in operators).tolist()
+            [[(1+0j), 0j], [0j, (1+0j)]]
+        """
+
+        dimension, dtype = self._require_summary()
+        eigenvalues, eigenvectors, tolerance = _choi_eigenvalues(
+            self.choi(max_bytes=max_bytes), dtype
+        )
+        smallest = float(eigenvalues.min())
+        if smallest < -tolerance:
+            raise ValueError(
+                "this map is not completely positive: its Choi matrix has the "
+                f"eigenvalue {smallest:.3e} against a {tolerance:.3e} tolerance, so "
+                "no Kraus list denotes it and the closest one would be a different "
+                "map. The transpose map is the standard example."
+            )
+        # Descending weight, and nothing is padded: an eigenvalue at or below the
+        # tolerance is zero for this purpose, which is what makes a unitary channel
+        # come back as one operator. The sort is stable, so operators sharing an
+        # eigenvalue keep the order the eigenproblem returned rather than acquiring a
+        # second arbitrary one here.
+        operators = []
+        for index in sorted(
+            range(len(eigenvalues)), key=lambda i: -float(eigenvalues[i])
+        ):
+            weight = float(eigenvalues[index])
+            if weight <= tolerance:
+                continue
+            # ``vec(A rho B) = (A (x) B^T) vec(rho)`` fixes the unstacking: the
+            # eigenvector read as ``(a, i)`` unstacked to ``(d, d)`` gives the
+            # transpose of the operator, and dropping that transpose is a different
+            # map rather than a rounding difference.
+            operator = (
+                eigenvectors[:, index].reshape(dimension, dimension).transpose(0, 1)
+            )
+            operators.append(operator * weight**0.5)
+        return tuple(operators)
 
     def matrix_in_basis(self, basis: Sequence[torch.Tensor]) -> torch.Tensor:
         """Return the map's matrix in an orthonormal basis of matrices.

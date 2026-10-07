@@ -1283,7 +1283,9 @@ def _transpose_map(
     return total
 
 
-def _amplitude_damping(dimension: int, gamma: float = 0.4) -> SuperOperator:
+def _amplitude_damping(
+    dimension: int, gamma: float = 0.4, dtype: torch.dtype = _COMPLEX128
+) -> SuperOperator:
     """The ``d``-level amplitude damping channel, trace preserving by construction.
 
     The lowering part acts on every level above the ground state, so ``K_1^dag K_1``
@@ -1294,11 +1296,9 @@ def _amplitude_damping(dimension: int, gamma: float = 0.4) -> SuperOperator:
     """
 
     diagonal = torch.diag(
-        torch.tensor(
-            [1.0] + [(1.0 - gamma) ** 0.5] * (dimension - 1), dtype=torch.complex128
-        )
+        torch.tensor([1.0] + [(1.0 - gamma) ** 0.5] * (dimension - 1), dtype=dtype)
     )
-    lowering = torch.zeros(dimension, dimension, dtype=torch.complex128)
+    lowering = torch.zeros(dimension, dimension, dtype=dtype)
     for level in range(1, dimension):
         lowering[level - 1, level] = 1.0
     return SuperOperator.from_kraus((diagonal, gamma**0.5 * lowering))
@@ -1738,3 +1738,277 @@ def test_the_complete_positivity_tolerance_is_relative_to_the_choi_scale() -> No
         # so the relative tolerance did not simply widen the accepted set.
         scaled = _transpose_map(2, scale=1024.0, dtype=dtype)
         assert scaled.is_completely_positive() is False
+
+
+def _choi_eigenvalues_above_tolerance(mapped: SuperOperator) -> torch.Tensor:
+    """Return the Choi eigenvalues above the certificate's own tolerance.
+
+    Read from the matrix here rather than off ``kraus()``, so the count and the
+    largest weight that decomposition reports are held against an independent reading
+    of the same spectrum instead of against themselves.
+    """
+
+    choi = mapped.choi()
+    eigenvalues = torch.linalg.eigvalsh((choi + choi.conj().transpose(0, 1)) / 2)
+    scale = float(eigenvalues.abs().max())
+    tolerance = 8.0 * float(torch.finfo(mapped.dtype).eps) * scale
+    return eigenvalues[eigenvalues > tolerance]
+
+
+def test_kraus_returns_a_list_that_reproduces_the_map() -> None:
+    """The decomposition is held against the map's own action, not against itself.
+
+    Every channel here is either built from a Kraus list or assembled from matrix
+    units, and the reconstructed map is compared through ``apply`` on a state that is
+    neither diagonal nor real, so a decomposition that got the unstacking index order,
+    the weight, or the adjoint side wrong is separated from this one.
+    """
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        for dimension in (2, 3):
+            state = _density_matrix(dimension).to(dtype)
+            identity = torch.eye(dimension, dtype=dtype)
+            probability = 0.3
+            cases = {
+                "identity": SuperOperator.from_kraus((identity,)),
+                "amplitude damping": _amplitude_damping(dimension, dtype=dtype),
+                "dephasing": _rotated_dephasing(dimension, 1.0, dtype),
+                "depolarizing": SuperOperator.from_kraus(
+                    (
+                        (1.0 - probability) ** 0.5 * identity,
+                        (probability / (dimension * dimension - 1)) ** 0.5
+                        * torch.roll(identity, shifts=1, dims=0),
+                    )
+                ),
+            }
+            for name, mapped in cases.items():
+                operators = mapped.kraus()
+                assert operators, name
+                # A tuple, so the list a caller receives cannot be reordered in place
+                # by whoever it was handed to.
+                assert isinstance(operators, tuple), f"{name} return type"
+                assert all(
+                    tuple(operator.shape) == (dimension, dimension)
+                    for operator in operators
+                ), name
+                # The operators carry the map's dtype. Not every fixture is
+                # parameterized by the loop's dtype -- the amplitude damping helper is
+                # complex128 by construction -- so the map is the authority here.
+                assert all(
+                    operator.dtype == mapped.dtype for operator in operators
+                ), f"{name} operator dtype in {dtype}"
+
+                rebuilt = SuperOperator.from_kraus(operators)
+                assert torch.allclose(
+                    rebuilt.apply(state), mapped.apply(state), atol=1e-6
+                ), f"{name} in {dtype} at {dimension} wires"
+                assert torch.allclose(
+                    rebuilt.dense(), mapped.dense(), atol=1e-6
+                ), f"{name} in {dtype} at {dimension} wires"
+
+
+def test_kraus_returns_one_operator_per_non_zero_choi_eigenvalue() -> None:
+    """The count is the Choi rank, so nothing is zero-padded and nothing is dropped.
+
+    A unitary channel is the sharpest reading of the first half: its Choi rank is one,
+    so a decomposition returning ``d**2`` operators with the rest at zero would be a
+    different object under the same name. The repeated-operator case reads the other
+    half, because three Kraus operators whose span is two-dimensional denote a rank-two
+    map, so the list that comes back is shorter than the one that went in. The weight
+    order is checked in the same pass, because ``K_k`` is ``sqrt(lambda_k)`` times a
+    unit-norm eigenvector and its squared Frobenius norm therefore *is* that
+    eigenvalue.
+    """
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        for dimension in (2, 3, 4):
+            identity = torch.eye(dimension, dtype=dtype)
+            shift = torch.roll(identity, shifts=1, dims=0)
+            cases = {
+                "identity": SuperOperator.from_kraus((identity,)),
+                "shift": SuperOperator.from_kraus((shift,)),
+                "dephasing": _rotated_dephasing(dimension, 1.0, dtype),
+                "repeated operator": SuperOperator.from_kraus(
+                    (identity, 0.5 * shift, 0.5 * shift)
+                ),
+            }
+            for name, mapped in cases.items():
+                operators = mapped.kraus()
+                weights = [
+                    float((operator.conj() * operator).sum().real)
+                    for operator in operators
+                ]
+                above = _choi_eigenvalues_above_tolerance(mapped)
+                assert len(operators) == len(above), f"{name} in {dtype}"
+                assert len(operators) <= dimension * dimension, name
+                assert len(operators) >= 1, name
+
+                # Descending weight, and the largest weight is the largest Choi
+                # eigenvalue, which is what makes the order a statement about the
+                # spectrum rather than about the loop that produced it. The comparison
+                # is to within rounding because operators sharing an eigenvalue are
+                # ordered by the eigenproblem and their realized weights differ in the
+                # last place -- the exact eigenvalues they were sorted by are equal.
+                assert all(
+                    first + 1e-9 >= second
+                    for first, second in zip(weights, weights[1:], strict=False)
+                ), f"{name} order"
+                assert weights[0] == pytest.approx(
+                    float(above.max()), rel=1e-5, abs=1e-6
+                ), name
+                # Repeating an operator does not add a term to the answer.
+                assert len(operators) == len(above), name
+
+
+def _first_level_projector(dimension: int, dtype: torch.dtype) -> torch.Tensor:
+    """Return ``|0><0|``, the first of the two projectors summing to the identity."""
+
+    projector = torch.zeros(dimension, dimension, dtype=dtype)
+    projector[0, 0] = 1.0
+    return projector
+
+
+def test_kraus_of_a_trace_preserving_channel_is_trace_preserving() -> None:
+    """``sum_k K_k^dag K_k == I`` is a property the round trip has to carry.
+
+    The control matters more than the assertion: the same file can build a channel
+    whose single Kraus operator is scaled by one half, which is completely positive and
+    not trace preserving, so the identity below is a statement about these channels
+    rather than about a sum that would come out right for any list.
+    """
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        for dimension in (2, 3):
+            identity = torch.eye(dimension, dtype=dtype)
+            for name, mapped in {
+                "amplitude damping": _amplitude_damping(dimension, dtype=dtype),
+                "dephasing": _rotated_dephasing(dimension, 1.0, dtype),
+                # Rank deficient and still trace preserving: two orthogonal projectors
+                # that sum to the identity, so the channel collapses to the block
+                # structure without losing any population.
+                "projector pair": SuperOperator.from_kraus(
+                    (_first_level_projector(dimension, dtype),)
+                    + (identity - _first_level_projector(dimension, dtype),)
+                ),
+            }.items():
+                completeness = sum(
+                    operator.conj().T @ operator for operator in mapped.kraus()
+                )
+                assert torch.allclose(
+                    completeness, identity, atol=1e-6
+                ), f"{name} in {dtype}"
+
+            # A single scaled matrix unit: completely positive, Choi rank one, and
+            # deliberately not trace preserving, so the assertion above is not one
+            # that any list of operators satisfies.
+            unit = torch.zeros(dimension, dimension, dtype=dtype)
+            unit[0, 0] = 1.0
+            scaled = SuperOperator.from_kraus((0.5 * unit,))
+            assert scaled.is_completely_positive()
+            completeness = sum(
+                operator.conj().T @ operator for operator in scaled.kraus()
+            )
+            assert not torch.allclose(completeness, identity, atol=1e-3)
+
+
+def test_kraus_refuses_a_map_that_is_not_completely_positive() -> None:
+    """A substitution would be silent, so the refusal names the eigenvalue instead."""
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        for dimension in (2, 3):
+            mapped = _transpose_map(dimension, dtype=dtype)
+            smallest, scale = _smallest_choi_eigenvalue(mapped)
+            assert smallest == pytest.approx(-1.0, abs=1e-6)
+            with pytest.raises(ValueError) as refused:
+                mapped.kraus()
+            message = str(refused.value)
+            assert "is not completely positive" in message
+            assert "no Kraus list denotes it" in message
+            assert "the closest one would be a different map" in message
+            # The refusal is the positivity branch and not the Hermiticity one, and
+            # the number it reports is the matrix's own smallest eigenvalue rather
+            # than a tolerance restated as one.
+            assert "does not preserve Hermiticity" not in message
+            assert f"{smallest:.3e}" in message
+            assert smallest < -8.0 * float(torch.finfo(dtype).eps) * scale
+
+
+def test_kraus_refuses_a_map_that_does_not_preserve_hermiticity() -> None:
+    """The other refusal, and it is a different sentence about a different map."""
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        generator = SuperOperator.left_multiply(
+            1j * torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=dtype)
+        )
+        with pytest.raises(ValueError) as refused:
+            generator.kraus()
+        message = str(refused.value)
+        assert "does not preserve Hermiticity" in message
+        assert "is not completely positive" not in message
+
+        # The same map with a Hermitian factor is answered rather than refused, so
+        # the branch is about this map and not about the shape it has.
+        assert (
+            len(
+                SuperOperator.left_multiply(
+                    torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=dtype)
+                ).kraus()
+            )
+            == 1
+        )
+
+
+def test_the_unstacking_transpose_is_load_bearing() -> None:
+    """The control for the one convention in this decomposition that is not free.
+
+    An eigenvector read as ``(a, i)`` and unstacked to ``(d, d)`` is the transpose of
+    the operator, so dropping the transpose is a different map that still has the right
+    spectrum, the right count, and a Hermitian Choi matrix. On amplitude damping the
+    two candidates are separated analytically rather than by an eyeballed margin:
+    ``K_1`` is ``sqrt(gamma) |0><1|``, so its transpose moves the population the wrong
+    way and the ``[0, 0]`` entry of the no-transpose map loses exactly
+    ``gamma * rho[1, 1]``. The same entry of the map this method returns is exact.
+    """
+
+    gamma = 0.4
+    dimension = 2
+    mapped = _amplitude_damping(dimension, gamma=gamma)
+    state = _density_matrix(dimension)
+    eigenvalues, eigenvectors = torch.linalg.eigh(
+        (mapped.choi() + mapped.choi().conj().transpose(0, 1)) / 2
+    )
+    tolerance = (
+        8.0 * float(torch.finfo(mapped.dtype).eps) * float(eigenvalues.abs().max())
+    )
+    operators = tuple(
+        eigenvectors[:, index].reshape(dimension, dimension)
+        * float(eigenvalues[index]) ** 0.5
+        for index in range(len(eigenvalues))
+        if float(eigenvalues[index]) > tolerance
+    )
+    without = SuperOperator.from_kraus(operators)
+    with_transpose = SuperOperator.from_kraus(mapped.kraus())
+
+    expected = -gamma * float(state[1, 1].real)
+    assert expected == pytest.approx(-0.2625282042778918, abs=1e-9)
+    assert float((without.apply(state) - mapped.apply(state))[0, 0].real) == (
+        pytest.approx(expected, abs=1e-6)
+    )
+    assert (
+        float((with_transpose.apply(state) - mapped.apply(state)).abs().max()) < 1e-15
+    ), "the transposed reading must reproduce the map"
+    # And the two candidates are separated by far more than their own rounding, so
+    # the reading above is not a residue.
+    assert float((without.dense() - mapped.dense()).abs().max()) > 1e-3
+
+
+def test_kraus_is_refused_above_its_byte_ceiling() -> None:
+    """The ceiling is ``choi()``'s, inherited because the spectrum is read off it."""
+
+    mapped = SuperOperator.from_kraus((torch.eye(4, dtype=_COMPLEX128),))
+    assert len(mapped.kraus()) == 1
+    with pytest.raises(ValueError) as refused:
+        mapped.kraus(max_bytes=16)
+    message = str(refused.value)
+    assert "16-byte ceiling" in message
+    assert "apply the map instead of materializing it" in message
