@@ -396,7 +396,7 @@ Evidence:
 
 - domain default: `flagquantum/algorithms`
 - domain default: `flagquantum/circuit.py`
-- domain default, negative search: no qubitization and no quantum singular value transform, and error mitigation limited to zero-noise extrapolation and probabilistic error cancellation over a declared Pauli channel
+- domain default, negative search: no qubitization and no quantum singular value transform, and error mitigation limited to the four registered methods -- zero-noise extrapolation over scaled noise models, probabilistic error cancellation over a declared Pauli channel, Clifford data regression over near-Clifford training circuits, and readout-error mitigation over a declared classical confusion
 
 - `execution_entry_points` override: `flagquantum/compiler/translate.py`, `flagquantum/compiler/target_emission.py`, `flagquantum/drawer/__init__.py`, `flagquantum/lindblad/__init__.py`, `flagquantum/simulation/lindblad.py`, `docs/development/API_CHANGE_PROPOSAL_065_EVOLUTION_SCHEDULE.md`, `search:no root export of draw, translate, evolve, or a unitary accessor beyond get_unitary under flagquantum.simulation`
 - `algorithm_block_encoding_family` override: `flagquantum/algorithms/primitives/linear_combination.py`, `tests/unit/test_algorithms_linear_combination.py`, `examples/algorithms/linear_combination.py`, `flagquantum/algorithms/primitives/README.md`

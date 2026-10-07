@@ -705,7 +705,7 @@ evidence = ["search:no Rydberg or analog Hamiltonian model"]
 id = "algorithm_layer"
 title = "Algorithm layer"
 cudaq_surface = ["sample, observe, run, evolve, draw, translate", "get_state and get_unitary", "estimate_resources", "dem_from_kernel", "CUDA-Q Algorithms", "CUDA-QX solvers", "error mitigation"]
-evidence = ["flagquantum/algorithms", "flagquantum/circuit.py", "search:no qubitization and no quantum singular value transform, and error mitigation limited to zero-noise extrapolation and probabilistic error cancellation over a declared Pauli channel"]
+evidence = ["flagquantum/algorithms", "flagquantum/circuit.py", "search:no qubitization and no quantum singular value transform, and error mitigation limited to the four registered methods -- zero-noise extrapolation over scaled noise models, probabilistic error cancellation over a declared Pauli channel, Clifford data regression over near-Clifford training circuits, and readout-error mitigation over a declared classical confusion"]
 
 [[domains.capabilities]]
 id = "execution_entry_points"
