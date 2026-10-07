@@ -161,8 +161,12 @@ jobs:
         run: python tools/check_parameter_shift_coverage_contract.py
       - name: Verify parameter-shift Hessian against central differences
         run: python tools/check_parameter_shift_hessian_contract.py
+      - name: Verify every differentiable opcode against an independent difference scheme
+        run: python tools/check_opcode_gradient_exactness.py
       - name: Verify the gradient method and execution mode matrix by re-measuring it
         run: python tools/check_gradient_methods_contract.py
+      - name: Verify the native gradient capability registration
+        run: python tools/check_native_gradients_contract.py
       - name: Verify runtime contract schema
         run: python tools/runtime_contract_schema.py --check
       - name: Verify documentation sources of truth

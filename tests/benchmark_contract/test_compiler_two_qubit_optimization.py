@@ -37,6 +37,7 @@ from benchmarks.compiler_two_qubit_optimization import (
     run_benchmark,
 )
 from flagquantum.compiler.pipeline import optimize
+from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -450,6 +451,13 @@ def test_the_qiskit_anchor_reports_a_no_op_rather_than_claiming_one(
     anchor = payload["qiskit_anchor"]
     if not anchor["available"]:
         pytest.skip(f"Qiskit not importable: {anchor['reason']}")
+    # Which lane took this reading. The measured no-op asserted below is a property
+    # of two named passes, and a reader cannot tell a pass that still exists from
+    # one that answered nothing without the field that names the library answering.
+    # That library also has to be one this repository certifies, since a pass that
+    # answers on an uncertified release answers about that release, not about the
+    # no-op the anchor records.
+    require_certified_lane(anchor["qiskit_version"], recording="this anchor")
     optimize_cliffords = anchor["optimize_cliffords"]
     assert optimize_cliffords["gates_after"] == optimize_cliffords["gates_before"]
     assert optimize_cliffords["opcodes_after"] == [
