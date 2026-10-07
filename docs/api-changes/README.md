@@ -37,6 +37,7 @@ process.
 - [Construction-layer acceptance](FQ-CONSTRUCTION-ACCEPTANCE-20261024.md)
 - [Gradient parameter frequencies](FQ-GRADIENT-PARAMETER-FREQUENCIES-20261002.md)
 - [The batch parameter-shift profile reads the opcode declaration](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md)
+- [The gradient method and execution mode matrix is measured, not declared](FQ-GRADIENT-METHODS-MATRIX-20261027.md)
 - [`fq.gradient` and the reported gradient method](FQ-GRADIENT-API-20261002.md)
 - [`fq.jacobian`, `fq.jvp`, and `fq.vjp` for a program with several outputs](FQ-VECTOR-DERIVATIVES-20261026.md)
 - [The density-matrix output](FQ-DENSITY-MATRIX-OUTPUT-20261006.md)
