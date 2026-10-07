@@ -277,10 +277,19 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         lambda t: set_key(t, "qec_dialect", "fail_closed", 'fail_closed = ""'),
     ),
     (
-        "drop the next_action from a partial row",
+        # `next_action` is required of every row that is not `aligned`, so this
+        # mutation does not need a `partial` row and must not borrow one. It was
+        # planted in `qec_stim_sampling_join` until that row converged on its own
+        # target, at which point the mutation could not be applied at all -- the
+        # row no longer has the key -- rather than failing for its own reason.
+        # `qec_decoder_configuration` is `absent`, is reached by the same single
+        # loop that requires `next_action` of a `partial` row, and is the row
+        # furthest from converging: nothing but a second selectable decoder moves
+        # it.
+        "drop the next_action from a row that must state one",
         "next_action is empty",
         lambda t: set_key(
-            t, "qec_stim_sampling_join", "next_action", 'next_action = ""'
+            t, "qec_decoder_configuration", "next_action", 'next_action = ""'
         ),
     ),
     (
@@ -330,14 +339,21 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         lambda t: set_key(t, "qec_detector_annotations", "target", 'target = ""'),
     ),
     (
-        # The row this mutation is planted in is `partial` on the other half of
-        # its own scope, so the branch it reaches is the partial one. It moved
-        # here when `qec_dem_matrices_and_rates` became `aligned`: a row that
-        # changes status must not quietly move a mutation onto the aligned
-        # branch, where it would still fail but for a different reason.
+        # The mutation writes the status it is about instead of borrowing
+        # whichever row happens to be `partial`. It was planted in
+        # `qec_dem_matrices_and_rates`, then `qec_dem_construction`, then
+        # `qec_dem_text_interchange`, and each row in turn converged on its own
+        # target and left the mutation firing the `aligned` message rather than
+        # this one. Writing the status is what makes the mutation test the branch
+        # rather than the checklist's current state.
         "leave a partial row with nothing present",
         "must name the symbols_present entry",
-        lambda t: set_key(t, "qec_dem_construction", "symbols_present", None),
+        lambda t: set_key(
+            set_key(t, "qec_dem_merge", "symbols_present", None),
+            "qec_dem_merge",
+            "status",
+            'status = "partial"',
+        ),
     ),
     (
         "leave a gap row with no proof at all",
