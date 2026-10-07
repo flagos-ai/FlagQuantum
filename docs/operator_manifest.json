@@ -304,6 +304,7 @@
       "opcode": "i",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -323,6 +324,7 @@
       "opcode": "x",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -342,6 +344,7 @@
       "opcode": "y",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -361,6 +364,7 @@
       "opcode": "z",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -382,6 +386,7 @@
       "opcode": "h",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -401,6 +406,7 @@
       "opcode": "s",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -422,6 +428,7 @@
       "opcode": "sdg",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -441,6 +448,7 @@
       "opcode": "t",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -462,6 +470,7 @@
       "opcode": "tdg",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -481,6 +490,7 @@
       "opcode": "sx",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -500,6 +510,7 @@
       "opcode": "sxdg",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -525,6 +536,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "target"
       ],
@@ -550,6 +562,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "target"
       ],
@@ -575,6 +588,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "target"
       ],
@@ -602,6 +616,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "target"
       ],
@@ -627,6 +642,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "target"
       ],
@@ -656,6 +672,7 @@
         "phi",
         "lbd"
       ],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -691,6 +708,7 @@
         "phi",
         "lbd"
       ],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -712,6 +730,7 @@
       "opcode": "cx",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -732,6 +751,7 @@
       "opcode": "cy",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -752,6 +772,7 @@
       "opcode": "cz",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -772,6 +793,7 @@
       "opcode": "swap",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -799,6 +821,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -826,6 +849,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -853,6 +877,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -879,6 +904,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -905,6 +931,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -931,6 +958,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -957,6 +985,7 @@
       "parameters": [
         "theta"
       ],
+      "power": "scale_single_parameter",
       "qubit_convention": [
         "control_or_left",
         "target_or_right"
@@ -980,6 +1009,7 @@
       "opcode": "ccx",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "control_0",
         "control_1_or_target_0",
@@ -1003,6 +1033,7 @@
       "opcode": "cswap",
       "parameter_frequencies": [],
       "parameters": [],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "control_0",
         "control_1_or_target_0",
@@ -1026,6 +1057,7 @@
       "parameters": [
         "probability"
       ],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -1047,6 +1079,7 @@
       "parameters": [
         "probability"
       ],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -1068,6 +1101,7 @@
       "parameters": [
         "probability"
       ],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],
@@ -1089,6 +1123,7 @@
       "parameters": [
         "gamma"
       ],
+      "power": "repeat_instruction",
       "qubit_convention": [
         "target"
       ],

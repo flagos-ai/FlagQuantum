@@ -20,14 +20,13 @@ and the caller fails rather than passing.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
 
-if sys.version_info >= (3, 11):
+try:
     import tomllib
-else:  # pragma: no cover - Python 3.10
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +49,20 @@ def lane_of(version: str) -> str:
     return version
 
 
+def is_lane(text: str) -> bool:
+    """Whether ``text`` is itself a ``major.minor`` lane, rather than unreadable.
+
+    This is a different question from ``lane_of``, and equality with that function
+    cannot answer it: ``lane_of`` returns an unreadable reading *unchanged*, so a
+    string that never parsed is equal to its own result. A patch release is not a
+    lane either, even though ``lane_of`` reads one as a lane. Both components must
+    be numeric and there must be exactly two of them.
+    """
+
+    parts = text.split(".")
+    return len(parts) == 2 and all(part.isdigit() for part in parts)
+
+
 def certified_lanes() -> tuple[str, ...]:
     """The Qiskit lanes this repository certifies, in policy order.
 
@@ -64,7 +77,7 @@ def certified_lanes() -> tuple[str, ...]:
         f"{_POLICY.name} must declare [tested].qiskit as a non-empty list of "
         f"version lanes; read {lanes!r}"
     )
-    assert all(lane == lane_of(lane) for lane in lanes), (
+    assert all(is_lane(lane) for lane in lanes), (
         f"[tested].qiskit must list major.minor lanes, not ranges or patch "
         f"releases; read {lanes!r}"
     )
