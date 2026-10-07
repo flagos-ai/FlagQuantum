@@ -48,11 +48,17 @@ it. Two differences are deliberate and both are recorded in
 `flagquantum/compiler/README.md`:
 
 1. **Level 3 is reserved, not implemented.** Qiskit's level 3 differs from its
-   level 2 only by moving `UnitarySynthesis` into the loop, and this package's
-   loop has no unitary-synthesis stage to move. Refusing level 3 is the honest
-   encoding of that: a level that silently ran level 2's passes while reporting
-   3 would be a compatibility promise this release cannot keep, and narrowing
-   the accepted set later is a breaking change while widening it is not.
+   level 2 only by moving `UnitarySynthesis` into the loop, and **no stage of this
+   ladder can be that pass**: `UnitarySynthesis` rewrites each instruction it
+   cannot keep into a *target's* native gates, so it needs a target basis, and
+   `optimize` is target-independent by contract and takes none. The capability is
+   not missing from the package -- `native_gate_legalization.legalize_native_gates`
+   performs exactly that rewrite, given a target snapshot -- it is missing from
+   *this* entry point, and no amount of new pass code would put it here. Refusing
+   level 3 is the honest encoding of that: a level that silently ran level 2's
+   passes while reporting 3 would be a compatibility promise this release cannot
+   keep, and narrowing the accepted set later is a breaking change while widening
+   it is not.
 2. **The unroll-to-basis step the levels gate in Qiskit is not here.** In
    Qiskit every level's loop carries an `_unroll_if_out_of_basis` conditional
    controller, because the pass manager rewrites into a target basis as it
@@ -125,12 +131,19 @@ DECLARED_OPTIMIZATION_LEVELS: tuple[int, ...] = (
 )
 
 #: Why each reserved level is refused, keyed by level. The text is the error a
-#: caller sees, so it names the stage that is missing rather than only saying no.
+#: caller sees, so it names the stage that is missing rather than only saying no:
+#: a refusal a caller cannot act on is indistinguishable from a missing feature.
 _RESERVED_REASONS: dict[int, str] = {
     3: (
-        "level 3 needs the unitary-synthesis stage Qiskit's level 3 moves into "
-        "the optimization loop, and this package has no unitary-synthesis pass "
-        "to move; level 2 runs every pass this release has"
+        "level 3 needs the unitary-synthesis stage `UnitarySynthesis`, which "
+        "Qiskit's level 3 moves into the optimization loop. That stage rewrites "
+        "each instruction it cannot keep into a target's native gates, so it needs "
+        "a target basis, and `optimize` takes none: this entry point is "
+        "target-independent by contract. The stage is not absent from the package, "
+        "only from this ladder -- target-aware unitary synthesis is the separate "
+        "entry point "
+        "`native_gate_legalization.legalize_native_gates(program, snapshot=...)`. "
+        "Level 2 runs every target-independent pass this release has"
     ),
 }
 
