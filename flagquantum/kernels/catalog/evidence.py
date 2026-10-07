@@ -124,11 +124,14 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
     _evidence(
         "FQKI-TRITON-SV-009-A",
         "tests/test_statevector_triton_gates.py::test_generic_local_2q_matches_layout_reference_and_exact_alias",
+        "tests/test_statevector_triton_gates.py::test_public_local_2q_runtime_uses_catalog",
         capability_tests=(
             "tests/test_statevector_triton_gates.py::test_generic_local_2q_rejects_unsupported_contracts",
+            "tests/unit/test_two_qubit_matrix_catalog_dispatch.py::test_two_qubit_matrix_shape_policy_matches_evidenced_window",
         ),
         benchmark_artifacts=(
             "benchmarks/results/local/statevector_local_2q_a800.json",
+            "benchmarks/results/local/statevector_local_2q_dispatch_a800.json",
         ),
     ),
     _evidence(
