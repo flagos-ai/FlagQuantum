@@ -137,3 +137,115 @@ def test_a_mode_that_cannot_serve_the_loss_fails_closed() -> None:
 
     with pytest.raises(CapabilityError, match="stabilizer"):
         fq.gradient(_circuit, PARAMETERS, _loss_in("stabilizer"))
+
+
+def _precise_circuit(parameters: torch.Tensor) -> fq.Circuit:
+    """The same two-qubit circuit in double precision.
+
+    The velocity tests differentiate twice, and a second-order route over the
+    default single-precision amplitudes differs from a single-order one at the
+    single-precision epsilon. Widening the circuit is what keeps the tolerance
+    below a statement about the mode rather than about the dtype.
+    """
+
+    return (
+        fq.Circuit(2, dtype=torch.complex128)
+        .ry(0, theta=parameters[0])
+        .rx(0, theta=parameters[1])
+        .ry(1, theta=parameters[2])
+        .cx(1, 0)
+    )
+
+
+def _vector_output_in(mode: str) -> Callable[[torch.Tensor], torch.Tensor]:
+    """Return one expectation value per qubit after a full two-qubit circuit."""
+
+    def program(parameters: torch.Tensor) -> torch.Tensor:
+        result = fq.run(
+            _precise_circuit(parameters),
+            options=fq.ExecutionOptions(mode=mode),
+            outputs=[fq.expectation(fq.Z(0)), fq.expectation(fq.Z(1))],
+        )
+        return torch.stack(list(result.expectations))
+
+    return program
+
+
+def _reference_jacobian() -> torch.Tensor:
+    return fq.jacobian(_vector_output_in("statevector"), PARAMETERS)
+
+
+@pytest.mark.parametrize("mode", DIFFERENTIABLE_MODES)
+def test_every_differentiable_mode_returns_the_same_jacobian(mode: str) -> None:
+    """The mode selects how amplitudes are stored, not what the derivative is."""
+
+    result = fq.jacobian(_vector_output_in(mode), PARAMETERS)
+
+    assert result.shape == (*_vector_output_in(mode)(PARAMETERS).shape, 3)
+    assert result.dtype == PARAMETERS.dtype
+    assert torch.allclose(result, _reference_jacobian(), rtol=1e-12, atol=1e-15)
+    # Four of the six entries move. The two zeros are structural: qubit 1 is
+    # rotated only by the third parameter, so its expectation cannot depend on
+    # the first two. Stating that keeps the agreement above from being an
+    # agreement about an all-zero matrix.
+    assert int((result.reshape(-1).abs() > 1e-3).sum()) == 4
+
+
+@pytest.mark.parametrize("mode", DIFFERENTIABLE_MODES)
+def test_every_differentiable_mode_returns_the_same_directional_products(
+    mode: str,
+) -> None:
+    """Forward and reverse directions must agree across every mode."""
+
+    output = _vector_output_in(mode)(PARAMETERS)
+    tangent = torch.tensor([0.4, 1.1, -0.9], dtype=torch.float64)
+    cotangent = torch.tensor([-0.6, 2.0], dtype=torch.float64).reshape(output.shape)
+    reference = _reference_jacobian().reshape(output.numel(), 3)
+
+    forward = fq.jvp(_vector_output_in(mode), PARAMETERS, tangent)
+    reverse = fq.vjp(_vector_output_in(mode), PARAMETERS, cotangent)
+
+    assert torch.allclose(
+        forward.reshape(-1), reference @ tangent, rtol=1e-10, atol=1e-13
+    )
+    assert torch.allclose(
+        reverse,
+        (reference.T @ cotangent.reshape(-1)).reshape_as(PARAMETERS),
+        rtol=1e-12,
+        atol=1e-15,
+    )
+
+
+def test_a_training_step_shaped_objective_uses_the_reverse_product() -> None:
+    """A scalar objective over several measured values is the reverse shape.
+
+    The objective weights both expectation values, so one reverse sweep returns
+    the whole parameter update. It must match the parameter gradient of the same
+    scalar objective taken through the scalar entry point.
+    """
+
+    output = _vector_output_in("statevector")(PARAMETERS)
+    cotangent = torch.tensor([1.5, -0.25], dtype=torch.float64).reshape(output.shape)
+
+    def objective(parameters: torch.Tensor) -> torch.Tensor:
+        measured = fq.run(
+            _precise_circuit(parameters),
+            outputs=[fq.expectation(fq.Z(0)), fq.expectation(fq.Z(1))],
+        )
+        stacked = torch.stack(list(measured.expectations))
+        return (stacked * cotangent).sum()
+
+    reverse = fq.vjp(_vector_output_in("statevector"), PARAMETERS, cotangent)
+    scalar = fq.gradient(objective, PARAMETERS)
+
+    assert scalar.method == "autograd"
+    assert torch.allclose(reverse, scalar.gradient, rtol=1e-12, atol=1e-15)
+    # Both terms must contribute, or the agreement would be about one of them.
+    assert float(reverse.abs().min()) > 1e-2
+
+
+def test_a_mode_that_cannot_serve_the_jacobian_fails_closed() -> None:
+    """The stabilizer mode samples outcomes and cannot serve an expectation."""
+
+    with pytest.raises(CapabilityError, match="stabilizer"):
+        fq.jacobian(_vector_output_in("stabilizer"), PARAMETERS)

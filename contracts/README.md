@@ -29,8 +29,12 @@ must validate the resulting behavior directly.
 | `split-real-imag-statevector-*-contract.toml` | Statevector representation, precision, device, and training acceptance boundaries. |
 | `double-single-contract.toml` | Shared double-single arithmetic and conformance requirements. |
 | `domestic-single-card-certification-contract.toml` | Domestic accelerator certification matrix and evidence requirements. |
-| `circuit-composition-contract.toml` | The construction-time composition surface: what `Circuit.compose` and `Circuit.adjoint` guarantee, every way they refuse, and the operations of that family that do not exist yet. |
+| `circuit-composition-contract.toml` | The construction-time composition surface: what `Circuit.compose`, `Circuit.adjoint` and `Circuit.power` guarantee, every way they refuse, and the operations of that family that do not exist yet. |
+| `density-matrix-output-contract.toml` | The density-matrix output kind: the recorded matrices, the execution modes that must agree on them, the caller-ordered basis permutation, the statevector cost bound, and every refusal sentence. |
 | `parameter-shift-coverage-contract.toml` | Which opcodes `batched_parameter_shift_gradient` can differentiate from one evaluation pair per parameter, measured against the opcode declaration for every registered opcode. |
+| `opcode-gradient-exactness-contract.toml` | Every opcode whose derivative rule is declared, measured against PyTorch autograd and against a Richardson-extrapolated difference of `fq.run` in each execution mode that can serve an expectation value. |
+| `gradient-methods-contract.toml` | Which (`fq.gradient` method, execution mode) pairs serve and which refuse, measured twice -- without and with a noise model -- with the refusal vocabulary, the measured cost of each method, and one recorded exception-reframing asymmetry. |
+| `native-gradients-contract.toml` | Where FlagQuantum's native gradient capability is declared: every `gradient_method` / `backward_method` site in the package classified onto its axis, every declared value mapped to the public method it denotes, and every public method driven, so a declared name no caller can request and a served name nothing declares are both failures. |
 | `primitives-admission-contract.toml` | The admission rule of `flagquantum/algorithms/primitives`: every export with the admission basis it was admitted on, the consumer that grounds it, its distribution semantics, and its differentiability shape. |
 | `public-api-v0.2-baseline.json` | Pre-open-source exports, signatures, defaults, and dataclass fields used as the API convergence baseline. |
 | `public-api-v1-candidate.json` | Proposed disposition of every baseline root export for the first public alpha. |
@@ -69,11 +73,12 @@ checks reject drift or omission of that packaged mirror.
 
 `circuit-composition-contract.toml` is the only contract that describes the
 construction-time composition surface. The approval record is not restated here:
-`docs/api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md` and
-`docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md` own the decision and the
-authorization for the two methods, this contract owns their guaranteed behavior,
-the refusal vocabulary that callers may rely on, and the fact that `control` and
-`power` are unplanned rather than partial. Its conformance test in
+`docs/api-changes/FQ-CIRCUIT-COMPOSITION-20261002.md`,
+`docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md` and
+`docs/api-changes/FQ-CIRCUIT-POWER-20261021.md` own the decision and the
+authorization for the three methods, this contract owns their guaranteed behavior,
+the refusal vocabulary that callers may rely on, and the fact that `control` is
+unplanned rather than partial. Its conformance test in
 `tests/unit/test_circuit_composition_contract.py` checks the contract against the
 implementation, so a change to a refusal message or to an operation's presence in
 that family is a contract change rather than a private detail.
@@ -91,6 +96,21 @@ opcode, and builds every refusal row. The decision and the authorization are in
 owns the measured coverage table. Its conformance test in
 `tests/unit/test_parameter_shift_coverage_contract.py` mutates the contract's
 clauses and requires the gate to name each one.
+
+`gradient-methods-contract.toml` is the second measurement, of the other axis.
+`fq.gradient` takes no execution mode, so availability is a property of a pair:
+the method passed to `fq.gradient` and the mode the caller's loss passes to
+`fq.run`. The contract records all thirty pairs, then re-measures the same thirty
+under a noise model, because noise is a `fq.run` argument rather than a mode and
+its measured effect is to narrow the serving modes to `auto` and
+`density_matrix`. `tools/check_gradient_methods_contract.py` rebuilds the
+reference program and runs every cell, so a cell that stops being true fails the
+gate rather than ageing quietly. Three combinations the scheduling plan predicted
+are absent by measurement rather than by omission -- `adjoint` never reaches a
+mode, the five distributed mode names are refused before any gradient code runs,
+and there is no noisy mode -- and each is recorded with its reason. The decision
+and the authorization are in
+`docs/api-changes/FQ-GRADIENT-METHODS-MATRIX-20261027.md`.
 
 Three contracts describe CUDA-Q. `cudaq-export-contract.toml` owns the adapter
 surface, `interop-capability-gap-matrix.toml` owns the adapter's per-format

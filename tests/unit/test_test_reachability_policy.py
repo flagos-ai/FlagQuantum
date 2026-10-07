@@ -17,9 +17,11 @@ means the tests that relied on it fail this check rather than going quiet.
 from __future__ import annotations
 
 import ast
+import fnmatch
 from pathlib import Path
 
 import pytest
+import yaml
 
 from tools.ci_tier import CI_TIERS
 
@@ -229,3 +231,95 @@ def test_the_launcher_scan_reads_both_places_a_lane_can_live() -> None:
     assert any(
         not command.startswith("run:") for command in commands
     ), "no command came from a tier definition: " + repr(commands[:5])
+
+
+# A compiler benchmark contract that reads a Qiskit anchor is not checking this
+# repository against itself: it builds its payload in-process, reads another
+# library's behaviour out of it, and compares the two. The payload is built by
+# the test, so the anchor exists only where that library is importable, and the
+# module skips when it is not. `benchmark_contract` is collected by
+# `distributed-cpu`, which installs no Qiskit. So the reachability rule above is
+# satisfied and the comparison still never happens: the skip is reported as a
+# pass by the tier that owns the marker, and a skipped agreement check reads
+# exactly like an agreement.
+#
+# The field names are the payload keys the anchors are stored under rather than
+# the module names, because a new anchor file is what reopens the hole and a new
+# anchor file stores one of these.
+ANCHOR_PAYLOAD_FIELDS = ("reference_anchor", "qiskit_anchor")
+
+# The one job that installs Qiskit. Its certified lanes come from
+# `dependency-policy.toml`, and an anchor is only comparable with a release that
+# table lists.
+QISKIT_LANE_JOB = "qiskit-optional"
+
+
+def _anchor_files() -> list[Path]:
+    """Compiler benchmark contracts that read a recorded Qiskit anchor."""
+    directory = ROOT / "tests" / "benchmark_contract"
+    return sorted(
+        path
+        for path in directory.glob("test_*.py")
+        if any(
+            field in path.read_text(encoding="utf-8") for field in ANCHOR_PAYLOAD_FIELDS
+        )
+    )
+
+
+def _job_run_commands(name: str) -> list[str]:
+    """Every `run:` shell block of one job in `ci.yml`."""
+    workflow = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    )
+    job = workflow["jobs"][name]
+    return [
+        step["run"] for step in job["steps"] if isinstance(step, dict) and "run" in step
+    ]
+
+
+def test_every_recorded_qiskit_anchor_is_read_where_qiskit_is_installed() -> None:
+    """An anchor compared only where Qiskit is absent is an anchor nobody reads.
+
+    The lane is asked for the same paths the tests live at, so a job that
+    installs Qiskit but collects other files does not satisfy this.
+    """
+    anchors = _anchor_files()
+    assert anchors, (
+        "no benchmark contract reads a recorded Qiskit anchor, so this check "
+        "would pass while watching nothing; if the anchors moved, move the field "
+        "names with them"
+    )
+
+    commands = _job_run_commands(QISKIT_LANE_JOB)
+    assert any(
+        "qiskit[qasm3-import]" in command for command in commands
+    ), f"{QISKIT_LANE_JOB} no longer installs Qiskit: " + repr(commands)
+
+    collected = {
+        token
+        for command in commands
+        for token in command.split()
+        if token.startswith("tests/")
+    }
+    unread = [
+        str(path.relative_to(ROOT))
+        for path in anchors
+        if not any(
+            fnmatch.fnmatch(str(path.relative_to(ROOT)), token) for token in collected
+        )
+    ]
+    assert not unread, (
+        f"{QISKIT_LANE_JOB} installs Qiskit and does not collect these files, so "
+        "every comparison they make skips on every pull request and is reported "
+        "as a pass: " + ", ".join(unread)
+    )
+
+    # A predicate that matched every path would satisfy the rule above while
+    # collecting nothing, so it is asked about a real sibling the lane does not
+    # name. A probe that no lane has ever named would be a weaker question.
+    probe = "tests/benchmark_contract/test_socket_local_throughput.py"
+    assert not any(
+        fnmatch.fnmatch(probe, token) for token in collected
+    ), f"the collection predicate matches every path: {probe} was matched by " + repr(
+        sorted(collected)
+    )

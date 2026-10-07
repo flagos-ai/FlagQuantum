@@ -94,7 +94,13 @@ class OutputRequest:
     name: str | None = None
 
     def __post_init__(self) -> None:
-        if self.kind not in {"counts", "expectation", "probabilities", "samples"}:
+        if self.kind not in {
+            "counts",
+            "density_matrix",
+            "expectation",
+            "probabilities",
+            "samples",
+        }:
             raise ValueError(f"unsupported output kind {self.kind!r}")
         object.__setattr__(
             self, "qubits", _qubits(self.qubits, owner=f"{self.kind} output")
@@ -105,7 +111,9 @@ class OutputRequest:
             raise ValueError("output name must be a non-empty string")
         if self.kind == "expectation" and not isinstance(self.observable, Observable):
             raise TypeError("expectation output requires an Observable")
-        if self.kind in {"probabilities"} and self.observable is not None:
+        if self.kind in {"density_matrix", "probabilities"} and (
+            self.observable is not None
+        ):
             raise TypeError(f"{self.kind} output does not accept an observable")
         if self.kind in {"samples", "counts"} and self.observable is not None:
             _sampled_pauli_term(self.observable)
@@ -293,6 +301,38 @@ def probabilities(
     )
 
 
+def density_matrix(
+    qubits: Iterable[int] | int | None | Omitted = OMITTED,
+    *,
+    name: str | None = None,
+) -> OutputRequest:
+    """Request the density matrix of selected qubits, tracing the rest out.
+
+    Args:
+        qubits: The qubits to keep, in the basis order the result should use.
+            Omitting them keeps every qubit.
+        name: An optional label for selecting this output from the result.
+
+    The result is whatever the execution state is, mixed or pure: a noisy run
+    returns the state its noise left behind, and readout confusion is refused
+    rather than folded in, because readout acts on outcomes after the state.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> circuit = fq.Circuit(2).h(0).cx(0, 1)
+        >>> density = fq.run(circuit, outputs=fq.density_matrix(qubits=0))
+        >>> density.density_matrix.shape
+        torch.Size([1, 2, 2])
+    """
+
+    selected = _selection_alias(qubits, OMITTED)
+    if isinstance(selected, Observable):
+        raise TypeError("density_matrix requires qubit indices, not an Observable")
+    return OutputRequest(
+        "density_matrix", _optional_qubits(selected, kind="density_matrix"), name=name
+    )
+
+
 def samples(
     qubits: Iterable[int] | int | Observable | None | Omitted = OMITTED,
     *,
@@ -440,6 +480,7 @@ __all__ = (
     "Y",
     "Z",
     "counts",
+    "density_matrix",
     "expectation",
     "probabilities",
     "samples",

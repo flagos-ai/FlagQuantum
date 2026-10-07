@@ -25,15 +25,15 @@ _EVIDENCED_BATCHES = frozenset((1, 4))
 
 @lru_cache(maxsize=None)
 def _diagonal_layout(
-    n_wires: int, wires: tuple[int, ...]
+    n_qubits: int, qubits: tuple[int, ...]
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Return the statevector permutation used by the reference route."""
 
-    rest_wires = tuple(wire for wire in range(n_wires) if wire not in wires)
+    rest_qubits = tuple(qubit for qubit in range(n_qubits) if qubit not in qubits)
     permutation = (
         (0,)
-        + tuple(wire + 1 for wire in wires)
-        + tuple(wire + 1 for wire in rest_wires)
+        + tuple(qubit + 1 for qubit in qubits)
+        + tuple(qubit + 1 for qubit in rest_qubits)
     )
     inverse = [0] * len(permutation)
     for index, axis in enumerate(permutation):
@@ -44,15 +44,15 @@ def _diagonal_layout(
 def _apply_diagonal_matrix_reference(
     state: torch.Tensor,
     matrix: torch.Tensor,
-    wires: Sequence[int],
-    n_wires: int,
+    qubits: Sequence[int],
+    n_qubits: int,
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
     """Apply a diagonal matrix through the established PyTorch reference path."""
 
-    wires = tuple(wires)
+    qubits = tuple(qubits)
     batch = state.shape[0]
-    dimension = 2 ** len(wires)
+    dimension = 2 ** len(qubits)
     if state.device.type == "cpu" and state.is_contiguous():
         matrix = matrix.to(device=state.device, dtype=state.dtype)
         diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
@@ -64,27 +64,27 @@ def _apply_diagonal_matrix_reference(
             raise ValueError(
                 "diagonal matrix must have shape [dim, dim] or [batch, dim, dim]"
             )
-        ordered_wires = tuple(sorted(wires))
-        wire_order = tuple(wires.index(wire) for wire in ordered_wires)
-        factors = diagonal.reshape((batch,) + (2,) * len(wires)).permute(
-            (0,) + tuple(index + 1 for index in wire_order)
+        ordered_qubits = tuple(sorted(qubits))
+        qubit_order = tuple(qubits.index(qubit) for qubit in ordered_qubits)
+        factors = diagonal.reshape((batch,) + (2,) * len(qubits)).permute(
+            (0,) + tuple(index + 1 for index in qubit_order)
         )
-        factor_shape = [batch] + [1] * n_wires
-        for wire in ordered_wires:
-            factor_shape[wire + 1] = 2
-        tensor = state.reshape((batch,) + (2,) * n_wires)
+        factor_shape = [batch] + [1] * n_qubits
+        for qubit in ordered_qubits:
+            factor_shape[qubit + 1] = 2
+        tensor = state.reshape((batch,) + (2,) * n_qubits)
         return (tensor * factors.reshape(factor_shape)).reshape(state.shape)
     if layout is None:
-        layout = _diagonal_layout(n_wires, wires)
+        layout = _diagonal_layout(n_qubits, qubits)
     permutation, inverse_permutation = layout
-    tensor = state.reshape((batch,) + (2,) * n_wires).permute(permutation)
+    tensor = state.reshape((batch,) + (2,) * n_qubits).permute(permutation)
     flat = tensor.reshape(batch, dimension, -1)
     diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
     if diagonal.ndim == 1:
         diagonal = diagonal.expand(batch, -1)
     output = complex_mul(flat, diagonal.unsqueeze(-1))
     return (
-        output.reshape((batch,) + (2,) * n_wires)
+        output.reshape((batch,) + (2,) * n_qubits)
         .permute(inverse_permutation)
         .reshape(batch, -1)
     )
@@ -242,7 +242,11 @@ def _apply_diagonal_matrix(
     n_wires: int,
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
-    """Apply a diagonal matrix through catalog dispatch or the reference path."""
+    """Apply a diagonal matrix through catalog dispatch or the reference path.
+
+    The signature keeps the vocabulary it was extracted with, because callers
+    pass these names as keywords; the private helpers above use qubit names.
+    """
 
     wires = tuple(wires)
     dispatched = _try_apply_cataloged_diagonal_matrix(

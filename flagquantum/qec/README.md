@@ -341,6 +341,43 @@ of a matrix-built record is the matrix, so `get_code` still reaches the three
 declared records -- and it is CSS-shaped, so an arbitrary non-CSS stabilizer list
 still has no route in.
 
+## Read the text stim writes
+
+`DetectorErrorModel.from_stim_text(text)` reads the stim detector error model text
+without importing stim, and `DetectorErrorModel.to_stim_text()` writes it. The text
+stim prints for a memory experiment at five rounds or more states its repeated
+middles as a `repeat` block, and the reader interprets the block rather than
+refusing it:
+
+```python
+from flagquantum.qec import DetectorErrorModel
+
+model = DetectorErrorModel.from_stim_text(
+    "detector D0\n"
+    "detector D1\n"
+    "detector D2\n"
+    "detector D3\n"
+    "detector D4\n"
+    "repeat 3 {\n"
+    "    error(0.1) D0\n"
+    "    shift_detectors 2\n"
+    "}\n"
+)
+print([e.detectors for e in model.errors])  # [(0,), (2,), (4,)]
+```
+
+The block's `shift_detectors` advances once per iteration, which is what places the
+three copies at successive detectors, and `repeat 0` is legal and contributes
+nothing. Reading a block is an **expansion**, so a block costs what its count
+states — stim keeps the block and expands it on demand, and this reader does not.
+Whatever the block, this reader states no model it cannot hold: a declaration that
+skips an index, an error mechanism that flips nothing, a malformed line, a stray
+closing brace and a block that never closes are each refused with the reason
+named. One narrowing is deliberate. The detector count comes from the `detector`
+declarations, so a text that states it only through its error targets —
+`error(0.1) D0`, which is what stim prints for a flat one-detector circuit — is
+read as a model with no detector and refused, where stim would infer the count.
+
 ## Give one location its own rate
 
 `PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per
@@ -641,19 +678,81 @@ whichever of the two a caller came from. A decoder fed a sampled syndrome has to
 matching detectors against the measurements that actually compose them, and that is
 now something a test can recompute from handles rather than only assume.
 
+## Cut a model into rounds
+
+A long experiment's model is one object, but a decoder that reads it a few rounds
+at a time needs those rounds to be nameable. `ChunkLayout` states how a model's
+detectors divide into layers, `DemChunksSpec` asks for windows over them, and the
+windows close back into the model they were cut from:
+
+```python
+from flagquantum.qec import (
+    ChunkLayout,
+    DemChunksSpec,
+    DetectorErrorModel,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    build_memory_circuit,
+    dem_chunks_from_spec,
+    dem_close_all,
+)
+
+noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
+memory = build_memory_circuit(RepetitionCode(distance=3), rounds=3)
+model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
+layout = ChunkLayout.from_memory_circuit(model, memory)
+chunks = dem_chunks_from_spec(DemChunksSpec(layout=layout, window=2))
+
+for chunk in chunks:
+    print(chunk.first_layer, chunk.last_layer, len(chunk.model.errors))
+print(dem_close_all(chunks) == model)
+```
+
+A *layer* is the set of detectors with one round index, so `layout.widths` is the
+round size in detector order and sums to the model's detector count. A *window*
+spans a run of layers and shares exactly one layer with each neighbour: the
+window's own bands are its leading boundary layer, its interior, and its trailing
+boundary layer, and the stride is the window width minus one, which is what makes
+the windows tile rather than overlap. `SeamId.prev_round` and `SeamId.next_round`
+name the two boundaries a window carries, and a window carries only the ones it
+has a neighbour for — the first window has no `prev_round`, the last no
+`next_round`.
+
+Ownership is what makes the windows a partition rather than a cover. A mechanism
+spans two adjacent layers, so the first window holding it whole owns it, every
+mechanism is owned once, and `dem_close_all(chunks) == model` is the invariant a
+test asserts rather than assumes. Three things are refused instead of
+approximated: a window of one layer, a window wider than the layout, and a layer
+count that does not tile at the stride. A mechanism that no window holds whole is
+refused rather than split — splitting it would state two weaker faults where the
+model stated one — and a mechanism flipping no detector is refused because an
+observable-only fault has no round to be placed in.
+
+`dem_stitch` contracts the shared layer of two adjacent windows and lays it out
+once, between their interiors, so a stitched pair spans one layer fewer than the
+sum of its parts; `dem_stitch_all` folds that over a sequence and
+`dem_stitch_merged` follows the stitch with `merge_duplicate_mechanisms` under a
+stated rule. `dem_close` puts one window back at its own place in the model's own
+numbering without renumbering from zero, so a window's detectors are the model's
+detectors. A seam's rows carry the global detector index rather than a position
+within the seam, which is why a stitch refuses two boundary bands that merely
+have the same width.
+
 ## Change and verify
 
 Use [repetition.py](repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
 and [matching.py](matching.py) for the detector-error-model matcher,
 [belief_propagation.py](belief_propagation.py) for the decoder that reads the
-hyperedges the matcher refuses, [registry.py](registry.py) for reaching either by
-name, [adapters.py](adapters.py) for the PyMatching cross-check,
+hyperedges the matcher refuses, [chunks.py](chunks.py) for the round-window
+decomposition, [registry.py](registry.py) for reaching either by name,
+[adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
 code records, [css_code.py](css_code.py) for a code record built from
-parity-check matrices, [circuit.py](circuit.py) for detector and observable
-layouts, and [types.py](types.py) for records. Run from the repository root:
+parity-check matrices, [dem_text.py](dem_text.py) for the stim text reader,
+[circuit.py](circuit.py) for detector and observable layouts, and
+[types.py](types.py) for records. Run from the repository root:
 
 ```bash
 python -m pytest tests/qec -q

@@ -891,6 +891,7 @@ def _qiskit_anchor() -> dict[str, Any]:
     """
 
     try:
+        import qiskit  # type: ignore[import-not-found]
         from qiskit import QuantumCircuit, transpile  # type: ignore[import-not-found]
         from qiskit.circuit.library import (  # type: ignore[import-not-found]
             HGate,
@@ -1010,6 +1011,11 @@ def _qiskit_anchor() -> dict[str, Any]:
     return {
         "available": True,
         "pass": "Optimize1qGates(basis=['u3','u1'])",
+        # The library reading, not the pinned `reference_revision` above: the mean
+        # gate counts below move between installed Qiskit versions, so a reading
+        # that does not name its lane cannot be told apart from one taken on a
+        # lane that no longer exists.
+        "qiskit_version": qiskit.__version__,
         "pre_translation": "transpile(basis_gates=['u3','u1'], optimization_level=0)",
         "agrees_up_to_global_phase": True,
         "worst_overlap_gap": worst_overlap_gap,

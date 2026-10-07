@@ -29,6 +29,7 @@ from .routing_evidence import (
     DEPLOYMENT_PACKAGE_SCHEMA,
     build_deployment_routing_evidence,
     deployment_artifact_sha256,
+    same_undirected_device,
     stable_payload_sha256,
 )
 
@@ -359,8 +360,10 @@ def create_deployment_package(
         or (
             isinstance(existing_routing, Mapping)
             and backend.coupling_map is not None
-            and tuple(existing_routing.get("coupling_edges", ()))
-            == backend.coupling_map.edges
+            and same_undirected_device(
+                existing_routing.get("coupling_edges", ()),
+                backend.coupling_map.edges,
+            )
             and existing_routing.get("mapping_restored") is True
         )
     )

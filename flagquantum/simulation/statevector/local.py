@@ -701,6 +701,7 @@ def _execute_statevector_program(
     reuse_clifford_output = clifford_matching_output_reuse_enabled(program)
     owns_output = owns_input
     clifford_scratch: torch.Tensor | None = None
+    cx_rzz_swap_scratch: torch.Tensor | None = None
     for step in program:
         if isinstance(step, _StatevectorCliffordMatchingStep):
             native_output, clifford_scratch = apply_native_clifford_matching(
@@ -832,7 +833,15 @@ def _execute_statevector_program(
             output = _apply_cx_sequence(circuit, step, output)
             continue
         if isinstance(step, _StatevectorCXSequenceRZZSwapStep):
-            output = _apply_cx_rzz_swap_sequence(step, output, circuit.n_qubits)
+            previous = output
+            output = _apply_cx_rzz_swap_sequence(
+                step,
+                output,
+                circuit.n_qubits,
+                scratch=cx_rzz_swap_scratch,
+            )
+            if owns_output and output.data_ptr() != previous.data_ptr():
+                cx_rzz_swap_scratch = previous
             owns_output = True
             continue
         if isinstance(step, _StatevectorSwapSequenceStep):
@@ -859,6 +868,19 @@ def _execute_statevector_program(
             continue
         instruction = step.instruction
         name = canonical_opcode(instruction.name)
+        if name in {"ccx", "cswap"}:
+            from .reversible_3q_dispatch import _try_apply_cataloged_reversible_3q
+
+            first_qubit, second_qubit, third_qubit = instruction.wires
+            dispatched = _try_apply_cataloged_reversible_3q(
+                output,
+                qubits=(first_qubit, second_qubit, third_qubit),
+                n_qubits=circuit.n_qubits,
+                opcode=name,
+            )
+            if dispatched is not None:
+                output = dispatched
+                continue
         if name in {"x", "cx", "swap"}:
             output = _apply_fixed_permutation(
                 output, name, instruction.wires, circuit.n_qubits
@@ -984,9 +1006,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = 0
             circuit._state_cache = output
             return output
-        batch_size, initial_window_size, uses_bounded_zero_state, output = (
-            _statevector_batch_input(circuit)
-        )
+        (
+            batch_size,
+            initial_window_size,
+            uses_bounded_zero_state,
+            owns_zero_state,
+            output,
+        ) = _statevector_batch_input(circuit)
         enable_triton_loop = (
             _triton_single_qubit_loop_enabled()
             and output.is_cuda
@@ -1147,6 +1173,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 program,
                 output,
                 parameter_bindings,
+                owns_input=owns_zero_state,
             )
         else:
             preallocate = _preallocated_batch_assembly_beneficial(program)
@@ -1157,6 +1184,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 batch_size=batch_size,
                 chunk_size=batch_chunk_size,
                 bounded_zero_state=uses_bounded_zero_state,
+                owns_zero_state=owns_zero_state,
                 preallocate=preallocate,
                 execute=lambda window, owns_input: _execute_statevector_program(
                     circuit,
