@@ -61,8 +61,8 @@ version and are never reused for a different semantic.
 
 ## Current inventory
 
-The catalog describes the code that already exists. It contains 30 semantics,
-32 Triton implementation entry points, and five FlagTree TLE implementation
+The catalog describes the code that already exists. It contains 31 semantics,
+33 Triton implementation entry points, and five FlagTree TLE implementation
 entry points; no planned kernel appears as an empty machine record.
 
 | Catalog ID | Semantic ID | Implementation symbols |
@@ -78,6 +78,7 @@ entry points; no planned kernel appears as an empty machine record.
 | FQK-SV-009 | `statevector.apply.matrix_2q.local` | `apply_complex64_local_2q` |
 | FQK-SV-010 | `statevector.apply.diagonal.local` | `apply_complex64_local_diagonal` |
 | FQK-SV-013 | `statevector.apply.reversible_permutation_3q.local` | `apply_complex64_local_reversible_3q` |
+| FQK-SV-014 | `statevector.apply.swap_sequence.local` | `apply_complex64_local_swap_sequence` |
 | FQK-GR-001 | `gradient.vjp.adjoint_1q.local` | `fused_complex64_local_1q_vjp_adjoint` |
 | FQK-GR-002 | `gradient.vjp.reversible_1q.local` | `fused_complex64_local_1q_reversible_vjp` |
 | FQK-GR-003 | `gradient.vjp.adjoint_1q.sharded` | `fused_complex64_sharded_1q_vjp_adjoint`, `fused_complex64_sharded_1q_vjp_adjoint_tle` (FlagTree TLE) |
@@ -468,6 +469,46 @@ Reproduce the public route with
 This semantic serves reversible arithmetic, Grover and amplitude-amplification
 oracles, multi-controlled logic, Shor-style arithmetic blocks, and circuit
 interoperability involving Toffoli or Fredkin gates.
+
+`FQKI-TRITON-SV-014-A` fuses four through eight ordered local SWAP gates into
+one statevector traversal. It computes the inverse composite bit permutation
+for every output amplitude and therefore avoids the full-state materialization
+performed after every individual PyTorch transpose. The wrapper accepts a
+contiguous CUDA `complex64` statevector and a bounded ordered SWAP sequence.
+It is forward-only, requires a distinct output buffer, and rejects shorter
+sequences because the measured launch overhead does not beat the product path.
+
+The checked-in
+[`statevector_swap_sequence_a800.json`](../../benchmarks/results/local/statevector_swap_sequence_a800.json)
+artifact records 30 counterbalanced, synchronized groups of 10 invocations for
+five fixed cases on `jp-a800-171` and `jp-a800-172` under stock Triton 3.7.1
+and FlagTree 0.7.0. It covers four, five, six, and eight ordered SWAPs,
+state sizes from `2**16` through `2**24`, and batches one and four. All 20
+host/compiler/shape cases are bitwise identical to repeated PyTorch SWAP
+materialization and reach `1.293x` to `2.514x` its speed. The aggregate
+decision is `eligible_for_dispatch_evaluation`.
+
+The public statevector compiler now forms a fused step only for four through
+eight adjacent SWAPs. Default dispatch additionally requires an evidenced
+`[1, 2**16]`, `[1, 2**20]`, `[1, 2**24]`, or `[4, 2**20]` contiguous CUDA
+`complex64` state with no gradient-bearing input. Shorter and longer sequences
+retain the existing gate-by-gate route, and `FQ_TRITON_SWAP_SEQUENCE=0`
+disables both the compiler fusion and kernel selection. The checked-in
+[`statevector_swap_sequence_dispatch_a800.json`](../../benchmarks/results/local/statevector_swap_sequence_dispatch_a800.json)
+artifact applies the same 30-by-10 counterbalanced protocol to the five public
+dispatch cases on both hosts and compiler lanes. All 20 comparisons are
+bitwise exact and win by `1.234x` through `2.438x`; its aggregate decision is
+`default_dispatch_enabled`.
+
+This is bounded single-device development evidence, not a release or
+distributed scalability claim. Reproduce or validate the direct wrapper with
+[`benchmarks/internal/evidence/statevector_swap_probe.py`](../../benchmarks/internal/evidence/statevector_swap_probe.py).
+Reproduce the public route with
+[`benchmarks/statevector_swap_sequence_dispatch.py`](../../benchmarks/statevector_swap_sequence_dispatch.py).
+
+This semantic serves QFT bit reversal, routing and layout permutations,
+compiled-circuit canonicalization, and repeated SWAP networks emitted by
+hardware-aware circuit transforms.
 
 `FQKI-TRITON-GR-001-A` fuses a scalar gate-parameter VJP with the local
 one-qubit adjoint update. The default reverse-mode runtime supplies a
@@ -1180,15 +1221,16 @@ Implementation maturity is independent:
 - **stable**: compatibility, fallback, accuracy, and performance regression
   policies are maintained.
 
-The current 30 semantics and 37 implementations are implemented. The 28 direct
-Triton `-A` implementations from SV-001 through SV-010, SV-013, GR-001 through GR-006,
-MPS-001 through MPS-008, and MEAS-001 through MEAS-003 are provisional after
-evidenced support-window validation. MPS-001 remains opt-in for the end-to-end
-reason above, SV-010 awaits a separate dispatch review, and the other listed
-routes have evidenced default-dispatch promotions. The two generic-autograd
-Triton `-B` implementations, the two NUM implementations, and the five explicit
-FlagTree implementations remain experimental, for nine experimental
-implementations in total.
+The current 31 semantics and 38 implementations are implemented. The 29 direct
+Triton `-A` implementations from SV-001 through SV-010, SV-013, SV-014,
+GR-001 through GR-006, MPS-001 through MPS-008, and MEAS-001 through MEAS-003
+are provisional after evidenced support-window validation. Provisional maturity
+does not itself imply public default dispatch: MPS-001 remains opt-in for the
+end-to-end reason above, SV-010 awaits a separate dispatch review, and the other
+listed routes have evidenced default-dispatch promotions. The two
+generic-autograd Triton `-B` implementations, the two NUM implementations, and
+the five explicit FlagTree implementations remain experimental, for nine
+experimental implementations in total.
 The rest of the 100/800 portfolio is planned or candidate work, not shipped
 capability.
 
