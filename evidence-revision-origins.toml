@@ -29,7 +29,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # the walk now asks about seven records rather than four and about the same five
 # revisions; the paragraph on citations at the end of this comment explains why.
 #
-# The table below declares seventy-two distinct revisions -- fifty
+# The table below declares eighty-five distinct revisions -- sixty-three
 # `unreferenced_object`, eighteen `producing_host_history` and four
 # `external_dependency` -- and they are exactly the revisions no ref of this repository
 # reaches, so this half of the question is countable from the file itself.
@@ -44,17 +44,17 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # no branch, which are the rows declared below. A reader who checks the first of those
 # four numbers is reading the remote's branch list rather than this table.
 #
-# `unreferenced_object` (fifty revisions) means no branch and no tag reaches
+# `unreferenced_object` (sixty-three revisions) means no branch and no tag reaches
 # the commit, so a clone or a plain fetch does not obtain it. This is the state a check
 # for whether the object exists cannot see: the producing checkout still held the
 # commit after the branch that introduced it was deleted or force-updated, so the
 # pin resolved there while being unobtainable for every reader. The public remote still
-# serves all fifty by name, each confirmed by the counted measurement the method
+# serves all sixty-three by name, each confirmed by the counted measurement the method
 # paragraph below states, but retaining an unreferenced object is server
-# policy rather than a promise, and one of the fifty is the head a pull request
+# policy rather than a promise, and one of the sixty-three is the head a pull request
 # was opened from: `4d976abe5c415414846c857616ffce6cbadeeefc` headed #201, which merged as
 # `4e52d18d`, and the head commit survives only as an object the remote retains. No ref
-# of this repository reaches any of the fifty, so a complete clone obtains none of
+# of this repository reaches any of the sixty-three, so a complete clone obtains none of
 # them. How many of them a particular working copy happens to resolve is a reading of
 # that working copy rather than a property of the repository -- a fetch of a since-deleted
 # branch brings objects in and a `gc` takes them out again -- so the number is not written
@@ -63,7 +63,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # exactly the quantity that moves, and would call a revision obtainable in the one
 # working copy most likely to still hold it.
 #
-# Fourteen of the fifty entered this table from a direction the first pass could
+# Fourteen of the sixty-three entered this table from a direction the first pass could
 # not see, and they are the reason the check now reads a field by its name. The walk
 # read a revision only when an artifact wrote all forty characters of it, and these
 # fourteen were recorded in a field named for a revision but in fewer characters than
@@ -84,11 +84,39 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # revision is available to declare and the artifact states `producing_host_history`
 # beside the value instead.
 #
-# One more of the fifty entered from the citation direction. It is
+# One more of the sixty-three entered from the citation direction. It is
 # `5cfcd765a72bb8007b5c6f07e9adc4337fc63b10`, and it entered only after
 # the citation that named it was written out in full: the Quafu artifact recorded it
 # as `5cfcd765`, which is too short for the gate to read as a revision, so an
 # unobtainable pin sat inside a walked artifact unasked.
+#
+# Sixteen more entered from the direction this table's subject states most plainly, and
+# they are the rows that left the quality job red on `main` at `9f19d6ceb`. A dispatch
+# benchmark under `benchmarks/results/local` records the revision its runs measured in
+# `runs[*].source_revision`, and the pull request that produced the artifact was
+# squash-merged, so the measured branch commit is reached by no ref while the commit
+# carrying the artifact is on `main`: the same shape as the revision #504 records, at
+# the scale the SV-0xx, GR-0xx and MEAS-002 dispatch rounds produced. The sixteen are
+# `statevector_local_cx_dispatch_a800.json`, `statevector_local_cx_segment_dispatch_a800.json`,
+# `statevector_ry_rz_pair_dispatch_a800.json`, `statevector_rx_rz_sequence_dispatch_a800.json`,
+# `statevector_control_subspace_pack_dispatch_a800.json`,
+# `statevector_control_subspace_unpack_dispatch_a800.json`,
+# `statevector_local_2q_dispatch_a800.json`, `statevector_local_diagonal_a800.json`,
+# `statevector_probability_dispatch_a800.json`,
+# `statevector_marginal_probability_dispatch_a800.json`,
+# `statevector_marginal_probability_kernel_a800.json`,
+# `statevector_pauli_expectation_dispatch_a800.json`,
+# `statevector_local_adjoint_vjp_dispatch_a800.json`,
+# `statevector_reversible_vjp_dispatch_a800.json`,
+# `statevector_sharded_adjoint_vjp_dispatch_a800.json` and
+# `mps_sampling_collapse_dispatch_a800.json`. Each was asked both questions before
+# being declared here. No head and no tag this repository publishes reaches it, which
+# is what `git for-each-ref --contains` answers for every ref and what the gate asks
+# again in every run; and the remote serves the object by name on both commit API
+# paths, which places it in this repository's database rather than in a history outside
+# it. Both answers together are `unreferenced_object` for the same reason as the rest
+# of the class. Their declaration changes what this table accounts for, not which
+# commits a reader can obtain.
 #
 # The fortieth, `aaa3a70c698dc629c37baa2719607444aa3b6381`, entered from a third
 # direction, and it is the reason the walk now reads a revision written in prose. The
@@ -245,7 +273,10 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # `51adb0a04f52745c0e019fa9f9ec402d7f9f6033` joined, for forty-eight requests each,
 # and `69b28e06c9c74657cdce9faee59b4cec5e9477db` plus
 # `aabf25db1955b5de22cd2255f8afcd9895859ad9` were each read on both paths when they
-# joined. Every request answered with the object, which is the count stated above.
+# joined. Sixteen more joined when the local dispatch pins above were declared, and the
+# whole set as it stands was read again on both paths at `9f19d6ceb`: sixty-three
+# revisions, one hundred and twenty-six requests, every one answered with the object,
+# which is the count stated above.
 # Three controls bound what a `200`
 # means: the same request answered with the object for a commit on `main`, with `404`
 # for a commit of `pytorch/pytorch`, and with `404` for a commit that exists only in the
@@ -291,7 +322,7 @@ schema = "flagquantum.evidence_revision_origins.v1"
 # files under it that record one of the revisions declared for it. That number is a
 # reading of this tree and is not pinned here: walking the evidence roots and asking
 # which file under that directory records one of the revisions declared for it answers
-# forty today, and it changes whenever an artifact recording one of those revisions is
+# fifty-nine today, and it changes whenever an artifact recording one of those revisions is
 # added. The number of declarations is left out of that sentence on purpose: it counts
 # declarations rather than readings, so it moves whenever one is added, and a declaration
 # edit has no other reason to touch prose two hundred lines above it. Declaring an origin
@@ -681,7 +712,15 @@ value = "155c8c4ad686287d29caaecce275ad0f55373c6b"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
+value = "1593550ac8b261838449dcf422e16324dcadcb5e"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "184c9686e49e472a97988d931b6a7469710165ba"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "20e48742258c354459a23df5d46eacee5e75fc7b"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
@@ -693,7 +732,15 @@ value = "26eb2a138ad1a1f5e63bf7fd61abba74dceda4f2"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
+value = "34dc62071606fb70f91dac38b4ccc238572d7b8a"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "3ca8d23ef910520ac533d470042a0ea5c9afa41f"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "3cf1437d8bcc7fc049aafa003db5e5e9d9bd90f7"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
@@ -705,11 +752,31 @@ value = "57f40ee6bfd1318ac98ab2d801216c958c168efe"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
+value = "5a0c26a8f337ceefdb84597b067479adc7e4a509"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "69b28e06c9c74657cdce9faee59b4cec5e9477db"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
+value = "842cde7cf91d32f29ab7ab3237d1cee7bdf2df8c"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
 value = "8f77d0c044076dc5e25eb5128d64699ebfd69d92"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
+origin = "producing_host_history"
+
+[[artifact.revision]]
+value = "9fb7fb6f5405c0c18481ebf36dcb780c2843aeb3"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "a408866df3e2a795d3a893cc85afab98bb41d42b"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
@@ -721,8 +788,36 @@ value = "be1f315390fcbb017384bb0cc271f927c96f6f83"
 origin = "unreferenced_object"
 
 [[artifact.revision]]
-value = "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708"
-origin = "producing_host_history"
+value = "c7567c3b52fe0206b64d872f6035bdfa065eca4a"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "c7b30f379ef57576474ab55ead39b96abadce62b"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "ca33f94d90cc67cb3e3a7193301428fceeccd2e0"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "d10aa97d8086c9511ffc65540d6a9c4d2481bc32"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "d8ee6259428c92c65ca0a4efe3bba462c3b2d760"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "e0638c00870740d9808c64107c3e701252e6e6ce"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "e3a636d1915c93877bb9866cfe48c446d832d826"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "eba4394b53fc9ddf2c0b087127932ae05b43216f"
+origin = "unreferenced_object"
 
 [[artifact.revision]]
 value = "f8e4df19a474b370d5825fbc49442e2a29d150a6"
