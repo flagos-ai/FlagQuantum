@@ -1247,3 +1247,374 @@ def test_matrix_in_basis_refuses_a_basis_spanning_two_devices() -> None:
     assert "must share one device" in message
     assert "cpu" in message
     assert "meta" in message
+
+
+def _choi_action_oracle(mapped: SuperOperator, dimension: int) -> torch.Tensor:
+    """Build ``sum_ab E_ab (x) E(E_ab)`` from the map's own ``apply``.
+
+    This is the Choi matrix by its definition rather than by a reshape, so it
+    cannot inherit an index-order error from the implementation. ``apply`` is
+    called with the whole stack of matrix units at once, which is the same call
+    the network makes and therefore a different path through the factor algebra
+    than ``dense`` is.
+    """
+
+    units = torch.stack(_unit_matrices(dimension))
+    images = mapped.apply(units)
+    return torch.stack(
+        [
+            torch.kron(units[index], images[index])
+            for index in range(dimension * dimension)
+        ]
+    ).sum(0)
+
+
+def _transpose_map(
+    dimension: int, scale: float = 1.0, dtype: torch.dtype = _COMPLEX128
+) -> SuperOperator:
+    """Return ``rho -> scale * rho^T``, the standard positive-but-not-CP map."""
+
+    total = SuperOperator()
+    for row in range(dimension):
+        for column in range(dimension):
+            matrix = torch.zeros(dimension, dimension, dtype=dtype)
+            matrix[row, column] = 1.0 + 0.0j
+            total += SuperOperator.left_right_multiply(matrix, matrix) * scale
+    return total
+
+
+def _amplitude_damping(dimension: int, gamma: float = 0.4) -> SuperOperator:
+    """The ``d``-level amplitude damping channel, trace preserving by construction.
+
+    The lowering part acts on every level above the ground state, so ``K_1^dag K_1``
+    is ``gamma`` times the projector onto those levels and the two Kraus operators
+    together sum to the identity. A single ``|0><1|`` term would leave every higher
+    level untouched, and the map would then not be trace preserving at all -- which
+    is a property this file asserts, so the fixture has to have it.
+    """
+
+    diagonal = torch.diag(
+        torch.tensor(
+            [1.0] + [(1.0 - gamma) ** 0.5] * (dimension - 1), dtype=torch.complex128
+        )
+    )
+    lowering = torch.zeros(dimension, dimension, dtype=torch.complex128)
+    for level in range(1, dimension):
+        lowering[level - 1, level] = 1.0
+    return SuperOperator.from_kraus((diagonal, gamma**0.5 * lowering))
+
+
+def _rotated_dephasing(
+    dimension: int, scale: float, dtype: torch.dtype
+) -> SuperOperator:
+    """A trace-preserving, rank-deficient channel whose Choi entries are inexact.
+
+    The plain dephasing channel's Choi matrix is diagonal, so scaling it produces
+    exactly representable entries and no rounding to measure. Conjugating it by a
+    unitary that is not a permutation keeps the rank deficiency while making every
+    entry a sum of products, which is what makes the rounding visible.
+    """
+
+    generator = torch.Generator().manual_seed(20261011)
+    real = torch.randn(dimension, dimension, dtype=torch.float64, generator=generator)
+    imaginary = torch.randn(
+        dimension, dimension, dtype=torch.float64, generator=generator
+    )
+    q, r = torch.linalg.qr((real + 1j * imaginary).to(dtype))
+    diagonal = torch.diagonal(r)
+    unitary = q * (diagonal / diagonal.abs()).conj()
+
+    operators = []
+    for index in range(dimension):
+        projector = torch.zeros(dimension, dimension, dtype=dtype)
+        projector[index, index] = 1.0
+        operators.append(scale * unitary @ projector @ unitary.conj().transpose(0, 1))
+    return SuperOperator.from_kraus(tuple(operators))
+
+
+def _smallest_choi_eigenvalue(mapped: SuperOperator) -> tuple[float, float]:
+    """Return the smallest Choi eigenvalue and the Choi matrix's spectral scale."""
+
+    choi = mapped.choi()
+    eigenvalues = torch.linalg.eigvalsh((choi + choi.conj().transpose(0, 1)) / 2)
+    return float(eigenvalues.min()), float(eigenvalues.abs().max())
+
+
+def test_choi_is_the_action_built_matrix_in_the_declared_index_order() -> None:
+    """The convention is pinned at a dimension where the candidates disagree.
+
+    Every index order that keeps the four indices in pairs gives a Hermitian
+    matrix with the map's trace along the diagonal, so a trace check cannot tell
+    them apart and neither can one wire: at ``d = 2`` two of the three wrong orders
+    coincide with the right one. Three wires is the smallest dimension where all
+    three wrong orders are separated, so that is where the assertion is made.
+    """
+
+    probability = 0.3
+    for dimension in (2, 3, 4):
+        identity = torch.eye(dimension, dtype=_COMPLEX128)
+        shift = torch.roll(identity, shifts=1, dims=0)
+        mapped = SuperOperator.from_kraus(
+            (
+                (1.0 - probability) ** 0.5 * identity,
+                (probability / (dimension * dimension - 1)) ** 0.5 * shift,
+            )
+        )
+        oracle = _choi_action_oracle(mapped, dimension)
+        assert torch.allclose(mapped.choi(), oracle, atol=1e-14)
+
+        if dimension < 3:
+            continue
+        shape = (dimension, dimension, dimension, dimension)
+        for order in ((0, 2, 1, 3), (1, 0, 3, 2), (0, 2, 3, 1)):
+            reshuffled = (
+                mapped.dense()
+                .reshape(shape)
+                .permute(*order)
+                .reshape(dimension * dimension, dimension * dimension)
+            )
+            assert float((reshuffled - oracle).abs().max()) > 1e-3
+
+
+def test_choi_of_a_trace_preserving_map_has_trace_d() -> None:
+    """A property of the map, so it holds for a map that is not even positive."""
+
+    for dimension in (2, 3):
+        identity = torch.eye(dimension, dtype=_COMPLEX128)
+        channels = {
+            "identity": SuperOperator.from_kraus((identity,)),
+            "dephasing": SuperOperator.from_kraus(
+                tuple(
+                    torch.diag(
+                        torch.tensor(
+                            [
+                                1.0 if index == other else 0.0
+                                for other in range(dimension)
+                            ],
+                            dtype=_COMPLEX128,
+                        )
+                    )
+                    for index in range(dimension)
+                )
+            ),
+            "amplitude damping": _amplitude_damping(dimension),
+            "transpose": _transpose_map(dimension),
+        }
+        for name, mapped in channels.items():
+            choi = mapped.choi()
+            assert choi.shape == (dimension * dimension, dimension * dimension), name
+            # The empirical entry count is exact, not approximate: the trace is a
+            # sum of the diagonal, and every channel here has exactly representable
+            # diagonal entries.
+            assert choi.trace() == complex(dimension), name
+            assert torch.allclose(
+                choi.trace().reshape(1),
+                mapped.apply(identity).trace().reshape(1),
+                atol=1e-14,
+            ), name
+
+
+def test_choi_partial_traces_read_the_maps_normalization() -> None:
+    """``Tr_first`` is ``E(I)`` and ``Tr_second`` is the identity for a TP map.
+
+    Both are properties of the same matrix rather than of two matrices, so they
+    also say which of the two traces is which -- a swap would put the identity on
+    the wrong axis and be invisible on a unital map.
+    """
+
+    for dimension in (2, 3):
+        identity = torch.eye(dimension, dtype=_COMPLEX128)
+        unital = SuperOperator.from_kraus((identity,))
+        damping = _amplitude_damping(dimension)
+        for mapped in (unital, damping, _transpose_map(dimension)):
+            blocks = mapped.choi().reshape(
+                dimension, dimension, dimension, dimension
+            )  # [(a, i), (b, j)]
+            first = torch.einsum("aiaj->ij", blocks)
+            second = torch.einsum("aibi->ab", blocks)
+            assert torch.allclose(first, mapped.apply(identity), atol=1e-14)
+            # A trace-preserving map has the identity there, and both maps here
+            # are trace preserving, so this is not a coincidence of the unital one.
+            assert torch.allclose(second, identity, atol=1e-14)
+
+        # Amplitude damping is the counterexample that separates the two partial
+        # traces: its first one is ``diag(1 + gamma, 1 - gamma, ...)``, which is
+        # ``E(I)`` and is not the identity. If the two were swapped in the
+        # implementation, this is the assertion that would notice.
+        blocked = damping.choi().reshape(dimension, dimension, dimension, dimension)
+        # ``K_0 I K_0^dag`` is ``diag(1, 1 - gamma, ..., 1 - gamma)`` and
+        # ``K_1 I K_1^dag`` is ``gamma`` on the levels the lowering leaves behind,
+        # so the first partial trace is ``diag(1 + gamma, 1, ..., 1, 1 - gamma)``.
+        expected = torch.diag(
+            torch.tensor(
+                [1.0 + 0.4] + [1.0] * (dimension - 2) + [1.0 - 0.4],
+                dtype=_COMPLEX128,
+            )
+        )
+        first = torch.einsum("aiaj->ij", blocked)
+        assert torch.allclose(first, expected, atol=1e-15)
+        assert float((first - identity).abs().max()) == pytest.approx(0.4)
+
+
+def test_choi_is_refused_above_its_byte_ceiling() -> None:
+    """The ceiling is the dense form's, because the matrix is the dense form."""
+
+    four = SuperOperator.left_multiply(torch.eye(4, dtype=_COMPLEX128))
+    assert four.choi(max_bytes=4096).shape == (16, 16)
+    with pytest.raises(ValueError) as refused:
+        four.choi(max_bytes=4095)
+    message = str(refused.value)
+    assert "16 x 16" in message
+    assert "4096 bytes" in message
+
+
+def test_is_completely_positive_accepts_every_kraus_channel() -> None:
+    """Kraus lists denote completely positive maps by construction."""
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        for dimension in (2, 3):
+            identity = torch.eye(dimension, dtype=dtype)
+            shift = torch.roll(identity, shifts=1, dims=0)
+            phase = torch.diag(
+                torch.tensor(
+                    [(-1.0) ** index for index in range(dimension)], dtype=dtype
+                )
+            )
+            probability = 0.3
+            cases = {
+                "identity": SuperOperator.from_kraus((identity,)),
+                # Rank deficient: its Choi matrix has exact zeros, which is the
+                # case a tolerance has to exist for in the first place.
+                "dephasing": SuperOperator.from_kraus(
+                    tuple(
+                        torch.diag(
+                            torch.tensor(
+                                [
+                                    1.0 if index == other else 0.0
+                                    for other in range(dimension)
+                                ],
+                                dtype=dtype,
+                            )
+                        )
+                        for index in range(dimension)
+                    )
+                ),
+                "depolarizing": SuperOperator.from_kraus(
+                    (
+                        (1.0 - probability) ** 0.5 * identity,
+                        (probability / (dimension * dimension - 1)) ** 0.5 * shift,
+                        (probability / (dimension * dimension - 1)) ** 0.5 * phase,
+                    )
+                ),
+                # A single Kraus operator, hence not trace preserving when it is
+                # not an isometry, and still completely positive: the certificate
+                # is about positivity and not about normalization. A one-sided
+                # multiplication would be the wrong example here, because it does
+                # not preserve Hermiticity at all.
+                "single scaled operator": SuperOperator.from_kraus((0.5 * shift,)),
+            }
+            for name, mapped in cases.items():
+                assert mapped.is_completely_positive(), f"{name} in {dtype}"
+                assert _smallest_choi_eigenvalue(mapped)[0] > -1e-6, name
+
+
+def test_is_completely_positive_refuses_the_transpose_map() -> None:
+    """The positive-but-not-completely-positive map, refused on positivity alone.
+
+    The transpose map is trace preserving and its Choi matrix is Hermitian, so
+    neither the trace nor the Hermiticity check can be what refuses it -- and the
+    eigenvalue that does is exactly minus one, not a rounding residue.
+    """
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        for dimension in (2, 3):
+            mapped = _transpose_map(dimension, dtype=dtype)
+            identity = torch.eye(dimension, dtype=dtype)
+            # It really is the transpose, and it really is a legitimate map.
+            for index in range(dimension):
+                for other in range(dimension):
+                    unit = torch.zeros(dimension, dimension, dtype=dtype)
+                    unit[index, other] = 1.0
+                    assert torch.allclose(
+                        mapped.apply(unit), unit.transpose(0, 1), atol=1e-15
+                    )
+            assert torch.allclose(mapped.apply(identity), identity, atol=1e-15)
+            assert mapped.choi().trace() == complex(dimension)
+
+            smallest, scale = _smallest_choi_eigenvalue(mapped)
+            assert smallest == pytest.approx(-1.0, abs=1e-6)
+            assert scale == pytest.approx(1.0, abs=1e-6)
+            assert mapped.is_completely_positive() is False
+
+
+def test_is_completely_positive_refuses_a_map_that_does_not_preserve_hermiticity() -> (
+    None
+):
+    """``False`` would be a false statement about a map that is not a candidate."""
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        generator = SuperOperator.left_multiply(
+            1j * torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=dtype)
+        )
+        with pytest.raises(ValueError) as refused:
+            generator.is_completely_positive()
+        message = str(refused.value)
+        assert "does not preserve Hermiticity" in message
+        assert "Choi matrix is" in message
+        assert "has no positivity to report" in message
+
+        # And the same matrix that is refused really is not Hermitian, so the
+        # refusal is not a tolerance that is simply too tight.
+        choi = generator.choi()
+        assert float((choi - choi.conj().transpose(0, 1)).abs().max()) > 1e-3
+
+        # A Hermiticity-preserving map of the same shape is answered rather than
+        # refused, so the branch is about this map and not about the shape.
+        assert SuperOperator.from_kraus(
+            (torch.eye(2, dtype=dtype),)
+        ).is_completely_positive()
+
+
+def test_the_complete_positivity_tolerance_is_relative_to_the_choi_scale() -> None:
+    """The tolerance's scale factor is load bearing, measured where it decides.
+
+    A rank-deficient channel scaled by ``c`` has a smallest Choi eigenvalue of
+    exactly zero in exact arithmetic, so every deviation here is rounding and the
+    ratio of that deviation to the matrix's own spectral scale is a constant of the
+    channel. The absolute deviation, in epsilons, is not: it grows with ``c**2``,
+    and by the top of this sweep it is four orders past what an absolute threshold
+    of eight epsilons would permit. A tolerance stated in absolute epsilons would
+    refuse a map that is exactly on the positivity boundary.
+    """
+
+    dimension = 4
+    identity = torch.eye(dimension, dtype=_COMPLEX128)
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        epsilon = float(torch.finfo(dtype).eps)
+        ratios = []
+        absolute = []
+        for scale in (1.0, 4.0, 16.0, 256.0, 1024.0):
+            channel = _rotated_dephasing(dimension, scale, dtype)
+            smallest, spectral = _smallest_choi_eigenvalue(channel)
+            assert channel.is_completely_positive()
+            # The map is the same trace-preserving channel multiplied by
+            # ``scale**2``, which is exactly why the ratio below is constant: the
+            # deviation and the scale it is measured against are rounded from the
+            # same entries.
+            rescaled = channel.apply(identity.to(dtype))
+            deviation = float((rescaled - scale**2 * identity.to(dtype)).abs().max())
+            assert deviation < 1e-6 * scale**2
+            ratios.append(-smallest / (epsilon * spectral))
+            absolute.append(-smallest / epsilon)
+        # The relative deviation is a constant of the channel, so the certificate
+        # reads the same number at every scale in the sweep. Nothing but the Choi
+        # scale turns it into a constant; in absolute units the same sweep spans
+        # five orders of magnitude.
+        assert max(ratios) - min(ratios) < 1e-9
+        assert max(abs(ratio) for ratio in ratios) < 2.0
+        assert max(absolute) > 8.0
+
+        # The same scaling applied to a genuinely non-positive map stays refused,
+        # so the relative tolerance did not simply widen the accepted set.
+        scaled = _transpose_map(2, scale=1024.0, dtype=dtype)
+        assert scaled.is_completely_positive() is False

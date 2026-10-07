@@ -38,6 +38,16 @@ orthonormal basis of matrices, which is how a channel's spectrum and its inverse
 are read in the Pauli basis. A Kraus list enters the algebra through
 :meth:`SuperOperator.from_kraus`, so a channel is expressed as a term list and
 transformed without a representation of its own.
+
+:meth:`SuperOperator.choi` reads the same map in a third index order: the Choi
+matrix is the object that carries the map's *positivity*, not merely its action,
+because ``sum_ij E_ij (x) E(E_ij)`` is positive semidefinite exactly when the map
+is completely positive. The two index orders are related by a reshuffle of the
+same ``d**4`` entries and by nothing else, so the Choi matrix of a channel is the
+channel and cannot drift from it. :meth:`SuperOperator.is_completely_positive`
+asks that question and refuses to answer it about a map whose Choi matrix is not
+Hermitian, since a map that does not preserve Hermiticity is not a candidate for
+positivity in the first place.
 """
 
 from __future__ import annotations
@@ -71,6 +81,27 @@ _BASIS_TOLERANCE_IN_EPSILON = 8.0
 # 1.0 at one wire and 3.0 at two. Eight epsilons sit roughly sixteen times above the
 # worst accepted basis and six to fifteen orders below the worst refused one, so no
 # basis is admitted or refused here by a rounding accident.
+
+_CHOI_TOLERANCE_IN_EPSILON = 8.0
+# How far the smallest Choi eigenvalue of a completely positive map may sit below
+# zero -- and how far a Choi matrix may sit from Hermitian -- before the certificate
+# refuses, counted in units of the map dtype's own epsilon times the Choi matrix's
+# own spectral scale.
+#
+# The scale is required, not a convenience. Measured over random Kraus lists (hence
+# completely positive maps by construction) at dimensions 2, 3, 4, 5, 8, 11, and 16
+# with 1, 2, 3, 5, 9, and 17 operators, forty draws each, the negative deviation of
+# the smallest eigenvalue grows without bound in *absolute* units -- 1.98 epsilons at
+# two dimensions to 27.44 at sixteen in complex64, and 23.24 at sixteen in
+# complex128 -- so an absolute tolerance would either refuse a correct channel at one
+# size or admit a wrong one at another. Divided by the largest absolute eigenvalue of
+# the same matrix the ratio stays bounded: the worst of the whole sweep is 1.751 in
+# complex64 and 1.930 in complex128, and no single size carries it. Eight epsilons
+# therefore clear every legitimate channel by a factor of 4.1, and the nearest genuine
+# violation is not close: the transpose map's Choi eigenvalue is exactly ``-1`` against
+# a scale of exactly ``1``, so the margin there is fifteen orders. The anti-Hermitian
+# part of the same draws stays under 1.37 of the largest entry, which the same
+# tolerance clears because the largest entry never exceeds the spectral scale.
 
 
 class OperatorFactor(Protocol):
@@ -523,6 +554,136 @@ class SuperOperator:
                 )
             matrix = matrix + coefficient * block
         return matrix
+
+    def choi(self, *, max_bytes: int = DEFAULT_DENSE_MATRIX_BYTES) -> torch.Tensor:
+        """Return the Choi matrix ``sum_ij E_ij (x) E(E_ij)`` of the map.
+
+        The Choi matrix is the map read in an index order that carries its
+        positivity rather than only its action: it is positive semidefinite
+        exactly when the map is completely positive. It holds the same ``d**4``
+        entries as :meth:`dense` and is related to it by a reshuffle, so the two
+        cannot describe different maps -- there is no second formula here, only a
+        second way of grouping the four indices. Since ``dense()`` reads a row by
+        the pair ``(row of rho, column of rho)`` and a Choi entry
+        ``[(a, i), (b, j)]`` is ``Phi(E_ab)[i, j]``, the regroup is
+        ``permute(2, 0, 3, 1)`` on the ``(p, q, r, s)`` shape. The two other
+        transposes of the same four indices produce a different matrix that still
+        has the map's trace along its diagonal, which is why the convention is
+        pinned by a test against the map's own action rather than by a trace check.
+
+        The trace of the result is a property of the map and not of the convention:
+        ``trace(choi())`` is ``trace(E(I))``, so a trace-preserving map has
+        ``trace(choi()) == d``. Measured exactly on the identity map, on a
+        depolarizing channel, on amplitude damping at ``gamma = 0.4``, and on the
+        transpose map, in both dtypes. The two normalization conditions are read
+        off the same matrix as its partial traces -- ``Tr_first[J]`` is ``E(I)``, so
+        a unital map has the identity there, and ``Tr_second[J]`` is the identity
+        exactly for a trace-preserving map -- and those are not re-derived here.
+
+        Args:
+            max_bytes: The byte ceiling, inherited from :meth:`dense` because this
+                matrix is that one's entries regrouped and has the same size.
+
+        Raises:
+            ValueError: If the materialized matrix would exceed ``max_bytes``.
+
+        Examples:
+            A bit-flip channel is trace preserving, so its Choi matrix has trace
+            two at one qubit, and the reshape is the whole transform:
+
+            >>> import torch
+            >>> from flagquantum.operators import SuperOperator
+            >>> flip = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex128)
+            >>> bit_flip = SuperOperator.from_kraus((flip,))
+            >>> bit_flip.choi().shape
+            torch.Size([4, 4])
+            >>> bit_flip.choi().trace()
+            tensor(2.+0.j, dtype=torch.complex128)
+        """
+
+        dimension, _ = self._require_summary()
+        side = dimension * dimension
+        entries = (
+            self.dense(max_bytes=max_bytes).reshape(
+                dimension, dimension, dimension, dimension
+            )
+            # ``dense()`` reads the pair ``(row of rho, column of rho)``; the Choi
+            # order pairs the matrix unit with its image, which regroups the four
+            # indices from ``(i, j, a, b)`` to ``(a, i, b, j)``.
+            .permute(2, 0, 3, 1)
+        )
+        return entries.reshape(side, side)
+
+    def is_completely_positive(
+        self, *, max_bytes: int = DEFAULT_DENSE_MATRIX_BYTES
+    ) -> bool:
+        """Return whether the map is completely positive.
+
+        The map is completely positive exactly when its Choi matrix is positive
+        semidefinite, so this reads the eigenvalues of the Hermitian part of
+        :meth:`choi` and compares the smallest against a tolerance. The tolerance is
+        not a convenience in either of its two factors. A legitimate channel may have
+        a rank-deficient Choi matrix, whose smallest eigenvalue is exactly zero and
+        therefore comes back an epsilon or two below zero once the entries are
+        rounded, so an exact comparison would refuse a channel that is on the
+        boundary rather than one that is outside it. And that deviation is not a
+        constant of the channel: a rotated rank-deficient dephasing channel, whose
+        smallest Choi eigenvalue is exactly zero in exact arithmetic, is measured at
+        0.42 epsilons at two dimensions and 1.46 at sixteen in complex64, and at
+        0.05 and 4.17 in complex128, and the same channel rescaled by ``c`` reaches
+        1.34e+06 epsilons at ``c = 1024``. The threshold is therefore stated relative
+        to the matrix's own largest eigenvalue rather than in absolute units;
+        nothing in the arithmetic of this class supplies a scale of its own.
+
+        A map whose Choi matrix is not Hermitian does not preserve Hermiticity,
+        and positivity is not a question about it -- the Lindblad generator is
+        such a map, being a sum of one-sided actions. That case raises rather than
+        returning ``False``, because ``False`` would read as "this map is not
+        completely positive" about a map that is not a candidate for the question.
+
+        Args:
+            max_bytes: The byte ceiling, inherited from :meth:`choi`.
+
+        Returns:
+            ``True`` if the smallest Choi eigenvalue is at or above the negative
+            of the tolerance, ``False`` if it is below it.
+
+        Raises:
+            ValueError: If the materialized matrix would exceed ``max_bytes``, or
+                if the Choi matrix is not Hermitian to the tolerance.
+
+        Examples:
+            A Kraus list denotes a completely positive map by construction, and a
+            dephasing channel built from its two projectors is one:
+
+            >>> import torch
+            >>> from flagquantum.operators import SuperOperator
+            >>> zero = torch.tensor([[1.0, 0.0], [0.0, 0.0]], dtype=torch.complex128)
+            >>> one = torch.tensor([[0.0, 0.0], [0.0, 1.0]], dtype=torch.complex128)
+            >>> SuperOperator.from_kraus((zero, one)).is_completely_positive()
+            True
+        """
+
+        _, dtype = self._require_summary()
+        matrix = self.choi(max_bytes=max_bytes)
+        adjoint = matrix.conj().transpose(0, 1)
+        # ``eigvalsh`` reads one triangle, so the matrix is symmetrized rather than
+        # handed over as it stands: the eigenvalues must describe the same matrix
+        # the Hermiticity check below measures.
+        eigenvalues = torch.linalg.eigvalsh((matrix + adjoint) / 2)
+        scale = float(eigenvalues.abs().max())
+        tolerance = _CHOI_TOLERANCE_IN_EPSILON * float(torch.finfo(dtype).eps) * scale
+        deviation = float(torch.max(torch.abs(matrix - adjoint)))
+        if deviation > tolerance:
+            raise ValueError(
+                "this map does not preserve Hermiticity: its Choi matrix is "
+                f"{deviation:.3e} away from Hermitian, above this certificate's "
+                f"{tolerance:.3e} tolerance at a Choi scale of {scale:.3e}, so it "
+                "has no positivity to report. Complete positivity is a property of "
+                "maps that take Hermitian states to Hermitian states, and a "
+                "generator is not one of them."
+            )
+        return float(eigenvalues.min()) >= -tolerance
 
     def matrix_in_basis(self, basis: Sequence[torch.Tensor]) -> torch.Tensor:
         """Return the map's matrix in an orthonormal basis of matrices.
