@@ -1148,7 +1148,7 @@ it and observing a test fail.
 - [ ] The parity rows `control_adjoint_modifiers` and
       `custom_operation_registration` in `contracts/cudaq-parity-matrix.toml` are
       updated only as far as the measurements above support, their rendered
-      entries in `docs/reference/CUDA_PARITY_MATRIX.md` are regenerated rather
+      entries in `docs/reference/CUDAQ_PARITY_MATRIX.md` are regenerated rather
       than hand-edited, and `python tools/parity_matrix.py --check` exits `0`.
       The status values written there are the ones the recorded evidence
       supports, and the document that records them is not the place to argue for
