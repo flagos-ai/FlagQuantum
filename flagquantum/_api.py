@@ -292,6 +292,149 @@ def gradient(
     )
 
 
+def jacobian(
+    program: Callable[[Tensor], Tensor],
+    parameters: Tensor,
+) -> Tensor:
+    """Differentiate every element of a vector-valued program.
+
+    Use this when a program returns several values -- the probabilities of a
+    register, one expectation per qubit, a batch of losses -- so that no single
+    gradient exists. The result is shaped
+    ``(*program_output.shape, *parameters.shape)``. For one scalar loss use
+    :func:`gradient`, which can also choose an approximate method.
+
+    Args:
+        program: Maps a parameter tensor to a real tensor.
+        parameters: Real, finite, non-empty parameter tensor.
+
+    Returns:
+        A detached tensor of shape ``(*program_output.shape, *parameters.shape)``
+        in the dtype and on the device of ``parameters``.
+
+    Raises:
+        CapabilityError: If the program's output does not depend on
+            ``parameters`` through PyTorch autograd.
+        ValidationError: If ``parameters`` is empty, complex, or non-finite, or
+            if the program returns a non-tensor, an empty tensor, or a complex
+            tensor.
+        TypeError: If ``parameters`` is not a tensor.
+
+    Examples:
+        >>> import torch
+        >>> import flagquantum as fq
+        >>> theta = torch.tensor([0.3], dtype=torch.float64)
+        >>> fq.jacobian(
+        ...     lambda p: fq.Circuit(1).ry(0, theta=p[0]).probabilities(), theta
+        ... ).shape
+        torch.Size([1, 2, 1])
+    """
+
+    from .gradients import jacobian as differentiate_each
+
+    return differentiate_each(program, parameters)
+
+
+def jvp(
+    program: Callable[[Tensor], Tensor],
+    parameters: Tensor,
+    tangents: Tensor,
+) -> Tensor:
+    """Apply the derivative of a vector-valued program to a parameter direction.
+
+    This is the forward-mode action ``J v``: how the whole output moves when the
+    ``parameters`` tensor moves along ``tangents``. It costs two reverse sweeps
+    whatever the output size, so it stays affordable where :func:`jacobian` would
+    need one sweep per output element. ``tangents`` must be shaped exactly like
+    ``parameters``; a direction that merely broadcasts is refused, because
+    broadcasting would silently differentiate along a different parameterization.
+
+    Args:
+        program: Maps a parameter tensor to a real tensor.
+        parameters: Real, finite, non-empty parameter tensor.
+        tangents: Real floating-point tensor shaped exactly like ``parameters``.
+
+    Returns:
+        A detached tensor shaped like the program's output, in the dtype and on
+        the device of ``parameters``.
+
+    Raises:
+        CapabilityError: If the program's output does not depend on
+            ``parameters``, or if the program cannot be differentiated twice.
+        ValidationError: If ``parameters`` or ``tangents`` is empty, complex, or
+            non-finite, if ``tangents`` is not shaped like ``parameters``, or if
+            the program returns a non-tensor, an empty tensor, or a complex
+            tensor.
+        TypeError: If ``parameters`` or ``tangents`` is not a tensor.
+
+    Examples:
+        >>> import torch
+        >>> import flagquantum as fq
+        >>> theta = torch.tensor([0.3], dtype=torch.float64)
+        >>> one = torch.ones(1, dtype=torch.float64)
+        >>> fq.jvp(
+        ...     lambda p: fq.Circuit(1).ry(0, theta=p[0]).probabilities(), theta, one
+        ... ).shape
+        torch.Size([1, 2])
+    """
+
+    from .gradients import jvp as push_forward
+
+    return push_forward(program, parameters, tangents)
+
+
+def vjp(
+    program: Callable[[Tensor], Tensor],
+    parameters: Tensor,
+    cotangents: Tensor,
+) -> Tensor:
+    """Apply the derivative of a vector-valued program to an output direction.
+
+    This is the reverse-mode action ``c^T J``: how one scalar built from the
+    program's output, ``<cotangents, program(parameters)>``, moves with the
+    ``parameters`` tensor. It costs one reverse sweep whatever the parameter
+    count, which is the shape a training step wants when a scalar objective is
+    assembled from several measured values. ``cotangents`` must be shaped exactly
+    like the program's output; weight every value equally with
+    ``torch.ones_like(output)``.
+
+    Args:
+        program: Maps a parameter tensor to a real tensor.
+        parameters: Real, finite, non-empty parameter tensor.
+        cotangents: Real floating-point tensor shaped exactly like the program's
+            output.
+
+    Returns:
+        A detached tensor shaped like ``parameters``, in the dtype and on the
+        device of ``parameters``.
+
+    Raises:
+        CapabilityError: If the program's output does not depend on
+            ``parameters`` through PyTorch autograd.
+        ValidationError: If ``parameters`` or ``cotangents`` is empty, complex,
+            or non-finite, if ``cotangents`` is not shaped like the program's
+            output, or if the program returns a non-tensor, an empty tensor, or a
+            complex tensor.
+        TypeError: If ``parameters`` or ``cotangents`` is not a tensor.
+
+    Examples:
+        >>> import torch
+        >>> import flagquantum as fq
+        >>> theta = torch.tensor([0.3], dtype=torch.float64)
+        >>> weights = torch.ones(1, 2, dtype=torch.float64)
+        >>> fq.vjp(
+        ...     lambda p: fq.Circuit(1).ry(0, theta=p[0]).probabilities(),
+        ...     theta,
+        ...     weights,
+        ... ).shape
+        torch.Size([1])
+    """
+
+    from .gradients import vjp as pull_back
+
+    return pull_back(program, parameters, cotangents)
+
+
 def plan(
     program: Circuit | CircuitIR,
     *,

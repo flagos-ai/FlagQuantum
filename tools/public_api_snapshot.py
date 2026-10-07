@@ -404,9 +404,12 @@ def _validate_authorized_execution_options(
         "expectation": fq.expectation,
         "from_openqasm": fq.from_openqasm,
         "gradient": fq.gradient,
+        "jacobian": fq.jacobian,
+        "jvp": fq.jvp,
         "probabilities": fq.probabilities,
         "samples": fq.samples,
         "train": fq.train,
+        "vjp": fq.vjp,
     }
     for name, expected_signature in expected_signatures.items():
         actual_signature = str(inspect.signature(objects[name], eval_str=False))
