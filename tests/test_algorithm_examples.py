@@ -36,6 +36,12 @@ GUIDE = "docs/guides/ALGORITHMS.md"
 ROOT_ALIAS_IMPORT = "import flagquantum as fq"
 TIMEOUT_SECONDS = 120
 
+#: The ground energy of the two-qubit transverse-field Ising operator the VQE
+#: example runs on, ``-sqrt(5)``, as the operator itself computes it. The example
+#: prints this from the operator rather than quoting it, so the test can compare a
+#: run's energy against the exact value instead of against the run.
+_GROUND_ENERGY = -2.2360679774997898
+
 # Every script in the directory, one entry per unit that has one.
 SCRIPTS = (
     "pca",
@@ -50,6 +56,7 @@ SCRIPTS = (
     "readout_mitigation",
     "folding",
     "variational_solvers",
+    "vqe_solvers",
     "spsa_optimizer",
     "nelder_mead_optimizer",
     "trotter",
@@ -175,6 +182,20 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     # cheaper and exact without it" is what that bias costs. Pinning only the
     # first would leave the recommendation deletable, which is the half that
     # keeps this unit from being read as a preferred optimizer.
+    # Three halves, one per reading a caller can get wrong. "stationary point of
+    # the pool" is the premise the ADAPT screen cannot check: an exact screen at a
+    # reference state that is an eigenstate of every generator is exactly zero, so
+    # the pool is blamed for the state. "why the loop stopped" is what the
+    # converged flag reports, against the arrival a reader expects. "the energy is
+    # not a bound" is what float32 and a finite step count give up together, so a
+    # reported value is a measurement rather than a floor to trust. Pinning only
+    # the second would leave the stationary-state premise deletable, which is the
+    # half that makes the first run's selection reproducible.
+    "vqe_solvers": (
+        "stationary point of the pool",
+        "why the loop stopped",
+        "the energy is not a bound",
+    ),
     "spsa_optimizer": (
         "an estimate rather than a gradient",
         "cheaper and exact without it",
@@ -717,6 +738,90 @@ def test_variational_solvers_example_fits_qaoa_and_shows_the_saddle() -> None:
     assert "one flat vector" in _labelled(output, "a start that is not flat")
     _assert_premise("variational_solvers", output)
     assert "take away" in output
+
+
+def test_vqe_solvers_example_runs_four_entry_points_on_one_instance() -> None:
+    output = _run("vqe_solvers")
+
+    assert "vqe solvers -- flagquantum.algorithms.core" in output
+    # The instance's optimum is the operator's own value rather than a run's, so
+    # the gap column below is a distance to a known number and not a self-report.
+    assert _labelled(output, "ground energy") == "-2.2360679774997898"
+    assert (
+        _labelled(output, "operator") == "[(1.0, (0, 1)), (-1.0, (0,)), (-1.0, (1,))]"
+    )
+    # The fixed-ansatz run is deterministic and does not consume the caller's
+    # tensor, and its reported energy is the fresh evaluation of the returned
+    # parameters rather than the last history entry: the two columns differ.
+    assert _labelled(output, "caller tensor unchanged") == "True"
+    assert _labelled(output, "two runs agree bit for bit") == "True"
+    assert _labelled(output, "energy") == "-2.2360680103302002"
+    assert _labelled(output, "start energy") == "0.885204017162323"
+    # The screen is exact, so the three gradients are an identity on the reference
+    # state rather than an approximation: only the Y rotation moves at |00>.
+    assert _labelled(output, "adapt selected") == "(0,)"
+    assert _labelled(output, "adapt initial energy") == "1"
+    assert _labelled(output, "adapt energy") == "-1.4142135623730354"
+    assert _labelled(output, "adapt converged") == "True"
+    assert _labelled(output, "first screening pass") == (
+        "['-1.000000', '0.000000', '-0.000000']"
+    )
+    assert _labelled(output, "iteration 0 selected") == (
+        "pool index 0 at gradient -1.000000"
+    )
+    assert _labelled(output, "iteration 0 energies") == "1.00000000 -> -1.41421356"
+    # The same pool at a stationary reference state selects nothing, and the run
+    # reports its exit condition rather than the distance to the ground state.
+    assert _labelled(output, "stationary selected") == "()"
+    assert _labelled(output, "stationary adapt iterations") == "0"
+    assert _labelled(output, "stationary energy") == "-1.9999999999999991"
+    assert _labelled(output, "stationary energy above ground") == "0.236068"
+    assert _labelled(output, "stationary converged") == "True"
+    # Three runs, one boolean, two reasons. The first two stop at the same energy
+    # for two different reasons -- the pool ran out and the largest gradient fell
+    # under the tolerance -- and both report the exit as True. The third spent its
+    # iteration budget at the very start, reports the exit as False, and is the
+    # one furthest from the ground energy of the three. So the flag tracks why the
+    # loop stopped and neither how close the energy came nor whether the run was
+    # cut short.
+    exhausted_energy = float(_labelled(output, "exhausted energy"))
+    tolerance_energy = float(_labelled(output, "tolerance energy"))
+    budget_energy = float(_labelled(output, "budget energy"))
+    assert _labelled(output, "a pool of one, exhausted") == "converged=True"
+    assert _labelled(output, "exhausted selected") == "(0,) of 1"
+    assert _labelled(output, "tolerance exit") == "converged=True"
+    assert _labelled(output, "tolerance selected") == "(0,)"
+    assert exhausted_energy == pytest.approx(tolerance_energy, abs=1e-9)
+    assert _labelled(output, "budget exit") == "converged=False"
+    assert _labelled(output, "budget selected") == "(0,)"
+    assert budget_energy > 0.9
+    # Every one of the three stops above the exact ground energy, because the pool
+    # reaches one wire only: a run reporting an arrival would be reporting a gap
+    # this pool cannot close.
+    assert min(exhausted_energy, tolerance_energy, budget_energy) - _GROUND_ENERGY > 0.5
+    # The deepening path reports one record per depth and the parameter count each
+    # depth asks for, which is what makes the padding visible.
+    assert _labelled(output, "depths") == "(1, 2, 3)"
+    assert _labelled(output, "parameters per depth") == "[2, 4, 6]"
+    assert _labelled(output, "energy per depth") == (
+        "['-2.2360680103', '-2.2360682487', '-2.2360682487']"
+    )
+    # The schedule's cost is a measured number rather than a claim.
+    assert _labelled(output, "stages in the schedule") == "2"
+    assert _labelled(output, "hybrid energy") == "-2.2360680103302002"
+    assert _labelled(output, "records") == "600"
+    assert _labelled(output, "objective evaluations") == "1200"
+    assert _labelled(output, "parameter groups") == "('quantum',)"
+    # Two refusals, each naming the entry point and the cause rather than letting
+    # torch's backward error stand for both.
+    assert "run_vqe: the objective carries no gradient" in _labelled(
+        output, "run_vqe, builder ignores parameters"
+    )
+    assert "the operator at pool index 0 adds no dependence" in _labelled(
+        output, "run_adapt_vqe, non-rotational pool"
+    )
+    _assert_premise("vqe_solvers", output)
+    assert "does not do" in output
 
 
 def test_pec_example_inverts_a_channel_and_shows_every_refusal() -> None:

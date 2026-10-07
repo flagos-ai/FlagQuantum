@@ -19,8 +19,37 @@ executed by `tests/test_algorithm_examples.py`.
 
 ## Where to start
 
-- `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
-  workflows.
+- `core.py`: Hamiltonians, ansatz builders, losses, and the four variational
+  eigensolver entry points, registered as the `algorithms_vqe_solvers` capability
+  with `tests/unit/test_vqe_solvers.py` as its focused unit and
+  [`examples/algorithms/vqe_solvers.py`](../../examples/algorithms/vqe_solvers.py)
+  as its golden path. `run_vqe` descends a fixed ansatz the caller supplies as a
+  `circuit_builder`; `run_adapt_vqe` grows one operator at a time from an operator
+  pool, screening each candidate by appending it at angle zero and
+  differentiating the objective there — an exact derivative rather than a
+  sampled estimate — then re-optimizing every accumulated angle;
+  `run_hybrid_vqe` runs one objective under a schedule of `OptimizationStage`
+  records and reports the records and objective evaluations that schedule cost;
+  and `run_layerwise_vqe` deepens a depth-indexed ansatz, starting each depth from
+  the coordinates the previous depth finished at with the newly appended ones at
+  zero, so a stage is a fresh descent rather than a warm restart of one and the
+  result carries one record per depth rather than one trajectory. **What a caller
+  reads as `converged` is an exit test and not an arrival test**: an exhausted
+  pool, a screening pass whose largest gradient fell under `gradient_tolerance`,
+  and a run that spent `max_adapt_iterations` all leave the loop, and the flag
+  names which happened rather than how close the energy came — measured on a
+  two-qubit instance, the run reporting `False` is the one furthest from the
+  ground energy. **The premise the screen cannot check is the reference state the
+  pool acts on**: screening is exact, so a reference state that is an eigenstate
+  of every pool generator screens every direction to exactly zero, the run selects
+  nothing, and it reports its exit above the ground energy. Because a descent
+  needs an objective that depends on what it updates, both `run_vqe` and
+  `run_adapt_vqe` check that dependence first and raise a `ValueError` naming the
+  entry point and the cause, rather than letting torch's `element 0 of tensors
+  does not require grad` stand for both. Every energy is an exact float32
+  statevector expectation at a finite step count, so a reported value is not a
+  bound, and `run_vqe`'s `energy` is a fresh evaluation of the returned parameters
+  rather than the last `history` entry.
 - `data_encoding.py`: encoding a classical feature vector onto a quantum state. `amplitude_encode` pads the vector to the next power of two with a caller-chosen value, normalises it by its euclidean norm, and hands it to the state-preparation primitive, so amplitude encoding spends the whole state vector on the data and costs a classical input that is already `2**n` amplitudes. `angular_encode` and `append_angular_encode` spend one rotation per feature instead — `'X'`, `'Y'`, or `'Z'`, mapped onto `rx`, `ry`, and `rz` the way CUDA-Q's `angular_encode` maps them, default `'Y'` — so the state is a product of independent rotations, the data on it is linear in the wire count rather than exponential, and the append form is what builds a data-reuploading map by interleaving the encoding with a variational block. Both halves hand the angle or the amplitude to the circuit as the tensor the caller supplied, so the encoder stays differentiable with respect to the features. Both refuse a repeated, negative, or non-integer wire and an input whose length disagrees with the wire count. Neither executes the circuit, selects a runtime, or carries a simulator object.
 - `chemistry.py`: the ansatz half of a chemistry workload — `uccsd_excitations`
   enumerates the single and double excitations of an electron count in a

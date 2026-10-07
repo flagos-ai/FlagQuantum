@@ -21,6 +21,7 @@ python -m examples.algorithms.cdr
 python -m examples.algorithms.readout_mitigation
 python -m examples.algorithms.folding
 python -m examples.algorithms.variational_solvers
+python -m examples.algorithms.vqe_solvers
 python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.nelder_mead_optimizer
 python -m examples.algorithms.trotter
@@ -83,6 +84,19 @@ What they show:
   gradient at the uniform superposition printed as exactly zero so the saddle is
   shown rather than asserted, and the maximum cut decoded from the optimized
   circuit's own probability distribution rather than read off the energy.
+- [`vqe_solvers.py`](vqe_solvers.py): one two-qubit operator minimized by all four
+  VQE entry points rather than by one, so the fixed-ansatz, the operator-growing,
+  the scheduled and the deepening descents are read side by side against the
+  operator's own ground energy. The ADAPT screen is printed as the exact
+  derivative it is -- measured from `|00>` at `-1.0, 0.0, -0.0` over three pool
+  directions -- and the same pool run from the stationary `|++>` state is shown
+  selecting nothing and still reporting `converged=True`, which is the premise
+  the unit cannot check rather than a defect. `converged` is then read against
+  three runs that reach it for three different reasons, and the one reporting
+  `False` is the one furthest from the ground energy, so the flag is an exit test
+  and not an arrival test. Two refusals close it: an objective with no gradient
+  and a pool element with none, each naming the entry point and the cause instead
+  of the torch backward error that names neither.
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.
@@ -155,7 +169,12 @@ needs no root alias either: it builds its basis states with
 `flagquantum.circuit.Circuit` and reaches the operator, the ansatz, and the solver
 from the subpackage, because the energy it reports is an expectation of a
 `flagquantum.algorithms.core.Hamiltonian` rather than a root-level object.
-`examples/README.md` records that boundary.
+`vqe_solvers.py` needs no root alias either, and for the same reason as
+`variational_solvers.py`: every object it touches -- the operator, the ansatz,
+the four entry points and the circuit it builds the reference state from -- comes
+from `flagquantum.circuit` or the `flagquantum.algorithms` subpackage, and the
+energy it reports is an expectation of a subpackage `Hamiltonian` rather than a
+root-level object. `examples/README.md` records that boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
 that is easiest to lose: quantum PCA's density matrix, its exponential and the

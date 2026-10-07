@@ -594,6 +594,30 @@ class OptimizerFactory(Protocol):
     ) -> torch.optim.Optimizer: ...
 
 
+def _require_parameter_dependence(
+    objective: torch.Tensor, *, owner: str, cause: str
+) -> None:
+    """Refuse an objective that carries no gradient, before torch raises for us.
+
+    Every optimization loop in this module differentiates its objective with
+    respect to the parameters it updates, so an objective that does not depend on
+    those parameters is a caller error rather than a step of a descent. Torch
+    reports it as ``element 0 of tensors does not require grad and does not have
+    a grad_fn``, which names neither this run nor the builder that produced it, so
+    the condition is checked here and named. Nothing about a run that does
+    differentiate changes.
+    """
+
+    if objective.requires_grad:
+        return
+    raise ValueError(
+        f"{owner}: the objective carries no gradient with respect to the "
+        f"parameters, because {cause}. This loop differentiates the objective with "
+        "respect to the parameters it updates, so an objective that does not depend "
+        "on them cannot be descended."
+    )
+
+
 def run_vqe(
     circuit_builder: Callable[[torch.Tensor], Circuit],
     initial_parameters: torch.Tensor | Sequence[float],
@@ -613,6 +637,12 @@ def run_vqe(
     for _ in range(int(steps)):
         optimizer.zero_grad()
         loss = vqe_loss(circuit_builder, parameters, hamiltonian)
+        _require_parameter_dependence(
+            loss,
+            owner="run_vqe",
+            cause="the circuit that circuit_builder returns does not depend on the "
+            "parameters it was handed",
+        )
         torch.autograd.backward(loss)
         optimizer.step()
         history.append(float(loss.detach()))
@@ -706,6 +736,15 @@ def run_adapt_vqe(
                 candidate_energy = energy(
                     (*selected_operators, pool[pool_index]), candidate_values
                 )
+                _require_parameter_dependence(
+                    candidate_energy,
+                    owner="run_adapt_vqe",
+                    cause=(
+                        f"the operator at pool index {pool_index} adds no dependence "
+                        "on the angle it is appended at, so it is not a rotation or "
+                        "the circuit builder does not apply it"
+                    ),
+                )
                 candidate_gradient = torch.autograd.grad(
                     candidate_energy, candidate_values
                 )[0][-1]
@@ -745,6 +784,12 @@ def run_adapt_vqe(
         for _ in range(int(optimization_steps)):
             optimizer.zero_grad(set_to_none=True)
             loss = energy(tuple(selected_operators), parameters)
+            _require_parameter_dependence(
+                loss,
+                owner="run_adapt_vqe",
+                cause="the circuit builder does not apply every selected operator, "
+                "so the accumulated parameters do not all reach the energy",
+            )
             torch.autograd.backward(loss)
             optimizer.step()
             history.append(float(loss.detach()))
