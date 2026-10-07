@@ -1414,8 +1414,8 @@ def test_choi_of_a_trace_preserving_map_has_trace_d() -> None:
             ), name
 
 
-def test_choi_partial_traces_read_the_maps_normalization() -> None:
-    """``Tr_first`` is ``E(I)`` and ``Tr_second`` is the identity for a TP map.
+def test_partial_trace_reads_the_maps_normalization_off_the_choi_matrix() -> None:
+    """The input trace is ``E(I)`` and the output trace is the identity for a TP map.
 
     Both are properties of the same matrix rather than of two matrices, so they
     also say which of the two traces is which -- a swap would put the identity on
@@ -1427,11 +1427,8 @@ def test_choi_partial_traces_read_the_maps_normalization() -> None:
         unital = SuperOperator.from_kraus((identity,))
         damping = _amplitude_damping(dimension)
         for mapped in (unital, damping, _transpose_map(dimension)):
-            blocks = mapped.choi().reshape(
-                dimension, dimension, dimension, dimension
-            )  # [(a, i), (b, j)]
-            first = torch.einsum("aiaj->ij", blocks)
-            second = torch.einsum("aibi->ab", blocks)
+            first = mapped.partial_trace("input")
+            second = mapped.partial_trace("output")
             assert torch.allclose(first, mapped.apply(identity), atol=1e-14)
             # A trace-preserving map has the identity there, and both maps here
             # are trace preserving, so this is not a coincidence of the unital one.
@@ -1441,7 +1438,7 @@ def test_choi_partial_traces_read_the_maps_normalization() -> None:
         # traces: its first one is ``diag(1 + gamma, 1 - gamma, ...)``, which is
         # ``E(I)`` and is not the identity. If the two were swapped in the
         # implementation, this is the assertion that would notice.
-        blocked = damping.choi().reshape(dimension, dimension, dimension, dimension)
+        first = damping.partial_trace("input")
         # ``K_0 I K_0^dag`` is ``diag(1, 1 - gamma, ..., 1 - gamma)`` and
         # ``K_1 I K_1^dag`` is ``gamma`` on the levels the lowering leaves behind,
         # so the first partial trace is ``diag(1 + gamma, 1, ..., 1, 1 - gamma)``.
@@ -1451,9 +1448,132 @@ def test_choi_partial_traces_read_the_maps_normalization() -> None:
                 dtype=_COMPLEX128,
             )
         )
-        first = torch.einsum("aiaj->ij", blocked)
         assert torch.allclose(first, expected, atol=1e-15)
         assert float((first - identity).abs().max()) == pytest.approx(0.4)
+
+
+def test_partial_trace_matches_the_action_it_summarizes() -> None:
+    """Both registers against an oracle built from the map's own ``apply``.
+
+    The oracle never reshapes ``choi()``: ``E(I)`` is one call to ``apply``, and
+    ``trace(E(E_ab))`` is one call per matrix unit. Reading the same two matrices
+    off the Choi index order is therefore a claim about that index order rather
+    than a second transcription of it. The fixtures separate the two registers: the
+    identity channel is both unital and trace preserving, while a one-sided action
+    is neither, so a swap of the two registers or a transposed pair of indices
+    would be visible here rather than hidden by a symmetric map.
+    """
+
+    for dimension in (2, 3, 4):
+        identity = torch.eye(dimension, dtype=_COMPLEX128)
+        units = _unit_matrices(dimension)
+        generator = torch.Generator().manual_seed(11)
+        random = torch.randn(
+            dimension, dimension, dtype=torch.complex128, generator=generator
+        )
+        maps = {
+            "identity": SuperOperator.from_kraus((identity,)),
+            "amplitude damping": _amplitude_damping(dimension),
+            "transpose": _transpose_map(dimension),
+            # A one-sided action is a generator rather than a channel, and it is
+            # the case where neither register's trace is the identity.
+            "generator": SuperOperator.left_multiply(random),
+        }
+        for name, mapped in maps.items():
+            expected_input = mapped.apply(identity)
+            # ``_unit_matrices`` walks the units row-major, so reshaping the traces
+            # by dimension indexes them as ``[a, b]``, which is ``E(E_ab)``.
+            expected_output = torch.stack(
+                [mapped.apply(unit).trace().reshape(()) for unit in units]
+            ).reshape(dimension, dimension)
+            assert torch.allclose(
+                mapped.partial_trace("input"), expected_input, atol=1e-14
+            ), name
+            assert torch.allclose(
+                mapped.partial_trace("output"), expected_output, atol=1e-14
+            ), name
+        # The generator is the fixture where both of the above are non-trivially
+        # different from the identity, so it is the one that pins the reading.
+        assert not torch.allclose(
+            maps["generator"].partial_trace("input"), identity, atol=1e-6
+        )
+
+
+def test_partial_trace_keeps_the_maps_dtype_and_refuses_a_third_register() -> None:
+    """The accessor adds no dtype, no device, and no register the map does not have."""
+
+    for dtype in (_COMPLEX128, _COMPLEX64):
+        identity = torch.eye(2, dtype=dtype)
+        mapped = SuperOperator.from_kraus((identity,))
+        for register in ("input", "output"):
+            trace = mapped.partial_trace(register)
+            assert trace.shape == (2, 2), register
+            assert trace.dtype == dtype, register
+            assert trace.device.type == "cpu", register
+
+    damping = _amplitude_damping(3)
+    for refused in ("Input", "inputs", "", "both", "output ", "in"):
+        with pytest.raises(ValueError) as error:
+            damping.partial_trace(refused)
+        message = str(error.value)
+        assert "'input'" in message and "'output'" in message
+        # The refusal names what the operation is not, because a caller reaching
+        # for this spelling usually wants a subsystem rather than a register.
+        assert "not this operation" in message
+
+    # The byte ceiling is ``choi``'s, because the trace is read off that matrix.
+    four = SuperOperator.left_multiply(torch.eye(4, dtype=_COMPLEX128))
+    assert four.partial_trace("input", max_bytes=4096).shape == (4, 4)
+    with pytest.raises(ValueError) as error:
+        four.partial_trace("output", max_bytes=4095)
+    assert "4096 bytes" in str(error.value)
+
+
+def test_partial_trace_is_differentiable_in_the_maps_factors() -> None:
+    """Each register's entries carry a gradient a training loop can reach.
+
+    The assertion is against a finite difference of the same entry rather than
+    against hand algebra, and the entry is the ``[0, 0]`` one on a map whose
+    off-diagonal factor entry depends on the parameter. For this map
+    ``K K^dag`` and ``K^dag K`` agree in the sum of their real parts and differ
+    entry by entry, so the two registers are checked on different numbers and one
+    of them cannot be passing on the other's behalf.
+    """
+
+    def damping_strength(probability: float) -> SuperOperator:
+        factor = torch.zeros(2, 2, dtype=_COMPLEX128)
+        factor[0, 0] = (1.0 - probability) ** 0.5
+        factor[0, 1] = 0.5 * probability
+        factor[1, 1] = (1.0 - probability) ** 0.5
+        return SuperOperator.from_kraus((factor,))
+
+    def entry(register: str, probability: float) -> float:
+        return float(damping_strength(probability).partial_trace(register).real[0, 0])
+
+    step = 1e-6
+    gradients = {}
+    for register in ("input", "output"):
+        parameter = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
+        factor = torch.zeros(2, 2, dtype=_COMPLEX128)
+        factor[0, 0] = torch.sqrt(1.0 - parameter)
+        factor[0, 1] = 0.5 * parameter
+        factor[1, 1] = torch.sqrt(1.0 - parameter)
+        SuperOperator.from_kraus((factor,)).partial_trace(register).real[
+            0, 0
+        ].backward()
+        assert parameter.grad is not None
+        measured = float(parameter.grad)
+
+        finite_difference = (
+            entry(register, 0.3 + step) - entry(register, 0.3 - step)
+        ) / (2 * step)
+        assert measured == pytest.approx(finite_difference, abs=1e-9)
+        gradients[register] = measured
+
+    # The fixture separates the registers, so the two gradients above are two
+    # measurements of two different quantities rather than one number twice.
+    assert gradients["input"] == pytest.approx(-0.85, abs=1e-9)
+    assert gradients["output"] == pytest.approx(-1.0, abs=1e-9)
 
 
 def test_choi_is_refused_above_its_byte_ceiling() -> None:

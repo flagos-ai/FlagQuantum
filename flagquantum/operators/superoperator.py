@@ -47,7 +47,11 @@ same ``d**4`` entries and by nothing else, so the Choi matrix of a channel is th
 channel and cannot drift from it. :meth:`SuperOperator.is_completely_positive`
 asks that question and refuses to answer it about a map whose Choi matrix is not
 Hermitian, since a map that does not preserve Hermiticity is not a candidate for
-positivity in the first place.
+positivity in the first place. Tracing one register of that same matrix is the
+map's normalization read off rather than re-derived, and
+:meth:`SuperOperator.partial_trace` returns it: the input trace is ``E(I)``, the
+identity exactly for a unital map, and the output trace is the identity exactly
+for a trace-preserving one.
 """
 
 from __future__ import annotations
@@ -578,7 +582,8 @@ class SuperOperator:
         transpose map, in both dtypes. The two normalization conditions are read
         off the same matrix as its partial traces -- ``Tr_first[J]`` is ``E(I)``, so
         a unital map has the identity there, and ``Tr_second[J]`` is the identity
-        exactly for a trace-preserving map -- and those are not re-derived here.
+        exactly for a trace-preserving map -- and :meth:`partial_trace` is the
+        accessor that exposes them rather than re-deriving them.
 
         Args:
             max_bytes: The byte ceiling, inherited from :meth:`dense` because this
@@ -613,6 +618,77 @@ class SuperOperator:
             .permute(2, 0, 3, 1)
         )
         return entries.reshape(side, side)
+
+    def partial_trace(
+        self, register: str, *, max_bytes: int = DEFAULT_DENSE_MATRIX_BYTES
+    ) -> torch.Tensor:
+        """Return the Choi matrix traced over one of its two registers.
+
+        The Choi matrix of this map is an operator on the pair ``(input, output)``
+        -- entry ``[(a, i), (b, j)]`` is ``E(E_ab)[i, j]`` -- so tracing one
+        register of it asks a question about the map rather than about a state.
+        Both answers are ``(d, d)`` matrices and both are statements the map
+        already had; the accessor exists so that reading them no longer means
+        reshaping ``choi()`` by hand and writing an ``einsum``.
+
+        ``register="input"`` sums the input index and returns ``E(I)``, an operator
+        on the output register: it is the identity exactly when the map is unital.
+        It is also what ``apply`` returns for the identity, and the owning suite
+        asserts that agreement rather than assuming it, so the two routes to the
+        quantity are one quantity.
+
+        ``register="output"`` sums the output index and returns the matrix
+        ``trace(E(E_ab))`` indexed by the input labels. It is the identity exactly
+        when the map is trace preserving, and it is *not* the same statement as
+        the input trace: amplitude damping is trace preserving and not unital, so
+        its two traces differ, which is what separates them.
+
+        Both traces are differentiable in whatever the factors are, because they
+        are read off :meth:`choi` by a sum rather than by a branch on values.
+
+        Args:
+            register: ``"input"`` or ``"output"``, naming the register summed.
+            max_bytes: The byte ceiling, inherited from :meth:`choi` because the
+                trace is read off that matrix.
+
+        Returns:
+            The ``(d, d)`` complex matrix of the other register, in the map's
+            dtype on the CPU.
+
+        Raises:
+            ValueError: If ``register`` is neither value, or if the materialized
+                Choi matrix would exceed ``max_bytes``.
+
+        Examples:
+            A unitary channel is both unital and trace preserving, so both traces
+            are the identity, while the transpose map is trace preserving and not
+            unital:
+
+            >>> import torch
+            >>> from flagquantum.operators import SuperOperator
+            >>> flip = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex128)
+            >>> bit_flip = SuperOperator.from_kraus((flip,))
+            >>> bit_flip.partial_trace("input").tolist()
+            [[(1+0j), 0j], [0j, (1+0j)]]
+            >>> bit_flip.partial_trace("output").tolist()
+            [[(1+0j), 0j], [0j, (1+0j)]]
+        """
+
+        dimension, _ = self._require_summary()
+        if register not in {"input", "output"}:
+            raise ValueError(
+                f"a partial trace of a superoperator sums one of its two "
+                f"registers, 'input' or 'output', and {register!r} is neither; "
+                "the map's action on a subsystem is not this operation"
+            )
+        # ``choi()`` reads ``(a, i, b, j)``: the input matrix unit ``(a, b)`` and
+        # the output matrix ``(i, j)``. Summing one pair leaves the other.
+        blocks = self.choi(max_bytes=max_bytes).reshape(
+            dimension, dimension, dimension, dimension
+        )
+        if register == "input":
+            return torch.einsum("aiaj->ij", blocks)
+        return torch.einsum("aibi->ab", blocks)
 
     def is_completely_positive(
         self, *, max_bytes: int = DEFAULT_DENSE_MATRIX_BYTES
