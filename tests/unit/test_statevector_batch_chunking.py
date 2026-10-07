@@ -244,6 +244,7 @@ def test_chunked_bounded_initial_state_has_a_complete_rollback(
         2 * (2**3) * torch.empty((), dtype=torch.complex128).element_size(),
     )
     monkeypatch.setenv("FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE", "0")
+    monkeypatch.setenv("FQ_CPU_STATEVECTOR_OWNED_ZERO_STATE", "0")
     circuit = _circuit(theta)
 
     result = circuit.state()

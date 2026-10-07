@@ -1,0 +1,363 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# Construction-layer acceptance: what must be true of a program that `Circuit.compose`
+# built, measured two ways — against the program a user would have written by hand for
+# the same placement, and against the same request served by every execution mode that
+# accepts it.
+#
+# This is an acceptance contract, not a semantics contract. What `compose` means and
+# every way it refuses belong to `contracts/circuit-composition-contract.toml` and are
+# not restated here. What is recorded here is the measurement that the construction
+# layer produces one program, not one program per route.
+schema = "flagquantum_construction_acceptance_contract_v1"
+maturity = "development_evidence"
+surface = "construction_layer_acceptance"
+accepted_program = "programs built with Circuit.compose"
+implementation = "flagquantum/circuit.py"
+semantics_source = "flagquantum/core/operator_schema.py"
+ir_source = "flagquantum/core/ir.py"
+# Acceptance adds no capability, so it changes no version and no export. Both are
+# recorded as measured facts rather than asserted, because an acceptance slice that
+# quietly widened the public surface would be the failure this contract exists to stop.
+ir_version_effect = "none"
+root_export_effect = "none"
+measured_ir_version = "1.0"
+measured_root_export_count = 37
+authorization_required = false
+authorization_reason = "acceptance measures existing behaviour; it adds no export, keyword, opcode, or serialized key"
+
+[subject]
+# The construction-layer members this acceptance covers. Each must be present in the
+# tree and must have a requirement row under [verification.requirements].
+#
+# This list has grown twice, both times because the census below fired rather than because
+# a plan was written: `Circuit.control` was listed as absent when this contract was
+# written, and `Circuit.power` was listed as absent after `control` landed. Each row that
+# said "absent" was true of the tree this contract measured; each stopped being true when
+# its slice merged, and the gate named the member the acceptance had to grow to cover
+# rather than staying green. That is the mechanism working, not a plan that was wrong. What
+# is measured now is the claim this contract exists for: `compose` and `adjoint` by the
+# placement claim, `control` under [control_acceptance], `power` under [power_acceptance].
+covered = ["Circuit.compose", "Circuit.adjoint", "Circuit.control", "Circuit.power"]
+# Empty on purpose, and asserted as empty rather than left out: the contract that owns the
+# family declares it complete, so an entry here would be a member whose absence this
+# acceptance contracts. A later member of this family starts here with a reason, the way
+# `control` and `power` each did before their slices merged.
+not_covered = []
+not_covered_reason = "the construction-time composition family is complete; every declared member is covered by this acceptance"
+
+[census]
+# The measurement behind `covered` and `not_covered`. This is the fail-closed mechanism:
+# the moment the construction layer grows, a name recorded here as absent stops being
+# absent and this contract fails until the acceptance is extended to cover it.
+measurement = "hasattr(fq.Circuit(2), name.rsplit('.', 1)[1]) for each contracted member"
+covered_members_are_present = true
+not_covered_members_are_absent = true
+# Reading `Circuit.__pow__` as well keeps the census honest about the operator spelling.
+# `power` is now present as a method and still absent as an operator, so those are two
+# facts rather than one: the method is covered above, and the spelling stays measured here,
+# which is what keeps `operator_spellings` below a live row rather than a stale alias. If
+# `__pow__` is ever added, this row stops being true and the gate says so.
+also_measured_absent = ["Circuit.__pow__"]
+# The construction family is declared once, by the contract that owns the members'
+# semantics. This gate reads that declaration instead of repeating it here, so the two
+# contracts cannot drift into two lists that both claim to be the family.
+family_declaration_source = "contracts/circuit-composition-contract.toml"
+family_declaration_keys = ["scope.provided", "scope.not_provided"]
+# `covered` plus `not_covered` must equal that declaration rather than merely be
+# consistent with itself. Without this the census re-checks the rows it still has and
+# never checks that it still has a row for every member. Measured: deleting
+# `Circuit.control` from `covered` and its row from `[verification].requirements`
+# together left this gate and the whole conformance file green, because the test
+# function was still in the file -- it had just stopped being required by anything.
+family_members_must_partition_the_declared_scope = true
+# Operator spellings of contracted members. `Circuit.__pow__` is how Python spells
+# `Circuit.power`: one family member under two names, so the partition counts it once.
+operator_spellings = { "Circuit.__pow__" = "Circuit.power" }
+
+[ir_identity]
+# The plan's claim is that a composed program's IR equals the hand-built program's IR.
+# It is measured on the four things a user can observe without reading private state.
+measures = ["to_dict", "content_hash", "n_wires", "instruction_signature"]
+instruction_signature = "(name, tuple(qubits), sorted (param, repr(value)) pairs)"
+tolerance = "exact"
+# The hand-built counterpart is the placement expanded by hand, not the block left
+# where it was. A block placed at qubits (2, 0) is compared against `h(2); cnot(2, 0)`,
+# which is the program the user writes when they place it that way.
+hand_built_definition = "the block's ladder emitted directly on the placed qubits"
+block_program = "for each placed position p: h(p); if the next position exists: cnot(p, next)"
+block_instruction_count = "2 * width - 1"
+placement_forms = ["qubits", "qubit_map"]
+# Placing on the identity target and placing on nothing are the two ways this claim can
+# pass trivially, so both are in the shape list below rather than left as edge cases.
+identity_placement_is_in_shapes = true
+
+# One row per measured placement. The gate expands each by hand and compares.
+[[placement]]
+n_qubits = 2
+qubits = [0]
+[[placement]]
+n_qubits = 3
+qubits = [0, 1]
+[[placement]]
+n_qubits = 3
+qubits = [2, 0]
+[[placement]]
+n_qubits = 3
+qubits = [1, 2]
+[[placement]]
+n_qubits = 3
+qubits = [1]
+[[placement]]
+n_qubits = 4
+qubits = [0, 1, 2]
+[[placement]]
+n_qubits = 5
+qubits = [3, 4]
+[[placement]]
+n_qubits = 6
+qubits = [5, 2, 4]
+
+# The same claim through the mapping form, where the map is sparse and out of order.
+[[placement_map]]
+n_qubits = 3
+mapping = { "0" = 2, "1" = 0 }
+[[placement_map]]
+n_qubits = 4
+mapping = { "0" = 3, "1" = 1 }
+[[placement_map]]
+n_qubits = 5
+mapping = { "0" = 4, "1" = 0, "2" = 2 }
+
+[control_acceptance]
+# The third construction member, measured by the same claim and not by a restatement of
+# what it means. `control`'s semantics -- the expansion, the ladder bound, the partner
+# table, every refusal -- belong to `contracts/circuit-composition-contract.toml` and are
+# not repeated here. The claim this contract exists for is narrower: the construction
+# layer produces one program, not one program per route.
+#
+# The two routes for `control` are `compose` then `control`, against the hand-built
+# placement then `control`. If `control` read the receiver's provenance rather than its
+# instructions, or if `compose` left anything in the receiver that `control` could see and
+# a hand-written receiver does not have, the two programs would differ and this fails.
+# The receiver block is the same ladder the placements place, so one measurement covers
+# the interaction of all three members rather than a fourth block nothing else shares.
+receiver_block = "for each placed position p: h(p); if the next position exists: cnot(p, next)"
+routes = ["compose then control", "hand-built placement then control"]
+# The same four observable facts the placement claim is measured on, so the two claims
+# cannot drift into measuring different things while both calling it "the same program".
+measures = ["to_dict", "content_hash", "n_wires", "instruction_signature"]
+route_identity = "exact"
+# Both routes must also stay the same program once a mode serves them, which is the other
+# half of the same claim. Measured on the one-control row below rather than on the widest
+# row: see mode_agreement_measured_on.
+mode_agreement = "tolerance"
+mode_agreement_measured_on = "every control placement row carrying mode_agreement = true"
+# TOML has one-line strings and `"""` blocks; it has no parenthesized continuation, so
+# this is written out long rather than folded.
+mode_agreement_reason = "the two-control ladder is 57 instructions and the mode spread it reaches is 8.941e-07, which is 75 percent of the 10 * eps(complex64) bound this contract declares; the bound is a property of the arithmetic and is not slackened for a program this acceptance chose to add, so the mode half is pinned to a program the bound clearly covers and the wider measurement is recorded rather than asserted"
+widest_measured_mode_spread = "recorded in docs/api-changes/FQ-CONSTRUCTION-ACCEPTANCE-20261024.md"
+# The result is always wider than its receiver, because a control qubit is added rather
+# than taken. Recording the rule lets the gate check the width instead of trusting it.
+result_width = "max(ctrl_qubits) + 1"
+
+# One row per measured control placement. `n_qubits` is the receiver's width, `qubits` is
+# where the block sits inside it, and `ctrl_qubits` are the added controls. The gate builds
+# both routes for every row and compares them, so a row added without both routes fails.
+#
+# `mode_agreement` marks the rows the mode half of the claim is measured on. It is set on
+# every one-control row rather than on one hand-picked program, so the half is measured
+# across the range of one-control expansions the contract lists. The two-control row is
+# not marked, and the reason is recorded under mode_agreement_reason above.
+[[control_placement]]
+n_qubits = 2
+qubits = [0, 1]
+n_controls = 1
+ctrl_qubits = [2]
+mode_agreement = true
+[[control_placement]]
+n_qubits = 3
+qubits = [2, 0]
+n_controls = 1
+ctrl_qubits = [3]
+mode_agreement = true
+[[control_placement]]
+n_qubits = 5
+qubits = [4, 0, 2]
+n_controls = 1
+ctrl_qubits = [5]
+mode_agreement = true
+[[control_placement]]
+n_qubits = 4
+qubits = [3, 1]
+n_controls = 2
+ctrl_qubits = [5, 4]
+
+[power_acceptance]
+# The fourth construction member, measured on the same claim as the third and for the same
+# reason: `power` reads its receiver's instructions, not where they came from. What `power`
+# means -- the repeat rule, the single-instruction rewrite, the integer requirement, the
+# emission limit -- belongs to `contracts/circuit-composition-contract.toml` and is not
+# restated here.
+#
+# The two routes for `power` are `compose` then `power`, against the hand-built placement
+# then `power`. If `power` read the receiver's provenance rather than its instructions, or
+# if `compose` left anything in the receiver that a hand-written receiver does not have,
+# the two programs would differ and this fails. The receiver block is the same ladder the
+# placements place, so one measurement covers the interaction rather than inventing a
+# second block nothing else shares.
+receiver_block = "for each placed position p: h(p); if the next position exists: cnot(p, next)"
+routes = ["compose then power", "hand-built placement then power"]
+# The same four observable facts the placement claim is measured on, so the three claims
+# cannot drift into measuring different things while all calling it "the same program".
+measures = ["to_dict", "content_hash", "n_wires", "instruction_signature"]
+route_identity = "exact"
+# Both routes must also stay the same program once a mode serves them, which is the other
+# half of the same claim. It is measured on a repeated program rather than on the identity
+# power: `power(0)` is empty and `power(1)` is its receiver, so neither would tell a route
+# that returned its input apart from one that built the program.
+mode_agreement = "tolerance"
+mode_agreement_measured_on = "every power placement row carrying mode_agreement = true"
+# `power` repeats or rewrites the program it was given; it never adds a qubit. Recording
+# the rule lets the gate check the width instead of trusting it.
+result_width = "the receiver's width"
+# The ladder is all `h` and `cnot`, and neither declares the exponential form the
+# single-instruction rewrite applies to, so every non-zero exponent emits whole copies.
+# `power(0)` is the empty program of the same width, and a negative exponent is the
+# inverse repeated, which is the same count as its absolute value.
+result_instruction_count = "abs(exponent) * (2 * width - 1)"
+# The rewrite itself is the one case where `power` derives new numbers from the receiver
+# rather than copying it, so it is the case a route that read provenance would show up in
+# first. It needs a single-instruction receiver, which is not the block above, so it is
+# measured in the conformance test and recorded here as a contracted fact rather than
+# asserted by this gate. The gate checks that the test named here exists, so this row is a
+# claim something measures rather than a name someone typed once.
+single_instruction_rewrite_measured_in = "tests/unit/test_construction_acceptance.py::test_a_powered_single_instruction_receiver_is_rewritten_by_both_routes_alike"
+single_instruction_rewrite = "a one-instruction receiver whose gate declares an exponential form is rewritten as that gate with the parameter multiplied by exponent; power(1) stays a copy rather than being rescaled"
+
+# One row per measured power placement. `n_qubits` is the receiver's width, `qubits` is
+# where the block sits inside it, and `exponent` is the power asked for. The gate builds
+# both routes for every row and compares them, so a row added without both routes fails.
+#
+# `exponent = 1` is here on purpose. It is the case the implementation handles by copying
+# rather than by rewriting, so it is where a route that folded or unfolded differently
+# would show up first, and it is the one non-zero exponent that must not grow the program.
+#
+# `mode_agreement` marks the row the mode half of the claim is measured on. It is the
+# smallest repeated program in the list, because the mode half is about the arithmetic
+# rather than about how wide a program this acceptance chose to add.
+[[power_placement]]
+n_qubits = 2
+qubits = [0]
+exponent = 0
+[[power_placement]]
+n_qubits = 2
+qubits = [0]
+exponent = 1
+[[power_placement]]
+n_qubits = 2
+qubits = [0]
+exponent = 2
+mode_agreement = true
+[[power_placement]]
+n_qubits = 3
+qubits = [1]
+exponent = 2
+[[power_placement]]
+n_qubits = 3
+qubits = [2, 0]
+exponent = 3
+[[power_placement]]
+n_qubits = 4
+qubits = [0, 1, 2]
+exponent = -1
+
+[result_identity]
+# The plan's second claim is that the modes agree. It is measured on probabilities
+# because that is the one output every full-state mode serves; `state` is `None` for the
+# two tensor modes, so comparing states would silently compare nothing.
+requested_output = "probabilities"
+request_kind = "probabilities"
+# Two claims hide under the word "agree", and they are not the same claim:
+#   1. the two construction routes agree with each other;
+#   2. each mode agrees with the reference mode.
+# (1) is exact and is asserted as exact. (2) is not exact and must not be recorded as if
+# it were: three of the five modes compute in a different arithmetic and land within
+# complex64 resolution of the reference rather than on it.
+between_construction_routes = "exact"
+between_modes = "tolerance"
+reference_mode = "statevector"
+between_modes_tolerance = 1e-06
+between_modes_tolerance_rationale = "the non-reference full-state modes land within complex64 resolution of the reference on the measured programs; the widest measured spread is 5.960e-08 across density_matrix, mps, and tensor_network once the controlled program in [control_acceptance] is included, and 8.429e-08 for the distributed member, against a complex64 epsilon of 1.192e-07"
+measured_max_spread = "recorded in docs/api-changes/FQ-CONSTRUCTION-ACCEPTANCE-20261024.md"
+
+[modes]
+# Measured from `ExecutionOptions`'s own mode set, not from prose. `serving` are the
+# modes that answer the request above; `refused` is the mode that does not, recorded
+# with the class and phrase so that the refusal is contracted rather than tolerated.
+serving = ["auto", "density_matrix", "mps", "statevector", "tensor_network"]
+refused = ["stabilizer"]
+refusal_class = "CapabilityError"
+refusal_phrase = "samples measurement outcomes"
+serving_and_refused_must_partition_the_mode_set = true
+
+[distributed_member]
+# The plan names `distributed_statevector` as the fourth mode. It is a real native mode
+# and it is reachable — but not the way the plan wrote it, so the route is recorded as
+# measured rather than assumed.
+reachable_through_execution_options = false
+execution_options_refusal_class = "ValidationError"
+execution_options_refusal_phrase = "mode must be one of"
+accepted_mode_argument = "distributed_statevector"
+# The keyword that carries the member is not a public keyword either: `fq.run` and
+# `fq.plan` refuse `world_size`, so the route is the runtime executor entry point.
+root_run_accepts_world_size = false
+root_plan_accepts_world_size = false
+route = "flagquantum.runtime.execution.run_native"
+world_size_argument = "world_size"
+served_output = "state"
+plan_flag = "is_distributed"
+measured_world_sizes = [2, 4, 8]
+between_construction_routes = "exact"
+between_modes = "tolerance"
+
+# The plan row named identifiers that do not exist. They are recorded here, with the
+# spelling that does exist, so that the correction is a measured row rather than a note
+# in a document that the next reader may not reach. `still_absent` is re-measured by the
+# gate: if any of these names appears later, this table is stale and the gate fails.
+[[plan_corrections]]
+field = "CircuitIR.n_qubits"
+recorded_by_plan = "the composed IR's n_qubits equals the hand-built IR's n_qubits"
+measured_spelling = "CircuitIR.n_wires"
+still_absent = true
+consequence = "the acceptance measures n_wires; n_qubits is not an attribute of CircuitIR"
+
+[[plan_corrections]]
+field = "CircuitIR.semantic_fingerprint"
+recorded_by_plan = "the composed IR's semantic_fingerprint equals the hand-built IR's"
+measured_spelling = "CircuitIR.content_hash"
+still_absent = true
+consequence = "the acceptance measures content_hash; semantic_fingerprint is not an attribute of CircuitIR"
+
+[[plan_corrections]]
+field = "ExecutionOptions(mode='distributed_statevector')"
+recorded_by_plan = "the fourth mode is selected by passing distributed_statevector as an ExecutionOptions mode"
+measured_spelling = "a native run-mode alias on the runtime executor entry point, not an ExecutionOptions value"
+still_absent = true
+consequence = "the acceptance reaches the distributed member through run_native(mode='distributed_statevector', world_size=...), and records that fq.run does not accept world_size"
+
+[[plan_corrections]]
+field = "cross-mode agreement"
+recorded_by_plan = "the four modes agree on the result"
+measured_spelling = "the two construction routes agree exactly; the modes agree within complex64 resolution"
+still_absent = false
+consequence = "the acceptance asserts exactness where it holds and a declared tolerance where it does not"
+
+[verification]
+contract_test = "tests/unit/test_construction_acceptance.py"
+gate = "tools/check_construction_acceptance_contract.py"
+# The split is deliberate. This gate owns the census and the deterministic IR claim,
+# because those are cheap and they are what goes stale when someone adds a member or a
+# mode. The conformance test owns the numerical claims, which need pytest's tolerance
+# reporting to be readable when they fail.
+requirements = { "Circuit.compose" = "test_a_composed_program_has_the_hand_built_ir", "Circuit.adjoint" = "test_an_adjoint_program_has_the_hand_built_inverse", "Circuit.control" = "test_a_controlled_program_has_the_hand_built_ir", "Circuit.power" = "test_a_powered_program_is_the_hand_built_power" }

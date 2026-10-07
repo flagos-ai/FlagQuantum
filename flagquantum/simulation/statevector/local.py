@@ -35,7 +35,7 @@ from .controlled_phase import (
     _controlled_phase_graph_factors_cpu,
 )
 from .cz_graph import _apply_cz_graph_cpu, _cached_cz_graph_signs, _cz_graph_signs_cpu
-from .dense_fusion_cpu import _apply_cx_rzz_swap_sequence, _apply_swap_sequence
+from .dense_fusion_cpu import _apply_cx_rzz_swap_sequence
 from .execution_metrics import initial_runtime_metrics
 from .fixed_layer_cpu import (
     apply_native_fixed_one_qubit_layer,
@@ -84,7 +84,6 @@ from .operations import (
     _cpu_cx_sequence_gather_enabled,
     _cpu_disjoint_single_wire_fusion_enabled,
     _cpu_single_wire_elementwise_enabled,
-    _cpu_swap_sequence_fusion_enabled,
     _cx_sequence_permutation_index,
     _diagonal_region,
     _fused_gate_matrix,
@@ -701,6 +700,7 @@ def _execute_statevector_program(
     reuse_clifford_output = clifford_matching_output_reuse_enabled(program)
     owns_output = owns_input
     clifford_scratch: torch.Tensor | None = None
+    cx_rzz_swap_scratch: torch.Tensor | None = None
     for step in program:
         if isinstance(step, _StatevectorCliffordMatchingStep):
             native_output, clifford_scratch = apply_native_clifford_matching(
@@ -832,21 +832,24 @@ def _execute_statevector_program(
             output = _apply_cx_sequence(circuit, step, output)
             continue
         if isinstance(step, _StatevectorCXSequenceRZZSwapStep):
-            output = _apply_cx_rzz_swap_sequence(step, output, circuit.n_qubits)
+            previous = output
+            output = _apply_cx_rzz_swap_sequence(
+                step,
+                output,
+                circuit.n_qubits,
+                scratch=cx_rzz_swap_scratch,
+            )
+            if owns_output and output.data_ptr() != previous.data_ptr():
+                cx_rzz_swap_scratch = previous
             owns_output = True
             continue
         if isinstance(step, _StatevectorSwapSequenceStep):
-            from .swap_sequence_dispatch import _try_apply_cataloged_swap_sequence
+            from .swap_sequence_dispatch import _apply_swap_sequence_step
 
-            dispatched = _try_apply_cataloged_swap_sequence(
+            output = _apply_swap_sequence_step(
                 output,
                 swaps=step.swaps,
                 n_qubits=circuit.n_qubits,
-            )
-            output = (
-                dispatched
-                if dispatched is not None
-                else _apply_swap_sequence(output, step.swaps, circuit.n_qubits)
             )
             owns_output = True
             continue
@@ -870,6 +873,19 @@ def _execute_statevector_program(
             continue
         instruction = step.instruction
         name = canonical_opcode(instruction.name)
+        if name in {"ccx", "cswap"}:
+            from .reversible_3q_dispatch import _try_apply_cataloged_reversible_3q
+
+            first_qubit, second_qubit, third_qubit = instruction.wires
+            dispatched = _try_apply_cataloged_reversible_3q(
+                output,
+                qubits=(first_qubit, second_qubit, third_qubit),
+                n_qubits=circuit.n_qubits,
+                opcode=name,
+            )
+            if dispatched is not None:
+                output = dispatched
+                continue
         if name in {"x", "cx", "swap"}:
             output = _apply_fixed_permutation(
                 output, name, instruction.wires, circuit.n_qubits
@@ -995,9 +1011,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = 0
             circuit._state_cache = output
             return output
-        batch_size, initial_window_size, uses_bounded_zero_state, output = (
-            _statevector_batch_input(circuit)
-        )
+        (
+            batch_size,
+            initial_window_size,
+            uses_bounded_zero_state,
+            owns_zero_state,
+            output,
+        ) = _statevector_batch_input(circuit)
         enable_triton_loop = (
             _triton_single_qubit_loop_enabled()
             and output.is_cuda
@@ -1006,21 +1026,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         enable_cpu_cross_wire_diagonal = (
             output.device.type == "cpu" and _cpu_cross_wire_diagonal_fusion_enabled()
         )
-        enable_cpu_swap_sequence = bool(
-            output.device.type == "cpu" and _cpu_swap_sequence_fusion_enabled()
-        )
-        from .swap_sequence_dispatch import _swap_sequence_dispatch_enabled
+        from .swap_sequence_dispatch import _swap_sequence_policy
 
-        enable_triton_swap_sequence = bool(
-            output.is_cuda
-            and output.dtype == torch.complex64
-            and _swap_sequence_dispatch_enabled()
-        )
-        swap_sequence_fusion_bounds = (
-            (2, None)
-            if enable_cpu_swap_sequence
-            else (4, 8) if enable_triton_swap_sequence else None
-        )
+        (
+            enable_cpu_swap_sequence,
+            enable_triton_swap_sequence,
+            swap_sequence_fusion_bounds,
+        ) = _swap_sequence_policy(output)
         enable_cpu_cz_graph = (
             output.device.type == "cpu" and _cpu_cz_graph_fusion_enabled()
         )
@@ -1172,6 +1184,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 program,
                 output,
                 parameter_bindings,
+                owns_input=owns_zero_state,
             )
         else:
             preallocate = _preallocated_batch_assembly_beneficial(program)
@@ -1182,6 +1195,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 batch_size=batch_size,
                 chunk_size=batch_chunk_size,
                 bounded_zero_state=uses_bounded_zero_state,
+                owns_zero_state=owns_zero_state,
                 preallocate=preallocate,
                 execute=lambda window, owns_input: _execute_statevector_program(
                     circuit,

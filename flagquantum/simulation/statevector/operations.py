@@ -17,7 +17,7 @@ from ..gate_matrix import (
 )
 from ..matrices import GATE_MAT_DICT
 from ..numerics.complex_arithmetic import complex_mul
-from . import controlled_phase, cz_graph, two_qubit_cpu
+from . import controlled_phase, cz_graph
 from .clifford_matching import (
     _reorder_disjoint_clifford_matchings,
     fuse_native_disjoint_clifford_matchings,
@@ -70,6 +70,7 @@ from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
 from .program import _StatevectorSwapSequenceStep as _StatevectorSwapSequenceStep
 from .single_qubit_cpu import apply_single_qubit_matrix_cpu
+from .two_qubit_matrix_dispatch import _try_apply_preferred_two_qubit_matrix
 from .wire_permutation import _clear_wire_permutation_cache
 
 _STATEVECTOR_LAYOUT_CACHE: dict[
@@ -713,21 +714,21 @@ def _apply_matrix(
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
     wires = tuple(wires)
+    if (
+        len(wires) == 2
+        and (
+            preferred := _try_apply_preferred_two_qubit_matrix(
+                state, matrix, wires, n_wires
+            )
+        )
+        is not None
+    ):
+        return preferred
     if state.device.type == "cpu" and state.is_contiguous():
         if len(wires) == 1:
             return apply_single_qubit_matrix_cpu(
                 state, matrix, qubit=wires[0], n_qubits=n_wires
             )
-        if (
-            len(wires) == 2
-            and (
-                preferred := two_qubit_cpu._apply_preferred_two_qubit_matrix_cpu(
-                    state, matrix, wires, n_wires
-                )
-            )
-            is not None
-        ):
-            return preferred
     return _apply_matrix_layout(state, matrix, wires, n_wires, layout=layout)
 
 

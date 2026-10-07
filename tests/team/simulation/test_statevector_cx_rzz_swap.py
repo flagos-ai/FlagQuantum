@@ -7,6 +7,12 @@ from flagquantum import Circuit
 from flagquantum.simulation.native_cpu.permutation import (
     native_cpu_cx_rzz_swap_available,
 )
+from flagquantum.simulation.statevector.dense_fusion_cpu import (
+    _apply_cx_rzz_swap_sequence,
+)
+from flagquantum.simulation.statevector.program import (
+    _StatevectorCXSequenceRZZSwapStep,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -63,3 +69,24 @@ def test_cpu_cx_rzz_swap_fusion_declines_autograd(
     assert circuit._last_statevector_runtime["statevector_apply_count"] == 3
     assert torch.isfinite(input_gradient).all()
     assert torch.isfinite(angle_gradient)
+
+
+def test_cpu_cx_rzz_swap_fusion_reuses_supplied_state_scratch() -> None:
+    if not native_cpu_cx_rzz_swap_available():
+        pytest.skip("native CPU extension is unavailable")
+    generator = torch.Generator().manual_seed(4412)
+    state = torch.randn((1, 2**16), dtype=torch.complex128, generator=generator)
+    step = _StatevectorCXSequenceRZZSwapStep(
+        controls=tuple(range(15)),
+        targets=tuple(range(1, 16)),
+        rzz_wires=(0, 15),
+        rzz_angle=0.173,
+        swap_wires=(1, 14),
+    )
+    expected = _apply_cx_rzz_swap_sequence(step, state, 16)
+    scratch = torch.empty_like(state)
+
+    actual = _apply_cx_rzz_swap_sequence(step, state, 16, scratch=scratch)
+
+    assert actual.data_ptr() == scratch.data_ptr()
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)

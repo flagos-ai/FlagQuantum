@@ -7,6 +7,7 @@ import pytest
 import flagquantum as fq
 import flagquantum.deployment as fqd
 from flagquantum.deployment import CloudBackendProfile
+from flagquantum.errors import ValidationError
 from flagquantum.remote import (
     HttpQuantumProvider,
     ProviderCredentials,
@@ -298,7 +299,7 @@ def test_quafu_provider_does_not_legacy_fallback_task_api_only_targets(target):
         },
     )
 
-    with pytest.raises(RuntimeError, match="requires the task API"):
+    with pytest.raises(ValidationError, match="requires the task API"):
         provider.submit(package)
 
     assert transport.posts == []
@@ -430,7 +431,9 @@ def test_quafu_provider_rejects_insecure_task_api_url():
 
 def test_quafu_provider_preserves_returned_bit_order_by_default():
     transport = FakeTransport()
-    provider = QuafuProvider(base_url="https://quafu.test", transport=transport)
+    provider = QuafuProvider(
+        base_url="https://quafu.test", transport=transport, token="legacy-secret"
+    )
     package = _package("quafu")
     handle = provider.submit(package)
 
@@ -450,6 +453,7 @@ def test_quafu_provider_can_reverse_result_bits_for_legacy_consumers():
     provider = QuafuProvider(
         base_url="https://quafu.test",
         transport=AsymmetricResultTransport(),
+        token="legacy-secret",
         reverse_result_bits=True,
     )
     package = _package("quafu")
@@ -551,6 +555,7 @@ def test_quafu_provider_run_polls_until_finished():
     provider = QuafuProvider(
         base_url="https://quafu.test",
         transport=PollingTransport(),
+        token="legacy-secret",
         poll_interval=0,
         result_timeout=1,
     )
@@ -673,7 +678,14 @@ def test_quafu_provider_submits_precompiled_logical_qasm_with_mapping():
 
 
 def test_quafu_provider_rejects_missing_or_invalid_physical_mapping():
-    provider = QuafuProvider(base_url="https://quafu.test", transport=FakeTransport())
+    # A credential is configured so that each assertion below still reaches the
+    # mapping validation it names. Without one the credential guard -- which
+    # sits at the head of both entry points -- answers first instead.
+    provider = QuafuProvider(
+        base_url="https://quafu.test",
+        transport=FakeTransport(),
+        token="legacy-secret",
+    )
     qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\n'
 
     with pytest.raises(ValueError, match="target_qubits"):

@@ -151,13 +151,15 @@ def _apply_cx_rzz_swap_sequence(
     step: _StatevectorCXSequenceRZZSwapStep,
     state: torch.Tensor,
     n_qubits: int,
+    *,
+    scratch: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply one compiled static CX/RZZ/SWAP segment natively."""
 
     images = compact_cx_rzz_swap_images(
         step.controls, step.targets, step.swap_wires, n_qubits
     )
-    output = torch.empty_like(state)
+    output = scratch if scratch is not None else torch.empty_like(state)
     if not fused_compact_cx_rzz_swap_out(
         state,
         images,

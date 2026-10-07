@@ -24,6 +24,25 @@ recorded in `docs/public_api_v1.json` and
 [Public API Protection](../development/PUBLIC_API_PROTECTION.md); the entries
 are otherwise unchanged.
 
+- Added `Circuit.power(k)` to the construction-time composition family. It returns
+  the circuit that applies the receiver's program `k` times, for an integer `k`,
+  and it is exact for every instruction: the whole program is appended in order,
+  so a gate with no angle, a custom `Circuit.unitary(...)` operation, and a noise
+  channel all work. `power(1)` copies the program rather than multiplying its
+  angles by one, so a symbolic parameter or a trainable angle stays the same
+  object, and `power(0)` is the empty program of the same shape. A negative
+  exponent is `adjoint().power(-k)`, which keeps the inverse rule in one place, so
+  a channel under a negative exponent raises the same `CapabilityError` that
+  `adjoint` raises. One rewrite shortens the common case: a receiver that is
+  exactly one instruction declaring exactly one parameter has that parameter
+  multiplied by the exponent instead of the gate being repeated, and the rule is
+  declared per opcode in `flagquantum/core/operator_schema.py` and measured
+  through the dense operator by the composition contract gate, so 12 of the 35
+  registered opcodes take the closed form and the other 23 repeat. A fractional
+  exponent is refused with `TypeError` rather than approximated, because the IR
+  has no instruction form for a matrix root. See
+  [the power API change](../api-changes/FQ-CIRCUIT-POWER-20261021.md).
+
 - Added the stable `fq.density_matrix(qubits=None, *, name=None)` output request and
   the `ExecutionResult.density_matrix` property, so an execution can be asked for the
   state on a named subset of qubits instead of only for outcome statistics.
@@ -44,9 +63,9 @@ are otherwise unchanged.
   program unchanged, level `1` cancels and merges what is adjacent, and level `2`
   also removes diagonal gates before a measurement and merges rotations across a
   proven commuting gap. Level `3` is declared and reserved and raises
-  `CompilationError`, because the unitary-synthesis stage it would add has no
-  pass-over-IR counterpart yet; a value that is not an integer is refused the same
-  way. The level that ran is recorded in `metadata["optimization"]`. See
+  `CompilationError`, because the unitary-synthesis stage it would add needs a
+  target basis and `optimize` is target-independent; a value that is not an integer
+  is refused the same way. The level that ran is recorded in `metadata["optimization"]`. See
   [the optimization-level API change](../api-changes/FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md).
 
 - Added the stable `fq.gradient(program, parameters, loss=None, *, method="auto",
@@ -61,6 +80,22 @@ are otherwise unchanged.
   result reports whether backward replayed it. See
   [the gradient API change](../api-changes/FQ-GRADIENT-API-20261002.md) and the
   [gradient methods example](../../examples/gradient_methods/README.md).
+- Added the stable `fq.jacobian(program, parameters)`,
+  `fq.jvp(program, parameters, tangents)`, and
+  `fq.vjp(program, parameters, cotangents)` entry points for a program that
+  returns several values, so that no single scalar gradient is defined.
+  `fq.jacobian` returns every partial derivative shaped
+  `(*program_output.shape, *parameters.shape)`, `fq.jvp` applies it forward as
+  `J @ tangents`, and `fq.vjp` applies it in reverse as `cotangents @ J`. None
+  of the three takes a `method`: there is no shift rule for a vector output and
+  no displacement to report, so all three are autograd-only and a program whose
+  output carries no PyTorch graph is refused rather than answered with a zero
+  derivative. A tangent must be shaped exactly like `parameters` and a cotangent
+  exactly like the program output, because a broadcast direction would
+  differentiate along a different parameterization. All three serve
+  `statevector`, `mps`, and `tensor_network` mode and return the parameter dtype
+  and device. See
+  [the vector-derivative API change](../api-changes/FQ-VECTOR-DERIVATIVES-20261026.md).
 - Added the stable `fq.from_openqasm(source)` entry point, which reads back the
   OpenQASM 2 and OpenQASM 3 text
   `flagquantum.compiler.openqasm.emit_openqasm` writes. It reports the imported

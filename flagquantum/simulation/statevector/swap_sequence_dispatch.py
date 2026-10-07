@@ -15,6 +15,10 @@ from ...kernels.catalog import (
     match_kernel_implementations,
 )
 from ..kernel_dispatch import _require_cataloged_kernel
+from .dense_fusion_cpu import (
+    _apply_swap_sequence,
+    _cpu_swap_sequence_fusion_enabled,
+)
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-SV-014-A"
 _EVIDENCED_STATE_SHAPES = frozenset(
@@ -151,12 +155,59 @@ def _try_apply_cataloged_swap_sequence(
     return _apply_cataloged_swap_sequence(state, swaps=swaps)
 
 
+def _apply_swap_sequence_step(
+    state: torch.Tensor,
+    *,
+    swaps: tuple[tuple[int, int], ...],
+    n_qubits: int,
+) -> torch.Tensor:
+    """Execute the authorized SV-014 route, or the established reference path."""
+
+    dispatched = _try_apply_cataloged_swap_sequence(
+        state,
+        swaps=swaps,
+        n_qubits=n_qubits,
+    )
+    if dispatched is not None:
+        return dispatched
+    return _apply_swap_sequence(state, swaps, n_qubits)
+
+
+def _swap_sequence_policy(
+    state: torch.Tensor,
+) -> tuple[bool, bool, tuple[int, int | None] | None]:
+    """Return the CPU flag, the Triton rollout flag, and the compile window.
+
+    The compile window is ``None`` when neither route forms a fused step,
+    ``(2, None)`` while CPU fusion is enabled, and the measured ``(4, 8)``
+    window while the Triton rollout is enabled.
+    """
+
+    enable_cpu_fusion = bool(
+        state.device.type == "cpu" and _cpu_swap_sequence_fusion_enabled()
+    )
+    enable_triton_dispatch = bool(
+        state.is_cuda
+        and state.dtype == torch.complex64
+        and _swap_sequence_dispatch_enabled()
+    )
+    if enable_cpu_fusion:
+        return True, enable_triton_dispatch, (2, None)
+    return (
+        False,
+        enable_triton_dispatch,
+        (4, 8) if enable_triton_dispatch else None,
+    )
+
+
 __all__ = (
     "_apply_cataloged_swap_sequence",
+    "_apply_swap_sequence_step",
     "_require_swap_sequence_kernel",
     "_swap_sequence_dispatch_enabled",
     "_swap_sequence_kernel_enabled",
     "_swap_sequence_kernel_match",
+    "_swap_sequence_policy",
     "_swap_sequence_shape_supported",
     "_try_apply_cataloged_swap_sequence",
 )

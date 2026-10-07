@@ -19,6 +19,12 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.
 - `contracts.py`: versioned cross-domain execution and evidence records.
+- `controlled.py` and `_composition.py`: the per-instruction adapters behind
+  `Circuit.adjoint`, `Circuit.power`, and `Circuit.control`. `operator_schema.py`
+  declares each opcode's adjoint, power, and control rule; `controlled.py` emits a
+  controlled expansion; `_composition.py` reads one recorded instruction, picks the
+  route its own record selects, and refuses by name when no route applies. The three
+  public methods are the only caller-facing statement of this behaviour.
 - `_artifacts.py`: internal artifact construction shared by stable public types.
 
 `runtime_config.py` is configuration data owned by Core; configuration
