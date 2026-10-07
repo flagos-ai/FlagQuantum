@@ -58,7 +58,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_matrices_and_rates` | aligned | now | — | Closed: both matrices in the stim orientation, the error-id column, the per-mechanism rate column, the closed-form marginals and the context object are all present. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
 | `qec_dem_chunking` | partial | now | `qec_decoder_family` | The layer algebra, the window identity, the named seams and the two round trips landed; what is left is the chunk-scoped matrix projection, which is the input shape of the sliding-window decoder and lands with it. |
-| `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
+| `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; the reader now takes the whole grammar stim's writer uses, `repeat` blocks and comments included; both separator readings offered under upstream's flag; the input end is narrow and the detector count is read from the declarations. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed and every family the noise record states is placed; a second grammar now places a channel bound to a named gate after the gate it matched, so what remains at the input end is the arbitrary annotated circuit rather than the placement. |
 | `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a belief-propagation decoder that reads the hyperedges that matcher refuses, a composite-fault decomposition that widens it past the one hyperedge a memory circuit states, its PyMatching cross-check, and a name-keyed registry all landed; no sliding window, no batch result record, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
@@ -939,7 +939,7 @@ statement about the channel; the test splits the handles by what they measure fo
 exactly that reason, since pooling the two kinds would average the distinction
 away.
 
-## 3. The 23 field rows — `dem.py` against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
+## 3. The 23 field rows — the detector error model against `DEMResult` / `dem_from_kernel` (both CUDA-Q core)
 
 The short version, because the full table is in the TOML. Across 23 field rows:
 2 `equivalent`, 2 `renamed`, 1 `extra`, 14 `reshaped`, 4 `absent`.
@@ -973,10 +973,14 @@ evidence about either.
 What remains of upstream's two stated losses is the error-id one, and that is a
 property of the record on both sides rather than of this reader. The rest of the
 refusals differ in kind, not in spirit: upstream hands the text to stim and states
-what it loses, this repository refuses constructs its own record cannot hold
-(`repeat`, comments, skipped indices, malformed lines) rather than dropping them —
-and one construct more under the expanded reading alone, a component that cancels
-to nothing, which no mechanism can state.
+what it loses, this repository refuses a construct its own record cannot hold (a
+declaration that skips an index, an error mechanism that flips nothing, a
+malformed line, a block that never closes, a closing brace with no block open)
+rather than dropping it — and one construct more under the expanded reading alone,
+a component that cancels to nothing, which no mechanism can state. `repeat` blocks
+and `#` comments are read rather than refused, and a block is read by expansion,
+which is the one cost this reader pays that stim's does not; the sixty swept models
+that carry a block are read as the model stim's own `flattened()` form states.
 
 The second is `dem_merge_duplicate_columns(dem, mode)`, a free function over a
 dem with a mode enum, which is `DetectorErrorModel.merge_duplicate_mechanisms`
