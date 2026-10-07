@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections import OrderedDict, deque
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from threading import Lock
+from types import MappingProxyType
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
@@ -30,6 +31,25 @@ ROUTING_STRATEGIES = (
 
 # The two strategies that plan SWAPs from a search rather than estimating them.
 SABRE_ROUTING_STRATEGIES = ("sabre", "sabre_layout")
+
+# The strategies whose plan the deployment routing contract accepts, which is the
+# candidate set an automatic choice may pick from: `auto` must not hand a caller a
+# program that fail-closed deployment then refuses. `sabre_layout` is the one
+# strategy outside this set, and the reason is structural rather than a ranking: it
+# starts from a layout `plan_sabre_layout` searched for, so its
+# `initial_logical_to_physical` is the identity on only 23 of the 60 programs in
+# `tests/team/compiler/test_routing_conformance.py`, while
+# `flagquantum/deployment/routing_evidence.py` requires the identity because a
+# deployment artifact must state a physical starting assignment a provider can
+# reproduce. It stays a caller-selected strategy and stays priceable, so a caller
+# whose provider accepts a permuted start can still ask for it by name.
+# `flagquantum/deployment/routing_evidence.py` reads this constant, so the
+# accepted set and the selectable set cannot drift apart.
+DEPLOYABLE_ROUTING_STRATEGIES = (
+    "restore_after_each_gate",
+    "persistent_layout",
+    "sabre",
+)
 
 # The physical couplings a multi-wire instruction needs, as operand index pairs.
 # This is the authoritative vocabulary for multi-wire locality in the Compiler:
@@ -424,54 +444,51 @@ class RoutingCostEstimate:
 
 @dataclass(frozen=True)
 class RoutingStrategySelection:
-    """Auditable strategy choice made before routed IR materialization."""
+    """Auditable strategy choice made from the planning cost of every strategy.
+
+    ``candidates`` holds one priced estimate per name in
+    ``DEPLOYABLE_ROUTING_STRATEGIES``, in that order, so the record states both the
+    choice and what it was chosen over. The set is the deployment contract's, not
+    the whole routing vocabulary, because a choice the contract refuses is not a
+    choice a caller can deploy. It is an immutable view rather than a dict a caller
+    can edit, because the record is written into compile metadata as the evidence
+    of the choice.
+    """
 
     selected_strategy: str
-    restore_after_each_gate: RoutingCostEstimate
-    persistent_layout: RoutingCostEstimate
+    candidates: Mapping[str, RoutingCostEstimate]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "candidates", MappingProxyType(dict(self.candidates)))
 
     def summary(self) -> dict[str, Any]:
         return {
             "schema": "flagquantum_routing_strategy_selection_v1",
             "objective": "minimize_planned_inserted_swaps_then_instructions",
             "selected_strategy": self.selected_strategy,
-            "tie_breaker": "restore_after_each_gate",
+            "tie_breaker": "candidate_order",
             "candidates": {
-                "restore_after_each_gate": (self.restore_after_each_gate.summary()),
-                "persistent_layout": self.persistent_layout.summary(),
+                name: estimate.summary() for name, estimate in self.candidates.items()
             },
         }
 
 
-def estimate_routing_cost(
-    circuit_or_ir: Any,
-    coupling_map: CouplingMap | Iterable[tuple[int, int]],
-    *,
-    strategy: str = "restore_after_each_gate",
-) -> RoutingCostEstimate:
-    """Estimate routing growth without constructing routed instructions."""
+def _source_routing_counts(
+    ir: CircuitIR,
+    coupling: CouplingMap,
+) -> tuple[int, int, int]:
+    """Return the source program's topology, routed, and skipped-channel counts.
 
-    if strategy not in {"restore_after_each_gate", "persistent_layout"}:
-        raise ValueError(
-            "routing cost estimate supports 'restore_after_each_gate' or "
-            "'persistent_layout'; 'sabre' and 'sabre_layout' plan SWAPs instead "
-            "of estimating them"
-        )
-    ir = ensure_circuit_ir(circuit_or_ir)
-    coupling = (
-        coupling_map
-        if isinstance(coupling_map, CouplingMap)
-        else CouplingMap(ir.n_wires, coupling_map)
-    )
-    if coupling.n_wires < ir.n_wires:
-        raise ValueError("Coupling map has fewer wires than the circuit.")
+    These three describe a program against one device, and every strategy reports
+    them the same way: a two-wire operation is a topology gate, one the device
+    cannot execute directly is also a routed gate, and a two-wire channel is
+    neither because routing may not move a channel. Counting them in one place is
+    what keeps a strategy's routing metadata and its cost estimate from
+    disagreeing about the same program.
+    """
 
-    cache_before = coupling.path_cache_info()
-    logical_to_physical = list(range(ir.n_wires))
-    physical_to_logical = list(range(ir.n_wires))
     topology_gate_count = 0
     routed_gate_count = 0
-    forward_swap_count = 0
     skipped_channel_count = 0
     for instruction in ir:
         if len(instruction.wires) != 2:
@@ -480,6 +497,37 @@ def estimate_routing_cost(
             skipped_channel_count += 1
             continue
         topology_gate_count += 1
+        if not coupling.has_edge(*instruction.wires):
+            routed_gate_count += 1
+    return topology_gate_count, routed_gate_count, skipped_channel_count
+
+
+def _estimate_swap_plan(
+    ir: CircuitIR,
+    coupling: CouplingMap,
+    *,
+    strategy: str,
+) -> tuple[int, tuple[int, ...]]:
+    """Estimate the SWAPs one estimating strategy inserts, and its mid-plan layout.
+
+    The estimate replays the strategy's layout bookkeeping over the program's wire
+    pairs instead of emitting instructions, which is what keeps it cheap.
+    ``restore_after_each_gate`` returns to the identity layout after every gate, so
+    it pays each hop twice and ends where it started; ``persistent_layout`` keeps
+    the layout it reached, so it pays each hop once and reports where it finished.
+
+    Returns:
+        ``(planned_inserted_swap_count, pre_restore_logical_to_physical)``.
+    """
+
+    logical_to_physical = list(range(ir.n_wires))
+    physical_to_logical = list(range(ir.n_wires))
+    forward_swap_count = 0
+    for instruction in ir:
+        if len(instruction.wires) != 2:
+            continue
+        if instruction.metadata.get("is_channel"):
+            continue
         mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
         if coupling.has_edge(*mapped_wires):
             continue
@@ -489,7 +537,6 @@ def estimate_routing_cost(
                 "Routing through physical ancilla wires outside the circuit IR "
                 "is not supported; provide an explicit layout/lowering step."
             )
-        routed_gate_count += 1
         gate_swap_count = max(0, len(path) - 2)
         forward_swap_count += gate_swap_count
         if strategy == "persistent_layout":
@@ -504,14 +551,79 @@ def estimate_routing_cost(
                 )
                 logical_to_physical[left_logical] = right
                 logical_to_physical[right_logical] = left
-
     identity_layout = tuple(range(ir.n_wires))
     pre_restore_layout = (
         tuple(logical_to_physical)
         if strategy == "persistent_layout"
         else identity_layout
     )
-    planned_swaps = 2 * forward_swap_count
+    return 2 * forward_swap_count, pre_restore_layout
+
+
+def estimate_routing_cost(
+    circuit_or_ir: Any,
+    coupling_map: CouplingMap | Iterable[tuple[int, int]],
+    *,
+    strategy: str = "restore_after_each_gate",
+) -> RoutingCostEstimate:
+    """Estimate one strategy's routing growth without emitting routed instructions.
+
+    Every name in ``ROUTING_STRATEGIES`` is priceable. The two estimating
+    strategies are priced by replaying their layout bookkeeping over the program's
+    wire pairs; the two SABRE strategies are priced by planning their SWAPs, which
+    is the work ``route_to_topology`` would do anyway, so a planned price is the
+    count the chosen strategy will insert rather than a bound on it. Pricing all
+    four is what lets ``select_routing_strategy`` compare a planner against an
+    estimate.
+
+    Args:
+        circuit_or_ir: The program to price.
+        coupling_map: The device to price it against, as a ``CouplingMap`` or an
+            edge sequence.
+        strategy: One of ``ROUTING_STRATEGIES``.
+
+    Returns:
+        The planned SWAP count, the expected instruction count, and the source
+        counts the same strategy would report in routing metadata.
+
+    Raises:
+        ValueError: If ``strategy`` is not in ``ROUTING_STRATEGIES``, the coupling
+            map has fewer wires than the circuit, a costed path leaves the
+            device, or a planner cannot route the program.
+    """
+
+    if strategy not in ROUTING_STRATEGIES:
+        raise ValueError(
+            "routing strategy must be one of "
+            + ", ".join(repr(name) for name in ROUTING_STRATEGIES)
+        )
+    ir = ensure_circuit_ir(circuit_or_ir)
+    coupling = (
+        coupling_map
+        if isinstance(coupling_map, CouplingMap)
+        else CouplingMap(ir.n_wires, coupling_map)
+    )
+    if coupling.n_wires < ir.n_wires:
+        raise ValueError("Coupling map has fewer wires than the circuit.")
+
+    identity_layout = tuple(range(ir.n_wires))
+    cache_before = coupling.path_cache_info()
+    topology_gate_count, routed_gate_count, skipped_channel_count = (
+        _source_routing_counts(ir, coupling)
+    )
+    if strategy in SABRE_ROUTING_STRATEGIES:
+        initial_layout = (
+            plan_sabre_layout(ir, coupling)
+            if strategy == "sabre_layout"
+            else identity_layout
+        )
+        plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
+        planned_swaps = len(plan.swaps) + len(plan_restore_swaps(plan, coupling))
+        pre_restore_layout = plan.final_logical_to_physical
+    else:
+        planned_swaps, pre_restore_layout = _estimate_swap_plan(
+            ir, coupling, strategy=strategy
+        )
     cache_after = coupling.path_cache_info()
     return RoutingCostEstimate(
         strategy=strategy,
@@ -534,7 +646,19 @@ def select_routing_strategy(
     circuit_or_ir: Any,
     coupling_map: CouplingMap | Iterable[tuple[int, int]],
 ) -> RoutingStrategySelection:
-    """Select a routing strategy from lightweight cost estimates."""
+    """Select the cheapest routing strategy the deployment contract accepts.
+
+    The candidates are ``DEPLOYABLE_ROUTING_STRATEGIES``, so the automatic choice
+    can reach the ``sabre`` planner while never producing a program deployment
+    refuses. Candidates are ranked by planned inserted SWAPs and then by expected
+    instruction count; ties are broken by candidate order, which keeps the two
+    estimating strategies ahead of the planner so that an equally priced plan is
+    not planned twice.
+
+    Pricing a planner is planning it, so this call does the work
+    ``route_to_topology`` will repeat. A caller who routes once should pass the
+    strategy it wants rather than asking for ``"auto"``.
+    """
 
     ir = ensure_circuit_ir(circuit_or_ir)
     coupling = (
@@ -542,34 +666,18 @@ def select_routing_strategy(
         if isinstance(coupling_map, CouplingMap)
         else CouplingMap(ir.n_wires, coupling_map)
     )
-    restore = estimate_routing_cost(
-        ir,
-        coupling,
-        strategy="restore_after_each_gate",
+    candidates = {
+        name: estimate_routing_cost(ir, coupling, strategy=name)
+        for name in DEPLOYABLE_ROUTING_STRATEGIES
+    }
+    selected = min(
+        DEPLOYABLE_ROUTING_STRATEGIES,
+        key=lambda name: (
+            candidates[name].planned_inserted_swap_count,
+            candidates[name].estimated_instruction_count,
+        ),
     )
-    persistent = estimate_routing_cost(
-        ir,
-        coupling,
-        strategy="persistent_layout",
-    )
-    persistent_cost = (
-        persistent.planned_inserted_swap_count,
-        persistent.estimated_instruction_count,
-    )
-    restore_cost = (
-        restore.planned_inserted_swap_count,
-        restore.estimated_instruction_count,
-    )
-    selected = (
-        "persistent_layout"
-        if persistent_cost < restore_cost
-        else "restore_after_each_gate"
-    )
-    return RoutingStrategySelection(
-        selected_strategy=selected,
-        restore_after_each_gate=restore,
-        persistent_layout=persistent,
-    )
+    return RoutingStrategySelection(selected_strategy=selected, candidates=candidates)
 
 
 def _swap_instruction(
@@ -710,9 +818,13 @@ def _route_persistent_layout(
     physical_to_logical = list(range(ir.n_wires))
     routed: list[Instruction] = []
     routing_swaps: list[tuple[int, int, Instruction, int]] = []
-    topology_gate_count = 0
-    routed_gate_count = 0
-    skipped_channel_count = 0
+    # Counted against the source wires, like every other strategy and like the
+    # cost estimate: a gate this layout happened to make local is still a gate
+    # the device did not carry, and reporting it as unrouted would make the same
+    # field mean something different per strategy.
+    topology_gate_count, routed_gate_count, skipped_channel_count = (
+        _source_routing_counts(ir, coupling)
+    )
 
     def apply_mapping_swap(
         left: int,
@@ -757,7 +869,6 @@ def _route_persistent_layout(
             )
             continue
         if instruction.metadata.get("is_channel"):
-            skipped_channel_count += 1
             routed.append(
                 _remap_instruction(
                     instruction,
@@ -768,7 +879,6 @@ def _route_persistent_layout(
             )
             continue
 
-        topology_gate_count += 1
         left, right = mapped_wires
         if not coupling.has_edge(left, right):
             path = coupling.shortest_path(left, right)
@@ -777,7 +887,6 @@ def _route_persistent_layout(
                     "Routing through physical ancilla wires outside the circuit IR "
                     "is not supported; provide an explicit layout/lowering step."
                 )
-            routed_gate_count += 1
             for path_index in range(len(path) - 2):
                 swap = (
                     path[path_index],
@@ -863,12 +972,13 @@ def _route_sabre(
     )
     plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
     routed: list[Instruction] = []
-    topology_gate_count = 0
-    # Counted against the source wires, exactly as the shortest-path strategies
-    # do, so the number describes the work the topology forces rather than the
-    # work this layout happened to arrange for free.
-    routed_gate_count = 0
-    skipped_channel_count = 0
+    # Counted against the source wires rather than the placed ones, exactly as the
+    # shortest-path strategies and the cost estimate count them, so the number
+    # describes the work the topology forces rather than the work this layout
+    # happened to arrange for free.
+    topology_gate_count, routed_gate_count, skipped_channel_count = (
+        _source_routing_counts(ir, coupling)
+    )
     swap_index = 0
     placed_so_far = 0
     for source_index in plan.sequence:
@@ -896,8 +1006,6 @@ def _route_sabre(
             _require_multi_wire_device_local(
                 instruction, placed_wires, coupling.has_edge
             )
-            if instruction.metadata.get("is_channel"):
-                skipped_channel_count += 1
             routed.append(
                 _remap_instruction(
                     instruction,
@@ -907,9 +1015,6 @@ def _route_sabre(
                 )
             )
             continue
-        topology_gate_count += 1
-        if not coupling.has_edge(*instruction.wires):
-            routed_gate_count += 1
         routed.append(
             _remap_instruction(
                 instruction,
@@ -986,10 +1091,10 @@ def route_to_topology(
         )
 
     routed: list[Instruction] = []
-    routed_gate_count = 0
+    topology_gate_count, routed_gate_count, skipped_channel_count = (
+        _source_routing_counts(ir, coupling)
+    )
     inserted_swap_count = 0
-    topology_gate_count = 0
-    skipped_channel_count = 0
     for source_index, instruction in enumerate(ir):
         if len(instruction.wires) != 2:
             _require_multi_wire_device_local(
@@ -1005,7 +1110,6 @@ def route_to_topology(
             )
             continue
         if instruction.metadata.get("is_channel"):
-            skipped_channel_count += 1
             routed.append(
                 _remap_instruction(
                     instruction,
@@ -1016,7 +1120,6 @@ def route_to_topology(
             )
             continue
 
-        topology_gate_count += 1
         left, right = instruction.wires
         if coupling.has_edge(left, right):
             routed.append(
@@ -1038,7 +1141,6 @@ def route_to_topology(
         forward_swaps = [
             (path[index], path[index + 1]) for index in range(len(path) - 2)
         ]
-        routed_gate_count += 1
         inserted_swap_count += 2 * len(forward_swaps)
         for swap_left, swap_right in forward_swaps:
             routed.append(

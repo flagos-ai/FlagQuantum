@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from ..compiler import CouplingMap
+from ..compiler.routing import DEPLOYABLE_ROUTING_STRATEGIES
 
 DEPLOYMENT_ROUTING_EVIDENCE_SCHEMA = "flagquantum_deployment_routing_evidence_v1"
 DEPLOYMENT_PACKAGE_SCHEMA = "flagquantum_deployment_package_v1"
@@ -44,7 +45,10 @@ def validate_deployment_routing_plan(
     if plan.get("schema") != "flagquantum_routing_plan_v1":
         raise DeploymentRoutingEvidenceError("unsupported routing plan schema")
     strategy = plan.get("strategy")
-    if strategy not in {"restore_after_each_gate", "persistent_layout"}:
+    # The accepted set is the Compiler's deployable set, not a second copy of it:
+    # a strategy the automatic choice may pick must be accepted here, or `auto`
+    # could hand a package a plan this fail-closed validator then refuses.
+    if strategy not in DEPLOYABLE_ROUTING_STRATEGIES:
         raise DeploymentRoutingEvidenceError("unsupported routing strategy")
 
     expected_identity = tuple(range(int(n_wires)))
@@ -118,10 +122,9 @@ def validate_deployment_routing_plan(
                 "routing strategy selection disagrees with materialized plan"
             )
         candidates = selection.get("candidates")
-        if not isinstance(candidates, Mapping) or set(candidates) != {
-            "restore_after_each_gate",
-            "persistent_layout",
-        }:
+        if not isinstance(candidates, Mapping) or set(candidates) != set(
+            DEPLOYABLE_ROUTING_STRATEGIES
+        ):
             raise DeploymentRoutingEvidenceError(
                 "routing strategy selection candidates are incomplete"
             )

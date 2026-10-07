@@ -6,6 +6,8 @@ import torch
 import flagquantum as fq
 import flagquantum.runtime.planner as fqxp
 from flagquantum.compiler.routing import (
+    DEPLOYABLE_ROUTING_STRATEGIES,
+    ROUTING_STRATEGIES,
     CouplingMap,
     estimate_routing_cost,
     route_to_topology,
@@ -22,10 +24,7 @@ def _workload() -> fq.Circuit:
     return circuit
 
 
-@pytest.mark.parametrize(
-    "strategy",
-    ("restore_after_each_gate", "persistent_layout"),
-)
+@pytest.mark.parametrize("strategy", ROUTING_STRATEGIES)
 @pytest.mark.parametrize(
     "coupling",
     (
@@ -39,6 +38,14 @@ def test_routing_estimate_matches_materialized_plan(
     strategy: str,
     coupling: CouplingMap,
 ) -> None:
+    """A price is the plan a strategy produces, not a bound on it.
+
+    Every name the router accepts is priced, including the two planners, whose
+    price is the plan itself. The two SABRE strategies reorder operations and
+    ``persistent_layout`` counts a two-wire operation as unrouted only where the
+    device lacks the coupling, so the counting fields have to agree too.
+    """
+
     estimate = estimate_routing_cost(
         _workload(),
         coupling,
@@ -53,19 +60,51 @@ def test_routing_estimate_matches_materialized_plan(
 
     assert estimate.source_instruction_count == len(_workload())
     assert estimate.estimated_instruction_count == len(routed)
+    assert estimate.planned_inserted_swap_count == metadata["inserted_swap_count"]
     assert (
         estimate.planned_inserted_swap_count == metadata["planned_inserted_swap_count"]
     )
     assert estimate.topology_gate_count == metadata["topology_gate_count"]
     assert estimate.routed_gate_count == metadata["routed_gate_count"]
+    assert estimate.skipped_channel_count == metadata["skipped_channel_count"]
     assert (
         estimate.pre_restore_logical_to_physical
         == metadata["pre_restore_logical_to_physical"]
-    )
+    ), "pre_restore_logical_to_physical"
     assert estimate.final_logical_to_physical == metadata["final_logical_to_physical"]
 
 
-def test_auto_strategy_selects_persistent_when_it_reduces_swaps() -> None:
+def test_the_estimate_prices_every_strategy_the_router_accepts() -> None:
+    """The candidate set is the router's whole vocabulary, planners included.
+
+    The estimate used to refuse ``sabre`` and ``sabre_layout`` because a planner
+    does not estimate its SWAPs, which left the automatic choice unable to compare
+    a planner against an estimate. Pricing a planner is planning it, which is what
+    makes the two lists equal rather than a pinned pair of names.
+    """
+
+    priced = {
+        strategy: estimate_routing_cost(
+            _workload(), CouplingMap.line(5), strategy=strategy
+        )
+        for strategy in ROUTING_STRATEGIES
+    }
+
+    assert set(priced) == set(ROUTING_STRATEGIES)
+    assert (
+        priced["sabre_layout"].planned_inserted_swap_count
+        < priced["persistent_layout"].planned_inserted_swap_count
+    )
+
+
+def test_the_estimate_refuses_a_name_the_router_does_not_accept() -> None:
+    with pytest.raises(ValueError, match="routing strategy must be one of"):
+        estimate_routing_cost(
+            _workload(), CouplingMap.line(5), strategy="restore_after_each_swap"
+        )
+
+
+def test_auto_strategy_selects_the_cheapest_deployable_strategy() -> None:
     circuit = fq.Circuit(5)
     circuit.cx(0, 4).h(4).cx(0, 4)
     coupling = CouplingMap.line(5)
@@ -81,6 +120,16 @@ def test_auto_strategy_selects_persistent_when_it_reduces_swaps() -> None:
         routing_strategy="auto",
     )
 
+    assert set(selection.candidates) == set(DEPLOYABLE_ROUTING_STRATEGIES)
+    assert selection.candidates[
+        selection.selected_strategy
+    ].planned_inserted_swap_count == min(
+        estimate.planned_inserted_swap_count
+        for estimate in selection.candidates.values()
+    )
+    # ``persistent_layout`` and ``sabre`` both price at 6 SWAPs here and the
+    # candidate order puts the estimate first, so an equal price does not pay for
+    # a plan.
     assert selection.selected_strategy == "persistent_layout"
     assert compiled.to_ir().metadata["routing"]["strategy"] == "persistent_layout"
     assert (
@@ -95,28 +144,44 @@ def test_auto_strategy_selects_persistent_when_it_reduces_swaps() -> None:
     assert torch.allclose(compiled.state(), circuit.state(), atol=1e-6)
 
 
-def test_auto_strategy_tie_breaks_to_restore_after_each_gate() -> None:
+def test_the_automatic_choice_reaches_the_sabre_planner() -> None:
+    """The gap the parity row named: ``auto`` could not select a planner at all.
+
+    The same selection is driven through ``compile`` and through the deployment
+    package builder, because the automatic choice must not hand one of them a
+    program the other refuses.
+    """
+
+    circuit = _spread_workload(n_wires=12, depth=20, seed=4)
+    coupling = CouplingMap.line(12)
+
+    selection = select_routing_strategy(circuit, coupling)
+
+    assert selection.selected_strategy == "sabre"
+    assert (
+        selection.candidates["sabre"].planned_inserted_swap_count
+        < selection.candidates["persistent_layout"].planned_inserted_swap_count
+    )
+    compiled = circuit.compile(coupling_map=coupling, routing_strategy="auto")
+    routing = compiled.to_ir().metadata["routing"]
+    assert routing["strategy"] == "sabre"
+    assert routing["initial_logical_to_physical"] == tuple(range(circuit.n_qubits))
+    assert routing["final_logical_to_physical"] == tuple(range(circuit.n_qubits))
+    assert torch.allclose(compiled.state(), circuit.state(), atol=1e-6)
+
+
+def test_auto_strategy_tie_breaks_to_the_estimating_strategy() -> None:
+    """Equal prices must not re-plan, so the estimates keep their place in order."""
+
     circuit = fq.Circuit(3).cx(0, 1).h(2)
 
     selection = select_routing_strategy(circuit, CouplingMap.line(3))
 
-    assert selection.restore_after_each_gate.planned_inserted_swap_count == 0
-    assert selection.persistent_layout.planned_inserted_swap_count == 0
+    assert {
+        name: estimate.planned_inserted_swap_count
+        for name, estimate in selection.candidates.items()
+    } == dict.fromkeys(DEPLOYABLE_ROUTING_STRATEGIES, 0)
     assert selection.selected_strategy == "restore_after_each_gate"
-
-
-def test_the_estimate_refuses_the_planner_strategies_by_name() -> None:
-    """The estimate prices two strategies; the planner is refused, not priced.
-
-    `routing.ROUTING_STRATEGIES` names four strategies, so a caller could
-    reasonably ask the estimator for any of them. Two of those names are SWAP
-    planners rather than cost models, and the refusal says so instead of
-    returning a number that would be an estimate of nothing.
-    """
-
-    for strategy in ("sabre", "sabre_layout"):
-        with pytest.raises(ValueError, match="plan SWAPs instead of estimating them"):
-            estimate_routing_cost(_workload(), CouplingMap.line(5), strategy=strategy)
 
 
 def _spread_workload(n_wires: int, depth: int, seed: int) -> fq.Circuit:
@@ -133,39 +198,88 @@ def _spread_workload(n_wires: int, depth: int, seed: int) -> fq.Circuit:
     return circuit
 
 
-def test_auto_strategy_cannot_reach_a_planner_and_states_the_gap() -> None:
-    """The selector's candidate set is pinned, because the gap is the row's.
+def test_the_selector_ranks_the_whole_candidate_set() -> None:
+    """The automatic choice is the minimum of the prices it reports.
 
-    The parity row `topology_aware_routing` is `partial` on the routing decision
-    rather than on the router: a SABRE-class planner is present, and the
-    automatic choice cannot see it. This test re-derives that from the tree so
-    the reason cannot go stale in either direction -- the assertion is an
-    inequality, so it still holds after any improvement to the planner, and it
-    fails if the selector gains a planner strategy without the row being updated.
+    The parity row `topology_aware_routing` was `partial` because the automatic
+    choice priced two strategies and so could not reach the SABRE planner. The
+    assertion is the invariant rather than a pinned winner, so it still holds
+    after any improvement to any strategy, and it fails if a candidate is priced
+    but not considered, or if the chosen plan is not the plan it was priced at.
     """
 
     program = _spread_workload(n_wires=12, depth=20, seed=4)
     coupling = CouplingMap.line(12)
 
     selection = select_routing_strategy(program, coupling)
+    candidates = dict(selection.candidates)
 
-    # The candidate set is exactly the two estimating strategies, which is what
-    # the selection record exposes as its candidate fields.
-    assert set(selection.summary()["candidates"]) == {
-        "restore_after_each_gate",
-        "persistent_layout",
-    }
-    selected = selection.selected_strategy
-    selected_swaps = route_to_topology(program, coupling, strategy=selected).metadata[
-        "routing"
-    ]["inserted_swap_count"]
+    assert set(candidates) == set(DEPLOYABLE_ROUTING_STRATEGIES)
+    chosen = candidates[selection.selected_strategy]
+    assert chosen.planned_inserted_swap_count == min(
+        estimate.planned_inserted_swap_count for estimate in candidates.values()
+    )
+    # The record is written into compile metadata as the evidence of the choice,
+    # so the view of what was chosen over is not a dict a caller can edit after
+    # the fact.
+    with pytest.raises(TypeError):
+        selection.candidates["sabre"] = chosen  # type: ignore[index]
+    inserted = route_to_topology(
+        program, coupling, strategy=selection.selected_strategy
+    ).metadata["routing"]["inserted_swap_count"]
+    assert inserted == chosen.planned_inserted_swap_count
 
-    for planner in ("sabre", "sabre_layout"):
-        planner_swaps = route_to_topology(program, coupling, strategy=planner).metadata[
+    for strategy in DEPLOYABLE_ROUTING_STRATEGIES:
+        materialized = route_to_topology(program, coupling, strategy=strategy).metadata[
             "routing"
         ]["inserted_swap_count"]
-        assert selected_swaps > planner_swaps, (
-            f"{selected} spent {selected_swaps} swaps where {planner} needed "
-            f"{planner_swaps}, so this workload no longer shows the gap the "
-            "parity row's reason rests on"
+        assert inserted <= materialized, (
+            f"auto chose {selection.selected_strategy} at {inserted} swaps while "
+            f"{strategy} used {materialized}, so the selector is not ranking the "
+            "candidate set it reports"
         )
+
+
+def test_the_automatic_choice_is_always_accepted_by_deployment() -> None:
+    """A widening of the candidate set must not make ``auto`` undeployable.
+
+    `sabre_layout` is the one strategy outside the set, and it is outside for a
+    structural reason rather than a ranking: it starts from a searched layout, so
+    its ``initial_logical_to_physical`` is not the identity that a deployment
+    artifact has to state. This asserts the separation on the workload that
+    widening was measured on, and it fails if a strategy is added to the
+    candidate set without the deployment contract accepting its plan.
+    """
+
+    from flagquantum.deployment.routing_evidence import (
+        DeploymentRoutingEvidenceError,
+        validate_deployment_routing_plan,
+    )
+
+    program = _spread_workload(n_wires=12, depth=20, seed=4)
+    coupling = CouplingMap.line(12)
+    selection = select_routing_strategy(program, coupling)
+    assert "sabre_layout" not in DEPLOYABLE_ROUTING_STRATEGIES
+    assert set(DEPLOYABLE_ROUTING_STRATEGIES) < set(ROUTING_STRATEGIES)
+
+    for strategy in DEPLOYABLE_ROUTING_STRATEGIES:
+        plan = dict(
+            route_to_topology(program, coupling, strategy=strategy).metadata["routing"]
+        )
+        assert validate_deployment_routing_plan(
+            plan, n_wires=program.n_qubits, coupling_map=coupling
+        )
+
+    undeployable = dict(
+        route_to_topology(program, coupling, strategy="sabre_layout").metadata[
+            "routing"
+        ]
+    )
+    undeployable.pop("strategy_selection", None)
+    with pytest.raises(
+        DeploymentRoutingEvidenceError, match="unsupported routing strategy"
+    ):
+        validate_deployment_routing_plan(
+            undeployable, n_wires=program.n_qubits, coupling_map=coupling
+        )
+    assert selection.selected_strategy in DEPLOYABLE_ROUTING_STRATEGIES
