@@ -397,7 +397,16 @@ python -m pytest tests/unit/test_vn_entropy_output.py -q
 
 python tools/validate_required_checks.py
 # validated 6 externally configured required checks
+
+python tools/check_construction_acceptance_contract.py
+# Construction acceptance contract passed: 38 exports, opcode census 35, IR_VERSION 1.0
 ```
+
+The last of those is another slice's gate and it fired on this branch before the
+line above was true: `measured_root_export_count is stale: contract says 37,
+fq.__all__ has 38`. Its recorded reading moves with the surface, while its
+`not_covered` list stays empty, because a measurement output kind is not a
+construction member. The change record states that reasoning in full.
 
 The two test files are deliberately different jobs. The contract file holds the
 gate's tamper battery plus one shortest-path scenario. The scenario file holds the

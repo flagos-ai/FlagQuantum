@@ -286,6 +286,29 @@ a removal version, and a name born after the migration started would be born
 deprecated. This is the same decision proposal 068 recorded for
 `fq.density_matrix`.
 
+### A third firing of the construction-acceptance census
+
+`contracts/construction-acceptance-contract.toml` records
+`measured_root_export_count` as a live reading rather than a constant, precisely so
+that a surface move is named instead of absorbed. This slice is the third movement:
+it reads 38 after this PR and read 37 before it.
+
+The census fired on this branch, in its own words:
+
+```text
+measured_root_export_count is stale: contract says 37, fq.__all__ has 38
+```
+
+The recorded number moves with it, and `[subject]` is left alone on purpose. The two
+readings answer different questions: `[subject].not_covered` is the list of
+*construction members* the acceptance contracts as absent, and a measurement output
+kind is not a construction member, so adding `vn_entropy` there would be a false
+entry. The count is the reading that is supposed to move.
+
+That is also why updating it is not "updating a snapshot so a test passes": the gate
+would fail again on the next surface move, and `tests/unit/test_construction_acceptance.py`
+still asserts the reading equals `len(fq.__all__)` rather than a literal.
+
 ## Verification
 
 ```bash
