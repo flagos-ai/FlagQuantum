@@ -55,6 +55,12 @@ def _cpu_statevector_batch_bounded_initial_state_enabled() -> bool:
     )
 
 
+def _cpu_statevector_owned_zero_state_enabled() -> bool:
+    """Whether execution may initialize and consume a private zero-state buffer."""
+
+    return bool(_environment_flag("FQ_CPU_STATEVECTOR_OWNED_ZERO_STATE", default=True))
+
+
 def _cpu_statevector_batch_preallocated_assembly_enabled() -> bool:
     """Whether inference windows write directly into their final result."""
 
@@ -114,6 +120,7 @@ def _execute_statevector_batch_windows(
     batch_size: int,
     chunk_size: int,
     bounded_zero_state: bool,
+    owns_zero_state: bool,
     preallocate: bool,
     execute: Callable[[torch.Tensor, bool], torch.Tensor],
 ) -> tuple[torch.Tensor, str]:
@@ -142,7 +149,7 @@ def _execute_statevector_batch_windows(
             else output[: stop - start]
         )
         with _parameter_batch_window(start, stop, batch_size):
-            chunk = execute(window, direct)
+            chunk = execute(window, direct or owns_zero_state)
         if direct:
             if chunk.data_ptr() != window.data_ptr():
                 window.copy_(chunk)
@@ -224,7 +231,7 @@ def _initial_state_batch_window(circuit: Circuit, batch_size: int) -> torch.Tens
 
 def _statevector_batch_input(
     circuit: Circuit,
-) -> tuple[int, int, bool, torch.Tensor]:
+) -> tuple[int, int, bool, bool, torch.Tensor]:
     """Resolve logical batch size and the smallest safe execution input."""
 
     batch_size = (
@@ -243,14 +250,30 @@ def _statevector_batch_input(
         and circuit._inputs is None
         and initial_window_size < batch_size
     )
-    output = (
-        torch.empty(
+    owns_zero_state = bool(
+        circuit._inputs is None
+        and not uses_bounded_zero_state
+        and _cpu_statevector_owned_zero_state_enabled()
+    )
+    if uses_bounded_zero_state:
+        output = torch.empty(
             (initial_window_size, 0), dtype=circuit.dtype, device=circuit.device
         )
-        if uses_bounded_zero_state
-        else circuit.initial_state()
+    elif owns_zero_state:
+        output = torch.empty(
+            (batch_size, 2**circuit.n_qubits),
+            dtype=circuit.dtype,
+            device=circuit.device,
+        )
+    else:
+        output = circuit.initial_state()
+    return (
+        batch_size,
+        initial_window_size,
+        uses_bounded_zero_state,
+        owns_zero_state,
+        output,
     )
-    return batch_size, initial_window_size, uses_bounded_zero_state, output
 
 
 def _materialize_bounded_zero_state(

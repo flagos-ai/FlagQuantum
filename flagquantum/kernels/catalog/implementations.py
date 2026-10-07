@@ -156,6 +156,14 @@ IMPLEMENTATIONS: tuple[KernelImplementation, ...] = (
         maturity="provisional",
     ),
     _triton(
+        "FQKI-TRITON-SV-010-A",
+        "statevector.apply.diagonal.local",
+        "statevector_diagonal",
+        "apply_complex64_local_diagonal",
+        layouts=("flat_statevector", "diagonal_operator"),
+        maturity="provisional",
+    ),
+    _triton(
         "FQKI-TRITON-SV-013-A",
         "statevector.apply.reversible_permutation_3q.local",
         "statevector_reversible_3q",
