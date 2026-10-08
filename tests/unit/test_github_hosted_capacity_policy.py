@@ -25,12 +25,20 @@ Five invariants:
    `cpucore` bucket carries the matrix value in its name, which means a fourth
    interpreter would be a fourth bucket: the set is spelled out so that is a
    decision about the ceiling and not a side effect of a matrix edit.
-4. Both workflows cancel a superseded run of the same branch, so a push that
-   lands during an earlier run does not queue a second full matrix behind it.
+4. Both workflows cancel a superseded run of the same pull request, and neither
+   cancels a superseded run of `main`. A pull request's older tree is a tree
+   nobody will merge; a revision of `main` has already been merged, so cancelling
+   its run leaves a merge commit that no gate ever read. On 2026-10-08 two merges
+   landed 17 seconds apart and all 23 check runs attached to the first of them
+   were `cancelled` (issue #579), so the distinction is asserted here. Both halves
+   of the expression are asserted, because a group keyed to the commit for every
+   event satisfies "a push is never superseded" while cancelling nothing at all.
 5. `publish-dev-container.yml` caps its own matrix instead of joining a bucket,
    because its legs build container images and serializing them all would cost
-   more than the slots are worth. `cd.yml` is out of scope: it publishes on a
-   release and holds one job, so it cannot occupy more than one runner.
+   more than the slots are worth. It keeps cancelling a superseded run of `main`:
+   a superseded container build is superseded work, and no merge gate reads it.
+   `cd.yml` is out of scope: it publishes on a release and holds one job, so it
+   cannot occupy more than one runner.
 """
 
 from __future__ import annotations
@@ -51,6 +59,14 @@ BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
 # One concurrency group admits one job, so these eight scoped names are a
 # ceiling of eight concurrent GitHub-hosted runners for one run.
+#
+# The scope is the pull request number where there is one and the branch name
+# otherwise, so an unrelated branch's older run cannot serialize a newer one.
+# Two pushes to `main` do share these groups, and deliberately so: a push run of
+# `main` is no longer cancelled when the next push arrives, which means its jobs
+# have to wait somewhere instead. `queue: max` turns that group into a queue
+# rather than a drop, so the later revision is read after the earlier one instead
+# of deleting it.
 RUN_SCOPE = "${{ github.event.pull_request.number || github.ref_name }}"
 BUCKETS = frozenset(
     {
@@ -194,18 +210,40 @@ def test_the_buckets_in_use_are_exactly_the_declared_ceiling() -> None:
     )
 
 
-def test_a_superseded_run_is_cancelled_rather_than_queued() -> None:
+def test_a_superseded_pull_request_run_is_cancelled_and_a_main_push_is_not() -> None:
     offenders: list[str] = []
     for workflow in BUCKETED_WORKFLOWS:
         concurrency = _document(workflow).get("concurrency")
         if not isinstance(concurrency, dict):
             offenders.append(f"{workflow} declares no workflow-level concurrency")
             continue
-        if concurrency.get("cancel-in-progress") is not True:
-            offenders.append(f"{workflow} does not cancel a superseded run")
+        group = str(concurrency.get("group", ""))
+        # The two halves have to be asserted together. A group keyed to
+        # `github.sha` for every event would satisfy "a push is not superseded"
+        # while also giving every push to a branch under review its own group, so
+        # `cancel-in-progress` would never cancel anything and each push would
+        # queue a full matrix behind the last.
+        if "github.sha" not in group:
+            offenders.append(
+                f"{workflow} keys a push run to its branch, so the next push to "
+                "main supersedes a revision that is already merged"
+            )
+        if "github.event_name == 'push'" not in group:
+            offenders.append(
+                f"{workflow} does not keep pull request runs in one group, so a "
+                "push to a branch under review queues a matrix that is never read"
+            )
+        if concurrency.get("cancel-in-progress") != (
+            "${{ github.event_name == 'pull_request' }}"
+        ):
+            offenders.append(
+                f"{workflow} does not scope cancellation to the pull request"
+            )
     assert not offenders, (
-        "a push that lands during an earlier run must cancel that run, not "
-        "queue a second full matrix behind it:\n" + "\n".join(offenders)
+        "a push to a branch under review must cancel that branch's superseded "
+        "run, and a push to `main` must not cancel the run of a revision that is "
+        "already merged, because a cancelled merge-commit reading is "
+        "indistinguishable from a passing one:\n" + "\n".join(offenders)
     )
 
 
