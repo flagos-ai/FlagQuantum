@@ -117,12 +117,12 @@ Two things follow, and both belong to the same finding as
 
   The worst minute is 2026-10-06T00:19Z, when three merges landed 35 seconds apart:
   `95ea9097` (#514) lost all 19 of its check runs, `fbc25d1a` (#515) lost the single one it
-  had registered, and `ab4abdb9` (#518) lost 19 of 23. The pair quoted in issue #579 is the
-  same shape at one second less: `964712239` (#590) merged at 01:06:02Z with all 23 of its
-  check runs `cancelled`, `quality` among them, and `724de8d06` (#591) merged 17 seconds
-  later and kept all 23 — because it was the push that did the cancelling. On 2026-10-07
-  `12985416` (#577), the merge of the repair for a different gate defect, lost all 19 of
-  its own check runs to `c7880caf` (#584) 54 seconds later.
+  had registered, and `ab4abdb9` (#518) lost 19 of 23. The pair quoted in issue #579 has the
+  same shape: `964712239` (#590) merged at 01:06:02Z with all 23 of its check runs
+  `cancelled`, `quality` among them, and `724de8d06` (#591) merged 17 seconds later and kept
+  all 23 — because it was the push that did the cancelling. On 2026-10-07 `12985416` (#577),
+  the merge of the repair for a different gate defect, lost all 19 of its own check runs to
+  `c7880caf` (#584) 54 seconds later.
 - **The `(#NNN)` convention no longer describes `main`.** 73 of the 275 first-parent
   commits since 2026-10-01 are merge commits and `required_linear_history` is disabled, so
   nothing rejects the shape. A reader who takes the five-step flow above as "one pull
