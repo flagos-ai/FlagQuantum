@@ -30,7 +30,9 @@ Five invariants:
    nobody will merge; a revision of `main` has already been merged, so cancelling
    its run leaves a merge commit that no gate ever read. On 2026-10-08 two merges
    landed 17 seconds apart and all 23 check runs attached to the first of them
-   were `cancelled` (issue #579), so the distinction is asserted here.
+   were `cancelled` (issue #579), so the distinction is asserted here. Both halves
+   of the expression are asserted, because a group keyed to the commit for every
+   event satisfies "a push is never superseded" while cancelling nothing at all.
 5. `publish-dev-container.yml` caps its own matrix instead of joining a bucket,
    because its legs build container images and serializing them all would cost
    more than the slots are worth. It keeps cancelling a superseded run of `main`:
@@ -57,6 +59,14 @@ BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
 # One concurrency group admits one job, so these eight scoped names are a
 # ceiling of eight concurrent GitHub-hosted runners for one run.
+#
+# The scope is the pull request number where there is one and the branch name
+# otherwise, so an unrelated branch's older run cannot serialize a newer one.
+# Two pushes to `main` do share these groups, and deliberately so: a push run of
+# `main` is no longer cancelled when the next push arrives, which means its jobs
+# have to wait somewhere instead. `queue: max` turns that group into a queue
+# rather than a drop, so the later revision is read after the earlier one instead
+# of deleting it.
 RUN_SCOPE = "${{ github.event.pull_request.number || github.ref_name }}"
 BUCKETS = frozenset(
     {
