@@ -331,7 +331,12 @@ def _local_esm2_model(
     if checkpoint_snapshot.path != checkpoint_path:
         raise ValueError("ESM2 checkpoint snapshot differs from loader path")
     revalidate_regular_file(checkpoint_snapshot, label="ESM2 checkpoint")
-    model, alphabet = loader(str(checkpoint_path))
+    # The reviewed FAIR ESM checkpoint stores its model arguments as an
+    # argparse.Namespace.  PyTorch 2.6+ defaults torch.load to weights-only
+    # mode, so allow precisely that standard-library type while the pinned
+    # fair-esm loader deserializes the hash-verified local checkpoint.
+    with torch.serialization.safe_globals([argparse.Namespace]):
+        model, alphabet = loader(str(checkpoint_path))
     revalidate_regular_file(checkpoint_snapshot, label="ESM2 checkpoint")
     return model.eval().to(device), alphabet
 

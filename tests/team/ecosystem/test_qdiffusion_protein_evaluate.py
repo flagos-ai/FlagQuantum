@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from dataclasses import dataclass
@@ -579,13 +580,16 @@ def test_evaluate_outputs_uses_local_model_and_merges_sequence_metrics(
 ) -> None:
     _, paths = _training_artifacts(tmp_path)
     loader_paths: list[str] = []
+
+    def load_local_model(path: str) -> tuple[_Model, object]:
+        assert argparse.Namespace in torch.serialization.get_safe_globals()
+        loader_paths.append(path)
+        return _Model(), object()
+
     helpers = SimpleNamespace(
         esm=SimpleNamespace(
             pretrained=SimpleNamespace(
-                load_model_and_alphabet_local=lambda path: (
-                    loader_paths.append(path) or _Model(),
-                    object(),
-                )
+                load_model_and_alphabet_local=load_local_model
             )
         )
     )
