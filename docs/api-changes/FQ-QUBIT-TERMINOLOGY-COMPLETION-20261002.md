@@ -258,8 +258,8 @@ that contains the word. Measured examples that must change:
 |---|---|
 | `flagquantum/circuit.py:56,60` | `f"{owner} wire must be an integer, got {value!r}"` |
 | `flagquantum/circuit.py:570` | `"A wire can appear in only one of x, y, or z."` |
-| `flagquantum/core/ir.py:42,44,46` | `f"{owner} requires at least one wire"` / `wires must be non-negative` / `cannot repeat a wire` |
-| `flagquantum/core/ir.py:439` | `f"n_wires must be positive, got {n_wires}"` |
+| `flagquantum/core/ir/__init__.py:42,44,46` | `f"{owner} requires at least one wire"` / `wires must be non-negative` / `cannot repeat a wire` |
+| `flagquantum/core/ir/__init__.py:439` | `f"n_wires must be positive, got {n_wires}"` |
 | `flagquantum/observables/__init__.py:50` | `"Pauli tensor products require disjoint wires"` |
 | `flagquantum/observables/__init__.py:135,139,141,174` | `f"{owner} wire must be an integer…"` / `f"{owner} wire must be a non-negative integer"` / `"output wires must be unique"` |
 | `flagquantum/core/_compilation_evidence.py:159,161` | `f"{owner} must contain two distinct wires"` / `f"{owner} contains a wire outside the coupling map"` |
@@ -299,7 +299,7 @@ key family the migration doc already declares unchanged:
 
 | Family | Keys | Read/written by |
 |---|---|---|
-| Circuit IR | `n_wires`, `wires` | `core/ir.py` `to_dict`/`from_dict`, the three node writers/readers |
+| Circuit IR | `n_wires`, `wires` | `core/ir/__init__.py` `to_dict`/`from_dict`, the three node writers/readers |
 | Execution plan | `n_wires`, `shardable_wires` (embedded full `CircuitIR` program) | `runtime/execution_plan_contract.py:635` |
 | Training state | the plan payload above | `runtime/training_state.py:311` (rejects a differing version at `:363`) |
 | Measurement contract | `wires` | `MeasurementContract`, declared **required** in `docs/runtime_contracts.schema.json:90` |
@@ -328,7 +328,7 @@ exactly as they are, so `IR_VERSION "1.0"` keeps meaning what it means today, an
 have `to_dict()`/`from_dict()` convert at the boundary:
 
 ```python
-# flagquantum/core/ir.py — the two vocabularies meet in exactly two functions
+# flagquantum/core/ir/__init__.py — the two vocabularies meet in exactly two functions
 def to_dict(self) -> dict[str, Any]:
     return {"n_wires": self.n_qubits, ...}       # payload vocabulary is "1.0"
 
@@ -349,7 +349,7 @@ Rename the payload keys and accept both `"1.0"` and `"2.0"` on read, migrating
 on read.
 
 - Cost: `IR_VERSION` becomes a range, which contradicts the exact-match pin at
-  `core/ir.py:440-445` and the "keep `1.0` readable" ruling; every reader
+  `core/ir/__init__.py:440-445` and the "keep `1.0` readable" ruling; every reader
   (`runtime/execution_plan_contract.py:635`, `runtime/training_state.py:311,363`)
   and every interop contract's `ir_version` check (`tools/check_*_interop_contract.py`,
   5 files) must handle the range; `training_state.py:363` currently **rejects** a

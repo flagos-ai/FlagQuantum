@@ -118,8 +118,8 @@ candidate-stable. The result type is `DynamicExecutionResult`
 
 ### 4. `CircuitIR` carries no classical register, no result bit, and no condition
 
-**Measured.** `flagquantum/core/ir.py` declares the two dataclasses. `Instruction`
-(`flagquantum/core/ir.py:339-346`) has exactly five fields:
+**Measured.** `flagquantum/core/ir/__init__.py` declares the two dataclasses. `Instruction`
+(`flagquantum/core/ir/__init__.py:339-346`) has exactly five fields:
 
 ```console
 CircuitIR: ['n_wires', 'instructions', 'version', 'dtype', 'shape', 'observables', 'measurements', 'metadata']
@@ -147,7 +147,7 @@ Proposed`.
 ### 5. A conditional instruction is constructible, and one of the two spellings is refused only at the execution boundary
 
 **Measured.** Both metadata spellings construct without error, because
-`Instruction.__post_init__` (`flagquantum/core/ir.py:348`) only requires an
+`Instruction.__post_init__` (`flagquantum/core/ir/__init__.py:348`) only requires an
 unknown opcode to carry `is_dynamic` or `matrix`; it never validates a condition:
 
 ```console

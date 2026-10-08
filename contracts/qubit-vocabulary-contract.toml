@@ -164,7 +164,7 @@ canonical = [
     "flagquantum/compiler/routing.py::CouplingMap.neighbors::wire",
     "flagquantum/compiler/routing.py::CouplingMap.ring::n_wires",
     "flagquantum/compiler/two_qubit_synthesis.py::synthesize_two_qubit::wires",
-    "flagquantum/core/ir.py::from_engine_qir::n_wires",
+    "flagquantum/core/ir/__init__.py::from_engine_qir::n_wires",
     "flagquantum/core/qubit_mapping.py::remap_qubits::wires",
     "flagquantum/deployment/cloud.py::expectation_z_from_counts::wires",
     "flagquantum/deployment/routing_evidence.py::build_deployment_routing_evidence::n_wires",
@@ -450,7 +450,7 @@ owner_team = "core + integration + ecosystem"
 canonical_count = 16
 files = [
     "flagquantum/circuit.py",
-    "flagquantum/core/ir.py",
+    "flagquantum/core/ir/__init__.py",
     "flagquantum/core/qubit_mapping.py",
     "flagquantum/drawer/mpl_drawer.py",
     "flagquantum/drawer/text_drawer.py",

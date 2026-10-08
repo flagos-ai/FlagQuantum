@@ -226,7 +226,7 @@ Revision 1 also printed `CIRCUIT_ATTR_adjoint: False` here and closed with
 rather than corrected, because the grep they came from cannot return `1` on this
 checkout: `flagquantum/circuit.py:431` defines `def adjoint(self) -> "Circuit"`.
 The refusal text is unchanged and is what this section rests on. The refusal
-comes from `flagquantum/core/ir.py:364`, which is a deliberate rule
+comes from `flagquantum/core/ir/__init__.py:364`, which is a deliberate rule
 rather than an accident: an unknown opcode is admitted only when the instruction
 carries an explicit matrix. A control-count-by-name design would therefore be
 refused by the IR before it reached any backend, and each name a caller invented
@@ -273,7 +273,7 @@ parameters, and placed the amplitude in `|111>`, which is the state of an
 uncontrolled `x(2)` after `x(0); x(1)` and not the state a caller asking for two
 controls would expect. `IRValidationError` never fires because the parameters of
 a schema are checked for *presence*, not for *absence of extras*
-(`flagquantum/core/ir.py:371`). So the nearest thing to "arbitrary controls"
+(`flagquantum/core/ir/__init__.py:371`). So the nearest thing to "arbitrary controls"
 that compiles today is a silent wrong answer, which is the worst possible
 starting point and the reason this proposal must fix a representation rather
 than merely add one.
@@ -653,8 +653,8 @@ under "Non-goals".
 
 The two candidate representations are an instruction-level modifier and a family
 of generated opcode names (`mcx`, `cccx`, `h_dg`, ...). The second is refused.
-`flagquantum/core/ir.py:349` canonicalises every instruction name through
-`canonical_opcode` and `flagquantum/core/ir.py:364` refuses an unknown name
+`flagquantum/core/ir/__init__.py:349` canonicalises every instruction name through
+`canonical_opcode` and `flagquantum/core/ir/__init__.py:364` refuses an unknown name
 unless the instruction carries an explicit matrix, so a name-per-modifier design
 would have to add a permanent, unbounded set of names to a table the rest of the
 system already treats as closed, and each added name would create a new
@@ -793,7 +793,7 @@ Refused explicitly:
 
 ### 7. A registered operator enters the IR only with an explicit matrix
 
-`flagquantum/core/ir.py:364` admits an unknown opcode only when the instruction
+`flagquantum/core/ir/__init__.py:364` admits an unknown opcode only when the instruction
 carries a matrix, and this proposal keeps that rule rather than exempting
 registered operators from it. The reason is that the IR is the serialized
 boundary: an `Instruction` whose opcode is known only to a runtime registry

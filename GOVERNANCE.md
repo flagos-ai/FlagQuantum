@@ -33,7 +33,7 @@ as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 | Class | Examples | Who decides |
 | --- | --- | --- |
 | Ordinary change | A domain's internal implementation, its tests, and its documentation. | One reviewer; currently the maintainer |
-| Protected surface | `AGENTS.md`, `architecture.toml`, `team-ownership.toml`, `contracts/**`, `.github/**`, `tools/**`, `pyproject.toml`, `flagquantum/core/ir.py` | Integration owner. A separate integration change, before the team implementation proceeds |
+| Protected surface | `AGENTS.md`, `architecture.toml`, `team-ownership.toml`, `contracts/**`, `.github/**`, `tools/**`, `pyproject.toml`, `flagquantum/core/ir/**` | Integration owner. A separate integration change, before the team implementation proceeds |
 | Stable Core API | The 34 exports in `docs/public_api_v1.json` | An API change proposal plus recorded authorization, per `AGENTS.md` |
 | Capability level | A level in `capability-maturity.toml` | Evidence that satisfies `tools/check_capability_maturity.py`, approved by Integration |
 | Release | `flagquantum/version.py`, tags, release notes | Maintainer |

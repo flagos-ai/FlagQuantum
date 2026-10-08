@@ -2,7 +2,24 @@
 
 ## Status
 
-**Proposed. Integration authorization requested; no Stable Core change requested.**
+**Approved. Integration authorization granted; no Stable Core change requested.**
+
+Approved by the repository owner on 2026-10-08, which is the acceptance item
+"Repository owner authorizes Phase 4 activation" below. Approval authorizes the
+internal module structure under `flagquantum/core/ir/`, not the public surface:
+`IR_VERSION` remains `"1.0"`, `CircuitIR` schema `1.0` remains the only public
+serialized IR, and no Stable Core export is added.
+
+The decision also ratifies
+[`IR-007`](../architecture/decisions/IR_007_PHASE_4_HYBRID_DYNAMIC_SCOPE.md),
+whose own `Status` is updated to `Approved` in the same change. That is a
+consequence rather than a second decision: `IR-007` fixes the Phase 4 scope this
+proposal activates, both
+[the `DynamicCircuit` promotion proposal](API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md)
+and [`API_CHANGE_PROPOSAL_066`](API_CHANGE_PROPOSAL_066_DYNAMIC_CIRCUIT_V1.md)
+state that their scope "is ratified by `IR-007`", and `IR-007`'s own background
+records an unratified scope as a failure mode. Activating the phase without its
+scope would leave every downstream row citing a `Proposed` authority.
 
 This proposal activates Phase 4 of
 [`MULTI_LEVEL_IR_ARCHITECTURE.md`](../architecture/MULTI_LEVEL_IR_ARCHITECTURE.md)
@@ -52,18 +69,63 @@ cover the importer, linear values, identity layers, custom matrices, parameter
 binding, and the Phase 1 static scope — not the Phase 4 surface, which is what
 this proposal authorizes.
 
-A related defect was found while preparing this proposal and is recorded here
-because it must be fixed by the same integration change rather than silently
-inherited. The existing public IR is the single module `flagquantum/core/ir.py`;
-there is no `flagquantum/core/ir/` directory today. A glob of the form
-`flagquantum/core/ir/**` matches paths *inside* a directory and does not match a
-sibling module, so `flagquantum/core/ir.py` is presently constrained only by the
-public API snapshot and contract checks and by Core team ownership, not by the
-protected-path mechanism. Whether that is a real gap depends on the matcher
-implementation in `tools/check_team_scope.py`, which is not present in the
-checkout used to prepare this proposal and could not be inspected. The pattern
-must be verified and, if necessary, corrected to cover both `ir.py` and `ir/**`
-before the internal level packages are created.
+A related defect was found while preparing this proposal, and it is settled here
+because this activation is the change that has to settle it. The public IR was
+the single module `flagquantum/core/ir.py`; there was no `flagquantum/core/ir/`
+directory. A glob of the form `flagquantum/core/ir/**` matches paths *inside* a
+directory and does not match a sibling module, so the two spellings protect
+disjoint sets of files.
+
+**Re-measured at approval, because the proposal could not inspect the matcher
+when it was written.** `tools/check_team_scope.py` matches protected paths with
+`fnmatch.fnmatchcase`, measured directly on the spellings and on files created for
+the measurement. Before the split, the module path matched the literal entry and
+not the glob. After the split, `flagquantum/core/ir/__init__.py` matches the glob
+and not the literal path, and a scratch second file created under the package and
+then removed matched the glob as well, which is the case the glob exists for -- a
+package with any number of files, not one. The sibling glob
+`flagquantum/core/ir/**/*` is strictly narrower than `flagquantum/core/ir/**` and
+misses a package's own `__init__.py`. The gap the proposal suspected was therefore
+real, and the coarse pattern is the correct one once the directory exists.
+
+The correction could not be applied ahead of the split, and that is a property of
+the validator rather than a preference: `protected_path_errors` rejects a
+protected entry that matches no file in the worktree, precisely so that an
+unprotected surface cannot look protected, so adding `flagquantum/core/ir/**`
+while the directory did not exist would fail `--validate`. `team-ownership.toml`
+recorded the module alone and carried a comment explaining why the package
+pattern had been removed. The gate is therefore satisfied by **two coordinated
+edits at the moment the directory appears**: the first file under
+`flagquantum/core/ir/` and the `flagquantum/core/ir/**` entry land in the same
+change.
+
+**The split is the first implementation step of this activation**, because the
+authorized home and the protected-path mechanism have to agree, and the two
+candidate ways to make them agree failed measurement differently.
+
+- **Renaming the module was not open.** The public IR has a name, and it is
+  `flagquantum.core.ir`. Moving it to `flagquantum/core/ir_levels/` or any other
+  sibling directory would leave the authorized path naming nothing and would put
+  the single source of truth behind a new name for no capability gain.
+- **`flagquantum/_compiler/`, which `MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13
+  fixes as the internal layout, cannot be created in this tree.** Measured:
+  creating `flagquantum/_compiler/__init__.py` makes `tools/check_architecture.py`
+  fail with `flagquantum/_compiler: unreviewed top-level package directory is
+  forbidden`, because the directory is absent from
+  `architecture.toml` `package_layout.allowed_top_level_directories`; adding a
+  single `from .._compiler import ...` line under `flagquantum/compiler/` fails
+  the same gate with `compiler imports forbidden layer _compiler`, because
+  `_compiler` is listed in `boundaries.compiler_forbidden`. `team-ownership.toml`
+  independently records `flagquantum/_compiler` as one of five patterns removed
+  for matching no tracked path. § 19.13's layout is therefore a design sketch
+  written against a tree that never had it, and correcting it is a policy change
+  rather than part of this activation.
+
+So the module becomes the package `flagquantum/core/ir/` in the same change that
+adds the entry. `flagquantum/core/ir/__init__.py` is the former module with three
+relative imports deepened by one level and nothing else, so
+`flagquantum.core.ir` keeps every name it had, `IR_VERSION` stays `"1.0"`, and
+the split is invisible to the module's roughly forty importers.
 
 **Contract-first ordering.** Phase 4 spans Core, Compiler, and Runtime. Under
 `docs/development/MULTI_TEAM_DEVELOPMENT.md` these teams cannot write against each
@@ -202,7 +264,10 @@ instead.
 - [ ] `IR_VERSION`, `CircuitIR` schema, and `docs/public_api_v1.json` are unchanged.
 - [ ] `DynamicCircuit` promotion is assessed against the criteria table above and
       recorded, or explicitly deferred with reasons.
-- [ ] Repository owner authorizes Phase 4 activation.
+- [x] Repository owner authorizes Phase 4 activation. (2026-10-08; the same change
+      lands the split described under "The split is the first implementation step
+      of this activation", because the authorized home and the protected-path
+      mechanism have to agree in one change.)
 
 ## Non-goals
 

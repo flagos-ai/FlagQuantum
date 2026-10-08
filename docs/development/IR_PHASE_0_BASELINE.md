@@ -44,7 +44,7 @@ reorder, or rename any of them.
 
 ### 1.2 CircuitIR Schema 1.0
 
-Authoritative implementation: `flagquantum/core/ir.py`.
+Authoritative implementation: `flagquantum/core/ir/__init__.py`.
 
 Current top-level canonical payload fields:
 
@@ -129,7 +129,7 @@ hash does not approve or freeze Proposal 011.
 Without a separate API change proposal and owner approval, do not change:
 
 - Stable exports in `flagquantum/__init__.py`.
-- Public types, schemas, or serialization behavior in `flagquantum/core/ir.py`.
+- Public types, schemas, or serialization behavior in `flagquantum/core/ir/__init__.py`.
 - Signatures or stable semantics of `fq.plan`, `fq.run`, or `compile_for_backend`.
 - `docs/public_api_v1.json` or approved contracts.
 - Protected ExecutionPlan, ExecutionResult, or DeploymentPackage schemas.

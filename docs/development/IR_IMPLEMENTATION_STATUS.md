@@ -11,7 +11,7 @@ useful rationale, but their phase completion labels do not describe this tree.
 
 | Responsibility | Current implementation |
 | --- | --- |
-| Public circuit interchange | `flagquantum/core/ir.py` |
+| Public circuit interchange | `flagquantum/core/ir/__init__.py` |
 | Root compile dispatch | `flagquantum/_api.py` |
 | Optimization and circuit compilation | `flagquantum/compiler/pipeline.py` |
 | Native-gate and topology legalization | `compiler/native_gate_legalization.py`, `compiler/topology_legalization.py` |

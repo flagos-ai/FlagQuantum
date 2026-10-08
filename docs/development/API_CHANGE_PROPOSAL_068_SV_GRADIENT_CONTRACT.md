@@ -674,7 +674,7 @@ Three facts follow, and the third is the defect. First, `h` and a rotation whose
 parameter tuple is not exactly `("theta",)` return `None` rather than raising;
 that is a documented return value, not an accident. Second, `u3` never reaches
 the function at all — Core's IR refuses to construct the `Instruction`, so that
-refusal belongs to `flagquantum/core/ir.py` and not here. Third, `rzz` is
+refusal belongs to `flagquantum/core/ir/__init__.py` and not here. Third, `rzz` is
 accepted by the opcode-and-params guard while its generator is `4x4`, so when the
 matrix passed in is `2x2` the multiplication fails inside `torch.matmul` with
 `RuntimeError: mat1 and mat2 shapes cannot be multiplied (4x4 and 2x2)`. The same

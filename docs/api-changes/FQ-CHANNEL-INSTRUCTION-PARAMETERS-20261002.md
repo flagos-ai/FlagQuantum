@@ -17,7 +17,7 @@ The Stable Core surface changes in two places.
    These opcodes were registered as channels with an empty parameter tuple, so
    the public gate method derived from the schema could not accept the value the
    channel is defined by.
-2. `flagquantum/core/ir.py` requires those parameters on an `Instruction` that
+2. `flagquantum/core/ir/__init__.py` requires those parameters on an `Instruction` that
    names a channel and does not carry a materialized Kraus tuple.
 
 The owner of the affected surface is the integration maintainer, because the
@@ -456,7 +456,7 @@ python tools/check_legacy_root_api_usage.py                  # pass
 
 - **Owner:** integration maintainer, 2026-10-02.
 - **Affected surfaces:** `flagquantum/core/operator_schema.py`,
-  `flagquantum/core/ir.py`, `flagquantum/circuit.py`,
+  `flagquantum/core/ir/__init__.py`, `flagquantum/circuit.py`,
   `flagquantum/noise/{channels,__init__}.py`,
   `flagquantum/compiler/noise.py`, `flagquantum/qec/sampling.py`,
   `flagquantum/testing/correctness.py`,

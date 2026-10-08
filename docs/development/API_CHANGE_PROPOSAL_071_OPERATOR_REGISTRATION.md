@@ -69,7 +69,7 @@ channel. Section 1 of the probe measures the acceptance:
   len(flagquantum.__all__)           -> 36
 ```
 
-`flagquantum/core/ir.py:369` refuses an unknown name without a matrix and
+`flagquantum/core/ir/__init__.py:369` refuses an unknown name without a matrix and
 accepts an unknown name *with* one, so the IR deliberately admits an arbitrary
 named operation. The consequence, measured in "Problem" sections 2 to 5, is that the name
 is what every executor dispatches on, and a supplied matrix is an input the
@@ -539,7 +539,7 @@ present".
 
 ### 7. There is no construction-time check on the operand at all
 
-`Instruction.__post_init__` (`flagquantum/core/ir.py:357`) checks the name, the
+`Instruction.__post_init__` (`flagquantum/core/ir/__init__.py:357`) checks the name, the
 wires and the params, and never inspects `self.matrix` beyond testing it for
 `None`. Section 6 of the probe:
 
@@ -698,7 +698,7 @@ The channel's Kraus tuple is derived from its declared parameters, and
 
 Any operand rule must therefore be keyed on "a matrix is present **and the
 instruction is not a channel**". The classifier already exists:
-`instruction.metadata["is_channel"]`, read at `flagquantum/core/ir.py:366`.
+`instruction.metadata["is_channel"]`, read at `flagquantum/core/ir/__init__.py:366`.
 
 ### 11. The dense-expectation helper deliberately routes a Hermitian, non-unitary operator through `Circuit.any`
 
@@ -850,7 +850,7 @@ changes which symptom a user sees when they hit the operand defects above. It is
 (`flagquantum/circuit.py:213`) and stores it in `self._inputs` and in
 `circuit_param` (`:272`, `:278`), and `Circuit.adjoint` passes it through
 (`:469`). The FlagQuantum IR has no initial-state field — a search of
-`flagquantum/core/ir.py` for `inputs` returns nothing — and
+`flagquantum/core/ir/__init__.py` for `inputs` returns nothing — and
 `flagquantum/_api.py`'s `fq.run` accepts
 `program_or_plan: Circuit | CircuitIR | ExecutionPlan`. Converting the `Circuit`
 to IR therefore discards the declared initial state, and `fq.run` executes from
@@ -1029,7 +1029,7 @@ The message names the operand, the wires and both shapes, in the style of
 ### 6. Channels are explicitly out of scope, by classifier and not by shape
 
 `instruction.metadata["is_channel"]` is the classifier
-(`flagquantum/core/ir.py:366`), and section 10 of "Problem" measures why shape
+(`flagquantum/core/ir/__init__.py:366`), and section 10 of "Problem" measures why shape
 cannot substitute for it: a channel's `matrix` is a Kraus 4-tuple of `(2, 2)`
 tensors, so it is square, non-empty, and not an operand. Every rule in this
 proposal reads the classifier first.

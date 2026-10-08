@@ -226,7 +226,7 @@ of the versioned IR against the hand-built circuit:
 2. **Should `compose` accept a raw instruction sequence**, so that a user can place
    the output of a compiler pass? The `CircuitIR` form covers most of that need;
    a third accepted type may not earn its place.
-3. **Should the label reader move to `flagquantum/core/ir.py`?** It is Core
+3. **Should the label reader move to `flagquantum/core/ir/__init__.py`?** It is Core
    semantics and `ir.py` already refuses a bad instruction qubit. It is a separate
    module today only to keep `ir.py` from growing; the placement is revisitable when
    `N1-2` adds the `twin/` consumer.

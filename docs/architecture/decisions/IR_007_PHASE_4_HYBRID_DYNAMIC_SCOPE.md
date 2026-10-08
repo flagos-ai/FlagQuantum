@@ -1,7 +1,11 @@
 # IR-007: Phase 4 hybrid and dynamic scope
 
-Status: Proposed
+Status: Approved
 Date: 2026-10-06
+Ratified: 2026-10-08 by the repository owner, together with the Phase 4 activation
+in [`API_CHANGE_PROPOSAL_062`](../../development/API_CHANGE_PROPOSAL_062_MULTI_LEVEL_IR_PHASE_4_ACTIVATION.md).
+That proposal admits the internal level structure and names this document as the
+ratified scope, so the two carry one decision rather than two.
 Applicable phase: Phase 4 functions, classical control, and dynamic migration.
 Related: [`API_CHANGE_PROPOSAL_062`](../../development/API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md),
 [`ARCH-012`](ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md).
@@ -35,8 +39,9 @@ one-way by design. Phase 4 is the work that would make those features exist.
 
 ### 1. Scope admitted
 
-Phase 4 admits the following into the internal levels, in the layout fixed by
-`MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13:
+Phase 4 admits the following into the internal levels. The admission is settled by
+this ADR; the layout is `flagquantum/core/ir/`, the module that already owns the
+public IR, for the reason recorded under Decision 11.
 
 - `ProgramModule` with functions, typed arguments and results, scopes, and calls;
 - blocks, branches, bounded loops, and function terminators;
@@ -124,11 +129,19 @@ failed acceptance item.
 - **Extend public `CircuitIR` schema to carry dynamic semantics.** Rejected by
   § 5.1, by `IR_006`, and by the compatibility promise; it would also break
   consumers for no gain.
-- **Place the internal levels under `flagquantum/core/ir/`.** Rejected: the
-  approved design already fixes `flagquantum/_compiler/**` in § 19.13, and
-  `team-ownership.toml` already assigns that path to the compiler team. Creating a
-  second internal IR home would be the parallel scaffolding that
-  `ARCH-012` clause 2 prohibits.
+- **Place the internal levels in a new internal home of their own.** Rejected, and
+  this is the decision that the layout in Decision 11 records. The design sketch in
+  `MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13 named `flagquantum/_compiler/**`, and
+  that name cannot be created in this tree: measured, creating
+  `flagquantum/_compiler/__init__.py` fails `tools/check_architecture.py` with
+  `flagquantum/_compiler: unreviewed top-level package directory is forbidden`,
+  and one `from .._compiler import ...` line under `flagquantum/compiler/` fails
+  the same gate with `compiler imports forbidden layer _compiler`, because
+  `boundaries.compiler_forbidden` lists that name. `team-ownership.toml` records
+  it among five patterns removed for matching no tracked path. A third internal
+  IR home beside the public one would also be the parallel scaffolding that
+  `ARCH-012` clause 2 prohibits, so the levels go in the package that already
+  owns the IR rather than in a second location.
 - **Land the internal levels before the contract and conformance test.** Rejected:
   Phase 4 spans Core, Compiler, and Runtime, and `MULTI_TEAM_DEVELOPMENT.md`
   forbids teams writing against each other's unfinished surfaces.
@@ -150,19 +163,21 @@ An earlier draft of this ADR recorded a suspected defect: that
 `team-ownership.toml` protected `flagquantum/core/ir/**`, a glob that cannot match
 the sibling module `flagquantum/core/ir.py`, leaving the public IR module outside
 the protected-path mechanism. That suspicion has been checked against the tree and
-is **not** a defect. It is recorded here because the earlier draft asked for the
-pattern to be verified, and the verification is the finding.
+is **not** a defect for the tree as it stood on 2026-10-06. It is recorded here
+because the earlier draft asked for the pattern to be verified, and the
+verification is the finding.
 
 Three checks were run.
 
-1. The entry is `flagquantum/core/ir.py`, a literal repository-relative path, not
-   `flagquantum/core/ir/**`. The `**` form appears nowhere in `protected_paths`.
+1. The entry was `flagquantum/core/ir.py`, a literal repository-relative path, not
+   `flagquantum/core/ir/**`. The `**` form appeared nowhere in `protected_paths`.
 2. `tools/check_team_scope.py` is present in this checkout and matches protected
    paths with `fnmatch.fnmatchcase`. Under that matcher `flagquantum/core/ir.py`
-   matches the literal entry and `flagquantum/core/ir/**` would not have, which is
-   why the distinction matters. The literal form is the correct one.
+   matched the literal entry and `flagquantum/core/ir/**` would not have, which is
+   why the distinction matters. The literal form was the correct one for a flat
+   module.
 3. The mechanism is enforced, not merely declared. `check_team_scope.py --team core
-   --files flagquantum/core/ir.py` exits non-zero with `protected integration
+   --files flagquantum/core/ir.py` exited non-zero with `protected integration
    surface; submit a contract/ADR change`.
 
 `protected_path_errors()` additionally fails `--validate` when a protected entry
@@ -170,8 +185,27 @@ matches no file in the worktree, so the entry cannot silently become stale. The
 sibling glob rule remains a real trap for any future entry of that shape; it is
 recorded here as guidance rather than as an open defect.
 
-This ADR does not depend on the outcome in either direction: the internal levels go
-to `flagquantum/_compiler/**`, per § 19.13.
+**Correction, 2026-10-08.** The tree changed, so the conclusion did. The public IR
+is now the package `flagquantum/core/ir/`, and the protected entry is the glob,
+because a module and its same-named sibling directory cannot both be protected by
+one spelling. This is the same matcher finding read in the other direction: the
+glob matches every file of the package and no sibling module, and the literal path
+now matches nothing at all, which `--validate` would reject. The readings above are
+kept as the record of 2026-10-06 and are not restated.
+
+## Layout decision
+
+The internal levels live in `flagquantum/core/ir/**`, the package that already owns
+the public IR, and not under `flagquantum/_compiler/**` as
+`MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13 sketched. § 19.13's name cannot be created
+in this tree: `flagquantum/_compiler/` fails `tools/check_architecture.py` as an
+unreviewed top-level package directory, importing it from `flagquantum/compiler/`
+fails the same gate as a forbidden layer, and `team-ownership.toml` records the
+name among five patterns removed for matching no tracked path. Landing there would
+mean amending two policy files to revive a name the repository deliberately
+deleted, which is a separate change and not part of Phase 4. The consequence for
+the levels is only their filesystem location: the levels, ownership rules,
+verifier taxonomy, and pass contract in Decisions 1-8 are unchanged.
 
 ## Acceptance
 
@@ -194,8 +228,12 @@ to `flagquantum/_compiler/**`, per § 19.13.
 - [ ] Static batched execution shows no regression against the recorded baseline.
 - [ ] `IR_VERSION`, `CircuitIR` schema, `docs/public_api_v1.json`, and root exports
       are unchanged.
-- [ ] `flagquantum/_compiler/**` is the only internal home for the levels, matching
-      § 19.13, and no second internal IR location is proposed or created.
-- [ ] Repository owner approves the Phase 4 scope.
+- [x] `flagquantum/core/ir/**` is the only internal home for the levels, and no
+      second internal IR location is proposed or created. The public IR module
+      became the package `flagquantum/core/ir/` in the same change, with
+      `__init__.py` holding the former module's contents and the glob added to
+      `team-ownership.toml` protected paths beside it.
+- [x] Repository owner approves the Phase 4 scope. (2026-10-08, together with the
+      Phase 4 activation in `API_CHANGE_PROPOSAL_062`.)
 - [ ] Compiler and runtime owners confirm the pass-contract and defect-semantics
       details during review.

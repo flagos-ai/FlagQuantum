@@ -144,6 +144,16 @@ directory does not exist protects nothing and fails silently, and nothing in the
 repository detected that. `tools/check_team_scope.py --validate` now rejects such
 an entry, so the second instance cannot be introduced quietly.
 
+**Correction, 2026-10-08: the split this finding anticipated has landed.** The
+readings above are kept as the record of 2026-10-06 and are not restated. The
+public IR is now the package `flagquantum/core/ir/`, whose `__init__.py` is the
+former module byte-for-byte plus one deepened relative import, so the protected
+entry is `flagquantum/core/ir/**` and it matches every file of the package. The
+two spellings are not interchangeable: re-measured under the checker's
+`fnmatch.fnmatchcase`, `flagquantum/core/ir.py` matched the module and not the
+directory, and the glob matches the directory and not a sibling module. Both
+entries appeared together, which is what `--validate` requires.
+
 ## Finding 3: `teams.compiler.owns` retains a path the repository removed
 
 `teams.compiler.owns` lists `flagquantum/compilation/**`.

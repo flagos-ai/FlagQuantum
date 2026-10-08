@@ -13,12 +13,18 @@ protected_paths = [
     "flagquantum/__init__.py",
     "flagquantum/_api.py",
     "flagquantum/core/_artifacts.py",
-    # FlagQuantum IR is the single source of truth. It is a flat module today, so
-    # the protection names the module itself: `flagquantum/core/ir/**` was a
-    # reservation for a package split that never landed, and it matched no file,
-    # so it protected nothing. `tools/check_team_scope.py --validate` rejects a
-    # protected entry in that state instead of trusting the comment.
-    "flagquantum/core/ir.py",
+    # FlagQuantum IR is the single source of truth. It was a flat module until
+    # the Phase 4 activation split it into a package whose `__init__.py` is the
+    # former module plus one deepened relative import. The glob below matches
+    # every file of that package, which the earlier entry could not express: a
+    # pattern ending in `/**` does not match a same-named module. The two
+    # spellings are not interchangeable in either direction, measured under the
+    # checker's `fnmatch.fnmatchcase` -- the flat `flagquantum/core/ir.py`
+    # matched the module and not the directory, and this glob matches the
+    # directory and not a sibling module. `tools/check_team_scope.py --validate`
+    # rejects a protected entry that matches no file, so the entry and the split
+    # land together.
+    "flagquantum/core/ir/**",
     "docs/architecture/LONG_HORIZON_ARCHITECTURE.md",
     "docs/architecture/decisions/**",
     # `tools/**` implements the machine-checked rules: architecture boundaries,
@@ -111,7 +117,7 @@ owns = [
     "flagquantum/qec/**",
     # Top-level package modules owned by core: the backend-neutral exception
     # vocabulary, the stable operator face over `core/operator_schema.py`, and
-    # the parameter-shift utilities that operate on `core/ir.py` programs.
+    # the parameter-shift utilities that operate on `core/ir/` programs.
     "flagquantum/errors.py",
     "flagquantum/gradients.py",
     "flagquantum/operators/**",

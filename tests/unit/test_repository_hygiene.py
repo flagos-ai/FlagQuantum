@@ -107,7 +107,7 @@ def test_distribution_quarantine_covers_models_datasets_and_generated_files():
         "source/tests/test_api.py",
     ):
         assert _forbidden(member)
-    assert not _forbidden("flagquantum/core/ir.py")
+    assert not _forbidden("flagquantum/core/ir/__init__.py")
 
 
 def test_lazy_import_budget_and_optional_jax_absence():

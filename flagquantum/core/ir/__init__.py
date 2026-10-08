@@ -12,14 +12,14 @@ from dataclasses import dataclass, field
 from numbers import Real
 from typing import Any
 
-from ..errors import SerializationError, ValidationError
-from .operator_schema import (
+from ...errors import SerializationError, ValidationError
+from ..operator_schema import (
     OPERATOR_SCHEMAS,
     OperatorSchema,
     canonical_opcode,
     get_operator_schema,
 )
-from .parameters import Parameter, ParameterExpression
+from ..parameters import Parameter, ParameterExpression
 
 IR_VERSION = "1.0"
 
