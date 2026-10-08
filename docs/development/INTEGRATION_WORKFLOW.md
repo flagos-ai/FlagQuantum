@@ -136,6 +136,27 @@ integration branch. The 270 that followed used per-change branches off `main`. T
 declared workflow is the **migration device** that produced the current layout; it is
 not the steady state that maintains it.
 
+The branch roster above is the 2026-10-01 measurement and it has since moved, which
+strengthens the row rather than weakening it. On 2026-10-08 `git ls-remote --heads origin`
+returns 9 branches — `main` and 8 others — and not one of the eight is a `refactor/vnext-team-*`
+team branch:
+
+| Branch | Ahead of `main` | Behind `main` |
+| --- | --- | --- |
+| `parity/w6-recovery` | 96 | 554 |
+| `feat/cpu-inplace-capacity` | 3 | 230 |
+| `feat/cpu-dense-native-one-qubit` | 2 | 230 |
+| `feat/qboson-kaiwu-provider-core` | 2 | 0 |
+| `bench/compiler-optimization-levels-vs-qiskit` | 1 | 0 |
+| `feat/cpu-qft-diagonal-memory` | 1 | 230 |
+| `fix/construction-acceptance-root-export-count` | 1 | 122 |
+
+`fix/main-push-reading-is-not-cancelled` is omitted because it is the branch that produced
+this revision and its work is this change. The roster grew from 4 branches to 9 while the
+number of team branches stayed at zero, and six of the eight are hundreds of commits behind
+`main` — the abandoned-head-branch pattern the open questions below describe, at a larger
+scale than the 2026-10-01 table shows.
+
 ### Why the stale declaration is not merely untidy
 
 `ci.yml:7` sets `pull_request: branches: [main]`. A pull request whose base is any other
@@ -375,9 +396,12 @@ A declaration of the workflow is complete when:
    whether the current shape is the intended one, rather than whether an accident would be
    rejected.
 4. **What happens to abandoned remote branches?** Squash merging leaves the head branch
-   behind, so the remote accumulates branches whose work is already in `main`. One of
-   the eight current non-main branches — `feat/team-scope-changed-path-gate`, whose work
-   landed as `4f4adbd` — is in exactly that state.
+   behind, so the remote accumulates branches whose work is already in `main`. As of
+   2026-10-08 none of the eight non-main branches is in that state:
+   `feat/team-scope-changed-path-gate`, whose work landed as `4f4adbd`, has since been
+   deleted, and all eight that remain are ahead of `main` by at least one commit. The
+   question narrows from "what do we do with branches whose work has landed" to "what do
+   we do with the six that are one to three commits ahead and hundreds behind".
 5. **Does the existing `refactor/` and `dev/` prefix usage mean a team-branch naming
    scheme is wanted after all?** The observed prefixes are per-change, not per-team, but
    18 `refactor/` and 4 `dev/` branches suggest a looser convention that has never been
