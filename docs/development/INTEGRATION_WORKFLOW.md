@@ -275,6 +275,15 @@ time:
   — is **not** applied. Candidate B stays open. The two unstaffed branches above remain
   the record of why.
 
+Candidate E was not adopted, and on 2026-10-08 the case for it narrowed. Its stated
+motivation was that a pull request whose base is not `main` reports no checks at all and is
+therefore *silently* unverified. Since the eight required checks are enforced on `main`,
+such a pull request reports none of them, GitHub leaves each `Expected — Waiting for status
+to be reported`, and the merge is blocked rather than accepted. The failure is loud now, so
+what remains of Candidate E is a base-branch convention check rather than a repair of a
+silent hole. It is not added here: no evidence yet shows a maintainer attempting a stacked
+merge since the checks were enforced.
+
 One part of the stale declaration was corrected on its own terms. Of the eleven `owns`
 lists, five named directories that do not exist in this repository
 (`flagquantum/ops`, `flagquantum/_compiler`, `flagquantum/compilation`,
