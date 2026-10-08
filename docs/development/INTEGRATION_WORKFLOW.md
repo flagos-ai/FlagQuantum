@@ -217,6 +217,12 @@ same eight contexts were recognised and the pull request went `clean`.
 names GitHub reported on that pull request's head commit, which is what makes the mistake
 reproducible as a test failure rather than as a second silent outage.
 
+The approved API change proposals written before this date still describe
+`tools/validate_required_checks.py` as pinning "six externally configured required
+checks". That was true of the contract at the time each was approved, and those proposals
+are records of an approval rather than a description of the current roster, so they are left
+as written. The roster is eight here and in `.github/required-checks.json`.
+
 What this does not do: it does not make a red `main` impossible, and it does not require a
 human to read a pull request. A red `main` blocks a release
 ([release policy](RELEASE_POLICY.md#a-red-main-blocks-the-release)); a green pull request
