@@ -727,6 +727,22 @@ def test_component_loader_requires_private_regular_file(tmp_path: Path) -> None:
         _load_component(link, "test.schema")
 
 
+def test_component_loader_accepts_current_sdk_approval_version(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "sdk-approval.json"
+    expected = {
+        "schema": assembler_module.SDK_APPROVAL_SCHEMA,
+        "version": assembler_module.SDK_APPROVAL_VERSION,
+    }
+    digest = _write_json(path, expected)
+
+    assert _load_component(path, assembler_module.SDK_APPROVAL_SCHEMA) == (
+        expected,
+        digest,
+    )
+
+
 @pytest.mark.parametrize("unsafe_kind", ("public", "symlink"))
 def test_component_loader_requires_private_real_parent(
     tmp_path: Path, unsafe_kind: str

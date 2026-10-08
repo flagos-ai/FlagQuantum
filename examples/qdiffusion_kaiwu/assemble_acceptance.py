@@ -44,6 +44,7 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import _load_frozen_config
 from examples.qdiffusion_kaiwu.sdk_approval import SCHEMA as SDK_APPROVAL_SCHEMA
+from examples.qdiffusion_kaiwu.sdk_approval import VERSION as SDK_APPROVAL_VERSION
 from examples.qdiffusion_kaiwu.source_preflight import (
     SCHEMA as SOURCE_PREFLIGHT_SCHEMA,
 )
@@ -191,11 +192,10 @@ def _load_component(path: Path, schema: str) -> tuple[dict[str, Any], str]:
     value = loads_json_strict(encoded)
     if not isinstance(value, dict):
         raise ValueError(f"component record must be a JSON object: {path}")
-    expected_version = (
-        PROVIDER_RECONCILIATION_VERSION
-        if schema == PROVIDER_RECONCILIATION_SCHEMA
-        else "1.0"
-    )
+    expected_version = {
+        PROVIDER_RECONCILIATION_SCHEMA: PROVIDER_RECONCILIATION_VERSION,
+        SDK_APPROVAL_SCHEMA: SDK_APPROVAL_VERSION,
+    }.get(schema, "1.0")
     if value.get("schema") != schema or value.get("version") != expected_version:
         raise ValueError(f"component record has an unsupported schema: {path}")
     return value, hashlib.sha256(encoded).hexdigest()
