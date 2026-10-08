@@ -19,7 +19,7 @@ which of the three documents to correct — is not taken here.
    merge push itself is read by the same eight checks, which is what makes arriving at
    `main` a reading rather than an event nobody looks at.
 4. The pull request is merged. A squash merge produces exactly one commit whose subject
-   ends in `(#NNN)`; at the 2026-10-08 measurement 73 of the 274 commits on `main`'s
+   ends in `(#NNN)`; at the 2026-10-08 measurement 73 of the 275 commits on `main`'s
    first-parent line since 2026-10-01 are merge commits instead, which the addendum below
    the measurements records.
 5. The head branch is abandoned. It is not deleted automatically and it is not
@@ -74,21 +74,23 @@ October is `396ddeb8` at `2026-10-01T00:29:36+08:00`.
 
 | Measurement | Value |
 | --- | --- |
-| First-parent commits, all history | 539 |
+| First-parent commits, all history | 540 |
 | Of those, merge commits, all history | 74 |
 | Merge commits before 2026-10-01 | **1** — `3c932585`, 2026-09-11, `Merge pull request #15` |
-| First-parent commits before the first merge, inclusive | 265 |
-| First-parent commits since 2026-10-01 | 274 |
+| First-parent commits before 2026-10-01 | 265 |
+| Of those, merge commits | **1** |
+| First-parent commits since 2026-10-01 | 275 |
 | Of those, merge commits | **73** |
-| Of those, commits whose subject ends in `(#NNN)` | 201 |
+| Of those, commits whose subject ends in `(#NNN)` | 202 |
 
 Both conventions are in use, and the second is new. Before the single September merge,
-`main`'s first-parent line held 264 non-merge commits, 98.5% of the 268 at that point: a
-linear history with one exception. From 2026-10-01 the same line holds 73 merges in 274
-commits, 26.6%, and 201 commits that still end in a pull-request number. The sample matters
-here too — 700 commits are reachable from `main` in that window once the merged branch
-histories are counted, so measuring "the newest 300 commits" overstates the merge share,
-because most of those commits live on the branches rather than on `main`'s own line.
+`main`'s first-parent line held 264 non-merge commits: of the 265 commits before
+2026-10-01, 99.6% are squashes or ordinary commits, a linear history with one exception
+nine commits from the root. From 2026-10-01 the same line holds 73 merges in 275 commits,
+26.5%, and 202 commits that still end in a pull-request number. The sample matters here
+too — 701 commits are reachable from `main` in that window once the merged branch histories
+are counted, so measuring "the newest 300 commits" overstates the merge share, because most
+of those commits live on the branches rather than on `main`'s own line.
 
 Two things follow, and both belong to the same finding as
 [issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579):
@@ -98,12 +100,30 @@ Two things follow, and both belong to the same finding as
   is of a tree that is not yet a revision of `main`: it is not a reading of `main` with
   every other change that landed in between. The merge push is therefore the only reading
   of the revision `main` actually holds, and with the push trigger's concurrency group
-  keyed to the branch, the next push cancelled it: the merges of #590 and #591 landed 17
-  seconds apart on 2026-10-08 and all 23 check runs attached to the first of them were
-  `cancelled`, `quality` among them. The workflows no longer cancel a superseded run of
-  `main`, and the required checks on the pull request are what must pass before the merge
-  is accepted.
-- **The `(#NNN)` convention no longer describes `main`.** 73 of the 274 first-parent
+  keyed to the branch, the next push cancelled it. The workflows no longer cancel a
+  superseded run of `main`, and the required checks on the pull request are what must pass
+  before the merge is accepted.
+
+  This was not two incidents. Every merge commit on `main`'s first-parent line since
+  2026-10-01 — 73 of them, the first dated 2026-10-05 — was measured by reading its check
+  runs back from the API:
+
+  | Merge commits since 2026-10-01 | Count |
+  | --- | --- |
+  | Total | 73 |
+  | With at least one `cancelled` check run | **53** |
+  | With nothing but `cancelled` check runs | **24** |
+  | With nothing `cancelled` and nothing failed | 14 |
+
+  The worst minute is 2026-10-06T00:19Z, when three merges landed 35 seconds apart:
+  `95ea9097` (#514) lost all 19 of its check runs, `fbc25d1a` (#515) lost the single one it
+  had registered, and `ab4abdb9` (#518) lost 19 of 23. The pair quoted in issue #579 has the
+  same shape: `964712239` (#590) merged at 01:06:02Z with all 23 of its check runs
+  `cancelled`, `quality` among them, and `724de8d06` (#591) merged 17 seconds later and kept
+  all 23 — because it was the push that did the cancelling. On 2026-10-07 `12985416` (#577),
+  the merge of the repair for a different gate defect, lost all 19 of its own check runs to
+  `c7880caf` (#584) 54 seconds later.
+- **The `(#NNN)` convention no longer describes `main`.** 73 of the 275 first-parent
   commits since 2026-10-01 are merge commits and `required_linear_history` is disabled, so
   nothing rejects the shape. A reader who takes the five-step flow above as "one pull
   request, one commit" will misread the history this finding is about.
@@ -118,7 +138,7 @@ Two things follow, and both belong to the same finding as
 | `.github/workflows/ci.yml` | `push` triggered on `main`, `develop`, and `refactor/flagquantum-vnext-architecture` (corrected to `main` only by the change that edited this line) | `5` |
 | `.github/workflows/ci.yml` | `pull_request` triggers on `main` only | `7` |
 
-### The two sets do not intersect
+### The two sets do not intersect, measured 2026-10-01
 
 | Declared | Actual | Evidence |
 | --- | --- | --- |
@@ -128,34 +148,45 @@ Two things follow, and both belong to the same finding as
 | `develop` is a CI push branch | `develop` **does not exist** | `git ls-remote --exit-code --heads origin develop` fails |
 | 11 `worktree` names | no directory matching `FlagQuantum-vNext*` exists beside the checkout | `ls -d ../FlagQuantum-vNext*` |
 | team branches deliver merged work | **exactly one** merged pull request ever came from a `vnext-team-*` branch: **#15**, `refactor/flagquantum-vnext-architecture` into `main`, 2026-09-11, "refactor: establish FlagQuantum v0.2.0 architecture" | GitHub API over all 271 merged pull requests |
-| team branches are long-lived integration lines | the head branches of squash merges are abandoned; `feat/team-scope-changed-path-gate`, for example, still exists on the remote although its work landed as `4f4adbd` (#282) | `git ls-remote --heads origin` |
+| team branches are long-lived integration lines | the head branches of squash merges are abandoned; `feat/team-scope-changed-path-gate`, for example, still existed on the remote although its work had landed as `4f4adbd` (#282) — it has since been deleted, and the addendum below records why most abandoned heads do not survive | `git ls-remote --heads origin` |
 
 The single exception is decisive rather than incidental. PR #15 was the v0.2.0
-architecture migration, and it is the only pull request in 271 that used the
-integration branch. The 270 that followed used per-change branches off `main`. The
-declared workflow is the **migration device** that produced the current layout; it is
-not the steady state that maintains it.
+architecture migration, and it is the only pull request — 271 at that measurement, 561 at
+the 2026-10-08 one — whose head was the integration branch. The 270 that followed used
+per-change branches off `main`. The declared workflow is the **migration device** that
+produced the current layout; it is not the steady state that maintains it.
 
 The branch roster above is the 2026-10-01 measurement and it has since moved, which
 strengthens the row rather than weakening it. On 2026-10-08 `git ls-remote --heads origin`
-returns 9 branches — `main` and 8 others — and not one of the eight is a `refactor/vnext-team-*`
+returns 8 branches — `main` and 7 others — and not one of the seven is a `refactor/vnext-team-*`
 team branch:
 
 | Branch | Ahead of `main` | Behind `main` |
 | --- | --- | --- |
-| `parity/w6-recovery` | 96 | 554 |
-| `feat/cpu-inplace-capacity` | 3 | 230 |
-| `feat/cpu-dense-native-one-qubit` | 2 | 230 |
-| `feat/qboson-kaiwu-provider-core` | 2 | 0 |
-| `bench/compiler-optimization-levels-vs-qiskit` | 1 | 0 |
-| `feat/cpu-qft-diagonal-memory` | 1 | 230 |
-| `fix/construction-acceptance-root-export-count` | 1 | 122 |
+| `parity/w6-recovery` | 96 | 555 |
+| `feat/cpu-inplace-capacity` | 3 | 231 |
+| `feat/cpu-dense-native-one-qubit` | 2 | 231 |
+| `feat/qboson-kaiwu-provider-core` | 2 | 1 |
+| `bench/compiler-optimization-levels-vs-qiskit` | 1 | 1 |
+| `feat/cpu-qft-diagonal-memory` | 1 | 231 |
+| `fix/construction-acceptance-root-export-count` | 1 | 123 |
 
-`fix/main-push-reading-is-not-cancelled` is omitted because it is the branch that produced
-this revision and its work is this change. The roster grew from 4 branches to 9 while the
-number of team branches stayed at zero, and five of the eight are 122 to 554 commits behind
-`main` — drift the 2026-10-01 table, which listed the branches without their distance from
-`main`, could not show. Only two of the eight are up to date with `main` at all.
+The roster grew from 4 branches to 8 while the number of team branches stayed at zero, and
+five of the seven are 123 to 555 commits behind `main` — drift the 2026-10-01 table, which
+listed the branches without their distance from `main`, could not show. Only two of the
+seven are up to date with `main` at all.
+
+One row of the earlier table has also gone stale, and in the other direction. It cites
+`feat/team-scope-changed-path-gate` as a head branch that "still exists on the remote
+although its work landed as `4f4adbd` (#282)". Its work had landed, and the branch has
+since been deleted: `git ls-remote --exit-code --heads origin
+feat/team-scope-changed-path-gate` now exits 2. The same is true of every head branch this
+repository has abandoned except one —
+`fix/construction-acceptance-root-export-count` is the head of
+[#594](https://github.com/flagos-ai/FlagQuantum/pull/594), one commit, closed without
+merging on 2026-10-07 and not deleted, which is the abandoned-branch pattern at its
+smallest. The repository has `delete_branch_on_merge` enabled, so a merged head branch is
+removed automatically and a closed-unmerged one is not, which is what the two rows show.
 
 ### Why the stale declaration is not merely untidy
 
@@ -412,7 +443,7 @@ A declaration of the workflow is complete when:
 3. **Should squash merges be required by rule rather than convention?** At the 2026-10-01
    measurement `main` was linear because every merge had been a squash, with
    `required_linear_history` disabled. The convention changed in October 2026 — 73 of the
-   274 first-parent commits since 2026-10-01 are merge commits — so the question is now
+   275 first-parent commits since 2026-10-01 are merge commits — so the question is now
    whether the current shape is the intended one, rather than whether an accident would be
    rejected.
 4. **What happens to abandoned remote branches?** Squash merging leaves the head branch

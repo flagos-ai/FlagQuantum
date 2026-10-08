@@ -24,7 +24,7 @@ classification mechanism: `tools/check_team_scope.py` resolves *which domain own
 path*, which is what makes a boundary checkable. They are **not** eleven working groups.
 
 Read the roster honestly: there is one maintainer. No branch named in that file has ever
-existed, the work of the 560 merged pull requests was done by one person plus two one-off
+existed, the work of the 561 merged pull requests was done by one person plus two one-off
 contributions, and a team whose `owns` list matched nothing was removed rather than kept
 as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 
@@ -51,27 +51,32 @@ compared against.
 
 | Measurement | 2026-10-01 | 2026-10-08 |
 | --- | --- | --- |
-| First-parent commits on `main` | 214 | 539 |
-| Authored by `Wei LIU <liuwei.chem.phys@gmail.com>` | 213 | 536 |
+| First-parent commits on `main` | 214 | 540 |
+| Authored by `Wei LIU <liuwei.chem.phys@gmail.com>` | 213 | 537 |
 | Authored by anyone else | 1 (`Qiming Teng <tengqm@outlook.com>`, 2026-09-18) | 3 (`Qiming Teng <tengqm@outlook.com>` 2, `Yulong Ao <aoyulong@outlook.com>` 1) |
 | Repository collaborators | 1 (`FlagQuantum`, `admin`) | 1 (`FlagQuantum`, `admin`) |
 | GitHub API contributors | 3 (`FlagQuantum` 1543 commits, `tengqm` 2, `aoyulong` 1) | 3 (`FlagQuantum` 2069 commits, `tengqm` 2, `aoyulong` 1) |
-| Merged pull requests | 271 | 560 |
+| Merged pull requests | 271 | 561 |
 | Closed without merging | 2 | 22 |
-| Open pull requests | 7 | **0** |
+| Open pull requests | 7 | 1 |
 
 The API's contributor counts and the commit authors on `main` do not agree, because a
 squash merge attributes a whole pull request to its merger and history has been rewritten
 at least once. The git-side figures are the ones that describe `main`, and since October
 2026 they include the merge commits themselves, which are attributed to the account that
-pressed merge: 73 of the 274 first-parent commits since 2026-10-01 are merges, so the
+pressed merge: 73 of the 275 first-parent commits since 2026-10-01 are merges, so the
 maintainer's own share now counts merges as well as authored work.
 
-The open-pull-request count of zero is a measurement of that moment rather than a standing
-property: the review queue was empty and the only open item was
-[issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579). The pull request that
-closes it is the first entry the queue has held since, so the number is quoted with the
-date it was read rather than as a current count.
+The open-pull-request count is quoted with the moment it was read, and this row was
+recorded wrong once. It was first written as **0**, and zero never held on 2026-10-08:
+[#598](https://github.com/flagos-ai/FlagQuantum/pull/598) was opened at 02:40Z and
+[#597](https://github.com/flagos-ai/FlagQuantum/pull/597), the pull request that closes
+[issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579), was open from 01:46Z
+until it merged at 05:47Z, so the queue held two at the moment of that measurement and
+holds one now. The paragraph this replaces said the queue had been empty and that #597 was
+the first entry it had held since, which was a recalled state rather than a read one. That
+is the failure this document is written against, one row up: an unmeasured number in a
+table whose subject is measured ones.
 
 ## What protects `main`
 
