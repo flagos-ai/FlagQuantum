@@ -284,15 +284,29 @@ def apply_provider_reconciliations(
 
     if len(used_record_ids) != len(matching):
         raise ValueError("provider reconciliation does not identify one component task")
+    target_assignment_valid = len(effective_targets) == 1 or (
+        schema == _SMOKE_SCHEMA and derived.get("project_no") is None
+    )
     identities_complete = (
         len(effective_ids) == len(receipts)
         and len(effective_ids) == len(set(effective_ids))
-        and len(effective_targets) == 1
+        and target_assignment_valid
     )
     if not identities_complete:
         return derived
 
-    target = next(iter(effective_targets))
+    if schema == _SMOKE_SCHEMA:
+        sampling_targets = {
+            receipt.get("provider_target")
+            for receipt in receipts
+            if receipt.get("task_mode") == "sampling"
+            and _canonical_identifier(receipt.get("provider_target"))
+        }
+        if len(sampling_targets) != 1:
+            return derived
+        target = next(iter(sampling_targets))
+    else:
+        target = next(iter(effective_targets))
     derived["provider_identity_complete"] = True
     derived["qboson_target"] = target
     provider_transport_proven = bool(

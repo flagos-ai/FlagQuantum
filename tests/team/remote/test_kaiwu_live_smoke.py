@@ -204,6 +204,46 @@ def test_live_smoke_rejects_inconsistent_provider_targets(
     assert record["qboson_target"] is None
 
 
+def test_live_smoke_accepts_account_default_cross_target_routing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _AccountDefaultRoutedClient(_CompletedClient):
+        def submit(
+            self,
+            matrix: FrozenIsingMatrix,
+            *,
+            task_name: str,
+            mode: KaiwuTaskMode,
+            requested_samples: int,
+            project_no: str | None,
+        ) -> KaiwuTaskReceipt:
+            receipt = super().submit(
+                matrix,
+                task_name=task_name,
+                mode=mode,
+                requested_samples=requested_samples,
+                project_no=project_no,
+            )
+            target = "SPQC-550" if mode == "optimization" else "SPQC-1000"
+            return replace(receipt, provider_target=target)
+
+    monkeypatch.setattr(smoke_module, "KaiwuSDKClient", _AccountDefaultRoutedClient)
+    record = run_live_smoke(
+        client=_AccountDefaultRoutedClient(expose_provider_identity=True),
+        task_prefix="account-default-routed-smoke",
+        project_no=None,
+        timeout=1.0,
+        poll_interval=0.01,
+        environment_lock_sha256="b" * 64,
+        sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
+    )
+
+    assert record["provider_identity_complete"] is True
+    assert record["qboson_target"] == "SPQC-1000"
+    assert record["hardware_acceptance"] is True
+
+
 def test_live_smoke_requires_exact_sdk_client_type(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

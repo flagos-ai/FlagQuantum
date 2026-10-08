@@ -2885,6 +2885,7 @@ def _validate_provider_smoke_component(
     task_names: list[str] = []
     task_ids: list[str] = []
     targets: set[str] = set()
+    targets_by_mode: dict[str, str] = {}
     matrix_digests: set[str] = set()
     for index, (task, expected_mode) in enumerate(
         zip(tasks, expected_modes, strict=True)
@@ -2912,6 +2913,7 @@ def _validate_provider_smoke_component(
             task_ids.append(task_id)
         if isinstance(target, str):
             targets.add(target)
+            targets_by_mode[expected_mode] = target
         if task_record.get("provider_task_id_available") is not True:
             errors.append(f"{label}: task {index} provider task ID is unavailable")
         if task_record.get("provider_target_available") is not True:
@@ -3049,10 +3051,13 @@ def _validate_provider_smoke_component(
         errors.append(f"{label}: SDK task names are not unique")
     if len(task_ids) != len(set(task_ids)):
         errors.append(f"{label}: provider task IDs are not unique")
-    if len(targets) != 1:
+    if record.get("project_no") is not None and len(targets) != 1:
         errors.append(f"{label}: provider targets are inconsistent")
-    elif record.get("qboson_target") != next(iter(targets)):
-        errors.append(f"{label}: top-level provider target differs from tasks")
+    sampling_target = targets_by_mode.get("sampling")
+    if record.get("qboson_target") != sampling_target:
+        errors.append(
+            f"{label}: top-level provider target differs from the sampling task"
+        )
     if len(matrix_digests) != 1:
         errors.append(f"{label}: task matrix identities are inconsistent")
 

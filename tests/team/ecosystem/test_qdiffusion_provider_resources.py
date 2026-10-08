@@ -75,7 +75,7 @@ def test_resource_snapshot_blocks_the_observed_zero_sampling_state() -> None:
     assert reason == "sampling_resource_unavailable"
 
 
-def test_resource_snapshot_requires_both_modes_on_one_target() -> None:
+def test_resource_snapshot_accepts_account_default_cross_target_pools() -> None:
     record = _record(sampling=0)
     resources = record["resources"]
     assert isinstance(resources, list)
@@ -88,8 +88,8 @@ def test_resource_snapshot_requires_both_modes_on_one_target() -> None:
         now=datetime(2026, 10, 6, 12, tzinfo=timezone.utc),
     )
 
-    assert ready is False
-    assert reason == "common_target_resources_unavailable"
+    assert ready is True
+    assert reason == "provider_smoke_resources_available"
 
 
 @pytest.mark.parametrize(

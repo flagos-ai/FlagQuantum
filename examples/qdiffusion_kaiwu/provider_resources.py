@@ -133,16 +133,10 @@ def assess_provider_resources(
         (item["target"], item["mode"]): item["available"]
         for item in record["resources"]
     }
-    if not any(
-        available[(target, "optimization")] >= 1
-        and available[(target, "sampling")] >= 1
-        for target in TARGETS
-    ):
-        if not any(available[(target, "optimization")] >= 1 for target in TARGETS):
-            return False, "optimization_resource_unavailable"
-        if not any(available[(target, "sampling")] >= 1 for target in TARGETS):
-            return False, "sampling_resource_unavailable"
-        return False, "common_target_resources_unavailable"
+    if not any(available[(target, "optimization")] >= 1 for target in TARGETS):
+        return False, "optimization_resource_unavailable"
+    if not any(available[(target, "sampling")] >= 1 for target in TARGETS):
+        return False, "sampling_resource_unavailable"
     return True, "provider_smoke_resources_available"
 
 

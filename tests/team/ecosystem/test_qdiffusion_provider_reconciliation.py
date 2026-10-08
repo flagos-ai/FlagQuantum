@@ -327,6 +327,7 @@ def test_smoke_identity_can_be_derived_from_two_unique_bill_rows() -> None:
             "mode": "optimization",
             "provider_batch_id": "O-BATCH-1",
             "associated_task_id": "optimization-task",
+            "provider_target": "SPQC-550",
             "resource_delta": -1,
         }
     )

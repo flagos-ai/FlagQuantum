@@ -216,11 +216,18 @@ def run_live_smoke(
         for record in records
         if isinstance(record.get("provider_target"), str)
     }
+    sampling_targets = {
+        record.get("provider_target")
+        for record in records
+        if record.get("task_mode") == "sampling"
+        and isinstance(record.get("provider_target"), str)
+    }
     provider_identity_complete = (
         len(records) == 2
         and len(provider_task_ids) == 2
         and len(set(provider_task_ids)) == 2
-        and len(provider_targets) == 1
+        and len(sampling_targets) == 1
+        and (len(provider_targets) == 1 or project_no is None)
         and all(
             record["provider_task_id_available"] is True
             and record["provider_target_available"] is True
@@ -272,7 +279,7 @@ def run_live_smoke(
         "real_provider_evidence": provider_use_proven,
         "qboson_hardware_used": provider_use_proven,
         "qboson_target": (
-            next(iter(provider_targets)) if provider_identity_complete else None
+            next(iter(sampling_targets)) if provider_identity_complete else None
         ),
         "project_no": project_no,
         "environment_lock_sha256": environment_lock_sha256,

@@ -118,6 +118,30 @@ Status as of 2026-10-08 on branch `feat/qboson-kaiwu-integration`:
   and target identities. Post-hoc account-bill reconciliation is not a runtime
   receipt. Both probe records therefore remain
   `hardware_acceptance=false` and `qdiffusion_acceptance=false`.
+- The formally approved Phase 2 provider smoke then ran on `jp-a800-171` from
+  the digest-pinned source and 72-distribution Python 3.10 environment in an
+  auto-remove, read-only, tmpfs-only container.  The environment lock reproduced
+  SHA-256 `a16cf3280f29d339adcc92d5fc65d9695a99ff65665f75a471ee2402bf52abf0`.
+  With `project_no=null`, Kaiwu completed exactly one optimization task and one
+  ten-sample task without fallback; the immutable smoke component has SHA-256
+  `b6349154dbffa85b96f6a374307491f228e2181bdc1f1b7f75924d0c3d37a23f`.
+  The authenticated Resource Bill uniquely reconciled the optimization task to
+  SPQC-550 task `33a5c9db9cf44804a6278d7237058dd8`, delta `-1`, and the
+  sampling task to SPQC-1000 task `acff1238b3df4a4ab58790b58a988f69`,
+  delta `-10`.  The two private version 2.0 reconciliation records have SHA-256
+  `2e179eaaab2409ae2cfb12dfa4fe79b9aee08762f0b6c58e34ba603b096b72bb`
+  and `aaedf0f0ab933bcb2264dc90dc5454d51ace5f541c08cceef9bbd7a1e95297c9`;
+  the post-smoke resource snapshot has SHA-256
+  `0f2c188f57c45dc6b92dcd93d0c6b1f8e665ef0a15150d2d71adc9453fa49c28`.
+  This observation established that an account-default smoke can legitimately
+  route its two modes to different provider targets.  Readiness now checks the
+  independently available optimization and sampling pools, and smoke identity
+  accepts cross-target routing only for the reviewed null assignment.  Explicit
+  project assignments still require one consistent target.  The smoke's
+  top-level `qboson_target` is the sampling target, SPQC-1000, because that is
+  the hardware identity relevant to downstream QDiffusion sampling.  Targeted
+  resource, reconciliation, smoke, and acceptance-validator regression passed
+  with 193 tests.
 - Kaiwu 1.3.1 writes `license.lic` beside its installed package during license
   initialization. A read-only container therefore fails before submission
   unless the package is copied into an executable tmpfs and imported from that
