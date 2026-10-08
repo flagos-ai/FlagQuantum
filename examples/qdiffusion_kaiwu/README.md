@@ -319,6 +319,15 @@ development probe retained only its owner-only recovery checkpoint and output
 record. The tmpfs package copy and license file vanished when the auto-removed
 container exited.
 
+For the retained 2026-10-08 sampling probe, the authenticated Resource Bill
+later matched the local task to one SPQC-1000 provider batch and associated
+task, recorded `SDK Create Task` / `Consumption`, and accounted for exactly ten
+sampling credits. The owner-only reconciliation record has SHA-256
+`d7c00cf0cdac8e4974e86e6617f09774a9d1de03d4348c870e357e9af4418087`.
+This is useful operational evidence, but it is post-hoc account-bill evidence:
+it does not replace the runtime task/target identity required for hardware or
+QDiffusion acceptance.
+
 `qboson_live_smoke.py` is a separately invoked, quota-consuming Phase 2 probe.
 It submits one fixed optimization task and one fixed sampling task, uses the
 same identity for bounded polling, and writes a new mode-0600 record without

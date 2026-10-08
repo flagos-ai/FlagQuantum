@@ -103,13 +103,20 @@ Status as of 2026-10-08 on branch `feat/qboson-kaiwu-integration`:
   remaining SPQC-1000 optimization credit stayed unchanged. The retained
   post-run resource snapshot has SHA-256
   `92505b876b4929bf27d3f802fc2006ae5be69bce70cc3462c94afed48a53ba48`.
+  The authenticated Resource Bill subsequently reconciled that local task to
+  one provider batch and one associated provider task on SPQC-1000, with
+  transaction channel `SDK Create Task`, transaction type `Consumption`, and
+  sampling resource delta `-10`. The private mode-0600 reconciliation record
+  has SHA-256
+  `d7c00cf0cdac8e4974e86e6617f09774a9d1de03d4348c870e357e9af4418087`.
   This establishes the bounded sampling development path and, together with
   the earlier optimization probe, closes the operational optimization/sampling
   transport question without spending the last optimization credit again.
   It does not satisfy the formal Phase 2 acceptance record: the two modes were
   run as separate development probes, the reviewed rights record is still
-  absent, and the pinned SDK result mapping still lacks provider-reported task
-  and target identities. Both probe records therefore remain
+  absent, and the pinned SDK result mapping still lacks runtime-returned task
+  and target identities. Post-hoc account-bill reconciliation is not a runtime
+  receipt. Both probe records therefore remain
   `hardware_acceptance=false` and `qdiffusion_acceptance=false`.
 - Kaiwu 1.3.1 writes `license.lic` beside its installed package during license
   initialization. A read-only container therefore fails before submission
