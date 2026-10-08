@@ -8,7 +8,6 @@ import stat
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 
@@ -26,6 +25,8 @@ from flagquantum.remote.kaiwu import (
     new_receipt,
 )
 from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+
+np = pytest.importorskip("numpy")
 
 pytestmark = pytest.mark.integration
 SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"

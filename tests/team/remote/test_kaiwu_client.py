@@ -10,7 +10,6 @@ from types import SimpleNamespace
 from typing import ClassVar
 from unittest.mock import Mock
 
-import numpy as np
 import pytest
 
 import flagquantum.remote.kaiwu.client as client_module
@@ -23,6 +22,8 @@ from flagquantum.remote.kaiwu import (
     submit_kaiwu_task,
 )
 from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskReceipt
+
+np = pytest.importorskip("numpy")
 
 pytestmark = pytest.mark.unit
 

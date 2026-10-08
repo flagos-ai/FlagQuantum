@@ -7,7 +7,6 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 from flagquantum.remote.kaiwu import (
@@ -22,6 +21,8 @@ from flagquantum.remote.kaiwu.contracts import (
     FrozenIsingMatrix,
     KaiwuTaskMode,
 )
+
+np = pytest.importorskip("numpy")
 
 pytestmark = pytest.mark.unit
 

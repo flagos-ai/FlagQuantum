@@ -5,7 +5,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 
-import numpy as np
 import pytest
 
 from flagquantum.algorithms import Hamiltonian, pauli_term
@@ -20,6 +19,8 @@ from flagquantum.remote.kaiwu.contracts import (
     FrozenIsingMatrix,
     KaiwuTaskMode,
 )
+
+np = pytest.importorskip("numpy")
 
 pytestmark = pytest.mark.unit
 

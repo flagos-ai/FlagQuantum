@@ -5,7 +5,6 @@ import itertools
 import os
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
 
@@ -13,6 +12,8 @@ from flagquantum.ecosystem.kaiwu import (
     encode_qubo_as_ising,
     ising_energy,
 )
+
+np = pytest.importorskip("numpy")
 
 pytestmark = pytest.mark.integration
 SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"

@@ -5,7 +5,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
 
@@ -23,6 +22,8 @@ from flagquantum.remote.kaiwu import (
     new_receipt,
 )
 from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+
+np = pytest.importorskip("numpy")
 
 pytestmark = pytest.mark.unit
 
