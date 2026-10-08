@@ -100,11 +100,29 @@ Two things follow, and both belong to the same finding as
   is of a tree that is not yet a revision of `main`: it is not a reading of `main` with
   every other change that landed in between. The merge push is therefore the only reading
   of the revision `main` actually holds, and with the push trigger's concurrency group
-  keyed to the branch, the next push cancelled it: the merges of #590 and #591 landed 17
-  seconds apart on 2026-10-08 and all 23 check runs attached to the first of them were
-  `cancelled`, `quality` among them. The workflows no longer cancel a superseded run of
-  `main`, and the required checks on the pull request are what must pass before the merge
-  is accepted.
+  keyed to the branch, the next push cancelled it. The workflows no longer cancel a
+  superseded run of `main`, and the required checks on the pull request are what must pass
+  before the merge is accepted.
+
+  This was not two incidents. Every merge commit on `main`'s first-parent line since
+  2026-10-01 — 73 of them, the first dated 2026-10-05 — was measured by reading its check
+  runs back from the API:
+
+  | Merge commits since 2026-10-01 | Count |
+  | --- | --- |
+  | Total | 73 |
+  | With at least one `cancelled` check run | **53** |
+  | With nothing but `cancelled` check runs | **24** |
+  | With nothing `cancelled` and nothing failed | 14 |
+
+  The worst minute is 2026-10-06T00:19Z, when three merges landed 35 seconds apart:
+  `95ea9097` (#514) lost all 19 of its check runs, `fbc25d1a` (#515) lost the single one it
+  had registered, and `ab4abdb9` (#518) lost 19 of 23. The pair quoted in issue #579 is the
+  same shape at one second less: `964712239` (#590) merged at 01:06:02Z with all 23 of its
+  check runs `cancelled`, `quality` among them, and `724de8d06` (#591) merged 17 seconds
+  later and kept all 23 — because it was the push that did the cancelling. On 2026-10-07
+  `12985416` (#577), the merge of the repair for a different gate defect, lost all 19 of
+  its own check runs to `c7880caf` (#584) 54 seconds later.
 - **The `(#NNN)` convention no longer describes `main`.** 73 of the 275 first-parent
   commits since 2026-10-01 are merge commits and `required_linear_history` is disabled, so
   nothing rejects the shape. A reader who takes the five-step flow above as "one pull
