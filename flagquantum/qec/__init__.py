@@ -69,6 +69,7 @@ from .registry import (
 from .repetition import run_repetition_memory_experiment
 from .sampling import sample_memory_circuit
 from .sliding_window import SlidingWindowMatchingDecoder
+from .subsystem import SubsystemCode, tesseract_code
 from .surface import RotatedSurfaceCode, ZxxzSurfaceCode
 from .types import (
     Correction,
@@ -136,6 +137,7 @@ __all__ = (
     "SlidingWindowMatchingDecoder",
     "StabilizerCode",
     "SteaneCode",
+    "SubsystemCode",
     "SyndromeRound",
     "StreamingDecoder",
     "bivariate_bicycle_code",
@@ -156,5 +158,6 @@ __all__ = (
     "sample_memory_circuit",
     "toric_code",
     "triangular_colour_code",
+    "tesseract_code",
     "ZxxzSurfaceCode",
 )

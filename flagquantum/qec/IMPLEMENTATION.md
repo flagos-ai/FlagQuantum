@@ -145,13 +145,42 @@ matrices, so a stabilizer carrying both an X factor and a Z factor has no row he
 not because the protocol refuses it but because one row of `hz` and one row of `hx`
 would describe two checks that do not commute. `build_memory_circuit` still refuses a
 declared product that is neither pure X nor pure Z. The Reichardt and Floquet
-families remain absent as *records* and have no matrix route either. The qLDPC
+families remain absent as *records* and have no matrix route either. What the
+subsystem record adds beside those is a second *reading* of matrices this route
+already accepts rather than a second set of matrices: `SubsystemCode` takes the
+same four blocks and two more, and the two more change what the four mean. The
+tesseract's sixteen data qubits carry ten independent check rows and two
+anticommuting gauge pairs, so the checks alone leave six classes -- which is
+exactly what `CssCode` counts in them, and it refuses the family's four declared
+logical operators for that reason -- while the record that knows about the gauge
+reports four protected qubits and names the other two as gauge. Neither reading is
+an error, and the two are not interchangeable, which is why this is a second
+record rather than two optional fields on the first: a protection claim states
+which classes survive, and a record that cannot say which centers it took makes
+that claim unstated rather than false.
+The new record is deliberately **not** a `StabilizerCode`, so the route that turns
+a record into CSS matrices refuses it with the protocol named rather than building
+matrices the gauge generators would be dropped from, and `tests/qec/test_subsystem_code.py`
+holds both sides of that: the CSS record refusing the four logicals of a code it
+counts six of, and this record absent from the members that route reads. The
+distance it reports is dressed -- every declared logical operator is required to
+commute with the opposite checks *and* to lie outside its own family's checks and
+gauge -- and the same file measures the stricter reading as well, so a reader can
+see that four is the family's declared distance under both rather than an artifact
+of which center the search took. The family's use is the free logical gate it
+carries: the sixteen-wire permutation of arXiv:2412.14256 maps the whole gauge
+group onto itself as a set, and on the declared
+`path4: L1, L0, L2, L5` order its two four-weight families move exactly as
+`CNOT(0 -> 1) * CNOT(2 -> 3)` does, which is measured against the
+Calderbank-Shor-Steane span a class is read modulo rather than against the
+operators the matrix happens to carry. The qLDPC
 case went the other way: `qldpc_code` takes a caller's own parity-check matrix pair
 and derives its logical operators, so the general form of what
 `bivariate_bicycle_code` was already doing for its own pair is now reachable
-directly, and five routes arrive at a record without the caller writing the
+directly, and six routes arrive at a record without the caller writing the
 matrices' consequences down -- the colour patch, the torus, the bicycle family, the
-punctured Reed-Muller family on the Boolean cube and a caller's own pair. What the
+punctured Reed-Muller family on the Boolean cube, the tesseract's subsystem
+reading and a caller's own pair. What the
 colour record changes about the layer above it is the shape of a check: a face on
 the triangular patch's edge spans four qubits and a face in its bulk spans six, so
 `triangular_colour_code` is the record whose checks reach weight six, and its two
@@ -598,7 +627,11 @@ the same file demonstrates.
 
 Not covered by the sweeps: `#` comments, gauge detectors, colour codes, distances
 above seven, `approximate_disjoint_errors`, and hand-written text outside the
-style `to_stim_text()` emits.
+style `to_stim_text()` emits. The gauge gap is stated precisely because the
+subsystem record does not close it: the record declares which generators are gauge
+and the automorphism that preserves them, but this package has no round structure
+and no detector model in which a gauge generator is measured, so a subsystem code
+has no memory experiment here and no decoder registered for one.
 
 ## Reading a model back
 
