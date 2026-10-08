@@ -65,6 +65,7 @@ class _CompletedClient:
 def test_minimal_live_sampling_uses_flagquantum_boundaries(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    pytest.importorskip("numpy")
     tmp_path.chmod(0o700)
     receipt = tmp_path / "receipt.json"
     client = _CompletedClient()

@@ -33,7 +33,14 @@ constant bias without asking the caller to construct a matrix.
 result validation, and recovery. QDiffusion is one consumer of this path; it
 does not call the vendor SDK directly.
 
-After installing the reviewed Kaiwu 1.3.1 wheel and exporting
+Install the open adapter boundary first:
+
+```bash
+python -m pip install -e '.[kaiwu]'
+```
+
+This extra installs NumPy only; it does not download or redistribute the Kaiwu
+SDK. After separately installing the reviewed Kaiwu 1.3.1 wheel and exporting
 `QBOSON_USER_ID` and `QBOSON_SDK_CODE`, run one explicitly acknowledged,
 ten-credit sampling request with:
 

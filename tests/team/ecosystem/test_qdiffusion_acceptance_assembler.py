@@ -1577,7 +1577,8 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     manifest["component_records"][14]["sha256"] = tampered_smoke_sha
     _write_json(manifest_path, manifest)
     assert any(
-        "provider smoke: top-level provider target differs from tasks" in error
+        "provider smoke: top-level provider target differs from the sampling task"
+        in error
         for error in validate_acceptance(manifest_path)
     )
 
@@ -1586,10 +1587,11 @@ def test_assembled_component_bundle_passes_final_validator(tmp_path: Path) -> No
     tampered_smoke_sha = _write_json(component_paths[14], tampered_smoke)
     manifest["component_records"][14]["sha256"] = tampered_smoke_sha
     _write_json(manifest_path, manifest)
+    errors = validate_acceptance(manifest_path)
     assert any(
         "provider task identities are reused across remote components" in error
-        for error in validate_acceptance(manifest_path)
-    )
+        for error in errors
+    ), errors
 
     restored_smoke_sha = _write_json(component_paths[14], provider_smoke_record)
     manifest["component_records"][14]["sha256"] = restored_smoke_sha
