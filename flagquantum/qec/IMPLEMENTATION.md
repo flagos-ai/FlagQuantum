@@ -144,9 +144,19 @@ it, and saying so is the honest boundary: this route states a code as parity-che
 matrices, so a stabilizer carrying both an X factor and a Z factor has no row here --
 not because the protocol refuses it but because one row of `hz` and one row of `hx`
 would describe two checks that do not commute. `build_memory_circuit` still refuses a
-declared product that is neither pure X nor pure Z. The Reichardt and Floquet
-families remain absent as *records* and have no matrix route either. What the
-subsystem record adds beside those is a second *reading* of matrices this route
+declared product that is neither pure X nor pure Z. A Floquet family remains
+absent as a *record* and has no matrix route either: a dynamic code states its
+stabilizer group per round rather than once, and nothing here records a code whose
+group changes. The other family this paragraph used to name beside it is not
+absent, and the correction is measured rather than editorial: the framework this
+package replaces binds its Reichardt module to the very tesseract record below --
+`cudaq/logical/qec/reichardt.py` links `Tesseract`, and
+`cudaq/logical/codes/catalog.py` writes that family with the same five check rows,
+the same four Z-type and four X-type logical rows, the same two gauge pairs,
+`k=4`, `r=2`, `d=4` and the same `path4: L1, L0, L2, L5` protected order that
+`tesseract_code()` declares -- so the family has a record here under a different
+name and the absence was a naming difference, not a capability gap. What the
+subsystem record adds beside that is a second *reading* of matrices this route
 already accepts rather than a second set of matrices: `SubsystemCode` takes the
 same four blocks and two more, and the two more change what the four mean. The
 tesseract's sixteen data qubits carry ten independent check rows and two
@@ -160,20 +170,33 @@ which classes survive, and a record that cannot say which centers it took makes
 that claim unstated rather than false.
 The new record is deliberately **not** a `StabilizerCode`, so the route that turns
 a record into CSS matrices refuses it with the protocol named rather than building
-matrices the gauge generators would be dropped from, and `tests/qec/test_subsystem_code.py`
-holds both sides of that: the CSS record refusing the four logicals of a code it
-counts six of, and this record absent from the members that route reads. The
+matrices the gauge generators would be dropped from, and `tests/qec/test_subsystem_code.py`,
+fourteen cases, holds both sides of that: the CSS record refusing the four logicals
+of a code it counts six of, and this record absent from the members that route
+reads. The
 distance it reports is dressed -- every declared logical operator is required to
 commute with the opposite checks *and* to lie outside its own family's checks and
-gauge -- and the same file measures the stricter reading as well, so a reader can
-see that four is the family's declared distance under both rather than an artifact
-of which center the search took. The family's use is the free logical gate it
-carries: the sixteen-wire permutation of arXiv:2412.14256 maps the whole gauge
-group onto itself as a set, and on the declared
-`path4: L1, L0, L2, L5` order its two four-weight families move exactly as
-`CNOT(0 -> 1) * CNOT(2 -> 3)` does, which is measured against the
-Calderbank-Shor-Steane span a class is read modulo rather than against the
-operators the matrix happens to carry. The qLDPC
+gauge -- and the same file measures both readings, so a reader can see that four
+is the family's declared distance under each rather than an artifact of which
+center the search took. It measures something stronger than that as well, because
+the tesseract cannot tell the two readings apart: its dressed and its check-only
+distance are both four. The 3x3 Bacon-Shor is the smallest subsystem family where
+they disagree -- a search up to the checks alone finds a weight-two operator and
+the record reports three -- so "the distance is dressed" is a measured claim rather
+than a number the published family happens to satisfy either way. The family's use
+is the free logical gate it carries, and the gate is now published beside the
+record rather than held by a test: `tesseract_column_swap()` reads the
+sixteen-wire permutation off the hypercube layout -- a wire whose lowest coordinate
+is clear exchanges the column above it -- and `tesseract_free_cnot_pairs()` states
+the two protected pairs it couples, so the claim that the permutation implements
+`CNOT(0 -> 1) * CNOT(2 -> 3)` on the declared `path4: L1, L0, L2, L5` order joins
+two independently written facts instead of restating one. The permutation maps the
+whole gauge group onto itself as a set, all 16384 elements of it, and the action is
+measured against the Calderbank-Shor-Steane span a class is read modulo rather than
+against the operators the matrix happens to carry. The derived tuple was itself
+measured against the one the framework this package replaces publishes for the same
+family, wire for wire: a derivation is only worth calling one if it lands on the
+published permutation rather than on some other involution of the same layout. The qLDPC
 case went the other way: `qldpc_code` takes a caller's own parity-check matrix pair
 and derives its logical operators, so the general form of what
 `bivariate_bicycle_code` was already doing for its own pair is now reachable
@@ -325,7 +348,7 @@ a sampled record, and every detector the model attributes to those two families
 was sampled at exactly zero. What was missing was never the record and never the
 channel: the model read all four families, and the stabilizer engine classifies a
 channel by the operators it carries rather than by its name, so a Z channel and a
-Y channel were both executable. What was missing was the placement — the data
+Y channel were both executable. What was missing was the placement -- the data
 location placed the X channel and only the X channel. Each of the three data faults
 is now placed as its own channel at the one data location, and the Y fault is one
 channel whose single non-identity branch carries the Y operator rather than an X
@@ -341,8 +364,8 @@ limitations rather than approximated here.
 Merging is also an operation a caller asks for, not only a step construction
 performs. `DetectorErrorModel.merge_duplicate_mechanisms(rule=...)` gives every
 shared signature one prior, `DemMergeRule` states the two rules by what they
-compute — `INDEPENDENT_PARITY` for mechanisms that are independent and coincide,
-`CLAMPED_LINEAR_SUM` for the sum of the group clamped at one — and
+compute -- `INDEPENDENT_PARITY` for mechanisms that are independent and coincide,
+`CLAMPED_LINEAR_SUM` for the sum of the group clamped at one -- and
 `mechanisms_are_unique()` and `require_unique_mechanisms()` are the predicate and
 the refusal. The default parity rule is exact rather than tidy: a detector's rate
 is a product of `1 - 2p` factors over the mechanisms touching it, and a group's
@@ -359,7 +382,7 @@ columns of a parity matrix are independent by construction, which is why it live
 on the mechanism's own record and why every entry point either carries it or
 refuses the model: `from_memory_circuit` and `from_code_matrices` produce no ids,
 `from_stim_text` cannot meet one, and `error_ids` projects the vector back out in
-the sense upstream gives that name — one entry per mechanism, mechanisms sharing
+the sense upstream gives that name -- one entry per mechanism, mechanisms sharing
 an entry being alternatives, and `None`, upstream's `nullopt`, exactly when no
 mechanism states an id, which is what every construction route here produces and
 what stim's text always describes.
@@ -375,13 +398,13 @@ drawing one uniform per group and landing the shot in one member's interval or i
 the left-over mass, so a member fires in exactly the shots the model says it does
 while the shots in which the group fires at all follow the group's mass rather
 than the larger share two independent draws would give. A group that sums to
-exactly one is admitted — the group then fires every shot — and a group of one
+exactly one is admitted -- the group then fires every shot -- and a group of one
 member excludes nothing and behaves as if it were unstated. A group whose
 probabilities sum *above* one is refused rather than renormalized: renormalizing
 would change every member's stated rate and leave nothing to read back, so the
 refusal names the id and the sum. `stated_ids()` and `exclusive_groups()` are the
-model's statement of what it excluded — empty and empty respectively exactly when
-it is independent — and `error_ids` is the label vector, whose values are opaque
+model's statement of what it excluded -- empty and empty respectively exactly when
+it is independent -- and `error_ids` is the label vector, whose values are opaque
 and whose numbering is therefore a normalization: two models that differ only in
 how their ids are numbered are the same model, and what is a fact about a model is
 the partition the vector induces.
@@ -468,7 +491,7 @@ against, which is the only way an X-type check can have one at all, since an
 X-type ancilla on a register never measured in that basis has a coin-toss
 outcome. Handing stim that circuit and requiring its own error analysis to
 reproduce the shape and every full signature and rate is a statement about the
-matrix route rather than about the memory circuit — the memory circuit's
+matrix route rather than about the memory circuit -- the memory circuit's
 transcription ends in a terminal data readout and has a different detector
 count. Running the
 matrix route against the memory transcription would conflate the two geometries
@@ -485,8 +508,8 @@ deviation over the sweep is 0.000374 against a four-standard-error tolerance of
 0.000672, and the tolerance is bounded above by the standard error of a
 half-rate so that it cannot silently degrade into an assertion that accepts any
 divergence. A model holding one mechanism per detector, carrying that detector's
-exact marginal, lands between 0.29 and 0.65 of the marginal tolerance — it
-reproduces the marginals by construction — while its pair rates miss by 10.7 to
+exact marginal, lands between 0.29 and 0.65 of the marginal tolerance -- it
+reproduces the marginals by construction -- while its pair rates miss by 10.7 to
 23.6 times the pair tolerance, against a largest true pair covariance of 0.0284
 to 0.1794.
 
@@ -510,7 +533,7 @@ program does contain. That guard cannot be recovered without executing, so the
 oracle it belonged to survives as `_forced_signature` and the suite holds the
 derivation against it location by location: every mechanism of a repetition code,
 a Steane code and a rotated surface patch, over every fault family, in both
-readout frames. The distance-7 patch is asserted to build for exactly that reason —
+readout frames. The distance-7 patch is asserted to build for exactly that reason --
 it is what fails if the derivation is replaced by an execution again. The executed
 route is bounded where the derivation is not: `distance=4` is 31 wires (2**31
 amplitudes), and `distance=5` is 49 wires and fails on the allocator.
@@ -628,10 +651,13 @@ the same file demonstrates.
 Not covered by the sweeps: `#` comments, gauge detectors, colour codes, distances
 above seven, `approximate_disjoint_errors`, and hand-written text outside the
 style `to_stim_text()` emits. The gauge gap is stated precisely because the
-subsystem record does not close it: the record declares which generators are gauge
-and the automorphism that preserves them, but this package has no round structure
-and no detector model in which a gauge generator is measured, so a subsystem code
-has no memory experiment here and no decoder registered for one.
+subsystem record does not close it: the record declares which generators are gauge,
+the automorphism that preserves them and the logical action that automorphism
+implements, but this package has no round structure and no detector model in which
+a gauge generator is measured, so a subsystem code has no memory experiment here
+and no decoder registered for one. The sweeps' own reading of the gap is unchanged
+by the automorphism being published: a permutation of data wires is not a measured
+gauge generator, and no detector in this package reads one.
 
 ## Reading a model back
 
@@ -642,8 +668,8 @@ is a set of detectors and observables it flips together with a probability, and
 mechanisms are independent unless an error id says otherwise, so a model is a
 register of detector wires and observable wires carrying one Pauli frame per
 fault. `circuit_from_detector_error_model(model)` returns that register as a
-`CircuitIR` — one wire per detector followed by one per observable, one
-Pauli-frame channel per fault group, one measurement per wire — and
+`CircuitIR` -- one wire per detector followed by one per observable, one
+Pauli-frame channel per fault group, one measurement per wire -- and
 `detector_error_model_from_circuit(circuit, num_detectors=...)`, published as
 `DetectorErrorModel.from_circuit`, reads it back.
 
@@ -656,8 +682,8 @@ says. Two different memory experiments of the same distance and the same noise
 record produce the same model, and a reader that returned a circuit for one of
 them would be asserting a fact the model never carried. What the reader returns
 instead is the canonical detector-level circuit every model *does* determine. The
-detector and observable split is outside it for the same reason — a wire index
-says nothing about which side of the split it falls on — so the detector count is
+detector and observable split is outside it for the same reason -- a wire index
+says nothing about which side of the split it falls on -- so the detector count is
 the caller's to state, and a caller who states the wrong count gets a model whose
 mechanisms are right and whose split is not rather than an error. The two
 functions are meant to be read as a pair.
@@ -686,8 +712,8 @@ what `flagquantum.simulation.stabilizer` samples, so a model reaches a second
 route to the same rates that shares no arithmetic with `dem_sampling`: the
 model's own route draws one uniform per mechanism and exclusive-ors the
 signatures that fired, and this one goes through a stabilizer engine. Held
-against the rates the model *states* — not against a second sample of the same
-route — the realization's sampled detector and observable rates departed by at
+against the rates the model *states* -- not against a second sample of the same
+route -- the realization's sampled detector and observable rates departed by at
 most 2.01 standard errors over the hand-written models and the memory-circuit
 models of the three codes that suite builds together, at 100000 shots with one
 seed, and a group
@@ -705,7 +731,7 @@ names the mechanism and refuses. And exclusivity is executable rather than
 merely stated: the members of an id-carrying group are the branches of one
 channel, so a realization draws at most one of them per shot, which is the same
 statement `dem_alternatives.py` makes in the model's own arithmetic. The
-realization does not make a correlated model transcribable — `to_stim_text()`
+realization does not make a correlated model transcribable -- `to_stim_text()`
 refuses an id-carrying model here exactly as it does anywhere else, because the
 format reads every error instruction as an independent mechanism.
 
@@ -820,8 +846,8 @@ statement of the model rather than a summary of it.
 Two mechanisms that agree on *both* their detectors and their observables are the
 different case, and it is where the merge operation becomes load-bearing. Such a
 pair is one fault stated twice, so a matcher that must explain that detector's
-defect would charge the cheaper of the two parallel edges — for mechanisms of
-`0.1` and `0.2` that is `log 4`, or `1.386` — for a fault whose combined parity
+defect would charge the cheaper of the two parallel edges -- for mechanisms of
+`0.1` and `0.2` that is `log 4`, or `1.386` -- for a fault whose combined parity
 `0.26` has weight `log(0.74 / 0.26)`, or `1.046`. The charge is larger than the
 fault's own weight, so a matcher would prefer a longer chain of other mechanisms
 over the mechanism that actually fired. The graph is right to keep the two edges
@@ -926,8 +952,8 @@ formality once the patches are wide: measured at a physical rate of 0.02 over on
 thousand shots of `RotatedSurfaceCode(distance=5)`, the widest syndrome held 21
 detection events and the default budget declined one shot in a thousand, while at
 0.01 over twenty thousand shots the same patch never passed 16 events and the
-default never fired. The derivation and the model have no ceiling of that kind —
-a distance-7 patch is 336 detectors — so the budget, and not the model, is what
+default never fired. The derivation and the model have no ceiling of that kind --
+a distance-7 patch is 336 detectors -- so the budget, and not the model, is what
 bounds the patch a decode of this route can cover, and it is recorded as an owned
 gap rather than presented as a property of the model. Raising it trades shots for
 enumeration, not memory: the widening of the model does not change this decoder's
@@ -1026,7 +1052,7 @@ model's widest mechanism, so with `window >= commit + span` every mechanism
 starting inside the band ends before the window's last detector and the window
 never treats it as a boundary step. `span` is measured from the graph rather than
 declared, and a window that already reaches the end of the graph is admitted
-whatever its width, since nothing is past its last detector then — which is the
+whatever its width, since nothing is past its last detector then -- which is the
 admission that keeps the one-window identity reachable. The band is committed
 whether or not the window reaches the graph's end: a window is not widened into
 authority over the detectors past its band, and the one-window identity survives
@@ -1038,8 +1064,8 @@ later; the default window is three bands.
 What the narrow window buys is finite work per syndrome: the defect budget bounds
 a window's syndrome rather than the whole history's, which is how a syndrome the
 exact matcher refuses becomes a syndrome this decoder answers. On the four long
-syndromes measured — 122, 164, 480 and 1600 detectors, where the exact matcher
-declined 11, 25, 40 and 40 of 40 shots — the windowed decoder answered all 40 at
+syndromes measured -- 122, 164, 480 and 1600 detectors, where the exact matcher
+declined 11, 25, 40 and 40 of 40 shots -- the windowed decoder answered all 40 at
 a band of one span and a window of two. What it costs is that a narrow window is a
 decision about a window: the mechanisms it selects can differ from the exact
 matcher's even where the observables agree, and the observable agreement is bought
@@ -1047,7 +1073,7 @@ with the window's width rather than guaranteed. Agreement improves with the widt
 and not monotonically at every width: over five short codes and 400 shots each, at
 a window of two bands the disagreements were 0, 1, 2, 7 and 12, at three bands 0,
 2, 1, 2 and 7, at four bands 0, 0, 0, 0 and 4, and at five bands the widest of
-them refused one shot of the 400 while the others agreed on every one — so width
+them refused one shot of the 400 while the others agreed on every one -- so width
 buys agreement and not monotonically. Widening is not free in the other direction
 either, because a wider window also collects more defects and reaches the same
 budget the exact matcher has: on the 480-detector patch a window of 48 detectors
@@ -1105,8 +1131,8 @@ looks like one.
 What the decoder reaches is measured rather than asserted. On the one-round
 Steane model it returns the least weight and the most likely observable for all
 64 syndromes. On the one-round rotated surface code it carries more weight than
-the least-weight explanation on five syndromes of 256 — by 0.6904 on two and
-2.9444 on three — and differs from the most likely observable on three of those
+the least-weight explanation on five syndromes of 256 -- by 0.6904 on two and
+2.9444 on three -- and differs from the most likely observable on three of those
 five, so its entire gap to an optimal decoder on that model is those five
 syndromes and not a property of the code. Against the matcher on the model both
 accept, a two-round repetition code, the two reach the least weight on every one
@@ -1210,7 +1236,7 @@ it asks for otherwise.
 Registration is checked at registration time, while the registering module is
 being imported. `register_decoder` refuses a name that is not a non-empty string,
 a second registration of a name unless the caller passes `replace=True`, and a
-class missing `decode` or `from_detector_error_model` — the two members every
+class missing `decode` or `from_detector_error_model` -- the two members every
 decoder in this family shares. A `TypeError` at import time, naming the member
 that is missing, is a better failure than an `AttributeError` at the first call,
 where the name is all the caller has to go on.
@@ -1231,7 +1257,7 @@ The optional implementation is registered whether or not it is installed, so
 for it without the extra raises the error that names the extra, instead of a name
 that silently is not there. The adapter module is imported, but it reaches
 PyMatching through a function rather than at import time, so `import
-flagquantum.qec` does not import `pymatching` — a test starts a fresh interpreter
+flagquantum.qec` does not import `pymatching` -- a test starts a fresh interpreter
 and measures that rather than asserting it. No name is preferred over another, so
 `get_decoder(AUTHORITY_NAME, ...)` returns the authority wherever the extra
 happens to be installed; the cross-check is never reached by accident.

@@ -62,16 +62,22 @@ What this file proves
     route that turns a record into CSS matrices refuses this record outright
     instead of building the matrices the gauge would be missing from.
 11. ``test_the_column_swap_is_an_automorphism_of_the_gauge_group``: the
-    sixteen-wire permutation of arXiv:2412.14256 maps all 16384 elements of the
+    sixteen-wire permutation the family publishes maps all 16384 elements of the
     gauge group onto the gauge group, which is the group-theoretic statement of
     "the automorphism preserves the gauge subsystem" that the family is used for.
 12. ``test_the_column_swap_implements_two_cnots_on_the_declared_logical_order``:
-    the same permutation acts on the four declared logical pairs exactly as
-    ``CNOT(0 -> 1) * CNOT(2 -> 3)`` does -- the control's X operator gains the
-    target's and the target's Z operator gains the control's, with nothing else
-    moving -- which is the free logical gate the family is published for.
-13. ``test_the_public_namespace_publishes_the_record``: ``flagquantum.qec``
-    resolves the record and the family and names both in its ``__all__``.
+    the same permutation acts on the four declared logical pairs exactly as the
+    pairs the family publishes say ``CNOT(control -> target)`` does -- the
+    control's X operator gains the target's and the target's Z operator gains the
+    control's, with nothing else moving -- which is the free logical gate the
+    family is published for.
+13. ``test_the_published_permutation_is_the_layout_involution``: the permutation
+    is read off the hypercube layout rather than transcribed, and the derivation
+    is held against the tuple the framework this package replaces publishes, so
+    "derived" is a measured claim and not a claim about how the code looks.
+14. ``test_the_public_namespace_publishes_the_record``: ``flagquantum.qec``
+    resolves the record, the family, the permutation and the declared action and
+    names all four in its ``__all__``.
 
 What this file does not prove
 -----------------------------
@@ -100,15 +106,38 @@ from flagquantum.qec import (
     SubsystemCode,
     css_code_matrices,
     tesseract_code,
+    tesseract_column_swap,
+    tesseract_free_cnot_pairs,
 )
 from flagquantum.qec.gf2 import in_span, rank, reduce_rows, reduce_vector
 from flagquantum.qec.pauli import Pauli
 
 pytestmark = pytest.mark.unit
 
-# The data-wire permutation of arXiv:2412.14256, as the family's own gadget
-# states it. Wire ``position`` is moved to wire ``SWAP[position]``.
-_SWAP = (2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15)
+# The permutation the framework this package replaces publishes for the same
+# family, transcribed from ``cudaq/logical/qec/reichardt.py`` where it is the
+# ``column_swap`` constant of the free-CNOT gadget. It is an external statement,
+# so it is repeated here rather than read out of the module under test: point 13
+# holds the module's derivation against it, and a value read back from the same
+# code that computed it would agree with that code whatever either said.
+_CUDAQ_COLUMN_SWAP = (
+    2,
+    1,
+    0,
+    3,
+    6,
+    5,
+    4,
+    7,
+    10,
+    9,
+    8,
+    11,
+    14,
+    13,
+    12,
+    15,
+)
 
 # The hypercube's eight cells as the sixteen vertices they touch, and the two
 # anticommuting gauge pairs. The tables are repeated here rather than read off
@@ -574,6 +603,7 @@ def test_the_css_reading_of_the_same_matrices_is_a_different_code() -> None:
 
 def test_the_column_swap_is_an_automorphism_of_the_gauge_group() -> None:
     tesseract = tesseract_code()
+    swap = tesseract_column_swap()
     generators = [
         (
             (_mask(_supports(operator)), 0)
@@ -592,7 +622,7 @@ def test_the_column_swap_is_an_automorphism_of_the_gauge_group() -> None:
     assert len(group) == 2**14
 
     images = {
-        (_permute(x_part, _SWAP), _permute(z_part, _SWAP)) for x_part, z_part in group
+        (_permute(x_part, swap), _permute(z_part, swap)) for x_part, z_part in group
     }
     assert images <= group
     # Conjugation by a wire permutation is injective, so an image contained in a
@@ -602,6 +632,7 @@ def test_the_column_swap_is_an_automorphism_of_the_gauge_group() -> None:
 
 def test_the_column_swap_implements_two_cnots_on_the_declared_logical_order() -> None:
     tesseract = tesseract_code()
+    swap = tesseract_column_swap()
     z_logicals = _z_logicals(tesseract)
     x_logicals = _x_logicals(tesseract)
     z_span = [
@@ -628,19 +659,22 @@ def test_the_column_swap_implements_two_cnots_on_the_declared_logical_order() ->
         return -1
 
     measured_z = tuple(
-        class_of(_permute(_mask(_supports(logical)), _SWAP), z_logicals, z_span)
+        class_of(_permute(_mask(_supports(logical)), swap), z_logicals, z_span)
         for logical in z_logicals
     )
     measured_x = tuple(
-        class_of(_permute(_mask(_supports(logical)), _SWAP), x_logicals, x_span)
+        class_of(_permute(_mask(_supports(logical)), swap), x_logicals, x_span)
         for logical in x_logicals
     )
 
     # What CNOT(control -> target) does to a logical pair: the control's X
     # operator gains the target's, the target's Z operator gains the control's,
     # and the two operators of the other pair do not move. Nothing else in either
-    # family moves, so the measured action below is the whole of the claim.
-    pairs = ((0, 1), (2, 3))
+    # family moves, so the measured action below is the whole of the claim. The
+    # pairs come from the family rather than from this test, which is what makes
+    # the comparison two statements instead of one written twice.
+    pairs = tesseract_free_cnot_pairs()
+    assert len({index for pair in pairs for index in pair}) == 4
     bases = tuple(1 << index for index in range(4))
     expected_x = tuple(
         bits | sum(1 << target for control, target in pairs if control == index)
@@ -657,7 +691,33 @@ def test_the_column_swap_implements_two_cnots_on_the_declared_logical_order() ->
     # two combinations above are not what every permutation produces.
     assert expected_z != bases and expected_x != bases
     assert measured_z != bases and measured_x != bases
-    assert tuple(range(16)) != _SWAP
+    assert tuple(range(16)) != swap
+
+
+def test_the_published_permutation_is_the_layout_involution() -> None:
+    swap = tesseract_column_swap()
+
+    # The permutation moves a wire to a wire and nowhere else, so its image is the
+    # sixteen wires rather than a tuple that happens to hold sixteen numbers.
+    assert sorted(swap) == list(range(16))
+    # Swapping the first and third column of each four-wire row is an involution,
+    # and that is a property the derivation has to have rather than one the
+    # published tuple might have by luck.
+    assert all(swap[swap[position]] == position for position in range(16))
+    # The layout reading: a wire whose lowest coordinate is clear exchanges the
+    # column above it, and one whose lowest coordinate is set does not move. The
+    # two halves are stated separately so that a derivation that moved every wire
+    # cannot pass by matching the second half alone.
+    moved = tuple(position for position in range(16) if swap[position] != position)
+    assert moved == (0, 2, 4, 6, 8, 10, 12, 14)
+    assert all(swap[position] == position ^ 2 for position in moved)
+
+    # The external statement: this is the tuple the framework this package
+    # replaces publishes as the family's ``column_swap``. A derivation is only
+    # worth calling one if it lands on the published permutation rather than on
+    # some other involution of the same layout.
+    assert swap == _CUDAQ_COLUMN_SWAP
+    assert swap != tuple(range(16))
 
 
 def test_the_public_namespace_publishes_the_record() -> None:
@@ -665,5 +725,12 @@ def test_the_public_namespace_publishes_the_record() -> None:
 
     assert qec.SubsystemCode is SubsystemCode
     assert qec.tesseract_code is tesseract_code
-    assert "SubsystemCode" in qec.__all__
-    assert "tesseract_code" in qec.__all__
+    assert qec.tesseract_column_swap is tesseract_column_swap
+    assert qec.tesseract_free_cnot_pairs is tesseract_free_cnot_pairs
+    for name in (
+        "SubsystemCode",
+        "tesseract_code",
+        "tesseract_column_swap",
+        "tesseract_free_cnot_pairs",
+    ):
+        assert name in qec.__all__

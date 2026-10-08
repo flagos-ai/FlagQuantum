@@ -79,6 +79,8 @@ from flagquantum.qec import (
     qldpc_code,
     reed_muller_code,
     tesseract_code,
+    tesseract_column_swap,
+    tesseract_free_cnot_pairs,
 )
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
@@ -131,7 +133,7 @@ pytestmark = pytest.mark.unit
 # values a Hartree-Fock solve consumes, and the entry point that builds one. The
 # driver module contributes three more: the Hartree-Fock solution, the returned
 # Hamiltonian with its energies, and the geometry-to-Hamiltonian entry point. The
-# error-correction package contributes eight: the code record a caller constructs,
+# error-correction package contributes ten: the code record a caller constructs,
 # the matrices that record is read back as, the bivariate-bicycle family, whose
 # example is the smallest member of the family rather than the published one,
 # because the published instance spends its time in the distance search and an
@@ -141,7 +143,11 @@ pytestmark = pytest.mark.unit
 # example is the two-by-two Bacon-Shor code because that is the smallest member of
 # a family whose matrices are not enough to state it, the published tesseract,
 # whose example is the five numbers that separate its reading of sixteen data
-# qubits from the Calderbank-Shor-Steane reading of the same check rows, and the
+# qubits from the Calderbank-Shor-Steane reading of the same check rows, the
+# permutation of that family's free-CNOT gadget, whose example is the whole
+# sixteen-wire tuple because the tuple is the fact rather than a summary of it,
+# the protected pairs that gadget couples, whose two pairs are the declared action
+# the permutation is checked against, and the
 # route that derives the
 # same record from a caller's check matrices, whose example is the Steane code
 # written as its three checks rather than as a record, and the hyperedge decoder's
@@ -210,6 +216,8 @@ ENTRIES = (
     single_excitation,
     surface_code_qubits_per_logical,
     tesseract_code,
+    tesseract_column_swap,
+    tesseract_free_cnot_pairs,
     target_capability_snapshot,
     translate,
     trotter_circuit,
