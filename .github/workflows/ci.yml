@@ -14,10 +14,17 @@ on:
 # jobs, and this workflow fans out beyond the share one repository should hold.
 # Two constraints bound this repository's share of it.
 #
-# The block below cancels a superseded run of the same branch, so a push that
-# lands while an earlier one is still running does not queue a second full
-# matrix behind it. `github.ref` is the pull request's merge ref for a pull
-# request and the branch for a push, which is the granularity wanted here.
+# The block below cancels a superseded run of the same pull request, so a push to
+# a branch under review does not queue a second full matrix behind it, and it
+# deliberately does not cancel a superseded run of `main`. A pull request's older
+# tree is a tree nobody will merge, so its reading is replaceable. A revision of
+# `main` has already been merged, so cancelling its run leaves a merge commit that
+# no gate ever read, and nothing here reports the difference between that and a
+# passing revision: on 2026-10-08 the merges of #590 and #591 landed 17 seconds
+# apart and all 23 check runs attached to the first of them were `cancelled`,
+# `quality` among them (issue #579). A push run is therefore keyed to its own
+# commit and allowed to finish. The cost is a queued matrix per push to `main`
+# rather than a dropped one, and that is the trade this file makes knowingly.
 #
 # Every job below then joins one of eight named buckets scoped to this pull
 # request or pushed branch -- `cpucore-3.1x`, `coverage`, `distributed`, and
@@ -32,8 +39,8 @@ on:
 # keeps only the newest waiting job and cancels the ones behind it, which would
 # report nothing at all for the job that was dropped.
 concurrency:
-  group: flagquantum-ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: flagquantum-ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:

@@ -13,15 +13,22 @@ which of the three documents to correct — is not taken here.
 1. A change is developed on a short-lived branch cut from `main`.
 2. The branch is pushed and a pull request is opened **with `main` as the base**.
 3. CI runs on the pull request. The required checks are listed in
-   `.github/required-checks.json`.
-4. The pull request is approved and **squash merged** into `main`. One pull request
-   becomes exactly one commit, whose subject ends in `(#NNN)`.
+   `.github/required-checks.json`, and since 2026-10-08 all eight are enforced on `main`:
+   each must complete successfully, on a head branch up to date with `main`, before the
+   merge is accepted — for the maintainer as well, because `enforce_admins` is on. The
+   merge push itself is read by the same eight checks, which is what makes arriving at
+   `main` a reading rather than an event nobody looks at.
+4. The pull request is merged. A squash merge produces exactly one commit whose subject
+   ends in `(#NNN)`; at the 2026-10-08 measurement 73 of the 272 commits on `main`'s
+   first-parent line since 2026-10-01 are merge commits instead, which the addendum below
+   the measurements records.
 5. The head branch is abandoned. It is not deleted automatically and it is not
    reintegrated.
 
-History is linear by this convention, not by rule: `required_linear_history` is
-disabled on `main` (`enforce_admins` is also disabled), yet `main` carries 214 commits,
-213 of them ending in a pull-request number, and **zero merge commits**.
+History was linear by this convention rather than by rule: `required_linear_history` is
+disabled on `main`, and at the 2026-10-01 measurement `main` carried 214 commits, 213 of
+them ending in a pull-request number, and **zero merge commits**. The 2026-10-08
+measurement below no longer finds that shape.
 
 ## Evidence
 
@@ -55,6 +62,46 @@ Head-branch prefixes across the 271 merged pull requests:
 The prefixes are per-change descriptions, not per-team branches. `refactor/` appears 18
 times and `dev/` 4 times; neither is a team identity, and no prefix reproduces the 11
 team names in `team-ownership.toml`.
+
+### Addendum, 2026-10-08: `main` now carries merge commits
+
+The table above is the 2026-10-01 measurement, and the shape it describes did not hold.
+`git log --first-parent`, on a full clone (`git fetch --unshallow`), reports the line of
+commits `main` actually advanced through — the commits a merge landed, not the branch
+history it pulled in:
+
+| Measurement | Value |
+| --- | --- |
+| First-parent commits, all history | 539 |
+| Of those, merge commits, all history | 74 |
+| Merge commits before 2026-10-01 | **1** — `3c932585`, 2026-09-11, `Merge pull request #15` |
+| First-parent commits since 2026-10-01 | 272 |
+| Of those, merge commits | **73** |
+| Of those, commits whose subject ends in `(#NNN)` | 199 |
+
+Both conventions are in use, and the second is new: one merge in September, then 73
+merges in the first week of October. The sample matters here — 698 commits are reachable
+from `main` in that window once the merged branch histories are counted, so measuring "the
+newest 300 commits" overstates the merge share, because most of those merge commits live
+on the branches rather than on `main`'s own line.
+
+Two things follow, and both belong to the same finding as
+[issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579):
+
+- **`main` advances by a push per merge, and a second push used to delete the first
+  reading.** A pull request is read on its own merge ref while it is open, and that reading
+  is of a tree that is not yet a revision of `main`: it is not a reading of `main` with
+  every other change that landed in between. The merge push is therefore the only reading
+  of the revision `main` actually holds, and with the push trigger's concurrency group
+  keyed to the branch, the next push cancelled it: the merges of #590 and #591 landed 17
+  seconds apart on 2026-10-08 and all 23 check runs attached to the first of them were
+  `cancelled`, `quality` among them. The workflows no longer cancel a superseded run of
+  `main`, and the required checks on the pull request are what must pass before the merge
+  is accepted.
+- **The `(#NNN)` convention no longer describes `main`.** 73 of the 272 first-parent
+  commits since 2026-10-01 are merge commits and `required_linear_history` is disabled, so
+  nothing rejects the shape. A reader who takes the five-step flow above as "one pull
+  request, one commit" will misread the history this finding is about.
 
 ### The declared flow
 
@@ -101,8 +148,13 @@ happened, six times:
 
 Measured directly: the commit of #284 has **1 check run**; the merge commit of #281,
 based on `main`, has **23**. A stacked pull request is not merely slower to verify — it
-is unverified, and the required-checks gate does not notice, because a pull request with
-zero checks has zero failing checks.
+is unverified. Since 2026-10-08 `main` requires eight status checks, so the shape of this
+failure changed rather than disappeared: a pull request based on another branch reports
+none of them, GitHub leaves each one `Expected — Waiting for status to be reported`, and
+the merge is **blocked** rather than accepted. The gate notices now; what it still cannot
+do is run, because no workflow matches a base branch other than `main`. The remedy for a
+stacked change remains to retarget it at `main` (or to land its base first), not to merge
+it and hope.
 
 This is exactly the failure mode the declared workflow would produce for *every* pull
 request, since it routes work through an integration branch that CI does not watch.
@@ -116,24 +168,46 @@ only reader of either field is the uniqueness check itself. The two fields are k
 reserved record of the migration layout, now labelled as reserved in both
 `team-ownership.toml` and `AGENTS.md`, rather than removed.
 
-### Branch protection does not supply the missing control
+### Branch protection now supplies the control, and did not before
 
-`gh api repos/flagos-ai/FlagQuantum/branches/main/protection`:
+`gh api repos/flagos-ai/FlagQuantum/branches/main/protection`, measured on 2026-10-01 and
+again on 2026-10-08:
 
-| Setting | Value |
-| --- | --- |
-| `required_approving_review_count` | 2 |
-| `dismiss_stale_reviews` | false |
-| `require_code_owner_reviews` | false |
-| **`enforce_admins.enabled`** | **false** |
-| `required_linear_history.enabled` | false |
+| Setting | 2026-10-01 | 2026-10-08 |
+| --- | --- | --- |
+| `required_approving_review_count` | 2 | **0** |
+| `dismiss_stale_reviews` | false | false |
+| `require_code_owner_reviews` | false | false |
+| **`enforce_admins.enabled`** | **false** | **true** |
+| `required_status_checks` | **absent** | the eight names in `.github/required-checks.json` |
+| `required_status_checks.strict` | — | **true** |
+| `required_linear_history.enabled` | false | false |
 
-Two required approvals are configured, and the account that authors and merges these
-pull requests holds `admin: true`, so the requirement is bypassable. The measured result
-is that the last 14 merges were all authored and merged by the same account with zero
-reviews. This document does not recommend that the bypass be closed or left open; it
-records that the "two approvals" requirement is nominal, so it cannot be the mechanism
-that distinguishes the declared workflow from the observed one.
+At the 2026-10-01 measurement, two required approvals were configured, the account that
+authors and merges these pull requests holds `admin: true`, and the requirement was
+bypassable: the last 14 merges were authored and merged by the same account with zero
+reviews. The count of two could not be the mechanism that distinguishes the declared
+workflow from the observed one, and it was recorded as nominal rather than corrected.
+
+Two decisions were taken on 2026-10-08, in the change that closes
+[issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579):
+
+1. **The two-approval requirement was removed rather than enforced.** A requirement that
+   no second reviewer exists to meet is not a rule; the number now says what this
+   repository does. The control that replaces it is the required checks.
+2. **Eight required checks, strict, enforced against admins.** `quality`,
+   `cpu-core (3.10)`, `cpu-core (3.11)`, `cpu-core (3.12)`, `package`, `distributed-cpu`,
+   `coverage`, and `pre-commit` must each complete successfully on a head branch up to date
+   with `main` before a merge is accepted — including a merge performed by the maintainer.
+   `.github/required-checks.json` records the names, `tools/validate_required_checks.py`
+   proves each name is one a workflow job produces, and `ci.yml`/`pre-commit.yaml` no
+   longer cancel a superseded run of `main`, so the merge push of a revision is read
+   instead of discarded.
+
+What this does not do: it does not make a red `main` impossible, and it does not require a
+human to read a pull request. A red `main` blocks a release
+([release policy](RELEASE_POLICY.md#a-red-main-blocks-the-release)); a green pull request
+is what the eight checks make it mean.
 
 ## Decision Candidates
 
@@ -261,21 +335,25 @@ A declaration of the workflow is complete when:
    integration team for protected paths, and `--team integration` is the supported bypass
    for a cross-team change. Is that role a reviewer, a merger, or only a path
    classification?
-3. **Should the two-approval requirement be enforced or removed?** It is currently
-   nominal because admins are exempt. Either answer is defensible; the current
-   combination — a requirement that is neither met nor removed — is the only one that
-   cannot be audited.
-4. **Should squash merges be required by rule rather than convention?** `main` is linear
-   because every merge has been a squash, with `required_linear_history` disabled. An
-   accidental merge commit would not be rejected today.
-5. **What happens to abandoned remote branches?** Squash merging leaves the head branch
+3. **Should squash merges be required by rule rather than convention?** At the 2026-10-01
+   measurement `main` was linear because every merge had been a squash, with
+   `required_linear_history` disabled. The convention changed in October 2026 — 73 of the
+   272 first-parent commits since 2026-10-01 are merge commits — so the question is now
+   whether the current shape is the intended one, rather than whether an accident would be
+   rejected.
+4. **What happens to abandoned remote branches?** Squash merging leaves the head branch
    behind, so the remote accumulates branches whose work is already in `main`. One of
    the eight current non-main branches — `feat/team-scope-changed-path-gate`, whose work
    landed as `4f4adbd` — is in exactly that state.
-6. **Does the existing `refactor/` and `dev/` prefix usage mean a team-branch naming
+5. **Does the existing `refactor/` and `dev/` prefix usage mean a team-branch naming
    scheme is wanted after all?** The observed prefixes are per-change, not per-team, but
    18 `refactor/` and 4 `dev/` branches suggest a looser convention that has never been
    written down.
+
+Closed on 2026-10-08: **should the two-approval requirement be enforced or removed?** It
+was removed, and the eight required checks — strict, and enforced against admins — are the
+control that replaces it. See [Branch protection now supplies the
+control](#branch-protection-now-supplies-the-control-and-did-not-before).
 
 ## Owner and approvals
 

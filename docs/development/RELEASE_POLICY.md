@@ -40,3 +40,21 @@ allowed only from an intentional release commit after supported Python and
 dependency bounds, clean installs, artifact contents, licenses, reproducible
 builds, checksummed manifests and release contracts pass. The current
 development branch must not publish unfinished builds.
+
+## A red `main` blocks the release
+
+A release candidate is a revision of `main` whose required checks all completed
+successfully. The names are recorded in `.github/required-checks.json` and every
+one of them is enforced on `main`, including for the maintainer.
+
+While `main` is red the release waits, and the remedy is a fix that passes on
+`main` rather than a release cut beside it. A revision whose required checks
+failed is a revision with a known defect; a revision whose checks never reported
+is a revision with no reading at all, and the second is the more dangerous of the
+two because nothing in the repository reports the difference. That is not
+hypothetical: on 2026-10-08 two merges to `main` landed 17 seconds apart and all
+23 check runs attached to the first of them were `cancelled`, `quality` among
+them, so a revision of `main` existed that no gate had read
+([issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579)). The
+workflows no longer cancel a superseded run of `main` for that reason, and this
+paragraph is what makes the reading a release condition rather than a courtesy.
