@@ -400,8 +400,10 @@ A declaration of the workflow is complete when:
    2026-10-08 none of the eight non-main branches is in that state:
    `feat/team-scope-changed-path-gate`, whose work landed as `4f4adbd`, has since been
    deleted, and all eight that remain are ahead of `main` by at least one commit. The
-   question narrows from "what do we do with branches whose work has landed" to "what do
-   we do with the six that are one to three commits ahead and hundreds behind".
+   question narrows from "what do we do with branches whose work has landed" to what the
+   roster addendum above measures instead: four branches holding one to three unmerged
+   commits while 122 to 230 behind, two holding one or two commits and not behind at all,
+   and one carrying 96 commits from 554 behind.
 5. **Does the existing `refactor/` and `dev/` prefix usage mean a team-branch naming
    scheme is wanted after all?** The observed prefixes are per-change, not per-team, but
    18 `refactor/` and 4 `dev/` branches suggest a looser convention that has never been
