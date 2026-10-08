@@ -561,10 +561,11 @@ def test_restore_rejects_duplicate_json_keys(tmp_path: Path, encoded: str) -> No
         ("project_no", "project\tname", "invalid project number"),
         ("submitted_at", "2026-10-05T00:00:00", "aware UTC"),
         ("submitted_at", "2026-10-05T08:00:00+08:00", "aware UTC"),
-        (
+        pytest.param(
             "submitted_at",
-            (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+            "2999-01-01T00:00:00+00:00",
             "submission time is in the future",
+            id="submitted_at-future",
         ),
         ("provider_task_id", 7, "invalid provider_task_id"),
         ("provider_task_id", "   ", "invalid provider_task_id"),
