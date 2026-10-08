@@ -68,10 +68,10 @@ class JAXQuantumKernel:
     """JAX quantum kernel exposed as a PyTorch differentiable callable."""
 
     circuit_builder: TorchCircuitBuilder
-    n_wires: int
+    n_qubits: int
     mode: str = "statevector"
     observable: str = "z_sum"
-    observable_wires: tuple[int, ...] | None = None
+    observable_qubits: tuple[int, ...] | None = None
     hamiltonian_terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...] = ()
     parameter_shape: tuple[int, ...] | None = None
     accepts_inputs: bool = False
@@ -167,7 +167,9 @@ class JAXQuantumKernel:
         if self.mode == "mps" and self.observable == "hamiltonian":
             hamiltonian_fastpath = (
                 "local_pauli_zz_chain_padded_scan"
-                if _is_zz_z_chain_hamiltonian(self.hamiltonian_terms, int(self.n_wires))
+                if _is_zz_z_chain_hamiltonian(
+                    self.hamiltonian_terms, int(self.n_qubits)
+                )
                 else "generic_pauli_string_transfer"
             )
         return {
@@ -189,7 +191,7 @@ class JAXQuantumKernel:
             ),
             "mode": self.mode,
             "observable": self.observable,
-            "observable_wires": self.observable_wires,
+            "observable_wires": self.observable_qubits,
             "hamiltonian_terms": self.hamiltonian_terms,
             "hamiltonian_fastpath": hamiltonian_fastpath,
             "parameter_shape": self.parameter_shape,
@@ -247,26 +249,26 @@ class JAXQuantumKernel:
             if self.mode == "statevector":
                 state = _jax_statevector_from_circuit(
                     circuit,
-                    int(self.n_wires),
+                    int(self.n_qubits),
                     parameters,
                     matmul_precision=self.matmul_precision,
                 )
             elif self.mode == "mps":
                 tensors = _jax_mps_from_circuit(
                     circuit,
-                    int(self.n_wires),
+                    int(self.n_qubits),
                     parameters,
                     max_bond=self.max_bond,
                     cutoff=self.cutoff,
                     matmul_precision=self.matmul_precision,
                 )
                 if self.observable == "z_sum":
-                    wires = self.observable_wires or tuple(range(int(self.n_wires)))
-                    return _jax_mps_z_sum(tensors, wires, self.matmul_precision)
+                    qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
+                    return _jax_mps_z_sum(tensors, qubits, self.matmul_precision)
                 if self.observable == "z":
-                    wires = self.observable_wires or tuple(range(int(self.n_wires)))
+                    qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
                     return _jax_mps_z_values(
-                        tensors, wires, self.matmul_precision
+                        tensors, qubits, self.matmul_precision
                     ).sum()
                 if self.observable == "hamiltonian":
                     return _jax_mps_hamiltonian_expectation(
@@ -279,25 +281,25 @@ class JAXQuantumKernel:
                 )
             elif self.mode in {"tensor_network", "tn"}:
                 if self.observable == "z_sum":
-                    wires = self.observable_wires or tuple(range(int(self.n_wires)))
+                    qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
                     return _jax_tensor_network_z_sum(
                         circuit,
-                        int(self.n_wires),
-                        wires,
+                        int(self.n_qubits),
+                        qubits,
                         self.matmul_precision,
                     )
                 if self.observable == "z":
-                    wires = self.observable_wires or tuple(range(int(self.n_wires)))
+                    qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
                     return _jax_tensor_network_z_values(
                         circuit,
-                        int(self.n_wires),
-                        wires,
+                        int(self.n_qubits),
+                        qubits,
                         self.matmul_precision,
                     ).sum()
                 if self.observable == "hamiltonian":
                     return _jax_tensor_network_hamiltonian_expectation(
                         circuit,
-                        int(self.n_wires),
+                        int(self.n_qubits),
                         self.hamiltonian_terms,
                         self.matmul_precision,
                     )
@@ -309,15 +311,15 @@ class JAXQuantumKernel:
                     "JAXQuantumKernel mode must be 'statevector', 'mps', or 'tensor_network'."
                 )
             if self.observable == "z_sum":
-                wires = self.observable_wires or tuple(range(int(self.n_wires)))
-                return _jax_z_sum(state, int(self.n_wires), wires)
+                qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
+                return _jax_z_sum(state, int(self.n_qubits), qubits)
             if self.observable == "z":
-                wires = self.observable_wires or tuple(range(int(self.n_wires)))
-                return jnp.sum(_jax_z_values(state, int(self.n_wires), wires))
+                qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
+                return jnp.sum(_jax_z_values(state, int(self.n_qubits), qubits))
             if self.observable == "hamiltonian":
                 return _jax_hamiltonian_expectation(
                     state,
-                    int(self.n_wires),
+                    int(self.n_qubits),
                     self.hamiltonian_terms,
                     self.matmul_precision,
                 )
@@ -359,9 +361,9 @@ def compile_quantum_kernel(
     backend: str = "jax",
     interface: str = "torch",
     mode: str = "statevector",
-    n_wires: int | None = None,
+    n_qubits: int | None = None,
     observable: str = "z_sum",
-    observable_wires: Iterable[int] | int | None = None,
+    observable_qubits: Iterable[int] | int | None = None,
     hamiltonian: Any | None = None,
     jit: bool = True,
     matmul_precision: str | None = "highest",
@@ -380,32 +382,32 @@ def compile_quantum_kernel(
         mode = "tensor_network"
     if mode not in {"statevector", "mps", "tensor_network"}:
         raise ValueError("mode must be 'statevector', 'mps', or 'tensor_network'.")
-    wires: tuple[int, ...] | None
-    if isinstance(observable_wires, int):
-        wires = (int(observable_wires),)
-    elif observable_wires is None:
-        wires = None
+    qubits: tuple[int, ...] | None
+    if isinstance(observable_qubits, int):
+        qubits = (int(observable_qubits),)
+    elif observable_qubits is None:
+        qubits = None
     else:
-        wires = tuple(int(wire) for wire in observable_wires)
+        qubits = tuple(int(qubit) for qubit in observable_qubits)
     hamiltonian_terms = _normalize_hamiltonian_terms(hamiltonian)
     if hamiltonian is not None:
         observable = "hamiltonian"
-    if n_wires is None:
+    if n_qubits is None:
         if example_parameters is None:
-            raise ValueError("n_wires or example_parameters must be provided.")
+            raise ValueError("n_qubits or example_parameters must be provided.")
         if accepts_inputs:
-            raise ValueError("n_wires is required when circuit_builder accepts inputs")
+            raise ValueError("n_qubits is required when circuit_builder accepts inputs")
         probe = circuit_builder(example_parameters.detach())
-        n_wires = int(probe.n_wires)
+        n_qubits = int(probe.n_qubits)
     parameter_shape = None
     if example_parameters is not None:
         parameter_shape = tuple(int(dim) for dim in example_parameters.shape)
     return JAXQuantumKernel(
         circuit_builder=circuit_builder,
-        n_wires=int(n_wires),
+        n_qubits=int(n_qubits),
         mode=mode,
         observable=observable,
-        observable_wires=wires,
+        observable_qubits=qubits,
         hamiltonian_terms=hamiltonian_terms,
         parameter_shape=parameter_shape,
         accepts_inputs=accepts_inputs,
@@ -440,7 +442,7 @@ def _normalize_hamiltonian_terms(
         normalized.append(
             (
                 coeff_value,
-                tuple((int(wire), str(name).lower()) for wire, name in ops),
+                tuple((int(qubit), str(name).lower()) for qubit, name in ops),
             )
         )
     if not normalized:
@@ -459,9 +461,9 @@ class QuantumTorchLayer(torch.nn.Module):
         backend: str = "jax",
         quantum_backend: str | None = None,
         mode: str = "statevector",
-        n_wires: int,
+        n_qubits: int,
         observable: str = "z_sum",
-        observable_wires: Iterable[int] | int | None = None,
+        observable_qubits: Iterable[int] | int | None = None,
         hamiltonian: Any | None = None,
         jit: bool = True,
         matmul_precision: str | None = "highest",
@@ -488,9 +490,9 @@ class QuantumTorchLayer(torch.nn.Module):
             backend=selected_backend,
             interface="torch",
             mode=mode,
-            n_wires=n_wires,
+            n_qubits=n_qubits,
             observable=observable,
-            observable_wires=observable_wires,
+            observable_qubits=observable_qubits,
             hamiltonian=hamiltonian,
             jit=jit,
             matmul_precision=matmul_precision,

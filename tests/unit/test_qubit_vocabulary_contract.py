@@ -125,7 +125,7 @@ def test_the_gate_reports_definition_progress_per_slice() -> None:
 
     rows = _GATE.slice_progress(_contract(), "definition")
     assert [row[0] for row in rows] == [f"WQ-{index}" for index in range(2, 9)]
-    assert all(retired == 0 for _, retired, _ in rows)
+    assert sum(retired for _, retired, _ in rows) == 4
     assert sum(retired + remaining for _, retired, remaining in rows) == 10
 
 
@@ -937,9 +937,9 @@ def test_the_report_names_the_aliases_apart_from_retirement(
     contract["other_surfaces"]["public_attribute_aliased"] = 3
     _GATE._report(contract)
     lines = capsys.readouterr().out.splitlines()
-    assert "30 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
-    assert "27 of 122 attribute sites retired, 4 kept as deprecated aliases" in lines[8]
-    assert "0 of 10 definition names retired" in lines[16]
+    assert "79 of 341 baseline sites retired, 11 kept as deprecated aliases" in lines[0]
+    assert "68 of 122 attribute sites retired, 4 kept as deprecated aliases" in lines[8]
+    assert "4 of 10 definition names retired" in lines[16]
 
 
 def test_a_slice_attribute_count_that_disagrees_with_the_ledger_is_reported() -> None:
@@ -1143,9 +1143,9 @@ def test_a_definition_rename_that_disagrees_with_the_rule_is_reported() -> None:
     row = next(
         entry
         for entry in _definition_rows(contract)
-        if entry["site"].endswith("::rank_for_wire")
+        if entry["site"].endswith("::infer_n_wires_from_dense_state")
     )
-    row["replacement"] = "rank_for_qubit_indices"
+    row["replacement"] = "infer_n_qubit_indices"
     _some(_errors(contract), "must be replaced by")
 
 
@@ -1156,11 +1156,22 @@ def test_a_definition_without_a_kind_is_reported() -> None:
 
 
 def test_the_definition_ledger_is_the_scanner_output_at_the_baseline() -> None:
+    """The same measurement claim as the parameter ledger, one surface over.
+
+    A definition name may only leave the live surface through a retirement row,
+    so the ledger minus the retirements has to equal the scanner exactly and no
+    retired name may still be found.
+    """
+
     contract = _contract()
     scanned = _CENSUS.definition_census(_ROOT / "flagquantum")
-    assert {
+    declared = {
         str(row["site"]): str(row["replacement"]) for row in _definition_rows(contract)
-    } == {site.identifier: site.replacement for site in scanned.ledgered}
+    }
+    retired = {str(site) for site in contract["definition_retirement"]["sites"]}
+    live = {site.identifier: site.replacement for site in scanned.ledgered}
+    assert {site: declared[site] for site in set(declared) - retired} == live
+    assert not retired & set(live)
 
 
 # --------------------------------------------------------------------- live facts

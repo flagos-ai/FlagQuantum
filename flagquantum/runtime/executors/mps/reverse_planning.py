@@ -52,14 +52,14 @@ def plan_mps_reverse_segments(
         return tuple((record,) for record in ordered)
     segments: list[tuple[MPSReverseTapeRecord, ...]] = []
     pending: list[MPSReverseTapeRecord] = []
-    wires: set[int] = set()
+    qubits: set[int] = set()
     signature = None
 
     def flush() -> None:
-        nonlocal pending, wires, signature
+        nonlocal pending, qubits, signature
         if pending:
             segments.append(tuple(pending))
-        pending, wires, signature = [], set(), None
+        pending, qubits, signature = [], set(), None
 
     for record in ordered:
         candidate = (
@@ -68,12 +68,12 @@ def plan_mps_reverse_segments(
             and len(record.input_shapes) == 1
         )
         current = (record.compute_owner, record.input_shapes, record.output_shapes)
-        wire = record.wires[0]
-        if not candidate or (pending and (current != signature or wire in wires)):
+        qubit = record.wires[0]
+        if not candidate or (pending and (current != signature or qubit in qubits)):
             flush()
         if candidate:
             pending.append(record)
-            wires.add(wire)
+            qubits.add(qubit)
             signature = current
         else:
             segments.append((record,))
@@ -197,7 +197,7 @@ def cached_mps_gradient_buckets(
 
 
 def plan_mps_canonicalization_bonds(
-    n_wires: int, dirty_bonds: Sequence[int], policy: str
+    n_qubits: int, dirty_bonds: Sequence[int], policy: str
 ) -> tuple[int, ...]:
     """Plan the minimal canonicalization interval for the declared policy."""
     if policy not in {"none", "dirty", "full"}:
@@ -205,11 +205,11 @@ def plan_mps_canonicalization_bonds(
     if policy == "none":
         return ()
     if policy == "full":
-        return tuple(range(max(0, n_wires - 1)))
+        return tuple(range(max(0, n_qubits - 1)))
     dirty = tuple(sorted(set(int(bond) for bond in dirty_bonds)))
-    if any(bond < 0 or bond >= n_wires - 1 for bond in dirty):
+    if any(bond < 0 or bond >= n_qubits - 1 for bond in dirty):
         raise ValueError("dirty canonicalization bond is outside the MPS")
-    return () if not dirty else tuple(range(dirty[0], n_wires - 1))
+    return () if not dirty else tuple(range(dirty[0], n_qubits - 1))
 
 
 def _collect_autograd_leaves(

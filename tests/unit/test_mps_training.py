@@ -298,7 +298,7 @@ def test_single_rank_sharded_mps_gather_avoids_object_collective(monkeypatch):
         initialized=True,
     )
     sharded = ShardedMPSState(
-        n_wires=1,
+        n_qubits=1,
         bsz=1,
         config=mps.config,
         local_tensors={0: mps.tensors[0]},
@@ -306,7 +306,7 @@ def test_single_rank_sharded_mps_gather_avoids_object_collective(monkeypatch):
             DistributedShardPlan(
                 rank=0,
                 world_size=1,
-                wires=(0,),
+                qubits=(0,),
                 left_boundary=None,
                 right_boundary=None,
             ),

@@ -113,7 +113,7 @@ def _statevector_expectation_backward_op(
         ]
         circuit = _bind_template(template, names, local_parameters)
         result = execute_torch_distributed_statevector_reverse(
-            circuit, observable_wires=observable_wires, device="cpu"
+            circuit, observable_qubits=observable_wires, device="cpu"
         )
         gradients = torch.autograd.grad(
             result.value,
@@ -144,7 +144,7 @@ def _statevector_expectation_op(
     ]
     circuit = _bind_template(template, names, local_parameters)
     return execute_torch_distributed_statevector_reverse(
-        circuit, observable_wires=observable_wires, device="cpu"
+        circuit, observable_qubits=observable_wires, device="cpu"
     ).value.detach()
 
 

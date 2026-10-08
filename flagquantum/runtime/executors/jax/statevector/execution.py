@@ -183,14 +183,14 @@ def jax_sharded_statevector_parameter_value_and_grad(
     circuit_builder: Callable[[Any], Any],
     parameters: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     world_size: int | None = None,
     local_world_size: int | None = None,
     bsz: int = 1,
     complex_bytes: int | None = None,
     dtype: Any | None = None,
     observable: str = "z_sum",
-    observable_wires: Sequence[int] | None = None,
+    observable_qubits: Sequence[int] | None = None,
     distributed_backend_policy: DistributedBackendPolicy | None = None,
     distributed_profile: str | None = None,
     jax_backend: str | None = None,
@@ -244,9 +244,9 @@ def jax_sharded_statevector_parameter_value_and_grad(
     parameter_shape = tuple(int(dim) for dim in static_parameters.shape)
     example_circuit = circuit_builder(static_parameters)
     ir = _as_ir(example_circuit)
-    if int(ir.n_wires) != int(n_wires):
+    if int(ir.n_wires) != int(n_qubits):
         raise ValueError(
-            f"n_wires={n_wires} does not match circuit IR n_wires={ir.n_wires}."
+            f"n_qubits={n_qubits} does not match circuit IR n_qubits={ir.n_wires}."
         )
     plan = plan_distributed_statevector(
         ir,
@@ -316,9 +316,9 @@ def jax_sharded_statevector_parameter_value_and_grad(
             )
             return _jax_sharded_statevector_loss_from_shards(
                 shards,
-                n_wires=int(n_wires),
+                n_wires=int(n_qubits),
                 observable=observable,
-                observable_wires=observable_wires,
+                observable_wires=observable_qubits,
             )
         finally:
             _set_active_jax_compute_dtype(previous_dtype)
@@ -332,7 +332,7 @@ def jax_sharded_statevector_parameter_value_and_grad(
                 plan=plan,
                 complex_bytes=complex_bytes,
                 observable=observable,
-                observable_wires=observable_wires,
+                observable_wires=observable_qubits,
             )
 
     elif resolved_backward_backend == "shard_map":
@@ -344,7 +344,7 @@ def jax_sharded_statevector_parameter_value_and_grad(
                 plan=plan,
                 complex_bytes=complex_bytes,
                 observable=observable,
-                observable_wires=observable_wires,
+                observable_wires=observable_qubits,
             )
 
     else:

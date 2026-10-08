@@ -50,6 +50,37 @@ The affected candidate signatures
 are updated for this explicitly requested migration; the historical baseline
 and checker remain unchanged.
 
+## The executor surface
+
+The distributed executors under `flagquantum.runtime.executors` are the fourth
+slice. `fq.runtime` is not an attribute of the `fq` package, so no name in this
+slice is reachable from `fq.*` and none of them keeps a forwarder: every rename
+below is a hard rename in the same release.
+
+| Before | After |
+|---|---|
+| `runtime.executors.mps.*` and `runtime.executors.jax.*`: `n_wires`, `wire`, `wires`, `left_wire`, `wire_shards`, `adjoint_wires`, `observable_wires` | the `qubit` spellings |
+| `runtime.executors.statevector.*`: `wire_layout`, `persistent_wire_layout`, `preferred_local_wires`, `local_physical_wire`, `sharded_physical_wire`, `logical_wire`, `wires` | `qubit_layout`, `persistent_qubit_layout`, `preferred_local_qubits`, `local_physical_qubit`, `sharded_physical_qubit`, `logical_qubit`, `qubits` |
+| `runtime.executors.statevector.layout.StatevectorLayoutSwap`: `local_logical_wire`, `local_physical_wire`, `sharded_logical_wire`, `sharded_physical_wire` | the four `…_qubit` spellings |
+| `runtime.distributed.{scale_profile,training_profile}`: `wire_layout`, `n_wires` | `qubit_layout`; `n_wires` is **kept** on the two scale cases, whose `as_dict` payload carries it as a key |
+| `runtime.executors.mps.records.MPSReverseTapeRecord`: `wires` | **kept** as a serialized field; the `build_mps_reverse_tape_record` parameter is `qubits` |
+| `runtime.executors.jax.common.rank_for_wire`, `validate_observable_wires`; `runtime.executors.statevector.forward.communication_aware_wire_layout`; `runtime.executors.statevector.program_cache.remap_instruction_wires` | `rank_for_qubit`, `validate_observable_qubits`, `communication_aware_qubit_layout`, `remap_instruction_qubits` |
+
+Payload keys do not move with the attribute that fills them. The executors' own
+`summary()` dictionaries still carry `"n_wires"`, `"wire_layout"`, and
+`"logical_to_physical_wires"`, and `execute_torch_distributed_statevector_reverse`
+still reports `"observable_wires"` in its `summary()`. Each is a key in a payload
+that leaves the process, so it moves only with that payload's schema.
+
+`flagquantum.runtime.executors` is sparsely sliced: several of its modules —
+`jax/statevector/kernels.py`, `statevector/reverse_adjoint_kernels.py`,
+`statevector/forward_rzz_segment.py`, `mps/canonicalization.py`,
+`jax/mps/shards.py` — declare nothing this slice owns and yet read a plan or a
+shard this slice renamed. They were caught up in the same change, and the only
+check that sees them is a test run, because the reference reaches them through an
+`Any`. A rename whose reach is wider than its file list is not verified by
+`mypy --strict` alone.
+
 ## Scope of the rename
 
 The migration covers four surfaces, all measured by

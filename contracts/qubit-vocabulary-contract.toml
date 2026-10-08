@@ -36,7 +36,7 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 397
+measured_private = 372
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
@@ -489,6 +489,55 @@ sites = [
     "flagquantum/runtime/planner/topology.py::rank_ownership::n_wires",
     "flagquantum/testing/correctness.py::generate_circuit_ir::n_wires",
     "flagquantum/testing/remote.py::InMemoryRemoteTarget.discover_backends::n_wires",
+    "flagquantum/runtime/executors/jax/common.py::rank_for_wire::wire",
+    "flagquantum/runtime/executors/jax/common.py::rank_for_wire::wire_shards",
+    "flagquantum/runtime/executors/jax/common.py::validate_observable_wires::n_wires",
+    "flagquantum/runtime/executors/jax/common.py::validate_observable_wires::wires",
+    "flagquantum/runtime/executors/jax/kernel.py::QuantumTorchLayer.__init__::n_wires",
+    "flagquantum/runtime/executors/jax/kernel.py::QuantumTorchLayer.__init__::observable_wires",
+    "flagquantum/runtime/executors/jax/kernel.py::compile_quantum_kernel::n_wires",
+    "flagquantum/runtime/executors/jax/kernel.py::compile_quantum_kernel::observable_wires",
+    "flagquantum/runtime/executors/jax/mps/gradients.py::jax_sharded_mps_parameter_value_and_grad::n_wires",
+    "flagquantum/runtime/executors/jax/mps/gradients.py::jax_sharded_mps_parameter_value_and_grad::observable_wires",
+    "flagquantum/runtime/executors/jax/mps/result.py::JAXShardedMPSResult.expectation_z::wire",
+    "flagquantum/runtime/executors/jax/statevector/execution.py::jax_sharded_statevector_parameter_value_and_grad::n_wires",
+    "flagquantum/runtime/executors/jax/statevector/execution.py::jax_sharded_statevector_parameter_value_and_grad::observable_wires",
+    "flagquantum/runtime/executors/jax/statevector/records.py::JAXShardedStatevectorResult.expectation_z::wire",
+    "flagquantum/runtime/executors/jax/tensor_network/gradients.py::jax_sliced_tensor_network_parameter_value_and_grad::n_wires",
+    "flagquantum/runtime/executors/jax/tensor_network/gradients.py::jax_sliced_tensor_network_parameter_value_and_grad::observable_wires",
+    "flagquantum/runtime/executors/jax/tensor_network/gradients.py::jax_sliced_tensor_network_value_and_grad::observable_wires",
+    "flagquantum/runtime/executors/jax/tensor_network/records.py::JAXShardedTensorNetworkResult.expectation_z::wire",
+    "flagquantum/runtime/executors/mps/compiled_training.py::compile_mps_training_step::observable_wires",
+    "flagquantum/runtime/executors/mps/distributed_state.py::ShardedMPSState.__init__::n_wires",
+    "flagquantum/runtime/executors/mps/distributed_state.py::ShardedMPSState.apply_one_local::wire",
+    "flagquantum/runtime/executors/mps/distributed_state.py::ShardedMPSState.apply_two_local::left_wire",
+    "flagquantum/runtime/executors/mps/records.py::build_mps_reverse_tape_record::wires",
+    "flagquantum/runtime/executors/mps/reverse_observables.py::mps_expectation_and_adjoints::adjoint_wires",
+    "flagquantum/runtime/executors/mps/reverse_planning.py::plan_mps_canonicalization_bonds::n_wires",
+    "flagquantum/runtime/executors/mps/reverse_tape.py::ReverseTapeBuilder.canonicalize_bond::left_wire",
+    "flagquantum/runtime/executors/mps/state.py::RankOwnedMPSState.owner::wire",
+    "flagquantum/runtime/executors/mps/state.py::initial_mps_ownership::n_wires",
+    "flagquantum/runtime/executors/mps/state.py::normalize_rank_owned_initial_tensors::n_wires",
+    "flagquantum/runtime/executors/mps/state.py::validate_mps_ownership::n_wires",
+    "flagquantum/runtime/executors/statevector/forward.py::communication_aware_wire_layout::preferred_local_wires",
+    "flagquantum/runtime/executors/statevector/forward_executor.py::execute_torch_distributed_statevector::persistent_wire_layout",
+    "flagquantum/runtime/executors/statevector/forward_executor.py::execute_torch_distributed_statevector::preferred_local_wires",
+    "flagquantum/runtime/executors/statevector/forward_executor.py::execute_torch_distributed_statevector::wire_layout",
+    "flagquantum/runtime/executors/statevector/layout.py::distributed_swap_rank_local_bits::local_physical_wire",
+    "flagquantum/runtime/executors/statevector/layout.py::distributed_swap_rank_local_bits::n_wires",
+    "flagquantum/runtime/executors/statevector/layout.py::distributed_swap_rank_local_bits::sharded_physical_wire",
+    "flagquantum/runtime/executors/statevector/layout.py::schedule_statevector_dependency_dag.pending_use::logical_wire",
+    "flagquantum/runtime/executors/statevector/local_execution.py::apply_gate_to_statevector_shard::wires",
+    "flagquantum/runtime/executors/statevector/local_execution.py::apply_gate_to_statevector_shards::wires",
+    "flagquantum/runtime/executors/statevector/program_cache.py::remapped_program.remap::wires",
+    "flagquantum/runtime/executors/statevector/reverse.py::execute_torch_distributed_statevector_reverse::observable_wire",
+    "flagquantum/runtime/executors/statevector/reverse.py::execute_torch_distributed_statevector_reverse::observable_wires",
+    "flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py::apply_cpu_compact_cx_adjoint_segment::n_wires",
+    "flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py::apply_cpu_cx_adjoint_segment::n_wires",
+    "flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py::apply_or_defer_cpu_cx_adjoint_segment::segment_wires",
+    "flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py::cpu_cx_permutation_images::n_wires",
+    "flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py::cpu_cx_permutation_index::n_wires",
+    "flagquantum/runtime/executors/statevector/training.py::train_distributed_statevector::observable_wire",
 ]
 
 [[slices]]
@@ -549,7 +598,7 @@ files = [
 [[slices]]
 id = "WQ-4"
 title = "runtime executors"
-owner_team = "runtime"
+owner_team = "simulation + runtime"
 canonical_count = 49
 attribute_count = 41
 attribute_field_count = 37
@@ -1214,6 +1263,171 @@ replacement = "qubits"
 # literal are a source-level kernel-catalog `symbol` field and two `__all__`
 # lists, which the same rename updates.
 
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/kernel.py::JAXQuantumKernel::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/kernel.py::JAXQuantumKernel::observable_wires"
+replacement = "observable_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/mps/gradient_result.py::JAXShardedMPSParameterGradientResult::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/mps/result.py::JAXShardedMPSResult::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/mps/training_records.py::JAXMPSRankShardState::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/mps/training_records.py::JAXShardedMPSParameterFlowPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/mps/training_records.py::JAXShardedMPSParameterGateAssignment::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/mps/training_records.py::JAXShardedMPSTrainingPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/planning_core.py::JAXDistributedQuantumPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/statevector/records.py::JAXShardedStatevectorTrainingPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/tensor_network/records.py::JAXShardedTensorNetworkResult::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/tensor_network/records.py::JAXSlicedTensorNetworkGradientResult::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/jax/tensor_network/records.py::JAXSlicedTensorNetworkParameterGradientResult::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/mps/compiled_training.py::MPSTrainingStep::observable_wires"
+replacement = "observable_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/mps/distributed_state.py::DistributedBoundarySync::left_wire"
+replacement = "left_qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/mps/distributed_state.py::DistributedBoundarySync::right_wire"
+replacement = "right_qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/mps/distributed_state.py::DistributedMPSState::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/mps/distributed_state.py::DistributedShardPlan::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/mps/distributed_state.py::ShardedMPSState::n_wires"
+replacement = "n_qubits"
+declaration = "instance"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/mps/state.py::MPSPartition::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/mps/state.py::RankOwnedMPSState::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/forward.py::TorchDistributedStatevectorResult::logical_to_physical_wires"
+replacement = "logical_to_physical_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/forward.py::TorchDistributedStatevectorResult::wire_layout"
+replacement = "qubit_layout"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/gather.py::DistributedStatevectorGatherResult::logical_to_physical_wires"
+replacement = "logical_to_physical_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/gather.py::DistributedStatevectorGatherResult::wire_layout"
+replacement = "qubit_layout"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/layout.py::PersistentStatevectorLayoutPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/layout.py::StatevectorLayoutSwap::local_logical_wire"
+replacement = "local_logical_qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/layout.py::StatevectorLayoutSwap::local_physical_wire"
+replacement = "local_physical_qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/layout.py::StatevectorLayoutSwap::sharded_logical_wire"
+replacement = "sharded_logical_qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/layout.py::StatevectorLayoutSwap::sharded_physical_wire"
+replacement = "sharded_physical_qubit"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/models.py::DistributedStatevectorPlan::n_wires"
+replacement = "n_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/models.py::DistributedStatevectorPlan::sharded_wires"
+replacement = "sharded_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/models.py::StatevectorExecutionSegment::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/models.py::StatevectorFusionBlock::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/models.py::StatevectorGatePlan::sharded_wires_touched"
+replacement = "sharded_qubits_touched"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/models.py::StatevectorGatePlan::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/reverse.py::TorchDistributedStatevectorGradientResult::logical_to_physical_wires"
+replacement = "logical_to_physical_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/statevector/reverse.py::TorchDistributedStatevectorGradientResult::observable_wires"
+replacement = "observable_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/tensor_network/state.py::DistributedTensorNetworkExpectation::observable_wires"
+replacement = "observable_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/executors/tensor_network/state.py::DistributedTensorNetworkState::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/runtime/trajectories/result.py::MPSMonteCarloResult::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+
 [definition_ledger]
 measured_canonical = 10
 
@@ -1271,7 +1485,12 @@ kind = "function"
 # [retirement]: the gate requires every entry to be absent from the live
 # scan, so a slice cannot claim a rename it did not make.
 [definition_retirement]
-sites = []
+sites = [
+    "flagquantum/runtime/executors/jax/common.py::rank_for_wire",
+    "flagquantum/runtime/executors/jax/common.py::validate_observable_wires",
+    "flagquantum/runtime/executors/statevector/forward.py::communication_aware_wire_layout",
+    "flagquantum/runtime/executors/statevector/program_cache.py::remap_instruction_wires",
+]
 
 [verification]
 contract = "tests/unit/test_qubit_vocabulary_contract.py"
@@ -1281,5 +1500,6 @@ census_tests = "tests/unit/test_census_wire_vocabulary.py"
 attribute_proposal = "docs/development/API_CHANGE_PROPOSAL_067_QUBIT_VOCABULARY_ATTRIBUTES.md"
 attribute_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md"
 runtime_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-RUNTIME-20261007.md"
+executor_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-EXECUTORS-20261008.md"
 ci_workflow = ".github/workflows/ci.yml"
 pre_push = "tools/pre_push.py"

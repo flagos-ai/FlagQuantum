@@ -1,4 +1,4 @@
-"""Persistent logical-to-physical wire layouts for sharded statevectors."""
+"""Persistent logical-to-physical qubit layouts for sharded statevectors."""
 
 from __future__ import annotations
 
@@ -17,15 +17,15 @@ class StatevectorLayoutSwap:
     """Exchange one local and one rank-address bit without restoring the layout."""
 
     before_instruction: int
-    local_logical_wire: int
-    sharded_logical_wire: int
-    local_physical_wire: int
-    sharded_physical_wire: int
+    local_logical_qubit: int
+    sharded_logical_qubit: int
+    local_physical_qubit: int
+    sharded_physical_qubit: int
 
 
 @dataclass(frozen=True)
 class StatevectorLayoutSegment:
-    """A maximal instruction interval sharing one persistent wire layout."""
+    """A maximal instruction interval sharing one persistent qubit layout."""
 
     start_instruction: int
     stop_instruction: int
@@ -34,9 +34,9 @@ class StatevectorLayoutSegment:
 
 @dataclass(frozen=True)
 class PersistentStatevectorLayoutPlan:
-    """Belady-style wire residency plan for distributed statevector execution."""
+    """Belady-style qubit residency plan for distributed statevector execution."""
 
-    n_wires: int
+    n_qubits: int
     rank_bits: int
     initial_logical_to_physical: tuple[int, ...]
     final_logical_to_physical: tuple[int, ...]
@@ -68,10 +68,10 @@ def distributed_swap_rank_local_bits(
     amplitudes: torch.Tensor,
     *,
     rank: int,
-    n_wires: int,
+    n_qubits: int,
     rank_bits: int,
-    local_physical_wire: int,
-    sharded_physical_wire: int,
+    local_physical_qubit: int,
+    sharded_physical_qubit: int,
     process_group: Any | None = None,
     output: torch.Tensor | None = None,
     send_buffer: torch.Tensor | None = None,
@@ -87,16 +87,16 @@ def distributed_swap_rank_local_bits(
 
     if amplitudes.ndim != 2:
         raise ValueError("statevector amplitudes must have shape [batch, local]")
-    if rank_bits < 1 or rank_bits >= n_wires:
-        raise ValueError("rank_bits must leave at least one local wire")
-    local_limit = n_wires - rank_bits
-    if not 0 <= local_physical_wire < local_limit:
-        raise ValueError("local_physical_wire is not a local index bit")
-    if not local_limit <= sharded_physical_wire < n_wires:
-        raise ValueError("sharded_physical_wire is not a rank-address bit")
+    if rank_bits < 1 or rank_bits >= n_qubits:
+        raise ValueError("rank_bits must leave at least one local qubit")
+    local_limit = n_qubits - rank_bits
+    if not 0 <= local_physical_qubit < local_limit:
+        raise ValueError("local_physical_qubit is not a local index bit")
+    if not local_limit <= sharded_physical_qubit < n_qubits:
+        raise ValueError("sharded_physical_qubit is not a rank-address bit")
 
-    local_bit_position = n_wires - local_physical_wire - 1 - rank_bits
-    rank_bit_position = n_wires - sharded_physical_wire - 1
+    local_bit_position = n_qubits - local_physical_qubit - 1 - rank_bits
+    rank_bit_position = n_qubits - sharded_physical_qubit - 1
     rank_mask = 1 << rank_bit_position
     rank_value = (rank >> rank_bit_position) & 1
     peer = rank ^ rank_mask
@@ -163,12 +163,12 @@ def _next_use(
     instructions: Sequence[Any],
     *,
     after: int,
-    logical_wire: int,
+    logical_qubit: int,
 ) -> int:
     for index in range(after + 1, len(instructions)):
-        if logical_wire in instructions[index].wires:
+        if logical_qubit in instructions[index].wires:
             return index
-    return len(instructions) + logical_wire
+    return len(instructions) + logical_qubit
 
 
 def schedule_statevector_dependency_dag(
@@ -176,13 +176,13 @@ def schedule_statevector_dependency_dag(
     *,
     world_size: int,
 ) -> CircuitIR:
-    """List-schedule independent gates to keep the active wire set resident.
+    """List-schedule independent gates to keep the active qubit set resident.
 
-    Instructions that share a wire retain their original relative order.
-    Instructions with no dependency path between them act on disjoint wires and
+    Instructions that share a qubit retain their original relative order.
+    Instructions with no dependency path between them act on disjoint qubits and
     therefore commute, so the scheduler may choose among them without changing
     circuit semantics.  The ready instruction touching the fewest rank-address
-    wires is emitted first while a lightweight residency model follows the
+    qubits is emitted first while a lightweight residency model follows the
     selected order.
 
     This is deliberately topology-agnostic: it improves alternating matchings,
@@ -201,10 +201,10 @@ def schedule_statevector_dependency_dag(
 
     instructions = ir.instructions
     instruction_count = len(instructions)
-    per_wire: list[list[int]] = [[] for _ in range(ir.n_wires)]
+    per_qubit: list[list[int]] = [[] for _ in range(ir.n_wires)]
     for index, instruction in enumerate(instructions):
-        for wire in instruction.wires:
-            per_wire[int(wire)].append(index)
+        for qubit in instruction.wires:
+            per_qubit[int(qubit)].append(index)
     cursors = [0] * ir.n_wires
     completed: set[int] = set()
     scheduled: list[Any] = []
@@ -213,14 +213,14 @@ def schedule_statevector_dependency_dag(
 
     def is_ready(index: int) -> bool:
         return all(
-            per_wire[int(wire)][cursors[int(wire)]] == index
-            for wire in instructions[index].wires
+            per_qubit[int(qubit)][cursors[int(qubit)]] == index
+            for qubit in instructions[index].wires
         )
 
-    def pending_use(logical_wire: int) -> int:
-        cursor = cursors[logical_wire]
-        uses = per_wire[logical_wire]
-        return uses[cursor] if cursor < len(uses) else instruction_count + logical_wire
+    def pending_use(logical_qubit: int) -> int:
+        cursor = cursors[logical_qubit]
+        uses = per_qubit[logical_qubit]
+        return uses[cursor] if cursor < len(uses) else instruction_count + logical_qubit
 
     while len(scheduled) < instruction_count:
         ready = [
@@ -234,22 +234,24 @@ def schedule_statevector_dependency_dag(
             ready,
             key=lambda candidate: (
                 sum(
-                    mapping[int(wire)] in sharded_positions
-                    for wire in instructions[candidate].wires
+                    mapping[int(qubit)] in sharded_positions
+                    for qubit in instructions[candidate].wires
                 ),
                 candidate,
             ),
         )
-        requested = {int(wire) for wire in instructions[index].wires}
+        requested = {int(qubit) for qubit in instructions[index].wires}
         while True:
-            missing = [wire for wire in requested if mapping[wire] in sharded_positions]
+            missing = [
+                qubit for qubit in requested if mapping[qubit] in sharded_positions
+            ]
             if not missing:
                 break
             sharded_logical = min(missing, key=pending_use)
             residents = [
-                wire
-                for wire in range(ir.n_wires)
-                if mapping[wire] not in sharded_positions and wire not in requested
+                qubit
+                for qubit in range(ir.n_wires)
+                if mapping[qubit] not in sharded_positions and qubit not in requested
             ]
             if not residents:
                 break
@@ -260,8 +262,8 @@ def schedule_statevector_dependency_dag(
             )
         scheduled.append(instructions[index])
         completed.add(index)
-        for wire in requested:
-            cursors[wire] += 1
+        for qubit in requested:
+            cursors[qubit] += 1
 
     reordered = tuple(scheduled)
     return replace(
@@ -281,10 +283,10 @@ def plan_persistent_statevector_layout(
     world_size: int,
     initial_logical_to_physical: Sequence[int] | None = None,
 ) -> PersistentStatevectorLayoutPlan:
-    """Keep requested wires local using farthest-next-use residency replacement.
+    """Keep requested qubits local using farthest-next-use residency replacement.
 
     Rank-address positions form the non-resident set.  When an instruction needs
-    a non-resident logical wire, one resident wire not used by that instruction
+    a non-resident logical qubit, one resident qubit not used by that instruction
     is evicted.  The new layout remains active for following instructions.
     """
 
@@ -295,19 +297,19 @@ def plan_persistent_statevector_layout(
         )
     rank_bits = world_size.bit_length() - 1
     if rank_bits >= ir.n_wires:
-        raise ValueError("world_size must leave at least one local statevector wire")
+        raise ValueError("world_size must leave at least one local statevector qubit")
     initial = tuple(
         range(ir.n_wires)
         if initial_logical_to_physical is None
         else map(int, initial_logical_to_physical)
     )
     if tuple(sorted(initial)) != tuple(range(ir.n_wires)):
-        raise ValueError("initial_logical_to_physical must be a wire permutation")
+        raise ValueError("initial_logical_to_physical must be a qubit permutation")
 
     sharded_positions = frozenset(range(ir.n_wires - rank_bits, ir.n_wires))
     mapping = list(initial)
     baseline = sum(
-        any(mapping[int(wire)] in sharded_positions for wire in instruction.wires)
+        any(mapping[int(qubit)] in sharded_positions for qubit in instruction.wires)
         for instruction in ir.instructions
     )
     swaps: list[StatevectorLayoutSwap] = []
@@ -316,29 +318,31 @@ def plan_persistent_statevector_layout(
     segment_layout = tuple(mapping)
 
     for index, instruction in enumerate(ir.instructions):
-        requested = {int(wire) for wire in instruction.wires}
+        requested = {int(qubit) for qubit in instruction.wires}
         while True:
-            missing = [wire for wire in requested if mapping[wire] in sharded_positions]
+            missing = [
+                qubit for qubit in requested if mapping[qubit] in sharded_positions
+            ]
             if not missing:
                 break
             sharded_logical = min(
                 missing,
-                key=lambda wire: _next_use(
-                    ir.instructions, after=index, logical_wire=wire
+                key=lambda qubit: _next_use(
+                    ir.instructions, after=index, logical_qubit=qubit
                 ),
             )
             residents = [
-                wire
-                for wire in range(ir.n_wires)
-                if mapping[wire] not in sharded_positions and wire not in requested
+                qubit
+                for qubit in range(ir.n_wires)
+                if mapping[qubit] not in sharded_positions and qubit not in requested
             ]
             if not residents:
                 # A gate wider than local capacity cannot be made entirely local.
                 break
             local_logical = max(
                 residents,
-                key=lambda wire: _next_use(
-                    ir.instructions, after=index, logical_wire=wire
+                key=lambda qubit: _next_use(
+                    ir.instructions, after=index, logical_qubit=qubit
                 ),
             )
             if segment_start < index:
@@ -350,10 +354,10 @@ def plan_persistent_statevector_layout(
             swaps.append(
                 StatevectorLayoutSwap(
                     before_instruction=index,
-                    local_logical_wire=local_logical,
-                    sharded_logical_wire=sharded_logical,
-                    local_physical_wire=local_physical,
-                    sharded_physical_wire=sharded_physical,
+                    local_logical_qubit=local_logical,
+                    sharded_logical_qubit=sharded_logical,
+                    local_physical_qubit=local_physical,
+                    sharded_physical_qubit=sharded_physical,
                 )
             )
             mapping[local_logical], mapping[sharded_logical] = (
@@ -370,7 +374,7 @@ def plan_persistent_statevector_layout(
             )
         )
     return PersistentStatevectorLayoutPlan(
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         rank_bits=rank_bits,
         initial_logical_to_physical=initial,
         final_logical_to_physical=tuple(mapping),

@@ -174,13 +174,13 @@ def test_the_replacement_rule_substitutes_the_root(
 
 def test_the_repository_scan_separates_the_three_populations() -> None:
     scanned = _CENSUS.census(_ROOT / "flagquantum")
-    # The scan is live, not frozen: `WQ-2` and `WQ-3` renamed 30 of the 341
-    # baseline sites, so 311 wire-named parameters are still on screen. The frozen
-    # number lives in the contract's `[ledger]`, and the two agree through
+    # The scan is live, not frozen: `WQ-2`, `WQ-3`, and `WQ-4` renamed 79 of the
+    # 341 baseline sites, so 262 wire-named parameters are still on screen. The
+    # frozen number lives in the contract's `[ledger]`, and the two agree through
     # `[retirement]`.
-    assert len(scanned.canonical) == 311
+    assert len(scanned.canonical) == 262
     assert len(scanned.aliases) == 11
-    assert len(scanned.internal) == 397
+    assert len(scanned.internal) == 372
     assert scanned.canonical and scanned.aliases and scanned.internal
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"
@@ -385,12 +385,12 @@ def test_a_class_name_alone_is_not_evidence_of_containment(tmp_path: Path) -> No
 
 def test_the_repository_split_accounts_for_every_wire_named_attribute() -> None:
     scanned = _CENSUS.attribute_census(_ROOT / "flagquantum")
-    # Live, like the parameter scan: `WQ-2` and `WQ-3` retired 27 of the 122
-    # ledgered names and kept 3 of them as deprecated forwarders, so 95 are still
-    # on screen.
-    assert len(scanned.ledgered) == 95
+    # Live, like the parameter scan: `WQ-2`, `WQ-3`, and `WQ-4` retired 68 of the
+    # 122 ledgered names and kept 3 of them as deprecated forwarders, so 54 are
+    # still on screen.
+    assert len(scanned.ledgered) == 54
     assert len(scanned.excluded) == 22
-    assert len(_CENSUS.public_attribute_names(_ROOT / "flagquantum")) == 117
+    assert len(_CENSUS.public_attribute_names(_ROOT / "flagquantum")) == 76
     assert _CENSUS.public_attribute_names(_ROOT / "flagquantum") == tuple(
         sorted(site.identifier for site in (*scanned.ledgered, *scanned.excluded))
     )
@@ -413,13 +413,18 @@ def test_every_declaration_kind_is_on_the_attribute_ledger() -> None:
         for kind in _CENSUS.DECLARATION_KINDS
     }
     assert "flagquantum/circuit.py::Circuit::n_wires" in owned["member"]
-    # `WQ-2` renamed the instance example this test used to name. The live
-    # instance kind is now the one site a slice still owes, and the renamed one
-    # is gone from the scan rather than from the record.
+    # `WQ-2` and `WQ-4` renamed the instance examples this test used to name, so
+    # the live instance kind is now one of the two sites a later slice owes. The
+    # renamed ones are gone from the scan rather than from the record, which is
+    # what `[attribute_retirement]` carries.
+    assert (
+        "flagquantum/simulation/tensor_network/state.py"
+        "::TensorNetworkState::dense_observable_wires"
+    ) in owned["instance"]
     assert (
         "flagquantum/runtime/executors/mps/distributed_state.py"
-        "::ShardedMPSState::n_wires"
-    ) in owned["instance"]
+        "::ShardedMPSState::n_wires" not in owned["instance"]
+    )
     assert (
         "flagquantum/drawer/text_drawer.py::TextDrawer::wire_order"
         not in owned["instance"]
