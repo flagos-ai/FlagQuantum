@@ -28,6 +28,9 @@ from examples.qdiffusion_kaiwu.private_io import (
     validate_private_directory,
     validate_private_json_output_path,
 )
+from examples.qdiffusion_kaiwu.provider_reconciliation import (
+    apply_provider_reconciliations,
+)
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _validate_imported_module_tree,
 )
@@ -106,19 +109,45 @@ def _load_pinned_eval_workflow(plugin_root: Path) -> tuple[ModuleType, ModuleTyp
     return workflow, helpers
 
 
-def _load_training_record(path: Path) -> tuple[dict[str, Any], str]:
+def _load_training_record(
+    path: Path,
+    *,
+    reconciliation_paths: tuple[Path, ...] = (),
+) -> tuple[dict[str, Any], str]:
     encoded = read_private_bytes(
         path,
         label="protein-training record",
         max_bytes=_MAX_TRAINING_RECORD_BYTES,
     )
-    record = loads_json_strict(encoded)
-    if not isinstance(record, dict):
+    original_record = loads_json_strict(encoded)
+    if not isinstance(original_record, dict):
         raise ValueError("training record must be a JSON object")
-    if record.get("schema") != TRAINING_SCHEMA or record.get("version") != "1.0":
+    if (
+        original_record.get("schema") != TRAINING_SCHEMA
+        or original_record.get("version") != "1.0"
+    ):
         raise ValueError("unsupported protein-training record")
-    if record.get("run_completed") is not True:
+    if original_record.get("run_completed") is not True:
         raise ValueError("protein-training record is not complete")
+    record_sha256 = hashlib.sha256(encoded).hexdigest()
+    reconciliations: list[dict[str, Any]] = []
+    for index, reconciliation_path in enumerate(reconciliation_paths):
+        reconciliation_encoded = read_private_bytes(
+            reconciliation_path,
+            label=f"provider reconciliation {index}",
+            max_bytes=4 * 1024 * 1024,
+        )
+        reconciliation = loads_json_strict(reconciliation_encoded)
+        if not isinstance(reconciliation, dict):
+            raise ValueError("provider reconciliation must be a JSON object")
+        if reconciliation.get("component_record_sha256") != record_sha256:
+            raise ValueError("provider reconciliation references another training record")
+        reconciliations.append(reconciliation)
+    record = apply_provider_reconciliations(
+        original_record,
+        component_record_sha256=record_sha256,
+        reconciliations=reconciliations,
+    )
     provider_errors: list[str] = []
     _validate_training_provider_evidence(
         record, "protein-training record", provider_errors
@@ -128,7 +157,7 @@ def _load_training_record(path: Path) -> tuple[dict[str, Any], str]:
             "protein-training provider evidence is invalid: "
             + "; ".join(provider_errors)
         )
-    return record, hashlib.sha256(encoded).hexdigest()
+    return record, record_sha256
 
 
 def _verified_training_paths(
@@ -427,6 +456,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--training-record", required=True, type=Path)
+    parser.add_argument(
+        "--provider-reconciliation", action="append", default=[], type=Path
+    )
     parser.add_argument("--run-directory", required=True, type=Path)
     parser.add_argument("--plugin-root", required=True, type=Path)
     parser.add_argument("--evaluation-model", required=True, type=Path)
@@ -455,10 +487,16 @@ def main() -> None:
     }.items():
         if not path.is_absolute():
             parser.error(f"--{label} must be an absolute path")
+    for path in args.provider_reconciliation:
+        if not path.is_absolute():
+            parser.error("--provider-reconciliation must be an absolute path")
     validate_private_json_output_path(args.output)
 
     config, config_sha256 = _load_frozen_config(args.config)
-    record, record_sha256 = _load_training_record(args.training_record)
+    record, record_sha256 = _load_training_record(
+        args.training_record,
+        reconciliation_paths=tuple(args.provider_reconciliation),
+    )
     if record.get("experiment_config_sha256") != config_sha256:
         parser.error("training record belongs to another frozen configuration")
     if record.get("source_revision") != args.source_revision:

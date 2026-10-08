@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 import torch
 
+from examples.qdiffusion_kaiwu import provider_reconciliation as reconciliation
 from examples.qdiffusion_kaiwu import qdiffusion_protein_evaluate as evaluation_module
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _invalid_sequence_count,
@@ -343,6 +344,73 @@ def test_training_record_loader_rejects_injected_provider_evidence(
     path.chmod(0o600)
     with pytest.raises(ValueError, match="provider evidence is invalid"):
         _load_training_record(path)
+
+
+def test_training_record_loader_applies_bill_reconciliation_without_rehashing(
+    tmp_path: Path,
+) -> None:
+    record = _provider_training_record()
+    record.update(
+        real_provider_evidence=False,
+        qboson_hardware_used=False,
+        provider_identity_complete=False,
+        provider_reported_target=False,
+        qboson_target=None,
+        qboson_task_ids=[],
+    )
+    record["task_receipts"][0]["provider_task_id"] = None
+    record["task_receipts"][0]["provider_target"] = None
+    path = tmp_path / "training.json"
+    path.write_text(json.dumps(record), encoding="utf-8")
+    path.chmod(0o600)
+    original_digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    reconciliation_record = {
+        "schema": reconciliation.SCHEMA,
+        "version": reconciliation.VERSION,
+        "captured_at": "2026-10-05T00:01:00+00:00",
+        "source": reconciliation.SOURCE,
+        "component_record_sha256": original_digest,
+        "local_task_name": "protein-task",
+        "local_submitted_at": "2026-10-05T00:00:00+00:00",
+        "matrix_sha256": "a" * 64,
+        "mode": "sampling",
+        "requested_samples": 10,
+        "provider_batch_id": "provider-batch",
+        "associated_task_id": "provider-task",
+        "provider_target": "SPQC-provider",
+        "transaction_channel": reconciliation.TRANSACTION_CHANNEL,
+        "transaction_type": reconciliation.TRANSACTION_TYPE,
+        "resource_delta": -10,
+        "unique_account_match": True,
+        "hardware_acceptance": False,
+        "qdiffusion_acceptance": False,
+        "claim_boundary": reconciliation.CLAIM_BOUNDARY,
+    }
+    reconciliation_path = tmp_path / "reconciliation.json"
+    reconciliation_path.write_text(
+        json.dumps(reconciliation_record), encoding="utf-8"
+    )
+    reconciliation_path.chmod(0o600)
+
+    loaded, digest = _load_training_record(
+        path, reconciliation_paths=(reconciliation_path,)
+    )
+
+    assert digest == original_digest
+    assert loaded["provider_identity_complete"] is True
+    assert loaded["real_provider_evidence"] is True
+    assert loaded["qboson_hardware_used"] is True
+    assert loaded["qboson_task_ids"] == ["provider-task"]
+    assert loaded["task_receipts"][0]["provider_task_id"] == "provider-task"
+    assert loaded["task_receipts"][0]["provider_target"] == "SPQC-provider"
+
+    reconciliation_record["component_record_sha256"] = "f" * 64
+    reconciliation_path.write_text(
+        json.dumps(reconciliation_record), encoding="utf-8"
+    )
+    reconciliation_path.chmod(0o600)
+    with pytest.raises(ValueError, match="another training record"):
+        _load_training_record(path, reconciliation_paths=(reconciliation_path,))
 
 
 @pytest.mark.parametrize("unsafe_kind", ("public-file", "public-parent", "symlink"))

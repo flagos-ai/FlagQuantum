@@ -484,6 +484,9 @@ def main() -> None:
     parser.add_argument("--evaluation-model", required=True, type=Path)
     parser.add_argument("--artifact-preflight-output", required=True, type=Path)
     parser.add_argument("--training-record", required=True, type=Path)
+    parser.add_argument(
+        "--provider-reconciliation", action="append", default=[], type=Path
+    )
     parser.add_argument("--training-run-directory", required=True, type=Path)
     parser.add_argument("--trained-checkpoint", required=True, type=Path)
     parser.add_argument("--sdk-checkpoint-dir", required=True, type=Path)
@@ -539,6 +542,9 @@ def main() -> None:
     }.items():
         if not path.is_absolute():
             parser.error(f"--{label} must be an absolute path")
+    for path in args.provider_reconciliation:
+        if not path.is_absolute():
+            parser.error("--provider-reconciliation must be an absolute path")
     validate_private_json_output_path(args.artifact_preflight_output)
     validate_private_json_output_path(args.output)
     validate_private_directory(
@@ -582,7 +588,8 @@ def main() -> None:
     if role != "portability_replay":
         parser.error("protein portability replay must run on replay_host")
     training_record, training_record_sha256 = _load_training_record(
-        args.training_record
+        args.training_record,
+        reconciliation_paths=tuple(args.provider_reconciliation),
     )
     if training_record.get("experiment_config_sha256") != config_sha256:
         parser.error("training record belongs to another frozen configuration")

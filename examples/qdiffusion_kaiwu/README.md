@@ -581,6 +581,11 @@ preflight and requires its file and transfer-manifest digests to match the
 training record rather than inheriting those claims. System, training,
 evaluation, and replay recompute the executing FlagQuantum tree and actual
 plugin-root file count and content-set digests before importing the workflow.
+When Kaiwu 1.3.1 omits provider task identity, repeat
+`--provider-reconciliation` for every reviewed Resource Bill sidecar belonging
+to that training record. Evaluation and replay apply those records only to an
+in-memory identity view; the immutable training bytes and the SHA-256 used by
+downstream evidence remain unchanged.
 They also bind the executing `flagquantum.version.__version__` to the frozen
 software lane and retain it in every component and final host record.
 System, training, and replay additionally reject the core QDiffusion modules

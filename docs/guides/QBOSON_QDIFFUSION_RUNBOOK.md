@@ -895,6 +895,7 @@ enter the final acceptance bundle.
 python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate \
   --config /absolute/evidence/acceptance-config.json \
   --training-record /absolute/evidence/seed-1701-training.json \
+  --provider-reconciliation /absolute/evidence/seed-1701-reconciliation-001.json \
   --run-directory /absolute/private/qdiffusion-runs/seed-1701/RUN_DIRECTORY \
   --plugin-root /absolute/src/kaiwu-pytorch-plugin \
   --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D.pt \
@@ -918,6 +919,12 @@ metrics, zero invalid sequences, secret redaction, and an explicit statement
 that this local evaluation consumed no provider quota and is candidate evidence
 only.
 
+Repeat `--provider-reconciliation` once per task when the immutable training
+record was produced by a Kaiwu SDK response that omitted task identity. The
+evaluator validates that every sidecar references the original training-record
+digest, applies it only in memory, and retains that original digest in the
+evaluation record.
+
 On the configured replay host, load the preregistered seed's exact best energy
 checkpoint and the training run's hashed test FASTA. The fixed replay performs
 one objective call and three guided steps with the frozen four candidates, for
@@ -934,6 +941,7 @@ python -B -s -m examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live \
   --evaluation-model /absolute/artifacts/esm2_t33_650M_UR50D.pt \
   --artifact-preflight-output /absolute/evidence/replay-preflight.json \
   --training-record /absolute/evidence/seed-1701-training.json \
+  --provider-reconciliation /absolute/evidence/seed-1701-reconciliation-001.json \
   --training-run-directory /absolute/transferred/seed-1701/RUN_DIRECTORY \
   --trained-checkpoint /absolute/transferred/seed-1701/RUN_DIRECTORY/checkpoints/BEST.pt \
   --sdk-checkpoint-dir /absolute/private/kaiwu-checkpoints \
