@@ -153,9 +153,9 @@ team branch:
 
 `fix/main-push-reading-is-not-cancelled` is omitted because it is the branch that produced
 this revision and its work is this change. The roster grew from 4 branches to 9 while the
-number of team branches stayed at zero, and six of the eight are hundreds of commits behind
-`main` — the abandoned-head-branch pattern the open questions below describe, at a larger
-scale than the 2026-10-01 table shows.
+number of team branches stayed at zero, and five of the eight are 122 to 554 commits behind
+`main` — drift the 2026-10-01 table, which listed the branches without their distance from
+`main`, could not show. Only two of the eight are up to date with `main` at all.
 
 ### Why the stale declaration is not merely untidy
 
