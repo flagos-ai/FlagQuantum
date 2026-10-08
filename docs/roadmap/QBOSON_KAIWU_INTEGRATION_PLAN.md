@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-Status as of 2026-10-07 on branch `feat/qboson-kaiwu-integration`:
+Status as of 2026-10-08 on branch `feat/qboson-kaiwu-integration`:
 
 - API Change Proposal 068 documents the provider-specific Ising, remote-task,
   sampler, dependency, evidence, and maturity boundaries. Its status is draft;
@@ -14,11 +14,11 @@ Status as of 2026-10-07 on branch `feat/qboson-kaiwu-integration`:
   A800-SXM4-80GB devices, driver 580.126.20, and system Python 3.10.12. Neither
   system Python environment currently contains Torch, Kaiwu, or the Kaiwu
   PyTorch plugin. Docker is available on both hosts.
-- No QBoson credentials have been supplied to the integration environment, and
-  no provider quota has been approved for a FlagQuantum run. The authenticated
-  capability probe and all live submissions therefore remain blocked by those
-  explicit prerequisites. Kaiwu authentication uses `user_id` and `sdk_code` to
-  initialize a local license; `sdk_code` must be handled as a secret.
+- QBoson credentials are available only through dedicated owner-controlled
+  environment variables. They are resolved after local gates, removed from the
+  process environment after in-memory construction, and are absent from source,
+  receipts, logs, and retained evidence. Kaiwu authentication uses `user_id` and
+  `sdk_code` to initialize a local license; `sdk_code` remains a secret.
 - On 2026-10-06 the authenticated platform beginner tutorial accepted the
   independently computed Max Cut result, marked the tutorial mastered, and
   displayed a notification that free real-machine credits had been issued. The
@@ -64,6 +64,31 @@ Status as of 2026-10-07 on branch `feat/qboson-kaiwu-integration`:
   counts and timestamps; it contains no account identifier, transaction ID,
   SDK code, or other credential, expires after 24 hours, and is resource-state
   evidence rather than spend approval or provider execution evidence.
+- On 2026-10-08 an explicitly authorized, optimization-only development probe
+  completed through the pinned Kaiwu 1.3.1 Remote adapter. Before submission,
+  the Linux x86_64 Python 3.10.22 environment was rebuilt entirely from retained
+  wheels in an auto-remove container, its environment lock was independently
+  reproduced in a second disconnected venv, and the fresh authenticated
+  Resource Bill snapshot passed the one-call optimization gate while failing
+  the sampling gate. The command hard-limited provider use to one optimization
+  task, used no `project_no`, requested no sampling, and had no local fallback.
+  Kaiwu reported `Completed` with two returned spin vectors. The private probe
+  record is mode `0600`, has SHA-256
+  `d697b794770b53b11d3546e1ec3572b71371ee81eb071dea591c6c45776a908c`,
+  and remains explicitly marked `hardware_acceptance=false` and
+  `qdiffusion_acceptance=false`.
+  The post-run authenticated bill reconciled the SDK transaction to SPQC-550,
+  recorded exactly one optimization-credit consumption, changed its balance
+  from three available/zero used to two available/one used, left SPQC-1000 at
+  one available/zero used, and left every sampling balance and use count at
+  zero. The private reconciliation record has SHA-256
+  `1124f6d9b4765f6dbe69b07bafee92df7ebb0ef533131c18bef2576ddc37bd02`;
+  the post-run resource snapshot has SHA-256
+  `0bb222f77814ae18232a8b4aa38896d1a3502196e495669fb911428fa2deeb2e`.
+  This proves the bounded optimization development path and recovery evidence,
+  but it does not satisfy the Phase 2 optimization-plus-sampling exit gate.
+  Sampling quota, the formal project/use approvals, the full provider smoke,
+  and all QDiffusion acceptance runs remain open.
 - On 2026-10-07 an authenticated follow-up feedback request was submitted after
   explicit user confirmation, and the platform displayed `Submitted
   successfully`. The request contains no account identifier or credential. It
