@@ -729,7 +729,9 @@ def test_the_module_is_reachable_from_a_fresh_interpreter() -> None:
     assert completed.returncode == 0, completed.stderr
 
 
-def test_the_decoder_is_reached_by_name_once_the_graph_moved_to_the_sub_protocol() -> None:
+def test_the_decoder_is_reached_by_name_once_the_graph_moved_to_the_sub_protocol() -> (
+    None
+):
     """The registry promises a decoded syndrome; the graph is a narrower promise.
 
     This decoder was constructed directly because the registry's one protocol
