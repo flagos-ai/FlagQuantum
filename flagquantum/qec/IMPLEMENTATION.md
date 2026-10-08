@@ -144,10 +144,12 @@ it, and saying so is the honest boundary: this route states a code as parity-che
 matrices, so a stabilizer carrying both an X factor and a Z factor has no row here --
 not because the protocol refuses it but because one row of `hz` and one row of `hx`
 would describe two checks that do not commute. `build_memory_circuit` still refuses a
-declared product that is neither pure X nor pure Z. A Floquet family remains
-absent as a *record* and has no matrix route either: a dynamic code states its
-stabilizer group per round rather than once, and nothing here records a code whose
-group changes. The other family this paragraph used to name beside it is not
+declared product that is neither pure X nor pure Z. The Floquet family this
+paragraph used to name as absent is now a record of its own rather than a matrix
+route, and the section after this one is that record: a dynamic code states its
+stabilizer group per round rather than once, so what it needs is not a route from
+matrices but a sequence of measurement rounds and a rule for advancing the group
+through them. The other family this paragraph used to name beside it is not
 absent, and the correction is measured rather than editorial: the framework this
 package replaces binds its Reichardt module to the very tesseract record below --
 `cudaq/logical/qec/reichardt.py` links `Tesseract`, and
@@ -658,6 +660,123 @@ a gauge generator is measured, so a subsystem code has no memory experiment here
 and no decoder registered for one. The sweeps' own reading of the gap is unchanged
 by the automorphism being published: a permutation of data wires is not a measured
 gauge generator, and no detector in this package reads one.
+
+## A code whose group moves
+
+`subsystem.py` records a code whose stabilizer group is smaller than its checks:
+one group, read through two centers. `floquet.py` records the other way a code
+fails to be one fixed group. A dynamic code *is* the sequence of measurements that
+defines it, and its instantaneous stabilizer group is different at every round
+while the information it protects is not. Nothing about that needs a new matrix
+route; it needs a propagation rule and a period, and both are derived here rather
+than tabulated.
+
+`MeasurementPhase` is one round: a name and the operators that round measures. The
+name matters because it is what a refusal can point at -- two rounds of one
+schedule cannot share one -- and the operators are checked rather than trusted:
+each is a Pauli, none is the identity, and no two anticommute, because a round
+that measured two anticommuting operators would be measuring something whose
+outcome the other measurement decides. `num_operators` and
+`num_independent_operators` are both reported, so a round that measures the same
+check twice is visible as a round with two operators and one independent one.
+
+`FloquetCode` is a width, a period's worth of phases, and the two numbers that come
+out of them. The rule that produces the second from the first is the whole content
+of the module. **A round's instantaneous stabilizer group is the part of the
+previous round's group that commutes with every operator the round measures.** The
+tempting version of that rule -- walk the old group's generators and keep the ones
+that commute -- is wrong, and it is wrong for a reason that has nothing to do with
+implementation: a product of two generators can commute with a measurement although
+neither of the two factors does, so a generator-at-a-time reading drops operators
+that survive. The module therefore solves for the subgroup instead of filtering
+for it: one linear equation per measured operator, written in the old group's
+coordinates, and the null space of that system is the set of old-group elements
+that commute with all of them, which is re-expanded into the basis it came from and
+reduced together with the measured operators. The suite holds that rule against a
+brute-force walk of the old group's every element rather than against a second
+implementation of itself, and it exhibits the smallest witness of the difference
+between the two readings rather than describing one: a two-generator group on three
+wires whose product survives a measurement both of its generators anticommute with.
+
+A period is not a group, so neither number is read off one round. The settled
+period is the least number of rounds the group sequence repeats over, compared as
+spans rather than as reduced bases, and the rounds before the first repeat are
+`num_transient_rounds`. Then both reported numbers are read at *every* round of the
+period, and the two readings are not the same kind of reading.
+
+The least logical weight stated is the lightest of the rounds' readings, because a
+claim about a period has to hold where the period is weakest. Periods whose rounds
+disagree about it are not hypothetical: a three-wire schedule that measures `Z0*Y1`
+beside `X0*X1*X2` and then `Y0*Y1*Y2` repeats over two rounds whose least logical
+weights are one and two, and the lighter of the two is the number reported. The ring
+family below never disagrees with itself and is no evidence that a period cannot:
+the minimum is kept because it is what the definition says.
+
+The protected count is `n - rank`, and it has to be the same number at every round
+of the period or the period is refused as not a code. No schedule has been found
+whose settled rounds disagree about that number: every two-round schedule on three
+wires was walked, fourteen million of them over the three thousand eight hundred and
+forty-three isotropic subspaces of the six-bit symplectic space, every cycle of the
+advance map had a single rank, and so did two million sampled three- and four-round
+schedules at the same width, seven hundred thousand random schedules over widths
+three to seven, half of them biased towards rounds whose operators already lie in the
+running group, and every member of the ring family. The refusal is kept anyway,
+because a settled period that disagreed would otherwise be reported with an arbitrary
+one of its rounds' counts.
+
+The least logical weight is not a basis reading. A logical operator here is one
+that commutes with the round's group without being in it, and the weight reported
+is the lightest such operator, searched for in increasing weight over the
+`2 * width` symplectic positions up to a caller-visible `distance_search_weight`.
+Exhausting that bound is a refusal that names the rank and the width, never a
+number read off whatever basis the module happened to hold -- which is the
+difference between a distance and an artifact of a reduction. `logical_operators`
+returns a basis of the quotient, and its weights are what the search is checked
+against rather than what the search reports.
+
+Two families ship. `ring_floquet_code(n)` is derived from its width alone, refuses
+an odd width because a ring cannot be matched, and refuses a ring of two because
+one edge per class leaves no check to protect a qubit with. On `n` wires the
+two-phase ring -- `Z` on the even edges, `X` on the odd ones -- settles at period
+two after one transient round, holds `n / 2 + 1` checks, protects `n / 2 - 1`
+qubits and has least logical weight two. The ceiling that comes with the number was
+measured rather than asserted. All 585 ring schedules of two, three and four phase
+classes over widths four to twelve were built through `FloquetCode` itself; every
+one settled, every one protected at least one qubit, every one read one count at
+every round of its own period, no member reached weight three, and the three- and
+four-class rings reached weight one. So the published ring is a record of the
+*shape* of a dynamic code rather than a distance claim, and the module says that
+beside the number rather than leaving the number bare. The second family is the
+refusal: a four-phase ring that alternates `Z`, `X`, `Z`, `X` over the two edge
+classes settles at period four with zero protected qubits and is refused by name as
+a measurement schedule rather than a code. That refusal is the reason the ring
+carries a name at all.
+
+**The record states its width as `num_qubits` rather than `num_wires`, and that was
+a measurement before it was a spelling.** The repository is partway through one
+vocabulary migration, and its ledger in `contracts/qubit-vocabulary-contract.toml`
+is a set that may only shrink: a function parameter named for wires that no ledger
+entry covers fails the gate, and the gate's own documented remedy is not to add the
+line -- adding one would make a brand-new surface part of a baseline the migration
+exists to retire. Building the record with `num_wires` was measured to fail exactly
+that gate, on the public entry point and on the private helper alike, so the width is
+stated as `num_qubits` throughout. A count of wires is a count of qubits and the
+migration's word for the count is the qubit word; the record's prose still says wire
+where it means the site an operator acts on, and its `data_wires` accessor keeps its
+name, because those are not parameters and the ledger does not reach them.
+
+What the record deliberately does not carry is the fault distance. There is no
+detector model here, so a fault that is a measurement error in one round and a data
+error in the next is not one operator and the number reported is a code distance
+rather than a spacetime distance. The framework this package replaces has an
+authoring surface aimed at exactly that model -- measurement phases with
+gauge-measurement maps, record-defined logical maps and encoding epochs -- and none
+of it is here. A schedule here is stated as its rounds; no schema or compiler
+container is introduced for it, because a container needs a second consumer and
+there is not one. `tests/qec/test_floquet_code.py` is where the propagation rule,
+the period, the refusals and the sweep are held, and the ring's own six numbers are
+a doctest on the public entry point, so the arithmetic is executed on every run of
+the docstring gate.
 
 ## Reading a model back
 

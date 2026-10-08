@@ -44,6 +44,7 @@ from .dem_circuit import (
     detector_error_model_from_circuit,
 )
 from .dem_construction import CssCodeMatrices, css_code_matrices
+from .floquet import FloquetCode, MeasurementPhase, ring_floquet_code
 from .logical import certify_logical_product, derive_anticommuting_logical_product
 from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
 from .noise import (
@@ -116,11 +117,13 @@ __all__ = (
     "DetectorLayout",
     "ErrorEvent",
     "ErrorSchedule",
+    "FloquetCode",
     "GraphlikeDetectorErrorModelDecoder",
     "LogicalObservable",
     "MatchingDecodeResult",
     "MatchingDependencyError",
     "MeasurementMap",
+    "MeasurementPhase",
     "MeasurementRef",
     "MemoryCircuit",
     "MinimumWeightMatchingDecoder",
@@ -158,6 +161,7 @@ __all__ = (
     "qldpc_code",
     "reed_muller_code",
     "register_decoder",
+    "ring_floquet_code",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
     "sample_memory_circuit",

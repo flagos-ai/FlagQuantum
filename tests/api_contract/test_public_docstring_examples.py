@@ -74,10 +74,13 @@ from flagquantum.qec import (
     BeliefPropagationOsdDecoder,
     CssCode,
     CssCodeMatrices,
+    FloquetCode,
+    MeasurementPhase,
     SubsystemCode,
     bivariate_bicycle_code,
     qldpc_code,
     reed_muller_code,
+    ring_floquet_code,
     tesseract_code,
     tesseract_column_swap,
     tesseract_free_cnot_pairs,
@@ -133,7 +136,8 @@ pytestmark = pytest.mark.unit
 # values a Hartree-Fock solve consumes, and the entry point that builds one. The
 # driver module contributes three more: the Hartree-Fock solution, the returned
 # Hamiltonian with its energies, and the geometry-to-Hamiltonian entry point. The
-# error-correction package contributes ten: the code record a caller constructs,
+# error-correction package contributes thirteen: the code record a caller
+# constructs,
 # the matrices that record is read back as, the bivariate-bicycle family, whose
 # example is the smallest member of the family rather than the published one,
 # because the published instance spends its time in the distance search and an
@@ -152,7 +156,12 @@ pytestmark = pytest.mark.unit
 # same record from a caller's check matrices, whose example is the Steane code
 # written as its three checks rather than as a record, and the hyperedge decoder's
 # model constructor, whose example is the name the registry reaches it by, since
-# that name is what the constructor exists for.
+# that name is what the constructor exists for. The dynamic-code record contributes
+# three more: the record itself, whose example states a schedule of four phases by
+# hand and reads a period of two back off it, the measurement phase the schedule is
+# built from, whose example is a named round and the two numbers a round reports
+# about its own operators, and the published two-phase ring, whose example is the
+# six numbers that separate a schedule which protects qubits from one that does not.
 ENTRIES = (
     adder_circuit,
     adder_wires,
@@ -164,8 +173,10 @@ ENTRIES = (
     CssCode,
     CssCodeMatrices,
     FermionOperator,
+    FloquetCode,
     HartreeFockSolution,
     Layout,
+    MeasurementPhase,
     MolecularGeometry,
     MolecularHamiltonian,
     MolecularIntegrals,
@@ -209,6 +220,7 @@ ENTRIES = (
     qldpc_code,
     reed_muller_code,
     recommend_simulator,
+    ring_floquet_code,
     run_cirq,
     run_pennylane,
     run_qaoa,
