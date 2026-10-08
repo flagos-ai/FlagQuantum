@@ -199,16 +199,27 @@ def audit_readiness(
         else:
             checks["sdk_approval"] = _check("pass", "sdk_approval_valid")
 
-    if sdk_approval is not None and checks["project"]["status"] == "pass":
-        assert project_no is not None
-        if project_no.strip() != sdk_approval.get("project_no"):
-            checks["project"] = _check(
-                "fail", "project_differs_from_reviewed_assignment"
-            )
-        else:
-            checks["project"] = _check(
-                "pass", "project_matches_reviewed_assignment"
-            )
+    if sdk_approval is not None:
+        approved_project = sdk_approval.get("project_no")
+        if approved_project is None:
+            if project_no is None:
+                checks["project"] = _check(
+                    "pass", "reviewed_account_default_assignment"
+                )
+            else:
+                checks["project"] = _check(
+                    "fail", "project_differs_from_reviewed_assignment"
+                )
+        elif checks["project"]["status"] == "pass":
+            assert project_no is not None
+            if project_no.strip() != approved_project:
+                checks["project"] = _check(
+                    "fail", "project_differs_from_reviewed_assignment"
+                )
+            else:
+                checks["project"] = _check(
+                    "pass", "project_matches_reviewed_assignment"
+                )
 
     if config is None:
         checks["frozen_environment"] = _check("blocked", "config_not_validated")
@@ -276,12 +287,17 @@ def audit_readiness(
 
     if config_path is None or config is None:
         checks["protein_artifacts"] = _check("blocked", "config_not_validated")
-    elif set(artifact_paths) != {
-        "dataset",
-        "base_checkpoint",
-        "tokenizer",
-        "evaluation_model",
-    } or any(path is None for path in artifact_paths.values()) or dataset_source_archive is None:
+    elif (
+        set(artifact_paths)
+        != {
+            "dataset",
+            "base_checkpoint",
+            "tokenizer",
+            "evaluation_model",
+        }
+        or any(path is None for path in artifact_paths.values())
+        or dataset_source_archive is None
+    ):
         checks["protein_artifacts"] = _check("missing", "artifact_paths_absent")
     else:
         try:

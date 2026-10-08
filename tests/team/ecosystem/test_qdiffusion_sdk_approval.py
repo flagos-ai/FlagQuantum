@@ -109,7 +109,8 @@ def test_documented_records_use_reviewed_distribution_identity() -> None:
             "review time is in the future",
         ),
         ("approval_reference", "<required>", "frozen value is required"),
-        ("project_no", "<required>", "assigned project is required"),
+        ("project_no", "<required>", "reviewed project identifier or null"),
+        ("project_no", "", "reviewed project identifier or null"),
         (
             "project_assignment_reviewed_at",
             "2026-10-06",
@@ -152,6 +153,22 @@ def test_runtime_project_must_match_reviewed_assignment() -> None:
 
     with pytest.raises(ValueError, match="differs from the reviewed"):
         verify_approved_project_assignment("CPQC-other", _approval())
+
+
+def test_runtime_may_use_reviewed_account_default_assignment() -> None:
+    approval = _approval()
+    approval["project_no"] = None
+
+    assert validate_sdk_approval_record(approval) == []
+    verify_approved_project_assignment(None, approval)
+
+    with pytest.raises(ValueError, match="differs from the reviewed"):
+        verify_approved_project_assignment("CPQC-other", approval)
+
+
+def test_runtime_cannot_omit_reviewed_explicit_assignment() -> None:
+    with pytest.raises(ValueError, match="differs from the reviewed"):
+        verify_approved_project_assignment(None, _approval())
 
 
 @pytest.mark.parametrize(

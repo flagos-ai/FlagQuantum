@@ -10,7 +10,7 @@
   "service_terms_effective_date": "2026-07-09",
   "rights_reviewed_at": "<required>",
   "approval_reference": "<required>",
-  "project_no": "<required>",
+  "project_no": null,
   "project_assignment_reviewed_at": "<required>",
   "project_assignment_reference": "<required>",
   "organizational_use_approved": "<required>",

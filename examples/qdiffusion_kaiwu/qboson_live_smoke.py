@@ -165,7 +165,7 @@ def run_live_smoke(
     *,
     client: KaiwuTaskClient,
     task_prefix: str,
-    project_no: str,
+    project_no: str | None,
     timeout: float,
     poll_interval: float,
     environment_lock_sha256: str,
@@ -176,7 +176,8 @@ def run_live_smoke(
     """Run one optimization and one sampling task without fallback."""
 
     task_prefix = normalize_provider_identifier(task_prefix, label="task_prefix")
-    project_no = normalize_provider_identifier(project_no, label="project_no")
+    if project_no is not None:
+        project_no = normalize_provider_identifier(project_no, label="project_no")
     if SHA256.fullmatch(environment_lock_sha256) is None:
         raise ValueError("environment_lock_sha256 must be a lowercase SHA-256 digest")
     if SHA256.fullmatch(sdk_approval_sha256) is None:
@@ -221,13 +222,13 @@ def run_live_smoke(
         and len(set(provider_task_ids)) == 2
         and len(provider_targets) == 1
         and all(
-        record["provider_task_id_available"] is True
-        and record["provider_target_available"] is True
-        and isinstance(record["provider_task_id"], str)
-        and bool(record["provider_task_id"].strip())
-        and isinstance(record["provider_target"], str)
-        and bool(record["provider_target"].strip())
-        for record in records
+            record["provider_task_id_available"] is True
+            and record["provider_target_available"] is True
+            and isinstance(record["provider_task_id"], str)
+            and bool(record["provider_task_id"].strip())
+            and isinstance(record["provider_target"], str)
+            and bool(record["provider_target"].strip())
+            for record in records
         )
     )
     smoke_passed = (
@@ -321,7 +322,7 @@ def main() -> None:
     parser.add_argument("--sdk-approval", required=True, type=Path)
     parser.add_argument("--provider-resources", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--project-no", required=True)
+    parser.add_argument("--project-no")
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--expected-sdk-version", choices=("1.3.1",), default="1.3.1")
     parser.add_argument("--requested-samples", type=int, default=10)
@@ -335,9 +336,10 @@ def main() -> None:
             f"{ACKNOWLEDGEMENT!r}; no task was submitted"
         )
     try:
-        arguments.project_no = normalize_provider_identifier(
-            arguments.project_no, label="--project-no"
-        )
+        if arguments.project_no is not None:
+            arguments.project_no = normalize_provider_identifier(
+                arguments.project_no, label="--project-no"
+            )
         arguments.task_prefix = normalize_provider_identifier(
             arguments.task_prefix, label="--task-prefix"
         )

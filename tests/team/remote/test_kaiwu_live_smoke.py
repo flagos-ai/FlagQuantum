@@ -130,6 +130,23 @@ def test_live_smoke_runs_both_modes_without_overclaiming() -> None:
     )
 
 
+def test_live_smoke_runs_both_modes_with_account_default_assignment() -> None:
+    record = run_live_smoke(
+        client=_CompletedClient(expose_provider_identity=False),
+        task_prefix="account-default-smoke",
+        project_no=None,
+        timeout=1.0,
+        poll_interval=0.01,
+        environment_lock_sha256="a" * 64,
+        sdk_approval_sha256="f" * 64,
+        provider_resources_sha256="9" * 64,
+    )
+
+    assert record["project_no"] is None
+    assert [task["project_no"] for task in record["tasks"]] == [None, None]
+    assert record["live_provider_smoke_passed"] is True
+
+
 def test_injected_live_smoke_cannot_claim_hardware_with_complete_identity() -> None:
     record = run_live_smoke(
         client=_CompletedClient(expose_provider_identity=True),

@@ -352,8 +352,8 @@ The live smoke, system, training, and replay producers require the exact pinned
 caller sets a real-transport flag.
 
 The command requires `QBOSON_USER_ID`, `QBOSON_SDK_CODE`, an existing absolute
-private checkpoint directory, the project assigned in the reviewed SDK approval,
-and a current
+private checkpoint directory, the project assignment retained in the reviewed
+SDK approval, and a current
 private provider-resource snapshot that passes the optimization-plus-sampling
 gate. The snapshot is loaded before SDK approval, credentials, or license
 initialization, and its exact digest is retained in the smoke record. All
@@ -368,7 +368,9 @@ must be typed exactly so an ordinary test run cannot spend provider quota:
 Task prefixes and project numbers must be nonempty printable text. Control or
 format characters fail before SDK submission; restored provider task/target
 identities and final evidence must also be canonical without surrounding
-whitespace.
+whitespace. When the reviewed assignment explicitly selects the provider's
+account-default route, `project_no` is `null` and `--project-no` must be omitted.
+An explicit reviewed project still requires an exact matching argument.
 
 ```bash
 python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
@@ -377,10 +379,13 @@ python -B -s -m examples.qdiffusion_kaiwu.qboson_live_smoke \
   --sdk-approval /absolute/private-evidence/sdk-approval.json \
   --provider-resources /absolute/private-evidence/provider-resources.json \
   --output /absolute/private-evidence/qboson-smoke.json \
-  --project-no CPQC-your-project \
   --task-prefix flagquantum-smoke-20261005 \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
 ```
+
+The example above shows the reviewed account-default route. Add
+`--project-no CPQC-your-project` only when the approval record contains that
+exact explicit project identifier.
 
 Successful tasks alone do not make this an acceptance record. The script keeps
 `hardware_acceptance=false` until the command is using the real SDK transport

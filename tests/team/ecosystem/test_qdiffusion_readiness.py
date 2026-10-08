@@ -409,6 +409,77 @@ def test_provider_smoke_readiness_does_not_require_protein_config(
     assert mismatched["ready_to_start_provider_smoke"] is False
 
 
+def test_provider_smoke_readiness_accepts_reviewed_account_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sdk_approval = {"approved": True, "project_no": None}
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_environment_lock",
+        lambda path: ({"lock": True}, "c" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "load_sdk_approval",
+        lambda path: (sdk_approval, "1" * 64),
+    )
+    monkeypatch.setattr(
+        readiness_module,
+        "verify_approved_kaiwu_distribution",
+        lambda environment, approval: None,
+    )
+    monkeypatch.setattr(
+        readiness_module, "validate_private_directory", lambda *a, **k: None
+    )
+    _pass_provider_resources(monkeypatch)
+
+    report = audit_readiness(
+        config_path=None,
+        environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
+        plugin_root=None,
+        primary_source_preflight=None,
+        replay_source_preflight=None,
+        artifact_paths=dict.fromkeys(_paths()),
+        provider_resources_path=Path("/private/provider-resources.json"),
+        checkpoint_dir=Path("/private/checkpoints"),
+        environ={
+            "QBOSON_USER_ID": "present",
+            "QBOSON_SDK_CODE": "present",
+        },
+        required_stage="provider-smoke",
+    )
+
+    assert report["checks"]["project"] == {
+        "status": "pass",
+        "reason": "reviewed_account_default_assignment",
+    }
+    assert report["ready_to_start_provider_smoke"] is True
+
+    unexpected_project = audit_readiness(
+        config_path=None,
+        environment_lock_path=Path("/private/environment.json"),
+        sdk_approval_path=Path("/private/sdk-approval.json"),
+        plugin_root=None,
+        primary_source_preflight=None,
+        replay_source_preflight=None,
+        artifact_paths=dict.fromkeys(_paths()),
+        provider_resources_path=Path("/private/provider-resources.json"),
+        checkpoint_dir=Path("/private/checkpoints"),
+        environ={
+            "QBOSON_USER_ID": "present",
+            "QBOSON_SDK_CODE": "present",
+            "QBOSON_PROJECT_NO": "unexpected",
+        },
+        required_stage="provider-smoke",
+    )
+    assert unexpected_project["checks"]["project"] == {
+        "status": "fail",
+        "reason": "project_differs_from_reviewed_assignment",
+    }
+    assert unexpected_project["ready_to_start_provider_smoke"] is False
+
+
 def test_provider_smoke_readiness_rejects_zero_sampling_resources(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

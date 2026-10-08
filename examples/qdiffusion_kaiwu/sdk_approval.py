@@ -93,7 +93,9 @@ def validate_sdk_approval_record(
             raise ValueError
     except ValueError:
         reviewed_timestamp = None
-        errors.append(f"{label}.rights_reviewed_at: expected a timezone-aware timestamp")
+        errors.append(
+            f"{label}.rights_reviewed_at: expected a timezone-aware timestamp"
+        )
     service_terms_date = datetime.fromisoformat(
         EXPECTED_IDENTITY["service_terms_effective_date"]
     ).date()
@@ -116,8 +118,13 @@ def validate_sdk_approval_record(
     ):
         errors.append(f"{label}.approval_reference: frozen value is required")
     project_no = record.get("project_no")
-    if not _canonical_printable_identifier(project_no) or project_no == "<required>":
-        errors.append(f"{label}.project_no: assigned project is required")
+    if project_no == "<required>" or (
+        project_no is not None and not _canonical_printable_identifier(project_no)
+    ):
+        errors.append(
+            f"{label}.project_no: expected a reviewed project identifier or null "
+            "for the reviewed account-default assignment"
+        )
     project_reviewed_at = record.get("project_assignment_reviewed_at")
     try:
         project_reviewed_timestamp = datetime.fromisoformat(
@@ -140,9 +147,7 @@ def validate_sdk_approval_record(
         not _canonical_printable_identifier(project_reference)
         or project_reference == "<required>"
     ):
-        errors.append(
-            f"{label}.project_assignment_reference: frozen value is required"
-        )
+        errors.append(f"{label}.project_assignment_reference: frozen value is required")
     for field in (
         "organizational_use_approved",
         "isolated_container_use_approved",
@@ -155,15 +160,15 @@ def validate_sdk_approval_record(
 
 
 def verify_approved_project_assignment(
-    project_no: str, approval: dict[str, Any]
+    project_no: str | None, approval: dict[str, Any]
 ) -> None:
     """Require a runtime project to match the reviewed account assignment."""
 
     errors = validate_sdk_approval_record(approval)
     if errors:
         raise ValueError("; ".join(errors))
-    if not _canonical_printable_identifier(project_no):
-        raise ValueError("project_no must be a canonical printable identifier")
+    if project_no is not None and not _canonical_printable_identifier(project_no):
+        raise ValueError("project_no must be null or a canonical printable identifier")
     if project_no != approval["project_no"]:
         raise ValueError("project_no differs from the reviewed project assignment")
 

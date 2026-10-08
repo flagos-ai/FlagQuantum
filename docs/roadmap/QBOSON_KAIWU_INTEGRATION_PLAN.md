@@ -117,6 +117,15 @@ Status as of 2026-10-08 on branch `feat/qboson-kaiwu-integration`:
   copy. The successful sampling run used that memory-only compatibility lane;
   the license file disappeared with the auto-removed container, while only the
   owner-only recovery checkpoint and redacted evidence were retained.
+- The private SDK-approval contract and Phase 2 smoke entrypoint now represent
+  either an exact reviewed project identifier or a reviewed account-default
+  assignment with `project_no=null`. The latter matches the documented Kaiwu
+  1.3.1 behavior and the two completed development probes, while still
+  requiring the same rights review, assignment review timestamp, assignment
+  reference, environment lock, resource gate, and explicit cost
+  acknowledgement. Omission is not treated as approval: a null runtime project
+  is accepted only when the reviewed private record also contains null, and an
+  unexpected explicit project fails closed before credential resolution.
 - On 2026-10-07 an authenticated follow-up feedback request was submitted after
   explicit user confirmation, and the platform displayed `Submitted
   successfully`. The request contains no account identifier or credential. It
