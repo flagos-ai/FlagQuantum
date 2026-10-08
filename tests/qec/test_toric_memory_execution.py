@@ -62,6 +62,25 @@ What this file proves
    logical rate sits well below the model's own raw observable rate, per
    observable index. This is what makes the correction usable rather than merely
    valid.
+8. ``test_the_registered_names_agree_on_which_toric_models_they_take``: every name
+   the registry holds is built against both sides of the profile, and which side a
+   name belongs on is read from the decoder the registry returns rather than from
+   a list written here. The quiet model is accepted by every name and the declared
+   one by exactly the names whose decoders are not
+   ``GraphlikeDetectorErrorModelDecoder`` instances, so the pair graph is pinned as
+   a sub-protocol with more than one implementation rather than as a name.
+9. ``test_the_hyperedge_decoder_lowers_the_logical_rate_on_the_torus``: the model
+   three of the four registered names refuse is decoded by the fourth, every
+   correction reproduces its syndrome, and the decoded logical rate sits below the
+   model's exact raw rate per observable index. This is the row that closes the
+   gap the previous revision of this file recorded: the weight-four mechanisms
+   decided the matching refusal and were fed to nothing else.
+10. ``test_the_exact_matcher_bounds_the_syndrome_a_torus_reaches``: at six rounds
+   and two percent, a sampled syndrome carries twenty-two detectors against the
+   exact matcher's budget of twenty, and the windowed matcher is handed the same
+   draws and refuses strictly fewer. The two remaining names refuse nothing, so
+   the row is a comparison of three decoders on one set of draws rather than a
+   refusal on its own.
 
 What this file does not prove
 -----------------------------
@@ -71,9 +90,11 @@ five are three tori, not a family of growing capacity, and the file compares eac
 torus's decoded rate against its own raw rate rather than one size against
 another: at these shot budgets a small difference between two sizes is not
 separable from sampling error, so it is not asserted. Nothing here is a statement
-about a toric-code decoder's real-world performance, and the weight-four
-mechanisms that decide the matching refusal are fed to nothing but that refusal --
-the belief-propagation decoder is not run against this family at all.
+about a toric-code decoder's real-world performance. The hyperedge decoder is
+measured here on the declared model, but only against the model's own raw rate and
+only at one noise rate per row: that is a correction claim, not a suppression or a
+threshold claim, and the row records that the same measurement at the profile's
+higher rate does not clear the margin this file asserts elsewhere.
 
 Execution is limited to the linear size two torus. The trajectory simulator draws
 each shot from the full output distribution, so the size-three torus, which is
@@ -93,7 +114,17 @@ import pytest
 
 from flagquantum.compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from flagquantum.errors import CapabilityError
-from flagquantum.qec import toric_code
+from flagquantum.qec import (
+    AUTHORITY_NAME,
+    BELIEF_PROPAGATION_OSD_NAME,
+    CROSS_CHECK_NAME,
+    SLIDING_WINDOW_NAME,
+    DetectorErrorModelDecoder,
+    GraphlikeDetectorErrorModelDecoder,
+    decoder_names,
+    get_decoder,
+    toric_code,
+)
 from flagquantum.qec.circuit import MeasurementRef, MemoryCircuit, build_memory_circuit
 from flagquantum.qec.codes import CssCode
 from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
@@ -567,3 +598,198 @@ def test_decoding_reduces_the_logical_rate_at_low_noise(linear_size: int) -> Non
         assert (
             after < before / _DECODING_MARGIN
         ), f"observable {index} decoded to {after} against a raw rate of {before}"
+
+
+# The shot budget the two rows below use. It is smaller than the file's other
+# budgets because each of these rows decodes once per sampled syndrome with four
+# decoders, and the exact matcher enumerates the ways to pair a syndrome's
+# defective detectors, so the cost is bounded by that enumeration rather than by
+# the sampler. The draws are seeded, so the counts these rows assert are
+# reproducible rather than sampled twice.
+_BOUNDED_SHOTS = 300
+
+# The round count and fault rate at which the distance-three torus reaches past
+# the exact matcher's default defect budget. Both numbers are measurements: at six
+# rounds and a two-percent fault rate the widest of three hundred sampled syndromes
+# carries twenty-two detectors against a budget of twenty, and four of the three
+# hundred cross it. Lowering the rate or the round count keeps every draw inside
+# the budget -- eight rounds at one percent peaks at exactly twenty and crosses
+# nothing -- so this row is pinned at the smallest configuration that crosses.
+_CAP_ROUNDS = 6
+_CAP_NOISE = 0.02
+
+
+def test_the_registered_names_agree_on_which_toric_models_they_take() -> None:
+    """The protocol decides which names take the hyperedge model, not a list.
+
+    The torus is the family where a code's noise declaration, and nothing about
+    the code, decides whether the model carries weight-four mechanisms. Every name
+    the registry holds is built against both models here, and which side a name
+    belongs on is read from the decoder the name returns rather than from a list
+    written into the test: a name whose decoder is a
+    ``GraphlikeDetectorErrorModelDecoder`` must accept the quiet model and refuse
+    the declared one, and a name that is not one must accept both.
+
+    That is why the counts are asserted as bounds and not as literals. The claim
+    worth pinning is that the pair graph is a property of a sub-protocol with more
+    than one implementation -- fewer than two and the sub-protocol would be a
+    second name for one class -- and that exactly one name sits outside it on this
+    family. A test that named the four strings would pass while a decoder was
+    registered on the wrong side of the split.
+    """
+
+    memory = build_memory_circuit(_torus(3), rounds=2)
+    declared = DetectorErrorModel.from_memory_circuit(
+        memory, noise=_noise(y_fault=True)
+    )
+    quiet = DetectorErrorModel.from_memory_circuit(memory, noise=_noise(y_fault=False))
+
+    graphlike: list[str] = []
+    hyperedge: list[str] = []
+
+    for name in decoder_names():
+        decoder = get_decoder(name, quiet)
+        if isinstance(decoder, GraphlikeDetectorErrorModelDecoder):
+            graphlike.append(name)
+            with pytest.raises(CapabilityError, match="graphlike"):
+                get_decoder(name, declared)
+        else:
+            hyperedge.append(name)
+            assert isinstance(decoder, DetectorErrorModelDecoder)
+            assert not hasattr(decoder, "graph")
+            get_decoder(name, declared)
+
+    assert len(graphlike) >= 2, graphlike
+    assert len(hyperedge) == 1, hyperedge
+    assert set(graphlike) | set(hyperedge) == set(decoder_names())
+
+
+def test_the_hyperedge_decoder_lowers_the_logical_rate_on_the_torus() -> None:
+    """The family the matcher refuses is decoded, and decoded usefully.
+
+    The declared model carries eight weight-four mechanisms and three of the four
+    registered names refuse it. This row hands every syndrome the model itself
+    draws to the one name that does not, and asks two things of each answer: that
+    the mechanisms it selects reproduce the syndrome exactly, and that the
+    observables they flip are the ones the draw caused more often than not doing
+    anything would be.
+
+    Both halves are needed. A decoder that returned the empty mechanism set would
+    reproduce the zero syndrome and fail nothing but the rate, and a decoder that
+    returned a plausible-looking set would pass the rate on the draws where the
+    truth is also empty. Every draw is decoded, including the ones whose syndrome
+    is empty, because the zero syndrome is the one draw whose cause is known
+    before any decoding happens and an answer that names a mechanism for it is
+    wrong. The rate is then compared per observable index and against the model's
+    own raw rate, which is exact rather than sampled, and the margin is a factor
+    of four against measured ratios of 30.0 and 9.3 at these settings.
+
+    The fault rate is the low one this file already uses for its decoded-rate rows
+    and not the profile's, and that is a measurement rather than a preference: the
+    same row at the profile's five percent measures ratios of 1.4 and 1.6, because
+    order-zero post-processing leaves the free mechanism positions at zero and the
+    estimate is not the most likely explanation. Running it there would either
+    fail or force a margin loose enough to pass on no correction at all.
+    """
+
+    model = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(_torus(3), rounds=2),
+        noise=PhenomenologicalNoise(
+            data_flip=_LOW_NOISE,
+            phase_flip=_LOW_NOISE,
+            both_flip=_LOW_NOISE,
+            measurement_flip=_LOW_NOISE,
+        ),
+    )
+    sample = model.dem_sampling(shots=_BOUNDED_SHOTS, seed=_SEED)
+    decoder = get_decoder(BELIEF_PROPAGATION_OSD_NAME, model)
+    wrong = [0] * model.num_observables
+    explained = 0
+
+    for row in range(_BOUNDED_SHOTS):
+        detection_events = tuple(
+            int(index) for index in sample.detectors[row].nonzero().flatten().tolist()
+        )
+        caused = {
+            int(index) for index in sample.observables[row].nonzero().flatten().tolist()
+        }
+        result = decoder.decode(detection_events)
+        flipped: set[int] = set()
+        for mechanism in result.mechanisms:
+            flipped ^= set(model.errors[mechanism].detectors)
+        assert flipped == set(detection_events), detection_events
+        explained += bool(detection_events)
+        if detection_events:
+            assert result.mechanisms, detection_events
+        else:
+            # The zero syndrome is the one draw whose cause is known without
+            # decoding, so an answer that selects a mechanism for it is wrong
+            # whatever the mechanisms do to the observables.
+            assert not result.mechanisms
+        predicted = set(result.observables)
+        for index in range(model.num_observables):
+            if (index in caused) != (index in predicted):
+                wrong[index] += 1
+
+    raw = [float(rate) for rate in model.observable_rates()]
+    decoded = [count / _BOUNDED_SHOTS for count in wrong]
+
+    assert explained > 0, "the row is not about the zero syndrome alone"
+    assert model.num_observables == 2
+    assert all(0.0 < rate < 1.0 for rate in raw)
+    for index, (before, after) in enumerate(zip(raw, decoded, strict=True)):
+        assert (
+            after < before / _DECODING_MARGIN
+        ), f"observable {index} decoded to {after} against a raw rate of {before}"
+
+
+def test_the_exact_matcher_bounds_the_syndrome_a_torus_reaches() -> None:
+    """The exact matcher refuses what the windowed one still explains.
+
+    The matcher enumerates the ways to pair a syndrome's defective detectors, so it
+    bounds a syndrome at a default defect budget and refuses past it. A torus has
+    no boundary and every check is weight four, so at a long enough experiment at a
+    high enough rate a sampled syndrome reaches past that budget -- here a
+    twenty-two-detector draw against a budget of twenty.
+
+    The row is a comparison rather than a refusal on its own. The exact matcher,
+    the windowed matcher and the hyperedge decoder are all handed the same draws,
+    and the windowed one is asserted to refuse strictly fewer: it decodes one
+    window at a time, so a syndrome too wide for the exact matcher can still sit
+    inside every window. The two remaining names are asserted to refuse nothing, so
+    a decoder that refused everything would fail the row rather than pass it.
+    """
+
+    model = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(_torus(3), rounds=_CAP_ROUNDS),
+        noise=PhenomenologicalNoise(
+            data_flip=_CAP_NOISE, phase_flip=_CAP_NOISE, measurement_flip=_CAP_NOISE
+        ),
+    )
+    sample = model.dem_sampling(shots=_BOUNDED_SHOTS, seed=_SEED)
+    draws = [
+        tuple(
+            int(index) for index in sample.detectors[row].nonzero().flatten().tolist()
+        )
+        for row in range(_BOUNDED_SHOTS)
+    ]
+
+    exact = get_decoder(AUTHORITY_NAME, model)
+    assert max(len(draw) for draw in draws) > exact.max_defects
+
+    refusals: dict[str, int] = {}
+    for name in decoder_names():
+        decoder = get_decoder(name, model)
+        refusals[name] = 0
+        for draw in draws:
+            if not draw:
+                continue
+            try:
+                decoder.decode(draw)
+            except CapabilityError:
+                refusals[name] += 1
+
+    assert refusals[AUTHORITY_NAME] > 0, refusals
+    assert refusals[SLIDING_WINDOW_NAME] < refusals[AUTHORITY_NAME], refusals
+    assert refusals[CROSS_CHECK_NAME] == 0, refusals
+    assert refusals[BELIEF_PROPAGATION_OSD_NAME] == 0, refusals

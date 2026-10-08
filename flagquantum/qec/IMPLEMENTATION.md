@@ -183,7 +183,14 @@ Y fault and run at least two rounds and that fault's X and Z halves land on
 different round boundaries, so a mechanism reaches weight four and the matcher
 refuses a model it accepted one round earlier. `tests/qec/test_toric_memory_execution.py`
 measures both sides at the same code, round count and fault rate rather than
-recording the refusal alone.
+recording the refusal alone, and it feeds the refused side to the decoder that
+does answer it: on the two-round declared model every one of three hundred
+draws is decoded, the empty syndrome included, every correction is required to
+reproduce the syndrome it was handed, and the observables it predicts give a
+logical rate of 0.0033 and 0.0100 against the model's own exact 0.1000 and
+0.0933. The same file records the rate at which that stops being true -- 0.2667
+against 0.3588 at five percent -- so the ordered-statistics pass is not read
+there as a suppression claim.
 
 Detector semantics are fixed. A detector is a measurement parity that is
 deterministic in the noiseless circuit. Which parity that is depends on the

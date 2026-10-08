@@ -406,7 +406,13 @@ fault to separate into. Add a Y fault and run at least two rounds, and that faul
 X half and Z half land on different round boundaries, so one data fault lights four
 detectors, the model stops being graphlike, and the matcher refuses a model it
 accepted at one round. The belief-propagation decoder answers that model, and
-nothing about the code changed.
+nothing about the code changed. `tests/qec/test_toric_memory_execution.py`
+decodes three hundred draws of that model, requires every correction to
+reproduce its syndrome, and compares the observables it predicts against the
+model's exact raw rate -- 0.0033 and 0.0100 against 0.1000 and 0.0933 at a
+one-percent fault rate. At five percent the same measurement is 0.2667 against
+0.3588, which is recorded rather than asserted: this decoder is a route to an
+answer, not a threshold claim.
 
 ## Derive a record from any check matrices
 

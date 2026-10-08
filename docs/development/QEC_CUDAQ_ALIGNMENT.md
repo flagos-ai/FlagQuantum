@@ -199,6 +199,29 @@ distance-three patch is the Steane code up to a qubit relabelling, so its model'
 mechanism-weight histogram is the Steane model's row for row, and nothing here
 separates the two families or claims a threshold.
 
+The torus is the second family on that route, and it is the family that turns
+the route into a rate rather than only into syndrome reproduction.
+`tests/qec/test_toric_memory_execution.py` had recorded the gap in its own words
+-- the weight-four mechanisms decided the matching refusal and were fed to
+nothing else -- and that sentence is now gone rather than reworded. On the
+two-round declared model of the distance-three torus every one of three hundred
+sampled draws is decoded, the empty syndrome included, which the row requires to
+be answered by selecting no mechanism; every mechanism set is required to
+reproduce the syndrome it was handed; and the observables those sets predict are
+compared per index against the model's exact raw rates, 0.0033 and 0.0100 against
+0.1000 and 0.0933. The same file records where the answer stops being useful: at
+the five-percent rate its profile rows use, the same measurement is 0.2667
+against 0.3588, a ratio of 1.34, so the ordered-statistics pass is a route to an
+answer and not a suppression claim at that rate. It also compares three decoders
+on one set of draws -- at six rounds and two percent a sampled syndrome carries
+twenty-two detectors against the exact matcher's default budget of twenty, the
+windowed matcher refuses strictly fewer of them, and the hyperedge decoder and
+the PyMatching-backed name refuse none -- so the bound that row states is a
+measured difference between decoders rather than one decoder's limit. And the
+same file replaces a list with a measurement: every name the registry holds is
+built against both sides of the noise declaration, and which side a name belongs
+on is read from the decoder the name returns.
+
 **What `qec_stim_sampling_join` closed, and what it did not.** The row said the
 join was the gap: the stabilizer engine executed noiseless Clifford programs and
 refused a noise channel, so detection events could only be sampled from the
