@@ -271,6 +271,29 @@ supplying a wheel does not turn it into an approved artifact.
 
 ## Live provider smoke test
 
+When an account has optimization credit but no sampling credit,
+`qboson_optimization_probe.py` provides a narrower development-only gate. It
+requires a fresh authenticated resource snapshot with at least one optimization
+call, verifies the exact Kaiwu 1.3.1 environment before credential discovery,
+and submits exactly one fixed optimization task. `--project-no` is optional
+because the pinned SDK documents direct account-credit operation with
+`project_no=None`. The command cannot request sampling, never opens hardware or
+QDiffusion acceptance, and uses a distinct acknowledgement string:
+
+```bash
+python -m examples.qdiffusion_kaiwu.qboson_optimization_probe \
+  --checkpoint-dir /private/checkpoints \
+  --environment-lock /private/environment_lock.json \
+  --provider-resources /private/provider_resources.json \
+  --output /private/optimization_probe.json \
+  --task-name flagquantum-development-probe \
+  --acknowledge-provider-cost I_ACKNOWLEDGE_ONE_QBOSON_OPTIMIZATION_CREDIT
+```
+
+An incomplete task is retained for recovery under the same task-name and matrix
+identity; the probe does not resubmit it. The full Phase 2 gate below remains
+unchanged and still requires both optimization and sampling.
+
 `qboson_live_smoke.py` is a separately invoked, quota-consuming Phase 2 probe.
 It submits one fixed optimization task and one fixed sampling task, uses the
 same identity for bounded polling, and writes a new mode-0600 record without
