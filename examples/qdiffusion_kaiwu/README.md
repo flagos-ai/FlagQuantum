@@ -6,6 +6,11 @@ checkout root. The `-B` flag prevents bytecode files from mutating reviewed
 source trees, and `-s` disables the user-site package directory so an old
 installed FlagQuantum cannot silently replace the current source tree.
 
+The frozen 2026-10-08 run exercised the complete real-provider and two-host
+path but failed the preregistered guided repeat-ratio threshold. The redacted
+result is documented in
+[`QBOSON_QDIFFUSION_ACCEPTANCE_2026-10-08.md`](../../docs/guides/QBOSON_QDIFFUSION_ACCEPTANCE_2026-10-08.md).
+
 ## Credential-free local golden path
 
 `run_local_conformance.sh` is the single local entry point for the conversion,

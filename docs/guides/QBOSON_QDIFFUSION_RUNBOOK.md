@@ -12,6 +12,12 @@ The validation hosts are `jp-a800-171` and `jp-a800-172`. Each run is an
 independent single-host, single-GPU execution. The pair is not a multi-node or
 distributed run, and NVIDIA A800 evidence is not domestic-accelerator evidence.
 
+The frozen 2026-10-08 run completed but did not pass its preregistered
+application-quality gate. See
+[QBoson QDiffusion acceptance result (2026-10-08)](QBOSON_QDIFFUSION_ACCEPTANCE_2026-10-08.md).
+Do not interpret the completed infrastructure and provider gates as final
+QDiffusion application acceptance.
+
 Run every Python command below from the root of the reviewed extracted
 FlagQuantum checkout. Commands use `python -s -m ...` so the current checkout
 is imported as a module and user-site packages cannot silently replace it.
