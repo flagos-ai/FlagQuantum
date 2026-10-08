@@ -214,6 +214,25 @@ executed by `tests/test_algorithm_examples.py`.
   global minimum. Demonstration scale: the starting simplex is the caller's or a
   coordinate-offset default, the run is single-threaded and unbatched, and the
   reported cost is a count of objective calls rather than a latency.
+- `cobyla.py`: COBYLA trust-region search — the constrained counterpart of the
+  two units above, minimizing an objective under the inequality constraints
+  `constraint(parameters) >= 0`. Every step is the exact minimizer of a linear
+  program over a box: the objective and the constraints are replaced by affine
+  models at the current radius, a violated constraint is priced into the merit
+  with a coefficient that doubles when an accepted step fails to reduce it, and
+  the radius shrinks to `rhoend` or grows to `rhobeg` on the step's own evidence.
+  **It is a local method and the price is a schedule, not a calibrated weight**:
+  the subproblem is a linearization, so a converged run reports that the trust
+  region reached its floor rather than that it found a constrained optimum, and a
+  price that is too low returns an infeasible point that scores better than the
+  feasible optimum — which is why `minimize` returns `feasible` and `residual`
+  beside `value` rather than leaving a caller to compute them.
+  `minimize(objective, parameters, constraints=())` shares its shape with
+  `NelderMeadOptimizer.minimize`, so one constrained objective can be handed to
+  either; unlike that unit it reports an exact penalty price and the largest
+  violation the run ended on. Demonstration scale: the models are finite
+  differences with a radius-sized step, the run is single-threaded and unbatched,
+  and the reported cost is a count of distinct points read rather than a latency.
 - `variational.py`: variational solvers over a checked cost operator —
   `maxcut_hamiltonian` builds the weighted MaxCut cost operator `sum w_ij Z_i
   Z_j`, and `run_qaoa` fits QAOA angles to it. **The two share one checked edge

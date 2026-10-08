@@ -25,6 +25,7 @@ from flagquantum.algorithms.chemistry_integrals import (
     MolecularIntegrals,
     molecular_integrals,
 )
+from flagquantum.algorithms.cobyla import CobylaOptimizer
 from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
@@ -122,7 +123,12 @@ pytestmark = pytest.mark.unit
 # groups that census is read through. The Nelder-Mead optimizer contributes
 # one: its example is the same two-qubit Pauli energy the SPSA entry beside it
 # minimizes, so the two optimizer units are compared on one objective rather
-# than each being merely present. The folding module contributes one: its
+# than each being merely present. The trust-region optimizer contributes one: its
+# example minimizes that same Pauli energy under two constraints, and the two
+# numbers it asserts are the energy the constraints allow and the boundary point
+# they pin the run to, so the constrained unit is distinguished from the
+# unconstrained one it sits beside rather than merely present next to it. The
+# folding module contributes one: its
 # example is the shortest statement that separates the two quantities a plan
 # reports, so a reader sees the realized instruction count beside the factor
 # that was asked for rather than a single number standing for both. The adjoint
@@ -170,6 +176,7 @@ ENTRIES = (
     angular_encode,
     BeliefPropagationOsdDecoder.from_detector_error_model,
     BosonOperator,
+    CobylaOptimizer,
     CssCode,
     CssCodeMatrices,
     FermionOperator,

@@ -22,6 +22,11 @@ def test_canonical_algorithms_package_owns_public_implementations() -> None:
     )
     assert algorithms.Hamiltonian.__module__ == "flagquantum.algorithms.core"
     assert algorithms.FoldingPlan.__module__ == "flagquantum.algorithms.folding"
+    # The constrained optimizer lives in its own module rather than in the unit it
+    # is measured against, so a caller reads which method they asked for from the
+    # module the name resolves to.
+    assert algorithms.CobylaOptimizer.__module__ == "flagquantum.algorithms.cobyla"
+    assert algorithms.CobylaResult.__module__ == "flagquantum.algorithms.cobyla"
     # The folding unit is reachable as a name and as its own module, so a caller
     # never has to reach a private path to find it.
     assert algorithms.folding.fold_program is fold_program

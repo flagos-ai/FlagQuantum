@@ -59,6 +59,7 @@ SCRIPTS = (
     "vqe_solvers",
     "spsa_optimizer",
     "nelder_mead_optimizer",
+    "cobyla_optimizer",
     "trotter",
     "block_encoding",
     "linear_combination",
@@ -209,6 +210,19 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "nelder_mead_optimizer": (
         "has to be deterministic",
         "a local minimum rather than the global one",
+    ),
+    # Two halves. "the subproblem is a linearization" with "a converged run
+    # reports that its trust region reached its floor rather than that it found a
+    # constrained optimum" is what the method is and therefore what its flag
+    # means, and "the price it puts on a violated constraint is a schedule rather
+    # than a calibrated weight" is the half a caller has to act on. Pinning only
+    # the first would leave the second deletable, and a run whose value is read
+    # without its feasibility flag is exactly the misreading the second half
+    # prevents: this script measures a price at which the returned point is
+    # infeasible and still scores better than the feasible optimum.
+    "cobyla_optimizer": (
+        "the subproblem is a linearization",
+        "a schedule rather than a calibrated weight",
     ),
     # Two halves. "the product approximates exp(-i t H) and nothing here bounds how
     # far apart they are" is the approximation's own concession, and "a commutator
@@ -943,6 +957,51 @@ def test_nelder_mead_example_is_exact_and_shows_what_converged_means() -> None:
         "the objective returned a non-finite value"
     )
     _assert_premise("nelder_mead_optimizer", output)
+    assert "take away" in output
+
+
+def test_cobyla_example_shows_the_boundary_and_what_the_price_decides() -> None:
+    output = _run("cobyla_optimizer")
+
+    assert "COBYLA trust-region search -- flagquantum.algorithms.cobyla" in output
+    # The constrained run lands on the boundary and reports the energy there, and
+    # the same objective with no constraint is what that energy is measured
+    # against, so the reader sees the bound's cost rather than the bound alone.
+    assert _labelled(output, "iterations") == "53"
+    assert _labelled(output, "objective calls") == "312"
+    assert _labelled(output, "final energy") == "-1.2432199365413288"
+    assert _labelled(output, "final parameters") == "[0.9, 1.19e-08]"
+    assert _labelled(output, "residual") == "0.0"
+    assert _labelled(output, "feasible") == "True"
+    assert _labelled(output, "converged") == "True"
+    assert _labelled(output, "exact value at the floor") == "-1.2432199365"
+    assert _labelled(output, "energy the bound leaves") == "0.0"
+    assert _labelled(output, "energy the bound costs") == "0.7567800635"
+    # The price comparison is the premise's second half as a number: the cheaper
+    # price returns an infeasible point whose value beats the feasible optimum.
+    assert _labelled(output, "price 1.0") == "[2.5, 2.5] value 0.5"
+    assert _labelled(output, "cheap residual") == "1.0"
+    assert _labelled(output, "cheap feasible") == "False"
+    assert _labelled(output, "price 2.0") == "[2.0, 2.0] value 2.0"
+    assert _labelled(output, "exact residual") == "0.0"
+    assert _labelled(output, "exact feasible") == "True"
+    assert _labelled(output, "a cheaper point scores") == (
+        "0.5 against the feasible optimum's 2.0"
+    )
+    # Four refusals, and only one of them is about the objective: the other three
+    # are an option, a radius ordering, and a constraint that never returns a
+    # number, so a run cannot report a constraint it never read.
+    assert _labelled(output, "in-place objective").startswith(
+        "the objective modified the tensor it was given"
+    )
+    assert _labelled(output, "budget") == "maxiter must be a positive integer"
+    assert _labelled(output, "floor above the start") == (
+        "rhoend must be strictly below rhobeg"
+    )
+    assert _labelled(output, "non-finite constraint") == (
+        "constraint 0 returned a non-finite value"
+    )
+    _assert_premise("cobyla_optimizer", output)
     assert "take away" in output
 
 

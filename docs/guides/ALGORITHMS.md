@@ -26,6 +26,7 @@ tested, and reproducible still does not carry an advantage of its own.
 | `amplitude_estimation.py` — amplitude estimation | Available. Estimates the amplitude a marking operator selects, by phase estimation over the Grover operator. | Brassard et al. 2002 | **The state-preparation unitary is assumed free.** A real distribution needs QRAM, so this is not an end-to-end advantage. |
 | `spsa.py` — simultaneous perturbation stochastic approximation | Available. Minimizes a scalar objective with no gradient, from two evaluations per step whatever the parameter count, on the recursion ``theta_{k+1} = theta_k - a_k g_hat_k`` with ``g_hat_k`` built from one random sign vector. | Spall 1992; Spall 1998 | **The premise is that no gradient is available, and the estimate is not a gradient.** It is biased for every finite perturbation and its expectation reaches the gradient only as the perturbation shrinks, so a single estimate is not a descent direction. An objective with an exact gradient is served more cheaply and exactly by autograd or parameter shift, and no end-to-end advantage follows. |
 | `nelder_mead.py` — Nelder-Mead simplex search | Available. Minimizes a scalar objective with no gradient and no random draw, by reflecting, expanding, contracting, and shrinking a simplex of ``n + 1`` vertices, and stops when the objective values across the simplex and the vertex positions across the simplex both fall under the caller's thresholds. | Nelder & Mead 1965; Lagarias, Reeds, Wright & Wright 1998 | **The premise is that the objective is deterministic, and it is a local method.** Every step is a ranking of two objective values against each other, so a stochastic objective turns those decisions into noise and this unit is not a substitute for `spsa.py` beside it; `converged` reports a collapsed simplex rather than a global minimum, and the published counterexample's collinear start is refused rather than reproduced, so a local minimum is what remains reachable. No end-to-end advantage follows. |
+| `cobyla.py` — COBYLA trust-region search | Available. Minimizes a scalar objective under the inequality constraints `constraint(parameters) >= 0`, by solving at each iteration the linear program that minimizes the affine model of the objective plus a price on the affine model of the largest violated constraint, inside a box of the current radius; the radius grows back to the starting radius or shrinks by half on the step's own evidence, and the price doubles when an accepted step fails to reduce a violation. | Powell 1994 | **The premise is that the objective is deterministic, the subproblem is a linearization, and it is a local method.** A step is only as good as the affine models are at the current radius, so `converged` reports that the trust region reached its floor rather than that it found a constrained optimum; the price on a violated constraint is a schedule rather than a calibrated weight, so a run can return a point that is infeasible and scores better than the feasible optimum, which is why `feasible` and `residual` are reported beside `value`. Neither `spsa.py` nor `nelder_mead.py` beside it handles a constraint at all. Demonstration scale: the models are finite differences at the radius, so no end-to-end advantage follows. |
 | `trotter.py` — time evolution by a product formula | Available. Turns a weighted Pauli sum into the circuit a product formula applies, as a basis change and a CX ladder per term, so a time-evolution workload is an ordinary circuit; the primitive underneath it is the exact circuit for ``exp(-i * theta * P)`` of one Pauli word. | Trotter 1959; Suzuki 1990; Suzuki 1991; Lloyd 1996 | **The premise is commutativity, and it fails by exactly the amount nothing here bounds.** A product formula is exact only when the terms commute; otherwise the defect falls off with the step length at the composition's own rate and no bound is reported, because a bound needs a commutator norm that belongs to the caller. The term count is the caller's Hamiltonian's, so no end-to-end advantage follows. |
 | `logical_resources.py` — logical-layer resource estimation | Available. Reads a Clifford+T program's operation counts, T family, and schedule depth out of the compiler's own static estimate and costs them on a rotated surface code at a distance the caller names: logical layers, physical qubits, surface-code cycles, and their product. | Fowler et al. 2012 | **None, and it is a count rather than a measurement.** Nothing runs, and no wall-clock time, memory, or allocation is read; the input has to already be Clifford+T, so a parametric rotation is refused rather than synthesised; no distillation factory, magic-state budget, routing overhead, placement, or device model is included; and no logical error rate is reported, because that number needs a device's threshold fit. |
 
@@ -194,6 +195,18 @@ units carries a root-level `fq.` name.
   not that the point it collapsed onto is a minimum. The claim it supports is a cost
   claim on a deterministic objective with no available derivative. See the section
   below.
+- **COBYLA carries no advantage premise either, and it is the one optimizer here
+  that answers a constraint.** `cobyla.py` minimizes the same kind of scalar
+  objective under inequality constraints the other two cannot express at all, by
+  minimizing an affine model of the objective plus a priced affine model of the
+  largest violated constraint over a box — which is a convex subproblem for a
+  non-convex problem. Its `converged` flag reports that the trust region reached
+  its floor, not that the point is a constrained optimum, and its price on a
+  violation is a schedule rather than a calibrated weight, so a run can return an
+  infeasible point that scores better than the feasible optimum; `feasible` is
+  reported beside `value` for exactly that reason, and both are measured in the
+  section below. The claim it supports is a cost claim on a constrained
+  deterministic objective with no available derivative.
 - **The time-evolution unit carries no advantage premise, and the quantity that
   would bound it is not computed.** `trotter.py` is a compiler-facing
   construction: it turns a Pauli sum into the circuit that approximates
@@ -2053,6 +2066,216 @@ except Exception as error:
 # objective makes the stored pair describe different parameters
 ```
 
+## COBYLA trust-region search
+
+`cobyla.py` is the third optimizer unit, and it is the one that answers the
+question the other two decline: `NelderMeadOptimizer` and `SPSAOptimizer` both
+minimize a scalar objective with no gradient, and neither takes a constraint.
+`CobylaOptimizer(maxiter=..., rhobeg=..., rhoend=..., penalty=...,
+penalty_ceiling=..., constraint_tolerance=...)` drives a scalar objective through
+`minimize(objective, parameters, constraints=())`, which returns a `CobylaResult`
+carrying the final point, the objective value there, one constraint value per
+constraint in the caller's order, the largest violation (`residual`), a `feasible`
+flag, the final radius and its floor, the final price, the iteration and
+evaluation counts, and a `converged` flag.
+
+**A constraint is `constraint(parameters) >= 0`, and the subproblem is a linear
+program rather than a simplex move.** Each iteration builds an affine model of the
+objective and of every constraint from finite differences at the current radius,
+and then solves, exactly, the linear program that minimizes
+
+```
+objective model at d  +  price * (largest violation among the constraint models at d)
+```
+
+over a box `|d_j| <= radius`. A violation is priced rather than forbidden, and that
+is what makes the step well defined when no point inside the box satisfies every
+constraint: the subproblem is always feasible, because a step large enough to
+satisfy nothing still has a value, and the method's answer to "this constraint
+cannot be met here" is a price rather than an exception. The program is solved by
+Bland's rule in exact rational arithmetic over floats, so a run replays bit for
+bit; two independent measurements of the step are quoted below.
+
+**The premise is determinism, and the subproblem is convex while the problem is
+not.** The linear program has a unique cost, but the models it was built from are
+only valid at the scale the radius names, so a step is a statement about the
+linearization rather than about the objective. That is why this is a *trust-region*
+method: a step that improved the merit is accepted and the radius may grow, a step
+that did not is rejected and the radius halves, and the run stops when the radius
+reaches `rhoend` or the iteration budget runs out. `COBYLA_ASSUMPTIONS` states the
+three conditions a run rests on — determinism, local affine validity over the
+radius, and the caller's own notion of a satisfied constraint — and the result
+carries them, so the boundary is on the returned object rather than only in this
+paragraph.
+
+**`converged` reports the trust region, not optimality, and the gap is measured.**
+`converged` is exactly `rho <= rhoend`: the run ran out of scale to try. It is not
+a statement about the objective's slope and not a statement about feasibility, and
+the same run can report `converged=True` and `feasible=False` at once — a
+constraint that no point satisfies is one of the cases quoted below, and the run
+returns the point that violates it least rather than raising. Reading `value` as a
+constrained optimum without reading `feasible` beside it is the mistake the unit's
+`COBYLA_LIMITATIONS` records.
+
+**The price is a schedule rather than a calibrated weight, and that is the
+sharpest edge in this unit.** COBYLA's exact penalty is not computed here; the
+price starts at `penalty`, doubles when an accepted step fails to reduce a
+violation that exists or when the true violation came in worse than the
+linearization predicted, and stops at `penalty_ceiling`. A price that is too low
+therefore does not fail — it converges to a point that violates a constraint and
+*scores better than the feasible optimum*, because each step minimized the merit it
+was given and the merit did not charge enough for the violation. Both prices are
+run below on one quadratic with one affine constraint, changing nothing else, and
+the cheaper one returns `0.5` at a point that violates the constraint by `1.0`
+while the feasible optimum is `2.0`. The guard against reading that as a better
+answer is that `feasible` is computed from `residual` and `constraint_tolerance`
+and returned beside the value rather than left to the caller.
+
+```python
+import torch
+
+from flagquantum.algorithms import CobylaOptimizer
+
+
+def quadratic(parameters):
+    return ((parameters - torch.tensor([3.0, 3.0], dtype=torch.float64)) ** 2).sum()
+
+
+def budget(values):
+    return 4.0 - values[0] - values[1]
+
+
+cheap = CobylaOptimizer(maxiter=500, rhobeg=0.5, rhoend=1e-10, penalty=1.0).minimize(
+    quadratic, torch.zeros(2, dtype=torch.float64), constraints=[budget]
+)
+print([round(float(value), 6) for value in cheap.parameters], round(cheap.value, 6))
+# [2.5, 2.5] 0.5  -- the unconstrained minimum is [3.0, 3.0], which the constraint forbids
+print(round(cheap.residual, 6), cheap.feasible, cheap.penalty, cheap.iterations)
+# 1.0 False 1.0 38  -- it violates by 1.0 at a price it never raised
+exact = CobylaOptimizer(maxiter=500, rhobeg=0.5, rhoend=1e-10, penalty=2.0).minimize(
+    quadratic, torch.zeros(2, dtype=torch.float64), constraints=[budget]
+)
+print([round(float(value), 6) for value in exact.parameters], round(exact.value, 6))
+# [2.0, 2.0] 2.0  -- one option changed, and the feasible optimum is what is returned
+print(round(exact.residual, 6), exact.feasible, exact.penalty, exact.iterations)
+# 0.0 True 2.0 37  -- cheaper in merit, worse as an answer: 0.5 beats the feasible 2.0
+
+
+def floor(values):
+    return values[0] - 1.0
+
+
+walk = CobylaOptimizer(
+    maxiter=200, rhobeg=0.5, rhoend=1e-10, penalty_ceiling=2.0
+).minimize(
+    lambda values: values[0] + values[1],
+    torch.zeros(2, dtype=torch.float64),
+    constraints=[floor, lambda values: values[1] + 5.0],
+)
+print(
+    [round(float(value), 6) for value in walk.parameters],
+    round(walk.value, 6),
+    round(walk.residual, 6),
+    walk.penalty,
+    walk.iterations,
+)
+# [1.0, -5.0] -4.0 0.0 2.0 43
+#   -- the first accepted step traded the violation against the objective without
+#      reducing it, so the price doubled, and the second step bought the boundary
+
+
+def energy(values):
+    import flagquantum as fq
+
+    circuit = fq.Circuit(2, dtype=torch.complex128)
+    circuit = circuit.ry(0, values[0]).ry(1, values[1]).cx(0, 1)
+    outputs = fq.expectation(fq.Z(0) + fq.Z(1))
+    return -fq.run(circuit, outputs=outputs).expectation().sum()
+
+
+bounded = CobylaOptimizer(maxiter=400, rhobeg=0.5, rhoend=1e-8).minimize(
+    energy,
+    torch.tensor([0.2, 0.2], dtype=torch.float64),
+    constraints=[lambda values: values[0] - 0.9],
+)
+print(
+    [round(float(value), 10) for value in bounded.parameters],
+    round(bounded.value, 10),
+)
+# [0.9, 1.19e-08] -1.2432199365  -- the constraint binds, so the angle is exactly the floor
+print(
+    round(bounded.residual, 12),
+    bounded.feasible,
+    bounded.converged,
+    bounded.iterations,
+    bounded.evaluations,
+)
+# 0.0 True True 53 312  -- no violation, and the trust region reached its floor
+free = CobylaOptimizer(maxiter=400, rhobeg=0.5, rhoend=1e-8).minimize(
+    energy, torch.tensor([0.2, 0.2], dtype=torch.float64)
+)
+print(round(free.value, 10), free.converged, free.iterations, free.evaluations)
+# -2.0 True 50 203  -- the same objective with no constraint reaches the exact minimum
+
+
+def in_place(parameters):
+    parameters[0] = 0.0
+    return (parameters**2).sum()
+
+
+for label, build in (
+    ("penalty_ceiling=0.5", lambda: CobylaOptimizer(penalty=1.0, penalty_ceiling=0.5)),
+    ("rhoend=rhobeg", lambda: CobylaOptimizer(rhobeg=0.5, rhoend=0.5)),
+):
+    try:
+        build()
+    except Exception as error:
+        print(label, type(error).__name__, error)
+# penalty_ceiling=0.5 ValidationError penalty_ceiling must be at least penalty,
+# because the schedule doubles the penalty from where it started and never lowers it
+# rhoend=rhobeg ValidationError rhoend must be strictly below rhobeg, because a
+# trust region whose floor is where it started has no scale left to try
+
+try:
+    CobylaOptimizer().minimize(in_place, torch.zeros(2, dtype=torch.float64))
+except Exception as error:
+    print("in-place", type(error).__name__, error)
+# in-place ValidationError the objective modified the tensor it was given; this unit
+# stores a point and its function value together, so an in-place function makes the
+# stored pair describe different parameters
+```
+
+**The cost is a count of distinct points read, not of function calls.** Every
+iteration builds two models — one at the current point and one at the trial point
+the subproblem chose — and each model costs one base evaluation plus one per
+parameter. The trial point of an iteration is usually the offset the previous model
+already read, so those evaluations are served from a per-run cache and a cached
+point is never handed to the caller's function twice. `CobylaResult.evaluations`
+counts the calls actually made across the objective and every constraint together,
+which is the number a caller comparing this unit against a gradient method has to
+use; it is a count and not a latency, and the run is single-threaded and unbatched.
+
+**What it refuses, and when.** An option that is not what its name promises -- a
+non-positive or non-integer `maxiter`, a `rhoend` that is not strictly below
+`rhobeg`, a non-positive or non-finite `penalty`, `rhoend`, `rhobeg` or
+`constraint_tolerance`, and a `penalty_ceiling` below `penalty` -- raises
+`ValidationError` at construction. A non-callable objective, a constraint
+collection that is not a sequence of callables, non-floating or empty or non-finite
+parameters, an objective or a constraint that does not return one finite scalar,
+and either one writing into the tensor it is handed all raise before a value is
+stored beside a point. The in-place refusal is the same reasoning as `spsa.py`'s
+and `nelder_mead.py`'s: this unit stores a point and its function value together,
+and a function that rewrites its argument makes that stored pair describe different
+parameters, which is a wrong answer rather than an exception.
+
+**What it does not do.** The constraints are inequality constraints on a flat view
+of the parameters, so an equality constraint has to arrive as two of them; there is
+no equality handling, no bounds syntax, no restart, no multi-start, no checkpoint
+protocol, and no parallel or batched evaluation. The radius schedule and the price
+schedule are the two mechanisms that decide what a run returns, and both are the
+caller's to set. A constrained problem with a large feasible set and a low price is
+the case this unit reports rather than repairs.
+
 ## Variational solvers over a checked cost operator
 
 `variational.py` is the first unit in this guide that is a **solver** rather than a
@@ -3044,6 +3267,26 @@ executes it.
   than for anything built here: no construction from it is implemented, which is
   why the collinear starting simplex its demonstration needs is refused by name
   instead of reproduced.
+
+- COBYLA is attributed to M. J. D. Powell, "A Direct Search Optimization Method
+  That Models the Objective and Constraint Functions by Linear Interpolation",
+  in *Advances in Optimization and Numerical Analysis*, S. Gomez & J.-P. Hennart
+  (eds.), Kluwer Academic Publishers, 51-67 (1994) — the trust-region
+  linear-interpolation method this unit's step is the subproblem of, the linear
+  programs over a box, and the merit function that adds a priced multiple of the
+  largest constraint violation to the objective model. **No DOI is recorded for
+  this entry because none was confirmed**, and a plausible-looking identifier is
+  worse than none; the venue, editors, pages and year above are the record.
+  **What this unit keeps and what it leaves is the paper's own division**: the
+  step here is that merit's minimizer, and the radius and price schedules are this
+  unit's, so `penalty`, `penalty_ceiling`, and `rhoend` are the caller's, no
+  Lagrange-multiplier estimate is formed, no quadratic model is fitted, and the
+  convergence claim the paper develops is not repeated — the `converged` flag
+  reports the trust region's floor and nothing about optimality. The
+  interpolation set is a finite-difference star at the radius rather than the
+  paper's simplex of interpolated points, which is the difference a reader of
+  both should expect to find and is why the unit states its own premises instead
+  of borrowing the paper's.
 
 - The product formula is attributed to H. F. Trotter, "On the product of
   semi-groups of operators", *Proceedings of the American Mathematical Society*

@@ -24,6 +24,7 @@ python -m examples.algorithms.variational_solvers
 python -m examples.algorithms.vqe_solvers
 python -m examples.algorithms.spsa_optimizer
 python -m examples.algorithms.nelder_mead_optimizer
+python -m examples.algorithms.cobyla_optimizer
 python -m examples.algorithms.trotter
 python -m examples.algorithms.block_encoding
 python -m examples.algorithms.linear_combination
@@ -106,6 +107,13 @@ What they show:
   SPSA run beside it at the *same evaluation budget* so the two optimizer units
   are compared on one objective rather than each being merely present, and the
   two-well quartic printed to measure what a converged flag does not mean.
+- [`cobyla_optimizer.py`](cobyla_optimizer.py): that Pauli energy again, this time
+  under a constraint that binds, with the unconstrained run beside it so the cost
+  of the bound is a number, and one quadratic under one affine constraint solved
+  twice at two prices so the second half of the unit's premise is measured rather
+  than asserted: the cheaper price returns a point that violates the constraint
+  and still scores better than the feasible optimum, which is why `feasible` is
+  printed beside `value`.
 - [`trotter.py`](trotter.py): a transverse-field Ising Hamiltonian turned into the
   circuit a product formula applies, with the defect at two step counts per order
   measured against `torch.matrix_exp`, the primitive's own emitted gates printed
@@ -149,6 +157,9 @@ and `fq.run` calls its objective makes. `nelder_mead_optimizer.py` imports both 
 well, for one more reason: it imports `SPSAOptimizer` beside
 `NelderMeadOptimizer` from the subpackage, so the comparison it prints is run
 through the two shipped units rather than reimplemented in the script.
+`cobyla_optimizer.py` imports both as well: the constrained optimizer from the
+subpackage, and `flagquantum` itself for the `fq.Circuit` and `fq.run` calls the
+energy it constrains is built from.
 `trotter.py` needs no root alias either:
 the circuit it builds is a `flagquantum.circuit.Circuit`, and the readout it takes
 is the package's own `expectation_ps`. `block_encoding.py` needs no root alias

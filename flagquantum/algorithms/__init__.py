@@ -5,6 +5,7 @@ from . import arithmetic as arithmetic
 from . import cdr as cdr
 from . import chemistry as chemistry
 from . import chemistry_integrals as chemistry_integrals
+from . import cobyla as cobyla
 from . import core as core
 from . import data_encoding as data_encoding
 from . import error_mitigation as error_mitigation
@@ -60,6 +61,12 @@ from .chemistry_integrals import (
     MolecularGeometry,
     MolecularIntegrals,
     molecular_integrals,
+)
+from .cobyla import (
+    COBYLA_ASSUMPTIONS,
+    COBYLA_LIMITATIONS,
+    CobylaOptimizer,
+    CobylaResult,
 )
 from .core import (
     AdaptVQEIteration,
@@ -190,10 +197,14 @@ __all__ = [
     "CDR_ASSUMPTIONS",
     "CDR_LIMITATIONS",
     "CDR_SNAP_OPCODES",
+    "COBYLA_ASSUMPTIONS",
+    "COBYLA_LIMITATIONS",
     "CdrResult",
     "CliffordFit",
     "CliffordTrainingPoint",
     "CliffordVariant",
+    "CobylaOptimizer",
+    "CobylaResult",
     "ExtrapolationFit",
     "FOLDING_ASSUMPTIONS",
     "FOLDING_SCHEMA",
@@ -255,6 +266,7 @@ __all__ = [
     "chemistry",
     "chemistry_integrals",
     "clifford_variants",
+    "cobyla",
     "coupler_hardware_efficient_ansatz",
     "coupler_hardware_efficient_parameter_count",
     "create_molecular_hamiltonian",

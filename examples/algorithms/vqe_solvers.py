@@ -396,8 +396,13 @@ def main() -> None:
     print(f"  {'':<{LABEL_WIDTH}}  -- no accuracy or scaling claim: the one instance")
     print(f"  {'':<{LABEL_WIDTH}}  is two qubits, and a deeper ansatz reaching a")
     print(f"  {'':<{LABEL_WIDTH}}  lower energy here is a fact about this instance")
-    print(f"  {'':<{LABEL_WIDTH}}  -- no optimizer beyond torch's own, no COBYLA, no")
-    print(f"  {'':<{LABEL_WIDTH}}  constraint or penalty term, and no warm start")
+    print(f"  {'':<{LABEL_WIDTH}}  -- no derivative-free optimizer: the pool and the")
+    print(f"  {'':<{LABEL_WIDTH}}  ansatz are fitted by autograd or parameter shift")
+    print(f"  {'':<{LABEL_WIDTH}}  through one of the staged methods, so neither the")
+    print(f"  {'':<{LABEL_WIDTH}}  SPSA nor the Nelder-Mead unit is reached here, and")
+    print(f"  {'':<{LABEL_WIDTH}}  neither is the constrained one, which would need a")
+    print(f"  {'':<{LABEL_WIDTH}}  constraint this instance does not have; there is also")
+    print(f"  {'':<{LABEL_WIDTH}}  no penalty term and no warm start")
 
 
 if __name__ == "__main__":
