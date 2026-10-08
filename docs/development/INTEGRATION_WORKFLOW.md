@@ -32,7 +32,7 @@ measurement below no longer finds that shape.
 
 ## Evidence
 
-### The observed flow
+### The observed flow, measured 2026-10-01
 
 | Measurement | Value |
 | --- | --- |
@@ -211,9 +211,10 @@ again on 2026-10-08:
 
 At the 2026-10-01 measurement, two required approvals were configured, the account that
 authors and merges these pull requests holds `admin: true`, and the requirement was
-bypassable: the last 14 merges were authored and merged by the same account with zero
-reviews. The count of two could not be the mechanism that distinguishes the declared
-workflow from the observed one, and it was recorded as nominal rather than corrected.
+bypassable: the fourteen pull requests merged immediately before that measurement, #271
+through #284, were each authored and merged by `FlagQuantum` with zero submitted reviews.
+The count of two could not be the mechanism that distinguishes the declared workflow from
+the observed one, and it was recorded as nominal rather than corrected.
 
 Two decisions were taken on 2026-10-08, in the change that closes
 [issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579):
