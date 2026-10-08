@@ -506,6 +506,9 @@ def test_evaluation_revalidates_local_source_preflight() -> None:
     assert source.index(
         "record, record_sha256 = _load_training_record("
     ) < source.index("torch.cuda.set_device(device)")
+    assert source.index("_load_pinned_qdiffusion_api(root)") < source.index(
+        'importlib.import_module("dplm.workflows.esm2_eval")'
+    )
     assert source.index("load_source_preflight(") < source.index(
         "workflow, helpers = _load_pinned_eval_workflow("
     )

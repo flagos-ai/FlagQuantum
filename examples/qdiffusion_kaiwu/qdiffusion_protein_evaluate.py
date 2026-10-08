@@ -32,6 +32,7 @@ from examples.qdiffusion_kaiwu.provider_reconciliation import (
     apply_provider_reconciliations,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
+    _load_pinned_qdiffusion_api,
     _validate_imported_module_tree,
 )
 from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
@@ -90,6 +91,7 @@ def _load_pinned_eval_workflow(plugin_root: Path) -> tuple[ModuleType, ModuleTyp
     expected = case_root / "dplm" / "workflows" / "esm2_eval.py"
     if not expected.is_file() or not source_root.is_dir():
         raise ValueError("plugin root does not contain the pinned ESM2 workflow")
+    _load_pinned_qdiffusion_api(root)
     for path in (source_root, case_root):
         encoded = str(path)
         if encoded not in sys.path:
