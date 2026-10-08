@@ -294,6 +294,31 @@ An incomplete task is retained for recovery under the same task-name and matrix
 identity; the probe does not resubmit it. The full Phase 2 gate below remains
 unchanged and still requires both optimization and sampling.
 
+When sampling credit is available, `qboson_sampling_probe.py` provides the
+matching development-only sampling gate without spending an optimization
+credit. It requires a fresh resource snapshot with at least ten sampling
+credits, submits exactly one fixed Ising task for exactly ten samples, accepts
+the documented account-default `project_no=None` path, and cannot open hardware
+or QDiffusion acceptance:
+
+```bash
+python -m examples.qdiffusion_kaiwu.qboson_sampling_probe \
+  --checkpoint-dir /private/checkpoints \
+  --environment-lock /private/environment_lock.json \
+  --provider-resources /private/provider_resources.json \
+  --output /private/sampling_probe.json \
+  --task-name flagquantum-sampling-probe \
+  --acknowledge-provider-cost I_ACKNOWLEDGE_TEN_QBOSON_SAMPLING_CREDITS
+```
+
+The pinned SDK writes `license.lic` in its installed package directory during
+initialization. For a read-only container, copy the installed `kaiwu` package
+into an executable tmpfs and put that copy on `PYTHONPATH`; do not make the
+container root writable merely to accommodate this file. The successful
+development probe retained only its owner-only recovery checkpoint and output
+record. The tmpfs package copy and license file vanished when the auto-removed
+container exited.
+
 `qboson_live_smoke.py` is a separately invoked, quota-consuming Phase 2 probe.
 It submits one fixed optimization task and one fixed sampling task, uses the
 same identity for bounded polling, and writes a new mode-0600 record without

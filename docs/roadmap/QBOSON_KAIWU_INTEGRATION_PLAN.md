@@ -89,6 +89,34 @@ Status as of 2026-10-08 on branch `feat/qboson-kaiwu-integration`:
   but it does not satisfy the Phase 2 optimization-plus-sampling exit gate.
   Sampling quota, the formal project/use approvals, the full provider smoke,
   and all QDiffusion acceptance runs remain open.
+- Later on 2026-10-08 the authenticated account received 10,000 SPQC-1000
+  sampling credits. An explicitly authorized sampling-only development probe
+  then completed through the same pinned Kaiwu 1.3.1 Remote adapter with
+  `project_no=None`, exactly ten requested and returned samples, no optimization
+  request, and no local fallback. The private mode-0600 probe record has SHA-256
+  `61c9ea831cf8152dcfa879d8e14f15fa61a061b913b6ff7072bc9d9a2d9953ca`.
+  Its pre-run resource snapshot has SHA-256
+  `591658a012f7f0435cc595dc86b3feafebe170bff6b6144b650b18943c787252`.
+  After completion, the authenticated Dashboard showed the named task as
+  `Completed`, identified its resource as `SPQC-1000` and mode as `Sampling`,
+  and showed the sampling balance decrease from 10,000 to 9,990 while the
+  remaining SPQC-1000 optimization credit stayed unchanged. The retained
+  post-run resource snapshot has SHA-256
+  `92505b876b4929bf27d3f802fc2006ae5be69bce70cc3462c94afed48a53ba48`.
+  This establishes the bounded sampling development path and, together with
+  the earlier optimization probe, closes the operational optimization/sampling
+  transport question without spending the last optimization credit again.
+  It does not satisfy the formal Phase 2 acceptance record: the two modes were
+  run as separate development probes, the reviewed rights record is still
+  absent, and the pinned SDK result mapping still lacks provider-reported task
+  and target identities. Both probe records therefore remain
+  `hardware_acceptance=false` and `qdiffusion_acceptance=false`.
+- Kaiwu 1.3.1 writes `license.lic` beside its installed package during license
+  initialization. A read-only container therefore fails before submission
+  unless the package is copied into an executable tmpfs and imported from that
+  copy. The successful sampling run used that memory-only compatibility lane;
+  the license file disappeared with the auto-removed container, while only the
+  owner-only recovery checkpoint and redacted evidence were retained.
 - On 2026-10-07 an authenticated follow-up feedback request was submitted after
   explicit user confirmation, and the platform displayed `Submitted
   successfully`. The request contains no account identifier or credential. It
