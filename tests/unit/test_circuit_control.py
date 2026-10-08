@@ -475,9 +475,9 @@ def test_control_is_a_method_and_not_a_root_export() -> None:
     assert "control" not in fq.__all__
     # The recorded Stable Core is the manifest's business, not this test's, so the
     # claim is made against the manifest rather than against a transcription of its
-    # cardinality. `density_matrix` joined the exports under PR #541, which landed
-    # before #552 cut this file; the literal count this test used to carry was
-    # already stale on the branch that wrote it.
+    # cardinality. `density_matrix` joined the exports under PR #541 and `vn_entropy`
+    # under the von Neumann entropy output, both after the literal count this test
+    # used to carry; a literal here goes stale on whichever branch writes it next.
     recorded = json.loads(
         (ROOT / "docs" / "public_api_v1.json").read_text(encoding="utf-8")
     )

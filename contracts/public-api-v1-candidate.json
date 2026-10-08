@@ -49,7 +49,8 @@
       "submit",
       "train",
       "twin",
-      "vjp"
+      "vjp",
+      "vn_entropy"
     ],
     "planned_additions": []
   },
@@ -177,7 +178,8 @@
     "probabilities",
     "run_noisy_statevector",
     "samples",
-    "twin"
+    "twin",
+    "vn_entropy"
   ],
   "experimental": [
     {
@@ -226,7 +228,7 @@
     "compile_for_backend": "flagquantum.compile"
   },
   "rules": {
-    "root_export_budget": 40,
+    "root_export_budget": 41,
     "root_backend_specific_exports": 0,
     "root_evidence_exports": 0,
     "breaking_changes_require_approved_proposal": true,

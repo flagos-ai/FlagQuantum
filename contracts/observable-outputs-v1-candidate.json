@@ -4,10 +4,10 @@
   "approval": {
     "approved_at": "2026-09-09",
     "approved_by": "API owner via explicit user directive",
-    "amended_at": "2026-10-06",
+    "amended_at": "2026-11-01",
     "amended_by": "API owner via explicit user directive",
-    "amendment_proposal": "docs/development/API_CHANGE_PROPOSAL_068_DENSITY_MATRIX_OUTPUT.md",
-    "amendment_record": "docs/api-changes/FQ-DENSITY-MATRIX-OUTPUT-20261006.md"
+    "amendment_proposal": "docs/development/API_CHANGE_PROPOSAL_069_VN_ENTROPY_OUTPUT.md",
+    "amendment_record": "docs/api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md"
   },
   "root_additions": [
     "I",
@@ -20,7 +20,8 @@
     "density_matrix",
     "expectation",
     "probabilities",
-    "samples"
+    "samples",
+    "vn_entropy"
   ],
   "root_removals": [
     "MeasurementNode",
@@ -33,7 +34,8 @@
     "probabilities": "(qubits: 'Iterable[int] | int | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | None | Omitted' = OMITTED) -> 'OutputRequest'",
     "samples": "(qubits: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED) -> 'OutputRequest'",
     "counts": "(qubits: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED) -> 'OutputRequest'",
-    "density_matrix": "(qubits: 'Iterable[int] | int | None | Omitted' = OMITTED, *, name: 'str | None' = None) -> 'OutputRequest'"
+    "density_matrix": "(qubits: 'Iterable[int] | int | None | Omitted' = OMITTED, *, name: 'str | None' = None) -> 'OutputRequest'",
+    "vn_entropy": "(qubits: 'Iterable[int] | int', *, log_base: 'float | None' = None, name: 'str | None' = None) -> 'OutputRequest'"
   },
   "rules": {
     "measurement_nodes_are_internal": true,
@@ -44,7 +46,10 @@
     "density_matrix_traces_out_unnamed_qubits": true,
     "density_matrix_honours_requested_qubit_order": true,
     "density_matrix_refuses_readout_confusion": true,
-    "statevector_to_density_matrix_is_bounded": true
+    "statevector_to_density_matrix_is_bounded": true,
+    "vn_entropy_requires_at_least_one_qubit": true,
+    "vn_entropy_refuses_nonpositive_log_base": true,
+    "vn_entropy_refuses_readout_confusion": true
   },
   "qubit_naming_migration": "docs/api-changes/FQ-QUBIT-NAMING-20260913.md"
 }

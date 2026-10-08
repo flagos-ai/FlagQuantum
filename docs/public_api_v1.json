@@ -41,7 +41,8 @@
     "submit",
     "train",
     "twin",
-    "vjp"
+    "vjp",
+    "vn_entropy"
   ],
   "verification": {
     "Circuit": "tests/unit/test_ir_public_api.py::test_public_api_snapshot_and_internal_root_exports_are_closed",
@@ -83,7 +84,8 @@
     "submit": "tests/api_contract/test_remote_jobs.py::test_quafu_submit_result_and_restore",
     "train": "tests/api_contract/test_module_training_semantics.py::test_train_is_a_minimal_caller_owned_optimizer_loop",
     "twin": "tests/test_twin.py::test_twin_namespace_is_small_and_domain_named",
-    "vjp": "tests/test_vector_derivatives.py::test_the_vector_jacobian_product_is_the_cotangent_applied_to_the_jacobian"
+    "vjp": "tests/test_vector_derivatives.py::test_the_vector_jacobian_product_is_the_cotangent_applied_to_the_jacobian",
+    "vn_entropy": "tests/unit/test_vn_entropy_output_contract.py::test_a_user_asks_for_an_entropy_of_a_named_subsystem"
   },
   "experimental_stability": "none"
 }

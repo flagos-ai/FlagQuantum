@@ -19,17 +19,28 @@ ir_source = "flagquantum/core/ir.py"
 # Acceptance adds no capability, so it changes no version and no export. Both are
 # recorded as measured facts rather than asserted, because an acceptance slice that
 # quietly widened the public surface would be the failure this contract exists to stop.
+#
+# The count is a live reading and it has moved four times, each time by an unrelated
+# slice rather than by this one: 36 when this contract was written, 37 when the
+# density-matrix output landed, 38 when the von Neumann entropy output landed
+# (`docs/api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md`), and 40 when
+# `fq.jacobian`, `fq.jvp` and `fq.vjp` landed as three additive Stable Core root
+# exports under `docs/api-changes/FQ-VECTOR-DERIVATIVES-20261026.md`. Those last
+# two slices met in the same tree, so the reading below is their composition: 41,
+# not 38 and not 40. Moving the recorded number is the point of recording it: the
+# alternative is a census that reads a stale constant and stays green while the
+# surface it describes has changed. The row fired exactly as intended when the
+# vector derivatives landed -- the count is a fact about the tree, so it stopped
+# being true the moment the public surface changed, and it was corrected here
+# rather than left asserting a stale number. A move from a *construction* member
+# would still be caught by [subject] instead, which is why the two readings are
+# separate rows and not one. `root_export_effect = "none"` above still holds --
+# that row is about what *this* acceptance adds, and this acceptance adds no
+# export.
 ir_version_effect = "none"
 root_export_effect = "none"
 measured_ir_version = "1.0"
-# Re-measured when `fq.jacobian`, `fq.jvp` and `fq.vjp` landed as three additive Stable
-# Core root exports under
-# `docs/api-changes/FQ-VECTOR-DERIVATIVES-20261026.md`. The row fired exactly as intended:
-# the count is a fact about the tree, so it stopped being true the moment the public
-# surface changed, and it was corrected here rather than left asserting a stale number.
-# `root_export_effect = "none"` above still holds -- that row is about what *this*
-# acceptance adds, and this acceptance adds no export.
-measured_root_export_count = 40
+measured_root_export_count = 41
 authorization_required = false
 authorization_reason = "acceptance measures existing behaviour; it adds no export, keyword, opcode, or serialized key"
 

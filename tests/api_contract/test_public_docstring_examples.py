@@ -36,6 +36,7 @@ ENTRIES = (
     fq.compile,
     fq.density_matrix,
     fq.expectation,
+    fq.vn_entropy,
     fq.from_openqasm,
     fq.gradient,
     fq.plan,

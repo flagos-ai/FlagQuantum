@@ -92,6 +92,7 @@ class OutputRequest:
     qubits: tuple[int, ...] = ()
     observable: Observable | None = None
     name: str | None = None
+    log_base: float | None = None
 
     def __post_init__(self) -> None:
         if self.kind not in {
@@ -100,6 +101,7 @@ class OutputRequest:
             "expectation",
             "probabilities",
             "samples",
+            "vn_entropy",
         }:
             raise ValueError(f"unsupported output kind {self.kind!r}")
         object.__setattr__(
@@ -115,6 +117,23 @@ class OutputRequest:
             self.observable is not None
         ):
             raise TypeError(f"{self.kind} output does not accept an observable")
+        if self.kind == "vn_entropy":
+            if self.observable is not None:
+                raise TypeError("vn_entropy output does not accept an observable")
+            if not self.qubits:
+                raise ValueError(
+                    "vn_entropy output requires at least one qubit: the entropy "
+                    "of no subsystem is not a number"
+                )
+            # The base is validated here rather than at execution, so a base that has no
+            # logarithm is refused where the request is written instead of in the middle
+            # of a run. The rule itself lives with the entropy arithmetic so that one
+            # logarithm convention serves the request and the measurement.
+            from ..simulation.entropy import log_base_divisor
+
+            log_base_divisor(self.log_base)
+        elif self.log_base is not None:
+            raise TypeError(f"{self.kind} output does not accept a log_base")
         if self.kind in {"samples", "counts"} and self.observable is not None:
             _sampled_pauli_term(self.observable)
 
@@ -333,6 +352,39 @@ def density_matrix(
     )
 
 
+def vn_entropy(
+    qubits: Iterable[int] | int,
+    *,
+    log_base: float | None = None,
+    name: str | None = None,
+) -> OutputRequest:
+    """Request the von Neumann entropy of a subsystem, in nats by default.
+
+    Args:
+        qubits: The qubits whose entropy is requested, named in the basis order
+            the reduced state would use. At least one is required, and the
+            selection may be any subset rather than a contiguous run.
+        log_base: The logarithm's base. ``None`` is the natural logarithm, so the
+            answer is in nats; ``2`` gives bits.
+        name: An optional label for selecting this output from the result.
+
+    The entropy is a property of the state the run left behind, so every
+    execution mode that holds a state answers with the same number: dense modes
+    reduce and diagonalise, while matrix-product and tensor-network modes contract
+    the named sites out of the state they already hold.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> circuit = fq.Circuit(2).h(0).cx(0, 1)
+        >>> result = fq.run(circuit, outputs=fq.vn_entropy(qubits=0))
+        >>> round(float(result.vn_entropy), 6)
+        0.693147
+    """
+
+    selected = _qubits(qubits, owner="vn_entropy output")
+    return OutputRequest("vn_entropy", selected, name=name, log_base=log_base)
+
+
 def samples(
     qubits: Iterable[int] | int | Observable | None | Omitted = OMITTED,
     *,
@@ -459,6 +511,14 @@ def lower_outputs(
         request_shots = shots if request.kind in {"samples", "counts"} else None
         if request.kind in {"samples", "counts"} and request_shots is None:
             raise ValueError(f"{request.kind} output requires shots")
+        if request.kind == "vn_entropy":
+            # The base travels in metadata because the measurement node is the Core IR
+            # type and adding a base field to it would put an entropy convention into
+            # the representation every other measurement shares. For every other kind
+            # the field is left absent rather than written as ``None``, so a node that
+            # happens to carry metadata from elsewhere cannot be read as requesting a
+            # base it never named.
+            metadata["fq_log_base"] = request.log_base
         if seed is not None:
             metadata["seed"] = seed
         lowered.append(
@@ -484,4 +544,5 @@ __all__ = (
     "expectation",
     "probabilities",
     "samples",
+    "vn_entropy",
 )

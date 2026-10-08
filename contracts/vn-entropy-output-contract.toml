@@ -1,0 +1,383 @@
+schema = "flagquantum_vn_entropy_output_contract_v1"
+maturity = "development_evidence"
+implementation = "flagquantum/simulation/entropy.py"
+declaration_source = "flagquantum/observables/__init__.py"
+record = "docs/api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md"
+proposal = "docs/development/API_CHANGE_PROPOSAL_069_VN_ENTROPY_OUTPUT.md"
+authorization = "measurement-parity family grant of 2026-10-31"
+
+[request]
+kind = "vn_entropy"
+constructor = "flagquantum.vn_entropy"
+selection_parameter = "qubits"
+base_parameter = "log_base"
+modes = ["auto", "statevector", "density_matrix", "mps", "tensor_network"]
+
+[definition]
+unit = "nats"
+identity = "S(rho) = -Tr rho log rho, with 0 log 0 taken as 0 and every eigenvalue clamped at zero"
+complement_symmetry = "for a globally pure state the entropy of a selection equals the entropy of its complement"
+
+[agreement]
+independent_reference_tolerance = 1.0e-12
+mode_tolerance = 1.0e-12
+log_base_tolerance = 1.0e-12
+# A globally pure state has equal entropy on a selection and on its complement, so a pure row
+# cannot tell "the selection" from "everything else" -- the two are the same number by
+# mathematics, not by accident. The mixed rows exist because there the two differ, and this
+# floor is what makes the separation a measurement: a mixed row whose two sides agreed would
+# leave the gate unable to see a swapped selection at all.
+state_separation_floor = 1.0e-6
+
+[bound]
+# A selection costs 4 ** len(qubits), not 4 ** n, so the density-matrix output's
+# statevector ceiling does not apply to this kind. The gate measures that directly:
+# at this size fq.density_matrix refuses the same program while fq.vn_entropy answers.
+probed_qubits = 12
+
+[scaling]
+probe_qubits = [11, 12, 13]
+selection = [0]
+
+[[log_base]]
+name = "natural logarithm"
+base = 0.0
+mode = "natural"
+value = 0.6931471805599454
+
+[[log_base]]
+name = "base two"
+base = 2.0
+mode = "named"
+value = 1.0000000000000002
+
+[[log_base]]
+name = "base ten"
+base = 10.0
+mode = "named"
+value = 0.3010299956639812
+
+[[log_base]]
+name = "Euler number"
+base = 2.718281828459045
+mode = "named"
+value = 0.6931471805599454
+
+[[log_base]]
+name = "base one half"
+base = 0.5
+mode = "named"
+value = -1.0000000000000002
+
+[[refusal]]
+name = "no qubit is named"
+exception = "ValueError"
+message_phrase = "vn_entropy output requires at least one qubit"
+trigger = "fq.vn_entropy([])"
+
+[[refusal]]
+name = "an observable is not a qubit selection"
+exception = "TypeError"
+message_phrase = "vn_entropy output does not accept an observable"
+trigger = "fq.OutputRequest('vn_entropy', (0,), observable=fq.Z(0))"
+
+[[refusal]]
+name = "a repeated qubit is refused rather than counted twice"
+exception = "ValueError"
+message_phrase = "output qubits must be unique"
+trigger = "fq.run(two_qubit_bell(), outputs=fq.vn_entropy([0, 0]))"
+
+[[refusal]]
+name = "a negative qubit is refused"
+exception = "ValueError"
+message_phrase = "vn_entropy output qubit must be a non-negative integer"
+trigger = "fq.run(two_qubit_bell(), outputs=fq.vn_entropy([-1]))"
+
+[[refusal]]
+name = "a fractional qubit is refused"
+exception = "TypeError"
+message_phrase = "vn_entropy output qubit must be an integer"
+trigger = "fq.vn_entropy([0.5])"
+
+[[refusal]]
+name = "a boolean is not a qubit"
+exception = "TypeError"
+message_phrase = "vn_entropy output qubit must be an integer"
+trigger = "fq.vn_entropy([True])"
+
+[[refusal]]
+name = "a qubit outside the program is named"
+exception = "ValueError"
+message_phrase = "outside a 2-qubit circuit"
+trigger = "fq.run(two_qubit_bell(), outputs=fq.vn_entropy([5]))"
+
+[[refusal]]
+name = "a base of zero is refused rather than answered by accident"
+exception = "ValueError"
+message_phrase = "log_base must be positive"
+trigger = "fq.vn_entropy([0], log_base=0)"
+
+[[refusal]]
+name = "a base of one is refused because it has no logarithm"
+exception = "ValueError"
+message_phrase = "log_base must not be 1"
+trigger = "fq.vn_entropy([0], log_base=1)"
+
+[[refusal]]
+name = "a negative base is refused"
+exception = "ValueError"
+message_phrase = "log_base must be positive"
+trigger = "fq.vn_entropy([0], log_base=-1)"
+
+[[refusal]]
+name = "an infinite base is refused"
+exception = "ValueError"
+message_phrase = "log_base must be finite"
+trigger = "fq.vn_entropy([0], log_base=float('inf'))"
+
+[[refusal]]
+name = "a boolean base is refused as a number"
+exception = "TypeError"
+message_phrase = "log_base must be a number"
+trigger = "fq.vn_entropy([0], log_base=True)"
+
+[[refusal]]
+name = "a string base is refused as a number"
+exception = "TypeError"
+message_phrase = "log_base must be a number"
+trigger = "fq.vn_entropy([0], log_base='2')"
+
+[[refusal]]
+name = "a kind that has no base refuses one"
+exception = "TypeError"
+message_phrase = "probabilities output does not accept a log_base"
+trigger = "fq.OutputRequest('probabilities', (0,), log_base=2)"
+
+[[refusal]]
+name = "readout confusion is refused rather than folded in"
+exception = "ValueError"
+message_phrase = "a von Neumann entropy output cannot include readout confusion"
+trigger = "fq.run(two_qubit_bell(), outputs=fq.vn_entropy([0]), noise_model=readout_model())"
+
+[[refusal]]
+name = "shots are refused because entropy is not sampled"
+exception = "ValueError"
+message_phrase = "shots requires fq.samples(...) or fq.counts(...) output"
+trigger = "fq.run(two_qubit_bell(), shots=100, outputs=fq.vn_entropy([0]))"
+
+[[refusal]]
+name = "a sampling mode is refused by name"
+exception = "CapabilityError"
+message_phrase = "it cannot serve measurement kind(s) vn_entropy"
+trigger = "fq.run(two_qubit_bell(), options=fq.ExecutionOptions(mode='stabilizer'), outputs=fq.vn_entropy([0]))"
+
+[[refusal]]
+name = "a noisy program refuses every mode that cannot hold a mixed state"
+exception = "ValidationError"
+message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+trigger = "fq.run(damped_program(), options=fq.ExecutionOptions(mode='mps'), outputs=fq.vn_entropy([0]), noise_model=damped_model())"
+
+[[baseline]]
+name = "bell pair, one qubit"
+n_qubits = 2
+hadamard = [0]
+rotations = []
+entanglers = [[0, 1]]
+qubits = [0]
+value = 0.6931471805599454
+
+[[baseline]]
+name = "bell pair, both qubits"
+n_qubits = 2
+hadamard = [0]
+rotations = []
+entanglers = [[0, 1]]
+qubits = [0, 1]
+value = 2.2204460492503126e-16
+
+[[baseline]]
+name = "ghz three, one qubit"
+n_qubits = 3
+hadamard = [0]
+rotations = []
+entanglers = [[0, 1], [1, 2]]
+qubits = [0]
+value = 0.6931471805599454
+
+[[baseline]]
+name = "ghz three, prefix pair"
+n_qubits = 3
+hadamard = [0]
+rotations = []
+entanglers = [[0, 1], [1, 2]]
+qubits = [0, 1]
+value = 0.6931471805599454
+
+[[baseline]]
+name = "ghz three, whole chain"
+n_qubits = 3
+hadamard = [0]
+rotations = []
+entanglers = [[0, 1], [1, 2]]
+qubits = [0, 1, 2]
+value = 2.2204460492503126e-16
+
+[[baseline]]
+name = "product state of three"
+n_qubits = 3
+hadamard = []
+rotations = [[0, 0.31], [1, 0.62], [2, 0.93]]
+entanglers = []
+qubits = [0]
+value = 2.2204460492503126e-16
+
+[[baseline]]
+name = "three-qubit chain, first site"
+n_qubits = 3
+hadamard = []
+rotations = [[0, 0.31], [1, 0.62], [2, 0.93]]
+entanglers = [[0, 1], [1, 2]]
+qubits = [0]
+value = 0.08061294763511237
+
+[[baseline]]
+name = "three-qubit chain, prefix pair"
+n_qubits = 3
+hadamard = []
+rotations = [[0, 0.31], [1, 0.62], [2, 0.93]]
+entanglers = [[0, 1], [1, 2]]
+qubits = [0, 1]
+value = 0.15843803087686198
+
+[[baseline]]
+name = "three-qubit chain, middle site"
+n_qubits = 3
+hadamard = []
+rotations = [[0, 0.31], [1, 0.62], [2, 0.93]]
+entanglers = [[0, 1], [1, 2]]
+qubits = [1]
+value = 0.19218705720700827
+
+[[baseline]]
+name = "three-qubit chain, outer pair"
+n_qubits = 3
+hadamard = []
+rotations = [[0, 0.31], [1, 0.62], [2, 0.93]]
+entanglers = [[0, 1], [1, 2]]
+qubits = [0, 2]
+value = 0.19218705720700938
+
+[[baseline]]
+name = "four-qubit chain, middle pair"
+n_qubits = 4
+hadamard = []
+rotations = [[0, 0.31], [1, 0.62], [2, 0.93], [3, 1.24]]
+entanglers = [[0, 1], [1, 2], [2, 3]]
+qubits = [1, 2]
+value = 0.17816570353939634
+
+[[baseline]]
+name = "four-qubit chain, suffix site"
+n_qubits = 4
+hadamard = []
+rotations = [[0, 0.31], [1, 0.62], [2, 0.93], [3, 1.24]]
+entanglers = [[0, 1], [1, 2], [2, 3]]
+qubits = [3]
+value = 0.10251288636862473
+
+# The two mixed rows. A noisy execution produces the only state in this contract whose
+# selection and complement carry different entropies, which is what makes a swapped selection
+# a measurable defect rather than a mathematical identity. The rate is 0.25 because the noise
+# module stores it as a float32 and then widens it, so a rate that is not exactly representable
+# in float32 arrives at the Kraus operators already rounded; at 0.25 the recorded value is
+# reproduced bit for bit.
+[[baseline]]
+name = "damped superposition, the damped qubit"
+n_qubits = 2
+state = "mixed"
+hadamard = [0]
+rotations = []
+entanglers = []
+damping = 0.25
+damped_qubit = 0
+qubits = [0]
+value = 0.19646697846469818
+complement_value = 2.2204460492503126e-16
+
+[[baseline]]
+name = "damped superposition, the undamped qubit"
+n_qubits = 2
+state = "mixed"
+hadamard = [0]
+rotations = []
+entanglers = []
+damping = 0.25
+damped_qubit = 0
+qubits = [1]
+value = 2.2204460492503126e-16
+complement_value = 0.19646697846469818
+
+[reference_programs]
+tool = "pennylane==0.45.1"
+device = "default.qubit"
+amplitudes = "qml.vn_entropy(wires=..., log_base=None)"
+largest_measured_difference = 7.7e-17
+
+[[reference]]
+name = "bell pair, one qubit"
+value = 0.6931471805599454
+
+[[reference]]
+name = "bell pair, both qubits"
+value = 2.220446049250313e-16
+
+[[reference]]
+name = "ghz three, one qubit"
+value = 0.6931471805599454
+
+[[reference]]
+name = "ghz three, prefix pair"
+value = 0.6931471805599454
+
+[[reference]]
+name = "ghz three, whole chain"
+value = 2.220446049250313e-16
+
+[[reference]]
+name = "product state of three"
+value = 2.991575181069661e-16
+
+[[reference]]
+name = "three-qubit chain, first site"
+value = 0.08061294763511237
+
+[[reference]]
+name = "three-qubit chain, prefix pair"
+value = 0.15843803087686198
+
+[[reference]]
+name = "three-qubit chain, middle site"
+value = 0.1921870572070083
+
+[[reference]]
+name = "three-qubit chain, outer pair"
+value = 0.19218705720700938
+
+[[reference]]
+name = "four-qubit chain, middle pair"
+value = 0.17816570353939631
+
+[[reference]]
+name = "four-qubit chain, suffix site"
+value = 0.10251288636862498
+
+# PennyLane's ``default.mixed`` applies the same channel with a slightly lossier route, so the
+# recorded readings sit about 3e-15 above FlagQuantum's and its undamped-side reading is a small
+# negative number rather than zero. Both are recorded as measured, not as expected.
+[[reference]]
+name = "damped superposition, the damped qubit"
+value = 0.1964669784646954
+
+[[reference]]
+name = "damped superposition, the undamped qubit"
+value = -9.769962616701425e-15

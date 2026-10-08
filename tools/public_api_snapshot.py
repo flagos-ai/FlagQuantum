@@ -410,6 +410,7 @@ def _validate_authorized_execution_options(
         "samples": fq.samples,
         "train": fq.train,
         "vjp": fq.vjp,
+        "vn_entropy": fq.vn_entropy,
     }
     for name, expected_signature in expected_signatures.items():
         actual_signature = str(inspect.signature(objects[name], eval_str=False))

@@ -47,6 +47,7 @@ __all__ = (
     "samples",
     "train",
     "vjp",
+    "vn_entropy",
     "__version__",
     "experimental",
     "twin",
@@ -92,6 +93,7 @@ def __getattr__(name: str) -> Any:
         "expectation",
         "probabilities",
         "samples",
+        "vn_entropy",
     }:
         return getattr(import_module(".observables", __name__), name)
     if name in {"submit", "restore_job"}:

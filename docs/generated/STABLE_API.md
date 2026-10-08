@@ -44,3 +44,4 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.train` | Stable | executable contract |
 | `fq.twin` | Stable | executable contract |
 | `fq.vjp` | Stable | executable contract |
+| `fq.vn_entropy` | Stable | executable contract |

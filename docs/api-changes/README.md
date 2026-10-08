@@ -45,6 +45,7 @@ process.
 - [The parameter-shift Hessian reads the first-order rule twice](FQ-PARAMETER-SHIFT-HESSIAN-20261030.md)
 - [The metric tensor differentiates the state and reads no rule](FQ-METRIC-TENSOR-20261031.md)
 - [The density-matrix output](FQ-DENSITY-MATRIX-OUTPUT-20261006.md)
+- [The von Neumann entropy output](FQ-VN-ENTROPY-OUTPUT-20261101.md)
 - [Compiler boundary responsibility split](FQ-COMPILER-BOUNDARY-SPLIT-20260930.md)
 - [Pauli algebra and quantum_info ownership boundary](FQ-PAULI-QUANTUM-INFO-BOUNDARY-20260930.md)
 - [Quafu credential presence fails closed before submission](FQ-QUAFU-CREDENTIAL-FAIL-CLOSED-20260930.md)
