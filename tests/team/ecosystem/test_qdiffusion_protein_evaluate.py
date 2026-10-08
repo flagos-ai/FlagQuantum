@@ -646,6 +646,8 @@ def test_evaluate_outputs_uses_local_model_and_merges_sequence_metrics(
     assert guided["mean_cosine_distance"] == 0.4
     assert guided["identity_to_reference_mean"] == 0.8
     assert baseline["invalid_sequence_count"] == 0
+    assert set(baseline) == set(evaluation_module.METRIC_NAMES)
+    assert set(guided) == set(evaluation_module.METRIC_NAMES)
 
 
 def test_evaluate_outputs_rejects_esm2_change_during_local_load(

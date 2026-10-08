@@ -54,6 +54,7 @@ from examples.qdiffusion_kaiwu.strict_json import loads_json_strict
 from examples.qdiffusion_kaiwu.validate_acceptance import (
     EVALUATION_COMPONENT_FIELDS,
     EVALUATION_COMPONENT_SCHEMA,
+    METRIC_NAMES,
     _validate_evaluation_component,
     _validate_training_provider_evidence,
 )
@@ -417,7 +418,12 @@ def evaluate_outputs(
             candidate_embeddings=embeddings,
             pair_mode=evaluation["pair_mode"],
         )
-        metrics = asdict(summary)
+        summary_values = asdict(summary)
+        metrics = {
+            field: summary_values[field]
+            for field in METRIC_NAMES
+            if field in summary_values
+        }
         quality_snapshot = (
             paths.snapshots[quality_name]
             if isinstance(paths, _VerifiedTrainingPaths)
