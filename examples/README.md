@@ -17,8 +17,9 @@ These examples do not use that alias:
   Ising interoperability without credentials, provider submission, or quota.
 - [`qdiffusion_kaiwu/minimal_live_sampling.py`](qdiffusion_kaiwu/minimal_live_sampling.py)
   — the shortest live `FlagQuantum -> Kaiwu -> QBoson` path. It requires an
-  explicit ten-credit acknowledgement and uses the provider-specific
-  ecosystem and remote boundaries without a local fallback.
+  explicit ten-credit acknowledgement, starts from a FlagQuantum
+  `QuboProblem`, and uses the provider-specific ecosystem and remote
+  boundaries without exposing a matrix or enabling a local fallback.
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
   `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py` and
   `error_mitigation.py`, which import the unit they demonstrate from the

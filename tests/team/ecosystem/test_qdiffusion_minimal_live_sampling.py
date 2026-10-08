@@ -79,7 +79,8 @@ def test_minimal_live_sampling_uses_flagquantum_boundaries(
 
     output = capsys.readouterr().out
     assert "FlagQuantum -> Kaiwu -> QBoson sampling completed" in output
-    assert "samples: 10" in output
+    assert "assignments: 10" in output
+    assert "first binary assignment: [1, 0]" in output
     assert "remote calls: 1" in output
     assert "fallback: False" in output
     assert client.submissions == 1

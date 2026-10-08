@@ -17,7 +17,7 @@ The shortest provider path remains owned by FlagQuantum rather than by the
 QDiffusion example:
 
 ```text
-Ising matrix or QDiffusion
+FlagQuantum QuboProblem, Hamiltonian, or QDiffusion
     -> flagquantum.ecosystem.kaiwu.KaiwuSampler
     -> flagquantum.remote.kaiwu.KaiwuSDKClient
     -> Kaiwu SDK -> QBoson SPQC
@@ -25,6 +25,10 @@ Ising matrix or QDiffusion
 
 `KaiwuSampler` owns the plugin-compatible `solve(ising_matrix)` boundary,
 matrix and precision semantics, deduplication, and the hard remote-call budget.
+Ordinary FlagQuantum callers use `solve_qubo(problem)` or
+`solve_hamiltonian(hamiltonian)`: the adapter lowers `I`, `Z`, and `ZZ` terms,
+adds and decodes the auxiliary gauge spin, and preserves the Hamiltonian's
+constant bias without asking the caller to construct a matrix.
 `KaiwuSDKClient` owns credentials, provider submission, bounded polling,
 result validation, and recovery. QDiffusion is one consumer of this path; it
 does not call the vendor SDK directly.
@@ -44,12 +48,13 @@ python -B -s -m examples.qdiffusion_kaiwu.minimal_live_sampling \
   --acknowledge-provider-cost I_ACKNOWLEDGE_TEN_QBOSON_SAMPLING_CREDITS
 ```
 
-The example uses `project_no=None`, the account-default route. It submits at
-most one distinct matrix, requests exactly ten samples, has no local fallback,
-and writes a credential-free recovery receipt without overwriting an existing
-file. Read [`minimal_live_sampling.py`](minimal_live_sampling.py) for the
-complete application code. Use the more extensive guarded probes below when
-producing reviewable evidence rather than learning the integration.
+The example constructs a FlagQuantum `QuboProblem`; no matrix appears in user
+code. It uses `project_no=None`, the account-default route, submits at most one
+distinct lowered Hamiltonian, requests exactly ten samples, has no local
+fallback, and writes a credential-free recovery receipt without overwriting an
+existing file. Read [`minimal_live_sampling.py`](minimal_live_sampling.py) for
+the complete application code. Use the more extensive guarded probes below
+when producing reviewable evidence rather than learning the integration.
 
 ## Credential-free local golden path
 

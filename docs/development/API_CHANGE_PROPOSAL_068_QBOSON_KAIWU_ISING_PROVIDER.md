@@ -57,11 +57,15 @@ The first review concerns the submodule APIs only:
 from flagquantum.ecosystem.kaiwu import (
     KaiwuSampler,
     canonicalize_ising_matrix,
+    decode_hamiltonian_spins,
     decode_qubo_spins,
+    encode_hamiltonian_as_ising,
     encode_qubo_as_ising,
     ising_energy,
     prepare_integer_precision,
 )
+from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.qubo import QuboProblem, qubo_to_ising
 from flagquantum.remote.kaiwu import (
     KaiwuCredentials,
     KaiwuSDKClient,
@@ -78,7 +82,7 @@ client = KaiwuSDKClient(
 sampler = KaiwuSampler(
     client=client,
     task_name="bounded-qdiffusion",
-    project_no="CPQC-project",
+    project_no=None,  # account-default; use an explicit reviewed project if assigned
     requested_samples=10,
     timeout=3600,
     max_remote_calls=32,
@@ -87,6 +91,35 @@ sampler = KaiwuSampler(
 samples = sampler.solve(ising_matrix)
 sampler.last_job.save("/absolute/private-evidence/qboson-receipt.json")
 ```
+
+Ordinary FlagQuantum code does not need to construct `ising_matrix`. The same
+sampler lowers the framework's existing vendor-neutral optimization and
+Hamiltonian representations:
+
+```python
+problem = QuboProblem(
+    n_variables=2,
+    linear={0: -1.0, 1: -1.5},
+    quadratic={(0, 1): 1.5},
+    offset=0.25,
+)
+binary_assignments = sampler.solve_qubo(problem)
+
+hamiltonian = Hamiltonian((
+    pauli_term(-1.0, "Z", (0,)),
+    pauli_term(0.5, "ZZ", (0, 1)),
+))
+logical_spins = sampler.solve_hamiltonian(hamiltonian)
+```
+
+The Hamiltonian lowering accepts only constant `I`, `Z`, and `ZZ` terms with
+finite, non-trainable real scalar coefficients. It owns the Kaiwu sign and
+off-diagonal double-counting convention, represents linear terms with one
+auxiliary gauge spin, preserves the identity-term bias, and decodes returned
+samples back to logical spins. `solve_qubo` additionally returns binary values
+under FlagQuantum's existing `x = (s + 1) / 2` convention. Direct matrix
+submission remains the low-level QDiffusion/plugin boundary rather than the
+primary application interface.
 
 The example is illustrative and does not approve these names as stable. In
 particular, the SDK client cannot be promoted until a real pinned response

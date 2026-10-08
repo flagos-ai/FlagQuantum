@@ -2,7 +2,7 @@
 
 This is the shortest live path through the integration introduced by PR 598::
 
-    QDiffusion-compatible Ising matrix
+    FlagQuantum QuboProblem or Hamiltonian
         -> flagquantum.ecosystem.kaiwu.KaiwuSampler
         -> flagquantum.remote.kaiwu.KaiwuSDKClient
         -> Kaiwu SDK and the QBoson service
@@ -17,14 +17,16 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from flagquantum.ecosystem.kaiwu import KaiwuSampler, ising_energy
+from flagquantum.algorithms.qubo import QuboProblem
+from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import KaiwuSDKClient, KaiwuTaskClient
 
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_TEN_QBOSON_SAMPLING_CREDITS"
-ISING_MATRIX = (
-    (0.0, 1.0, -0.5),
-    (1.0, 0.0, 0.25),
-    (-0.5, 0.25, 0.0),
+PROBLEM = QuboProblem(
+    n_variables=2,
+    linear={0: -1.0, 1: -1.5},
+    quadratic={(0, 1): 1.5},
+    offset=0.25,
 )
 
 
@@ -47,16 +49,15 @@ def run_live_sampling(
         max_remote_calls=1,
         integer_target_range=(-127, 127),
     )
-    samples = sampler.solve(ISING_MATRIX)
+    assignments = sampler.solve_qubo(PROBLEM)
     if sampler.last_job is None or sampler.last_result is None:
         raise RuntimeError("QBoson sampling returned without a retained job and result")
     sampler.last_job.save(receipt_output)
 
-    energies = ising_energy(ISING_MATRIX, samples)
     print("FlagQuantum -> Kaiwu -> QBoson sampling completed")
-    print(f"  samples: {samples.shape[0]}")
-    print(f"  spins per sample: {samples.shape[1]}")
-    print(f"  minimum recomputed energy: {float(energies.min()):.6f}")
+    print(f"  assignments: {assignments.shape[0]}")
+    print(f"  variables per assignment: {assignments.shape[1]}")
+    print(f"  first binary assignment: {assignments[0].tolist()}")
     print(f"  remote calls: {sampler.remote_call_count}")
     print(f"  fallback: {sampler.last_result.metadata.get('fallback_occurred')}")
     print(f"  recovery receipt: {receipt_output}")

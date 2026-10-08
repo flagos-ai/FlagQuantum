@@ -8,6 +8,8 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
+from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.qubo import QuboProblem
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.remote.kaiwu import (
     KaiwuTaskReceipt,
@@ -179,6 +181,54 @@ def test_sampler_returns_plugin_compatible_numpy_spins() -> None:
     assert sampler.remote_call_count == 1
     assert sampler.last_result is not None
     assert sampler.last_result.metadata["fallback_occurred"] is False
+
+
+def test_sampler_solves_flagquantum_hamiltonian_without_user_matrix() -> None:
+    client = _CompletedClient()
+    sampler = KaiwuSampler(
+        client=client,
+        task_name="hamiltonian",
+        requested_samples=10,
+        max_remote_calls=1,
+        poll_interval=0.01,
+    )
+    hamiltonian = Hamiltonian(
+        (
+            pauli_term(-1.0, "Z", (0,)),
+            pauli_term(0.5, "ZZ", (0, 1)),
+        )
+    )
+
+    logical_spins = sampler.solve_hamiltonian(hamiltonian)
+
+    assert logical_spins.shape == (10, 2)
+    assert logical_spins.dtype == np.int8
+    assert logical_spins[0].tolist() == [1, -1]
+    assert client.submitted[0] != ((-1.0, 0.5), (0.5, 0.0))
+
+
+def test_sampler_solves_flagquantum_qubo_without_user_matrix() -> None:
+    client = _CompletedClient()
+    sampler = KaiwuSampler(
+        client=client,
+        task_name="qubo",
+        requested_samples=10,
+        max_remote_calls=1,
+        poll_interval=0.01,
+    )
+    problem = QuboProblem(
+        n_variables=2,
+        linear={0: -1.0, 1: -0.5},
+        quadratic={(0, 1): 1.5},
+        offset=0.25,
+    )
+
+    assignments = sampler.solve_qubo(problem)
+
+    assert assignments.shape == (10, 2)
+    assert assignments.dtype == np.int8
+    assert assignments[0].tolist() == [1, 0]
+    assert sampler.remote_call_count == 1
 
 
 def test_identical_matrix_is_deduplicated_and_returns_a_copy() -> None:

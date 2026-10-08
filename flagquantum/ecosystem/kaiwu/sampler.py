@@ -29,6 +29,9 @@ if TYPE_CHECKING:
     import numpy as np
     import torch
 
+    from ...algorithms import Hamiltonian
+    from ...algorithms.qubo import QuboProblem
+
 
 @dataclass(frozen=True, slots=True)
 class KaiwuTransferRecord:
@@ -213,6 +216,30 @@ class KaiwuSampler:
 
         with self._solve_lock:
             return self._solve_locked(ising_matrix)
+
+    def solve_hamiltonian(self, hamiltonian: Hamiltonian) -> np.ndarray:
+        """Solve a FlagQuantum Z-basis Hamiltonian and return logical spins."""
+
+        import numpy as np
+
+        from .matrix import decode_hamiltonian_spins, encode_hamiltonian_as_ising
+
+        encoding = encode_hamiltonian_as_ising(hamiltonian)
+        auxiliary_spins = self.solve(encoding.matrix)
+        logical_spins = decode_hamiltonian_spins(auxiliary_spins)
+        return np.asarray(logical_spins, dtype=np.int8)
+
+    def solve_qubo(self, problem: QuboProblem) -> np.ndarray:
+        """Solve a FlagQuantum QUBO problem and return binary assignments."""
+
+        import numpy as np
+
+        from ...algorithms.qubo import QuboProblem, qubo_to_ising
+
+        if not isinstance(problem, QuboProblem):
+            raise TypeError("problem must be a FlagQuantum QuboProblem")
+        logical_spins = self.solve_hamiltonian(qubo_to_ising(problem))
+        return np.asarray((logical_spins + 1) // 2, dtype=np.int8)
 
     def _solve_locked(self, ising_matrix: object) -> np.ndarray:
         """Submit one unique matrix while ``_solve_lock`` is held."""

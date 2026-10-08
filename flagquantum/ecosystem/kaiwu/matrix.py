@@ -17,8 +17,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from math import isfinite
 from numbers import Real
+from typing import TYPE_CHECKING
 
 import torch
+
+if TYPE_CHECKING:
+    from ...algorithms import Hamiltonian
 
 
 class KaiwuInteropError(ValueError):
@@ -67,6 +71,20 @@ class QuboIsingEncoding:
 
     matrix: torch.Tensor
     bias: float
+
+
+@dataclass(frozen=True)
+class HamiltonianIsingEncoding:
+    """Kaiwu representation of a FlagQuantum Z-basis Hamiltonian.
+
+    The final row and column belong to a gauge auxiliary spin. Decode returned
+    solutions with :func:`decode_hamiltonian_spins` to recover the logical
+    Pauli-Z eigenvalues in the original Hamiltonian's qubit order.
+    """
+
+    matrix: torch.Tensor
+    bias: float
+    n_qubits: int
 
 
 MatrixLike = torch.Tensor | Sequence[Sequence[float]]
@@ -182,9 +200,101 @@ def encode_qubo_as_ising(
     return QuboIsingEncoding(matrix=encoded, bias=bias)
 
 
-def decode_qubo_spins(auxiliary_spins: SpinLike) -> torch.Tensor:
-    """Decode Kaiwu spins from :func:`encode_qubo_as_ising` to binary values."""
+def _hamiltonian_coefficient(value: object) -> float:
+    if isinstance(value, torch.Tensor):
+        if value.numel() != 1 or value.requires_grad or value.is_complex():
+            raise KaiwuMatrixValidationError(
+                "Hamiltonian coefficients must be constant real scalars"
+            )
+        value = value.detach().cpu().item()
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise KaiwuMatrixValidationError(
+            "Hamiltonian coefficients must be constant real scalars"
+        )
+    coefficient = float(value)
+    if not isfinite(coefficient):
+        raise KaiwuMatrixValidationError("Hamiltonian coefficients must be finite")
+    return coefficient
 
+
+def encode_hamiltonian_as_ising(
+    hamiltonian: Hamiltonian,
+) -> HamiltonianIsingEncoding:
+    """Lower a FlagQuantum ``I``/``Z``/``ZZ`` Hamiltonian for Kaiwu.
+
+    One final auxiliary spin represents single-qubit ``Z`` terms without
+    choosing a gauge. With returned spins ``y = [s * t, t]``, the encoded
+    energy equals the source Hamiltonian energy on logical spins ``s``.
+
+    Args:
+        hamiltonian: A FlagQuantum Hamiltonian containing only constant,
+            single-qubit ``Z``, and two-qubit ``ZZ`` terms.
+
+    Returns:
+        The symmetric Kaiwu matrix, constant bias, and logical qubit count.
+
+    Raises:
+        KaiwuMatrixValidationError: If the input is not a FlagQuantum
+            Hamiltonian, has no logical qubits, or contains unsupported or
+            non-constant coefficients.
+    """
+
+    from ...algorithms import Hamiltonian
+
+    if not isinstance(hamiltonian, Hamiltonian):
+        raise KaiwuMatrixValidationError(
+            "hamiltonian must be a FlagQuantum Hamiltonian"
+        )
+
+    declared_qubits = tuple(
+        qubit for term in hamiltonian.terms for qubit in term.qubits
+    )
+    if any(qubit < 0 for qubit in declared_qubits):
+        raise KaiwuMatrixValidationError(
+            "Hamiltonian qubit indices must be non-negative"
+        )
+    n_qubits = max(
+        hamiltonian.n_qubits,
+        1 + max(declared_qubits, default=-1),
+    )
+    if n_qubits < 1:
+        raise KaiwuMatrixValidationError(
+            "Hamiltonian must declare at least one logical qubit"
+        )
+
+    matrix = torch.zeros((n_qubits + 1, n_qubits + 1), dtype=torch.float64)
+    auxiliary = n_qubits
+    bias = 0.0
+    for term in hamiltonian.terms:
+        coefficient = _hamiltonian_coefficient(term.coefficient)
+        operations = term.ops
+        if not operations:
+            bias += coefficient
+            continue
+        if len(operations) == 1 and operations[0][1] == "z":
+            qubit = operations[0][0]
+            matrix[qubit, auxiliary] -= coefficient / 2.0
+            matrix[auxiliary, qubit] -= coefficient / 2.0
+            continue
+        if len(operations) == 2 and all(name == "z" for _, name in operations):
+            first, second = (qubit for qubit, _ in operations)
+            matrix[first, second] -= coefficient / 2.0
+            matrix[second, first] -= coefficient / 2.0
+            continue
+        raise KaiwuMatrixValidationError(
+            "Kaiwu Hamiltonian lowering supports only I, Z, and ZZ terms"
+        )
+
+    if not isfinite(bias):
+        raise KaiwuMatrixValidationError("Hamiltonian constant bias overflowed")
+    return HamiltonianIsingEncoding(
+        matrix=canonicalize_ising_matrix(matrix),
+        bias=bias,
+        n_qubits=n_qubits,
+    )
+
+
+def _decode_auxiliary_spins(auxiliary_spins: SpinLike) -> tuple[torch.Tensor, bool]:
     spins = _as_tensor(auxiliary_spins, description="auxiliary spins").to(
         device="cpu", dtype=torch.float64
     )
@@ -204,9 +314,23 @@ def decode_qubo_spins(auxiliary_spins: SpinLike) -> torch.Tensor:
     if not bool(((spins == -1) | (spins == 1)).all()):
         raise KaiwuMatrixValidationError("auxiliary spins must contain only -1 or +1")
 
-    effective_spins = spins[:, :-1] * spins[:, -1:]
+    return spins[:, :-1] * spins[:, -1:], was_vector
+
+
+def decode_qubo_spins(auxiliary_spins: SpinLike) -> torch.Tensor:
+    """Decode Kaiwu spins from :func:`encode_qubo_as_ising` to binary values."""
+
+    effective_spins, was_vector = _decode_auxiliary_spins(auxiliary_spins)
     binary = ((effective_spins + 1) / 2).to(dtype=torch.int64)
     return binary[0] if was_vector else binary
+
+
+def decode_hamiltonian_spins(auxiliary_spins: SpinLike) -> torch.Tensor:
+    """Decode auxiliary Kaiwu spins to logical Pauli-Z eigenvalues."""
+
+    logical, was_vector = _decode_auxiliary_spins(auxiliary_spins)
+    logical = logical.to(dtype=torch.int8)
+    return logical[0] if was_vector else logical
 
 
 def ising_energy(

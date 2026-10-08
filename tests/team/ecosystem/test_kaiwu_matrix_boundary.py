@@ -5,11 +5,14 @@ import itertools
 import pytest
 import torch
 
+from flagquantum.algorithms import Hamiltonian, pauli_term
 from flagquantum.ecosystem.kaiwu import (
     KaiwuMatrixValidationError,
     KaiwuPrecisionError,
     canonicalize_ising_matrix,
+    decode_hamiltonian_spins,
     decode_qubo_spins,
+    encode_hamiltonian_as_ising,
     encode_qubo_as_ising,
     ising_energy,
     prepare_integer_precision,
@@ -147,6 +150,67 @@ def test_qubo_auxiliary_encoding_has_exhaustive_energy_parity() -> None:
 
             assert actual.item() == pytest.approx(source)
             assert decode_qubo_spins(encoded_spins).tolist() == list(binary)
+
+
+def test_hamiltonian_encoding_has_exhaustive_energy_parity() -> None:
+    hamiltonian = Hamiltonian(
+        (
+            pauli_term(1.25, "I", (2,)),
+            pauli_term(-0.5, "Z", (0,)),
+            pauli_term(0.75, "Z", (2,)),
+            pauli_term(-1.5, "ZZ", (0, 1)),
+            pauli_term(0.25, "ZZ", (1, 2)),
+        )
+    )
+    encoding = encode_hamiltonian_as_ising(hamiltonian)
+
+    assert encoding.n_qubits == 3
+    for logical_spins in itertools.product((-1, 1), repeat=3):
+        expected = (
+            1.25
+            - 0.5 * logical_spins[0]
+            + 0.75 * logical_spins[2]
+            - 1.5 * logical_spins[0] * logical_spins[1]
+            + 0.25 * logical_spins[1] * logical_spins[2]
+        )
+        for auxiliary in (-1, 1):
+            encoded_spins = tuple(
+                spin * auxiliary for spin in logical_spins
+            ) + (auxiliary,)
+
+            actual = ising_energy(
+                encoding.matrix,
+                encoded_spins,
+                bias=encoding.bias,
+            )
+
+            assert actual.item() == pytest.approx(expected)
+            assert decode_hamiltonian_spins(encoded_spins).tolist() == list(
+                logical_spins
+            )
+
+
+@pytest.mark.parametrize(
+    ("hamiltonian", "message"),
+    (
+        (Hamiltonian((pauli_term(1.0, "X", (0,)),)), "only I, Z, and ZZ"),
+        (
+            Hamiltonian((pauli_term(1.0 + 0.0j, "Z", (0,)),)),
+            "constant real scalars",
+        ),
+        (
+            Hamiltonian(
+                (pauli_term(torch.tensor(1.0, requires_grad=True), "Z", (0,)),)
+            ),
+            "constant real scalars",
+        ),
+    ),
+)
+def test_hamiltonian_encoding_rejects_unsupported_terms(
+    hamiltonian: Hamiltonian, message: str
+) -> None:
+    with pytest.raises(KaiwuMatrixValidationError, match=message):
+        encode_hamiltonian_as_ising(hamiltonian)
 
 
 @pytest.mark.parametrize(
