@@ -179,9 +179,11 @@ def test_probe_rejects_invalid_evidence_digest(field: str) -> None:
         "provider_resources_sha256": "b" * 64,
     }
     arguments[
-        "environment_lock_sha256"
-        if field == "environment"
-        else "provider_resources_sha256"
+        (
+            "environment_lock_sha256"
+            if field == "environment"
+            else "provider_resources_sha256"
+        )
     ] = "invalid"
 
     with pytest.raises(ValueError, match="sha256"):

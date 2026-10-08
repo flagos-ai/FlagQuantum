@@ -174,9 +174,9 @@ def test_hamiltonian_encoding_has_exhaustive_energy_parity() -> None:
             + 0.25 * logical_spins[1] * logical_spins[2]
         )
         for auxiliary in (-1, 1):
-            encoded_spins = tuple(
-                spin * auxiliary for spin in logical_spins
-            ) + (auxiliary,)
+            encoded_spins = tuple(spin * auxiliary for spin in logical_spins) + (
+                auxiliary,
+            )
 
             actual = ising_energy(
                 encoding.matrix,

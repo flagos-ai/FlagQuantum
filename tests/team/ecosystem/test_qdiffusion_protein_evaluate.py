@@ -388,9 +388,7 @@ def test_training_record_loader_applies_bill_reconciliation_without_rehashing(
         "claim_boundary": reconciliation.CLAIM_BOUNDARY,
     }
     reconciliation_path = tmp_path / "reconciliation.json"
-    reconciliation_path.write_text(
-        json.dumps(reconciliation_record), encoding="utf-8"
-    )
+    reconciliation_path.write_text(json.dumps(reconciliation_record), encoding="utf-8")
     reconciliation_path.chmod(0o600)
 
     loaded, digest = _load_training_record(
@@ -406,9 +404,7 @@ def test_training_record_loader_applies_bill_reconciliation_without_rehashing(
     assert loaded["task_receipts"][0]["provider_target"] == "SPQC-provider"
 
     reconciliation_record["component_record_sha256"] = "f" * 64
-    reconciliation_path.write_text(
-        json.dumps(reconciliation_record), encoding="utf-8"
-    )
+    reconciliation_path.write_text(json.dumps(reconciliation_record), encoding="utf-8")
     reconciliation_path.chmod(0o600)
     with pytest.raises(ValueError, match="another training record"):
         _load_training_record(path, reconciliation_paths=(reconciliation_path,))

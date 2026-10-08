@@ -40,9 +40,7 @@ class _CompletedClient:
             provider_target="SPQC-test",
         )
 
-    def query_status(
-        self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix
-    ) -> str:
+    def query_status(self, receipt: KaiwuTaskReceipt, matrix: FrozenIsingMatrix) -> str:
         del receipt, matrix
         return "Completed"
 
