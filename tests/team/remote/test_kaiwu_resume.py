@@ -78,7 +78,7 @@ def _save_receipt(
     client: _ResumeClient,
     *,
     mode: KaiwuTaskMode = "sampling",
-    project_no: str = "CPQC-test",
+    project_no: str | None = "CPQC-test",
 ) -> Path:
     parent.chmod(0o700)
     receipt = new_receipt(
@@ -125,6 +125,29 @@ def test_resume_queries_existing_identity_without_submit(
     assert record["qboson_hardware_used"] is True
     assert record["flagquantum_submit_api_called"] is False
     assert record["fallback_occurred"] is False
+
+
+def test_resume_queries_account_default_identity_without_submit(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    client = _ResumeClient()
+    path = _save_receipt(tmp_path, client, project_no=None)
+    monkeypatch.setattr(resume_module, "KaiwuSDKClient", _ResumeClient)
+
+    record = run_resume(
+        client=client,
+        recovery_receipt=path,
+        expected_mode="sampling",
+        project_no=None,
+        timeout=1.0,
+        poll_interval=0.01,
+        environment_lock_sha256="b" * 64,
+        sdk_approval_sha256="c" * 64,
+    )
+
+    assert client.submit_calls == 0
+    assert record["task"]["project_no"] is None
+    assert record["resume_completed"] is True
 
 
 def test_resume_retains_timeout_without_submit(tmp_path: Path) -> None:

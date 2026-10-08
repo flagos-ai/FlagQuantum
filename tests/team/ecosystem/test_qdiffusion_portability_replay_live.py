@@ -235,7 +235,7 @@ def test_portability_replay_runs_bounded_slice_without_false_acceptance(
         environment_lock_sha256="1" * 64,
         provider_resource_gate=_provider_resource_gate(),
         sdk_version="1.3.1",
-        project_no="project",
+        project_no=None,
         task_prefix="replay",
         requested_samples=10,
         timeout=1.0,
@@ -257,6 +257,7 @@ def test_portability_replay_runs_bounded_slice_without_false_acceptance(
     assert record["transfer_manifest_sha256"] == "0" * 64
     assert record["environment_lock_sha256"] == "1" * 64
     assert record["provider_resource_gate"] == _provider_resource_gate()
+    assert all(receipt["project_no"] is None for receipt in record["task_receipts"])
     assert record["acceptance"]["portability"] == "fail"
 
 

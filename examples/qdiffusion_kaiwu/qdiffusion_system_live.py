@@ -124,7 +124,9 @@ def _validate_requested_cuda_device(device_name: str) -> torch.device:
     try:
         device = torch.device(device_name)
     except (RuntimeError, TypeError):
-        raise ValueError("live QDiffusion system probe requires explicit cuda:0") from None
+        raise ValueError(
+            "live QDiffusion system probe requires explicit cuda:0"
+        ) from None
     if device != torch.device("cuda:0"):
         raise ValueError("live QDiffusion system probe requires explicit cuda:0")
     return device
@@ -272,7 +274,7 @@ def run_live_system_probe(
     sdk_version: str,
     device: torch.device,
     observed_gpu: str,
-    project_no: str,
+    project_no: str | None,
     task_prefix: str,
     requested_samples: int,
     timeout: float,
@@ -517,7 +519,7 @@ def main() -> None:
     parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--provider-resources", required=True, type=Path)
-    parser.add_argument("--project-no", required=True)
+    parser.add_argument("--project-no")
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--expected-sdk-version", choices=("1.3.1",), default="1.3.1")
@@ -534,9 +536,10 @@ def main() -> None:
             f"{ACKNOWLEDGEMENT!r}; no task was submitted"
         )
     try:
-        arguments.project_no = normalize_provider_identifier(
-            arguments.project_no, label="--project-no"
-        )
+        if arguments.project_no is not None:
+            arguments.project_no = normalize_provider_identifier(
+                arguments.project_no, label="--project-no"
+            )
         arguments.task_prefix = normalize_provider_identifier(
             arguments.task_prefix, label="--task-prefix"
         )
@@ -568,9 +571,10 @@ def main() -> None:
         mode="sampling",
         required_calls=config["remote_call_budget"],
     )
-    if arguments.expected_hostname != config["host_identities"][
-        arguments.execution_host
-    ]:
+    if (
+        arguments.expected_hostname
+        != config["host_identities"][arguments.execution_host]
+    ):
         parser.error("--expected-hostname differs from the frozen host identity")
     observed_hostname = socket.gethostname()
     if observed_hostname != arguments.expected_hostname:

@@ -324,9 +324,7 @@ def _capture_training_output_snapshots(
     artifacts, snapshots = _workflow_artifact_snapshots(run_directory)
     revalidate_regular_file(checkpoint, label="trained energy checkpoint")
     for name, snapshot in snapshots.items():
-        revalidate_regular_file(
-            snapshot, label=f"protein workflow artifact {name}"
-        )
+        revalidate_regular_file(snapshot, label=f"protein workflow artifact {name}")
     snapshots["trained_energy_checkpoint"] = checkpoint
     return checkpoint.path.name, checkpoint.sha256, artifacts, snapshots
 
@@ -621,7 +619,7 @@ def main() -> None:
     parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--provider-resources", required=True, type=Path)
-    parser.add_argument("--project-no", required=True)
+    parser.add_argument("--project-no")
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--seed", required=True, type=int)
     parser.add_argument("--expected-sdk-version", choices=("1.3.1",), default="1.3.1")
@@ -633,9 +631,10 @@ def main() -> None:
     if args.acknowledge_provider_cost != ACKNOWLEDGEMENT:
         parser.error("invalid provider-cost acknowledgement; no task was submitted")
     try:
-        args.project_no = normalize_provider_identifier(
-            args.project_no, label="--project-no"
-        )
+        if args.project_no is not None:
+            args.project_no = normalize_provider_identifier(
+                args.project_no, label="--project-no"
+            )
         args.task_prefix = normalize_provider_identifier(
             args.task_prefix, label="--task-prefix"
         )
@@ -824,18 +823,14 @@ def main() -> None:
     artifact_postflight_error: BaseException | None = None
     try:
         revalidate_artifact_snapshots(artifact_snapshots)
-        revalidate_regular_file(
-            dataset_source_snapshot, label="dataset source archive"
-        )
+        revalidate_regular_file(dataset_source_snapshot, label="dataset source archive")
         assert_artifacts_unchanged(
             args.config,
             artifact_paths,
             artifact_preflight,
             dataset_source_archive=args.dataset_source_archive,
         )
-        revalidate_regular_file(
-            dataset_source_snapshot, label="dataset source archive"
-        )
+        revalidate_regular_file(dataset_source_snapshot, label="dataset source archive")
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc
     apply_artifact_postflight(payload, artifact_postflight_error)

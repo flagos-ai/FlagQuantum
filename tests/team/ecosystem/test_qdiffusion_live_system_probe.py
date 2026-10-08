@@ -165,7 +165,7 @@ def test_injected_transport_cannot_pass_live_system_acceptance() -> None:
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
-        project_no="CPQC-test",
+        project_no=None,
         task_prefix="system-test",
         requested_samples=10,
         timeout=1.0,
@@ -271,7 +271,7 @@ def test_live_system_sdk_subclass_cannot_claim_real_transport(
         sdk_version="1.3.1",
         device=torch.device("cpu"),
         observed_gpu="test CPU",
-        project_no="CPQC-test",
+        project_no=None,
         task_prefix="subclass-system-test",
         requested_samples=10,
         timeout=1.0,
@@ -285,6 +285,7 @@ def test_live_system_sdk_subclass_cannot_claim_real_transport(
     assert record["pinned_sdk_client"] is False
     assert record["qboson_hardware_used"] is False
     assert record["real_provider_evidence"] is False
+    assert all(receipt["project_no"] is None for receipt in record["task_receipts"])
     assert record["acceptance"] == {"system": "fail", "application": "not_run"}
 
 

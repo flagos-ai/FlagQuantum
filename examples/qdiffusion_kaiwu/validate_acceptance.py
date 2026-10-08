@@ -1295,7 +1295,7 @@ def _validate_sampling_receipt(
     if receipt.get("requested_samples") != expected_requested_samples:
         errors.append(f"{label}: receipt sample count differs")
     project_no = receipt.get("project_no")
-    if not _canonical_printable_identifier(project_no):
+    if project_no is not None and not _canonical_printable_identifier(project_no):
         errors.append(f"{label}: receipt has no project number")
     submitted_at = receipt.get("submitted_at")
     try:
@@ -2804,7 +2804,9 @@ def _validate_provider_smoke_component(
         errors.append(f"{label}: fallback must be explicitly false")
     if record.get("failure") is not None:
         errors.append(f"{label}: retained failure is not empty")
-    if not _canonical_printable_identifier(record.get("project_no")):
+    if record.get("project_no") is not None and not _canonical_printable_identifier(
+        record.get("project_no")
+    ):
         errors.append(f"{label}: project number is invalid")
     approved_project = _mapping(
         config.get("kaiwu_sdk"), "config.kaiwu_sdk", errors

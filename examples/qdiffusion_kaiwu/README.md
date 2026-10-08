@@ -407,7 +407,7 @@ whose receipt `task_name` and `matrix_sha256` match the attempted task in the
 failed record; do not edit, rename, or copy fields between bundles.
 
 Run the dedicated recovery command in the same approved environment and with
-the same approved project. It restores the bundle, verifies its mode and
+the same approved project assignment. It restores the bundle, verifies its mode and
 project before the first status query, and never calls the FlagQuantum submit
 API:
 
@@ -418,10 +418,12 @@ python -B -s -m examples.qdiffusion_kaiwu.qboson_resume \
   --environment-lock /absolute/private-evidence/environment-lock.json \
   --sdk-approval /absolute/private-evidence/sdk-approval.json \
   --output /absolute/private-evidence/qboson-resume.json \
-  --project-no CPQC-your-project \
   --mode sampling \
   --acknowledge-provider-cost I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE
 ```
+
+This example resumes an account-default task. Supply `--project-no` only for a
+receipt and approval record that both contain the same explicit project.
 
 Recovery deliberately does not require a fresh provider-resource snapshot: an
 expired snapshot must not make an already retained identity unrecoverable.

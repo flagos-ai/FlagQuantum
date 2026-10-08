@@ -139,9 +139,7 @@ def _verified_checkpoint_snapshot(
     checkpoint_path: Path,
     training_record: dict[str, Any],
 ) -> RegularFileSnapshot:
-    validate_private_directory(
-        run_directory, label="protein training run directory"
-    )
+    validate_private_directory(run_directory, label="protein training run directory")
     try:
         checkpoint_path.resolve().relative_to(run_directory.resolve())
     except ValueError:
@@ -212,7 +210,7 @@ def run_portability_replay(
     environment_lock_sha256: str,
     provider_resource_gate: dict[str, Any],
     sdk_version: str,
-    project_no: str,
+    project_no: str | None,
     task_prefix: str,
     requested_samples: int,
     timeout: float,
@@ -294,15 +292,11 @@ def run_portability_replay(
             )
         if id(getattr(generator.energy_model, "sampler", None)) != id(sampler):
             raise RuntimeError("DPLM builder did not retain the FlagQuantum sampler")
-        revalidate_regular_file(
-            checkpoint_snapshot, label="trained energy checkpoint"
-        )
+        revalidate_regular_file(checkpoint_snapshot, label="trained energy checkpoint")
         runtime.load_trained_energy_weights(
             generator, str(trained_checkpoint), str(device)
         )
-        revalidate_regular_file(
-            checkpoint_snapshot, label="trained energy checkpoint"
-        )
+        revalidate_regular_file(checkpoint_snapshot, label="trained energy checkpoint")
         records = io_module.read_fasta_records(test_fasta)
         index = generation["portability_fixture_index"]
         if len(records) != generation["sequence_count"]:
@@ -327,9 +321,7 @@ def run_portability_replay(
             generated_length,
             generated_sha256,
         ) = _token_constraints(generator, generated)
-        revalidate_regular_file(
-            checkpoint_snapshot, label="trained energy checkpoint"
-        )
+        revalidate_regular_file(checkpoint_snapshot, label="trained energy checkpoint")
         if artifact_snapshots is not None:
             revalidate_artifact_snapshots(artifact_snapshots)
         if dataset_source_snapshot is not None:
@@ -507,7 +499,7 @@ def main() -> None:
     parser.add_argument("--source-preflight", required=True, type=Path)
     parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--provider-resources", required=True, type=Path)
-    parser.add_argument("--project-no", required=True)
+    parser.add_argument("--project-no")
     parser.add_argument("--task-prefix", required=True)
     parser.add_argument("--expected-sdk-version", choices=("1.3.1",), default="1.3.1")
     parser.add_argument("--requested-samples", type=int, default=10)
@@ -518,9 +510,10 @@ def main() -> None:
     if args.acknowledge_provider_cost != ACKNOWLEDGEMENT:
         parser.error("invalid provider-cost acknowledgement; no task was submitted")
     try:
-        args.project_no = normalize_provider_identifier(
-            args.project_no, label="--project-no"
-        )
+        if args.project_no is not None:
+            args.project_no = normalize_provider_identifier(
+                args.project_no, label="--project-no"
+            )
         args.task_prefix = normalize_provider_identifier(
             args.task_prefix, label="--task-prefix"
         )
@@ -719,9 +712,7 @@ def main() -> None:
     artifact_postflight_error: BaseException | None = None
     try:
         revalidate_artifact_snapshots(artifact_snapshots)
-        revalidate_regular_file(
-            dataset_source_snapshot, label="dataset source archive"
-        )
+        revalidate_regular_file(dataset_source_snapshot, label="dataset source archive")
         assert_artifacts_unchanged(
             args.config,
             artifact_paths,
@@ -729,13 +720,9 @@ def main() -> None:
             dataset_source_archive=args.dataset_source_archive,
         )
         _revalidate_training_paths(training_paths)
-        revalidate_regular_file(
-            checkpoint_snapshot, label="trained energy checkpoint"
-        )
+        revalidate_regular_file(checkpoint_snapshot, label="trained energy checkpoint")
         revalidate_artifact_snapshots(artifact_snapshots)
-        revalidate_regular_file(
-            dataset_source_snapshot, label="dataset source archive"
-        )
+        revalidate_regular_file(dataset_source_snapshot, label="dataset source archive")
     except (OSError, ValueError) as exc:
         artifact_postflight_error = exc
         payload["acceptance"]["portability"] = "fail"

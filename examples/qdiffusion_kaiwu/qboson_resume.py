@@ -83,7 +83,7 @@ def run_resume(
     client: KaiwuTaskClient,
     recovery_receipt: Path,
     expected_mode: KaiwuTaskMode,
-    project_no: str,
+    project_no: str | None,
     timeout: float,
     poll_interval: float,
     environment_lock_sha256: str,
@@ -91,7 +91,8 @@ def run_resume(
 ) -> dict[str, Any]:
     """Restore and poll one existing task without invoking ``client.submit``."""
 
-    project_no = normalize_provider_identifier(project_no, label="project_no")
+    if project_no is not None:
+        project_no = normalize_provider_identifier(project_no, label="project_no")
     for label, digest in (
         ("environment_lock_sha256", environment_lock_sha256),
         ("sdk_approval_sha256", sdk_approval_sha256),
@@ -158,7 +159,7 @@ def main() -> None:
     parser.add_argument("--environment-lock", required=True, type=Path)
     parser.add_argument("--sdk-approval", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--project-no", required=True)
+    parser.add_argument("--project-no")
     parser.add_argument("--mode", choices=("optimization", "sampling"), required=True)
     parser.add_argument("--expected-sdk-version", choices=("1.3.1",), default="1.3.1")
     parser.add_argument("--timeout", type=float, default=3600.0)
@@ -171,9 +172,10 @@ def main() -> None:
             f"{ACKNOWLEDGEMENT!r}; no task was queried"
         )
     try:
-        arguments.project_no = normalize_provider_identifier(
-            arguments.project_no, label="--project-no"
-        )
+        if arguments.project_no is not None:
+            arguments.project_no = normalize_provider_identifier(
+                arguments.project_no, label="--project-no"
+            )
     except (TypeError, ValueError) as exc:
         parser.error(str(exc))
 

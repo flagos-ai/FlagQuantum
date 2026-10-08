@@ -705,6 +705,21 @@ def test_complete_sampling_receipt_rejects_tampered_identity_fields(
     assert any(message in error for error in errors)
 
 
+def test_complete_sampling_receipt_accepts_account_default_assignment() -> None:
+    receipt = _complete_task_receipt()
+    receipt["project_no"] = None
+    errors: list[str] = []
+
+    _validate_sampling_receipt(
+        receipt,
+        label="receipt",
+        expected_requested_samples=10,
+        errors=errors,
+    )
+
+    assert not any("project" in error for error in errors)
+
+
 def test_complete_sampling_receipt_rejects_missing_or_extra_fields() -> None:
     for receipt in (
         {
@@ -1787,7 +1802,7 @@ def test_config_requires_frozen_flagquantum_version(value: object) -> None:
         ("sha256", "not-a-digest", "expected a SHA-256 digest"),
         ("rights_reviewed_at", "2026-10-06", "timezone-aware timestamp"),
         ("approval_reference", "<required>", "frozen value is required"),
-        ("project_no", "<required>", "assigned project is required"),
+        ("project_no", "<required>", "reviewed project identifier or null"),
         (
             "project_assignment_reviewed_at",
             "2026-10-06",
