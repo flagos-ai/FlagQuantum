@@ -13,7 +13,9 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 
 ## Where to start
 
-- `ir/`: canonical circuit representation, validation, and serialization.
+- `ir/`: canonical circuit representation, validation, and serialization. The
+  public IR is `ir/__init__.py`; the internal level boundary behind it, and the
+  shortest path for changing a level, are in `ir/README.md`.
 - `operator_schema.py`: canonical operation names and schemas.
 - `parameters.py`: symbolic parameters and binding semantics.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
@@ -23,31 +25,6 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 
 `runtime_config.py` is configuration data owned by Core; configuration
 resolution and execution policy remain Runtime responsibilities.
-
-## Internal IR levels
-
-`ir/__init__.py` is the public IR: `CircuitIR` schema 1.0, and the only
-serialized IR this product publishes. Behind it, `ir/levels.py` is the internal
-boundary that crosses to the program level, `ir/diagnostics.py` owns the refusal
-vocabulary, and `ir/program/` owns the program-level model, verifier, and
-lowering, each in one file. None of it is exported from `flagquantum`, none of it
-appears in `docs/public_api_v1.json`, and `IR_VERSION` stays `"1.0"`.
-
-The rules that boundary must keep -- level entry and exit, value identity,
-linearity, joins, failure categories, round trip, and rejection -- are declared in
-`contracts/multi-level-ir-internal-v1-candidate.json` and read back by
-`tools/check_multi_level_ir_contract.py` and
-`tests/unit/test_multi_level_ir_contract.py`. To change a level's behavior, change
-the owning file under `ir/program/` and run:
-
-```bash
-python tools/check_multi_level_ir_contract.py
-python -m pytest tests/unit/test_multi_level_ir_contract.py -q
-```
-
-A refusal names a code from `ir/diagnostics.py`; adding a code means declaring it
-there and in the contract, raising it somewhere in the boundary, and letting the
-gate confirm both directions.
 
 ## Ten-minute change path
 
