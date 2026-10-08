@@ -243,6 +243,25 @@ same eight contexts were recognised and the pull request went `clean`.
 names GitHub reported on that pull request's head commit, which is what makes the mistake
 reproducible as a test failure rather than as a second silent outage.
 
+Nothing in this repository compares the two, and that is the remaining hole in the gate.
+`.github/required-checks.json` is a *record* of what branch protection holds —
+`externally_configured: true` says so — and `tools/validate_required_checks.py` reads it
+against the workflow documents, not against GitHub. The settings are changed through the
+API, so a later edit to branch protection can leave the file describing a rule that is no
+longer in force, and no check fails. Re-reading the two together is a manual step, and it
+takes two commands:
+
+```bash
+diff <(gh api repos/flagos-ai/FlagQuantum/branches/main/protection \
+         --jq '.required_status_checks.contexts[]') \
+     <(python -c "import json; print(*json.load(open('.github/required-checks.json'))['checks'], sep='\n')")
+gh api repos/flagos-ai/FlagQuantum/branches/main/protection --jq '.required_status_checks.strict'
+```
+
+An empty diff and `true` are the agreeing state. A non-empty diff means the record and the
+enforcement have parted, and the record is the half that is wrong: branch protection is the
+rule, and the file is what the repository believes about it.
+
 The approved API change proposals written before this date still describe
 `tools/validate_required_checks.py` as pinning "six externally configured required
 checks". That was true of the contract at the time each was approved, and those proposals
