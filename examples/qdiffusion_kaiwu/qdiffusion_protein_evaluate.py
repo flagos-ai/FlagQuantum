@@ -322,9 +322,9 @@ def _local_esm2_model(
     snapshot: RegularFileSnapshot | None = None,
 ) -> tuple[Any, Any]:
     pretrained = getattr(getattr(helpers, "esm", None), "pretrained", None)
-    loader = getattr(pretrained, "load_model_and_alphabet_local", None)
+    loader = getattr(pretrained, "load_model_and_alphabet_core", None)
     if not callable(loader):
-        raise RuntimeError("ESM does not expose load_model_and_alphabet_local")
+        raise RuntimeError("ESM does not expose load_model_and_alphabet_core")
     checkpoint_snapshot = snapshot or capture_regular_file(
         checkpoint_path, label="ESM2 checkpoint"
     )
@@ -332,12 +332,17 @@ def _local_esm2_model(
         raise ValueError("ESM2 checkpoint snapshot differs from loader path")
     revalidate_regular_file(checkpoint_snapshot, label="ESM2 checkpoint")
     # The reviewed FAIR ESM checkpoint stores its model arguments as an
-    # argparse.Namespace.  PyTorch 2.6+ defaults torch.load to weights-only
-    # mode, so allow precisely that standard-library type while the pinned
-    # fair-esm loader deserializes the hash-verified local checkpoint.
+    # argparse.Namespace. PyTorch 2.6+ defaults torch.load to weights-only
+    # mode, so allow precisely that standard-library type while loading the
+    # hash-verified checkpoint. Evaluation uses embeddings, not contact
+    # prediction, so call fair-esm's core loader without an unregistered
+    # contact-regression companion checkpoint.
     with torch.serialization.safe_globals([argparse.Namespace]):
-        model, alphabet = loader(str(checkpoint_path))
+        model_data = torch.load(
+            str(checkpoint_path), map_location="cpu", weights_only=True
+        )
     revalidate_regular_file(checkpoint_snapshot, label="ESM2 checkpoint")
+    model, alphabet = loader(checkpoint_path.stem, model_data, None)
     return model.eval().to(device), alphabet
 
 

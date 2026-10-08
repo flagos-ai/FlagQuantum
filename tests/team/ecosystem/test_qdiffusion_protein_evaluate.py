@@ -577,20 +577,34 @@ class _Model:
 
 def test_evaluate_outputs_uses_local_model_and_merges_sequence_metrics(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _, paths = _training_artifacts(tmp_path)
     loader_paths: list[str] = []
 
-    def load_local_model(path: str) -> tuple[_Model, object]:
+    def load_checkpoint(
+        path: str, *, map_location: str, weights_only: bool
+    ) -> dict[str, object]:
         assert argparse.Namespace in torch.serialization.get_safe_globals()
+        assert map_location == "cpu"
+        assert weights_only is True
         loader_paths.append(path)
+        return {"cfg": {}, "model": {}}
+
+    def load_core(
+        model_name: str,
+        model_data: dict[str, object],
+        regression_data: None,
+    ) -> tuple[_Model, object]:
+        assert model_name == "esm2"
+        assert model_data == {"cfg": {}, "model": {}}
+        assert regression_data is None
         return _Model(), object()
 
+    monkeypatch.setattr(evaluation_module.torch, "load", load_checkpoint)
     helpers = SimpleNamespace(
         esm=SimpleNamespace(
-            pretrained=SimpleNamespace(
-                load_model_and_alphabet_local=load_local_model
-            )
+            pretrained=SimpleNamespace(load_model_and_alphabet_core=load_core)
         )
     )
 
@@ -636,19 +650,27 @@ def test_evaluate_outputs_uses_local_model_and_merges_sequence_metrics(
 
 def test_evaluate_outputs_rejects_esm2_change_during_local_load(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _, paths = _training_artifacts(tmp_path)
     checkpoint = tmp_path / "esm2.pt"
     checkpoint.write_bytes(b"esm2")
 
-    def load_then_mutate(path: str) -> tuple[_Model, object]:
+    def load_then_mutate(
+        path: str, *, map_location: str, weights_only: bool
+    ) -> dict[str, object]:
         assert path == str(checkpoint)
+        assert map_location == "cpu"
+        assert weights_only is True
         checkpoint.write_bytes(b"changed")
-        return _Model(), object()
+        return {"cfg": {}, "model": {}}
 
+    monkeypatch.setattr(evaluation_module.torch, "load", load_then_mutate)
     helpers = SimpleNamespace(
         esm=SimpleNamespace(
-            pretrained=SimpleNamespace(load_model_and_alphabet_local=load_then_mutate)
+            pretrained=SimpleNamespace(
+                load_model_and_alphabet_core=lambda *args: (_Model(), object())
+            )
         )
     )
 
