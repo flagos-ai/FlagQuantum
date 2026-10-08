@@ -19,7 +19,7 @@ which of the three documents to correct — is not taken here.
    merge push itself is read by the same eight checks, which is what makes arriving at
    `main` a reading rather than an event nobody looks at.
 4. The pull request is merged. A squash merge produces exactly one commit whose subject
-   ends in `(#NNN)`; at the 2026-10-08 measurement 73 of the 272 commits on `main`'s
+   ends in `(#NNN)`; at the 2026-10-08 measurement 73 of the 274 commits on `main`'s
    first-parent line since 2026-10-01 are merge commits instead, which the addendum below
    the measurements records.
 5. The head branch is abandoned. It is not deleted automatically and it is not
@@ -68,22 +68,27 @@ team names in `team-ownership.toml`.
 The table above is the 2026-10-01 measurement, and the shape it describes did not hold.
 `git log --first-parent`, on a full clone (`git fetch --unshallow`), reports the line of
 commits `main` actually advanced through — the commits a merge landed, not the branch
-history it pulled in:
+history it pulled in. Boundaries are ISO commit dates, because `git log --since` reads its
+boundary in the committer's timezone, which here is `+08:00`: the first commit counted as
+October is `396ddeb8` at `2026-10-01T00:29:36+08:00`.
 
 | Measurement | Value |
 | --- | --- |
 | First-parent commits, all history | 539 |
 | Of those, merge commits, all history | 74 |
 | Merge commits before 2026-10-01 | **1** — `3c932585`, 2026-09-11, `Merge pull request #15` |
-| First-parent commits since 2026-10-01 | 272 |
+| First-parent commits before the first merge, inclusive | 265 |
+| First-parent commits since 2026-10-01 | 274 |
 | Of those, merge commits | **73** |
-| Of those, commits whose subject ends in `(#NNN)` | 199 |
+| Of those, commits whose subject ends in `(#NNN)` | 201 |
 
-Both conventions are in use, and the second is new: one merge in September, then 73
-merges in the first week of October. The sample matters here — 698 commits are reachable
-from `main` in that window once the merged branch histories are counted, so measuring "the
-newest 300 commits" overstates the merge share, because most of those merge commits live
-on the branches rather than on `main`'s own line.
+Both conventions are in use, and the second is new. Before the single September merge,
+`main`'s first-parent line held 264 non-merge commits, 98.5% of the 268 at that point: a
+linear history with one exception. From 2026-10-01 the same line holds 73 merges in 274
+commits, 26.6%, and 201 commits that still end in a pull-request number. The sample matters
+here too — 700 commits are reachable from `main` in that window once the merged branch
+histories are counted, so measuring "the newest 300 commits" overstates the merge share,
+because most of those commits live on the branches rather than on `main`'s own line.
 
 Two things follow, and both belong to the same finding as
 [issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579):
@@ -98,7 +103,7 @@ Two things follow, and both belong to the same finding as
   `cancelled`, `quality` among them. The workflows no longer cancel a superseded run of
   `main`, and the required checks on the pull request are what must pass before the merge
   is accepted.
-- **The `(#NNN)` convention no longer describes `main`.** 73 of the 272 first-parent
+- **The `(#NNN)` convention no longer describes `main`.** 73 of the 274 first-parent
   commits since 2026-10-01 are merge commits and `required_linear_history` is disabled, so
   nothing rejects the shape. A reader who takes the five-step flow above as "one pull
   request, one commit" will misread the history this finding is about.
@@ -366,7 +371,7 @@ A declaration of the workflow is complete when:
 3. **Should squash merges be required by rule rather than convention?** At the 2026-10-01
    measurement `main` was linear because every merge had been a squash, with
    `required_linear_history` disabled. The convention changed in October 2026 — 73 of the
-   272 first-parent commits since 2026-10-01 are merge commits — so the question is now
+   274 first-parent commits since 2026-10-01 are merge commits — so the question is now
    whether the current shape is the intended one, rather than whether an accident would be
    rejected.
 4. **What happens to abandoned remote branches?** Squash merging leaves the head branch

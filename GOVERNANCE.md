@@ -64,7 +64,7 @@ The API's contributor counts and the commit authors on `main` do not agree, beca
 squash merge attributes a whole pull request to its merger and history has been rewritten
 at least once. The git-side figures are the ones that describe `main`, and since October
 2026 they include the merge commits themselves, which are attributed to the account that
-pressed merge: 73 of the 272 first-parent commits since 2026-10-01 are merges, so the
+pressed merge: 73 of the 274 first-parent commits since 2026-10-01 are merges, so the
 maintainer's own share now counts merges as well as authored work.
 
 The open-pull-request count of zero is a measurement of that moment rather than a standing
