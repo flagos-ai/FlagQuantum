@@ -212,6 +212,34 @@ def test_distribution_content_digest_binds_record_file_set(tmp_path: Path) -> No
         _distribution_content_sha256(Distribution(), name="example")  # type: ignore[arg-type]
 
 
+def test_distribution_content_digest_collapses_duplicate_record_path(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "package" / "module.py"
+    source.parent.mkdir()
+    source.write_text("value = 1\n", encoding="utf-8")
+
+    class Distribution:
+        def __init__(self, *, duplicate: bool) -> None:
+            entries = [Path("package/module.py")]
+            self.files = entries * 2 if duplicate else entries
+
+        @staticmethod
+        def locate_file(entry: Path) -> Path:
+            return tmp_path / entry
+
+    unique = _distribution_content_sha256(
+        Distribution(duplicate=False),
+        name="example",  # type: ignore[arg-type]
+    )
+    duplicate = _distribution_content_sha256(
+        Distribution(duplicate=True),
+        name="example",  # type: ignore[arg-type]
+    )
+
+    assert duplicate == unique
+
+
 def test_distribution_content_digest_rechecks_complete_file_set(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -46,10 +46,15 @@ def _distribution_content_sha256(
     labels: set[str] = set()
     for entry in sorted(files, key=str):
         label = str(entry).replace("\\", "/")
-        if not label or label in labels:
+        if not label:
             raise ValueError(
                 f"installed distribution has invalid file identity: {name}"
             )
+        # Some published wheels repeat an identical RECORD path. The installed
+        # filesystem still contains one file at that identity, so bind it once.
+        # Artifact bytes remain independently pinned by approved_artifact_sha256.
+        if label in labels:
+            continue
         labels.add(label)
         path = Path(distribution.locate_file(entry))
         if path.is_symlink() or not path.is_file():
