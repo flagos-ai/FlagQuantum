@@ -204,6 +204,19 @@ Two decisions were taken on 2026-10-08, in the change that closes
    longer cancel a superseded run of `main`, so the merge push of a revision is read
    instead of discarded.
 
+The eight names are the names of the **check runs**, not a path to them. A check run is
+reported under its job key — or the job's `name:`, where a job declares one — with the
+matrix suffix GitHub appends, so `cpu-core (3.10)` and not `CI / cpu-core (3.10)`. This
+was measured rather than assumed, because assuming it was wrong once here: branch
+protection was given the `"<workflow> / <job>"` spelling of all eight names, and pull
+request #597 stayed `blocked` with all nineteen of its check runs `success`, an empty
+review decision, and nothing else outstanding. No check run is ever reported under that
+spelling, so each of the eight sat `Expected` forever. Written as the job names alone, the
+same eight contexts were recognised and the pull request went `clean`.
+`tests/unit/test_gpu_workflow_watchdog_policy.py` pins the contract against the nineteen
+names GitHub reported on that pull request's head commit, which is what makes the mistake
+reproducible as a test failure rather than as a second silent outage.
+
 What this does not do: it does not make a red `main` impossible, and it does not require a
 human to read a pull request. A red `main` blocks a release
 ([release policy](RELEASE_POLICY.md#a-red-main-blocks-the-release)); a green pull request

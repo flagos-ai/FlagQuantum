@@ -104,7 +104,13 @@ Both halves are now stated rather than left nominal:
   accepted — including a merge by the maintainer, because `enforce_admins` is on.
   `.github/required-checks.json` records the names and `tools/validate_required_checks.py`
   proves each name is one a workflow job produces, so a required check cannot be a name
-  that reports nothing.
+  that reports nothing. The name is the check run's own name — the job key, or the job's
+  `name:` where it declares one, with GitHub's matrix suffix — and not a
+  `"<workflow> / <job>"` path to it. That distinction is not a preference: branch
+  protection was first given the `"<workflow> / <job>"` spelling of these eight names and
+  pull request #597 stayed `blocked` with all nineteen of its check runs `success`,
+  because no check run is reported under that spelling. Written as the job names alone,
+  the same contexts reported as required and the pull request went `clean`.
 - **A red `main` blocks release.** The answer to the third question in issue #579 is that
   a revision of `main` whose required checks did not all complete successfully is not a
   release candidate; [Version and release policy](docs/development/RELEASE_POLICY.md)
