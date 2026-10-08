@@ -571,10 +571,8 @@ def main() -> None:
         mode="sampling",
         required_calls=config["remote_call_budget"],
     )
-    if (
-        arguments.expected_hostname
-        != config["host_identities"][arguments.execution_host]
-    ):
+    expected_hostname = config["host_identities"][arguments.execution_host]
+    if arguments.expected_hostname != expected_hostname:
         parser.error("--expected-hostname differs from the frozen host identity")
     observed_hostname = socket.gethostname()
     if observed_hostname != arguments.expected_hostname:

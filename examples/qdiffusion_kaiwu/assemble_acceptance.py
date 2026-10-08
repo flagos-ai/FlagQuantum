@@ -17,6 +17,15 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     PREFLIGHT_SCHEMA as ARTIFACT_PREFLIGHT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.private_io import read_private_bytes
+from examples.qdiffusion_kaiwu.provider_reconciliation import (
+    SCHEMA as PROVIDER_RECONCILIATION_SCHEMA,
+)
+from examples.qdiffusion_kaiwu.provider_reconciliation import (
+    VERSION as PROVIDER_RECONCILIATION_VERSION,
+)
+from examples.qdiffusion_kaiwu.provider_reconciliation import (
+    apply_provider_reconciliations,
+)
 from examples.qdiffusion_kaiwu.provider_resources import (
     SCHEMA as PROVIDER_RESOURCES_SCHEMA,
 )
@@ -182,7 +191,12 @@ def _load_component(path: Path, schema: str) -> tuple[dict[str, Any], str]:
     value = loads_json_strict(encoded)
     if not isinstance(value, dict):
         raise ValueError(f"component record must be a JSON object: {path}")
-    if value.get("schema") != schema or value.get("version") != "1.0":
+    expected_version = (
+        PROVIDER_RECONCILIATION_VERSION
+        if schema == PROVIDER_RECONCILIATION_SCHEMA
+        else "1.0"
+    )
+    if value.get("schema") != schema or value.get("version") != expected_version:
         raise ValueError(f"component record has an unsupported schema: {path}")
     return value, hashlib.sha256(encoded).hexdigest()
 
@@ -729,6 +743,7 @@ def main() -> None:
         "--provider-resources", action="append", required=True, type=Path
     )
     parser.add_argument("--provider-smoke", required=True, type=Path)
+    parser.add_argument("--provider-reconciliation", action="append", type=Path)
     parser.add_argument("--artifact-preflight", required=True, type=Path)
     parser.add_argument("--portability", required=True, type=Path)
     parser.add_argument("--training-record", action="append", required=True, type=Path)
@@ -750,6 +765,7 @@ def main() -> None:
         args.artifact_preflight,
         args.portability,
         *args.provider_resources,
+        *(args.provider_reconciliation or []),
         *args.training_record,
         *args.evaluation_record,
     ]
@@ -783,6 +799,10 @@ def main() -> None:
         record, digest = _load_component(path, PROVIDER_RESOURCES_SCHEMA)
         provider_resources_by_digest.setdefault(digest, (path, record))
     provider_smoke = _load_component(args.provider_smoke, PROVIDER_SMOKE_SCHEMA)
+    provider_reconciliations = [
+        _load_component(path, PROVIDER_RECONCILIATION_SCHEMA)
+        for path in (args.provider_reconciliation or [])
+    ]
     artifact_preflight = _load_component(
         args.artifact_preflight, ARTIFACT_PREFLIGHT_SCHEMA
     )
@@ -791,16 +811,36 @@ def main() -> None:
     evaluations = [
         _load_component(path, EVALUATION_SCHEMA) for path in args.evaluation_record
     ]
+    reconciliation_records = [record for record, _ in provider_reconciliations]
+
+    def reconciled_component(
+        component: tuple[dict[str, Any], str],
+    ) -> tuple[dict[str, Any], str]:
+        record, digest = component
+        return (
+            apply_provider_reconciliations(
+                record,
+                component_record_sha256=digest,
+                reconciliations=reconciliation_records,
+            ),
+            digest,
+        )
+
+    primary_system_effective = reconciled_component(primary_system)
+    replay_system_effective = reconciled_component(replay_system)
+    reconciled_component(provider_smoke)
+    portability_effective = reconciled_component(portability)
+    training_effective = [reconciled_component(record) for record in training]
     primary, replay = assemble_records(
         config=config,
         config_sha256=config_sha256,
-        primary_system=primary_system,
-        replay_system=replay_system,
+        primary_system=primary_system_effective,
+        replay_system=replay_system_effective,
         primary_source_preflight=primary_source_preflight,
         replay_source_preflight=replay_source_preflight,
         transfer_manifest=transfer_manifest,
-        portability=portability,
-        training_records=training,
+        portability=portability_effective,
+        training_records=training_effective,
         evaluation_records=evaluations,
     )
 
@@ -819,6 +859,8 @@ def main() -> None:
         component_sources[f"training-{index}.json"] = path
     for index, path in enumerate(args.evaluation_record):
         component_sources[f"evaluation-{index}.json"] = path
+    for index, path in enumerate(args.provider_reconciliation or []):
+        component_sources[f"provider-reconciliation-{index}.json"] = path
     for index, (path, _) in enumerate(provider_resources_by_digest.values()):
         name = (
             "provider-resources.json"
@@ -841,6 +883,8 @@ def main() -> None:
         component_digests[f"training-{index}.json"] = digest
     for index, (_, digest) in enumerate(evaluations):
         component_digests[f"evaluation-{index}.json"] = digest
+    for index, (_, digest) in enumerate(provider_reconciliations):
+        component_digests[f"provider-reconciliation-{index}.json"] = digest
     for index, digest in enumerate(provider_resources_by_digest):
         name = (
             "provider-resources.json"

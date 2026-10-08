@@ -136,6 +136,22 @@ Status as of 2026-10-08 on branch `feat/qboson-kaiwu-integration`:
   runtime project is accepted only when the reviewed private record also
   contains null, and an unexpected explicit project fails closed before
   credential resolution.
+- Final QDiffusion assembly now accepts two task-identity sources without
+  rewriting an SDK receipt: identities returned directly by the pinned runtime,
+  or a separate version 2.0 authenticated Resource Bill reconciliation. The
+  latter is a closed, owner-only record for exactly one task and binds the
+  immutable component digest, task name, UTC submission time, matrix digest,
+  mode, requested samples, unique-match attestation, provider batch, associated
+  task, target, and exact resource delta. Capture is bounded to seven days;
+  optimization consumes one credit and
+  sampling consumes exactly the requested sample count. The assembler retains
+  the original component and reconciliation as separate evidence and derives
+  identity only in memory; final validation repeats the derivation and rejects
+  duplicate, unknown, contradictory, cross-task, cross-component, inconsistent-
+  target, or injected-transport upgrades. This removes runtime-only task fields
+  as a formal acceptance blocker while preserving them as the preferred path
+  and preserving the limitation that post-hoc evidence cannot support early
+  polling or recovery before the bill entry exists.
 - On 2026-10-07 an authenticated follow-up feedback request was submitted after
   explicit user confirmation, and the platform displayed `Submitted
   successfully`. The request contains no account identifier or credential. It

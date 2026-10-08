@@ -24,6 +24,19 @@ from examples.qdiffusion_kaiwu.preflight_protein_artifacts import (
     PREFLIGHT_SCHEMA as ARTIFACT_PREFLIGHT_COMPONENT_SCHEMA,
 )
 from examples.qdiffusion_kaiwu.private_io import read_private_bytes
+from examples.qdiffusion_kaiwu.provider_reconciliation import (
+    FIELDS as PROVIDER_RECONCILIATION_FIELDS,
+)
+from examples.qdiffusion_kaiwu.provider_reconciliation import (
+    SCHEMA as PROVIDER_RECONCILIATION_COMPONENT_SCHEMA,
+)
+from examples.qdiffusion_kaiwu.provider_reconciliation import (
+    VERSION as PROVIDER_RECONCILIATION_COMPONENT_VERSION,
+)
+from examples.qdiffusion_kaiwu.provider_reconciliation import (
+    apply_provider_reconciliations,
+    validate_provider_reconciliation_record,
+)
 from examples.qdiffusion_kaiwu.provider_resources import (
     SCHEMA as PROVIDER_RESOURCES_COMPONENT_SCHEMA,
 )
@@ -894,6 +907,8 @@ def _validate_component_field_set(
     """Reject missing or extended fields for executable evidence components."""
 
     expected_fields = COMPONENT_FIELDS_BY_SCHEMA.get(record.get("schema"))
+    if record.get("schema") == PROVIDER_RECONCILIATION_COMPONENT_SCHEMA:
+        expected_fields = PROVIDER_RECONCILIATION_FIELDS
     if expected_fields is not None and set(record) != expected_fields:
         errors.append(f"{label}: field set differs from its closed schema")
 
@@ -3059,6 +3074,7 @@ def _validate_component_bundle(
         PORTABILITY_COMPONENT_SCHEMA,
         TRAINING_COMPONENT_SCHEMA,
     }
+    executable_schemas = remote_component_schemas | {EVALUATION_COMPONENT_SCHEMA}
     referenced_provider_resources: set[str] = set()
     for payload in component_payloads.values():
         schema = payload.get("schema")
@@ -3092,6 +3108,10 @@ def _validate_component_bundle(
         PORTABILITY_COMPONENT_SCHEMA: 1,
         TRAINING_COMPONENT_SCHEMA: len(seeds),
         EVALUATION_COMPONENT_SCHEMA: len(seeds),
+        PROVIDER_RECONCILIATION_COMPONENT_SCHEMA: sum(
+            payload.get("schema") == PROVIDER_RECONCILIATION_COMPONENT_SCHEMA
+            for payload in component_payloads.values()
+        ),
     }
     observed_schema_counts = {
         schema: sum(
@@ -3107,6 +3127,8 @@ def _validate_component_bundle(
         expected_version = (
             SDK_APPROVAL_COMPONENT_VERSION
             if payload.get("schema") == SDK_APPROVAL_COMPONENT_SCHEMA
+            else PROVIDER_RECONCILIATION_COMPONENT_VERSION
+            if payload.get("schema") == PROVIDER_RECONCILIATION_COMPONENT_SCHEMA
             else "1.0"
         )
         if payload.get("version") != expected_version:
@@ -3117,7 +3139,7 @@ def _validate_component_bundle(
         _validate_executable_component_nested_fields(
             payload, label=f"component {digest}", errors=errors
         )
-        if payload.get("schema") in COMPONENT_FIELDS_BY_SCHEMA:
+        if payload.get("schema") in executable_schemas:
             execution_host = payload.get("execution_host")
             expected_hostname = (
                 config.get("host_identities", {}).get(execution_host)
@@ -3136,6 +3158,7 @@ def _validate_component_bundle(
                 SDK_APPROVAL_COMPONENT_SCHEMA,
                 PROVIDER_RESOURCES_COMPONENT_SCHEMA,
                 PROVIDER_SMOKE_COMPONENT_SCHEMA,
+                PROVIDER_RECONCILIATION_COMPONENT_SCHEMA,
                 SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
                 TRANSFER_MANIFEST_SCHEMA,
             )
@@ -3144,6 +3167,38 @@ def _validate_component_bundle(
             errors.append(
                 f"component {digest}: frozen experiment config identity mismatch"
             )
+
+    reconciliation_records = [
+        payload
+        for payload in component_payloads.values()
+        if payload.get("schema") == PROVIDER_RECONCILIATION_COMPONENT_SCHEMA
+    ]
+    for index, record in enumerate(reconciliation_records):
+        errors.extend(
+            validate_provider_reconciliation_record(
+                record, label=f"provider reconciliation {index}"
+            )
+        )
+        referenced_digest = record.get("component_record_sha256")
+        referenced_component = component_payloads.get(referenced_digest)
+        if not isinstance(referenced_component, dict) or referenced_component.get(
+            "schema"
+        ) not in remote_component_schemas | {PROVIDER_SMOKE_COMPONENT_SCHEMA}:
+            errors.append(
+                f"provider reconciliation {index}: referenced component is unavailable"
+            )
+
+    effective_component_payloads: dict[str, dict[str, Any]] = {}
+    for digest, payload in component_payloads.items():
+        try:
+            effective_component_payloads[digest] = apply_provider_reconciliations(
+                payload,
+                component_record_sha256=digest,
+                reconciliations=reconciliation_records,
+            )
+        except ValueError as exc:
+            errors.append(f"component {digest}: {exc}")
+            effective_component_payloads[digest] = payload
 
     sdk_approvals = [
         (digest, payload)
@@ -3165,7 +3220,10 @@ def _validate_component_bundle(
         if not isinstance(receipts, list):
             continue
         for index, receipt in enumerate(receipts):
-            if isinstance(receipt, dict) and receipt.get("project_no") != approved_project:
+            if (
+                isinstance(receipt, dict)
+                and receipt.get("project_no") != approved_project
+            ):
                 errors.append(
                     f"component {digest}: remote receipt {index} project number "
                     "differs from reviewed assignment"
@@ -3173,12 +3231,10 @@ def _validate_component_bundle(
 
     provider_smokes = [
         payload
-        for payload in component_payloads.values()
+        for payload in effective_component_payloads.values()
         if payload.get("schema") == PROVIDER_SMOKE_COMPONENT_SCHEMA
     ]
-    provider_smoke_resource_digest = provider_smokes[0].get(
-        "provider_resources_sha256"
-    )
+    provider_smoke_resource_digest = provider_smokes[0].get("provider_resources_sha256")
     if (
         not isinstance(provider_smoke_resource_digest, str)
         or provider_smoke_resource_digest not in provider_resources_by_digest
@@ -3197,12 +3253,6 @@ def _validate_component_bundle(
     )
     provider_smoke_time = _parse_timestamp(provider_smokes[0].get("recorded_at"))
     component_times: dict[str, datetime] = {}
-    executable_schemas = {
-        SYSTEM_COMPONENT_SCHEMA,
-        PORTABILITY_COMPONENT_SCHEMA,
-        TRAINING_COMPONENT_SCHEMA,
-        EVALUATION_COMPONENT_SCHEMA,
-    }
     for digest, payload in component_payloads.items():
         if payload.get("schema") not in executable_schemas:
             continue
@@ -3228,13 +3278,11 @@ def _validate_component_bundle(
     smoke_tasks = provider_smokes[0].get("tasks")
     if isinstance(smoke_tasks, list):
         for index, task in enumerate(smoke_tasks):
-            if isinstance(task, dict) and isinstance(
-                task.get("provider_task_id"), str
-            ):
+            if isinstance(task, dict) and isinstance(task.get("provider_task_id"), str):
                 provider_task_owners.setdefault(task["provider_task_id"], []).append(
                     f"provider smoke task {index}"
                 )
-    for digest, payload in component_payloads.items():
+    for digest, payload in effective_component_payloads.items():
         if payload.get("schema") not in remote_component_schemas:
             continue
         task_ids = payload.get("qboson_task_ids")
@@ -3281,9 +3329,7 @@ def _validate_component_bundle(
                 f"artifact preflight.{artifact_name}",
                 errors,
             )
-            frozen = _mapping(
-                config.get(config_name), f"config.{config_name}", errors
-            )
+            frozen = _mapping(config.get(config_name), f"config.{config_name}", errors)
             if identity.get("sha256") != frozen.get("sha256"):
                 errors.append(
                     f"artifact preflight: {artifact_name} identity differs from config"
@@ -3295,7 +3341,10 @@ def _validate_component_bundle(
                 errors.append(
                     f"artifact preflight: {artifact_name} algorithm is unsupported"
                 )
-            if type(identity.get("file_count")) is not int or identity["file_count"] <= 0:
+            if (
+                type(identity.get("file_count")) is not int
+                or identity["file_count"] <= 0
+            ):
                 errors.append(
                     f"artifact preflight: {artifact_name} file count is invalid"
                 )
@@ -3382,6 +3431,7 @@ def _validate_component_bundle(
             SDK_APPROVAL_COMPONENT_SCHEMA,
             PROVIDER_RESOURCES_COMPONENT_SCHEMA,
             PROVIDER_SMOKE_COMPONENT_SCHEMA,
+            PROVIDER_RECONCILIATION_COMPONENT_SCHEMA,
             SOURCE_PREFLIGHT_COMPONENT_SCHEMA,
             TRANSFER_MANIFEST_SCHEMA,
         ):
@@ -3406,7 +3456,7 @@ def _validate_component_bundle(
     for final, label in ((primary, "primary"), (replay, "replay")):
         system_digest = final.get("system_evidence_sha256")
         component = (
-            component_payloads.get(system_digest)
+            effective_component_payloads.get(system_digest)
             if isinstance(system_digest, str)
             else None
         )
@@ -3495,7 +3545,7 @@ def _validate_component_bundle(
         return
     training_by_seed: dict[int, tuple[str, dict[str, Any]]] = {}
     evaluation_by_seed: dict[int, tuple[str, dict[str, Any]]] = {}
-    for digest, payload in component_payloads.items():
+    for digest, payload in effective_component_payloads.items():
         seed = payload.get("seed")
         if payload.get("schema") == TRAINING_COMPONENT_SCHEMA:
             if type(seed) is not int or seed in training_by_seed:
@@ -3626,7 +3676,7 @@ def _validate_component_bundle(
     )
     portability_digest = portability_evidence.get("record_sha256")
     portability = (
-        component_payloads.get(portability_digest)
+        effective_component_payloads.get(portability_digest)
         if isinstance(portability_digest, str)
         else None
     )
@@ -4013,8 +4063,15 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
         payload.get("schema") == PROVIDER_RESOURCES_COMPONENT_SCHEMA
         for payload in component_payloads.values()
     )
+    provider_reconciliation_count = sum(
+        payload.get("schema") == PROVIDER_RECONCILIATION_COMPONENT_SCHEMA
+        for payload in component_payloads.values()
+    )
     expected_component_count = (
-        9 + provider_resource_count + 2 * len(config.get("seeds", []))
+        9
+        + provider_resource_count
+        + provider_reconciliation_count
+        + 2 * len(config.get("seeds", []))
     )
     if len(component_payloads) != expected_component_count:
         errors.append(
@@ -4092,12 +4149,12 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
                 "manifest: portability evidence is not linked to the selected seed checkpoint"
             )
     referenced_component_hashes = {
-            primary.get("source_preflight_sha256"),
-            replay.get("source_preflight_sha256"),
-            primary.get("transfer_manifest_sha256"),
-            primary.get("system_evidence_sha256"),
-            replay.get("system_evidence_sha256"),
-            portability_evidence.get("record_sha256"),
+        primary.get("source_preflight_sha256"),
+        replay.get("source_preflight_sha256"),
+        primary.get("transfer_manifest_sha256"),
+        primary.get("system_evidence_sha256"),
+        replay.get("system_evidence_sha256"),
+        portability_evidence.get("record_sha256"),
     }
     if isinstance(evidence_records, list):
         for record in evidence_records:
@@ -4125,6 +4182,7 @@ def validate_acceptance(manifest_path: Path) -> list[str]:
             SDK_APPROVAL_COMPONENT_SCHEMA,
             PROVIDER_RESOURCES_COMPONENT_SCHEMA,
             PROVIDER_SMOKE_COMPONENT_SCHEMA,
+            PROVIDER_RECONCILIATION_COMPONENT_SCHEMA,
         )
     )
     if referenced_component_hashes != set(component_payloads):

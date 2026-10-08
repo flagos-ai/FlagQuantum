@@ -397,14 +397,38 @@ The example above shows the reviewed account-default route. Add
 exact explicit project identifier.
 
 Successful tasks alone do not make this an acceptance record. The script keeps
-`hardware_acceptance=false` until the command is using the real SDK transport
+`hardware_acceptance=false` unless the command is using the real SDK transport
 and the pinned SDK mapping supplies both a stable provider task ID and a
 provider-reported target for every task. Injected clients are always recorded
 as `transport=injected_test`, `real_provider_evidence=false`, and
 `qboson_hardware_used=false`. The command preserves the diagnostic record but
-returns a nonzero exit status whenever hardware acceptance remains closed.
-It also records a value-free schema of the documented SDK result dictionary so
-the missing mapping can be reviewed without persisting raw provider values.
+returns a nonzero exit status whenever runtime hardware acceptance remains
+closed. It also records a value-free schema of the documented SDK result
+dictionary so the missing mapping can be reviewed without persisting raw
+provider values.
+
+Kaiwu 1.3.1 may complete real work without exposing those identities in the
+documented result mapping. Final assembly therefore supports a second,
+fail-closed identity path: repeat `--provider-reconciliation` once for each
+affected task. Each mode-0600 version 2.0 record must bind the exact immutable
+component SHA-256, task name, UTC submission time, matrix digest, mode, and
+requested sample count to one authenticated Resource Bill batch, associated
+task, provider target, and resource delta. It must also bind a retained,
+redacted Resource Bill row, attest that the account match is unique, and be
+captured within seven days. Sampling must consume exactly the requested
+sample count; optimization must consume exactly one optimization credit.
+`provider_reconciliation.example.json` documents the closed schema.
+
+The assembler never edits the original SDK component. It copies both the
+original component and every reconciliation into the final bundle, constructs
+an identity view only in memory, and the final validator independently repeats
+the complete binding. Duplicate task matches, unknown components, conflicting
+runtime identities, reused provider task IDs, inconsistent targets, extended
+fields, or an injected client fail closed. A reconciliation record keeps its
+own `hardware_acceptance=false` and `qdiffusion_acceptance=false`; acceptance
+comes only from the complete bundle. This compatibility path establishes
+completed-task identity but does not enable early polling or cross-process
+recovery before the Resource Bill entry exists.
 
 ## Resume an interrupted provider task
 
@@ -594,7 +618,9 @@ checkpoint, tokenizer, and evaluation-model identities. The
 standalone SDK approval, every uniquely referenced provider-resource snapshot,
 and successful Phase 2 provider smoke are required copied components as well.
 Repeat `--provider-resources` during assembly when the staged executions used
-different snapshots. Final validation
+different snapshots. Repeat `--provider-reconciliation` for every task whose
+immutable component lacks runtime identity; omit it when all SDK receipts
+already contain consistent provider task and target values. Final validation
 requires the approval to equal the frozen config decision, binds both private
 input digests to the smoke, verifies that the smoke time fell within the
 snapshot's bounded validity interval, rechecks that one target had both

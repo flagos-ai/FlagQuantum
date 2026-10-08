@@ -50,6 +50,8 @@ def test_assembler_accepts_repeated_provider_resource_snapshots() -> None:
 
     assert '"--provider-resources", action="append", required=True' in source
     assert "provider_resources_by_digest.setdefault(digest" in source
+    assert '"--provider-reconciliation", action="append"' in source
+    assert "apply_provider_reconciliations(" in source
 
 
 def _provider_resources() -> dict[str, Any]:
