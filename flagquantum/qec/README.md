@@ -738,6 +738,69 @@ detectors. A seam's rows carry the global detector index rather than a position
 within the seam, which is why a stitch refuses two boundary bands that merely
 have the same width.
 
+## Slide a window over those rounds
+
+Decoding the whole model at once needs the whole syndrome, which a realtime
+decoder does not have. A sliding window decodes a few rounds at a time, commits
+the part the next window cannot revise, and folds the committed corrections into
+a logical-frame prediction. `SlidingWindowDecoder` is that decoder over the
+windows above, and it is built from the decomposition rather than from the model,
+because the windows are what it slides over:
+
+```python
+from flagquantum.qec import (
+    BELIEF_PROPAGATION_NAME,
+    SlidingWindowDecoder,
+    dem_chunks_to_o_sparse,
+    dem_chunks_to_pcm,
+)
+
+spec = DemChunksSpec(layout=layout, window=2)
+decoder = SlidingWindowDecoder(spec, BELIEF_PROPAGATION_NAME)
+
+print(decoder.num_windows)             # windows one block is decoded in
+print(decoder.decode([]).observables)  # a whole block, in the model's numbering
+
+# Or one round at a time, in that round's own numbering: a record comes back
+# whenever a window closes and None while the window is still open.
+for layer in range(layout.num_layers):
+    record = decoder.decode_round([])
+```
+
+A *fault column* is a column of the model the windows decompose. Both sparse
+projections index that one column space in the order `dem_close_all` states, so
+`dem_chunks_to_pcm(chunks)` is the closed model's `detector_error_matrix()` read
+one detector row at a time and `dem_chunks_to_o_sparse(chunks)` is its
+`observables_flips_matrix()`, each in sparse form and neither built dense.
+
+Each window gets its own inner decoder, built from that window's own model and
+from nothing else, so no window is ever handed a row or a mechanism that is not
+its own. Every window that closes returns a record; `complete` says whether the
+block is finished and `converged` is the inner decoders' flags anded, or `None`
+when none of them reports one. `faults` is the committed part of the correction
+and `observables` is that same vector projected through the model's observable
+matrix, so the two are one statement read twice rather than two answers free to
+disagree.
+
+An inner decoder must state its selected mechanisms as `mechanisms` in that
+window's own column order, which is what `BeliefPropagationDecoder` reports,
+because the next window's syndrome has their support removed and a record that
+states only observables is an answer rather than a correction. The authority
+matcher's record states its correction as graph edges instead, so it is not yet
+usable as an inner decoder and a window built with it refuses at the first commit
+rather than silently dropping the correction. A whole arbitrary detector subset is
+also not a syndrome every window can explain — a window's residue is a subsystem
+the window need not span — so a window that cannot explain its residue refuses,
+the stream resets, and the next round starts a new block.
+
+`dem_chunks_to_d_sparse(chunks)` is a third numbering again: it maps each
+detector row onto the *measurement bits* of a flat `rounds * d` buffer, which is
+what a memory experiment's raw measurements occupy. That map holds when every
+round is the same `d` detectors wide, which is the precondition its arithmetic
+states; a surface code's boundary rounds are half that wide, so the map refuses
+that geometry by name and the circuit-derived `MeasurementMap` is the map that
+covers it instead.
+
 ## Change and verify
 
 Use [repetition.py](repetition.py) for experiment composition,
@@ -745,7 +808,9 @@ Use [repetition.py](repetition.py) for experiment composition,
 and [matching.py](matching.py) for the detector-error-model matcher,
 [belief_propagation.py](belief_propagation.py) for the decoder that reads the
 hyperedges the matcher refuses, [chunks.py](chunks.py) for the round-window
-decomposition, [registry.py](registry.py) for reaching either by name,
+decomposition, [sliding_window.py](sliding_window.py) for decoding those windows
+and the projections they are read through, [registry.py](registry.py) for
+reaching either by name,
 [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for

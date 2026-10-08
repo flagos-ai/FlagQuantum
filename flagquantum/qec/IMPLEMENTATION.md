@@ -811,7 +811,8 @@ mechanisms, the logical observables they flip, the total weight and the iteratio
 count. It is deliberately not the baseline's `DecoderResult`: there is no batch
 form, no async form and no optional-results channel here. The module imports
 `math`, `dataclasses` and `numbers` and nothing else, and it does not implement
-the sliding window, which needs the chunk seams this layer does not have yet.
+the sliding window, which lives in [sliding_window.py](sliding_window.py) because
+it needs the chunk seams this layer does not have.
 
 ## Reaching a decoder by name
 
@@ -944,3 +945,101 @@ counterpart, because its spec is a phase graph with a sparse shorthand that must
 be expanded against a round count supplied at expansion time, while the spec here
 is linear: `DemChunksSpec.chunk_specs` is that expansion, and a second name for
 one operation would be a second spelling of it.
+
+## Sliding a window over those rounds
+
+Upstream `cudaq-qec` ships a `sliding_window` decoder over its extended detector
+error model: it cuts the model into round windows, hands each window its own
+matrices and its own inner decoder, commits the part of a window the window that
+follows cannot revise, and folds the committed corrections into a logical-frame
+prediction. [sliding_window.py](sliding_window.py) is that decoder over the
+windows above, plus the three chunk-scoped projections the same baseline lists.
+`dem_chunks_to_pcm` and `dem_chunks_to_o_sparse` are projections of the whole
+sequence, and `dem_chunks_to_d_sparse` is the memory XOR map that pairs a
+detector with the measurement bits it compares.
+
+The reshape is that a window's matrices are already cut. Upstream slices detector
+rows and error columns out of one flat matrix to build a window and re-indexes
+both, which is why its per-window `H_round` and `first_column` are separate facts
+it has to carry around. Here the decomposition already did that: `dem_close_all`
+lays a window out at its own place in the model's numbering, and a window's own
+model numbers its rows from zero and holds only that window's mechanisms. So the
+inner decoder of a window is built from that window's model and from nothing
+else, and nothing is inherited because there is nothing to inherit. Upstream's
+`first_columns` bookkeeping and its per-window `get_pcm_for_rounds` call have no
+counterpart here for the same reason.
+
+A *fault column* is a column of the model the sequence decomposes, and both
+sparse projections index that one column space in the order `dem_close_all`
+states — the order `detector_error_matrix()` and `observables_flips_matrix()` use
+— so `dem_chunks_to_pcm(chunks)` is the former read one detector row at a time
+and `dem_chunks_to_o_sparse(chunks)` is the latter, each in sparse form. A window
+enumerates its mechanisms in its own order, so a projection maps that local
+column onto the model's global one with the stable sort that takes the
+concatenated window order to the sorted model order; the detectors take part in
+the key because that is one of the terms the model sorts by, and two mechanisms
+that agree on every term are duplicates that flip the same rows and the same
+observables. The map comes from the windows themselves, so a sequence that is not
+a decomposition of one model is refused by `dem_close_all` before any column is
+named, and a numbering past what a realtime decoder can address is refused rather
+than wrapped.
+
+`dem_chunks_to_d_sparse` is the one projection that meets a third numbering: the
+*measurement bit* of a flat `rounds * d` buffer, which is what a memory
+experiment's raw measurements occupy. It is round-major, so detector `r * d + k`
+brings together bit `k` of round zero and nothing else in the first round, and bit
+`k` of rounds `r - 1` and `r` after it. The precondition is upstream's own — every
+round of the sequence is the same `d` detectors wide — and it is checked rather
+than assumed, which is what makes the function refuse a surface code's geometry
+by name: a distance-three surface code's boundary rounds are four rows wide where
+its interior rounds are eight, so its detectors are not pairs of uniform rounds
+and its correspondence comes from the circuit's measurement handles, which is
+`MeasurementMap`'s map and not this one's. `rounds * d` is required to be the
+sequence's detector count, so a decomposition whose rounds are not all `d` rows
+wide cannot be read through this map even by accident.
+
+`SlidingWindowDecoder` takes a `DemChunksSpec` and a registered inner decoder
+name, and resolves the name through `get_decoder`, so a name the registry does
+not hold is refused where the decoder is built. It is deliberately not itself in
+the registry: a registered decoder is built from a model or from the graph one
+defines, and a sliding window needs the windows of a decomposition, which a model
+does not state — upstream takes its window geometry as constructor arguments for
+the same reason. Two entry points replace upstream's one. `decode` takes a whole
+block in the model's detector numbering and splits it into the layout's rounds;
+`decode_round` takes one round in that round's own numbering, which is the
+numbering upstream's per-round vector already has. Upstream decides between the
+two paths by comparing the first entry's length against the block size, which is
+the kind of overloading a stated entry point does without.
+
+What an inner decoder has to report is the substantive narrowing. A window's
+syndrome is the events of its detector rows less the support of the mechanisms the
+window before it committed, because two adjacent windows share the boundary
+round's detectors and the same event may not be explained twice. Forming that
+residue needs to know which mechanisms a window selected, so an inner record must
+state them as `mechanisms` in that window's own column order, which is what
+`BeliefPropagationDecodeResult` holds. A record that states only observables is an
+answer rather than a correction and is refused by name at the first commit;
+`MatchingDecodeResult` states its correction as graph edges rather than as column
+indices, so the authority matcher is not yet usable as an inner decoder. That is
+a property of that record and is recorded as such rather than worked around here,
+and it is why the sliding window is not a second spelling of the matcher.
+
+`SlidingWindowDecodeResult` reports the committed part of the correction and the
+observables that vector flips, so the two are one statement read twice rather than
+two answers free to disagree; a caller who projects a window's mechanisms
+independently gets the same observables. It diverges from upstream in reporting
+the committed faults while the stream is still sliding, where upstream returns an
+empty vector until the final window because its result vector is indexed by a
+column space in which the shared columns are still open — no column is shared
+here. Its `complete` flag is what upstream's empty-vector return encodes, and its
+`converged` field is the inner decoders' flags anded, or `None` when none of them
+reports one, because `MatchingDecodeResult` has no such flag and crediting a
+decoder that said nothing with settling is worse than saying nothing.
+
+A window that cannot explain its residue refuses rather than guesses. That is not
+a defect: a window's residue is a subsystem the window need not span, so an
+arbitrary detector subset is not a syndrome any window promises to read, and a
+narrow window can therefore abandon a block that a wider one decodes. The tests
+say so directly by driving mechanisms rather than random subsets, and by asserting
+that a two-round window of a four-round chain abandons the terminal mechanisms'
+syndromes while a three-round window answers every mechanism of the same model.

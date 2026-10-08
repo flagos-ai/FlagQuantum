@@ -57,10 +57,10 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_construction` | aligned | now | — | Closed: construction is exact on both routes, the context object landed, and the baseline's `decompose_errors` argument has a counterpart of its own on the circuit route. The kernel-annotation route stays absent and named, so no X/Y fault family follows from a kernel body. |
 | `qec_dem_matrices_and_rates` | aligned | now | — | Closed: both matrices in the stim orientation, the error-id column, the per-mechanism rate column, the closed-form marginals and the context object are all present. |
 | `qec_dem_merge` | aligned | now | — | Closed: both stated rules, the uniqueness predicate and the refusal are present and enforced at the decoder. |
-| `qec_dem_chunking` | partial | now | `qec_decoder_family` | The layer algebra, the window identity, the named seams and the two round trips landed; what is left is the chunk-scoped matrix projection, which is the input shape of the sliding-window decoder and lands with it. |
+| `qec_dem_chunking` | partial | now | `qec_decoder_family` | The layer algebra, the window identity, the named seams, the two round trips and the three chunk-scoped projections all landed; what is left is the baseline's sparse spec shorthand, its per-seam tags and its straddle flags, which are reshape decisions rather than gaps. |
 | `qec_dem_text_interchange` | aligned | now | `qec_stim_integration` | Closed: both directions present and independently checked, the reader takes the whole grammar stim's writer uses, `repeat` blocks and comments included, both separator readings are offered under upstream's flag, and the detector count is read from the declarations. The narrowness is at the input end and the precision width is a stated tolerance; both are declined rather than left open. |
 | `qec_stim_sampling_join` | aligned | now | `qec_stim_integration` | Closed: the join landed, every family the noise record states is placed, and a second grammar places a channel bound to a named gate after the gate it matched. An arbitrary annotated circuit at the input end is declined by the type the sampler states rather than left as a gap. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a belief-propagation decoder that reads the hyperedges that matcher refuses, a composite-fault decomposition that widens it past the one hyperedge a memory circuit states, its PyMatching cross-check, and a name-keyed registry all landed; no sliding window, no batch result record, no plugin boundary. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a belief-propagation decoder that reads the hyperedges that matcher refuses, a composite-fault decomposition that widens it past the one hyperedge a memory circuit states, its PyMatching cross-check, a name-keyed registry and a sliding-window decoder over the chunk decomposition all landed; no batch result record and no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | absent | later | `qec_logical_operations` | Depends on the decoder family; align to the semantic core via Qualtran. |
@@ -437,20 +437,81 @@ mechanisms span a subspace of the detector space and a syndrome outside it did
 not come from this model; the least-bad set would be a correction that does not
 explain what it was asked about.
 
-What the row still does not have, and it is now one item of scope rather than
-three. The sliding-window decoder needs the chunk seams the baseline expresses as
-`DemChunkSpec` with a window size, a step size, a per-round error-rate vector and
-straddle rounds, and the substrate those seams need has since landed in
-`flagquantum/qec/chunks.py`, with the window identity and the two round trips
-asserted in `tests/qec/test_dem_chunks.py`, so what the row waits on is the
-decoder that reads a window and the chunk-scoped matrix projections it would be
-handed rather than the seams themselves. The baseline's `DecoderResult` — the
-batch record whose `opt_results` channel is compared as a boolean flag and whose
-empty batch yields a `(0, 0)` result with a `(0,)` converged vector — has no
-local carrier either; `BeliefPropagationDecodeResult` is deliberately this
-decoder's own record and not that one, because a belief-propagation answer is a
-convergence flag over a selected set rather than a batch of corrections. And the
-plugin boundary is still the baseline's precedent rather than a protocol here.
+**How the sliding window landed, and the one narrowing it states.** The row's
+last unbuilt decoder half was the sliding window, and it is now
+`flagquantum/qec/sliding_window.py`, built on the chunk seams that
+`flagquantum/qec/chunks.py` states and that `qec_dem_chunking` records. The
+reshape is that a window's matrices are already cut. Upstream slices detector rows
+and error columns out of one flat matrix to build a window and re-indexes both,
+which is why its per-window `H_round` and its `first_columns` list are separate
+facts it carries around; here the decomposition did that already, because
+`dem_close_all` lays a window out at its own place in the model's numbering and a
+window's own model numbers its rows from zero and holds only that window's
+mechanisms. So the inner decoder of a window is built from that window's model and
+from nothing else, and upstream's column-offset commit has no counterpart: a
+window's correction is final when it is committed, nothing downstream can revise
+it, and no residue has to be re-derived from an offset.
+
+What an inner decoder has to report is the substantive narrowing, and it is
+stated rather than worked around. A window's syndrome is its own detector rows
+*less the support of the mechanisms the window before it committed*, because two
+adjacent windows share the boundary round's detectors and one event may not be
+explained twice. Forming that residue needs the selected mechanisms, so an inner
+record must state them as `mechanisms` in that window's own column order, which
+`BeliefPropagationDecodeResult` does and `MatchingDecodeResult` does not — that
+record states a correction as graph edges rather than as column indices. A window
+built with the authority matcher therefore refuses at the first commit by name,
+naming the inner decoder, its record type and the window, instead of silently
+dropping the correction; that refusal is a property of the matcher's record and
+is recorded as such. A window that cannot explain its residue refuses for the
+neighbouring reason and resets the stream, which is a limit rather than a defect:
+a window's residue is a subsystem the window need not span, so an arbitrary
+detector subset is not a syndrome any window promises to read. Measured on the
+distance-three repetition code at four rounds, a two-round window abandons the
+terminal mechanisms' syndromes where a three-round window answers every mechanism
+of the same model, and the tests assert both by driving the model's own mechanisms
+rather than random subsets.
+
+Three decisions about the record are worth naming because they are divergences
+rather than translations. `SlidingWindowDecodeResult` reports the committed faults
+*while the stream is still sliding*, where upstream returns an empty vector until
+the final window because its result vector is indexed by a column space in which
+the shared columns are still open — no column is shared here, so an empty vector
+would be stating less than the decoder knows. Its `complete` flag is what
+upstream's empty-vector return encodes, and its `converged` field is the inner
+decoders' flags anded, or `None` when none of them reports one, because the
+matcher's record has no such flag and crediting a decoder that said nothing with
+settling would be worse than saying nothing. And the decoder is deliberately *not*
+a registered name: a registered decoder is built from a model or from the graph
+one defines, and a sliding window needs the windows of a decomposition, which a
+model does not state, so a caller constructs it from a `DemChunksSpec` and names
+the registry decoder each window is built from.
+
+The three chunk-scoped projections landed with it. `dem_chunks_to_pcm` and
+`dem_chunks_to_o_sparse` index one shared fault column space in the order
+`dem_close_all` states, so `dem_chunks_to_pcm(chunks)` is the closed model's
+`detector_error_matrix()` read one detector row at a time and
+`dem_chunks_to_o_sparse(chunks)` is its `observables_flips_matrix()`, each in
+sparse form and neither built dense. `dem_chunks_to_pcm` is deliberately the
+trail-row form rather than a dense matrix product: a long model's mechanism count
+makes the dense product the thing to avoid, and the row and column index spaces
+are what a caller reads either way. `dem_chunks_to_d_sparse` is the one projection
+that meets a third numbering — the measurement bit of a flat `rounds * d` buffer,
+which is what a memory experiment's raw measurements occupy — so it is round-major
+and its precondition is checked rather than assumed: every round of the sequence
+must be the same `d` detectors wide. That is what makes it refuse a surface code's
+boundary rounds by name, since a distance-three surface code's boundary rounds are
+four rows wide where its interior rounds are eight; that geometry's correspondence
+comes from the circuit's measurement handles through `MeasurementMap` instead.
+
+What the row still does not have is now two items and neither is a decoder. The
+baseline's `DecoderResult` — the batch record whose `opt_results` channel is
+compared as a boolean flag and whose empty batch yields a `(0, 0)` result with a
+`(0,)` converged vector — has no local carrier; `BeliefPropagationDecodeResult`
+and `SlidingWindowDecodeResult` are deliberately each decoder's own record and not
+that one, because one answer is a convergence flag over a selected set and the
+other is a stream of committed windows. And the plugin boundary is still the
+baseline's precedent rather than a protocol here.
 
 **What `qec_dem_chunking` closed, and what it did not.** The row was `absent`
 with a floor of `later`, and the reason it was `later` was stated in the row
@@ -560,12 +621,18 @@ upstream's `extended_dem` is a model type holding the check matrix, the observab
 matrix, the rate vector and the seams; here a window is a plain
 `DetectorErrorModel` plus its own seams, which is the same decomposition without a
 second model type, and `dem_close` is what turns one back into an addressed model.
-What is deliberately not built is the chunk-scoped matrix projection —
-`dem_chunks_to_d_sparse`, `dem_chunks_to_o_sparse`, `dem_chunks_to_pcm` — and the
-reason is scope rather than difficulty: those three are the input shape of the
-decoder that reads a window, not of the model record, so they land with the
-sliding-window decoder inside `qec_decoder_family`. That is why this row is
-`partial` and not `aligned`, and it is the only thing the row still names.
+The chunk-scoped matrix projection landed with the decoder that reads a window
+rather than ahead of it, which is where this row said it belonged:
+`dem_chunks_to_pcm` and `dem_chunks_to_o_sparse` index one shared fault column
+space in the order `dem_close_all` states, so each is the closed model's own
+detector or observable matrix in sparse form, and `dem_chunks_to_d_sparse` is the
+memory XOR map that meets a third numbering — the measurement bit of a flat
+`rounds * d` buffer — and checks its own precondition of uniform round widths
+rather than assuming it, which is why it refuses a surface code's boundary rounds
+by name and leaves that geometry to `MeasurementMap`. What the row still names is
+therefore only the baseline's sparse spec shorthand, its per-seam tags and its
+straddle flags, and those are reshape decisions recorded above rather than
+pending work.
 
 **What `qec_stim_sampling_join` closed, and what it did not.** The row said the
 join was the gap: the stabilizer engine executed noiseless Clifford programs and
@@ -1115,10 +1182,13 @@ decoder result record and the decoder base protocol. The widest of these:
   of one operation. And upstream's `extended_dem` record — a model type holding
   the check matrix, the observable matrix, the rate vector and the seams — has no
   counterpart because a window here is a plain `DetectorErrorModel` plus its
-  seams, which is the same decomposition without a second model type. What is
-  still absent is the chunk-scoped matrix projection, and that is recorded in
-  `qec_dem_chunking` rather than here: a window's matrices are the input shape of
-  the sliding-window decoder, not of the model record.
+  seams, which is the same decomposition without a second model type. The
+  chunk-scoped matrix projection has since landed beside the sliding-window
+  decoder rather than being part of this record, and that is recorded in
+  `qec_dem_chunking`: a window's matrices are the input shape of the decoder that
+  reads it, so `dem_chunks_to_pcm`, `dem_chunks_to_o_sparse` and
+  `dem_chunks_to_d_sparse` read a sequence through the model it decomposes and
+  this row's `extended_dem` absence is unaffected by them.
 
 - **Per-error rates.** Upstream keeps one parallel `error_rates` vector beside
   the matrices; here each mechanism's rate is a field of its own record and
@@ -1184,7 +1254,9 @@ decoder result record and the decoder base protocol. The widest of these:
   returns the dense `(detectors, raw measurements)` matrix `D`, and the
   free-function helpers `d_sparse`, `dem_chunks_to_d_sparse`,
   `dem_chunks_to_o_sparse` and `dem_chunks_to_pcm` produce the `-1`-terminated
-  sparse forms a realtime decoder configuration takes. Here one record,
+  sparse forms a realtime decoder configuration takes, the last three of which
+  have since landed as the chunk-scoped projections of the sliding-window
+  decoder. Here one record,
   `MeasurementMap`, stores the row structure itself — one row per detector or
   observable, holding the measurements whose parity it is — and projects to both
   forms: `dense()` gives upstream's orientation and `flattened()` the sparse one,
@@ -1229,11 +1301,12 @@ decoder result record and the decoder base protocol. The widest of these:
 backend selector, and the plugin boundary upstream keeps for open decoders. The
 seam/stitch/close family is no longer among them, and `qec_dem_chunking` records
 what of it landed and what did not. The chunk-scoped matrix projection
-(`dem_chunks_to_d_sparse`, `dem_chunks_to_o_sparse`, `dem_chunks_to_pcm`) is
-absent too, but it is a named sub-absence rather than a row of its own: it is the
-one item of that family that did not land, it is recorded inside
-`dem_measurement_to_detector_map` and inside `qec_dem_chunking`, and it belongs
-to the decoder that reads a window rather than to the model record.
+(`dem_chunks_to_d_sparse`, `dem_chunks_to_o_sparse`, `dem_chunks_to_pcm`) has
+landed as well, with the sliding-window decoder that reads a window: it belongs to
+that decoder rather than to the model record, it is recorded inside
+`dem_measurement_to_detector_map`, `dem_seam_and_chunk_api` and
+`qec_dem_chunking`, and the field row it is read through is unchanged, because
+none of those three projections states a model of its own.
 
 Of the absent set, `canonicalize_for_rounds` is the one that sits closest to work
 already planned: a matcher wants round structure. The correlated-channel half of
@@ -1459,11 +1532,11 @@ CUDA-Q side; the last column is the difference in one line.
 | `dem_code_capacity_noise` | reshaped | The four families line up one for one against X/Y/Z data rates plus a measurement rate, scalars and per-qubit/per-check vectors alike, with the same wholesale override. The difference is the carrier: a standalone record read beside a code rather than a field of the matrix entry point's argument, so the vector lengths are validated against a count the reader supplies. |
 | `dem_canonicalize` | absent | No round-folding operation, so a model that states a group of alternatives still reaches a matcher unfolded; the round *structure* a window needs is now stated by `dem_seam_and_chunk_api`, and folding the group under its exclusivity is what remains. |
 | `dem_merge_operation` | renamed | Same two rules and the same formulas, free function with a mode enum against a model method with an enum of its own; the uniqueness assert is called here rather than merely offered. |
-| `dem_seam_and_chunk_api` | reshaped | Windows over named seams on both sides; the seam identity is a name rather than a hash of one, a seam's rows are global detector indices rather than positional tags, the spec is linear rather than a phase graph, and the chunk-scoped matrices are still absent. |
-| `dem_measurement_to_detector_map` | reshaped | One `MeasurementMap` record against a stored dense D matrix plus free-function sparse helpers: it projects to both forms, and a model now decomposes into windows over named seams, but the chunk-scoped helpers have no counterpart because a window's matrices belong to the decoder that reads a window. |
+| `dem_seam_and_chunk_api` | reshaped | Windows over named seams on both sides; the seam identity is a name rather than a hash of one, a seam's rows are global detector indices rather than positional tags, the spec is linear rather than a phase graph, and the chunk-scoped matrices landed with the sliding-window decoder as `dem_chunks_to_pcm` / `dem_chunks_to_o_sparse` / `dem_chunks_to_d_sparse`. |
+| `dem_measurement_to_detector_map` | reshaped | One `MeasurementMap` record against a stored dense D matrix plus free-function sparse helpers: it projects to both forms, and a model now decomposes into windows over named seams; the chunk-scoped helpers landed beside this map rather than inside it, because they read a sequence through the model it decomposes, and `dem_chunks_to_d_sparse` is the one that meets this map's own measurement-bit numbering while refusing a non-uniform round width by name. |
 | `kernel_annotation_surface` | reshaped | Layouts beside the source against annotations in the kernel body over measurement handles. |
 | `kernel_dem_from_kernel` | absent | CUDA-Q core derives the DEM from the kernel's own annotations; here it is assembled by hand. |
 | `decoder_registry` | reshaped | Upstream reaches a decoder by name — `get_decoder(name, H_or_dem_text_or_sparse_matrix, **options)` with a decorator putting a class behind a name; here `flagquantum.qec.get_decoder` takes a carrier and `register_decoder` puts one there, checked while the registering module is imported. Narrower on two deliberate points: the source argument is one of the three carriers a caller can hold a model in rather than a parity-check matrix, and only the detector-error-model family is registered, because the repetition-code decoders take an ordered syndrome history rather than detection events. |
-| `decoder_result_record` | reshaped | Single-shot record against `converged` + optional results, with separate batch and async records. The DEM-level matcher adds `MatchingDecodeResult` and the belief-propagation decoder adds `BeliefPropagationDecodeResult`, which is the one carrying the convergence flag; neither is this record and neither has a batch or async form. |
-| `decoder_base_methods` | reshaped | `decode` + streaming against `decode`/`decode_batch`/`decode_async`/`get_block_size`/`get_syndrome_size`/`get_version` and an errors-vs-observables request. The DEM-level decoder does not implement the repetition-only protocol, because no correction record here can express a surface-code correction. |
+| `decoder_result_record` | reshaped | Single-shot record against `converged` + optional results, with separate batch and async records. The DEM-level matcher adds `MatchingDecodeResult` and the belief-propagation decoder adds `BeliefPropagationDecodeResult`, which is the one carrying the convergence flag; the sliding window adds `SlidingWindowDecodeResult`, whose `converged` is the inner flags anded or `None` when none reports one, and which is the one local record that states a stream rather than a shot. None of the three is this record and none has a batch or async form. |
+| `decoder_base_methods` | reshaped | `decode` + streaming against `decode`/`decode_batch`/`decode_async`/`get_block_size`/`get_syndrome_size`/`get_version` and an errors-vs-observables request. The DEM-level decoder does not implement the repetition-only protocol, because no correction record here can express a surface-code correction; the sliding window instead states two entry points — a whole block in the model's numbering and one round in that round's own — and its record reports the committed faults and the observables that same vector flips, which is upstream's errors-vs-observables request answered rather than asked. |
 | `decoder_plugin_precedent` | absent | Upstream integrates open chromobius and pymatching plugins behind a boundary while its closed decoder ships as a binary — the same split the matrix plans. The integrating half of that split is now realized for one library, as the PyMatching cross-check behind an extra; what is still absent is the boundary itself, since the adapter is a concrete class rather than a registered plugin. |
