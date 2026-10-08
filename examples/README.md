@@ -15,6 +15,10 @@ These examples do not use that alias:
 - [`kaiwu_matrix_boundary.py`](kaiwu_matrix_boundary.py) — it imports the
   experimental Kaiwu ecosystem surface directly to demonstrate local QUBO and
   Ising interoperability without credentials, provider submission, or quota.
+- [`qdiffusion_kaiwu/minimal_live_sampling.py`](qdiffusion_kaiwu/minimal_live_sampling.py)
+  — the shortest live `FlagQuantum -> Kaiwu -> QBoson` path. It requires an
+  explicit ten-credit acknowledgement and uses the provider-specific
+  ecosystem and remote boundaries without a local fallback.
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
   `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py` and
   `error_mitigation.py`, which import the unit they demonstrate from the

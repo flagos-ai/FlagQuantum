@@ -11,6 +11,46 @@ path but failed the preregistered guided repeat-ratio threshold. The redacted
 result is documented in
 [`QBOSON_QDIFFUSION_ACCEPTANCE_2026-10-08.md`](../../docs/guides/QBOSON_QDIFFUSION_ACCEPTANCE_2026-10-08.md).
 
+## FlagQuantum-first live path
+
+The shortest provider path remains owned by FlagQuantum rather than by the
+QDiffusion example:
+
+```text
+Ising matrix or QDiffusion
+    -> flagquantum.ecosystem.kaiwu.KaiwuSampler
+    -> flagquantum.remote.kaiwu.KaiwuSDKClient
+    -> Kaiwu SDK -> QBoson SPQC
+```
+
+`KaiwuSampler` owns the plugin-compatible `solve(ising_matrix)` boundary,
+matrix and precision semantics, deduplication, and the hard remote-call budget.
+`KaiwuSDKClient` owns credentials, provider submission, bounded polling,
+result validation, and recovery. QDiffusion is one consumer of this path; it
+does not call the vendor SDK directly.
+
+After installing the reviewed Kaiwu 1.3.1 wheel and exporting
+`QBOSON_USER_ID` and `QBOSON_SDK_CODE`, run one explicitly acknowledged,
+ten-credit sampling request with:
+
+```bash
+mkdir -p private/checkpoints private/evidence
+chmod 700 private private/checkpoints private/evidence
+
+python -B -s -m examples.qdiffusion_kaiwu.minimal_live_sampling \
+  --checkpoint-dir "$PWD/private/checkpoints" \
+  --receipt-output "$PWD/private/evidence/minimal-sampling-receipt.json" \
+  --task-name flagquantum-minimal-sampling \
+  --acknowledge-provider-cost I_ACKNOWLEDGE_TEN_QBOSON_SAMPLING_CREDITS
+```
+
+The example uses `project_no=None`, the account-default route. It submits at
+most one distinct matrix, requests exactly ten samples, has no local fallback,
+and writes a credential-free recovery receipt without overwriting an existing
+file. Read [`minimal_live_sampling.py`](minimal_live_sampling.py) for the
+complete application code. Use the more extensive guarded probes below when
+producing reviewable evidence rather than learning the integration.
+
 ## Credential-free local golden path
 
 `run_local_conformance.sh` is the single local entry point for the conversion,
