@@ -12,6 +12,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`kaiwu_matrix_boundary.py`](kaiwu_matrix_boundary.py) — it imports the
+  experimental Kaiwu ecosystem surface directly to demonstrate local QUBO and
+  Ising interoperability without credentials, provider submission, or quota.
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
   `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py` and
   `error_mitigation.py`, which import the unit they demonstrate from the
@@ -52,6 +55,13 @@ They cover local statevector simulation, exact and sampled measurements, and
 PyTorch-native training without credentials, remote resources, or optional
 backends. See the [annotated local guide](../docs/guides/LOCAL_WORKFLOWS.md)
 before moving to configurable research examples.
+
+To inspect the local QBoson Kaiwu matrix boundary without installing the Kaiwu
+SDK or submitting a remote task, run:
+
+```bash
+python -m examples.kaiwu_matrix_boundary
+```
 
 ## First CPU execution
 

@@ -26,7 +26,16 @@ implementation of Kaiwu `PrecisionReducer`. Before using it for real-machine
 submission, run version-pinned conformance tests against the installed Kaiwu
 SDK and record the resulting coefficient and energy-order evidence.
 
-For a ten-minute local check, run:
+For a copy-ready local QUBO-to-Ising workflow that does not read credentials,
+submit a remote task, or consume provider quota, run:
+
+```bash
+python -m examples.kaiwu_matrix_boundary
+```
+
+The example converts a two-variable QUBO problem, verifies QUBO/Ising energy
+parity, decodes the lowest-energy spin vector, and reports explicit signed
+8-bit integer preparation evidence. To run the focused contract tests, use:
 
 ```bash
 pytest -q tests/team/ecosystem/test_kaiwu_matrix_boundary.py
