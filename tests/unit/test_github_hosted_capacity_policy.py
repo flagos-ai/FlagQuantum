@@ -208,10 +208,20 @@ def test_a_superseded_pull_request_run_is_cancelled_and_a_main_push_is_not() -> 
             offenders.append(f"{workflow} declares no workflow-level concurrency")
             continue
         group = str(concurrency.get("group", ""))
+        # The two halves have to be asserted together. A group keyed to
+        # `github.sha` for every event would satisfy "a push is not superseded"
+        # while also giving every push to a branch under review its own group, so
+        # `cancel-in-progress` would never cancel anything and each push would
+        # queue a full matrix behind the last.
         if "github.sha" not in group:
             offenders.append(
                 f"{workflow} keys a push run to its branch, so the next push to "
                 "main supersedes a revision that is already merged"
+            )
+        if "github.event_name == 'push'" not in group:
+            offenders.append(
+                f"{workflow} does not keep pull request runs in one group, so a "
+                "push to a branch under review queues a matrix that is never read"
             )
         if concurrency.get("cancel-in-progress") != (
             "${{ github.event_name == 'pull_request' }}"
