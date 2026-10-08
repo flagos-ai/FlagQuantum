@@ -1,0 +1,181 @@
+{
+  "schema": "flagquantum.multi_level_ir_internal_contract",
+  "version": "0.1",
+  "status": "implementation_authorized",
+  "owner": "core",
+  "approval_basis": "docs/development/API_CHANGE_PROPOSAL_062_MULTI_LEVEL_IR_PHASE_4_ACTIVATION.md",
+  "decision": "docs/architecture/decisions/IR_007_PHASE_4_HYBRID_DYNAMIC_SCOPE.md",
+  "taxonomy_source": "docs/architecture/decisions/IR_006_PHASE1_REVERSIBLE_SCOPE.md",
+  "existing_authorities": {
+    "public_ir": "flagquantum.core.ir.CircuitIR",
+    "public_ir_version": "flagquantum.core.ir.IR_VERSION",
+    "public_schema": "docs/public_api_v1.json",
+    "pass_infrastructure": "flagquantum.compiler.pass_manager.PassManager",
+    "single_level_precedent": "flagquantum.compiler._hybrid",
+    "boundary_module": "flagquantum.core.ir.levels",
+    "reader": "tools/check_multi_level_ir_contract.py",
+    "conformance": "tests/unit/test_multi_level_ir_contract.py"
+  },
+  "public_level": "circuit",
+  "internal_levels": [
+    "program",
+    "quantum",
+    "target"
+  ],
+  "realized_exits": [
+    "program"
+  ],
+  "declared_but_unimplemented_exits": [
+    "quantum",
+    "target"
+  ],
+  "support_states": [
+    "supported_exact",
+    "unsupported_with_diagnostics",
+    "invalid_input"
+  ],
+  "forbidden_states": [
+    "best_effort"
+  ],
+  "value_kinds": [
+    "bool",
+    "index",
+    "scalar",
+    "tensor",
+    "qubit"
+  ],
+  "linear_value_kinds": [
+    "qubit"
+  ],
+  "terminators": [
+    "return",
+    "branch"
+  ],
+  "diagnostic_codes": [
+    {
+      "code": "level.conditional_instruction",
+      "level": "circuit",
+      "meaning": "the circuit carries an instruction with declared conditions that the public schema does not resolve"
+    },
+    {
+      "code": "level.dynamic_instruction",
+      "level": "circuit",
+      "meaning": "the circuit carries an instruction marked is_dynamic, which has no def-use representation at the internal levels"
+    },
+    {
+      "code": "level.no_canonical_payload",
+      "level": "program",
+      "meaning": "the record records no canonical payload, so restoring the public circuit would require lowering"
+    },
+    {
+      "code": "level.not_circuit_ir",
+      "level": "circuit",
+      "meaning": "the caller passed something that is not a CircuitIR"
+    },
+    {
+      "code": "level.not_program_record",
+      "level": "program",
+      "meaning": "the caller passed something that is not a ProgramRecord"
+    },
+    {
+      "code": "level.payload_invalid",
+      "level": "program",
+      "meaning": "the recorded canonical payload is not a readable CircuitIR"
+    },
+    {
+      "code": "level.round_trip_mismatch",
+      "level": "program",
+      "meaning": "the recorded payload is not the canonical form: restoring it produces a different payload"
+    },
+    {
+      "code": "level.unsupported_exit",
+      "level": "program",
+      "meaning": "the requested level is declared by this contract but not implemented"
+    },
+    {
+      "code": "program.block_duplicate",
+      "level": "program",
+      "meaning": "two blocks of one function share a name"
+    },
+    {
+      "code": "program.block_missing",
+      "level": "program",
+      "meaning": "a function holds no block"
+    },
+    {
+      "code": "program.edge_arity",
+      "level": "program",
+      "meaning": "an edge contributes a different number of values than its target block declares as arguments"
+    },
+    {
+      "code": "program.edge_kind",
+      "level": "program",
+      "meaning": "an edge contributes kinds that differ positionally from the kinds its target block declares"
+    },
+    {
+      "code": "program.edge_missing",
+      "level": "program",
+      "meaning": "a branching block declares no successor"
+    },
+    {
+      "code": "program.edge_unexpected",
+      "level": "program",
+      "meaning": "a returning block declares a successor"
+    },
+    {
+      "code": "program.edge_unknown",
+      "level": "program",
+      "meaning": "an edge names a block that is not in the function"
+    },
+    {
+      "code": "program.entry_missing",
+      "level": "program",
+      "meaning": "the declared entry block is not among the function's blocks"
+    },
+    {
+      "code": "program.function_arity",
+      "level": "program",
+      "meaning": "a program record holds no function"
+    },
+    {
+      "code": "program.terminator_unknown",
+      "level": "program",
+      "meaning": "a block ends with a terminator outside the declared vocabulary"
+    },
+    {
+      "code": "value.identity",
+      "level": "program",
+      "meaning": "a value is not identifiable by scope and index, or its kind is outside the declared vocabulary"
+    },
+    {
+      "code": "value.linear_duplicate",
+      "level": "program",
+      "meaning": "a linear value has more than one consumer"
+    },
+    {
+      "code": "value.linear_unconsumed",
+      "level": "program",
+      "meaning": "a branching block does not forward a linear argument it owns"
+    }
+  ],
+  "rules": {
+    "level_entry_and_exit": "A level is entered only from the level below it, and a pass may consume and produce only levels this contract declares. Only the program exit exists today; the quantum and target exits are declared and are refused by name until the implementation that owns them lands, so no caller receives an approximation of a level that does not exist.",
+    "value_identity": "A value is identified by the scope it was defined in and its index within that scope, never by a name and never by an object identity. A scope name is non-empty, an index is non-negative, and a kind comes from the declared vocabulary.",
+    "linearity": "A value whose kind is linear identifies one resource state at one program point, so it has exactly one consumer. A branching block consumes a linear argument by forwarding it exactly once; a returning block's terminator is its consumer. A second consumer is refused, which is also how a stale use and a use after release are refused.",
+    "joins": "Every predecessor contributes exactly one live value for the same resource, which this boundary checks positionally: an edge into a block must contribute exactly the kinds that block declares as arguments, in order. Nothing is unified or merged implicitly.",
+    "failure_categories": "Exactly one state per conversion, from IR-006's taxonomy extended to the internal levels: supported_exact, unsupported_with_diagnostics, or invalid_input. A refusal carries at least one typed diagnostic naming a code this contract declares, and a supported_exact result carries none.",
+    "round_trip": "A supported static circuit round-trips to a canonical CircuitIR payload exactly: the payload restored from the program level equals, field for field, the canonical payload that entered it, and a payload the boundary cannot re-canonicalize is refused rather than reported as an exact round trip. The contract fake reaches this by recording the payload rather than by lowering; the program level that replaces it must reach it by construction.",
+    "rejection": "Dynamic structure, conditional structure, unmodelled structure, and a payload that no longer reads as a CircuitIR are rejected with diagnostics rather than approximated. An illegal control-flow graph is additionally refused as invalid input, including an unknown terminator, an unknown successor, a missing successor on a branch, a successor on a return, and a join whose kinds disagree.",
+    "no_best_effort": "No implicit lossy mode exists. best_effort is not a support state, and no code path may report one conversion as another because the difference was believed to be small.",
+    "no_second_pass_manager": "This boundary adds levels to the pass infrastructure that already exists at flagquantum.compiler.pass_manager; it does not introduce a pass manager, a pass registry, an analysis registry, an ExecutableArtifact, or a RuntimeAdapter of its own.",
+    "no_root_export": "The boundary module is internal: it is absent from the package root's exports, absent from the Stable Core snapshot, and adds no root export. CircuitIR schema 1.0 and IR_VERSION remain the only public serialized IR identity."
+  },
+  "exclusions": [
+    "no general-purpose classical language: recursion, unbounded loops, dynamic memory, exceptions, closures, or higher-order values",
+    "no timing, pulse, or calibration surface",
+    "no provider-native instruction set",
+    "no change to IR_VERSION, to CircuitIR schema 1.0, or to the Stable Core export set",
+    "no textual internal IR as a compatibility surface",
+    "no fq.AncillaQubit or other new public qubit type"
+  ]
+}

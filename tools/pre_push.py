@@ -120,6 +120,10 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_openqasm_import_contract.py"),
         ),
         Check(
+            "internal multi-level IR contract",
+            (python_executable, "tools/check_multi_level_ir_contract.py"),
+        ),
+        Check(
             "realtime messaging contract",
             (python_executable, "tools/check_realtime_messaging_contract.py"),
         ),
