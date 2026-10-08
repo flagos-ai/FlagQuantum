@@ -32,6 +32,93 @@ ADJOINT_RULES: tuple[str, ...] = (
     "not_applicable",
 )
 
+#: Rule names :attr:`OperatorSchema.power_rule` may return, and what each one means.
+#:
+#: ``scale_single_parameter``  the opcode declares exactly one parameter and its
+#:                             operator is the exponential of that parameter, so the
+#:                             gate applied ``k`` times is the same gate with that one
+#:                             parameter multiplied by ``k``. This is the only rewrite
+#:                             a power performs, and it is measured rather than
+#:                             assumed: the circuit composition contract gate
+#:                             compares the two forms through the dense operator of
+#:                             every opcode this rule names, so an opcode whose angle
+#:                             does not scale linearly is caught by the gate instead
+#:                             of being mis-announced here.
+#: ``repeat_instruction``      the declaration fixes no single-gate form, so the power
+#:                             is written out as further copies of the program. This
+#:                             is exact for every instruction, unitary or not, which
+#:                             is why it is the rule for everything else: a
+#:                             multi-angle opcode such as ``u3``, a gate with no
+#:                             parameters at all, a custom operation carrying its own
+#:                             matrix, and a noise channel all get it.
+POWER_RULES: tuple[str, ...] = (
+    "scale_single_parameter",
+    "repeat_instruction",
+)
+
+#: Rule names ``OperatorSchema.control`` may use, and what each one emits.
+#:
+#: A controlled form is not a corner of the matrix library but a closed identity over
+#: the same registered opcodes, so it is declared here with the standing ``adjoint``
+#: has. Two facts are declared: which registered opcode already is the single-control
+#: form (``CONTROL_PARTNERS``, consulted before any rule below is read), and which
+#: identity carries the remaining control count.
+#:
+#: Every identity is exact and uses no ancilla, which is what makes it safe inside a
+#: program builder. A builder has no way to learn which qubit starts in ``|0>``, so a
+#: construction that borrowed an ancilla would be right on a clean one and silently
+#: wrong on a dirty one. The price is depth: the ladder for ``k`` controls emits
+#: ``4 * 3 ** (k - 1) - 3`` gates, so ``MAX_LADDER_LEVEL`` bounds it rather than
+#: letting an arithmetic request produce a program nobody can inspect.
+#:
+#: ``identity``              the controlled form of the gate is the empty program.
+#: ``diagonal_ladder``       the gate is a phase ``P(phi)``, so ``C^k`` is the phase
+#:                           ladder itself.
+#: ``x_conjugated_ladder``   the gate is ``H P(phi) H``.
+#: ``y_conjugated_ladder``   the gate is ``(S H) P(phi) (S H)^dagger``.
+#: ``ry_conjugated_ladder``  the gate is ``RY(pi/4) P(pi) RY(-pi/4)``.
+#: ``rz_ladder``             the gate is ``P(theta)`` up to one eigenvalue phase
+#:                           ``-theta/2``, which stops being global once controlled.
+#: ``rx_ladder``             ``H P(theta) H`` up to the same eigenvalue phase.
+#: ``ry_ladder``             ``(S H) P(theta) (S H)^dagger`` up to the same phase.
+#: ``u_angle_ladder``        a gate whose two or three angles are two diagonal phases
+#:                           around one conjugated rotation.
+#: ``swap_ladder``           ``SWAP`` as three ``CX``.
+#: ``cswap_ladder``          ``CSWAP`` as three ``CCX``.
+#: ``rzz_ladder``            ``RZZ`` as ``CX RZ CX``.
+#: ``rxx_ladder``            ``RXX`` as ``(H x H) RZZ (H x H)``.
+#: ``ryy_ladder``            ``RYY`` as ``(S H x S H) RZZ (S H x S H)^dagger``.
+#: ``not_available``         the opcode has no controlled form this IR can express.
+CONTROL_RULES: tuple[str, ...] = (
+    "identity",
+    "diagonal_ladder",
+    "x_conjugated_ladder",
+    "y_conjugated_ladder",
+    "ry_conjugated_ladder",
+    "rz_ladder",
+    "rx_ladder",
+    "ry_ladder",
+    "u_angle_ladder",
+    "swap_ladder",
+    "cswap_ladder",
+    "rzz_ladder",
+    "rxx_ladder",
+    "ryy_ladder",
+    "not_available",
+)
+
+#: The deepest phase ladder one controlled instruction may need.
+#:
+#: A ladder of level ``level`` emits ``4 * 3 ** (level - 1) - 3`` instructions, so the
+#: cost is exponential and this bound is what keeps a control count from producing a
+#: program no one can inspect. It is a bound on the *ladder*, not on the control count,
+#: because a wider gate reaches a deeper ladder for the same count:
+#: ``control_ladder_level`` returns ``n_controls + arity - 1``. At this level the
+#: widest route -- ``CSWAP``, whose three Toffolis each reach one level further -- emits
+#: 236193 instructions, which the circuit composition contract records as measured
+#: evidence rather than as an estimate.
+MAX_LADDER_LEVEL = 10
+
 
 @dataclass(frozen=True)
 class OperatorSchema:
@@ -45,8 +132,17 @@ class OperatorSchema:
     decomposition: tuple[str, ...]
     qubit_convention: tuple[str, ...]
     parameter_frequencies: tuple[tuple[float, ...], ...] = ()
+    #: How one more control is added to this opcode; see ``CONTROL_RULES``. The
+    #: default is the refusal, so an opcode added without a controlled form is
+    #: uncontrollable rather than silently controlled by the wrong identity.
+    control: str = "not_available"
 
     def __post_init__(self) -> None:
+        if self.control not in CONTROL_RULES:
+            raise ValueError(
+                f"opcode {self.opcode!r} declares control rule {self.control!r}, "
+                f"which is not one of {CONTROL_RULES}"
+            )
         if not self.parameter_frequencies:
             return
         if self.semantic_kind != "unitary":
@@ -88,6 +184,34 @@ class OperatorSchema:
         """
 
         return bool(self.parameter_frequencies)
+
+    @property
+    def power_rule(self) -> str:
+        """Whether this opcode's angles scale, or its power is a repetition.
+
+        This is read from the declaration rather than stored beside it, so
+        "the gate's angle scales linearly" and "the powered gate is one
+        instruction" cannot drift apart. The derivation is a measurement of the
+        gates:
+
+        * a unitary that declares exactly one parameter is the exponential of that
+          parameter, so the gate applied ``k`` times is that gate with the parameter
+          multiplied by ``k``, which is one instruction and an exact result;
+        * every other instruction -- no parameter at all, several whose joint action
+          is not linear in them, an unknown opcode carrying its own matrix, or a noise
+          channel -- has no single-gate form, so the power is written as further
+          copies of the program, which is exact for any instruction and needs no
+          property of the gate beyond being executable.
+
+        The first claim is a property of the gates and not of the field, so the circuit
+        composition contract gate measures it through each opcode's dense operator and
+        refuses a gate whose angle turns out not to scale. A prediction read off a
+        declaration is only as good as the measurement behind it.
+        """
+
+        if self.unitary and len(self.parameters) == 1:
+            return "scale_single_parameter"
+        return "repeat_instruction"
 
     def shift_rule(self, parameter: str) -> tuple[tuple[float, float], ...]:
         """Coefficients and shifts that differentiate ``parameter``.
@@ -187,6 +311,7 @@ def _unitary(
     frequencies: tuple[tuple[float, ...], ...] = (),
     adjoint: str = "matrix_adjoint",
     decomposition: tuple[str, ...] = (),
+    control: str = "not_available",
 ) -> OperatorSchema:
     qubit_names = {
         1: ("target",),
@@ -204,6 +329,7 @@ def _unitary(
         decomposition=decomposition,
         qubit_convention=qubit_names,
         parameter_frequencies=frequencies,
+        control=control,
     )
 
 
@@ -236,23 +362,30 @@ def _channel(opcode: str, *, parameters: tuple[str, ...]) -> OperatorSchema:
 
 
 _SCHEMAS = (
-    _unitary("i", 1, aliases=("id",), adjoint="self_inverse"),
-    _unitary("x", 1, adjoint="self_inverse"),
-    _unitary("y", 1, adjoint="self_inverse"),
-    _unitary("z", 1, adjoint="self_inverse"),
-    _unitary("h", 1, aliases=("hadamard",), adjoint="self_inverse"),
-    _unitary("s", 1, adjoint="sdg"),
-    _unitary("sdg", 1, aliases=("sd",), adjoint="s"),
-    _unitary("t", 1, adjoint="tdg"),
-    _unitary("tdg", 1, aliases=("td",), adjoint="t"),
-    _unitary("sx", 1, adjoint="sxdg"),
-    _unitary("sxdg", 1, adjoint="sx"),
+    _unitary("i", 1, aliases=("id",), adjoint="self_inverse", control="identity"),
+    _unitary("x", 1, adjoint="self_inverse", control="x_conjugated_ladder"),
+    _unitary("y", 1, adjoint="self_inverse", control="y_conjugated_ladder"),
+    _unitary("z", 1, adjoint="self_inverse", control="diagonal_ladder"),
+    _unitary(
+        "h",
+        1,
+        aliases=("hadamard",),
+        adjoint="self_inverse",
+        control="ry_conjugated_ladder",
+    ),
+    _unitary("s", 1, adjoint="sdg", control="diagonal_ladder"),
+    _unitary("sdg", 1, aliases=("sd",), adjoint="s", control="diagonal_ladder"),
+    _unitary("t", 1, adjoint="tdg", control="diagonal_ladder"),
+    _unitary("tdg", 1, aliases=("td",), adjoint="t", control="diagonal_ladder"),
+    _unitary("sx", 1, adjoint="sxdg", control="x_conjugated_ladder"),
+    _unitary("sxdg", 1, adjoint="sx", control="x_conjugated_ladder"),
     _unitary(
         "rx",
         1,
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="rx_ladder",
     ),
     _unitary(
         "ry",
@@ -260,6 +393,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="ry_ladder",
     ),
     _unitary(
         "rz",
@@ -267,6 +401,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="rz_ladder",
     ),
     _unitary(
         "phase",
@@ -275,6 +410,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="diagonal_ladder",
     ),
     _unitary(
         "u1",
@@ -282,6 +418,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="diagonal_ladder",
     ),
     _unitary(
         "u2",
@@ -289,6 +426,7 @@ _SCHEMAS = (
         parameters=("phi", "lbd"),
         frequencies=((1.0,), (1.0,)),
         adjoint="adjoint_u2_angles",
+        control="u_angle_ladder",
     ),
     _unitary(
         "u3",
@@ -297,17 +435,25 @@ _SCHEMAS = (
         parameters=("theta", "phi", "lbd"),
         frequencies=((1.0,), (1.0,), (1.0,)),
         adjoint="adjoint_u3_angles",
+        control="u_angle_ladder",
     ),
-    _unitary("cx", 2, aliases=("cnot",), adjoint="self_inverse"),
-    _unitary("cy", 2, adjoint="self_inverse"),
-    _unitary("cz", 2, adjoint="self_inverse"),
-    _unitary("swap", 2, adjoint="self_inverse"),
+    _unitary(
+        "cx",
+        2,
+        aliases=("cnot",),
+        adjoint="self_inverse",
+        control="x_conjugated_ladder",
+    ),
+    _unitary("cy", 2, adjoint="self_inverse", control="y_conjugated_ladder"),
+    _unitary("cz", 2, adjoint="self_inverse", control="diagonal_ladder"),
+    _unitary("swap", 2, adjoint="self_inverse", control="swap_ladder"),
     _unitary(
         "crx",
         2,
         parameters=("theta",),
         frequencies=((0.5, 1.0),),
         adjoint="negate_parameters",
+        control="rx_ladder",
     ),
     _unitary(
         "cry",
@@ -315,6 +461,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((0.5, 1.0),),
         adjoint="negate_parameters",
+        control="ry_ladder",
     ),
     _unitary(
         "crz",
@@ -322,6 +469,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((0.5, 1.0),),
         adjoint="negate_parameters",
+        control="rz_ladder",
     ),
     _unitary(
         "cphase",
@@ -329,6 +477,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="diagonal_ladder",
     ),
     _unitary(
         "rxx",
@@ -336,6 +485,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="rxx_ladder",
     ),
     _unitary(
         "ryy",
@@ -343,6 +493,7 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="ryy_ladder",
     ),
     _unitary(
         "rzz",
@@ -350,9 +501,22 @@ _SCHEMAS = (
         parameters=("theta",),
         frequencies=((1.0,),),
         adjoint="negate_parameters",
+        control="rzz_ladder",
     ),
-    _unitary("ccx", 3, aliases=("ccnot", "toffoli"), adjoint="self_inverse"),
-    _unitary("cswap", 3, aliases=("fredkin",), adjoint="self_inverse"),
+    _unitary(
+        "ccx",
+        3,
+        aliases=("ccnot", "toffoli"),
+        adjoint="self_inverse",
+        control="x_conjugated_ladder",
+    ),
+    _unitary(
+        "cswap",
+        3,
+        aliases=("fredkin",),
+        adjoint="self_inverse",
+        control="cswap_ladder",
+    ),
     _channel("bit_flip", parameters=("probability",)),
     _channel("phase_flip", parameters=("probability",)),
     _channel("depolarizing", parameters=("probability",)),
@@ -366,6 +530,29 @@ OPERATOR_ALIASES: Mapping[str, str] = MappingProxyType(
     {alias: schema.opcode for schema in _SCHEMAS for alias in schema.aliases}
 )
 
+#: Opcodes that already are the one-control form of another opcode.
+#:
+#: These are read before the ``control`` rule of the *controlling* opcode, so that
+#: ``control.z`` at one control emits ``cz`` rather than rebuilding it, and
+#: ``control.cx`` at one control emits ``ccx``. A gate's own rule describes how to add
+#: controls beyond the ones it already has; this table describes when none need to be
+#: added. Each pair is validated against the registry below: the partner has to exist,
+#: be a parameter-free unitary of the same arity, and be the canonical opcode.
+CONTROL_PARTNERS: Mapping[str, str] = MappingProxyType(
+    {
+        "x": "cx",
+        "y": "cy",
+        "z": "cz",
+        "rx": "crx",
+        "ry": "cry",
+        "rz": "crz",
+        "phase": "cphase",
+        "u1": "cphase",
+        "swap": "cswap",
+        "cx": "ccx",
+    }
+)
+
 
 def canonical_opcode(name: str) -> str:
     normalized = str(name).strip().lower()
@@ -374,6 +561,58 @@ def canonical_opcode(name: str) -> str:
 
 def get_operator_schema(name: str) -> OperatorSchema | None:
     return OPERATOR_SCHEMAS.get(canonical_opcode(name))
+
+
+def _control_partner_errors() -> tuple[str, ...]:
+    """Return the pairs in ``CONTROL_PARTNERS`` a gate's own rule already covers.
+
+    The pair table is a shortcut, so a wrong entry would be invisible: the emitted
+    program would still be a program, just not the controlled gate. Each pair is
+    therefore checked against the registry at import time -- the partner has to be a
+    registered, parameter-free, unitary of the same arity written under its canonical
+    name -- and a pair is refused when the two opcodes declare different rules, which
+    is how a copy-paste mistake in this table would first show up.
+    """
+
+    errors = []
+    for opcode, partner in CONTROL_PARTNERS.items():
+        schema = OPERATOR_SCHEMAS.get(opcode)
+        partner_schema = OPERATOR_SCHEMAS.get(partner)
+        if schema is None or partner_schema is None:
+            errors.append(
+                f"controlled pair {opcode!r} -> {partner!r} names an unregistered opcode"
+            )
+            continue
+        if (
+            not partner_schema.unitary
+            or partner_schema.parameters
+            or partner_schema.arity != schema.arity
+            or canonical_opcode(partner) != partner
+        ):
+            errors.append(
+                f"controlled pair {opcode!r} -> {partner!r} is not a parameter-free "
+                "unitary of the same arity"
+            )
+            continue
+        if partner_schema.control != schema.control:
+            errors.append(
+                f"controlled pair {opcode!r} -> {partner!r} disagrees on the control "
+                f"rule: {schema.control!r} against {partner_schema.control!r}"
+            )
+    return tuple(errors)
+
+
+def control_ladder_level(arity: int, n_controls: int) -> int:
+    """Return the deepest phase ladder a controlled gate of this shape needs.
+
+    A gate of ``arity`` qubits has ``arity - 1`` partners that a control can be
+    attached to directly and one place left over where the phase ladder starts, so the
+    ladder level is ``n_controls + arity - 1``. One control on a one-qubit gate is the
+    shallowest case, level one, and one control on ``CSWAP`` is the deepest, level
+    three.
+    """
+
+    return n_controls + arity - 1
 
 
 def _negate_angle(value: Any) -> Any:
@@ -390,6 +629,20 @@ def _shift_angle(value: Any, delta: float) -> Any:
     if isinstance(value, (list, tuple)):
         return type(value)(_shift_angle(item, delta) for item in value)
     return value - delta
+
+
+def _scale_angle(value: Any, factor: int) -> Any:
+    """Multiply one angle by an integer, or every angle of a per-batch sequence.
+
+    A tensor, a float, and a symbolic ``Parameter`` all multiply on the right, so one
+    expression covers the three forms an angle is stored in. ``factor`` is multiplied
+    rather than added ``factor`` times, which is what keeps ``power(1)`` the identity
+    on the parameters and keeps a batched angle a single instruction.
+    """
+
+    if isinstance(value, (list, tuple)):
+        return type(value)(_scale_angle(item, factor) for item in value)
+    return value * factor
 
 
 def inverse_operator(
@@ -449,6 +702,58 @@ def inverse_operator(
     return None
 
 
+#: A power is a rewriting of instructions the IR already describes, so the only limit
+#: is readability: beyond this many emitted instructions the arithmetic is still exact
+#: but the program is no longer something a user can inspect, and a product is the
+#: better way to ask for it.
+MAX_POWER_REPEATS = 4096
+
+
+def power_operator(
+    schema: OperatorSchema, params: Mapping[str, Any], exponent: int
+) -> tuple[str, dict[str, Any]] | None:
+    """Return the single gate that equals ``exponent`` copies of one gate, if any.
+
+    A gate whose declaration is the exponential of one parameter has a one-instruction
+    ``exponent``-fold action: the same gate with that parameter multiplied by
+    ``exponent``. That is the whole of this function, and it returns the opcode and the
+    scaled parameters.
+
+    ``None`` means no single gate equals the repeated one, and the caller must write
+    the power out as further copies of the program. This is the common case rather than
+    an error: no parameter-free gate has a one-instruction square that is not itself,
+    a multi-angle gate's angles do not scale, a custom operation is defined by its
+    matrix rather than by a declaration, and a noise channel is not a unitary at all.
+
+    The caller must only reach for this when the power is of a *single-instruction*
+    program. For a longer program the copies of one gate are separated by the other
+    gates, so they do not compose into one instruction even when each of them does.
+
+    Args:
+        schema: The declaration of the gate being raised to a power.
+        params: That gate's parameter mapping.
+        exponent: A positive integer count of applications.
+
+    Returns:
+        The opcode and its scaled parameters, or ``None`` when no single gate equals
+        the repetition.
+
+    Raises:
+        ValueError: If ``exponent`` is not positive.
+    """
+
+    if exponent < 1:
+        raise ValueError(f"power requires a positive exponent, got {exponent}")
+    if schema.power_rule != "scale_single_parameter":
+        return None
+    return schema.opcode, {
+        name: (
+            _scale_angle(params[name], exponent) if name in schema.parameters else value
+        )
+        for name, value in params.items()
+    }
+
+
 def gate_info(name: str) -> GateInfo:
     """Return discoverable parameter and qubit requirements for a built-in gate."""
 
@@ -477,6 +782,8 @@ def operator_manifest() -> tuple[dict[str, object], ...]:
             "dtype_policy": schema.dtype_policy,
             "semantic_kind": schema.semantic_kind,
             "adjoint": schema.adjoint,
+            "power": schema.power_rule,
+            "control": schema.control,
             "decomposition": schema.decomposition,
             "differentiable": schema.differentiable,
             "qubit_convention": schema.qubit_convention,
@@ -490,12 +797,15 @@ __all__ = [
     "OperatorSchema",
     "GateInfo",
     "ADJOINT_RULES",
+    "MAX_POWER_REPEATS",
     "OPERATOR_ALIASES",
     "OPERATOR_SCHEMAS",
+    "POWER_RULES",
     "canonical_opcode",
     "get_operator_schema",
     "gate_info",
     "inverse_operator",
     "operator_manifest",
     "parameter_shift_rule",
+    "power_operator",
 ]

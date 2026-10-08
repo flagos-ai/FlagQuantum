@@ -13,6 +13,20 @@ layouts. The signature is therefore derived from the program rather than
 asserted about it, and a mechanism whose flip set is not deterministic across
 trajectories is refused.
 
+A circuit description places its faults in one of two grammars, and the record
+the caller states is what selects it. A
+:class:`~flagquantum.qec.PhenomenologicalNoise` names round boundaries and check
+readouts, so its faults are forced into the experiment's own source -- at the
+loop for a data fault, before a measurement for a readout fault.
+A :class:`~flagquantum.noise.NoiseModel` names gates, so its faults are spliced
+into the lowered program immediately after the instruction each rule matched,
+and its rate is read off the channel the rule carries. The second is upstream's
+placement, where a channel bound to a named gate acts on the state that gate
+leaves behind. Because a gate appears once per round, one gate-bound rule states
+one fault per round rather than one fault at one round boundary, and the two
+grammars are the two ways the same experiment can be described rather than two
+views of one description.
+
 A **matrix** description is read. :func:`_code_matrix_entries` takes the
 parity-check matrix a code is defined by and the matrix of its logical
 operators, and derives the same signatures combinatorially; nothing is lowered
@@ -48,6 +62,7 @@ the same fault one round later is one.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from numbers import Integral
@@ -57,6 +72,10 @@ from typing import Literal
 import torch
 
 from ..compiler._hybrid import INDEX, capture_source, lower_dynamic_program
+from ..core.ir import CircuitIR, Instruction
+from ..errors import CapabilityError, ValidationError
+from ..noise import NoiseModel
+from ..noise.channels import KrausChannel
 from ..runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 from .circuit import MeasurementRef, MemoryCircuit
 from .codes import CodeCheck, StabilizerCode
@@ -96,16 +115,44 @@ def _data_family_rates(
 
 
 def _memory_circuit_entries(
-    circuit: MemoryCircuit, noise: PhenomenologicalNoise
+    circuit: MemoryCircuit,
+    noise: PhenomenologicalNoise | NoiseModel,
+    *,
+    decompose_composite_faults: bool = False,
 ) -> tuple[int, int, tuple[Entry, ...]]:
     """Return the model shape and every mechanism a memory circuit contains.
 
-    Each location :func:`_mechanisms` enumerates is forced through the circuit on
+    Each location the stated record configures is forced through the circuit on
     its own and its signature is read off the layouts, so the model is derived
-    from the program rather than asserted about it. The refusals of the injection
-    engine reach the caller unchanged: a hand-built circuit whose source does not
-    match its layouts fails closed with a stated reason instead of building a
-    model that misdescribes it.
+    from the program rather than asserted about it. A round-boundary record is
+    forced through the experiment's source; a gate-bound record is forced through
+    the lowered program, because the source holds one copy of a gate while the
+    program holds one per round and a rule names the gate, not a round. The
+    refusals of both injection routes reach the caller unchanged: a hand-built
+    circuit whose source does not match its layouts, or whose source does not
+    lower to the rounds its record states, fails closed with a stated reason
+    instead of building a model that misdescribes it.
+
+    ``decompose_composite_faults`` decides how a composite data fault -- the Y
+    family, one fault that is an X flip and a Z flip at one location -- is
+    enumerated. Read the default way, it is one mechanism whose signature is the
+    XOR of the two parts, which is what the fault does and what
+    :mod:`tests.qec.test_data_fault_families` pins. Read the other way, it is two
+    faults, the X part and the Z part, each enumerated at the parent's own rate
+    and forced at the parent's own round and qubit. The two readings describe
+    different distributions and not two encodings of one: read together the parts
+    always fire together, read apart they fire independently, so a detector's
+    marginal flip rate is the same under both to floating-point rounding while the
+    joint law is not. What the second reading buys is a mechanism of at most two
+    detectors where the first states one of more, which is the shape a
+    minimum-weight matcher weights -- the parts of a composite fault are read off
+    the program exactly as the X and Z faults of their own families are, so they
+    are as graphlike as those families are and no more.
+
+    A part that flips nothing is an entry with an empty signature, which
+    ``DetectorErrorModel._merge_mechanisms`` drops for every construction route
+    alike; no separate rule is stated here, so a part cannot be dropped under one
+    reading and kept under the other.
 
     The detector and observable counts come from the circuit's own layouts rather
     than from a count re-derived from the code, so the returned shape and the
@@ -114,31 +161,57 @@ def _memory_circuit_entries(
 
     if not isinstance(circuit, MemoryCircuit):
         raise TypeError("circuit must be a MemoryCircuit")
-    if not isinstance(noise, PhenomenologicalNoise):
-        raise TypeError("noise must be a PhenomenologicalNoise")
+    if not isinstance(decompose_composite_faults, bool):
+        raise TypeError("decompose_composite_faults must be a bool")
     entries: list[Entry] = []
-    for mechanism in _mechanisms(circuit, noise):
-        if mechanism.kind in _FAULT_GATES:
-            source = _inject_data_flip(
-                circuit,
-                round_index=mechanism.round_index,
-                wire=mechanism.wire,
-                kind=mechanism.kind,
+    if isinstance(noise, NoiseModel):
+        if decompose_composite_faults:
+            raise CapabilityError(
+                "decompose_composite_faults names the Y family of a "
+                "round-boundary record, and this record is gate-bound: a "
+                "gate-bound rule states one Pauli per placement, either "
+                f"{sorted(_GATE_BOUND_FAMILIES)}, so it states no composite "
+                "fault for the option to read apart"
             )
-        elif mechanism.kind == "measurement":
-            source = _inject_measurement_flip(
-                circuit,
-                round_index=mechanism.round_index,
-                ancilla_wire=mechanism.wire,
+        program = _lowered_program(circuit)
+        for bound in _gate_bound_mechanisms(noise, program):
+            detectors, observables = _executed_flip_set(
+                circuit, _spliced_fault(program, bound)
             )
-        else:
-            # Unreachable through ``_mechanisms``, which sets the field from the
-            # annotation; stated for a caller that builds records itself, where a
-            # bare ``else`` would read an unknown kind as a measurement flip
-            # whenever the qubit is a declared ancilla.
-            raise ValueError(f"unknown mechanism kind {mechanism.kind!r}")
-        detectors, observables = _forced_signature(circuit, source)
-        entries.append((mechanism.probability, detectors, observables))
+            entries.append((bound.probability, detectors, observables))
+    elif isinstance(noise, PhenomenologicalNoise):
+        for mechanism in _mechanisms(circuit, noise):
+            kinds: tuple[str, ...] = (mechanism.kind,)
+            if decompose_composite_faults and mechanism.kind == _COMPOSITE_KIND:
+                kinds = _COMPOSITE_PARTS
+            for kind in kinds:
+                if kind in _FAULT_GATES:
+                    source = _inject_data_flip(
+                        circuit,
+                        round_index=mechanism.round_index,
+                        wire=mechanism.wire,
+                        kind=kind,
+                    )
+                elif kind == "measurement":
+                    source = _inject_measurement_flip(
+                        circuit,
+                        round_index=mechanism.round_index,
+                        ancilla_wire=mechanism.wire,
+                    )
+                else:
+                    # Unreachable through ``_mechanisms``, which sets the field
+                    # from the annotation; stated for a caller that builds
+                    # records itself, where a bare ``else`` would read an unknown
+                    # kind as a measurement flip whenever the qubit is a declared
+                    # ancilla.
+                    raise ValueError(f"unknown mechanism kind {kind!r}")
+                detectors, observables = _forced_signature(circuit, source)
+                entries.append((mechanism.probability, detectors, observables))
+    else:
+        raise TypeError(
+            "noise must be a PhenomenologicalNoise or a NoiseModel, got "
+            f"{type(noise).__name__}"
+        )
     return len(circuit.detectors), len(circuit.observables), tuple(entries)
 
 
@@ -525,6 +598,14 @@ _FAULT_GATES: Mapping[str, tuple[str, ...]] = MappingProxyType(
     }
 )
 
+# The composite family and the two single-Pauli parts it is the XOR of. The
+# sequence is stated once so a decomposition cannot name the parts in one order
+# here and another wherever the same fault is described, and so the claim that the
+# parts cover the composite exactly is a property of one tuple rather than of two
+# literals that happen to agree.
+_COMPOSITE_KIND: _MechanismKind = "both"
+_COMPOSITE_PARTS: tuple[_MechanismKind, ...] = ("data", "phase")
+
 
 @dataclass(frozen=True)
 class _Mechanism:
@@ -546,6 +627,218 @@ class _Mechanism:
     round_index: int
     wire: int
     probability: float
+
+
+# The two channels a gate-bound rule may carry, each with the data-fault family
+# it is. A bit flip is the X fault and a phase flip is the Z fault -- the same
+# pairing :data:`_FAULT_GATES` states -- so a channel and a family cannot be
+# paired two ways, and a channel that is neither names a capability this grammar
+# does not have rather than a fault it places.
+_GATE_BOUND_FAMILIES: Mapping[str, _DataFaultFamily] = MappingProxyType(
+    {"bit_flip": "data", "phase_flip": "phase"}
+)
+
+# The Pauli each family's fault is, as the matrix the flipped Kraus operator has
+# to equal times the rate's square root. A channel's name is a claim about its
+# operators, and this is what the claim is checked against.
+_PAULI_MATRICES: Mapping[_DataFaultFamily, tuple[tuple[float, float], ...]] = (
+    MappingProxyType(
+        {
+            "data": ((0.0, 1.0), (1.0, 0.0)),
+            "phase": ((1.0, 0.0), (0.0, -1.0)),
+        }
+    )
+)
+
+# The same fault identities as :data:`_FAULT_GATES`, written in the lowered
+# language: the source route writes the fault into the source, this one writes it
+# into the program that source lowered to, and the lowered language refuses `z`
+# as outside its dynamic profile, so a phase fault is the bit flip conjugated by
+# `h` on both routes. Lowercasing is the correspondence between the two
+# languages' gate names, which is what makes the two spellings one statement.
+_GATE_BOUND_GATES: Mapping[str, tuple[str, ...]] = MappingProxyType(
+    {
+        family: tuple(gate.lower() for gate in gates)
+        for family, gates in _FAULT_GATES.items()
+    }
+)
+
+# A gate-bound rule attaches its fault to the gate the rule matched, so the two
+# instructions that are not gates cannot be one. A readout fault's own position
+# is the measurement family of a round-boundary record, which states which check
+# it corrupts, and a preparation fault is not a Pauli fault the forced signature
+# can read off the layouts at all.
+_UNPLACEABLE_RULE_GATES = frozenset({"measure", "reset"})
+
+
+@dataclass(frozen=True)
+class _GateBoundMechanism:
+    """One noise location a rule binds to a named gate, by kind, qubit and rate.
+
+    ``after_instruction`` is the index of the instruction the fault immediately
+    follows and is what makes this placement gate-bound: a rule names a gate, the
+    gate is matched in the lowered program, and the fault sits after it. A
+    round-boundary mechanism has no such index and is a :class:`_Mechanism`
+    instead, so which of the two records a caller states is what decides which
+    grammar places the fault.
+    """
+
+    kind: _DataFaultFamily
+    after_instruction: int
+    wire: int
+    probability: float
+
+
+def _lowered_program(memory: MemoryCircuit) -> CircuitIR:
+    """Return the memory program lowered once, the way every route lowers it.
+
+    Both grammars read this one lowering: the round-boundary route lowers an
+    injected source with it, the gate-bound route indexes the program it returns,
+    and the sampler places its faults in the same program. A fault therefore
+    cannot be read at one instruction index by the model and placed at another by
+    the sampler.
+    """
+
+    return _lowered_source(
+        memory.source, rounds=memory.rounds, checks=len(memory.code.checks)
+    )
+
+
+def _pauli_fault(channel: KrausChannel) -> tuple[_DataFaultFamily, float]:
+    """Return the family a channel names and the rate its Kraus pair carries.
+
+    The rate and the Pauli are both read off the Kraus pair rather than trusted
+    from the channel's parameter map, because the pair is what a draw does: a
+    channel named ``bit_flip`` whose flipped operator is a different Pauli would
+    otherwise be placed as an X fault, and the model would describe a fault the
+    circuit does not run. The stabilizer engine makes the same check on the
+    sampler's side, so the rate the model states is the rate the sample flips at.
+    """
+
+    family = _GATE_BOUND_FAMILIES.get(channel.name)
+    if family is None:
+        raise CapabilityError(
+            "a channel bound to a named gate is placed only as "
+            f"{sorted(_GATE_BOUND_FAMILIES)}, and {channel.name!r} is neither: a "
+            "depolarizing or damping channel states a mixture rather than one "
+            "Pauli fault, and this grammar fails closed rather than placing one "
+            "of its terms as the whole fault"
+        )
+    operators = tuple(channel.kraus)
+    if len(operators) != 2:
+        raise CapabilityError(
+            f"the {channel.name!r} channel carries {len(operators)} Kraus "
+            "operator(s); a single-qubit Pauli fault is an identity and one flip"
+        )
+    flipped = torch.as_tensor(operators[1])
+    probability = float(torch.real(torch.trace(flipped.mH @ flipped) / 2).item())
+    if not 0.0 <= probability <= 1.0:
+        raise ValidationError(
+            f"the {channel.name!r} channel flips with probability {probability}, "
+            "which is not a probability"
+        )
+    pauli = torch.tensor(
+        _PAULI_MATRICES[family], dtype=flipped.dtype, device=flipped.device
+    )
+    if not torch.allclose(flipped, math.sqrt(probability) * pauli, atol=1e-6):
+        raise CapabilityError(
+            f"the {channel.name!r} channel's flipped Kraus operator is not the "
+            f"square root of its rate times the {family} family's Pauli, so the "
+            "channel does not state the fault its name does"
+        )
+    return family, probability
+
+
+def _gate_bound_mechanisms(
+    noise: NoiseModel, program: CircuitIR
+) -> tuple[_GateBoundMechanism, ...]:
+    """Return every fault a gate-bound record places in ``program``, in order.
+
+    The gates a rule attaches to are the record's own business: ``channels_for``
+    decides which instruction a rule matches and which qubits of it the channel
+    acts on, so the matching rule is stated once and this route reads it rather
+    than restating it. What this function decides is the placement -- the fault
+    follows the instruction -- and which channels a placement exists for.
+
+    A rule naming a gate the program does not carry places nothing. That is what
+    a noise model over a gate set means rather than a fallback, and it is not
+    silent about a capability: the channel's name is checked when a rule *does*
+    match, so a record stating a channel this grammar cannot place is refused as
+    soon as any of its rules matches.
+
+    Raises:
+        CapabilityError: A rule names a readout or a preparation, a rule's
+            channel is not a single-qubit Pauli fault, a matched instruction is
+            the program's last so the fault would sit outside it, or a rule binds
+            its one-qubit channel to more than one qubit.
+        ValueError: The record itself cannot resolve a rule's channel on a
+            matched instruction, which is the record's own refusal and is
+            reported as it states itself.
+    """
+
+    for rule in noise.rules:
+        unplaceable = sorted(set(rule.gate_names) & _UNPLACEABLE_RULE_GATES)
+        if unplaceable:
+            raise CapabilityError(
+                f"a gate-bound noise rule cannot name {unplaceable[0]!r}: this "
+                "grammar attaches a fault to the gate a rule names, and a readout "
+                "or a preparation is not one. A readout fault is the measurement "
+                "family of a PhenomenologicalNoise record, which states which "
+                "check it corrupts"
+            )
+    mechanisms: list[_GateBoundMechanism] = []
+    last = len(program.instructions) - 1
+    for index, instruction in enumerate(program.instructions):
+        for channel, wires in noise.channels_for(instruction):
+            family, probability = _pauli_fault(channel)
+            if len(wires) != 1:
+                raise CapabilityError(
+                    f"the {channel.name!r} rule on {instruction.name!r} acts on "
+                    f"{len(wires)} qubits; a gate-bound fault is one Pauli on one "
+                    "wire, and a two-qubit correlated fault has no placement here"
+                )
+            if index == last:
+                raise CapabilityError(
+                    f"the {channel.name!r} rule on {instruction.name!r} matches "
+                    "the program's last instruction, so the fault would follow "
+                    "the program's end rather than a gate in it"
+                )
+            if probability:
+                mechanisms.append(
+                    _GateBoundMechanism(
+                        kind=family,
+                        after_instruction=index,
+                        wire=int(wires[0]),
+                        probability=probability,
+                    )
+                )
+    return tuple(mechanisms)
+
+
+def _spliced_fault(program: CircuitIR, mechanism: _GateBoundMechanism) -> CircuitIR:
+    """Return ``program`` with one gate-bound fault spliced in after its gate.
+
+    The fault is the family's gate sequence from :data:`_GATE_BOUND_GATES`,
+    written straight after the instruction the rule matched, which is upstream's
+    placement: a channel bound to a named gate acts on the state that gate leaves
+    behind. The sequence is one instruction for a bit flip and three for a phase
+    flip, and the three are an exact identity rather than an approximation.
+    """
+
+    position = mechanism.after_instruction + 1
+    fault = tuple(
+        Instruction(name=name, wires=(mechanism.wire,))
+        for name in _GATE_BOUND_GATES[mechanism.kind]
+    )
+    return CircuitIR(
+        n_wires=program.n_wires,
+        instructions=(
+            *program.instructions[:position],
+            *fault,
+            *program.instructions[position:],
+        ),
+        metadata=dict(program.metadata),
+    )
 
 
 def _check_rate_order(checks: tuple[CodeCheck, ...]) -> tuple[int, ...]:
@@ -789,12 +1082,46 @@ def _forced_signature(
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Return the detectors and observables that ``source``'s forced error flips.
 
-    The source is lowered and executed twice, and the two shots must agree on
-    the *flip set*: a mechanism whose signature depends on the trajectory is not
-    a Pauli mechanism in the reference gate set, so it is refused instead of
-    contributing a signature. The shot is read through the layouts, never off the
-    raw register: a detector XORs the measurements its parity names, and an
-    observable XORs the terminal samples over the support of its Pauli.
+    The source is lowered the way the experiment's own source is lowered and read
+    by :func:`_executed_flip_set`, so a fault injected into the source is read off
+    the program that source lowers to rather than off a program of its own.
+    """
+
+    lowered = _lowered_source(
+        source, rounds=circuit.rounds, checks=len(circuit.code.checks)
+    )
+    return _executed_flip_set(circuit, lowered)
+
+
+def _lowered_source(source: str, *, rounds: int, checks: int) -> CircuitIR:
+    """Return ``source`` lowered with the round count and measurement budget given.
+
+    One lowering is stated here rather than at each caller because a fault's
+    signature is read off the *lowered* program: an injected source and the
+    experiment's own source have to lower by the same rule for the two to be
+    comparable, and the measurement budget is what the round loop's readouts are
+    counted against.
+    """
+
+    program = capture_source(source, (INDEX,))
+    return lower_dynamic_program(
+        program,
+        (rounds,),
+        max_dynamic_measurements=rounds * checks,
+    ).circuit
+
+
+def _executed_flip_set(
+    circuit: MemoryCircuit, program: CircuitIR
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Return the detectors and observables one program's forced error flips.
+
+    The program is executed twice and the two shots must agree on the *flip set*:
+    a mechanism whose signature depends on the trajectory is not a Pauli
+    mechanism in the reference gate set, so it is refused instead of contributing
+    a signature. The shot is read through the layouts, never off the raw register:
+    a detector XORs the measurements its parity names, and an observable XORs the
+    terminal samples over the support of its Pauli.
 
     The register bits themselves need not agree, and for a code with X-type
     checks they do not: an X-type ancilla is prepared in ``|+>``, so its
@@ -812,14 +1139,8 @@ def _forced_signature(
     chooses and need not be that order.
     """
 
-    program = capture_source(source, (INDEX,))
-    lowered = lower_dynamic_program(
-        program,
-        (circuit.rounds,),
-        max_dynamic_measurements=circuit.rounds * len(circuit.code.checks),
-    )
     execution = execute_hybrid_dynamic_session(
-        lowered.circuit, shots=2, seed=0, strategy="trajectory"
+        program, shots=2, seed=0, strategy="trajectory"
     )
     classical: list[list[int]] = execution.classical_bits.tolist()
     samples: list[list[int]] = execution.samples.tolist()

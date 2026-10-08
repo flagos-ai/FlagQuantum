@@ -16,14 +16,24 @@ from .result import MeasurementResult
 _SUPPORTED_KINDS = {
     "counts",
     "counts_ps",
+    "density_matrix",
     "expectation_identity",
     "expectation_ps",
     "expectation_z",
     "probabilities",
     "sample",
     "sample_ps",
+    "vn_entropy",
 }
 _DEFAULT_MAX_MARGINAL_WIRES = 8
+# Building a density matrix from a statevector of ``n`` qubits writes ``4 ** n``
+# entries, the square of the statevector it comes from, so the step is bounded
+# where a marginal over the same qubits is not. Ten qubits is 2,097,152 complex
+# values -- 16 MiB at complex64 and 32 MiB at complex128 -- and each further
+# qubit multiplies that by four. The limit is on that construction alone: a
+# density-mode run already holds the matrix, so reducing it is one pass over
+# memory the run has already paid for and is not bounded here.
+_DEFAULT_MAX_DENSITY_MATRIX_QUBITS = 10
 # How far a reduced total may sit from one before it is divided out. The gap is
 # wide on purpose: it has to absorb the rounding a normalised state accumulates
 # through many gates, which is orders of magnitude below this, while still
@@ -751,6 +761,165 @@ def _expectation_method(
     return method
 
 
+def _is_density_matrix_tensor(output: Any, n_qubits: int) -> bool:
+    """Whether a native result already is the batched density matrix asked for."""
+
+    return (
+        isinstance(output, torch.Tensor)
+        and output.is_complex()
+        and output.ndim == 3
+        and output.shape[-2:] == (2**n_qubits, 2**n_qubits)
+    )
+
+
+def _density_matrix_output(
+    output: Any,
+    qubits: tuple[int, ...],
+    *,
+    n_qubits: int,
+    noise_model: Any | None,
+) -> torch.Tensor:
+    """Return the state on ``qubits`` as a matrix, tracing the rest out.
+
+    Two routes, and the difference is what each one costs. A ``density_matrix``
+    run already holds the matrix, so the request is one partial trace over
+    memory the run has paid for. Every other mode holds amplitudes, so the
+    matrix has to be built first at four entries per basis state -- the square
+    of the state it comes from -- and that step is bounded.
+
+    Readout confusion is refused rather than folded in. It is a rule about
+    outcomes applied after measurement, so a matrix that included it would
+    describe a state the engine never prepared; the same reason the error
+    mitigation unit refuses to extrapolate a curve that omits it. The state a
+    noisy run returns is the state noise left behind, which is what a density
+    matrix means.
+    """
+
+    from ..simulation.density_matrix import density_matrix, reduced_density_matrix
+
+    if getattr(noise_model, "readout_rules", ()):
+        raise ValueError(
+            "a density-matrix output cannot include readout confusion: readout "
+            "acts on measurement outcomes after the state, so a matrix carrying "
+            "it would report a state the engine never prepared"
+        )
+    if _is_density_matrix_tensor(output, n_qubits):
+        return reduced_density_matrix(output, qubits)
+    if n_qubits > _DEFAULT_MAX_DENSITY_MATRIX_QUBITS:
+        entries = 4**n_qubits
+        raise ValueError(
+            f"a {n_qubits}-qubit density-matrix output built from a statevector "
+            f"writes {entries} entries, which exceeds the supported limit of "
+            f"{_DEFAULT_MAX_DENSITY_MATRIX_QUBITS} qubits; run the program with "
+            "options=fq.ExecutionOptions(mode='density_matrix') to ask for the "
+            "smaller reduction instead"
+        )
+    if isinstance(output, torch.Tensor):
+        if output.is_complex() and output.ndim == 2 and output.shape[-1] == 2**n_qubits:
+            return reduced_density_matrix(density_matrix(output), qubits)
+        raise CapabilityError(
+            "a density-matrix output needs a statevector or density-matrix result; "
+            f"this execution returned a {tuple(output.shape)} tensor"
+        )
+    if not callable(getattr(output, "state", None)):
+        raise CapabilityError(
+            "a density-matrix output from this execution mode is not implemented; "
+            "request the statevector or density_matrix mode"
+        )
+    return reduced_density_matrix(density_matrix(output), qubits)
+
+
+def _vn_entropy_output(
+    output: Any,
+    qubits: tuple[int, ...],
+    *,
+    n_qubits: int,
+    noise_model: Any | None,
+    log_base: float | None,
+) -> torch.Tensor:
+    """Return the von Neumann entropy of ``qubits``, in nats unless a base is named.
+
+    Two routes, chosen by what the execution hands over rather than by the mode string the
+    caller wrote, because what a mode is called is a plan-level fact and what it returned is
+    the measured one.
+
+    A matrix-product state holds this execution's state already split at every bond, so the
+    named sites are contracted out of its canonical form and the resulting operator is
+    diagonalised: ``4 ** len(qubits)`` entries rather than ``4 ** n``, and the full state is
+    never materialised. When the selection is a prefix of the chain the canonical form answers
+    with an entanglement spectrum directly -- one singular-value decomposition of a bond matrix
+    instead of the reduced matrix it would otherwise build -- which is the arithmetic the MPS
+    already paid for when it was constructed.
+
+    Everything else -- a dense statevector, a density matrix, a tensor-network state -- is
+    reduced with the density-matrix module's own partial trace and diagonalised. That is
+    deliberately the same routine ``fq.density_matrix`` reduces with, so the two requests
+    cannot disagree about what "the state on these qubits" means.
+
+    Readout confusion is refused for the same reason the density-matrix output refuses it:
+    readout is a rule about outcomes applied after the state, so an entropy computed from a
+    state that had readout folded in would describe a state the engine never prepared.
+    """
+
+    from ..simulation.entropy import (
+        contiguous_ascending_run,
+        entropy_from_density_matrix,
+        entropy_from_probabilities,
+        mps_prefix_spectrum,
+        mps_run_density_matrix,
+    )
+
+    if getattr(noise_model, "readout_rules", ()):
+        raise ValueError(
+            "a von Neumann entropy output cannot include readout confusion: readout acts on "
+            "measurement outcomes after the state, so an entropy carrying it would describe a "
+            "state the engine never prepared"
+        )
+
+    if callable(getattr(output, "move_orthogonality_center", None)) and (
+        getattr(output, "n_qubits", None) == n_qubits
+    ):
+        run = contiguous_ascending_run(qubits, n_qubits)
+        if run is not None:
+            if run == (0, len(qubits) - 1):
+                spectrum = mps_prefix_spectrum(output, len(qubits))
+                if spectrum is not None:
+                    return entropy_from_probabilities(spectrum, log_base=log_base)
+            return entropy_from_density_matrix(
+                mps_run_density_matrix(output, *run), log_base=log_base
+            )
+
+    if isinstance(output, torch.Tensor):
+        from ..simulation.density_matrix import density_matrix, reduced_density_matrix
+
+        if output.is_complex() and output.ndim == 2 and output.shape[-1] == 2**n_qubits:
+            return entropy_from_density_matrix(
+                reduced_density_matrix(density_matrix(output), qubits),
+                log_base=log_base,
+            )
+        if _is_density_matrix_tensor(output, n_qubits):
+            return entropy_from_density_matrix(
+                reduced_density_matrix(output, qubits), log_base=log_base
+            )
+        raise CapabilityError(
+            "a von Neumann entropy output needs a statevector, density-matrix, MPS, or "
+            f"tensor-network result; this execution returned a {tuple(output.shape)} tensor"
+        )
+
+    if callable(getattr(output, "state", None)):
+        from ..simulation.density_matrix import density_matrix, reduced_density_matrix
+
+        return entropy_from_density_matrix(
+            reduced_density_matrix(density_matrix(output), qubits),
+            log_base=log_base,
+        )
+
+    raise CapabilityError(
+        "a von Neumann entropy output from this execution mode is not implemented; request "
+        "the statevector, density_matrix, or mps mode"
+    )
+
+
 def _execute_analytic_measurement(
     output: Any,
     measurement_target: Callable[[], Any],
@@ -778,6 +947,18 @@ def _execute_analytic_measurement(
         if not any(axes.values()):
             axes["z"] = wires
         return method(**axes)
+    if kind == "density_matrix":
+        return _density_matrix_output(
+            output, wires, n_qubits=n_wires, noise_model=noise_model
+        )
+    if kind == "vn_entropy":
+        return _vn_entropy_output(
+            output,
+            wires,
+            n_qubits=n_wires,
+            noise_model=noise_model,
+            log_base=metadata.get("fq_log_base"),
+        )
 
     probabilities = _joint_marginal_probabilities(
         output,
@@ -822,10 +1003,12 @@ def execute_measurements(
         value: torch.Tensor | list[dict[str | int, int]]
         statistics: dict[str, Any] = {}
         if kind in {
+            "density_matrix",
             "expectation_identity",
             "expectation_z",
             "expectation_ps",
             "probabilities",
+            "vn_entropy",
         }:
             value = _execute_analytic_measurement(
                 output,

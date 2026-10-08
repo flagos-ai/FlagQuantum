@@ -28,6 +28,24 @@ def test_split_p5_contract_rejects_missing_optimizer_implementation_claim() -> N
     assert "optimizer_available" in " ".join(contract_errors(contract))
 
 
+def test_split_p5_contract_rejects_an_unnamed_difference_authority() -> None:
+    """The diagnostic's authority is a recorded fact, not a convention.
+
+    Without the key the gate cannot tell a shared quotient from a local one, so
+    dropping it has to fail rather than silently stop checking.
+    """
+
+    contract = load_toml(CONTRACT)
+    del contract["verification"]["difference_implementation"]
+    assert "one finite-difference authority" in " ".join(contract_errors(contract))
+
+
+def test_split_p5_contract_rejects_a_diagnostic_call_site_that_is_gone() -> None:
+    contract = load_toml(CONTRACT)
+    contract["verification"]["difference_conformance"] = "flagquantum/core/ir.py"
+    assert "reuse the shared quotient" in " ".join(contract_errors(contract))
+
+
 def test_split_p5_contract_rejects_single_word_double_single_gradient_claim() -> None:
     contract = load_toml(CONTRACT)
     precision = contract["precision_boundary"]

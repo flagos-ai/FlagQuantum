@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from collections.abc import Sequence
 from math import isfinite
@@ -11,10 +12,12 @@ from typing import TypeAlias
 import torch
 
 from ...core.operator_schema import canonical_opcode
+from ..native_cpu.rotation import fused_hadamard_controlled_phase_graph_
 from .program import (
     _StatevectorControlledPhaseDecompositionStep,
     _StatevectorControlledPhaseGraphStep,
     _StatevectorGateStep,
+    _StatevectorHadamardControlledPhaseGraphStep,
     _StatevectorPreCXStep,
     _StatevectorRXRZLoopStep,
 )
@@ -135,6 +138,43 @@ def _fuse_controlled_phase_graphs(
     return optimized
 
 
+def _fuse_hadamard_controlled_phase_graphs(
+    program: Sequence[_StatevectorPreCXStep],
+) -> list[_StatevectorPreCXStep]:
+    """Fuse exact QFT-style Hadamard and controlled-phase graph pairs."""
+
+    optimized: list[_StatevectorPreCXStep] = []
+    index = 0
+    while index < len(program):
+        window = program[index : index + 2]
+        if len(window) == 2:
+            hadamard, graph = window
+            if (
+                isinstance(hadamard, _StatevectorGateStep)
+                and hadamard.instruction.matrix is None
+                and not hadamard.instruction.params
+                and canonical_opcode(hadamard.instruction.name) == "h"
+                and len(hadamard.instruction.wires) == 1
+                and isinstance(graph, _StatevectorControlledPhaseGraphStep)
+            ):
+                target = int(hadamard.instruction.wires[0])
+                if graph.edges and all(
+                    target in (int(control), int(edge_target))
+                    for control, edge_target, _ in graph.edges
+                ):
+                    optimized.append(
+                        _StatevectorHadamardControlledPhaseGraphStep(
+                            target=target,
+                            edges=graph.edges,
+                        )
+                    )
+                    index += 2
+                    continue
+        optimized.append(program[index])
+        index += 1
+    return optimized
+
+
 def _controlled_phase_graph_factors_cpu(
     edges: Sequence[tuple[int, int, float]],
     *,
@@ -208,3 +248,48 @@ def _apply_controlled_phase_graph_cpu(
         tensor.mul_(shaped_factors)
         return state
     return (tensor * shaped_factors).reshape(state.shape)
+
+
+def _apply_hadamard_controlled_phase_graph_cpu(
+    state: torch.Tensor,
+    factors: torch.Tensor,
+    qubits: Sequence[int],
+    target: int,
+    n_qubits: int,
+    *,
+    inplace: bool = False,
+) -> torch.Tensor:
+    """Apply a Hadamard and its following static phase graph together."""
+
+    normalized_qubits = tuple(int(qubit) for qubit in qubits)
+    target = int(target)
+    if target not in normalized_qubits:
+        raise ValueError("Hadamard target must belong to the controlled-phase graph")
+    if factors.ndim != 1 or factors.dtype != state.dtype:
+        raise ValueError("controlled-phase graph factors must match the state dtype")
+    if factors.numel() != 2 ** len(normalized_qubits):
+        raise ValueError("controlled-phase graph factors do not match the wire count")
+
+    native_output = state if inplace else state.clone()
+    qubit_tensor = torch.tensor(normalized_qubits, dtype=torch.int64)
+    if fused_hadamard_controlled_phase_graph_(
+        native_output,
+        factors,
+        qubit_tensor,
+        target=target,
+        n_qubits=n_qubits,
+    ):
+        return native_output
+
+    state_shape = (state.shape[0],) + (2,) * int(n_qubits)
+    factor_shape = [1] + [1] * int(n_qubits)
+    for qubit in normalized_qubits:
+        factor_shape[qubit + 1] = 2
+    tensor = state.reshape(state_shape)
+    low, high = tensor.unbind(dim=target + 1)
+    low_factor, high_factor = factors.reshape(factor_shape).unbind(dim=target + 1)
+    scale = math.sqrt(0.5)
+    return torch.stack(
+        ((low + high) * (scale * low_factor), (low - high) * (scale * high_factor)),
+        dim=target + 1,
+    ).reshape(state.shape)

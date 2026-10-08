@@ -31,7 +31,15 @@ records the 22-qubit Linux x86 follow-up that routes wide product-state mixed
 Qiskit Aer and PennyLane Lightning comparisons, absolute times, route evidence,
 public usage, boundaries, stop conditions, and reproduction commands.
 
+[`NATIVE_CPU_DENSE_FUSIONS_LINUX_X86_20261006.md`](NATIVE_CPU_DENSE_FUSIONS_LINUX_X86_20261006.md)
+records the native Hadamard/controlled-phase and CX/RZZ/SWAP passes on a pinned
+22-qubit Linux x86 comparison. It includes all six statevector workloads,
+FlagQuantum/Aer/Lightning absolute times and speedups, focused rollback runs,
+correctness, public usage, boundaries, and reproduction commands.
+
 [`LINUX_X86_CPU_REGRESSION_GATE_20261004.md`](LINUX_X86_CPU_REGRESSION_GATE_20261004.md)
+
+[`LINUX_X86_CPU_ROADMAP_CLOSEOUT_20261005.md`](LINUX_X86_CPU_ROADMAP_CLOSEOUT_20261005.md)
 establishes the fixed-host 22-qubit Random Clifford regression gate. It records
 the CPU model and affinity, absolute FlagQuantum/Aer/Lightning times, internal
 slowdown and external-framework floors, workflow behavior, public usage,

@@ -38,6 +38,7 @@ from .engine import (
 )
 from .errors import DistributedScalabilityError
 from .mps_readiness import (
+    NO_FALLBACK_DECLARATIONS,
     _mps_communication_plan_reported,
     _mps_evidence_reported,
     _mps_memory_plan_reported,
@@ -364,7 +365,7 @@ def _release_mps_training_evidence_errors(
         )
 
     fallback = str(payload.get("fallback_semantics", "unknown")).lower()
-    if fallback not in {"none", "no_fallback", "not_used"}:
+    if fallback not in NO_FALLBACK_DECLARATIONS:
         errors.append(
             "MPS release gate rejects local replay, replicated autograd, "
             "and statevector fallback"

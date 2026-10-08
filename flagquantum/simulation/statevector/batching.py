@@ -10,7 +10,12 @@ import torch
 
 from ...core.ir import Instruction
 from ..gate_matrix import _parameter_batch_window
-from .operations import _environment_flag, _gate_parameter_tensor
+from .operations import (
+    _batched_rotation_sequence_matrices,
+    _batched_rx_ry_rz_matrices,
+    _environment_flag,
+    _gate_parameter_tensor,
+)
 from .program import (
     _direct_batch_assembly_beneficial,
     _preallocated_batch_assembly_beneficial,
@@ -18,6 +23,7 @@ from .program import (
     _StatevectorCrossWireDiagonalStep,
     _StatevectorCXSequenceStep,
     _StatevectorCZGraphStep,
+    _StatevectorDisjointDenseStep,
     _StatevectorFusedGateStep,
     _StatevectorProgramStep,
 )
@@ -53,6 +59,12 @@ def _cpu_statevector_batch_bounded_initial_state_enabled() -> bool:
             "FQ_CPU_STATEVECTOR_BATCH_BOUNDED_INITIAL_STATE", default=True
         )
     )
+
+
+def _cpu_statevector_owned_zero_state_enabled() -> bool:
+    """Whether execution may initialize and consume a private zero-state buffer."""
+
+    return bool(_environment_flag("FQ_CPU_STATEVECTOR_OWNED_ZERO_STATE", default=True))
 
 
 def _cpu_statevector_batch_preallocated_assembly_enabled() -> bool:
@@ -114,6 +126,7 @@ def _execute_statevector_batch_windows(
     batch_size: int,
     chunk_size: int,
     bounded_zero_state: bool,
+    owns_zero_state: bool,
     preallocate: bool,
     execute: Callable[[torch.Tensor, bool], torch.Tensor],
 ) -> tuple[torch.Tensor, str]:
@@ -142,7 +155,7 @@ def _execute_statevector_batch_windows(
             else output[: stop - start]
         )
         with _parameter_batch_window(start, stop, batch_size):
-            chunk = execute(window, direct)
+            chunk = execute(window, direct or owns_zero_state)
         if direct:
             if chunk.data_ptr() != window.data_ptr():
                 window.copy_(chunk)
@@ -224,7 +237,7 @@ def _initial_state_batch_window(circuit: Circuit, batch_size: int) -> torch.Tens
 
 def _statevector_batch_input(
     circuit: Circuit,
-) -> tuple[int, int, bool, torch.Tensor]:
+) -> tuple[int, int, bool, bool, torch.Tensor]:
     """Resolve logical batch size and the smallest safe execution input."""
 
     batch_size = (
@@ -243,14 +256,30 @@ def _statevector_batch_input(
         and circuit._inputs is None
         and initial_window_size < batch_size
     )
-    output = (
-        torch.empty(
+    owns_zero_state = bool(
+        circuit._inputs is None
+        and not uses_bounded_zero_state
+        and _cpu_statevector_owned_zero_state_enabled()
+    )
+    if uses_bounded_zero_state:
+        output = torch.empty(
             (initial_window_size, 0), dtype=circuit.dtype, device=circuit.device
         )
-        if uses_bounded_zero_state
-        else circuit.initial_state()
+    elif owns_zero_state:
+        output = torch.empty(
+            (batch_size, 2**circuit.n_qubits),
+            dtype=circuit.dtype,
+            device=circuit.device,
+        )
+    else:
+        output = circuit.initial_state()
+    return (
+        batch_size,
+        initial_window_size,
+        uses_bounded_zero_state,
+        owns_zero_state,
+        output,
     )
-    return batch_size, initial_window_size, uses_bounded_zero_state, output
 
 
 def _materialize_bounded_zero_state(
@@ -335,3 +364,72 @@ def _rotation_region_angles(
             angles.append(parameter[:, 0])
         regions.append(torch.stack(angles, dim=-1))
     return torch.stack(regions, dim=0) if regions else None
+
+
+def _prepare_batched_rotation_matrices(
+    circuit: Circuit,
+    program: Sequence[_StatevectorProgramStep],
+    state: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
+    """Build the per-step rotation matrices the local program loop reuses."""
+
+    matrix_steps = tuple(
+        region
+        for step in program
+        for region in (
+            step.regions
+            if isinstance(
+                step,
+                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
+            )
+            else (step,)
+        )
+    )
+    rx_ry_rz_steps = tuple(
+        step
+        for step in matrix_steps
+        if isinstance(step, _StatevectorFusedGateStep)
+        and tuple(item.name for item in step.instructions) == ("rx", "ry", "rz")
+        and len(step.wires) == 1
+    )
+    rx_ry_rz_matrices: dict[int, torch.Tensor] = {}
+    if rx_ry_rz_steps:
+        region_angles = _rotation_region_angles(
+            circuit, rx_ry_rz_steps, state, parameter_bindings
+        )
+        if region_angles is not None:
+            matrices = _batched_rx_ry_rz_matrices(region_angles).to(dtype=state.dtype)
+            rx_ry_rz_matrices = {
+                id(step): matrices[index] for index, step in enumerate(rx_ry_rz_steps)
+            }
+
+    rotation_matrices: dict[int, torch.Tensor] = {}
+    rotation_patterns = {
+        tuple(item.name for item in step.instructions)
+        for step in matrix_steps
+        if isinstance(step, _StatevectorFusedGateStep)
+        and len(step.instructions) >= 2
+        and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
+    }
+    for names in rotation_patterns:
+        rotation_steps = tuple(
+            step
+            for step in matrix_steps
+            if isinstance(step, _StatevectorFusedGateStep)
+            and tuple(item.name for item in step.instructions) == names
+        )
+        region_angles = _rotation_region_angles(
+            circuit, rotation_steps, state, parameter_bindings
+        )
+        if region_angles is None:
+            continue
+        matrices = _batched_rotation_sequence_matrices(
+            region_angles,
+            names=names,
+            dtype=state.dtype,
+        )
+        rotation_matrices.update(
+            {id(step): matrices[index] for index, step in enumerate(rotation_steps)}
+        )
+    return rx_ry_rz_matrices, rotation_matrices

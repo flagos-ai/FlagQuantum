@@ -66,24 +66,34 @@ frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary qub
 indices; a `StabilizerCode` is a value that declares its distance, qubit layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
 and a round count into circuit source plus a detector layout and an observable
-layout. `RepetitionCode` and `RotatedSurfaceCode` are the two records that
-implement it.
+layout. `RepetitionCode`, `RotatedSurfaceCode` and `SteaneCode` are the declared
+records that implement it, and the last is the one that declares a logical
+observable in each readout basis; `CssCode` implements the same protocol from the
+parity-check and logical matrices a caller already holds rather than from a
+class.
 
-Detector semantics are fixed. A detector is a measurement parity that is
-deterministic in the noiseless circuit. Which parity that is depends on the
-check's type, because both the initial state and the terminal data readout are in
-the Z basis. A Z-type check is deterministic in round zero and again at the
-terminal readout, so it declares one detector per round comparing that round
-against its predecessor -- where the first round is compared against the known
-all-zero prior state -- plus one detector comparing the final syndrome round
-against the terminal data readout. An X-type check is deterministic in neither
-place and declares only a detector for every round after the first, comparing two
-consecutive syndrome rounds. The count is therefore
-`nz * (rounds + 1) + nx * (rounds - 1)`, which reduces to the earlier
-`len(checks) * (rounds + 1)` exactly when every check is Z-type; for a
-distance-`d` repetition code, whose `len(checks)` is `d - 1` and which has no
-X-type check, it equals `(d - 1) * (rounds + 1)`. Logical failure is the parity of
-a declared logical observable.
+Detector semantics are fixed, and they are stated relative to the experiment's
+readout basis. A detector is a measurement parity that is deterministic in the
+noiseless circuit. Which parity that is depends on the check's type and on the
+basis the data qubits are prepared and read in, because the preparation and the
+terminal readout use one basis. A check whose stabilizer is of that basis' own
+type is deterministic in round zero and again at the terminal readout, so it
+declares one detector per round comparing that round against its predecessor --
+where the first round is compared against the known prior state, `|0...0>` in the
+Z basis and `|+...+>` in the X one, which the source reaches by one `H` per data
+qubit before the round loop -- plus one detector comparing the final syndrome
+round against the terminal data readout. A check of the other type is
+deterministic in neither place and declares only a detector for every round after
+the first, comparing two consecutive syndrome rounds. Both classes are still
+measured every round, because an error of the other Pauli type is precisely what
+this readout cannot see. With `nz` Z-type checks and `nx` X-type checks the
+Z-basis count is therefore `nz * (rounds + 1) + nx * (rounds - 1)`, and the
+X-basis count `nx * (rounds + 1) + nz * (rounds - 1)`; either reduces to the
+earlier `len(checks) * (rounds + 1)` exactly when every check is of the basis'
+own type, and for a distance-`d` repetition code, whose `len(checks)` is `d - 1`
+and which has no X-type check, the Z-basis count is `(d - 1) * (rounds + 1)`.
+Logical failure is the parity of a declared logical observable, and the one a
+given basis reads is the code's declared observable of that basis' type.
 
 The detector count is validated against the code's declared checks and the
 configured round count, and every reference is validated against the code's
@@ -129,8 +139,20 @@ model is exact for Pauli noise in the reference gate set.
 descriptions of an experiment. `_memory_circuit_entries` is the **forced** route
 `from_memory_circuit` calls: it enumerates the locations a noise record
 configures, injects one at a time into the source program the circuit carries,
-and reads the flip set off the circuit's own detector and observable layouts.
-`_code_matrix_entries` is the **read** route: it takes the four CSS blocks
+and reads the flip set off the circuit's own detector and observable layouts. Its
+`decompose_composite_faults` argument is a second *reading* of those locations and
+not a second route: with it on, the one composite fault a memory circuit states —
+the Y family, an X flip and a Z flip at one location — is enumerated as those two
+parts at the parent's rate, each forced through the same injector at the parent's
+own round and wire, instead of as one mechanism whose signature is their XOR. The
+parts fire together in the composite fault and independently when read apart, so
+the two readings share every detector and observable marginal to floating-point
+rounding and share no joint law, and the mechanism sets are asserted to differ.
+The default is the combined reading; the option exists so that the
+minimum-weight matcher, which refuses a mechanism of three detectors, can be
+handed the shape it weights, and a repetition code or a one-round surface
+experiment reaches the same model either way. `_code_matrix_entries` is the
+**read** route: it takes the four CSS blocks
 (`hz[k, q]` is one when a Z-type check `k` sees data qubit `q`, `hx`, and the
 logical-operator matrices `lz` and `lx` in the same convention), and derives every
 signature combinatorially, with nothing lowered or executed.
@@ -141,6 +163,49 @@ reaches a model without a circuit being written for it. The bridge reads every
 block the record declares; a logical observable that is neither pure X nor pure Z
 is refused with its index named rather than read as one of the two, so the fault
 family a half-read code would have lost cannot be lost silently.
+
+`css_code.py` is the same seam read the other way. `CssCode` takes the
+`CssCodeMatrices` record `css_code_matrices` produces and answers the same
+fourteen members a declared record answers -- the data qubits, the ancilla total
+with its two X-type and Z-type bands and the two matching stabilizer counts, the
+checks with their CNOT direction, the stabilizers, the logical observables and the
+distance -- so a caller holding the four blocks reaches a memory circuit, a
+detector and observable layout, a detector error model and `css_code_matrices`
+itself without writing a class for them. The Shor code is the demonstration that
+this is not a second way to write down a declared record: nine data qubits, six
+Z-type checks, two X-type checks and a weight-three logical Z reach a full
+experiment from four blocks alone.
+
+The distance is stated by the caller rather than derived, which is the baseline's
+own division -- its code record declares no distance accessor, its factories read
+one out of the options they were built with and throw when it is absent, and its
+matrix record carries no distance to read -- and deriving it here would be worse
+than copying that shape, because a minimum-weight-codeword search is exponential
+in general and would refuse exactly the large matrices the route exists for. What
+is enforced is the one direction a stated logical operator can prove: an operator
+of weight `w` bounds the distance above by `w`, so a record claiming more than the
+lightest operator it states is refused with both numbers named, and a record that
+understates its distance is accepted because the bound only holds one way.
+
+The record is also where the four blocks are held to the code algebra a matrix
+record normally leaves unchecked. `CssCodeMatrices` establishes that the blocks
+are well formed -- one common width, binary entries -- and says nothing about
+whether they describe a code, while the baseline's own construction validates a
+common column count, the per-element rate-vector lengths and the probability range
+and never commutation, orthogonality, logical non-triviality or independence. Here
+`hz` and `hx` must commute, each stated logical operator must meet the opposite
+basis' checks on an even number of qubits, neither logical block may put a row
+inside its own basis' check span, each block's rows must be independent because
+each row becomes one observable, and no check or logical row may be empty because
+an empty row states the identity operator. Every refusal names the row and the
+reason. That set is a deliberate strengthening of the baseline and not a
+conformance claim.
+
+Two limits of the route are deliberate. A matrix-built record is not registered by
+name, because its identity is the matrix rather than a string, so `get_code` still
+reaches the three declared records. And the route is CSS-shaped by construction, so
+an arbitrary non-CSS stabilizer list still has no way in, for the same reason a
+mixed X-and-Z stabilizer is refused.
 
 The two routes describe different experiments and the difference is stated rather
 than glossed. The matrix route is the code-capacity one: a fault in round `r`
@@ -371,27 +436,47 @@ evidence rather than decoration. The expanded model is a model in its own right 
 it prints and re-reads unchanged -- and it is the default reading that states the
 line stim wrote.
 
-What remains refused is a `repeat` block, a `#` comment, a declaration that skips
-an index, and a malformed line. The `repeat` refusal is deliberate rather than
-pending: expanding a block means interpreting a nested instruction stream, and
-`str(model.flattened())` already states the same instructions without the block.
-`flatten_loops=True` is not a substitute for that call, because stim still emits a
-block for a long enough circuit. One more line is refused by the suggested reading
-alone: a text such as `error(0.1) D0 D0 ^ D1` has a component that cancels to
-nothing, and a component with no targets has no mechanism to become, so the reader
-refuses it and names the default reading -- which states that line as `D1` -- as
-the route that states it.
+What remains refused is a declaration that skips an index, an error mechanism that
+flips nothing, a malformed line, a block that never closes, and a closing brace
+with no block open. Every refusal names what it could not read rather than
+dropping the instruction, so a text carrying information the model cannot state
+fails closed instead of being read as a shorter model. One more line is refused by
+the suggested reading alone: a text such as `error(0.1) D0 D0 ^ D1` has a component
+that cancels to nothing, and a component with no targets has no mechanism to
+become, so the reader refuses it and names the default reading -- which states that
+line as `D1` -- as the route that states it.
+
+A `repeat <count> { ... }` block and a `#` comment are read as well, and both are
+read the way stim means them. The block is stated by interpreting its instructions
+as many times as the count says, so the shape, the mechanisms and the accumulated
+`shift_detectors` offsets it produces are the ones its instructions produce in
+sequence. The shift is what makes the loop a loop: `shift_detectors 2` inside
+`repeat 3 { error(0.1) D0; shift_detectors 2 }` is applied three times, so the
+block's mechanism lands at detector zero, two and four, which is why stim reports
+five detectors for that text where a reading that applied the shift once for the
+whole block would report one. The count is a run of ASCII digits and nothing else:
+`repeat 0` is legal and contributes nothing at all, because the block's
+instructions never run, while a signed, non-numeric or missing count is refused by
+name rather than guessed. Blocks nest, and an inner block is drained inside the
+iteration of the one that holds it. Reading a block is therefore an expansion,
+which is the one cost this reader pays that stim's does not: stim keeps the block
+and expands it on demand. A `#` comment is cut at the `#` wherever it sits on the
+line, so a commented line states no instruction. What the expansion costs is
+bounded by the text, since a block is read by walking its instructions and not by
+materialising a second copy of them: the reader streams instruction lines and
+never holds the expansion.
 
 The evidence is a developer-time sweep of stim 1.16.0 over 240 detector error
 models -- repetition-code and rotated-surface-code memory circuits, distances
 three, five and seven, rounds one, two, three, five and nine, noisy and
-noise-free, with and without decomposed errors. This reader parsed all 180 that
-carried no block, agreeing with a re-read of the same text on the detector and
-observable counts, on the error count, and on every `(probability, detectors,
-observables)` mechanism; the 60 refusals were all `repeat` blocks, all from
-`repetition_code:memory` at five rounds or more. Every one of the same 240 models
-parsed when `flattened()` supplied the text, so flattening is a complete route
-around the last refusal.
+noise-free, with and without decomposed errors. This reader parses all 240
+unflattened, sixty of which carry a `repeat` block, agreeing with a re-read of the
+same text on the detector and observable counts, on the error count, and on every
+`(probability, detectors, observables)` mechanism; before the block was read the
+sixty refusals were all `repeat` blocks, all from `repetition_code:memory` at five
+rounds or more. The same suite asserts that a block-carrying text and the same
+text after `stim`'s `flattened()` state one model, so the reader and stim agree on
+what the block means rather than only on the fact that something can be read.
 
 Agreement on the shape and on the mechanism list is agreement with stim's own
 reading of a text stim wrote, so the reader is also checked against the physics.
@@ -475,19 +560,28 @@ qubits diagonally adjacent to it, so the checks that would fall outside the patc
 are truncated to weight two. The declared logical observable is `Z` on the data
 row `j == 0`.
 
-The X-type checks change what a memory experiment has to declare. Both the
-initial state and the terminal data readout are in the Z basis, so a Z-type check
-is deterministic in round zero and again at the terminal readout and gets
-`rounds + 1` detectors, while an X-type check is deterministic only against the
-round before it and gets `rounds - 1`. The X-type checks are still measured every
-round, because a Z error is precisely what the Z-basis readout cannot see: it
-commutes with every Z stabilizer and anticommutes with the X stabilizers over
-that data qubit, so it is reported as a change in an X-type check between two
-consecutive rounds. An X error is reported in the complementary way, by the
-round-zero and terminal detectors of the Z-type checks. `build_memory_circuit`
-refuses a code whose declared logical observable is not Z-type, because under a
-Z-basis readout such a code would be measured under premises that do not hold
-for it.
+The X-type checks change what a memory experiment has to declare, and the readout
+basis is what decides which of the two classes the experiment's detectors treat as
+its own. Under the default Z basis both the initial state and the terminal data
+readout are in that basis, so a Z-type check is deterministic in round zero and
+again at the terminal readout and gets `rounds + 1` detectors, while an X-type
+check is deterministic only against the round before it and gets `rounds - 1`.
+The X-type checks are still measured every round, because a Z error is precisely
+what the Z-basis readout cannot see: it commutes with every Z stabilizer and
+anticommutes with the X stabilizers over that data qubit, so it is reported as a
+change in an X-type check between two consecutive rounds. An X error is reported
+in the complementary way, by the round-zero and terminal detectors of the Z-type
+checks. `build_memory_circuit` states the readout basis as a field of the record,
+defaulting to Z, and refuses a code that declares no logical observable in the
+requested basis, because such a code would be measured under premises that do not
+hold for it. Under an X basis the two roles swap, which is the same rule read over
+the other class rather than a second rule: the preparation is one `H` per data
+qubit before the round loop and the same gates again before the terminal readout,
+the X-type checks become the round-zero and terminal detectors, the Z-type checks
+the ones compared only between consecutive rounds, and the observable read is the
+code's declared X-type one. `SteaneCode` declares a logical observable of each
+type, so it is the record that can be read either way, and a basis it cannot
+support is refused by name.
 
 That layout is checked against `stim`'s generated `surface_code:rotated_memory_z`
 at 28 (`distance`, `rounds`) points: distances two through eight and rounds one
@@ -663,6 +757,63 @@ than here: the two decoders agree on the cheapest weight of every syndrome and o
 the observables wherever the cheapest explanation is unique, and a tie is
 uncomparable because PyMatching's own arithmetic is narrower than this module's.
 
+## A second decoder, for the models the matcher cannot read
+
+`belief_propagation.py` is the other half of that decoder family, and the reason
+it is a family rather than a setting is the shape of the input. A matcher needs a
+graphlike model, so a mechanism touching three or more detectors has no edge to
+become and is refused. A factor graph has no such limit: a mechanism is one
+variable, a detector is one check, and a mechanism touching three detectors joins
+three checks, so the graph is the model as written rather than a projection of it.
+
+The exchange is sum-product in the log domain. A variable's prior is
+`log((1 - p) / p)` for that mechanism's own rate; a check composes the tangents of
+half of each other variable's message, inverts the product when its own detector
+fired, and sends the result back. Two details are the whole correctness of it.
+The message a check sends a variable must exclude that variable's own report,
+which is what separates the check's evidence about the variable from what the
+variable already said. And the check's syndrome bit belongs in the update,
+because a check whose detector fired states the complement of what it states when
+the detector is quiet. `_syndrome_mask` reads a syndrome as a set of detectors,
+so a detector named twice is named once, and a detector outside the model is
+refused.
+
+A run returns the first iterate whose hard decision explains the syndrome, and
+the empty syndrome is answered from the priors alone with an iteration count of
+zero. The claim is checked against the model's own distribution rather than
+against the exchange: every mechanism set has a probability and a signature, so
+the most likely explanation of a syndrome is a number computed by enumeration,
+and on a factor graph that is a tree the beliefs are exact and the decoder must
+reach it for every syndrome the model can produce. On a graph with cycles the
+exchange is approximate and a settled run can be heavier than the cheapest
+explanation, which is asserted as a fact rather than left to be discovered; what
+the tests hold the decoder to there is that every syndrome is answered with a set
+that flips it, that the weight is the sum of the selected mechanisms' own ratios,
+and that the weight is never below the cheapest explanation's.
+
+When the exchange does not settle, ordered statistics answers and the result's
+`converged` flag is false. The fallback orders the mechanisms by their posterior
+belief, takes a greedily chosen independent set of their columns as the
+information set, solves the reduced system over it, fixes every other mechanism
+at its belief decision, and refuses an inconsistent residual rather than
+returning a set that does not explain the syndrome. A caller who needs the
+exchange's own answer rather than a solve turns the fallback off, and then an
+unsettled run raises with the reason. Three refusals keep the region honest: a
+model that states its mechanisms are alternatives is refused, because the
+exchange weighs each variable as an independent fault and a group of alternatives
+is one fault whose members cannot fire together; a mechanism of rate zero is
+refused, because its prior ratio is not a number; and a syndrome no set of
+mechanisms can produce is refused, because the mechanisms span a subspace of the
+detector space and a syndrome outside it did not come from this model.
+
+`BeliefPropagationDecodeResult` carries the convergence flag, the selected
+mechanisms, the logical observables they flip, the total weight and the iteration
+count. It is deliberately not the baseline's `DecoderResult`: there is no batch
+form, no async form and no optional-results channel here. The module imports
+`math`, `dataclasses` and `numbers` and nothing else, and it does not implement
+the sliding window, which lives in [sliding_window.py](sliding_window.py) because
+it needs the chunk seams this layer does not have.
+
 ## Reaching a decoder by name
 
 `registry.py` is the factory half of the CUDA-Q QEC decoder surface: upstream
@@ -670,8 +821,8 @@ reaches a decoder through `get_decoder(name, H_or_dem_text_or_sparse_matrix,
 **options)` and registers one with a decorator, and this module offers
 `get_decoder(name, source, **options)`, `register_decoder(name, *,
 replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder` protocol
-those three are written against. `AUTHORITY_NAME` and `CROSS_CHECK_NAME` name the
-two registrations this package ships.
+those three are written against. `AUTHORITY_NAME`, `CROSS_CHECK_NAME` and
+`BELIEF_PROPAGATION_NAME` name the three registrations this package ships.
 
 Three things about it are narrower than upstream on purpose, and each is a
 decision rather than an omission.
@@ -680,9 +831,13 @@ The source argument is a *carrier*, not a decoder setting, which is why the thre
 accepted forms are the three a caller can hold a model in: the detector error
 model, stim's text for one, and the decoding graph the model defines. A model is
 lifted through the class's own `from_detector_error_model`; a graph is passed to
-the constructor, because the graph is already the thing a matcher searches and
-rebuilding a model from it would lose the observable labels the caller has in
-hand; text is read through `DetectorErrorModel.from_stim_text` first. A
+the class's own `from_decoding_graph`, which for a matcher is the graph it already
+searches and for a decoder that reads the model as written is the lift of the
+graph's own edges back into a model; text is read through
+`DetectorErrorModel.from_stim_text` first. The third constructor is required of
+every registered class for that reason: the three carriers are one documented
+surface, and a name that could be built from a model and not from a graph would
+be a name whose accepted sources depend on which name was asked for. A
 parity-check matrix is not a carrier, although upstream's
 `H_or_dem_text_or_sparse_matrix` is, because `from_code_matrices` reads a noise
 model and a round count rather than defaulting them, so a factory that lifted a
@@ -699,8 +854,8 @@ why the registry is a module of its own rather than methods on `Decoder`.
 Registration is checked at registration time, while the registering module is
 being imported. `register_decoder` refuses a name that is not a non-empty string,
 a second registration of a name unless the caller passes `replace=True`, and a
-class missing `decode` or `from_detector_error_model` — the two members every
-decoder in this family shares. A `TypeError` at import time, naming the member
+class missing `decode`, `from_detector_error_model` or `from_decoding_graph` —
+the three members every decoder in this family shares. A `TypeError` at import time, naming the member
 that is missing, is a better failure than an `AttributeError` at the first call,
 where the name is all the caller has to go on.
 
@@ -721,3 +876,170 @@ flagquantum.qec` does not import `pymatching` — a test starts a fresh interpre
 and measures that rather than asserting it. No name is preferred over another, so
 `get_decoder(AUTHORITY_NAME, ...)` returns the authority wherever the extra
 happens to be installed; the cross-check is never reached by accident.
+
+## Cutting a model into rounds
+
+`chunks.py` is the substrate a sliding-window decoder slides over, and it is
+deliberately only the substrate: nothing in it decodes, and a window's matrices
+are not produced, because those are the input shape of the decoder that reads a
+window rather than of the model record.
+
+A *layer* is the set of detectors sharing one round index, so the widths are the
+round sizes in detector order and sum to the model's detector count.
+`ChunkLayout.from_memory_circuit` reads them off a circuit rather than accepting
+them, and the two conventions that matter are decided there. A terminal detector
+— one whose parity references the terminal data readout and no round — is placed
+in the last layer instead of being given a round of its own, which is what makes
+a memory circuit's layers contiguous. And a numbering that reaches a layer after
+skipping one is refused rather than closed up: renumbering the rounds after a
+missing one would silently move every window that follows it, which is the kind
+of error a decomposition must not absorb.
+
+A *window* spans a contiguous run of layers, and its bands are fixed rather than
+configurable: the leading boundary layer it shares with its predecessor, its own
+interior, and the trailing boundary layer it shares with its successor. A stride
+of `window - 1` is what makes the windows share exactly one layer each, and a
+layer count that does not tile at that stride is refused with the count named —
+a caller who wants to advance by less reads overlapping windows and simply does
+not stitch them, rather than asking for a decomposition that does not tile.
+
+The property that makes the windows a partition rather than a cover is a fact
+about the model rather than a rule imposed on it: a mechanism spans exactly two
+adjacent layers, because a fault is placed at one location and flips that round's
+detectors and the round before's, and a mechanism lying inside one layer does not
+arise. So the first window that contains a mechanism whole owns it, every
+mechanism is owned once, and `dem_close_all(dem_chunks_from_spec(spec)) == model`
+is an equality the tests assert. Two mechanisms are refused rather than placed. A
+mechanism no window contains whole is refused and never split, because splitting
+it would state two weaker faults where the model stated one; the caller's remedy
+is a wider window or the fault stated per round. And a mechanism flipping no
+detector is refused, because an observable-only fault has no round to be placed
+in and choosing one would be inventing placement.
+
+`dem_stitch` contracts the shared layer of two adjacent windows and lays it out
+once, between their interiors, so the result spans one layer fewer than the sum
+of its parts; `dem_stitch_merged` follows that with the model's own
+`merge_duplicate_mechanisms` under a stated rule, which is the only place in this
+module where a probability is combined. `dem_close` lays one window out at its
+own place in the model's own numbering without renumbering from zero, so a
+window's detectors are the model's detectors, and a close of a decomposition is
+the model again.
+
+A chunk may name only the two standard boundary seams, at most once each, ordered
+by row, with the leading band starting at local row zero, the trailing band
+ending at the last local row, and the bands not overlapping. A stitch adds four
+refusals: a non-adjacent pair, an observable count that differs between the two
+sides, a boundary either side does not carry, and a contracted band whose
+detectors are not the same rows in the same order on both sides. That last one is
+what makes the operation an identity check rather than arithmetic on widths.
+
+Three differences from the CUDA-Q QEC seam surface are decisions rather than
+gaps, and the alignment checklist records all three. A seam here is identified by
+its name text, where upstream hashes a seam's name into a `uint32` at compile
+time and keeps a registry only so a diagnostic can turn the hash back into text —
+so nothing here hashes, nothing interns, and two seams are the same seam exactly
+when their names are equal. A seam's rows carry the global detector index rather
+than a position within the seam, where upstream's per-seam tags are caller-chosen
+labels numbered positionally. And what upstream calls `expand_dem_chunks` has no
+counterpart, because its spec is a phase graph with a sparse shorthand that must
+be expanded against a round count supplied at expansion time, while the spec here
+is linear: `DemChunksSpec.chunk_specs` is that expansion, and a second name for
+one operation would be a second spelling of it.
+
+## Sliding a window over those rounds
+
+Upstream `cudaq-qec` ships a `sliding_window` decoder over its extended detector
+error model: it cuts the model into round windows, hands each window its own
+matrices and its own inner decoder, commits the part of a window the window that
+follows cannot revise, and folds the committed corrections into a logical-frame
+prediction. [sliding_window.py](sliding_window.py) is that decoder over the
+windows above, plus the three chunk-scoped projections the same baseline lists.
+`dem_chunks_to_pcm` and `dem_chunks_to_o_sparse` are projections of the whole
+sequence, and `dem_chunks_to_d_sparse` is the memory XOR map that pairs a
+detector with the measurement bits it compares.
+
+The reshape is that a window's matrices are already cut. Upstream slices detector
+rows and error columns out of one flat matrix to build a window and re-indexes
+both, which is why its per-window `H_round` and `first_column` are separate facts
+it has to carry around. Here the decomposition already did that: `dem_close_all`
+lays a window out at its own place in the model's numbering, and a window's own
+model numbers its rows from zero and holds only that window's mechanisms. So the
+inner decoder of a window is built from that window's model and from nothing
+else, and nothing is inherited because there is nothing to inherit. Upstream's
+`first_columns` bookkeeping and its per-window `get_pcm_for_rounds` call have no
+counterpart here for the same reason.
+
+A *fault column* is a column of the model the sequence decomposes, and both
+sparse projections index that one column space in the order `dem_close_all`
+states — the order `detector_error_matrix()` and `observables_flips_matrix()` use
+— so `dem_chunks_to_pcm(chunks)` is the former read one detector row at a time
+and `dem_chunks_to_o_sparse(chunks)` is the latter, each in sparse form. A window
+enumerates its mechanisms in its own order, so a projection maps that local
+column onto the model's global one with the stable sort that takes the
+concatenated window order to the sorted model order; the detectors take part in
+the key because that is one of the terms the model sorts by, and two mechanisms
+that agree on every term are duplicates that flip the same rows and the same
+observables. The map comes from the windows themselves, so a sequence that is not
+a decomposition of one model is refused by `dem_close_all` before any column is
+named, and a numbering past what a realtime decoder can address is refused rather
+than wrapped.
+
+`dem_chunks_to_d_sparse` is the one projection that meets a third numbering: the
+*measurement bit* of a flat `rounds * d` buffer, which is what a memory
+experiment's raw measurements occupy. It is round-major, so detector `r * d + k`
+brings together bit `k` of round zero and nothing else in the first round, and bit
+`k` of rounds `r - 1` and `r` after it. The precondition is upstream's own — every
+round of the sequence is the same `d` detectors wide — and it is checked rather
+than assumed, which is what makes the function refuse a surface code's geometry
+by name: a distance-three surface code's boundary rounds are four rows wide where
+its interior rounds are eight, so its detectors are not pairs of uniform rounds
+and its correspondence comes from the circuit's measurement handles, which is
+`MeasurementMap`'s map and not this one's. `rounds * d` is required to be the
+sequence's detector count, so a decomposition whose rounds are not all `d` rows
+wide cannot be read through this map even by accident.
+
+`SlidingWindowDecoder` takes a `DemChunksSpec` and a registered inner decoder
+name, and resolves the name through `get_decoder`, so a name the registry does
+not hold is refused where the decoder is built. It is deliberately not itself in
+the registry: a registered decoder is built from a model or from the graph one
+defines, and a sliding window needs the windows of a decomposition, which a model
+does not state — upstream takes its window geometry as constructor arguments for
+the same reason. Two entry points replace upstream's one. `decode` takes a whole
+block in the model's detector numbering and splits it into the layout's rounds;
+`decode_round` takes one round in that round's own numbering, which is the
+numbering upstream's per-round vector already has. Upstream decides between the
+two paths by comparing the first entry's length against the block size, which is
+the kind of overloading a stated entry point does without.
+
+What an inner decoder has to report is the substantive narrowing. A window's
+syndrome is the events of its detector rows less the support of the mechanisms the
+window before it committed, because two adjacent windows share the boundary
+round's detectors and the same event may not be explained twice. Forming that
+residue needs to know which mechanisms a window selected, so an inner record must
+state them as `mechanisms` in that window's own column order, which is what
+`BeliefPropagationDecodeResult` holds. A record that states only observables is an
+answer rather than a correction and is refused by name at the first commit;
+`MatchingDecodeResult` states its correction as graph edges rather than as column
+indices, so the authority matcher is not yet usable as an inner decoder. That is
+a property of that record and is recorded as such rather than worked around here,
+and it is why the sliding window is not a second spelling of the matcher.
+
+`SlidingWindowDecodeResult` reports the committed part of the correction and the
+observables that vector flips, so the two are one statement read twice rather than
+two answers free to disagree; a caller who projects a window's mechanisms
+independently gets the same observables. It diverges from upstream in reporting
+the committed faults while the stream is still sliding, where upstream returns an
+empty vector until the final window because its result vector is indexed by a
+column space in which the shared columns are still open — no column is shared
+here. Its `complete` flag is what upstream's empty-vector return encodes, and its
+`converged` field is the inner decoders' flags anded, or `None` when none of them
+reports one, because `MatchingDecodeResult` has no such flag and crediting a
+decoder that said nothing with settling is worse than saying nothing.
+
+A window that cannot explain its residue refuses rather than guesses. That is not
+a defect: a window's residue is a subsystem the window need not span, so an
+arbitrary detector subset is not a syndrome any window promises to read, and a
+narrow window can therefore abandon a block that a wider one decodes. The tests
+say so directly by driving mechanisms rather than random subsets, and by asserting
+that a two-round window of a four-round chain abandons the terminal mechanisms'
+syndromes while a three-round window answers every mechanism of the same model.

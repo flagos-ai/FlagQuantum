@@ -1,0 +1,876 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# Purpose: the per-opcode exactness of the `parameter_shift` route across every
+# execution mode that can serve an expectation value.
+#
+# `contracts/gradient-methods-contract.toml` fixes the *method* axis and
+# `contracts/parameter-shift-coverage-contract.toml` fixes the remote-safe *batch*
+# profile. Neither answers the question this file answers, which is the one the plan
+# actually asks for: for every opcode whose derivative rule is declared, is the
+# analytic rule the one the implementation applies, in every mode the caller can
+# reach, and not just in the default one. A rule can be right in `statevector` and
+# wrong in `mps` because the modes are separate executors, so an exactness claim
+# that covers one mode is a claim about one executor.
+#
+# Three routes are compared per cell, and the third is not decoration. `autograd`
+# and `parameter_shift` can agree while both being wrong, because they can share the
+# same analytic rule -- measured agreement between them is not evidence that the
+# rule is right. The tie-breaker is a Richardson-extrapolated central difference
+# built from `fq.run` alone, which reads the derivative out of the loss surface and
+# shares no code with either route. `[difference_scheme]` records the scheme and
+# states that its step is a probe choice rather than a declared quantity.
+#
+# The opcode set is derived from `OperatorSchema.differentiable`, which is itself
+# derived from the declared frequency sets, so an opcode that gains a rule joins this
+# contract by existing and fails the gate until it is measured here. The mode
+# vocabulary is read from `flagquantum/runtime/options.py::_MODES` for the same
+# reason: a new mode is a new column this file has to account for.
+#
+# `stabilizer` is not a column. It refuses every differentiable opcode, with one
+# message, before any derivative is attempted: it samples measurement outcomes and
+# `parameter_shift` is driven by an expectation value. That is a property of the
+# measurement kind and not of any opcode, so it is recorded once as a refusal with
+# the file its phrase comes from, instead of fourteen times as an absence.
+#
+# The batch profile's split is recorded per opcode because it is a real cross-file
+# fact with a real consequence: every differentiable opcode is admitted by the
+# profile except the three whose declared rule needs two evaluation pairs and the
+# profile's `max_evaluation_pairs` is one. Reading the two files side by side is how
+# that is found; neither file says it alone.
+schema = "flagquantum_opcode_gradient_exactness_contract_v1"
+maturity = "development_evidence"
+implementation = "flagquantum/gradients.py"
+declaration_source = "flagquantum/core/operator_schema.py"
+mode_source = "flagquantum/runtime/options.py"
+batch_profile = "contracts/parameter-shift-coverage-contract.toml"
+authorization = [
+    "docs/api-changes/FQ-GRADIENT-OPCODE-EXACTNESS-20261028.md",
+]
+
+# Read from the implementation rather than copied, so the gate can prove it read the
+# same declaration this file records.
+declaration_vocabulary = [
+    "OPERATOR_SCHEMAS",
+    "OperatorSchema.parameters",
+    "OperatorSchema.parameter_frequencies",
+    "OperatorSchema.differentiable",
+    "OperatorSchema.shift_rule",
+]
+
+declared_methods = ["auto", "autograd", "finite_difference", "parameter_shift", "spsa"]
+declared_modes = ["auto", "density_matrix", "mps", "stabilizer", "statevector", "tensor_network"]
+# Every differentiable opcode is measured in these five modes. `auto` is a real
+# column because it resolves separately, and the four named ones are the modes that
+# can serve an expectation value at all.
+measured_modes = ["auto", "density_matrix", "mps", "statevector", "tensor_network"]
+# Modes that serve an expectation value and are nevertheless not columns, with the
+# reason. A mode that starts serving must be moved out of this list, which is why the
+# list is here rather than a comment.
+excluded_modes = [
+    { mode = "stabilizer", reason = "samples_measurement_outcomes" },
+]
+
+[reference]
+# A differentiated gate is only observable through the circuit around it. Every qubit
+# is prepared with a fixed rotation, the two entanglers join them, the differentiated
+# gate follows, and a closing entangler and rotation turn the measurement basis onto
+# the differentiated parameter. Without the closing rotation a phase-type opcode acts
+# on a state that differs from `|0...0>` by a scalar phase only, and every
+# phase-opcode derivative measures as zero -- which reads as agreement and is not.
+qubits = 3
+dtype = "complex128"
+fixed_rotations = [0.7, 1.1, 0.4, 0.9]
+entanglers = ["cx(0, 1)", "cx(1, 2)", "cx(2, 0)"]
+# Parameter `i` of a differentiated opcode is evaluated at `evaluation_points[i]`.
+evaluation_points = [0.3, 0.7, 1.1]
+observable = "expectation(Z(0))"
+tolerance = 1e-12
+cell_count = 70
+observability_floor = 3.360360652996e-02
+max_parameter_shift_vs_autograd = 3.925231146709e-16
+max_autograd_vs_richardson = 1.606145771937e-13
+max_parameter_shift_vs_richardson = 1.605798827242e-13
+max_cross_mode_spread = 1.221245327088e-15
+
+[difference_scheme]
+# The third route. `levels` displacements are halved in turn and `order` Richardson
+# levels remove the leading truncation terms, so the scheme is exact to
+# `O(base_step ** (2 * (levels - order)))` on a smooth loss and its remaining error
+# is round-off in the loss evaluations rather than truncation.
+kind = "richardson_extrapolated_central_difference"
+levels = 3
+order = 2
+base_step = 0.01
+# The step is chosen by the probe, not declared by the implementation, so it is a
+# measured-comparison parameter and not a contract of the derivative rule.
+base_step_is_a_probe_choice = true
+shares_no_code_with_the_compared_routes = true
+
+[[refusal]]
+mode = "stabilizer"
+exception = "CapabilityError"
+message_phrase = "samples measurement outcomes"
+message_source = "flagquantum/runtime/planner/__init__.py"
+second_message_source = "flagquantum/runtime/executors/stabilizer/sampling.py"
+measured_opcodes_refused = 14
+trigger = "any differentiable opcode differentiated through a loss that runs in mode='stabilizer'"
+reachable_from = "fq.gradient(..., method='parameter_shift') over a fq.run call with ExecutionOptions(mode='stabilizer')"
+
+[batch_profile_relation]
+max_evaluation_pairs = 1
+differentiable_opcodes = 14
+admitted_differentiable_opcodes = 11
+refused_differentiable_opcodes = ["crx", "cry", "crz"]
+split_reason = "pair_limit"
+refused_only_because_of_the_pair_limit = true
+
+[rules]
+one_row_per_differentiable_opcode = true
+no_row_for_an_opcode_without_a_declared_rule = true
+every_measured_mode_is_a_cell = true
+every_cell_re_measured_by_the_gate = true
+three_routes_per_cell_with_the_third_independent = true
+agreement_between_two_routes_is_not_evidence_alone = true
+observability_floor_is_measured_not_assumed = true
+excluded_modes_carry_their_reason = true
+a_new_opcode_rule_fails_the_gate_until_measured = true
+a_new_execution_mode_fails_the_gate_until_measured = true
+cross_mode_spread_is_measured_per_opcode = true
+no_silent_fallback = true
+
+[verification]
+contract = "tests/unit/test_opcode_gradient_exactness_contract.py"
+gate = "tools/check_opcode_gradient_exactness.py"
+every_cell_is_remeasured_by_the_gate = true
+every_opcode_row_is_derived_from_the_declaration = true
+refusal_phrase_occurs_in_its_message_source = true
+vocabularies_are_compared_with_the_implementation = true
+batch_profile_relation_is_remeasured = true
+
+[[opcode]]
+name = "cphase"
+arity = 2
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 6.645254850233e-02
+cross_mode_spread = 4.163336342344e-17
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "crx"
+arity = 2
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+terms_per_parameter = [4]
+pair_count_needed = 2
+shift_norm = 3.360360652996e-02
+cross_mode_spread = 9.714451465470e-17
+batch_profile_admitted = false
+batch_profile_evaluation_pairs = 2
+
+[[opcode]]
+name = "cry"
+arity = 2
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+terms_per_parameter = [4]
+pair_count_needed = 2
+shift_norm = 7.767199665879e-02
+cross_mode_spread = 8.326672684689e-17
+batch_profile_admitted = false
+batch_profile_evaluation_pairs = 2
+
+[[opcode]]
+name = "crz"
+arity = 2
+declared_parameters = ["theta"]
+declared_frequencies = [[0.5, 1.0]]
+terms_per_parameter = [4]
+pair_count_needed = 2
+shift_norm = 3.360360652996e-02
+cross_mode_spread = 5.551115123126e-17
+batch_profile_admitted = false
+batch_profile_evaluation_pairs = 2
+
+[[opcode]]
+name = "phase"
+arity = 1
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 1.329050970047e-01
+cross_mode_spread = 1.110223024625e-16
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "rx"
+arity = 1
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 7.674725925904e-02
+cross_mode_spread = 3.885780586188e-16
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "rxx"
+arity = 2
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 7.674725925904e-02
+cross_mode_spread = 2.498001805407e-16
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "ry"
+arity = 1
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 5.162047610199e-01
+cross_mode_spread = 1.221245327088e-15
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "ryy"
+arity = 2
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 5.615783774562e-02
+cross_mode_spread = 2.289834988289e-16
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "rz"
+arity = 1
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 1.329050970047e-01
+cross_mode_spread = 1.110223024625e-16
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "rzz"
+arity = 2
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 1.329050970047e-01
+cross_mode_spread = 5.551115123126e-17
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "u1"
+arity = 1
+declared_parameters = ["theta"]
+declared_frequencies = [[1.0]]
+terms_per_parameter = [2]
+pair_count_needed = 1
+shift_norm = 1.329050970047e-01
+cross_mode_spread = 1.110223024625e-16
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "u2"
+arity = 1
+declared_parameters = ["phi", "lbd"]
+declared_frequencies = [[1.0], [1.0]]
+terms_per_parameter = [2, 2]
+pair_count_needed = 1
+shift_norm = 4.650828072696e-01
+cross_mode_spread = 4.910462595696e-16
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[opcode]]
+name = "u3"
+arity = 1
+declared_parameters = ["theta", "phi", "lbd"]
+declared_frequencies = [[1.0], [1.0], [1.0]]
+terms_per_parameter = [2, 2, 2]
+pair_count_needed = 1
+shift_norm = 8.352901355015e-01
+cross_mode_spread = 8.270975252329e-16
+batch_profile_admitted = true
+batch_profile_evaluation_pairs = 1
+
+[[cell]]
+opcode = "cphase"
+mode = "auto"
+shift_norm = 6.645254850233e-02
+parameter_shift_vs_autograd = 2.775557561563e-17
+autograd_vs_richardson = 7.355227538142e-15
+parameter_shift_vs_richardson = 7.382983113757e-15
+
+[[cell]]
+opcode = "cphase"
+mode = "density_matrix"
+shift_norm = 6.645254850233e-02
+parameter_shift_vs_autograd = 5.551115123126e-17
+autograd_vs_richardson = 8.396061623728e-15
+parameter_shift_vs_richardson = 8.340550472496e-15
+
+[[cell]]
+opcode = "cphase"
+mode = "mps"
+shift_norm = 6.645254850233e-02
+parameter_shift_vs_autograd = 4.163336342344e-17
+autograd_vs_richardson = 4.676814491233e-15
+parameter_shift_vs_richardson = 4.718447854657e-15
+
+[[cell]]
+opcode = "cphase"
+mode = "statevector"
+shift_norm = 6.645254850233e-02
+parameter_shift_vs_autograd = 2.775557561563e-17
+autograd_vs_richardson = 7.355227538142e-15
+parameter_shift_vs_richardson = 7.382983113757e-15
+
+[[cell]]
+opcode = "cphase"
+mode = "tensor_network"
+shift_norm = 6.645254850233e-02
+parameter_shift_vs_autograd = 4.163336342344e-17
+autograd_vs_richardson = 2.307876112440e-14
+parameter_shift_vs_richardson = 2.312039448782e-14
+
+[[cell]]
+opcode = "crx"
+mode = "auto"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 2.081668171172e-17
+autograd_vs_richardson = 2.887967642806e-14
+parameter_shift_vs_richardson = 2.885885974635e-14
+
+[[cell]]
+opcode = "crx"
+mode = "density_matrix"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 4.163336342344e-17
+autograd_vs_richardson = 4.107131301723e-14
+parameter_shift_vs_richardson = 4.111294638065e-14
+
+[[cell]]
+opcode = "crx"
+mode = "mps"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 3.469446951954e-17
+autograd_vs_richardson = 1.265376692317e-13
+parameter_shift_vs_richardson = 1.265029747621e-13
+
+[[cell]]
+opcode = "crx"
+mode = "statevector"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 2.081668171172e-17
+autograd_vs_richardson = 2.887967642806e-14
+parameter_shift_vs_richardson = 2.885885974635e-14
+
+[[cell]]
+opcode = "crx"
+mode = "tensor_network"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 5.561523463982e-14
+parameter_shift_vs_richardson = 5.561523463982e-14
+
+[[cell]]
+opcode = "cry"
+mode = "auto"
+shift_norm = 7.767199665879e-02
+parameter_shift_vs_autograd = 5.551115123126e-17
+autograd_vs_richardson = 1.915134717478e-15
+parameter_shift_vs_richardson = 1.859623566247e-15
+
+[[cell]]
+opcode = "cry"
+mode = "density_matrix"
+shift_norm = 7.767199665879e-02
+parameter_shift_vs_autograd = 6.938893903907e-17
+autograd_vs_richardson = 3.887168364969e-14
+parameter_shift_vs_richardson = 3.880229471065e-14
+
+[[cell]]
+opcode = "cry"
+mode = "mps"
+shift_norm = 7.767199665879e-02
+parameter_shift_vs_autograd = 6.938893903907e-17
+autograd_vs_richardson = 5.574707362399e-14
+parameter_shift_vs_richardson = 5.581646256303e-14
+
+[[cell]]
+opcode = "cry"
+mode = "statevector"
+shift_norm = 7.767199665879e-02
+parameter_shift_vs_autograd = 5.551115123126e-17
+autograd_vs_richardson = 1.915134717478e-15
+parameter_shift_vs_richardson = 1.859623566247e-15
+
+[[cell]]
+opcode = "cry"
+mode = "tensor_network"
+shift_norm = 7.767199665879e-02
+parameter_shift_vs_autograd = 1.387778780781e-17
+autograd_vs_richardson = 3.626265954182e-14
+parameter_shift_vs_richardson = 3.624878175401e-14
+
+[[cell]]
+opcode = "crz"
+mode = "auto"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 1.387778780781e-17
+autograd_vs_richardson = 1.312144837229e-14
+parameter_shift_vs_richardson = 1.310757058448e-14
+
+[[cell]]
+opcode = "crz"
+mode = "density_matrix"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 6.938893903907e-18
+autograd_vs_richardson = 4.226480276870e-14
+parameter_shift_vs_richardson = 4.227174166260e-14
+
+[[cell]]
+opcode = "crz"
+mode = "mps"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 3.469446951954e-17
+autograd_vs_richardson = 1.606145771937e-13
+parameter_shift_vs_richardson = 1.605798827242e-13
+
+[[cell]]
+opcode = "crz"
+mode = "statevector"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 1.387778780781e-17
+autograd_vs_richardson = 1.312144837229e-14
+parameter_shift_vs_richardson = 1.310757058448e-14
+
+[[cell]]
+opcode = "crz"
+mode = "tensor_network"
+shift_norm = 3.360360652996e-02
+parameter_shift_vs_autograd = 6.938893903907e-18
+autograd_vs_richardson = 6.227657278757e-14
+parameter_shift_vs_richardson = 6.226963389366e-14
+
+[[cell]]
+opcode = "phase"
+mode = "auto"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 9.603429163008e-15
+parameter_shift_vs_richardson = 9.714451465470e-15
+
+[[cell]]
+opcode = "phase"
+mode = "density_matrix"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 7.827072323607e-15
+parameter_shift_vs_richardson = 7.827072323607e-15
+
+[[cell]]
+opcode = "phase"
+mode = "mps"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 8.326672684689e-17
+autograd_vs_richardson = 4.071742942813e-14
+parameter_shift_vs_richardson = 4.080069615497e-14
+
+[[cell]]
+opcode = "phase"
+mode = "statevector"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 9.603429163008e-15
+parameter_shift_vs_richardson = 9.714451465470e-15
+
+[[cell]]
+opcode = "phase"
+mode = "tensor_network"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 3.289035710452e-14
+parameter_shift_vs_richardson = 3.300137940698e-14
+
+[[cell]]
+opcode = "rx"
+mode = "auto"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 1.046385200709e-14
+parameter_shift_vs_richardson = 1.035282970463e-14
+
+[[cell]]
+opcode = "rx"
+mode = "density_matrix"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 2.775557561563e-17
+autograd_vs_richardson = 2.048361480433e-14
+parameter_shift_vs_richardson = 2.051137037995e-14
+
+[[cell]]
+opcode = "rx"
+mode = "mps"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 2.220446049250e-16
+autograd_vs_richardson = 4.767020111984e-14
+parameter_shift_vs_richardson = 4.744815651492e-14
+
+[[cell]]
+opcode = "rx"
+mode = "statevector"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 1.046385200709e-14
+parameter_shift_vs_richardson = 1.035282970463e-14
+
+[[cell]]
+opcode = "rx"
+mode = "tensor_network"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 3.040623308692e-14
+parameter_shift_vs_richardson = 3.040623308692e-14
+
+[[cell]]
+opcode = "rxx"
+mode = "auto"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 9.714451465470e-17
+autograd_vs_richardson = 6.591949208712e-15
+parameter_shift_vs_richardson = 6.494804694057e-15
+
+[[cell]]
+opcode = "rxx"
+mode = "density_matrix"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 1.740274591100e-14
+parameter_shift_vs_richardson = 1.740274591100e-14
+
+[[cell]]
+opcode = "rxx"
+mode = "mps"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 6.192268919847e-14
+parameter_shift_vs_richardson = 6.181166689601e-14
+
+[[cell]]
+opcode = "rxx"
+mode = "statevector"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 9.714451465470e-17
+autograd_vs_richardson = 6.591949208712e-15
+parameter_shift_vs_richardson = 6.494804694057e-15
+
+[[cell]]
+opcode = "rxx"
+mode = "tensor_network"
+shift_norm = 7.674725925904e-02
+parameter_shift_vs_autograd = 6.938893903907e-17
+autograd_vs_richardson = 2.607636329088e-14
+parameter_shift_vs_richardson = 2.614575222992e-14
+
+[[cell]]
+opcode = "ry"
+mode = "auto"
+shift_norm = 5.162047610199e-01
+parameter_shift_vs_autograd = 2.220446049250e-16
+autograd_vs_richardson = 5.662137425588e-15
+parameter_shift_vs_richardson = 5.440092820663e-15
+
+[[cell]]
+opcode = "ry"
+mode = "density_matrix"
+shift_norm = 5.162047610199e-01
+parameter_shift_vs_autograd = 2.220446049250e-16
+autograd_vs_richardson = 1.487698852998e-14
+parameter_shift_vs_richardson = 1.509903313490e-14
+
+[[cell]]
+opcode = "ry"
+mode = "mps"
+shift_norm = 5.162047610199e-01
+parameter_shift_vs_autograd = 3.330669073875e-16
+autograd_vs_richardson = 1.543210004229e-14
+parameter_shift_vs_richardson = 1.509903313490e-14
+
+[[cell]]
+opcode = "ry"
+mode = "statevector"
+shift_norm = 5.162047610199e-01
+parameter_shift_vs_autograd = 2.220446049250e-16
+autograd_vs_richardson = 5.662137425588e-15
+parameter_shift_vs_richardson = 5.440092820663e-15
+
+[[cell]]
+opcode = "ry"
+mode = "tensor_network"
+shift_norm = 5.162047610199e-01
+parameter_shift_vs_autograd = 2.220446049250e-16
+autograd_vs_richardson = 2.087219286295e-14
+parameter_shift_vs_richardson = 2.109423746788e-14
+
+[[cell]]
+opcode = "ryy"
+mode = "auto"
+shift_norm = 5.615783774562e-02
+parameter_shift_vs_autograd = 5.551115123126e-17
+autograd_vs_richardson = 2.498001805407e-15
+parameter_shift_vs_richardson = 2.442490654175e-15
+
+[[cell]]
+opcode = "ryy"
+mode = "density_matrix"
+shift_norm = 5.615783774562e-02
+parameter_shift_vs_autograd = 4.163336342344e-17
+autograd_vs_richardson = 2.674249710566e-14
+parameter_shift_vs_richardson = 2.678413046908e-14
+
+[[cell]]
+opcode = "ryy"
+mode = "mps"
+shift_norm = 5.615783774562e-02
+parameter_shift_vs_autograd = 1.526556658860e-16
+autograd_vs_richardson = 1.434616314633e-13
+parameter_shift_vs_richardson = 1.436142871292e-13
+
+[[cell]]
+opcode = "ryy"
+mode = "statevector"
+shift_norm = 5.615783774562e-02
+parameter_shift_vs_autograd = 5.551115123126e-17
+autograd_vs_richardson = 2.498001805407e-15
+parameter_shift_vs_richardson = 2.442490654175e-15
+
+[[cell]]
+opcode = "ryy"
+mode = "tensor_network"
+shift_norm = 5.615783774562e-02
+parameter_shift_vs_autograd = 2.081668171172e-17
+autograd_vs_richardson = 1.293409823688e-14
+parameter_shift_vs_richardson = 1.291328155517e-14
+
+[[cell]]
+opcode = "rz"
+mode = "auto"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 1.718070130607e-14
+parameter_shift_vs_richardson = 1.718070130607e-14
+
+[[cell]]
+opcode = "rz"
+mode = "density_matrix"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 1.587618925214e-14
+parameter_shift_vs_richardson = 1.587618925214e-14
+
+[[cell]]
+opcode = "rz"
+mode = "mps"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 2.775557561563e-17
+autograd_vs_richardson = 3.330669073875e-15
+parameter_shift_vs_richardson = 3.302913498260e-15
+
+[[cell]]
+opcode = "rz"
+mode = "statevector"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 1.718070130607e-14
+parameter_shift_vs_richardson = 1.718070130607e-14
+
+[[cell]]
+opcode = "rz"
+mode = "tensor_network"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 2.775557561563e-17
+autograd_vs_richardson = 1.451616604697e-14
+parameter_shift_vs_richardson = 1.454392162259e-14
+
+[[cell]]
+opcode = "rzz"
+mode = "auto"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 2.775557561563e-17
+autograd_vs_richardson = 1.715294573046e-14
+parameter_shift_vs_richardson = 1.718070130607e-14
+
+[[cell]]
+opcode = "rzz"
+mode = "density_matrix"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 1.587618925214e-14
+parameter_shift_vs_richardson = 1.587618925214e-14
+
+[[cell]]
+opcode = "rzz"
+mode = "mps"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 8.326672684689e-17
+autograd_vs_richardson = 3.877453913503e-14
+parameter_shift_vs_richardson = 3.869127240819e-14
+
+[[cell]]
+opcode = "rzz"
+mode = "statevector"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 2.775557561563e-17
+autograd_vs_richardson = 1.715294573046e-14
+parameter_shift_vs_richardson = 1.718070130607e-14
+
+[[cell]]
+opcode = "rzz"
+mode = "tensor_network"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 5.551115123126e-17
+autograd_vs_richardson = 4.451994328747e-14
+parameter_shift_vs_richardson = 4.457545443870e-14
+
+[[cell]]
+opcode = "u1"
+mode = "auto"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 9.603429163008e-15
+parameter_shift_vs_richardson = 9.714451465470e-15
+
+[[cell]]
+opcode = "u1"
+mode = "density_matrix"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 0.000000000000e+00
+autograd_vs_richardson = 7.827072323607e-15
+parameter_shift_vs_richardson = 7.827072323607e-15
+
+[[cell]]
+opcode = "u1"
+mode = "mps"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 8.326672684689e-17
+autograd_vs_richardson = 4.071742942813e-14
+parameter_shift_vs_richardson = 4.080069615497e-14
+
+[[cell]]
+opcode = "u1"
+mode = "statevector"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 9.603429163008e-15
+parameter_shift_vs_richardson = 9.714451465470e-15
+
+[[cell]]
+opcode = "u1"
+mode = "tensor_network"
+shift_norm = 1.329050970047e-01
+parameter_shift_vs_autograd = 1.110223024625e-16
+autograd_vs_richardson = 3.289035710452e-14
+parameter_shift_vs_richardson = 3.300137940698e-14
+
+[[cell]]
+opcode = "u2"
+mode = "auto"
+shift_norm = 4.650828072696e-01
+parameter_shift_vs_autograd = 2.897767167584e-16
+autograd_vs_richardson = 1.227914350695e-13
+parameter_shift_vs_richardson = 1.225772323813e-13
+
+[[cell]]
+opcode = "u2"
+mode = "density_matrix"
+shift_norm = 4.650828072696e-01
+parameter_shift_vs_autograd = 2.371437420134e-16
+autograd_vs_richardson = 2.852745282524e-14
+parameter_shift_vs_richardson = 2.847938467684e-14
+
+[[cell]]
+opcode = "u2"
+mode = "mps"
+shift_norm = 4.650828072696e-01
+parameter_shift_vs_autograd = 3.723801229871e-16
+autograd_vs_richardson = 6.905721638985e-14
+parameter_shift_vs_richardson = 6.879843566513e-14
+
+[[cell]]
+opcode = "u2"
+mode = "statevector"
+shift_norm = 4.650828072696e-01
+parameter_shift_vs_autograd = 2.897767167584e-16
+autograd_vs_richardson = 1.227914350695e-13
+parameter_shift_vs_richardson = 1.225772323813e-13
+
+[[cell]]
+opcode = "u2"
+mode = "tensor_network"
+shift_norm = 4.650828072696e-01
+parameter_shift_vs_autograd = 1.688305753616e-16
+autograd_vs_richardson = 5.162559634516e-14
+parameter_shift_vs_richardson = 5.145915344528e-14
+
+[[cell]]
+opcode = "u3"
+mode = "auto"
+shift_norm = 8.352901355015e-01
+parameter_shift_vs_autograd = 1.241267076624e-16
+autograd_vs_richardson = 3.339336040724e-14
+parameter_shift_vs_richardson = 3.346641118535e-14
+
+[[cell]]
+opcode = "u3"
+mode = "density_matrix"
+shift_norm = 8.352901355015e-01
+parameter_shift_vs_autograd = 1.570092458684e-16
+autograd_vs_richardson = 5.196845943268e-14
+parameter_shift_vs_richardson = 5.199335751470e-14
+
+[[cell]]
+opcode = "u3"
+mode = "mps"
+shift_norm = 8.352901355015e-01
+parameter_shift_vs_autograd = 1.665334536938e-16
+autograd_vs_richardson = 7.160546907833e-14
+parameter_shift_vs_richardson = 7.159503251128e-14
+
+[[cell]]
+opcode = "u3"
+mode = "statevector"
+shift_norm = 8.352901355015e-01
+parameter_shift_vs_autograd = 1.241267076624e-16
+autograd_vs_richardson = 3.339336040724e-14
+parameter_shift_vs_richardson = 3.346641118535e-14
+
+[[cell]]
+opcode = "u3"
+mode = "tensor_network"
+shift_norm = 8.352901355015e-01
+parameter_shift_vs_autograd = 3.925231146709e-16
+autograd_vs_richardson = 3.764597496557e-14
+parameter_shift_vs_richardson = 3.799056008879e-14

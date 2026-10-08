@@ -1,0 +1,755 @@
+# Repository contract; see contracts/README.md for ownership and stability.
+#
+# Purpose: the gradient method x execution mode availability matrix of `fq.gradient`,
+# in two axes -- an unnoisy program and the same program under a noise model.
+#
+# `fq.gradient` takes no execution mode. The mode is a property of the caller's loss,
+# because the loss is what calls `fq.run`. A matrix shaped like this one would
+# therefore be misleading if it were read as a dispatch table: the mode does not select
+# a gradient method and the gradient method does not select a mode. What the matrix
+# records is which combinations produce a derivative, which refuse, and why.
+# `mode_is_not_a_gradient_argument` states that, and this file is where a reader is
+# told it.
+#
+# The method vocabulary is read from `flagquantum/gradients.py::_GRADIENT_METHODS` and
+# the mode vocabulary from `flagquantum/runtime/options.py::_MODES`, rather than
+# restated, so adding a method or a mode fails the gate until this file is revisited.
+#
+# `adjoint` is not a row. It is refused before any program is touched, by name, with a
+# message explaining the adjoint sweep is reachable only as autograd's backward pass --
+# so it is not a per-mode availability question at all. It is recorded in
+# `refused_methods` and as a refusal with its own phrase.
+#
+# `auto` is a row, but not because it has per-mode behaviour: it resolves by measuring
+# the loss at the given parameters and reports what it resolved to. `[resolution]`
+# records the three measurements it makes.
+#
+# Accuracy is not uniform across a row and the number is not the signal: `exact` is.
+# `parameter_shift` and `autograd` report `exact = true`; `finite_difference` and
+# `spsa` report `exact = false` with the displacement they used. `[accuracy]` records a
+# measured deviation for each, and for `spsa` a range over seeds, because a single seed
+# can land far from the median in either direction.
+#
+# The noise axis is a separate set of rows rather than a column, because noise is a
+# `fq.run` argument and not an `ExecutionOptions` field: a noisy program is a different
+# program, not a different mode. Its measured shape is narrower than the unnoisy one --
+# only `auto` and `density_matrix` serve -- and that is the most consequential fact this
+# file carries, so it is recorded per cell rather than summarized.
+#
+# Every number in `[noise]` is a measurement at a stated precision and a stated step,
+# because those two things are what make it reproducible. A channel's Kraus coefficients
+# are rounded once, when the channel is built, so a `complex64` channel moves the noisy
+# gradient by 5.2e-08 and a float32 probability moves it by 5.6e-10 -- both far outside
+# the 1e-12 this block is compared at. The exact methods' agreement is therefore a
+# precision claim and is held to 1e-12; the spread that includes `finite_difference` is
+# the step's own roundoff, and is held to a floor derived from that step and from the
+# measured loss scale rather than to a literal.
+
+schema = "flagquantum_gradient_methods_contract_v1"
+maturity = "development_evidence"
+implementation = "flagquantum/gradients.py"
+mode_source = "flagquantum/runtime/options.py"
+authorization = [
+    "docs/api-changes/FQ-GRADIENT-METHODS-MATRIX-20261027.md",
+]
+
+# Read from the implementation rather than copied: the gate compares both lists.
+declared_methods = ["auto", "autograd", "parameter_shift", "finite_difference", "spsa"]
+refused_methods = ["adjoint"]
+serving_modes = ["auto", "density_matrix", "mps", "stabilizer", "statevector", "tensor_network"]
+# These five names are accepted by the runtime's own mode tables and refused by
+# `ExecutionOptions`, so no `fq.gradient` loss can select them. They are listed because
+# a reader looking for a distributed gradient row should find the reason it is absent
+# rather than conclude the combination was never considered.
+unreachable_modes = [
+    "distributed_mps",
+    "distributed_statevector",
+    "distributed_tensor_network",
+    "jax_sharded_mps",
+    "jax_sharded_tensor_network",
+]
+
+[taxonomy]
+method_vocabulary = "flagquantum/gradients.py::_GRADIENT_METHODS"
+mode_vocabulary = "flagquantum/runtime/options.py::_MODES"
+mode_is_not_a_gradient_argument = true
+mode_enters_through_the_loss = true
+noise_enters_through_fq_run = true
+noise_is_not_a_mode = true
+reported_method_is_the_method_that_ran = true
+exact_flag_is_the_only_accuracy_signal = true
+cell_count = 30
+serving_cell_count = 25
+refusing_cell_count = 5
+noise_cell_count = 30
+noise_serving_cell_count = 10
+noise_refusing_cell_count = 20
+
+[rules]
+# Every flag below is a claim this file makes about itself. A flag the gate does not
+# read is a flag nobody checks, so each is named in the gate explicitly.
+no_silent_fallback = true
+refusal_names_the_reason = true
+refusal_is_fail_closed = true
+approximate_methods_report_their_step = true
+statistical_method_reports_a_range_not_a_value = true
+step_is_ignored_by_the_exact_methods = true
+distributed_modes_are_absent_rather_than_fallback = true
+noise_axis_is_a_second_measured_axis = true
+vocabulary_is_read_from_the_implementation = true
+
+[reference]
+# The one program and one parameter vector every cell in this file was measured with.
+qubit_count = 2
+parameters = [0.3, 0.7, -0.4]
+parameter_dtype = "float64"
+program_steps = ["ry(0, theta=p0)", "rx(0, theta=p1)", "ry(1, theta=p2)", "cx(1, 0)"]
+observable = "Z(0)"
+reference_method = "parameter_shift"
+reference_mode = "statevector"
+reference_gradient = [-2.081840281210e-01, -5.668620735708e-01, 2.845408368732e-01]
+
+[resolution]
+# `auto` is a policy, not a method: it measures the loss at `parameters` and reads the
+# result. These three rows are the whole policy, and each was measured.
+graph_present = "autograd"
+no_graph_with_loss = "parameter_shift"
+no_graph_without_loss = "finite_difference"
+resolution_is_measured_not_declared = true
+
+[accuracy]
+# Deviation from `reference_gradient`, at the reference program. `relative_tolerance`
+# is the bound the gate enforces; the measured value is recorded next to it so a silent
+# accuracy regression is visible before it trips the bound.
+relative_tolerance = 1e-09
+autograd_max_deviation = 2.220e-16
+parameter_shift_max_deviation = 1.110e-16
+finite_difference_max_deviation = 3.749e-11
+finite_difference_is_deterministic = true
+# `spsa` is an estimator over Rademacher directions, so one seed is not a measurement.
+# These rows are the deviation range over 64 seeds, per direction count, and the median
+# is the mean of the two central order statistics of an even-sized sample. The reading
+# rule is the `exact` flag, not the small number a lucky seed produces: at directions=1
+# the median is 8.514e-01, and spending 65 loss evaluations on directions=32 only
+# brings the median to 1.147e-01 and the best of 64 seeds to 2.242e-02, while the
+# deterministic finite_difference method reaches 3.749e-11 for 7 loss evaluations.
+# Nothing measured here makes `spsa` competitive with it on this program, and no cell
+# above claims that it is.
+spsa_seed_count = 64
+spsa_default_directions = 1
+spsa_reading_rule = "read the exact flag; a low deviation from one seed is not an accuracy claim"
+
+[[accuracy.spsa]]
+directions = 1
+loss_evaluations = 3
+min_deviation = 4.927e-01
+median_deviation = 8.514e-01
+max_deviation = 8.514e-01
+
+[[accuracy.spsa]]
+directions = 2
+loss_evaluations = 5
+min_deviation = 2.845e-01
+median_deviation = 5.669e-01
+max_deviation = 8.514e-01
+
+[[accuracy.spsa]]
+directions = 4
+loss_evaluations = 9
+min_deviation = 3.448e-11
+median_deviation = 2.845e-01
+max_deviation = 8.514e-01
+
+[[accuracy.spsa]]
+directions = 8
+loss_evaluations = 17
+min_deviation = 3.448e-11
+median_deviation = 2.458e-01
+max_deviation = 6.380e-01
+
+[[accuracy.spsa]]
+directions = 32
+loss_evaluations = 65
+min_deviation = 2.242e-02
+median_deviation = 1.147e-01
+max_deviation = 3.018e-01
+
+[cost]
+# Measured loss-evaluation counts for the reference program's three parameters, not
+# formulas. `one_direction_of_spsa_costs_two_loss_evaluations` is the only cost rule
+# that is structural rather than incidental.
+one_direction_of_spsa_costs_two_loss_evaluations = true
+[[cost.methods]]
+method = "autograd"
+loss_evaluations = 1
+scales_with = "one forward and one backward pass, independent of the parameter count"
+[[cost.methods]]
+method = "parameter_shift"
+loss_evaluations = 6
+scales_with = "two loss evaluations per declared shift-rule term"
+[[cost.methods]]
+method = "finite_difference"
+loss_evaluations = 7
+scales_with = "two loss evaluations per parameter"
+[[cost.methods]]
+method = "spsa"
+loss_evaluations = 9
+directions = 4
+scales_with = "two loss evaluations per direction, independent of the parameter count"
+
+# The measured unnoisy matrix. One row per (method, mode) pair. A `serves` row records
+# the method the result reported and its exactness; a `refuses` row names the refusal.
+
+[[cells]]
+method = "auto"
+mode = "auto"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[cells]]
+method = "auto"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[cells]]
+method = "auto"
+mode = "mps"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[cells]]
+method = "auto"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[cells]]
+method = "auto"
+mode = "statevector"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[cells]]
+method = "auto"
+mode = "tensor_network"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+
+[[cells]]
+method = "autograd"
+mode = "auto"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[cells]]
+method = "autograd"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[cells]]
+method = "autograd"
+mode = "mps"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[cells]]
+method = "autograd"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[cells]]
+method = "autograd"
+mode = "statevector"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[cells]]
+method = "autograd"
+mode = "tensor_network"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+
+[[cells]]
+method = "parameter_shift"
+mode = "auto"
+verdict = "serves"
+reported_method = "parameter_shift"
+exact = true
+loss_evaluations = 6
+[[cells]]
+method = "parameter_shift"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "parameter_shift"
+exact = true
+loss_evaluations = 6
+[[cells]]
+method = "parameter_shift"
+mode = "mps"
+verdict = "serves"
+reported_method = "parameter_shift"
+exact = true
+loss_evaluations = 6
+[[cells]]
+method = "parameter_shift"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[cells]]
+method = "parameter_shift"
+mode = "statevector"
+verdict = "serves"
+reported_method = "parameter_shift"
+exact = true
+loss_evaluations = 6
+[[cells]]
+method = "parameter_shift"
+mode = "tensor_network"
+verdict = "serves"
+reported_method = "parameter_shift"
+exact = true
+loss_evaluations = 6
+
+[[cells]]
+method = "finite_difference"
+mode = "auto"
+verdict = "serves"
+reported_method = "finite_difference"
+exact = false
+loss_evaluations = 7
+[[cells]]
+method = "finite_difference"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "finite_difference"
+exact = false
+loss_evaluations = 7
+[[cells]]
+method = "finite_difference"
+mode = "mps"
+verdict = "serves"
+reported_method = "finite_difference"
+exact = false
+loss_evaluations = 7
+[[cells]]
+method = "finite_difference"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[cells]]
+method = "finite_difference"
+mode = "statevector"
+verdict = "serves"
+reported_method = "finite_difference"
+exact = false
+loss_evaluations = 7
+[[cells]]
+method = "finite_difference"
+mode = "tensor_network"
+verdict = "serves"
+reported_method = "finite_difference"
+exact = false
+loss_evaluations = 7
+
+[[cells]]
+method = "spsa"
+mode = "auto"
+verdict = "serves"
+reported_method = "spsa"
+exact = false
+loss_evaluations = 9
+[[cells]]
+method = "spsa"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "spsa"
+exact = false
+loss_evaluations = 9
+[[cells]]
+method = "spsa"
+mode = "mps"
+verdict = "serves"
+reported_method = "spsa"
+exact = false
+loss_evaluations = 9
+[[cells]]
+method = "spsa"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[cells]]
+method = "spsa"
+mode = "statevector"
+verdict = "serves"
+reported_method = "spsa"
+exact = false
+loss_evaluations = 9
+[[cells]]
+method = "spsa"
+mode = "tensor_network"
+verdict = "serves"
+reported_method = "spsa"
+exact = false
+loss_evaluations = 9
+
+# The measured noise axis, same program, same parameters, one depolarizing channel on
+# the entangler. Every servicing cell here agrees with its unnoisy counterpart to
+# 1.135e-11 or better across methods, which is what makes a single `noise_cells` set
+# meaningful rather than a second independent story: the derivative is not degraded by
+# the channel, the reachable mode set is narrowed by it.
+[[noise_cells]]
+method = "auto"
+mode = "auto"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[noise_cells]]
+method = "auto"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[noise_cells]]
+method = "auto"
+mode = "mps"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "auto"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[noise_cells]]
+method = "auto"
+mode = "statevector"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "auto"
+mode = "tensor_network"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "autograd"
+mode = "auto"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[noise_cells]]
+method = "autograd"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "autograd"
+exact = true
+loss_evaluations = 1
+[[noise_cells]]
+method = "autograd"
+mode = "mps"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "autograd"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[noise_cells]]
+method = "autograd"
+mode = "statevector"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "autograd"
+mode = "tensor_network"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "parameter_shift"
+mode = "auto"
+verdict = "serves"
+reported_method = "parameter_shift"
+exact = true
+loss_evaluations = 6
+[[noise_cells]]
+method = "parameter_shift"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "parameter_shift"
+exact = true
+loss_evaluations = 6
+[[noise_cells]]
+method = "parameter_shift"
+mode = "mps"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[noise_cells]]
+method = "parameter_shift"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[noise_cells]]
+method = "parameter_shift"
+mode = "statevector"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[noise_cells]]
+method = "parameter_shift"
+mode = "tensor_network"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[noise_cells]]
+method = "finite_difference"
+mode = "auto"
+verdict = "serves"
+reported_method = "finite_difference"
+exact = false
+loss_evaluations = 7
+[[noise_cells]]
+method = "finite_difference"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "finite_difference"
+exact = false
+loss_evaluations = 7
+[[noise_cells]]
+method = "finite_difference"
+mode = "mps"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "finite_difference"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[noise_cells]]
+method = "finite_difference"
+mode = "statevector"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "finite_difference"
+mode = "tensor_network"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "spsa"
+mode = "auto"
+verdict = "serves"
+reported_method = "spsa"
+exact = false
+loss_evaluations = 9
+[[noise_cells]]
+method = "spsa"
+mode = "density_matrix"
+verdict = "serves"
+reported_method = "spsa"
+exact = false
+loss_evaluations = 9
+[[noise_cells]]
+method = "spsa"
+mode = "mps"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "spsa"
+mode = "stabilizer"
+verdict = "refuses"
+refusal = "stabilizer_serves_no_expectation"
+[[noise_cells]]
+method = "spsa"
+mode = "statevector"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+[[noise_cells]]
+method = "spsa"
+mode = "tensor_network"
+verdict = "refuses"
+refusal = "noisy_execution_needs_auto_or_density_matrix"
+
+[noise]
+channel = "depolarizing"
+channel_probability = 0.05
+# The precision the noisy axis is measured at, which is the reference program's own. A
+# channel's Kraus coefficients are rounded once, when the channel is built, and every
+# downstream number inherits that rounding. Built at `complex64` -- the runtime default --
+# they are float32, and the noisy gradient moves by 5.2e-08 even where the platform's
+# float32 square root rounds like this one, which is 5e04 times the 1e-12 the reference
+# gradient is compared at. That is how this block first failed: a float32 channel on a
+# platform whose `sqrt(1 - p)` landed one ulp high produced a gradient 7.6e-08 from the
+# float64 answer, on the other side of it, and the disagreement reached all four CI jobs
+# that read this block. At `complex128` the coefficients carry float64 rounding, 1e-16
+# relative, so this block measures the program rather than a platform's float32
+# arithmetic. The gate builds its channel at exactly this dtype and holds this field
+# against the dtype it actually built.
+channel_dtype = "complex128"
+attached_to_gate = "cx"
+reference_mode = "density_matrix"
+reference_method = "parameter_shift"
+noisy_reference_gradient = [-1.9430509291292702e-01, -5.290712686660374e-01, 2.6557144774835423e-01]
+# `autograd` and `parameter_shift` are both exact, so their agreement under noise is a
+# precision claim rather than an accuracy claim, and the gate holds it to the same 1e-12
+# it holds the unnoisy reference gradient to. One rounding on the reference program.
+noisy_exact_methods_max_spread = 1.6653345369377348e-16
+# The largest disagreement between any two of the three deterministic noisy methods, in
+# the noisy reference cell (`density_matrix`), which includes `finite_difference`. The two
+# exact methods agree to one rounding, so this number is the difference quotient's own
+# roundoff and not a disagreement about the derivative, nor an accuracy claim for the
+# shift rule. Its natural scale is `2 * eps * |L| / step` -- the two evaluations and
+# their difference, divided by the 6.055454452393343e-06 step, which is 4.6e-11 for this
+# program's 0.628-magnitude loss -- and the gate allows twice that, 9.2e-11, for the
+# arithmetic around the evaluations. The consequence is deliberate: the gate re-measures
+# the spread and requires both the measurement and this recording to fall inside that
+# floor, so a spread stated orders of magnitude away from what the methods do is a
+# failure, while a spread that moved by a few 1e-12 between platforms is not. Comparing
+# this number bit-exactly, as an earlier revision of the gate did at 1e-14, measures a
+# platform's arithmetic rather than the program's behaviour.
+noisy_cross_method_max_spread = 1.6954215809050766e-11
+# The measured difference between the two axes at the same mode and method. Recorded so
+# that a reader cannot mistake the noisy rows for a repeat of the unnoisy ones.
+noisy_minus_unnoisy_gradient = [1.387893520806624e-02, 3.779080490471731e-02, -1.8969389124882496e-02]
+noise_narrows_the_reachable_mode_set = true
+noise_does_not_change_the_reported_method = true
+
+# Every refusal a caller can reach through `fq.gradient`'s documented surface, with the
+# exception class and the phrase its message must contain. There is no issue-code field
+# in the implementation, so the phrase is the machine-readable handle and the delivery
+# is `exception_class_and_message_phrase` -- the vocabulary
+# `contracts/circuit-composition-contract.toml` already uses. Adding a code to the
+# implementation would change this field, not add a second one.
+[[refusals]]
+code = "stabilizer_serves_no_expectation"
+exception = "CapabilityError"
+message_phrase = "samples measurement outcomes; it cannot serve"
+message_source = "flagquantum/runtime/executors/stabilizer/sampling.py"
+trigger = "a loss that runs the circuit with options=ExecutionOptions(mode='stabilizer') and asks for an expectation"
+reachable_from = ["auto", "autograd", "parameter_shift", "finite_difference", "spsa"]
+
+[[refusals]]
+code = "noisy_execution_needs_auto_or_density_matrix"
+exception = "ValidationError"
+message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+message_source = "flagquantum/runtime/planner/__init__.py"
+trigger = "a loss that passes a noise model to fq.run with a mode other than 'auto' or 'density_matrix'"
+reachable_from = ["auto", "autograd", "finite_difference", "spsa"]
+
+[[refusals]]
+code = "no_standalone_adjoint"
+exception = "CapabilityError"
+message_phrase = "no standalone adjoint gradient"
+message_source = "flagquantum/gradients.py"
+trigger = "fq.gradient(program, parameters, loss, method='adjoint')"
+reachable_from = ["method='adjoint'"]
+
+[[refusals]]
+code = "unknown_method"
+exception = "ValidationError"
+message_phrase = "unknown gradient method"
+message_source = "flagquantum/gradients.py"
+trigger = "fq.gradient(program, parameters, loss, method=<anything outside the declared vocabulary>)"
+reachable_from = ["any method outside declared_methods"]
+
+[[refusals]]
+code = "method_scoped_arguments"
+exception = "ValidationError"
+message_phrase = "apply only to method='spsa'"
+message_source = "flagquantum/gradients.py"
+trigger = "directions != 1 or generator is not None, with a method other than 'spsa'"
+reachable_from = ["auto", "autograd", "parameter_shift", "finite_difference"]
+
+[[refusals]]
+code = "parameter_shift_needs_the_loss"
+exception = "CapabilityError"
+message_phrase = "needs the circuit behind the loss"
+message_source = "flagquantum/gradients.py"
+trigger = "fq.gradient(program, parameters, method='parameter_shift') without loss="
+reachable_from = ["parameter_shift"]
+
+[[refusals]]
+code = "autograd_needs_a_graph"
+exception = "CapabilityError"
+message_phrase = "requires the loss to be built from the parameters"
+message_source = "flagquantum/gradients.py"
+trigger = "fq.gradient(program, parameters, loss, method='autograd') where the loss carries no graph"
+reachable_from = ["autograd"]
+
+[[refusals]]
+code = "step_must_be_a_positive_displacement"
+exception = "ValidationError"
+message_phrase = "step must be a positive finite displacement"
+message_source = "flagquantum/gradients.py"
+trigger = "step <= 0, or a non-finite step, with any method"
+reachable_from = ["any method"]
+
+[[refusals]]
+code = "directions_must_be_at_least_one"
+exception = "ValidationError"
+message_phrase = "directions must be at least 1"
+message_source = "flagquantum/gradients.py"
+trigger = "method='spsa' with directions < 1"
+reachable_from = ["spsa"]
+
+[[refusals]]
+code = "mode_is_not_reachable_from_the_loss"
+exception = "ValidationError"
+# The rendered message is f"{name} must be one of: {rendered}", so the phrase recorded
+# here is the literal fragment the source contains, not the interpolated sentence.
+message_phrase = "must be one of"
+message_source = "flagquantum/runtime/options.py"
+trigger = "ExecutionOptions(mode=<a name in unreachable_modes>)"
+reachable_from = ["any method"]
+
+# One measured asymmetry the matrix would otherwise hide. `_shifted_gradient` catches
+# `ValueError` to reframe a program the shift rule cannot answer, and `ValidationError`
+# is a `ValueError` while `CapabilityError` is not. So a `ValidationError` raised inside
+# a `parameter_shift` loss is reported as "the parameter-shift rule does not apply to
+# this program", which names the rule, and the same error inside an `autograd` loss is
+# reported as the error it is. The diagnosis is imprecise in the first case: the rule
+# does apply, and the loss's arguments are what is wrong. It is recorded here, not
+# corrected, because correcting it changes documented exception behaviour in a protected
+# module and needs its own authorization.
+[[reframings]]
+code = "parameter_shift_reframes_a_validation_error"
+outer_exception = "CapabilityError"
+outer_phrase = "the parameter-shift rule does not apply to this program"
+inner_exception = "ValidationError"
+applies_to = ["parameter_shift"]
+not_applied_to = ["autograd", "finite_difference", "spsa"]
+reason = "ValidationError is a ValueError, so the shift-rule wrapper absorbs it; CapabilityError is not, so a stabilizer refusal propagates unchanged"
+verdict = "recorded_not_corrected"
+
+[[reframings.instances]]
+trigger = "an execution mode name the option layer refuses"
+inner_phrase = "must be one of"
+measured_refusing_modes = ["distributed_mps", "distributed_statevector", "distributed_tensor_network", "jax_sharded_mps", "jax_sharded_tensor_network"]
+
+[[reframings.instances]]
+trigger = "a noise model with a mode other than auto or density_matrix"
+inner_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+measured_refusing_modes = ["mps", "statevector", "tensor_network"]
+
+[verification]
+contract = "tests/unit/test_gradient_methods_contract.py"
+gate = "tools/check_gradient_methods_contract.py"
+# The gate re-measures every cell in both axes and refuses a file that no longer
+# describes the implementation. The test owns the file's internal consistency and the
+# refusal vocabulary. Neither substitutes for the other: the gate answers "is the matrix
+# still true", the test answers "is the matrix still well formed".
+cell_matrix_is_remeasured_by_the_gate = true
+noise_axis_is_remeasured_by_the_gate = true
+every_refusal_phrase_occurs_in_its_message_source = true
+vocabularies_are_compared_with_the_implementation = true

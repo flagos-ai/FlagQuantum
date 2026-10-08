@@ -184,6 +184,18 @@ class ExecutionResult:
         return self._unique_tensor_measurement("probabilities")
 
     @property
+    def density_matrix(self) -> torch.Tensor:
+        """Return the unique requested density-matrix tensor."""
+
+        return self._unique_tensor_measurement("density_matrix")
+
+    @property
+    def vn_entropy(self) -> torch.Tensor:
+        """Return the unique requested von Neumann entropy, one value per batch item."""
+
+        return self._unique_tensor_measurement("vn_entropy")
+
+    @property
     def counts(self) -> list[dict[str | int, int]]:
         """Return the unique requested outcome counts."""
 

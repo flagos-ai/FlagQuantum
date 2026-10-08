@@ -1,0 +1,294 @@
+{
+  "capability": "distributed_tensor_network",
+  "capacity_workload": {
+    "dtype": "complex64",
+    "grid": [
+      4,
+      6,
+      2
+    ],
+    "learning_rate": 0.05,
+    "measured_ladder": [
+      {
+        "peak_memory_bytes": 51191433216,
+        "qubits": 24,
+        "seconds": 116.0,
+        "shape": [
+          4,
+          6,
+          2
+        ],
+        "sliced_labels": 4,
+        "status": "completed",
+        "world_size": 1
+      },
+      {
+        "peak_memory_bytes": 80930380288,
+        "qubits": 24,
+        "seconds": 0.0,
+        "shape": [
+          4,
+          6,
+          2
+        ],
+        "sliced_labels": 2,
+        "status": "oom",
+        "world_size": 1
+      },
+      {
+        "peak_memory_bytes": 51191434752,
+        "qubits": 24,
+        "seconds": 113.519,
+        "shape": [
+          4,
+          6,
+          2
+        ],
+        "sliced_labels": 4,
+        "status": "completed",
+        "world_size": 2
+      },
+      {
+        "peak_memory_bytes": 82023653888,
+        "qubits": 24,
+        "seconds": 17.668,
+        "shape": [
+          4,
+          6,
+          3
+        ],
+        "sliced_labels": 4,
+        "status": "oom",
+        "world_size": 1
+      },
+      {
+        "peak_memory_bytes": 82023653888,
+        "qubits": 24,
+        "seconds": 17.55,
+        "shape": [
+          4,
+          6,
+          3
+        ],
+        "sliced_labels": 4,
+        "status": "oom",
+        "world_size": 2
+      },
+      {
+        "peak_memory_bytes": 82478769152,
+        "qubits": 24,
+        "seconds": 8.42,
+        "shape": [
+          4,
+          6,
+          3
+        ],
+        "sliced_labels": 8,
+        "status": "oom",
+        "world_size": 2
+      },
+      {
+        "peak_memory_bytes": 76876243968,
+        "qubits": 24,
+        "seconds": 13.87,
+        "shape": [
+          4,
+          6,
+          3
+        ],
+        "sliced_labels": 16,
+        "status": "oom",
+        "world_size": 2
+      },
+      {
+        "peak_memory_bytes": 65148394496,
+        "qubits": 28,
+        "seconds": 11.901,
+        "shape": [
+          4,
+          7,
+          2
+        ],
+        "sliced_labels": 4,
+        "status": "oom",
+        "world_size": 1
+      },
+      {
+        "peak_memory_bytes": 80930380288,
+        "qubits": 24,
+        "seconds": 8.247,
+        "shape": [
+          4,
+          6,
+          2
+        ],
+        "sliced_labels": 2,
+        "status": "oom",
+        "world_size": 2
+      },
+      {
+        "peak_memory_bytes": 67089695744,
+        "qubits": 28,
+        "seconds": 11.52,
+        "shape": [
+          4,
+          7,
+          2
+        ],
+        "sliced_labels": 8,
+        "status": "oom",
+        "world_size": 1
+      },
+      {
+        "peak_memory_bytes": 73963469824,
+        "qubits": 28,
+        "seconds": 16.627,
+        "shape": [
+          4,
+          7,
+          2
+        ],
+        "sliced_labels": 16,
+        "status": "oom",
+        "world_size": 1
+      },
+      {
+        "peak_memory_bytes": 65148394496,
+        "qubits": 28,
+        "seconds": 11.943,
+        "shape": [
+          4,
+          7,
+          2
+        ],
+        "sliced_labels": 4,
+        "status": "oom",
+        "world_size": 2
+      }
+    ],
+    "name": "tensor_network_single_device_capacity_v1",
+    "premise_established": false,
+    "premise_established_note": "A capacity premise requires one measured shape that exhausts a single device and that a sharded run completes at the same frozen slicing. No such shape was measured on this pair, and the reason is recorded rather than assumed: for every shape measured so far the per-rank peak is identical at world size 1 and at world size 2 to within a few megabytes. The reverse-mode peak fell from 80.93 GiB at two sliced labels to 51.19 GiB at four and then stopped responding to slicing, and the pair reproduces that same number rather than halving it. A pair run therefore demonstrates that the training update is sharded -- each rank owns half the slice tasks and writes back only its own parameters -- but not that the pair trains a workload one device cannot, because the allocation that exhausts the device is not owned by any single slice. The slicing this contract freezes is one of the measured rungs, and at that rung the single device completes: the frozen grid at four sliced labels runs to completion on one device at 51191433216 bytes. The contract therefore does not describe an exhaustion at all, which is why the baseline cannot be recorded from it and why the ladder rung that does exhaust a device, two sliced labels at 80930380288 bytes, is recorded as a measurement rather than promoted into the freeze. A later re-measurement at the current revision adds a reason that is independent of the pair: the frozen grid does not contract at its own default slicing at all. The executor's default slice-label selection picks the lowest-numbered contracted labels, and for this grid the resulting pair of operands exceeds the twenty-five-dimension limit that torch.einsum and PyTorch's copy machinery share, so the producer's capacity-failure role raises 'tensor has too many (>25) dims' before any allocation is measured. Holding the circuit, parameters, steps, optimizer and tape budget fixed and spreading the label argument across the network instead completes the same rung in 4099927552 bytes, an order of magnitude below the 51191433216 bytes recorded above. The ladder's recorded completions are therefore not reproducible from the revision this manifest declares, and the premise is a property of the label choice rather than of the workload. The ladder's exhaustion rung, by contrast, does reproduce at the revision this manifest declares. Replaying two sliced labels at four rows, six columns and two cycles against a clean checkout of that revision, with nothing bounded, exhausts the device at 82082563072 bytes, against the 80930380288 bytes recorded here; the difference is which allocation the device refused once it was full, and it is the same rung on the same revision. The ladder is a record of what that revision did. What moved is the current revision: the same rung completes in 19308054528 bytes there, because contracting a sliced network above the einsum rank ceiling through grouped rank-three operands no longer materializes the multi-gigabyte contiguous copies that native einsum needed on a twenty-nine dimensional pair. The campaign's own wide-contraction fix therefore lowered this shape's single-device peak by a factor of four, which weakens the premise rather than establishing it: the shape that used to exhaust one device now fits comfortably, so a capacity failure has to be re-derived at whatever revision a payload is sealed at, and no rung recorded here can be reused for it. A third re-measurement separates the two explanations the notes above left entangled, and it rules out the one that would have let re-slicing establish this premise. Both notes observe that the per-rank peak does not fall when the slices are spread over a second rank, and the first note reads that as the exhausting allocation not being owned by any single slice. Measuring the decomposition directly, rather than inferring it from the peak, shows the stronger statement: the peak is not a sum over the slices a rank owns. At four rows, six columns and two cycles the rank that owns four of the eight slice tasks peaks at 41351083008 bytes, exactly the 41351083008 bytes the rank that owns all eight peaks at alone, and the reverse reports local_task_count 4 beside local_task_count 8 with the same local_peak_slice_tensor_bytes of 23864 and the same zero saved tape in both cases. The same equality holds at two sliced labels, where both world sizes refuse the allocation at 82082563584 bytes, and under the checkpoint budget, where both world sizes complete the same rung at 19308054528 bytes at two labels and 23282170880 bytes at three. The peak is therefore the maximum over one slice's own tensors, taken after the rank has finished with the slice, and it is a property of the slicing and the circuit rather than of the rank count. No slicing of this workload on this executor can make one device fail while the pair completes, because spreading slices over ranks changes how many slices a rank processes and not how large the largest one is. The premise is a property of the workload and the executor together, so the only way to establish it at this revision is to change the circuit, the slicing arithmetic or the executor's per-slice residency, none of which this frozen protocol may do after the fact. That is why premise_established stays false rather than being flipped by a re-slicing campaign: the measurement says no such campaign can succeed here, so flipping the flag would record a conclusion the contract's own evidence contradicts. A fourth re-measurement closes the remaining route rather than leaving it open for a later campaign. Spreading the contraction itself across ranks, rather than the slice tasks, was measured directly on the frozen shape: the multi-axis mesh executor contracts a pair of networks over a label set the ranks split, and replaying the widest interior target at four rows, six columns and two cycles under the memory objective raises the device peak instead of lowering it. One device peaks at 58.008 GiB and is refused; the mesh at two ranks peaks at 65.008 GiB over one label set, 75.508 GiB over a second and 46.008 GiB over a third, and at four ranks over the pair it selects it peaks at 78.32 GiB. Enabling expandable segments moves that reservation by 0.031 GiB and nothing else. No world size completes the target, and a same-cone control replay at this same revision reproduces the one-device refusal at 58.008 GiB and the two-rank refusal at 65.008 GiB, so what differs is the mesh path and not the revision it ran at. The mechanism is the planner's peak model rather than the transport: it predicts 154.0 GiB at one rank against the 58.008 GiB measured, 46.0 GiB at four ranks against the 78.32 GiB measured, and it prices the label set it ranks at 146.0 GiB as the cheapest of the three when that same label set measures the lowest peak. Widening the contraction also cannot reach the release world of sixteen, because the largest contracted extent product over this grid's interior targets is eight: no label set names sixteen mesh axes, so sixteen ranks are unreachable by topology rather than by memory. With the slice route closed by the per-slice residency measurement above, the output-sharding route closed by a planner that refuses 317 of 320 distributed tensor-network operations for having no sharded value, and the mesh route measured to raise the peak and to cap at eight axes, the premise is permanently unsatisfiable at this revision: no re-measurement, re-slicing, wider contraction or mesh placement of this frozen workload establishes it. That is a statement about this revision and this protocol rather than about the framework, and establishing it later requires changing the executor's per-slice residency, the mesh planner's peak model, or the frozen workload -- each a new revision with its own measurement rather than a re-reading of this one. The flag therefore stays false and the capability stays at production_supported, recorded here as a measured limit rather than carried as an open blocker.",
+    "single_gpu_baseline": {
+      "evidence_role": "provenance_evidence",
+      "evidence_scope": "one_gpu_local",
+      "rationale": "The single-device capacity failure is read as provenance evidence rather than as a release-gate payload, for the same reason the statevector lane reads it that way: a single device cannot shard one logical workload across ranks, so no world_size 1 artifact can satisfy the release gate. It is read from results_path rather than from benchmarks/results/scalability because the strict promotion audit requires every file in that directory to be release-grade sharded scalability evidence.",
+      "release_gate_payload": false,
+      "required_artifact_fields": [
+        "raw_log_sha256",
+        "hardware_inventory",
+        "commit",
+        "workload_sha256",
+        "rank_mapping",
+        "distribution_semantics",
+        "state_mode",
+        "acceptance_case",
+        "capacity_baseline_device",
+        "capacity_failure_reason",
+        "single_device_oom_observed",
+        "measured_peak_memory_bytes"
+      ],
+      "results_path": "benchmarks/results/smoke/release_candidates/tensor_network_single_gpu_capacity"
+    },
+    "slice_batch_size": 1,
+    "slice_count": 4,
+    "steps": 2,
+    "workload_manifest_path": "benchmarks/workloads/tn_cotengra_gap/flagquantum_4x6x2_expectation.json",
+    "workload_sha256": "d7ac4105ee27527b5d5e9a857ad116299d4fa9125f99e75cdf02a6eb10f685e0"
+  },
+  "freeze_note": "This manifest freezes the tensor-network release protocol and records that its capacity premise is not yet established. Four capacity candidates were falsified by measurement rather than by argument. First, flagquantum_18q_13l_expectation was frozen as the premise of an earlier campaign and then completed on a single A800 in 14.296 s at a 0.70 GiB peak, so it cannot be the workload one device fails to train. Second, the 24-qubit and 28-qubit grid ladder that replaced it does not separate the two cases either: the reverse-mode peak is not slice-owned above four sliced labels, so every measured shape that exhausts one device also exhausts both devices at the same peak. Third, the pair does not halve the peak for any measured shape, including the ones that exhaust a single device, so a pair run of a failing shape fails in the same place and at the same number of bytes. Fourth, the slicing this contract itself freezes does not exhaust a device: the measured ladder records the frozen 4x6x2 grid at four sliced labels completing on one device at 51191433216 bytes, so the capacity-failure producer refuses this contract with 'the frozen capacity workload completed on a single device, so it is not a capacity premise and cannot be recorded as one' instead of recording an exhaustion that did not happen. The ladder is recorded under capacity_workload.measured_ladder and capacity_workload.premise_established is false, because a premise declared rather than measured is not evidence. The gate therefore reports capacity_premise_not_established rather than passing on an assumed premise, and the capability stays at production_supported until a measured shape separates a single-device failure from a sharded completion. The speed protocol is frozen here so that the part of the release that does not depend on the premise can still be measured at one revision. A sixth finding was recorded after the ladder: every rung in it was measured with an unbounded rematerialization tape, and the ladders that exhaust a device are therefore budget measurements rather than intrinsic ones. Holding the shape, slicing, parameters and steps fixed and bounding the reverse tape at 4294967296 bytes moves the frozen 4x6x2 grid at two sliced labels from 80930380288 bytes out-of-memory to a completion at 17160570368 bytes, and moves 4x6x3 at four and eight sliced labels to completions at 30072620032 and 27926225920 bytes. The capacity question for this workload family is therefore what the tape budget is before it is what the sharding is, and this manifest freezes neither a budget nor a rung at which bounding one fails to rescue a single device. That is a further reason the premise stays unestablished rather than a reason to promote it.",
+  "frozen_before_release_run": true,
+  "required_artifact_fields": [
+    "raw_log_sha256",
+    "hardware_inventory",
+    "commit",
+    "workload_sha256",
+    "rank_outputs",
+    "rank_gradients",
+    "rank_timings",
+    "rank_peak_memory_bytes",
+    "communication_fraction",
+    "gpu_activity",
+    "distribution_semantics",
+    "state_mode"
+  ],
+  "runtime": {
+    "backend": "pytorch_native",
+    "collective_backend": "nccl",
+    "dtype": "complex128",
+    "gradient_scheme": "owner_reduce",
+    "launcher": "torchrun",
+    "optimizer": "rank_owned_sharded_sgd",
+    "state_mode": "distributed_tensor_network"
+  },
+  "schema_version": "flagquantum.tensor_network.release_manifest.v1",
+  "speed_workload": {
+    "acceptance_configuration": "matched_speed_18q_l10_s6",
+    "confidence_interval_must_exclude_speedup": 1.0,
+    "confidence_level": 0.95,
+    "freeze_note": "The timing protocol is two warmup and ten measured iterations rather than the statevector lane's five and thirty, because one tensor-network step is a complete forward and reverse contraction over the sliced network and takes orders of magnitude longer than one statevector training step at a comparable width. The protocol is frozen before the run and the acceptance configuration is the widest point of each frozen multiset.",
+    "layers": [
+      6,
+      8,
+      10
+    ],
+    "measured_steps": 10,
+    "minimum_scaling_efficiency": 0.5,
+    "minimum_speedup": 1.05,
+    "name": "tensor_network_matched_speed_v1",
+    "qubits": [
+      14,
+      16,
+      18
+    ],
+    "slice_label_counts": [
+      4,
+      4,
+      6
+    ],
+    "timing_unit": "one full forward-and-reverse training step over the sliced network",
+    "warmup_steps": 2,
+    "measured_single_device_floor": [
+      {
+        "name": "matched_speed_14q_l6_s4",
+        "qubits": 14,
+        "layers": 6,
+        "slice_label_counts": 4,
+        "parameter_count": 84,
+        "status": "completed",
+        "seconds": 15.043,
+        "peak_memory_bytes": 850956288
+      },
+      {
+        "name": "matched_speed_16q_l8_s4",
+        "qubits": 16,
+        "layers": 8,
+        "slice_label_counts": 4,
+        "parameter_count": 128,
+        "status": "completed",
+        "seconds": 30.367,
+        "peak_memory_bytes": 9159390208
+      },
+      {
+        "name": "matched_speed_18q_l10_s6",
+        "qubits": 18,
+        "layers": 10,
+        "slice_label_counts": 6,
+        "parameter_count": 180,
+        "status": "oom",
+        "seconds": 50.738,
+        "peak_memory_bytes": 71869284352
+      }
+    ],
+    "measured_single_device_floor_note": "The frozen ladder was measured on one A800 before any release payload was sealed, and the measurement falsifies its own acceptance configuration. The two narrower rungs complete: 84 trainable angles at 0.79 GiB peak in 15.0 s, and 128 at 8.53 GiB in 30.4 s. The acceptance configuration the freeze names, 180 trainable angles over eighteen wires and ten layers at six sliced labels, exhausts the device: it peaks at 66.9 GiB and then asks for a further 16 GiB, which does not fit on an 80 GiB accelerator. The pair does not rescue it, for the reason the capacity ladder already records: the rung fails on both ranks with the same 58.9 GiB resident and the same 16 GiB refused, so the reverse-mode peak is not slice-owned and adding a second host does not shrink it. The acceptance configuration is therefore unrunnable on this pair in either mode, and no matched-speed baseline or pair leg can be recorded from it. This is recorded rather than corrected: re-freezing the ladder now, after the measurement, would make the manifest describe a protocol chosen to fit the hardware it was measured on, and the freeze exists to prevent exactly that. The finding is the reason the tensor-network lane holds at production_supported instead of release_certified."
+  },
+  "topologies": {
+    "devices_per_node": 1,
+    "minimum_multi_node_count": 2,
+    "multi_node_required": true,
+    "note": "The measured cluster is one pair of hosts, so the release topology is a pair: two ranks, one device each, one on each host. No third host exists here, which is why the frozen topology is a pair rather than a ladder, and why the pair-only boundary is disclosed as a permanent limitation of the capability rather than as a stage of its measurement.",
+    "release_world_sizes": [
+      2
+    ]
+  }
+}

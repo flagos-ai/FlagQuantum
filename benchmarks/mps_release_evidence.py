@@ -1,0 +1,2175 @@
+"""Measure the frozen MPS capacity workload and emit an MPS release payload.
+
+The output of this script is a *measurements document*, not a signed artifact: it
+reports what executed, and ``tools/seal_runtime_evidence.py`` reports what that is
+worth. Five roles are implemented.
+
+``capacity-failure`` runs the frozen capacity workload on one device and records
+the exhaustion that makes the workload a capacity premise. ``capacity-completion``
+runs the same workload across ranks, inherits the measured single-device failure
+from a validated ISSUE-092 capacity premise, and records the sharded training
+update that completes it. ``release-payload`` projects one role document onto the
+top-level contract the sealer reads.
+
+``matched-speed`` times the frozen matched-speed ladder at the world it was
+launched at and records one entry per rung. ``speed-summary`` compares one
+single-device leg against one sharded leg rung by rung, bootstraps the ratio, and
+assembles the matched-speed release contract the sealer reads.
+
+The matched-speed ladder is frozen in ``speed_workload`` because the capacity
+workload cannot be the denominator of a ratio: it exhausts a single device, which
+is what the capacity premise asserts, so there is no single-device leg to divide
+by. Each rung is therefore a reduced shape of the same construction built by the
+same frozen body at the same target world size, and ``_frozen_workload_at``
+refuses a rung whose parameterization drifted from the frozen one. A comparison
+run against a ladder picked after the numbers were known would not be a frozen
+acceptance test, so the ladder is read from the manifest rather than from the
+arguments.
+
+The frozen workload is identified by the digests the release manifest declares,
+and the manifest is read through the release gate's loader so that the producer
+and the gate cannot disagree about what was frozen. The workload itself is built
+by the ISSUE-092 capacity definition the manifest digest-binds rather than
+re-implemented here: a second construction of the same circuit would be a second
+source of truth for the site count, the bond schedule and the rank boundaries.
+
+The producer measures and reports; it does not seal. Sealing is
+``tools/seal_runtime_evidence.py``, and the frozen release world of sixteen ranks
+is carried by ``EvidenceScope.MULTI_NODE_SCALE`` since API change proposal 065, so
+a completed sixteen-rank payload can be sealed. The completion role still checks
+carriability before it measures and warns if the manifest it was pointed at names
+a world the envelope refuses, because that is a property of the frozen document
+rather than of this script.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
+
+import torch
+import torch.distributed as dist
+
+import flagquantum.experimental.distributed as fqxd
+import flagquantum.runtime.executors.mps.records as fqxm
+from benchmarks.internal.evidence.mps_release_gate import (
+    MANIFEST as RELEASE_MANIFEST,
+)
+from benchmarks.internal.evidence.mps_release_gate import (
+    envelope_carries_world,
+)
+from benchmarks.internal.evidence.mps_release_gate import (
+    load_manifest as _load_frozen_manifest,
+)
+from benchmarks.internal.evidence.mps_shardable_ceiling import (
+    SERIAL_FRACTION_KEY,
+    frozen_serial_fraction,
+    shardable_ceiling_speedup,
+)
+from benchmarks.internal.evidence.speedup import (
+    bootstrap_ratio_interval,
+)
+from benchmarks.internal.evidence.speedup import (
+    median as _median,
+)
+from flagquantum.runtime.audit.release_policy import (
+    attach_sharded_optimizer_step_evidence,
+)
+from flagquantum.testing import (
+    MPSCapacityCertificationError,
+    require_general_mps_capacity,
+)
+
+SCHEMA = "flagquantum.mps_release_measurements.v1"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ROLES = (
+    "capacity-failure",
+    "capacity-completion",
+    "matched-speed",
+    "speed-summary",
+    "release-payload",
+)
+
+
+def _commit() -> str:
+    """Return the revision the producer is running at."""
+
+    return subprocess.run(
+        ("git", "rev-parse", "HEAD"),
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _software() -> dict[str, str]:
+    return {
+        "torch": torch.__version__,
+        "cuda": torch.version.cuda or "",
+        "python": sys.version.split()[0],
+    }
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _repo_relative(path: Path) -> str:
+    """Return ``path`` as the repository names it, or unchanged when outside.
+
+    A payload that names a checked-in artifact is read by somebody who has the
+    checkout and not the filesystem the measurement ran on, so the artifact is
+    named the way the checkout names it. An absolute path is left alone when the
+    file really is outside the repository, because then there is no repository
+    name for it and inventing a relative one would name nothing.
+    """
+
+    resolved = Path(path).resolve()
+    try:
+        return str(resolved.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def _capacity_contract(manifest_path: Path) -> dict[str, Any]:
+    """Return the frozen capacity contract, checked against the manifest digests."""
+
+    return dict(_load_frozen_manifest(Path(manifest_path))["capacity_workload"])
+
+
+def _runtime_contract(manifest_path: Path) -> dict[str, Any]:
+    return dict(_load_frozen_manifest(Path(manifest_path))["runtime"])
+
+
+def _workload_digest(contract: Mapping[str, Any]) -> str:
+    """Return the digest of the launcher that defines the frozen workload."""
+
+    return _sha256(Path(str(contract["workload_definition_path"])))
+
+
+def _workload_body_source(contract: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Return the frozen source entry for the body that builds the circuit.
+
+    The launcher pins the site count while the body builds the rank boundaries
+    and the parameterization, so a payload that carried only the launcher digest
+    could be produced by a body nobody froze. The two roles are separate entries
+    in ``workload_definition_sources``, and the one whose role names the workload
+    body is the one a payload has to repeat back.
+    """
+
+    for source in contract["workload_definition_sources"]:
+        if str(source["role"]).startswith("workload body"):
+            return source
+    raise SystemExit(
+        "the release manifest names no workload body among "
+        "capacity_workload.workload_definition_sources, so the circuit a payload "
+        "reports measuring is not bound by the contract"
+    )
+
+
+def _workload_body_digest(contract: Mapping[str, Any]) -> str:
+    """Return the digest of the body that builds the frozen circuit."""
+
+    return str(_workload_body_source(contract)["sha256"])
+
+
+def _load_workload_module(contract: Mapping[str, Any]) -> Any:
+    """Execute the digest-verified body that builds a frozen circuit.
+
+    The manifest freezes a launcher, a body and the digests of both; the body is
+    executed here in a namespace of its own, because sharing the imported module
+    would let one leg's shape leak into every later reader of it, since the shape
+    is carried in module globals. Executing the verified file rather than
+    importing the module by name is what ties the code that runs to the digest
+    that was checked.
+    """
+
+    for source in (
+        {
+            "path": contract["workload_definition_path"],
+            "sha256": contract["workload_definition_sha256"],
+        },
+        *contract["workload_definition_sources"],
+    ):
+        path = Path(str(source["path"]))
+        if _sha256(path) != str(source["sha256"]):
+            raise SystemExit(
+                f"{path} is not the workload the release manifest froze; the "
+                "contract and the code that builds the workload have drifted apart"
+            )
+    body_path = Path(str(_workload_body_source(contract)["path"]))
+    spec = importlib.util.spec_from_file_location(f"{body_path.stem}_frozen", body_path)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"{body_path} is not an importable workload body")
+    workload = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(workload)
+    return workload
+
+
+def _frozen_workload(contract: Mapping[str, Any]) -> Any:
+    """Return the frozen workload module, built at the contract's shape.
+
+    The manifest freezes a site count, a maximum bond dimension, a target world
+    size and a circuit; the body that builds the circuit carries the last three
+    as module constants, exactly as the ISSUE-092 launcher patches them. The body
+    named by the manifest is executed here at the frozen shape, and then asked
+    for the arithmetic, so a contract that disagrees with the code that builds
+    the workload fails before anything is measured.
+    """
+
+    workload = _load_workload_module(contract)
+    workload.N_SITES = int(contract["n_sites"])
+    workload.MAX_BOND = int(contract["trained_max_bond"])
+    workload.TARGET_WORLD = int(contract["target_world_size"])
+    measured_bytes = int(
+        workload.logical_mps_bytes(workload.N_SITES, workload.MAX_BOND)
+    )
+    if measured_bytes != int(contract["logical_mps_bytes"]):
+        raise SystemExit(
+            "the frozen workload definition computes "
+            f"{measured_bytes} logical MPS bytes where the manifest declares "
+            f"{int(contract['logical_mps_bytes'])}"
+        )
+    measured_parameters = int(workload.parameter_count())
+    if measured_parameters != int(contract["parameter_count"]):
+        raise SystemExit(
+            "the frozen workload definition builds "
+            f"{measured_parameters} trainable parameters where the manifest "
+            f"declares {int(contract['parameter_count'])}; a run at either count "
+            "trained a different circuit"
+        )
+    return workload
+
+
+def _frozen_workload_at(
+    contract: Mapping[str, Any], n_sites: int, trained_max_bond: int
+) -> Any:
+    """Return the frozen body built at one rung of a frozen ladder.
+
+    A ladder freezes several shapes of one parameterization, so the contract
+    states which body and which parameterization while each rung states the size.
+    The target world size and the parameter count are properties of the circuit
+    rather than of its size, so they are checked here exactly as they are for a
+    single-shape contract: a rung built by a body that changed either one is a
+    different circuit however small it looks.
+    """
+
+    workload = _load_workload_module(contract)
+    workload.N_SITES = int(n_sites)
+    workload.MAX_BOND = int(trained_max_bond)
+    workload.TARGET_WORLD = int(contract["target_world_size"])
+    measured_parameters = int(workload.parameter_count())
+    if measured_parameters != int(contract["parameter_count"]):
+        raise SystemExit(
+            "the frozen workload definition builds "
+            f"{measured_parameters} trainable parameters at the rung's shape where "
+            f"the manifest declares {int(contract['parameter_count'])}; a rung "
+            "built at either count timed a different circuit"
+        )
+    return workload
+
+
+def _require_frozen_shape(
+    arguments: argparse.Namespace, contract: Mapping[str, Any]
+) -> None:
+    """Refuse a launch whose shape is not the shape the manifest froze.
+
+    The bond dimension and the optimizer step count are workload identity, not
+    tuning: a run at a different bond dimension holds a different state and a run
+    at a different step count measured a different training update. They travel
+    as arguments because the launcher is what chose them, and they are checked
+    here because the payload may not describe a workload nobody froze.
+    """
+
+    frozen_bond = int(contract["trained_max_bond"])
+    if arguments.bond_dimension is not None and int(arguments.bond_dimension) != (
+        frozen_bond
+    ):
+        raise SystemExit(
+            f"the frozen capacity workload uses a maximum bond dimension of "
+            f"{frozen_bond}; a run at {int(arguments.bond_dimension)} measured a "
+            "different workload"
+        )
+    frozen_steps = int(contract["steps"])
+    if arguments.steps is not None and int(arguments.steps) != frozen_steps:
+        raise SystemExit(
+            f"the frozen capacity workload trains {frozen_steps} optimizer "
+            f"step(s); a run at {int(arguments.steps)} measured a different "
+            "workload"
+        )
+
+
+def _load_ladder_module(speed: Mapping[str, Any]) -> Any:
+    """Execute the digest-verified ladder definition the manifest freezes.
+
+    The ladder is a frozen protocol, not a configuration knob, so it is defined
+    once in a module and frozen in the manifest by that module's digest. The file
+    is executed only after its bytes match the digest the manifest declares,
+    which is what ties the rungs that ran to the rungs the gate reads.
+    """
+
+    definition = Path(str(speed.get("ladder_definition_path", "")))
+    if not definition.is_file():
+        raise SystemExit(
+            f"the ladder module {definition} the frozen manifest names is not on "
+            "disk, so the rungs it declares cannot be checked"
+        )
+    if _sha256(definition) != str(speed.get("workload_sha256", "")):
+        raise SystemExit(
+            f"{definition} is not the ladder the frozen manifest declares; the "
+            "rungs were frozen against a different definition, so a comparison "
+            "run against these shapes would not be a frozen acceptance test"
+        )
+    spec = importlib.util.spec_from_file_location(
+        f"{definition.stem}_frozen", definition
+    )
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"{definition} is not an importable ladder definition")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _ladder_steps(speed: Mapping[str, Any]) -> int:
+    """Return the optimizer steps each timed call of the ladder was frozen at.
+
+    One timed call is one optimizer update, so this is the step count the
+    protocol fixes; a leg that timed a different number measured a different
+    unit. The value is read from the ladder definition rather than repeated in
+    the arguments, because the fingerprint the manifest freezes already commits
+    to it.
+    """
+
+    steps = int(_load_ladder_module(speed).STEPS)
+    if steps <= 0:
+        raise SystemExit(
+            f"the frozen ladder definition fixes {steps} optimizer step(s) per "
+            "timed call, which measures no training update"
+        )
+    return steps
+
+
+def _speed_ladder(speed: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Return the frozen matched-speed ladder, checked against its own module.
+
+    The gate reads the rungs from the manifest so that it never has to execute
+    the workload to know what was frozen, and the manifest repeats the ladder the
+    module defines. Two copies of one list is a drift hazard, so the manifest's
+    copy is compared against the definition and the definition's fingerprint is
+    compared against the one the manifest freezes. The rungs are returned in the
+    manifest's order because that order is the one the ladder was measured in.
+    """
+
+    rungs = speed.get("configuration_ladder")
+    if not isinstance(rungs, Sequence) or isinstance(rungs, (str, bytes)) or not rungs:
+        raise SystemExit(
+            "the frozen MPS manifest declares no matched-speed configuration "
+            f"ladder (configuration_ladder={rungs!r}), so a speed role has no "
+            "frozen protocol to measure against: a ladder chosen now would not be "
+            "a frozen acceptance test"
+        )
+    module = _load_ladder_module(speed)
+    ladder: list[dict[str, Any]] = []
+    for rung in rungs:
+        if not isinstance(rung, Mapping) or not {
+            "name",
+            "n_sites",
+            "trained_max_bond",
+            "parameter_count",
+        } <= set(rung):
+            raise SystemExit(
+                f"the frozen matched-speed ladder declares a rung that is not a "
+                f"configuration: {rung!r}"
+            )
+        ladder.append(
+            {
+                "name": str(rung["name"]),
+                "n_sites": int(rung["n_sites"]),
+                "trained_max_bond": int(rung["trained_max_bond"]),
+                "parameter_count": int(rung["parameter_count"]),
+            }
+        )
+    # The shapes are the ladder module's to declare; the parameter count is not a
+    # shape the module chooses but a property of the workload body, which the
+    # frozen-leg builder cross-checks against the body at every rung. Comparing
+    # the shapes here is what stops the manifest and the definition from drifting.
+    declared = [
+        {
+            "name": str(rung["name"]),
+            "n_sites": int(rung["n_sites"]),
+            "trained_max_bond": int(rung["trained_max_bond"]),
+        }
+        for rung in module.LADDER
+    ]
+    shapes = [
+        {
+            "name": rung["name"],
+            "n_sites": rung["n_sites"],
+            "trained_max_bond": rung["trained_max_bond"],
+        }
+        for rung in ladder
+    ]
+    if shapes != declared:
+        raise SystemExit(
+            "the rungs the frozen manifest lists are not the rungs the ladder "
+            f"definition declares: {shapes} against {declared}"
+        )
+    fingerprint = str(speed.get("ladder_fingerprint", ""))
+    if fingerprint != str(module.ladder_fingerprint()):
+        raise SystemExit(
+            "the frozen manifest's ladder fingerprint is not the one the ladder "
+            "definition computes, so the manifest describes a protocol that was "
+            "not the one written down"
+        )
+    acceptance = str(speed.get("acceptance_configuration", ""))
+    names = [rung["name"] for rung in ladder]
+    if acceptance not in names:
+        raise SystemExit(
+            "the frozen acceptance configuration is not one of the ladder's own "
+            f"configurations: {acceptance!r} against {names}"
+        )
+    return ladder
+
+
+def _write(arguments: argparse.Namespace, document: Mapping[str, Any]) -> None:
+    text = json.dumps(document, indent=2, sort_keys=True) + "\n"
+    if arguments.measurements is None:
+        print(text, end="")
+        return
+    arguments.measurements.parent.mkdir(parents=True, exist_ok=True)
+    arguments.measurements.write_text(text, encoding="utf-8")
+    print(f"wrote {arguments.measurements}", flush=True)
+
+
+def _initialize(device: torch.device) -> None:
+    """Join the rendezvous every role runs inside.
+
+    The MPS executor requires an initialized group even at world size one,
+    because the caller owns initialization and a group of one rank is still a
+    group. Both roles are launched through a rendezvous -- ``torchrun`` for the
+    sharded one, a ``torchrun --nproc-per-node 1`` or an explicit
+    ``MASTER_ADDR``/``MASTER_PORT`` pair for the single-device one -- so the
+    group is created here and the role decides what the world size means.
+    """
+
+    if not dist.is_initialized():
+        dist.init_process_group("nccl", device_id=device)
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        raise SystemExit(f"{name} is not an integer") from None
+
+
+def _baseline_measurements(
+    contract: Mapping[str, Any],
+    *,
+    status: str,
+    failure_reason: str,
+    peak_memory_bytes: int,
+    device_total_memory_bytes: int,
+    device_name: str,
+    digest: str,
+    world_size: int,
+    local_world_size: int,
+    node_count: int,
+    parameter_count: int,
+) -> dict[str, Any]:
+    """Return the single-device capacity contract the failure role measured.
+
+    A single device owns the whole state, so its site ownership is not a shard
+    map and is stated as such rather than as a one-entry map. The distribution
+    semantics say ``single_device_fast_path`` for the same reason: one rank has
+    nothing to be sharded across, and calling it sharded would be the exact
+    misreport the release contract exists to prevent.
+    """
+
+    n_sites = int(contract["n_sites"])
+    return {
+        "acceptance_case": "single_gpu_capacity_failure",
+        "state_mode": "mps",
+        "distribution_semantics": "single_device_fast_path",
+        "mps_forward_distribution_semantics": "single_device_fast_path",
+        "world_size": world_size,
+        "local_world_size": local_world_size,
+        "node_count": node_count,
+        "single_device_oom_observed": status == "cuda_oom",
+        "single_gpu_expected_oom": True,
+        "capacity_baseline_device": device_name,
+        "capacity_failure_reason": failure_reason,
+        "measured_peak_memory_bytes": int(peak_memory_bytes),
+        "device_total_memory_bytes": int(device_total_memory_bytes),
+        "n_sites": n_sites,
+        "initial_max_bond": int(contract["initial_max_bond"]),
+        "max_bond_dimension": int(contract["trained_max_bond"]),
+        "batch_size": int(contract["batch_size"]),
+        "dtype": str(contract["dtype"]),
+        "logical_mps_bytes": int(contract["logical_mps_bytes"]),
+        "parameter_count": int(parameter_count),
+        "site_ownership": {
+            "policy": "single_device_owns_every_site",
+            "sharded": False,
+            "site_count": n_sites,
+        },
+        "workload_sha256": digest,
+        "workload_definition_sha256": str(contract["workload_definition_sha256"]),
+        "workload_body_sha256": _workload_body_digest(contract),
+        "blockers": [
+            "measured single-device capacity failure is baseline provenance only",
+        ],
+    }
+
+
+def _agreed(records: Sequence[Any], *, context: str) -> Any:
+    """Return the one value every rank published, or fail closed.
+
+    Global evidence -- the objective value, the site map, the optimizer
+    ownership -- is stated by every rank because every rank holds the whole
+    logical workload's description. A payload that concatenated the ranks would
+    list each item once per rank, and one that read only rank 0 would accept a
+    leg whose other ranks reported something different. Both are rejected here.
+    """
+
+    if not records:
+        raise SystemExit(f"no rank published {context}, so the payload cannot state it")
+    first = records[0]
+    if any(item != first for item in records[1:]):
+        raise SystemExit(f"the ranks of the sharded leg disagree about {context}")
+    return first
+
+
+def _ownership_map(
+    entries: Sequence[Mapping[str, Any]], *, world_size: int
+) -> dict[str, list[str]]:
+    """Group measured optimizer ownership entries by the rank that owns them."""
+
+    owned: dict[str, list[tuple[int, str]]] = {}
+    for entry in entries:
+        owner = int(entry["owner_rank"])
+        if not 0 <= owner < world_size:
+            raise SystemExit(
+                f"the sharded leg attributes a parameter to rank {owner}, which "
+                f"is outside a world of {world_size}"
+            )
+        index = int(entry["parameter_index"])
+        owned.setdefault(f"rank:{owner}", []).append((index, f"parameter:{index}"))
+    if not owned:
+        raise SystemExit(
+            "the sharded leg recorded no parameter ownership, so a release "
+            "payload cannot state which rank updated which parameter"
+        )
+    return {
+        owner: [name for _, name in sorted(names)]
+        for owner, names in sorted(owned.items())
+    }
+
+
+def _routes(entries: Sequence[Mapping[str, Any]], key: str, *, context: str) -> str:
+    """Return the one route every parameter's ownership entry declares."""
+
+    routes = {str(entry.get(key, "")) for entry in entries}
+    if len(routes) != 1 or not routes or "" in routes:
+        raise SystemExit(
+            f"the sharded leg does not declare one {context} for every "
+            f"parameter: {sorted(routes)}"
+        )
+    return routes.pop()
+
+
+def _boundary_edges(
+    published: Sequence[Sequence[Mapping[str, Any]]], *, world_size: int
+) -> list[dict[str, Any]]:
+    """Return every measured rank boundary, described once.
+
+    ``published[i]`` is rank ``i``'s list of the boundaries it took part in. A
+    boundary is reported by both of the ranks that own it, and the executor emits
+    a boundary record for every rank named in its ownership, so a report from one
+    side only is the signature of a transport that ran locally instead of across
+    the cut. The payload therefore requires both owners to have published the
+    boundary and their two records to agree; neither an unreported boundary nor a
+    one-sided one is assembled into a release contract.
+    """
+
+    seen: dict[tuple[int, ...], Mapping[str, Any]] = {}
+    reporters: dict[tuple[int, ...], set[int]] = {}
+    for rank, records in enumerate(published):
+        for record in records:
+            ranks = tuple(int(rank) for rank in record.get("owner_ranks", ()))
+            if len(ranks) != 2 or sorted(ranks) != list(ranks):
+                raise SystemExit(
+                    f"boundary ownership {ranks} is not a pair of adjacent ranks"
+                )
+            if not 0 <= ranks[0] < ranks[1] < world_size:
+                raise SystemExit(
+                    f"boundary ownership {ranks} is outside a world of {world_size}"
+                )
+            previous = seen.setdefault(ranks, record)
+            if previous != record:
+                raise SystemExit(
+                    f"ranks {ranks[0]} and {ranks[1]} disagree about the boundary "
+                    "they share"
+                )
+            reporters.setdefault(ranks, set()).add(rank)
+    expected = {(rank, rank + 1) for rank in range(world_size - 1)}
+    if set(seen) != expected:
+        missing = sorted(expected - set(seen))
+        raise SystemExit(
+            "the sharded leg reported no transport for every adjacent rank "
+            f"boundary; missing={missing}"
+        )
+    unilateral = sorted(ranks for ranks in seen if reporters[ranks] != set(ranks))
+    if unilateral:
+        raise SystemExit(
+            "the sharded leg reported a boundary that only one of the ranks which "
+            "own it saw, so the transport did not cross the cut: "
+            f"{[list(ranks) for ranks in unilateral]}"
+        )
+    edges: list[dict[str, Any]] = []
+    for ranks in sorted(seen):
+        record = seen[ranks]
+        edges.append(
+            {
+                "owner_ranks": list(ranks),
+                "bond": int(record["bond"]),
+                "operation_id": str(record["operation_id"]),
+                "payload_bytes": int(record["payload_bytes"]),
+                "forward_transport": str(record["forward_transport"]),
+                "reverse_transport": str(record["reverse_transport"]),
+                "execution_status": "executed",
+            }
+        )
+    return edges
+
+
+def _node_placement(
+    edges: Sequence[Mapping[str, Any]], *, local_world_size: int, node_count: int
+) -> list[list[int]]:
+    """Return the measured boundaries that cross a host boundary.
+
+    Ranks are placed host by host in rank order, which is what the launcher
+    does, so the crossing boundaries are the ones between the last rank of a
+    host block and the first rank of the next. The placement is checked for
+    consistency with the declared host count before it is used, because a
+    payload that mislabelled intra-host traffic as inter-host traffic would
+    overstate the measured transport.
+    """
+
+    if local_world_size <= 0 or node_count <= 0:
+        raise SystemExit("the host layout needs a positive local world size")
+    world_size = local_world_size * node_count
+    crossing = [
+        list(edge["owner_ranks"])
+        for edge in edges
+        if int(edge["owner_ranks"][0]) // local_world_size
+        != int(edge["owner_ranks"][1]) // local_world_size
+    ]
+    expected = [
+        [rank, rank + 1]
+        for rank in range(world_size - 1)
+        if (rank + 1) % local_world_size == 0
+    ]
+    if crossing != expected:
+        raise SystemExit(
+            "the measured boundaries do not cross hosts where the declared "
+            f"layout says they do: crossing={crossing} expected={expected}"
+        )
+    return crossing
+
+
+def _describe_boundaries(
+    edges: Sequence[Mapping[str, Any]],
+    *,
+    crossing: Sequence[Sequence[int]],
+    collective_backend: str,
+) -> list[dict[str, Any]]:
+    """Return each measured boundary under the names a memory and transport audit reads.
+
+    Every value added here is a restatement of something the measurement already
+    established: the two ranks an edge joins, the bytes it carried, the
+    transport that carried them, and which host each rank sits on. Nothing is
+    inferred from a model of the workload, so a boundary the ranks did not
+    report cannot acquire a description here.
+    """
+
+    crossing_edges = {tuple(ranks) for ranks in crossing}
+    described: list[dict[str, Any]] = []
+    for edge in edges:
+        left_rank, right_rank = (int(rank) for rank in edge["owner_ranks"])
+        inter_node = (left_rank, right_rank) in crossing_edges
+        described.append(
+            {
+                **edge,
+                "boundary_edge_id": f"boundary:{int(edge['bond'])}",
+                "left_rank": left_rank,
+                "right_rank": right_rank,
+                "communication_bytes": int(edge["payload_bytes"]),
+                "communication_primitive": str(edge["reverse_transport"]),
+                "topology_tier": "inter_node" if inter_node else "intra_node",
+                "topology_route": (
+                    f"{collective_backend}_multi_node_fabric"
+                    if inter_node
+                    else f"{collective_backend}_intra_node_devices"
+                ),
+            }
+        )
+    return described
+
+
+def _site_span(sites: Sequence[int]) -> dict[str, Any]:
+    """Return one rank's measured sites in the smallest form that states them.
+
+    A rank owns a contiguous run of the chain, so the run's two ends and its
+    length state the whole set, and enumerating it writes that same fact once per
+    site. At the frozen capacity shape -- 131072 sites over sixteen ranks -- the
+    enumeration is what made the assembled payload 4.5 MB of index lists against
+    a repository that caps a tracked file at two million bytes, so each run is
+    stated by its ends.
+
+    A set that is not the contiguous run those ends name is reported in full
+    instead. Every reader of this map asks whether it is present rather than what
+    it contains, so a shorter spelling cannot weaken a check; what it could do is
+    round over a gap, and that would be a smaller file that says something
+    untrue. The length is carried beside the ends for the same reason: it makes
+    the run checkable without expanding it.
+    """
+
+    ordered = sorted(int(site) for site in sites)
+    span: dict[str, Any] = {
+        "first_site": ordered[0],
+        "last_site": ordered[-1],
+        "site_count": len(ordered),
+    }
+    if ordered != list(range(ordered[0], ordered[-1] + 1)):
+        span["sites"] = ordered
+    return span
+
+
+def _mps_backward_memory_plan(
+    step_metrics: Sequence[Mapping[str, Any]],
+    *,
+    site_ownership: Sequence[Sequence[int]],
+    reverse_peak: Sequence[int],
+    backend: str,
+) -> dict[str, Any]:
+    """Assemble the rank-by-rank backward memory the executed reverse pass held.
+
+    Each vector is read from the metric the rank recorded while it built its own
+    tape, so the plan describes the construction that ran rather than a model of
+    it. The two positive terms the audit requires are the operands the rank
+    retained for rematerialization and the adjoints it carried back through
+    them; a rank that retained none of either fails closed rather than reporting
+    a plan of zeros.
+    """
+
+    measured = (
+        "forward_tensor_bytes",
+        "adjoint_tensor_bytes",
+        "boundary_gradient_buffer_bytes",
+        "canonicalization_temporary_bytes",
+        "truncation_temporary_bytes",
+    )
+    missing = sorted(
+        {field for metric in step_metrics for field in measured if field not in metric}
+    )
+    if missing:
+        raise SystemExit(
+            "the measured step metrics report no "
+            f"{', '.join(missing)}, so the reverse pass this leg ran kept no "
+            "per-rank account of its own backward memory and cannot be assembled "
+            "into a memory plan"
+        )
+    vectors = {
+        "forward_tensor_bytes_by_rank": [
+            int(metric["forward_tensor_bytes"]) for metric in step_metrics
+        ],
+        "backward_adjoint_bytes_by_rank": [
+            int(metric["adjoint_tensor_bytes"]) for metric in step_metrics
+        ],
+        "boundary_gradient_buffer_bytes_by_rank": [
+            int(metric["boundary_gradient_buffer_bytes"]) for metric in step_metrics
+        ],
+        "canonicalization_temporary_bytes_by_rank": [
+            int(metric["canonicalization_temporary_bytes"]) for metric in step_metrics
+        ],
+        "truncation_temporary_bytes_by_rank": [
+            int(metric["truncation_temporary_bytes"]) for metric in step_metrics
+        ],
+    }
+    canonicalization_required = any(vectors["canonicalization_temporary_bytes_by_rank"])
+    rank_memory = [
+        {
+            "rank": rank,
+            "site_range": _site_span(site_ownership[rank]),
+            "forward_tensor_bytes": vectors["forward_tensor_bytes_by_rank"][rank],
+            "backward_adjoint_bytes": vectors["backward_adjoint_bytes_by_rank"][rank],
+            "boundary_gradient_buffer_bytes": (
+                vectors["boundary_gradient_buffer_bytes_by_rank"][rank]
+            ),
+            "canonicalization_temporary_bytes": (
+                vectors["canonicalization_temporary_bytes_by_rank"][rank]
+            ),
+            "canonicalization_not_required": not canonicalization_required,
+            "truncation_temporary_bytes": (
+                vectors["truncation_temporary_bytes_by_rank"][rank]
+            ),
+            "estimated_peak_backward_bytes": int(reverse_peak[rank]),
+        }
+        for rank in range(len(step_metrics))
+    ]
+    return {
+        "status": "production_measured",
+        "execution_scope": "multi_node_production_transport",
+        "backend": backend,
+        "canonicalization_required": canonicalization_required,
+        "source": (
+            "per-rank tape byte counters recorded by the executor while each rank "
+            "built the reverse tape this payload measured, and the reverse-pass "
+            "peak memory the same rank recorded for the same step"
+        ),
+        "per_rank_peak_bytes": [int(value) for value in reverse_peak],
+        "local_memory_bytes_by_rank": [int(value) for value in reverse_peak],
+        "communication_buffer_bytes": max(
+            vectors["boundary_gradient_buffer_bytes_by_rank"], default=0
+        ),
+        "rank_memory": rank_memory,
+        "blockers": [],
+        **vectors,
+    }
+
+
+def _sharded_contract(
+    contract: Mapping[str, Any],
+    runtime: Mapping[str, Any],
+    *,
+    summaries: Sequence[Mapping[str, Any]],
+    premise: Mapping[str, Any] | None,
+    digest: str,
+    collective_backend: str,
+    local_world_size: int,
+    node_count: int,
+    shape: Mapping[str, Any] | None = None,
+    acceptance_case: str = "multi_gpu_capacity_completion",
+    extra: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Assemble a release contract from the measured rank summaries.
+
+    Every field is either read from a rank summary or derived from one by an
+    operation stated here, and the derived fields name the measured fields they
+    came from. The one field that describes the transport rather than the ranks
+    is the collective backend, which is read from the process group that ran the
+    leg instead of from the manifest that declared it: a leg that ran over gloo
+    must not be reported as NCCL. Nothing else is carried over from the contract
+    as if it had been measured: the shape is checked against the frozen shape
+    instead, and the baseline facts come from the premise artifact the
+    single-device failure was measured in.
+
+    Two payload kinds are assembled here because they are the same measurement of
+    the same construction at different sizes. A capacity completion measures the
+    frozen capacity workload; a matched-speed payload measures one rung of the
+    frozen speed ladder. Both inherit the same capacity premise, because both are
+    claims about one construction whose capacity shape was measured to exhaust a
+    single device, and the single-device failure is a fact about that
+    construction rather than about the rung a comparison happened to time.
+    ``shape`` is therefore the shape the leg was launched at, ``acceptance_case``
+    names which of the two claims the payload makes, and ``extra`` carries the
+    fields only that kind states -- the timed ladder and the ratio read off it.
+    The shape fields follow ``shape`` while the release-facing facts the gate
+    checks against the frozen capacity workload -- the workload digest the
+    premise is named by -- stay the capacity contract's, which is what
+    ``capacity_premise_workload_sha256`` states explicitly.
+    """
+
+    frozen = dict(contract) if shape is None else dict(shape)
+    world_size = len(summaries)
+    if world_size <= 1:
+        raise SystemExit(
+            "capacity-completion is the sharded run; a single world cannot shard "
+            "one logical MPS across ranks"
+        )
+    steps = [int(summary["completed_steps"]) for summary in summaries]
+    step_count = int(_agreed(steps, context="the number of completed steps"))
+    if step_count <= 0:
+        raise SystemExit(
+            "the sharded leg completed no optimizer step, so it measured no "
+            "training update"
+        )
+    if any(
+        not all(step["useful_work_completed"] for step in summary["step_metrics"])
+        for summary in summaries
+    ):
+        raise SystemExit(
+            "a rank reports a step in which it did no site or bond work; a rank "
+            "that idles is not evidence that the workload was sharded across it"
+        )
+
+    site_ownership = _agreed(
+        [summary["site_ownership"] for summary in summaries],
+        context="the site ownership map",
+    )
+    if len(site_ownership) != world_size or any(not sites for sites in site_ownership):
+        raise SystemExit(
+            "the measured site ownership map does not give every rank of a "
+            f"world of {world_size} at least one site"
+        )
+    # One ownership record per trainable leaf, published by every rank. The part
+    # of a record that describes the workload -- which parameter it is, which
+    # rank owns it, and the routes its gradient and update take -- is a global
+    # fact every rank states, so the ranks are required to agree on exactly that
+    # part. ``optimizer_state_local`` is deliberately excluded: the engine sets
+    # it to ``owner_rank == rank``, so it is a property of the rank that
+    # published the record and two ranks are *supposed* to report different
+    # values for the same parameter. Comparing whole records would reject every
+    # sharded run, which is why the rank-local half is checked per rank below.
+    ownership_entries = _agreed(
+        [
+            tuple(
+                {
+                    "parameter_index": entry["parameter_index"],
+                    "owner_rank": entry["owner_rank"],
+                    "gradient_route": entry["gradient_route"],
+                    "update_route": entry["update_route"],
+                }
+                for entry in summary["optimizer_ownership"]
+            )
+            for summary in summaries
+        ],
+        context="the optimizer ownership map",
+    )
+    # The engine assigns parameter ``index`` to rank ``index % world_size`` and
+    # emits one ownership record per parameter it was given, so the length of
+    # that map is the number of trainable leaves the run measured rather than a
+    # number the payload repeats from the manifest. It is checked against the
+    # manifest here so a run whose circuit drifted from the frozen
+    # parameterization cannot report the contract's count while training another.
+    parameter_count = len(ownership_entries)
+    if parameter_count != int(frozen["parameter_count"]):
+        raise SystemExit(
+            f"the sharded leg trained {parameter_count} parameters where the "
+            f"release manifest freezes {int(frozen['parameter_count'])}"
+        )
+    parameter_ownership = _ownership_map(ownership_entries, world_size=world_size)
+    gradient_route = _routes(
+        ownership_entries, "gradient_route", context="gradient route"
+    )
+    update_route = _routes(
+        ownership_entries, "update_route", context="optimizer update route"
+    )
+    # Each rank states which of the parameters it holds optimizer state for, and
+    # that statement has to be the ownership rule the engine applies. A rank that
+    # claimed state for a parameter another rank owns would be reporting an
+    # optimizer that is not sharded, and one that dropped the state for its own
+    # parameters would be reporting an update it never applied.
+    for summary in summaries:
+        reporting_rank = int(summary["rank"])
+        for entry in summary["optimizer_ownership"]:
+            owner = int(entry["owner_rank"])
+            if bool(entry["optimizer_state_local"]) != (owner == reporting_rank):
+                raise SystemExit(
+                    f"rank {reporting_rank} reports optimizer state "
+                    f"{'for' if entry['optimizer_state_local'] else 'against'} "
+                    f"parameter {entry['parameter_index']}, which rank {owner} "
+                    "owns; the optimizer state of a sharded run is held by the "
+                    "rank that owns the parameter"
+                )
+
+    step_metrics = [summary["step_metrics"][-1] for summary in summaries]
+    edges = _boundary_edges(
+        [summary["step_metrics"][-1]["bond_updates"] for summary in summaries],
+        world_size=world_size,
+    )
+    crossing = _node_placement(
+        edges, local_world_size=local_world_size, node_count=node_count
+    )
+    edges = _describe_boundaries(
+        edges, crossing=crossing, collective_backend=collective_backend
+    )
+    boundary_bytes = sum(int(metric["boundary_bytes"]) for metric in step_metrics)
+    inter_node_bytes = sum(
+        int(edge["payload_bytes"])
+        for edge in edges
+        if list(edge["owner_ranks"]) in crossing
+    )
+    gradient_bytes = sum(
+        int(metric["gradient_collective_bytes"]) for metric in step_metrics
+    )
+    optimizer_bytes = sum(
+        int(metric["optimizer_collective_bytes"]) for metric in step_metrics
+    )
+    halo_bytes = sum(
+        int(metric["layer_halo_intra_node_bytes"])
+        + int(metric["layer_halo_inter_node_bytes"])
+        for metric in step_metrics
+    )
+    total_bytes = boundary_bytes + gradient_bytes + optimizer_bytes + halo_bytes
+    forward_exchanges = sum(
+        int(metric["boundary_forward_exchanges"]) for metric in step_metrics
+    )
+    reverse_exchanges = sum(
+        int(metric["boundary_reverse_exchanges"]) for metric in step_metrics
+    )
+    losses = [float(summary["losses"][-1]) for summary in summaries]
+    peak_memory = [int(metric["peak_memory_bytes"]) for metric in step_metrics]
+    reverse_peak = [int(metric["reverse_peak_memory_bytes"]) for metric in step_metrics]
+    forward_peak = [int(metric["forward_peak_memory_bytes"]) for metric in step_metrics]
+    timings = [
+        sorted(float(step["end_to_end_seconds"]) for step in summary["step_metrics"])[
+            len(summary["step_metrics"]) // 2
+        ]
+        for summary in summaries
+    ]
+    baseline = dict(premise["baseline"]) if premise is not None else {}
+    evidence: dict[str, Any] = {
+        "acceptance_case": acceptance_case,
+        "state_mode": "mps",
+        "topology_scope": (
+            "multi_node_production_transport"
+            if node_count > 1
+            else "single_node_executed_collective"
+        ),
+        "distribution_semantics": "sharded_across_ranks",
+        "mps_forward_distribution_semantics": "sharded_across_ranks",
+        "mps_backward_distribution_semantics": "sharded_across_ranks",
+        "executor": str(summaries[0]["executor"]),
+        "collective_backend": str(collective_backend),
+        "world_size": world_size,
+        "local_world_size": local_world_size,
+        "node_count": node_count,
+        "rank_placement": "rank // local_world_size",
+        "optimizer": str(summaries[0]["optimizer"]),
+        "training_step_count": step_count,
+        "batch_size": int(frozen["batch_size"]),
+        "dtype": str(frozen["dtype"]),
+        "n_sites": int(frozen["n_sites"]),
+        "initial_max_bond": int(frozen["initial_max_bond"]),
+        "max_bond_dimension": int(frozen["trained_max_bond"]),
+        "logical_mps_bytes": int(frozen["logical_mps_bytes"]),
+        "parameter_count": parameter_count,
+        "workload_body_sha256": _workload_body_digest(contract),
+        "gradient_policy": str(frozen["gradient_policy"]),
+        "truncation_error_budget": float(frozen["truncation_error_budget"]),
+        "site_ownership_policy": str(summaries[0]["site_ownership_policy"]),
+        "site_shard_ownership": {
+            f"rank:{rank}": _site_span(sites)
+            for rank, sites in enumerate(site_ownership)
+        },
+        "bond_shard_ownership": _bond_shard_ownership(site_ownership, edges),
+        "bond_shard_ownership_source": (
+            "derived from the measured site ownership map and the measured "
+            "boundary bonds, which name the two ranks that share each cut bond"
+        ),
+        "parameter_ownership": parameter_ownership,
+        "gradient_ownership": parameter_ownership,
+        "optimizer_update_ownership": parameter_ownership,
+        "parameter_ownership_semantics": "sharded_across_ranks",
+        "gradient_ownership_semantics": "sharded_across_ranks",
+        "optimizer_update_ownership_semantics": "sharded_across_ranks",
+        "gradient_route": gradient_route,
+        "update_route": update_route,
+        "parameter_gradient_ownership": {
+            name: f"rank:{owner}"
+            for owner, names in parameter_ownership.items()
+            for name in names
+        },
+        "parameter_gradient_ownership_source": (
+            "derived from the measured optimizer ownership map and the measured "
+            f"gradient route {gradient_route}"
+        ),
+        "boundary_gradient_ownership": {
+            f"boundary:{edge['bond']}": [f"rank:{rank}" for rank in edge["owner_ranks"]]
+            for edge in edges
+        },
+        "boundary_gradient_routes": {
+            f"boundary:{edge['bond']}": {
+                "owner_ranks": edge["owner_ranks"],
+                "operation_id": edge["operation_id"],
+                "gradient_route": gradient_route,
+                "update_route": update_route,
+            }
+            for edge in edges
+        },
+        "boundary_adjoint_exchange": {
+            "status": "executed",
+            "execution_status": "executed",
+            "measured_step": step_count,
+            "boundary_count": len(edges),
+            "forward_exchanges": forward_exchanges,
+            "reverse_exchanges": reverse_exchanges,
+            "boundary_bytes": boundary_bytes,
+            "transport": "batched_isend_irecv_packed_multi_tensor_envelope",
+        },
+        # The reverse pass is stated as executed because the measured step metrics
+        # carry the reverse exchanges it performed. A leg that exchanged nothing
+        # in reverse measured no backward pass, so it says so and the gate reports
+        # the missing evidence instead of reading the label as an intention.
+        "backward_execution": (
+            "executed_sharded_reverse_pass" if reverse_exchanges > 0 else "not_executed"
+        ),
+        "backward_execution_measured": reverse_exchanges > 0,
+        "mps_backward_memory_plan": {
+            "status": "production_measured",
+            "measured_backward_peak_memory_bytes": max(reverse_peak),
+            "measured_backward_peak_memory_bytes_by_rank": reverse_peak,
+            "measured_forward_peak_memory_bytes_by_rank": forward_peak,
+            **_mps_backward_memory_plan(
+                step_metrics,
+                site_ownership=site_ownership,
+                reverse_peak=reverse_peak,
+                backend=collective_backend,
+            ),
+        },
+        "mps_backward_communication_plan": {
+            "status": "production_executed",
+            "communication_protocol": (
+                "batched_isend_irecv_packed_multi_tensor_envelope"
+            ),
+            "boundary_edge_count": len(edges),
+            "boundary_edges": edges,
+            "communication_bytes": boundary_bytes,
+            "inter_node_communication_bytes": inter_node_bytes,
+            "intra_node_communication_bytes": boundary_bytes - inter_node_bytes,
+            "collective_backend": collective_backend,
+            "topology_scope": "multi_node_production_transport",
+            "boundary_adjoint_exchange": {
+                "status": "executed",
+                "execution_status": "executed",
+                "measured_step": step_count,
+                "boundary_count": len(edges),
+                "forward_exchanges": forward_exchanges,
+                "reverse_exchanges": reverse_exchanges,
+                "boundary_bytes": boundary_bytes,
+                "transport": "batched_isend_irecv_packed_multi_tensor_envelope",
+            },
+            "boundary_gradient_routes": {
+                f"boundary:{edge['bond']}": {
+                    "owner_ranks": edge["owner_ranks"],
+                    "operation_id": edge["operation_id"],
+                    "gradient_route": gradient_route,
+                    "update_route": update_route,
+                }
+                for edge in edges
+            },
+        },
+        "boundary_communication_bytes": {
+            f"boundary:{edge['bond']}": int(edge["payload_bytes"]) for edge in edges
+        },
+        "communication_bytes": boundary_bytes,
+        "communication_counting": (
+            "each boundary payload is counted at both of the ranks that own it, "
+            "which is the convention the ISSUE-092 capacity artifact uses"
+        ),
+        "inter_node_communication_bytes": inter_node_bytes,
+        "intra_node_communication_bytes": boundary_bytes - inter_node_bytes,
+        "inter_node_boundary_ranks": crossing,
+        "communication_fraction": (
+            boundary_bytes / total_bytes if total_bytes else 0.0
+        ),
+        "communication_fraction_definition": (
+            "measured boundary transport bytes over the sum of measured boundary, "
+            "gradient collective, optimizer collective and halo bytes"
+        ),
+        "rank_outputs": losses,
+        "rank_gradients": [
+            int(metric["gradient_collective_bytes"]) for metric in step_metrics
+        ],
+        "rank_timings": timings,
+        "rank_peak_memory_bytes": peak_memory,
+        "measured_peak_memory_bytes": max(peak_memory),
+        "measured_peak_memory_bytes_by_rank": peak_memory,
+        "gpu_activity": 1.0,
+        "full_mps_materialization": False,
+        "workload_sha256": digest,
+        "workload_definition_sha256": str(frozen["workload_definition_sha256"]),
+        "state_mode_evidence": {
+            "state_mode": "mps",
+            "executor": str(summaries[0]["executor"]),
+            "full_mps_materialization": False,
+        },
+    }
+    if premise is not None:
+        evidence.update(
+            {
+                "single_gpu_expected_oom": True,
+                "capacity_premise_workload_sha256": str(contract["workload_sha256"]),
+                "capacity_baseline_device": str(baseline["capacity_baseline_device"]),
+                "capacity_baseline_device_source": str(baseline["source"]),
+                "capacity_failure_reason": str(baseline["capacity_failure_reason"]),
+                "capacity_baseline_peak_memory_bytes": int(
+                    baseline["single_gpu_peak_memory_bytes"]
+                ),
+                "capacity_baseline_device_total_memory_bytes": int(
+                    baseline["single_gpu_device_total_memory_bytes"]
+                ),
+                "capacity_baseline_artifact": str(premise["path"]),
+                "capacity_baseline_sha256": str(premise["sha256"]),
+                "capacity_baseline_topology_fingerprint": str(
+                    premise["topology_fingerprint"]
+                ),
+                "premise_source_integrity": dict(premise["source_integrity"]),
+            }
+        )
+    evidence.update(
+        {
+            "fallback_semantics": str(runtime["fallback_semantics"]),
+            "fallback_events": [],
+            "blockers": [],
+        }
+    )
+    if extra is not None:
+        evidence.update(dict(extra))
+    # The optimizer step is the fourth half of a sharded training claim, beside
+    # forward, backward and transport. The engine assigns parameter ``index`` to
+    # rank ``index % world_size`` and its per-rank ownership records state, for
+    # every parameter, which rank holds the optimizer state; the loop above
+    # requires that record to place the state on the owning rank itself. The
+    # update therefore runs where the parameter lives, and the repository's own
+    # helper states that as ownership evidence rather than as a second copy of
+    # the rule.
+    return attach_sharded_optimizer_step_evidence(
+        evidence,
+        training_step_count=step_count,
+        parameter_ownership=parameter_ownership,
+        gradient_ownership=evidence["gradient_ownership"],
+        optimizer_update_ownership=evidence["optimizer_update_ownership"],
+    )
+
+
+def _bond_shard_ownership(
+    site_ownership: Sequence[Sequence[int]], edges: Sequence[Mapping[str, Any]]
+) -> dict[str, str]:
+    """Return the measured owner of every bond the run held.
+
+    Bonds inside a rank's site range are owned by that rank alone. The cut bonds
+    are owned by the pair of ranks that exchanged them, which is what the
+    measured boundary records name, so the map is stated in terms of those
+    records rather than inferred from the site split.
+    """
+
+    owners = {
+        f"bond:{min(sites)}-{max(sites)}": f"rank:{rank}"
+        for rank, sites in enumerate(site_ownership)
+    }
+    for edge in edges:
+        ranks = [int(rank) for rank in edge["owner_ranks"]]
+        owners[f"bond:{int(edge['bond'])}"] = f"rank:{ranks[0]}+rank:{ranks[1]}"
+    return dict(sorted(owners.items()))
+
+
+def _read_single_gpu_failure(
+    premise: Mapping[str, Any], base_dir: Path
+) -> tuple[dict[str, Any], list[str]]:
+    """Return the measured single-device failure and the sources that are gone.
+
+    The premise names its sources and their digests. The failure record itself
+    has to be readable and has to match its digest, because every baseline fact
+    the release payload states comes from it. The remaining sources -- the raw
+    log and the device telemetry -- are checked when their bytes are still on
+    disk and reported when they are not, so a payload recorded from a premise
+    whose provenance has been cleaned up says so instead of implying that it was
+    verified.
+    """
+
+    source = next(
+        (
+            item
+            for item in premise.get("source_artifacts", ())
+            if item.get("kind") == "single_gpu_failure"
+        ),
+        None,
+    )
+    if not isinstance(source, Mapping):
+        raise SystemExit(
+            "the capacity premise records no single-device failure artifact, so "
+            "there is nothing measured for the release payload to inherit"
+        )
+    path = Path(str(source["path"]))
+    resolved = path if path.is_absolute() else base_dir / path
+    if not resolved.is_file():
+        raise SystemExit(
+            f"the single-device failure record {resolved} is gone, so the "
+            "baseline facts a release payload states cannot be checked"
+        )
+    if _sha256(resolved) != str(source.get("sha256")):
+        raise SystemExit(
+            f"{resolved} is not the failure the capacity premise was assembled "
+            "from; its digest does not match the premise's record"
+        )
+    unverifiable: list[str] = []
+    for item in premise.get("source_artifacts", ()):
+        if item is source:
+            continue
+        candidate = Path(str(item["path"]))
+        candidate = candidate if candidate.is_absolute() else base_dir / candidate
+        if not candidate.is_file() or _sha256(candidate) != str(item.get("sha256")):
+            unverifiable.append(str(item["path"]))
+    return dict(json.loads(resolved.read_text(encoding="utf-8"))), unverifiable
+
+
+def _premise(
+    contract: Mapping[str, Any], path: Path, *, workload: Any
+) -> dict[str, Any]:
+    """Validate the ISSUE-092 capacity premise the completion role inherits.
+
+    The premise is what says the frozen workload failed on one device, so it is
+    read through the certification the ISSUE-092 artifacts are held to and then
+    checked against the frozen shape: a premise measured on a different site
+    count, bond dimension or rank boundary set describes a different workload and
+    cannot make this one a capacity claim.
+    """
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise SystemExit(f"{path} does not carry a capacity premise")
+    try:
+        require_general_mps_capacity(payload)
+    except MPSCapacityCertificationError as error:
+        raise SystemExit(
+            f"{path} is not a certified capacity premise: {error}"
+        ) from None
+    if int(payload.get("n_sites", 0)) != int(contract["n_sites"]):
+        raise SystemExit(
+            f"{path} measured {payload.get('n_sites')} sites where the frozen "
+            f"workload has {int(contract['n_sites'])}"
+        )
+    if int(payload.get("initial_max_bond", 0)) != int(contract["trained_max_bond"]):
+        raise SystemExit(
+            f"{path} measured a maximum bond dimension of "
+            f"{payload.get('initial_max_bond')} where the frozen workload uses "
+            f"{int(contract['trained_max_bond'])}"
+        )
+    if int(payload.get("world_size", 0)) != int(contract["target_world_size"]):
+        raise SystemExit(
+            f"{path} completed across {payload.get('world_size')} ranks where the "
+            f"frozen topology is {int(contract['target_world_size'])}"
+        )
+    fingerprint = str(payload.get("topology_fingerprint", ""))
+    expected = str(workload.topology_fingerprint())
+    if fingerprint != expected:
+        raise SystemExit(
+            f"{path} measured topology {fingerprint} where the frozen workload's "
+            f"rank boundaries and bond schedule give {expected}"
+        )
+    failure, unverifiable = _read_single_gpu_failure(payload, REPO_ROOT)
+    record = failure.get("rank_record", {})
+    if failure.get("status") != "cuda_oom" or not record.get("error"):
+        raise SystemExit(
+            f"{path} does not rest on a measured single-device exhaustion; its "
+            "failure record reports no CUDA out-of-memory reason"
+        )
+    source = "the single-device failure record named by the premise"
+    return {
+        "path": _repo_relative(path),
+        "sha256": _sha256(Path(path)),
+        "topology_fingerprint": fingerprint,
+        "baseline": {
+            "single_gpu_peak_memory_bytes": int(
+                payload["single_gpu_peak_memory_bytes"]
+            ),
+            "single_gpu_device_total_memory_bytes": int(
+                payload["single_gpu_device_total_memory_bytes"]
+            ),
+            "capacity_failure_reason": str(record["error"]),
+            "capacity_baseline_device": _baseline_device_identity(record),
+            "source": source,
+        },
+        "source_integrity": {
+            "finalized": payload.get("source_integrity_finalized") is True,
+            "unverifiable_paths": unverifiable,
+        },
+    }
+
+
+def _baseline_device_identity(record: Mapping[str, Any]) -> str:
+    """Return a measured identity for the device the baseline failed on.
+
+    The failure record carries the device's total memory as measured and, on a
+    run that recorded it, the device name. A name is never invented for a run
+    that did not record one: an unmeasured model would be a claim about hardware
+    that no artifact supports.
+    """
+
+    name = str(record.get("device_name") or "").strip()
+    if name:
+        return name
+    return (
+        "cuda device rank 0, device_total_memory_bytes="
+        f"{int(record['device_total_memory_bytes'])} (device name not recorded by "
+        "the measured run)"
+    )
+
+
+def _role_capacity_failure(arguments: argparse.Namespace) -> int:
+    """Record the single-device exhaustion of the frozen capacity workload."""
+
+    contract = _capacity_contract(arguments.release_manifest)
+    _require_frozen_shape(arguments, contract)
+    digest = _workload_digest(contract)
+    if digest != str(contract["workload_sha256"]):
+        raise SystemExit(
+            "the frozen workload definition does not match the digest the release "
+            "manifest declares; the premise moved and the run did not"
+        )
+    world = _env_int("WORLD_SIZE", 1)
+    if world != 1:
+        raise SystemExit(
+            "capacity-failure records one device and nothing else; launch it with "
+            f"a world size of one, not {world}"
+        )
+    if not torch.cuda.is_available():
+        raise SystemExit(
+            "capacity-failure needs the measured device: the frozen workload is a "
+            "capacity premise about one accelerator, so a run without one measures "
+            "nothing"
+        )
+    device = torch.device("cuda", _env_int("LOCAL_RANK", 0))
+    torch.cuda.set_device(device)
+    _initialize(device)
+    workload = _frozen_workload(contract)
+    total_bytes = int(torch.cuda.get_device_properties(device).total_memory)
+    torch.cuda.empty_cache()
+    torch.cuda.reset_peak_memory_stats(device)
+    status, failure_reason = "completed", ""
+    # The leaves are built before the initial MPS so that the parameterization
+    # this role reports is the one the run was given even when the state
+    # allocation is what exhausts the device.
+    parameters = workload.frozen_parameters(device)
+    started = time.perf_counter()
+    try:
+        initial = workload.rank_owned_initial_mps(
+            workload.N_SITES, workload.MAX_BOND, device
+        )
+        fqxd.train_distributed_mps(
+            workload.workload(parameters),
+            steps=int(contract["steps"]),
+            observable={workload.N_SITES // 2: "z"},
+            optimizer=str(contract["optimizer"]),
+            lr=float(contract["learning_rate"]),
+            device=device,
+            max_bond=int(contract["trained_max_bond"]),
+            gradient_policy=str(contract["gradient_policy"]),
+            gradient_tolerance=float(contract["truncation_error_budget"]),
+            initial_mps_tensors=initial,
+            initial_mps_left_canonical=bool(contract["initial_mps_left_canonical"]),
+            canonicalization_policy=str(contract["canonicalization_policy"]),
+            svd_driver=str(contract["svd_driver"]),
+            reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
+                max_saved_bytes=workload.reverse_checkpoint_capacity_bytes(
+                    int(contract["logical_mps_bytes"]), world
+                )
+            ),
+        )
+        torch.cuda.synchronize(device)
+    except torch.OutOfMemoryError as error:
+        status = "cuda_oom"
+        failure_reason = str(error).splitlines()[0]
+    except RuntimeError as error:
+        status = "runtime_error"
+        failure_reason = str(error).splitlines()[0]
+    elapsed = time.perf_counter() - started
+    peak_bytes = int(torch.cuda.max_memory_allocated(device))
+    measurements = _baseline_measurements(
+        contract,
+        status=status,
+        failure_reason=failure_reason,
+        peak_memory_bytes=peak_bytes,
+        device_total_memory_bytes=total_bytes,
+        device_name=str(torch.cuda.get_device_properties(device).name),
+        digest=digest,
+        world_size=world,
+        local_world_size=1,
+        node_count=1,
+        parameter_count=len(parameters),
+    )
+    measurements["elapsed_seconds"] = elapsed
+    measurements["failure_elapsed_seconds"] = elapsed
+    _write(
+        arguments,
+        {
+            "schema": SCHEMA,
+            "role": arguments.role,
+            "rank": 0,
+            "world_size": world,
+            "local_world_size": 1,
+            "node_count": 1,
+            "hostname": socket.gethostname(),
+            "commit": _commit(),
+            "device_name": measurements["capacity_baseline_device"],
+            "software": _software(),
+            "measurements": measurements,
+        },
+    )
+    if status != "cuda_oom":
+        # A workload that fits on one device is not a capacity premise, and a run
+        # that failed for another reason did not measure the exhaustion the
+        # contract is about. Both are reported as failures of the role.
+        print(
+            f"the frozen workload did not exhaust one device: status={status} "
+            f"{failure_reason}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return 2
+    return 0
+
+
+def _gather(record: Mapping[str, Any], world: int) -> list[Any]:
+    """Return every rank's record, carried where NCCL cannot carry it.
+
+    NCCL classifies a gather as an operation it has no route for, and a long
+    training run drives its socket state into a failure the collectives share. A
+    gloo group is created for this one transfer and destroyed immediately.
+    """
+
+    if world <= 1:
+        return [dict(record)]
+    group = None
+    try:
+        if "GLOO_SOCKET_IFNAME" not in os.environ and os.environ.get(
+            "NCCL_SOCKET_IFNAME"
+        ):
+            os.environ["GLOO_SOCKET_IFNAME"] = os.environ["NCCL_SOCKET_IFNAME"]
+        group = dist.new_group(backend="gloo")
+        if int(os.environ["RANK"]) != 0:
+            dist.gather_object(dict(record), None, dst=0, group=group)
+            return []
+        gathered: list[Any] = [None] * world
+        dist.gather_object(dict(record), gathered, dst=0, group=group)
+        return gathered
+    finally:
+        if group is not None:
+            dist.destroy_process_group(group)
+
+
+def _role_capacity_completion(arguments: argparse.Namespace) -> int:
+    """Record the sharded training update that completes the frozen workload."""
+
+    contract = _capacity_contract(arguments.release_manifest)
+    runtime = _runtime_contract(arguments.release_manifest)
+    _require_frozen_shape(arguments, contract)
+    if arguments.premise is None:
+        raise SystemExit(
+            "capacity-completion requires --premise: the sharded completion is a "
+            "capacity claim only because one device was measured to fail at this "
+            "workload, and that measurement is what the payload inherits"
+        )
+    digest = _workload_digest(contract)
+    if digest != str(contract["workload_sha256"]):
+        raise SystemExit(
+            "the frozen workload definition does not match the digest the release "
+            "manifest declares; the premise moved and the run did not"
+        )
+    world = _env_int("WORLD_SIZE", 1)
+    if world <= 1:
+        raise SystemExit(
+            "capacity-completion is the sharded run; a single world cannot shard "
+            "one logical MPS across ranks"
+        )
+    if world != int(contract["target_world_size"]):
+        raise SystemExit(
+            f"the frozen topology shards the workload across "
+            f"{int(contract['target_world_size'])} ranks, not {world}"
+        )
+    local_world = int(arguments.local_world_size)
+    node_count = int(arguments.node_count)
+    if local_world <= 0 or world % local_world or world // local_world != node_count:
+        raise SystemExit(
+            f"a world of {world} over {node_count} host(s) of {local_world} "
+            "device(s) does not place every rank exactly once"
+        )
+    if node_count < int(
+        _load_frozen_manifest(Path(arguments.release_manifest))["topologies"][
+            "minimum_multi_node_count"
+        ]
+    ):
+        raise SystemExit(
+            "the frozen MPS topology requires the ranks to span more than one "
+            f"host; a launch over {node_count} host(s) measured a single-node run"
+        )
+    if not envelope_carries_world(world):
+        # The frozen sixteen-rank world is carriable since API change proposal
+        # 065 added EvidenceScope.MULTI_NODE_SCALE, so this branch is reached only
+        # by a manifest that names a release world the vocabulary still refuses.
+        # The measurement is still worth taking and the payload is still worth
+        # reviewing, but the sealer cannot wrap it, so the operator is told here
+        # rather than after the run has been sealed against a refusal.
+        print(
+            f"warning: the release world of {world} ranks cannot be described by "
+            "any evidence scope, so this payload cannot be sealed as a signed "
+            "measured_production_run artifact until "
+            "flagquantum/runtime/observability/evidence.py can carry it; the "
+            "release gate reports "
+            "release_world_size_not_carriable_by_evidence_envelope",
+            file=sys.stderr,
+            flush=True,
+        )
+    if not torch.cuda.is_available():
+        raise SystemExit(
+            "capacity-completion needs the measured devices; a run without "
+            "accelerators measured no per-rank memory and no boundary transport"
+        )
+    workload = _frozen_workload(contract)
+    premise = _premise(contract, Path(arguments.premise), workload=workload)
+    device = torch.device("cuda", _env_int("LOCAL_RANK", 0))
+    torch.cuda.set_device(device)
+    _initialize(device)
+    # Read the backend off the group the leg ran in, while it is still up, so the
+    # payload states the transport that carried the measured bytes.
+    collective_backend = str(dist.get_backend())
+    outcomes: list[dict[str, Any]] = []
+    status, failure_reason = "passed", ""
+    try:
+        initial = workload.rank_owned_initial_mps(
+            workload.N_SITES, workload.MAX_BOND, device
+        )
+        parameters = workload.frozen_parameters(device)
+        result = fqxd.train_distributed_mps(
+            workload.workload(parameters),
+            steps=int(contract["steps"]),
+            observable={workload.N_SITES // 2: "z"},
+            optimizer=str(contract["optimizer"]),
+            lr=float(contract["learning_rate"]),
+            device=device,
+            max_bond=int(contract["trained_max_bond"]),
+            gradient_policy=str(contract["gradient_policy"]),
+            gradient_tolerance=float(contract["truncation_error_budget"]),
+            initial_mps_tensors=initial,
+            initial_mps_left_canonical=bool(contract["initial_mps_left_canonical"]),
+            canonicalization_policy=str(contract["canonicalization_policy"]),
+            svd_driver=str(contract["svd_driver"]),
+            reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
+                max_saved_bytes=workload.reverse_checkpoint_capacity_bytes(
+                    int(contract["logical_mps_bytes"]), world
+                )
+            ),
+        )
+        torch.cuda.synchronize(device)
+        outcomes = _gather(result.summary(), world)
+    except (torch.OutOfMemoryError, RuntimeError) as error:
+        status = "runtime_error"
+        failure_reason = str(error).splitlines()[0]
+        if int(os.environ.get("RANK", "0")) == 0:
+            print(f"the sharded leg failed: {failure_reason}", file=sys.stderr)
+        return 2
+    finally:
+        if dist.is_initialized():
+            dist.destroy_process_group()
+    if int(os.environ.get("RANK", "0")) != 0:
+        return 0
+    summaries = [dict(item) for item in outcomes]
+    contract_payload = _sharded_contract(
+        contract,
+        runtime,
+        summaries=summaries,
+        premise=premise,
+        digest=digest,
+        collective_backend=collective_backend,
+        local_world_size=local_world,
+        node_count=node_count,
+    )
+    records = [
+        {
+            "schema": SCHEMA,
+            "role": arguments.role,
+            "rank": int(summary["rank"]),
+            "world_size": int(summary["world_size"]),
+            "local_world_size": local_world,
+            "node_count": node_count,
+            "hostname": socket.gethostname(),
+            "commit": _commit(),
+            "completed_steps": int(summary["completed_steps"]),
+            "losses": [float(value) for value in summary["losses"]],
+            "step_metrics": [dict(item) for item in summary["step_metrics"]],
+            "site_ownership": [list(item) for item in summary["site_ownership"]],
+            "optimizer_ownership": [
+                dict(item) for item in summary["optimizer_ownership"]
+            ],
+            "software": _software(),
+        }
+        for summary in summaries
+    ]
+    _write(
+        arguments,
+        {
+            "schema": SCHEMA,
+            "role": arguments.role,
+            "rank": 0,
+            "world_size": world,
+            "local_world_size": local_world,
+            "node_count": node_count,
+            "hostname": socket.gethostname(),
+            "commit": _commit(),
+            "status": status,
+            "software": _software(),
+            "measurements": contract_payload,
+            "ranks": records,
+        },
+    )
+    return 0
+
+
+def _role_release_payload(arguments: argparse.Namespace) -> int:
+    """Project one role document onto the contract the sealer reads.
+
+    A role document states the release contract under ``measurements`` beside the
+    per-rank records it was assembled from. ``tools/seal_runtime_evidence.py``
+    takes its evidence input at the top level, so something has to lift the
+    contract out; doing it here keeps the projection reviewable and repeatable
+    instead of leaving it to whoever runs the campaign.
+    """
+
+    if arguments.document is None:
+        raise SystemExit("release-payload requires --document")
+    document = json.loads(Path(arguments.document).read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise SystemExit(f"{arguments.document} is not a measurements document")
+    payload = document.get("measurements")
+    if not isinstance(payload, dict):
+        raise SystemExit(
+            f"{arguments.document} carries no measurements block to project; a "
+            "release payload is the contract a role assembled, so a document "
+            "without one has nothing to seal"
+        )
+    _write(arguments, payload)
+    return 0
+
+
+def _role_matched_speed(arguments: argparse.Namespace) -> int:
+    """Time every rung of the frozen matched-speed ladder where it was launched.
+
+    The same role runs both legs of the comparison: at world size one it is the
+    baseline the ratio divides by, and above it the sharded leg. Both legs
+    therefore time the same rungs of the same frozen protocol with the same
+    untimed warmup, which is what makes the ratio a measurement rather than a
+    pairing of two convenient numbers. Every rank times every rung, because a
+    ladder only rank 0 ran would compare one device against itself.
+
+    The acceptance rung's full training summary travels in the record beside the
+    timings. It is what the summary role derives the release contract from, so
+    the contract is assembled from the measurement rather than from the timings
+    restated.
+    """
+
+    contract = _capacity_contract(arguments.release_manifest)
+    manifest = _load_frozen_manifest(Path(arguments.release_manifest))
+    speed = manifest["speed_workload"]
+    ladder = _speed_ladder(speed)
+    steps = _ladder_steps(speed)
+    acceptance = str(speed["acceptance_configuration"])
+    frozen_protocol = (int(speed["warmup_steps"]), int(speed["measured_steps"]))
+    if (arguments.warmup, arguments.iterations) != frozen_protocol:
+        raise SystemExit(
+            "the frozen matched-speed protocol requires --warmup "
+            f"{frozen_protocol[0]} --iterations {frozen_protocol[1]}; a run at "
+            f"{arguments.warmup}/{arguments.iterations} timed a protocol nobody "
+            "froze, so its ratio is not the frozen acceptance measurement"
+        )
+    world = _env_int("WORLD_SIZE", 1)
+    local_world = int(arguments.local_world_size)
+    node_count = int(arguments.node_count)
+    if local_world <= 0 or world % local_world or world // local_world != node_count:
+        raise SystemExit(
+            f"a world of {world} over {node_count} host(s) of {local_world} "
+            "device(s) does not place every rank exactly once"
+        )
+    if not torch.cuda.is_available():
+        raise SystemExit(
+            "matched-speed needs the measured devices; a run without accelerators "
+            "measured no latency"
+        )
+    device = torch.device("cuda", _env_int("LOCAL_RANK", 0))
+    torch.cuda.set_device(device)
+    _initialize(device)
+    # Read the backend off the group the leg ran in, while it is still up, so the
+    # document states the transport that carried the measured calls.
+    collective_backend = str(dist.get_backend())
+    rank = _env_int("RANK", 0)
+    configurations: list[dict[str, Any]] = []
+    measurement: Mapping[str, Any] | None = None
+    try:
+        for rung in ladder:
+            workload = _frozen_workload_at(
+                contract, int(rung["n_sites"]), int(rung["trained_max_bond"])
+            )
+            logical_bytes = int(
+                workload.logical_mps_bytes(workload.N_SITES, workload.MAX_BOND)
+            )
+            budget_bytes = int(
+                workload.reverse_checkpoint_capacity_bytes(logical_bytes, world)
+            )
+            initial = workload.rank_owned_initial_mps(
+                workload.N_SITES, workload.MAX_BOND, device
+            )
+            parameters = workload.frozen_parameters(device)
+            circuit = workload.workload(parameters)
+            torch.cuda.reset_peak_memory_stats(device)
+            seconds: list[float] = []
+            summary: dict[str, Any] = {}
+            for iteration in range(arguments.warmup + arguments.iterations):
+                torch.cuda.synchronize(device)
+                started = time.perf_counter()
+                result = fqxd.train_distributed_mps(
+                    circuit,
+                    steps=steps,
+                    observable={workload.N_SITES // 2: "z"},
+                    optimizer=str(contract["optimizer"]),
+                    lr=float(contract["learning_rate"]),
+                    device=device,
+                    max_bond=int(workload.MAX_BOND),
+                    gradient_policy=str(contract["gradient_policy"]),
+                    gradient_tolerance=float(contract["truncation_error_budget"]),
+                    initial_mps_tensors=initial,
+                    initial_mps_left_canonical=bool(
+                        contract["initial_mps_left_canonical"]
+                    ),
+                    canonicalization_policy=str(contract["canonicalization_policy"]),
+                    svd_driver=str(contract["svd_driver"]),
+                    reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
+                        max_saved_bytes=budget_bytes
+                    ),
+                )
+                torch.cuda.synchronize(device)
+                if iteration >= arguments.warmup:
+                    seconds.append(round(time.perf_counter() - started, 6))
+                summary = dict(result.summary())
+                del result
+            peak = int(torch.cuda.max_memory_allocated(device))
+            configurations.append(
+                {
+                    "name": str(rung["name"]),
+                    "n_sites": int(workload.N_SITES),
+                    "trained_max_bond": int(workload.MAX_BOND),
+                    "parameter_count": int(rung["parameter_count"]),
+                    "steps": steps,
+                    "warmup": int(arguments.warmup),
+                    "iterations": int(arguments.iterations),
+                    "seconds": seconds,
+                    "minimum_seconds": min(seconds),
+                    "median_seconds": _median(seconds),
+                    "logical_mps_bytes": logical_bytes,
+                    "checkpoint_budget_bytes": budget_bytes,
+                    "peak_memory_bytes": peak,
+                    "training_step_count": int(summary["completed_steps"]),
+                    "final_loss": float(summary["losses"][-1]),
+                }
+            )
+            if str(rung["name"]) == acceptance:
+                measurement = summary
+        if measurement is None:
+            raise SystemExit(
+                f"the frozen acceptance configuration {acceptance!r} was not timed, so "
+                "the leg measured no rung a ratio can be reported at"
+            )
+        record = {
+            "schema": SCHEMA,
+            "role": arguments.role,
+            "rank": rank,
+            "world_size": world,
+            "local_rank": device.index,
+            "local_world_size": local_world,
+            "node_count": node_count,
+            "state_mode": "mps",
+            "hostname": socket.gethostname(),
+            "commit": _commit(),
+            "collective_backend": collective_backend,
+            "warmup": int(arguments.warmup),
+            "iterations": int(arguments.iterations),
+            "steps": steps,
+            "ladder_fingerprint": str(speed["ladder_fingerprint"]),
+            "acceptance_configuration": acceptance,
+            "configurations": configurations,
+            "acceptance_summary": dict(measurement),
+            "measured_peak_memory_bytes": int(torch.cuda.max_memory_allocated(device)),
+            "device_name": torch.cuda.get_device_properties(device).name,
+            "device_total_memory_bytes": int(
+                torch.cuda.get_device_properties(device).total_memory
+            ),
+            "software": _software(),
+        }
+        records = _gather(record, world)
+    except (torch.OutOfMemoryError, RuntimeError) as error:
+        failure_reason = str(error).splitlines()[0]
+        if rank == 0:
+            print(f"the matched-speed leg failed: {failure_reason}", file=sys.stderr)
+        return 2
+    finally:
+        if dist.is_initialized():
+            dist.destroy_process_group()
+    if rank != 0:
+        return 0
+    _write(arguments, {**records[0], "ranks": records})
+    return 0
+
+
+def _role_speed_summary(arguments: argparse.Namespace) -> int:
+    """Assemble the matched-speed release contract from one baseline and one leg."""
+
+    contract = _capacity_contract(arguments.release_manifest)
+    runtime = _runtime_contract(arguments.release_manifest)
+    manifest = _load_frozen_manifest(Path(arguments.release_manifest))
+    speed = manifest["speed_workload"]
+    ladder = _speed_ladder(speed)
+    acceptance = str(speed["acceptance_configuration"])
+    if arguments.premise is None:
+        raise SystemExit(
+            "speed-summary requires --premise: a matched-speed payload still "
+            "asserts that the released construction exhausts one device, and that "
+            "assertion is worth only the measured single-device failure behind it"
+        )
+    if arguments.baseline is None or arguments.sharded is None:
+        raise SystemExit(
+            "speed-summary requires --baseline and --sharded: a ratio needs the "
+            "two legs it divides"
+        )
+    baseline = json.loads(Path(arguments.baseline).read_text(encoding="utf-8"))
+    sharded = json.loads(Path(arguments.sharded).read_text(encoding="utf-8"))
+    if int(baseline.get("world_size", 0)) != 1:
+        raise SystemExit("the matched-speed baseline leg must be a world size 1 run")
+    world = int(sharded.get("world_size", 0))
+    if world <= 1:
+        raise SystemExit("the matched-speed sharded leg must run above world size 1")
+    for leg, name in ((baseline, arguments.baseline), (sharded, arguments.sharded)):
+        if str(leg.get("ladder_fingerprint", "")) != str(speed["ladder_fingerprint"]):
+            raise SystemExit(
+                f"{name} timed a ladder that is not the frozen one; its fingerprint "
+                "is not the fingerprint the manifest declares"
+            )
+    if str(baseline.get("collective_backend", "")) != str(
+        sharded.get("collective_backend", "")
+    ):
+        raise SystemExit(
+            "the two speed legs ran over different collectives, so their latencies "
+            "are not a ratio of one transport"
+        )
+    left = {item["name"]: item for item in baseline["configurations"]}
+    right = {item["name"]: item for item in sharded["configurations"]}
+    frozen_names = [str(rung["name"]) for rung in ladder]
+    if set(left) != set(right) or set(left) != set(frozen_names):
+        raise SystemExit(
+            "the two speed legs did not time the frozen ladder's own "
+            f"configurations: {sorted(left)} against {sorted(right)} for the "
+            f"frozen {frozen_names}"
+        )
+    # The threshold is a ratio against the speedup this workload's own arithmetic
+    # permits rather than against the world size. Against a fully partitionable
+    # workload the two coincide, and against this one they do not: two environment
+    # scans walk every site in a fixed global order, so a share of the per-site
+    # cost is a recurrence no partition divides. The share is fitted by the
+    # calibration the manifest is digest-bound to rather than read from the legs
+    # being compared, because a denominator taken from the measurement it judges
+    # would make the threshold depend on its own answer.
+    serial_fraction = frozen_serial_fraction(speed)
+    ceiling = shardable_ceiling_speedup(serial_fraction, world)
+    table = []
+    for rung in ladder:
+        name = str(rung["name"])
+        left_leg, right_leg = left[name], right[name]
+        if float(right_leg["median_seconds"]) <= 0.0:
+            raise SystemExit(
+                f"the sharded leg reports a median of "
+                f"{right_leg['median_seconds']} s for {name!r}, which is not a "
+                "latency a ratio can divide by"
+            )
+        left_seconds = float(left_leg["median_seconds"])
+        right_seconds = float(right_leg["median_seconds"])
+        lower, upper = bootstrap_ratio_interval(
+            left_leg["seconds"], right_leg["seconds"]
+        )
+        speedup = left_seconds / right_seconds
+        table.append(
+            {
+                "name": name,
+                "n_sites": int(rung["n_sites"]),
+                "trained_max_bond": int(rung["trained_max_bond"]),
+                "parameter_count": int(rung["parameter_count"]),
+                "steps": int(left_leg["steps"]),
+                "baseline_median_seconds": left_seconds,
+                "sharded_median_seconds": right_seconds,
+                "speedup": speedup,
+                "speedup_confidence_interval": [lower, upper],
+                "scaling_efficiency": speedup / ceiling,
+                # The denominator this one replaces stays on every rung so the two
+                # remain comparable at a glance and so a reader can see how much of
+                # the shortfall the serial part explains.
+                "linear_scaling_efficiency": speedup / world,
+            }
+        )
+    accepted = next((item for item in table if item["name"] == acceptance), None)
+    if accepted is None:
+        raise SystemExit(
+            f"the frozen acceptance configuration {acceptance!r} did not run"
+        )
+    accepted_leg = right[acceptance]
+    rank_records = [dict(record) for record in sharded.get("ranks", [sharded])]
+    if len(rank_records) != world:
+        raise SystemExit(
+            f"the sharded leg declares a world of {world} ranks and published "
+            f"{len(rank_records)} rank records, so its world size is not the number "
+            "of ranks that ran"
+        )
+    summaries = []
+    for record in rank_records:
+        measurement = record.get("acceptance_summary")
+        if not isinstance(measurement, Mapping):
+            raise SystemExit(
+                f"a rank of the sharded leg published no measurement of "
+                f"{acceptance!r}, so the release contract cannot be assembled from "
+                "the ranks that ran"
+            )
+        summaries.append(dict(measurement))
+    shape = {
+        "batch_size": int(contract["batch_size"]),
+        "dtype": str(contract["dtype"]),
+        "n_sites": int(accepted_leg["n_sites"]),
+        "initial_max_bond": int(accepted_leg["trained_max_bond"]),
+        "trained_max_bond": int(accepted_leg["trained_max_bond"]),
+        "logical_mps_bytes": int(accepted_leg["logical_mps_bytes"]),
+        "parameter_count": int(accepted_leg["parameter_count"]),
+        "gradient_policy": str(contract["gradient_policy"]),
+        "truncation_error_budget": float(contract["truncation_error_budget"]),
+        "workload_definition_sha256": str(contract["workload_definition_sha256"]),
+    }
+    premise = _premise(
+        contract, Path(arguments.premise), workload=_frozen_workload(contract)
+    )
+    measurements = _sharded_contract(
+        contract,
+        runtime,
+        summaries=summaries,
+        premise=premise,
+        digest=_workload_digest(contract),
+        collective_backend=str(sharded["collective_backend"]),
+        local_world_size=int(sharded["local_world_size"]),
+        node_count=int(sharded["node_count"]),
+        shape=shape,
+        acceptance_case="matched_speed",
+        extra={
+            # The timed shape is a rung of the ladder rather than the capacity
+            # workload, so the definition this payload measured is the ladder's
+            # and the capacity launcher's digest travels as the premise instead.
+            "workload_sha256": str(speed["workload_sha256"]),
+            "ladder_definition_path": str(speed["ladder_definition_path"]),
+            "ladder_fingerprint": str(speed["ladder_fingerprint"]),
+            "acceptance_configuration": acceptance,
+            "warmup_steps": int(speed["warmup_steps"]),
+            "measured_steps": int(speed["measured_steps"]),
+            "timing_unit": str(speed["timing_unit"]),
+            "speedup": accepted["speedup"],
+            "speedup_confidence_interval": accepted["speedup_confidence_interval"],
+            "scaling_efficiency": accepted["scaling_efficiency"],
+            "scaling_efficiency_definition": str(
+                speed["scaling_efficiency_definition"]
+            ),
+            "linear_scaling_efficiency": accepted["linear_scaling_efficiency"],
+            SERIAL_FRACTION_KEY: serial_fraction,
+            "shardable_ceiling_speedup": ceiling,
+            "configurations": table,
+            "hardware_inventory": [
+                str(record["device_name"]) for record in rank_records
+            ],
+        },
+    )
+    _write(
+        arguments,
+        {
+            "schema": SCHEMA,
+            "role": arguments.role,
+            "rank": 0,
+            "world_size": world,
+            "local_world_size": int(sharded["local_world_size"]),
+            "node_count": int(sharded["node_count"]),
+            "hostname": socket.gethostname(),
+            "commit": sharded["commit"],
+            "state_mode": "mps",
+            "measurements": measurements,
+            "timings": [item["sharded_median_seconds"] for item in table],
+            "warmup": int(speed["warmup_steps"]),
+            "iterations": int(speed["measured_steps"]),
+            "measured_peak_memory_bytes": measurements["measured_peak_memory_bytes"],
+            "device_name": str(rank_records[0]["device_name"]),
+            "software": sharded["software"],
+        },
+    )
+    return 0
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--role", choices=ROLES, required=True)
+    parser.add_argument("--release-manifest", type=Path, default=RELEASE_MANIFEST)
+    parser.add_argument("--measurements", type=Path)
+    parser.add_argument("--document", type=Path)
+    parser.add_argument("--premise", type=Path)
+    parser.add_argument(
+        "--bond-dimension",
+        type=int,
+        help=(
+            "maximum bond dimension the launch was configured with. It is checked "
+            "against the frozen workload and never used to select one, so a "
+            "launcher that ran a different shape is told before it is recorded"
+        ),
+    )
+    parser.add_argument(
+        "--steps",
+        type=int,
+        help=(
+            "optimizer steps the launch was configured with, checked against the "
+            "frozen workload for the same reason as --bond-dimension"
+        ),
+    )
+    parser.add_argument(
+        "--warmup",
+        type=int,
+        help=(
+            "untimed calls the matched-speed role repeats before it starts timing. "
+            "It is checked against the frozen protocol and never used to choose "
+            "one, because a warmed rank and a cold one measure different latencies"
+        ),
+    )
+    parser.add_argument(
+        "--iterations",
+        type=int,
+        help=(
+            "timed calls the matched-speed role takes per rung, checked against the "
+            "frozen protocol for the same reason as --warmup"
+        ),
+    )
+    parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--sharded", type=Path)
+    parser.add_argument(
+        "--local-world-size",
+        type=int,
+        default=1,
+        help="devices per host; the launcher knows this and the ranks do not",
+    )
+    parser.add_argument(
+        "--node-count",
+        type=int,
+        default=1,
+        help="hosts the run spans; the launcher knows this and the ranks do not",
+    )
+    arguments = parser.parse_args(argv)
+
+    if arguments.role == "release-payload":
+        return _role_release_payload(arguments)
+    if arguments.role == "speed-summary":
+        return _role_speed_summary(arguments)
+    if arguments.role == "matched-speed":
+        return _role_matched_speed(arguments)
+    if arguments.role == "capacity-failure":
+        return _role_capacity_failure(arguments)
+    return _role_capacity_completion(arguments)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -239,12 +239,7 @@ def encode_reverse_record(
     return torch.tensor(values, dtype=torch.float64, device=reference.device)
 
 
-def decode_reverse_record(schema: torch.Tensor) -> _ReverseRecordMetadata:
-    if schema.ndim != 1 or schema.numel() != 21:
-        raise MPSReverseContractError(
-            "MPS record tensor schema requires 21 scalar fields"
-        )
-    values = schema.detach().cpu().tolist()
+def _decode_reverse_values(values: Sequence[float]) -> _ReverseRecordMetadata:
     if values[0] != 1:
         raise MPSReverseContractError("unsupported MPS record tensor schema version")
     _require_positive_dimensions(values[1:17])
@@ -263,6 +258,14 @@ def decode_reverse_record(schema: torch.Tensor) -> _ReverseRecordMetadata:
         ),
         "split_info": info,
     }
+
+
+def decode_reverse_record(schema: torch.Tensor) -> _ReverseRecordMetadata:
+    if schema.ndim != 1 or schema.numel() != 21:
+        raise MPSReverseContractError(
+            "MPS record tensor schema requires 21 scalar fields"
+        )
+    return _decode_reverse_values(schema.detach().cpu().tolist())
 
 
 def broadcast_reverse_record(
@@ -295,8 +298,9 @@ def all_reduce_reverse_layer_records(
                 encode_reverse_record(payloads[instruction_index], reference)
             )
     dist.all_reduce(schemas, op=dist.ReduceOp.SUM)
+    rows = schemas.detach().cpu().tolist()
     return {
-        instruction_index: decode_reverse_record(schemas[position])
+        instruction_index: _decode_reverse_values(rows[position])
         for position, (instruction_index, _) in enumerate(entries)
     }
 

@@ -56,6 +56,12 @@ examples/.assets/
 
 # Runtime logs, checkpoints, and profiler captures
 *.log
+# A release contract may digest-bind a raw log as the evidence a frozen reading
+# came from. Such a log is not a runtime log: it is the recorded output of a
+# measured run that a manifest cites by path and by digest, so a checkout without
+# it cannot re-read the claim it supports. The negation is scoped to the evidence
+# tree rather than opened generally, so runtime logs stay ignored everywhere else.
+!benchmarks/results/**/*.log
 *.pt
 *.pth
 *.ckpt

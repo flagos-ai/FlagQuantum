@@ -66,7 +66,16 @@ reserved before entering the Remote client and is never released after an
 exception, because the provider may already have observed an indeterminate
 submission.
 
-For a ten-minute local check, run:
+For a copy-ready local QUBO-to-Ising workflow that does not read credentials,
+submit a remote task, or consume provider quota, run:
+
+```bash
+python -m examples.kaiwu_matrix_boundary
+```
+
+The example converts a two-variable QUBO problem, verifies QUBO/Ising energy
+parity, decodes the lowest-energy spin vector, and reports explicit signed
+8-bit integer preparation evidence. To run the focused contract tests, use:
 
 ```bash
 pytest -q tests/team/ecosystem/test_kaiwu_matrix_boundary.py

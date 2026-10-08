@@ -1,0 +1,430 @@
+{
+  "capability": "distributed_matrix_product_state",
+  "capacity_workload": {
+    "batch_size": 1,
+    "canonicalization_policy": "none",
+    "dtype": "complex64",
+    "frozen_evidence": [
+      {
+        "claim_evidence_type": "development_smoke",
+        "evidence_class": "local_non_release",
+        "kind": "single_gpu_capacity_failure_measurement",
+        "note": "status cuda_oom, world_size 1, n_sites 131072, initial_max_bond == trained_max_bond == 768, peak memory 75,148,300,800 bytes. Recorded as measured provenance for the premise note; not a release artifact.",
+        "path": "benchmarks/results/local/mps_capacity_131072q_chi768_1xa800_oom_20260805.json",
+        "sha256": "a3aa19c26c5444ce2a054a37efafd5646f377f937b4434cea32f5ca1c5004188"
+      },
+      {
+        "claim_evidence_type": "development_smoke",
+        "evidence_class": "local_non_release",
+        "kind": "sharded_capacity_completion_measurement",
+        "note": "schema flagquantum.issue092.general_mps_capacity.v1, world_size 16, local_world_size 8, node_count 2. Recorded as measured provenance for the premise note; not a release artifact.",
+        "path": "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json",
+        "sha256": "df8c19b74cc173799e3894025fb8e72de72a786d4542a9aa5e67687298f482f5"
+      },
+      {
+        "claim_evidence_type": "capability_probe",
+        "evidence_class": "development_probe",
+        "kind": "multinode_transport_probe",
+        "note": "Carries the claim blockers this manifest still stands behind: the host staging it measured inside its own profiled region, and the two-host boundary no run on this pair can widen. Digest-bound so the disclosure cannot drift away from the bytes it describes. The digest is refreshed whenever the probe is re-recorded, and the artifact was re-recorded when its forward circuit was bound to this contract's own accepted rung, which is what retired toy_circuit_parameters_only from it.",
+        "path": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",
+        "sha256": "0c7952f26345f98980f2906ff0aab9498500ed1869ca73a18a71a0f2bc3434db"
+      }
+    ],
+    "gradient_policy": "approximate",
+    "initial_max_bond": 768,
+    "initial_mps_left_canonical": true,
+    "learning_rate": 0.01,
+    "logical_mps_bytes": 1236780012864,
+    "measured_single_device_peak_memory_bytes": 75657923584,
+    "n_sites": 131072,
+    "name": "mps_capacity_131072_sites_bond768_v1",
+    "observable": {
+      "pauli": "z",
+      "wire": 65536
+    },
+    "optimizer": "adam",
+    "parameter_count": 31,
+    "premise_established": true,
+    "premise_established_note": "The premise is established by two signed measured_production_run envelopes at this contract's own digests. Both halves are sealed at workload_sha256 6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae and workload_body_sha256 05ec5746166182a93d9b6f46d50931b91158b46bb839d0870f30b179df07c662, which are the digests frozen here, so the pair measures this shape rather than the drifted body the older record names. The failure half is benchmarks/results/smoke/release_candidates/mps_single_gpu_capacity/mps_single_gpu_capacity.json, scope ONE_GPU_LOCAL, sealed at commit 2177dbd6371ef61e35deecb3fa8ecd63795175d3: status cuda_oom, single_device_oom_observed true, world_size 1, n_sites 131072, initial_max_bond and max_bond_dimension 768, batch_size 1, parameter_count 31, logical_mps_bytes 1236780012864, and a measured peak of 75657923584 bytes against an 85093777408 byte device. That peak is the reading frozen as measured_single_device_peak_memory_bytes, and this run reproduced it rather than inheriting it, which is what the earlier development-smoke record could not do. The completion half is benchmarks/results/scalability/mps_capacity_completion.json, scope MULTI_NODE_SCALE, sealed at commit dfa38eee88dc3c976ea3f484a9f6a18606db3c7f: acceptance_case multi_gpu_capacity_completion, world_size 16, local_world_size 8, node_count 2, topology_scope multi_node_production_transport, distribution_semantics sharded_across_ranks, training_step_count 1, parameter_count 31, and a measured maximum peak of 77745422336 bytes, which 14 of the sixteen ranks reach, with the remaining 2 lower at 77659790336 and 77344647680 bytes. So the shape that exhausts one device completes where this contract places it, at the same digests, in a signed envelope. What is retained from the earlier attempt is its provenance rather than its conclusion: benchmarks/results/local/mps_capacity_131072q_chi768_1xa800_oom_20260805.json and benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json are class local_non_release with claim_evidence_type development_smoke and both claim flags false, they share topology fingerprint c74a91e3a224a4dd414cfbfbcb31da7570880d42e6aa4eaccecf4b85427940a5, and the completion record's single_gpu_capacity_failure flag is inherited from the failure record rather than re-measured inside the run that recorded it, which is why neither could be the premise on its own. Two limits stay on the record. First, the two halves are separate signed runs rather than one run that measured both, so the premise is a pair of attestations at one pair of digests. Second, the baseline envelope reports single_gpu_expected_oom, which is the contract's expectation of this shape, not a second measurement of it. What the premise asserts is what the two envelopes attest and nothing further: this frozen shape exhausts one device and completes sharded across sixteen.",
+    "premise_provenance": {
+      "absent_sources": [],
+      "artifact": "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_repeat_complete_20260806.json",
+      "artifact_sha256": "df8c19b74cc173799e3894025fb8e72de72a786d4542a9aa5e67687298f482f5",
+      "current_workload_body_sha256": "05ec5746166182a93d9b6f46d50931b91158b46bb839d0870f30b179df07c662",
+      "note": "The only recorded multi-node MPS capacity completion was measured in a checkout whose revision is not in this repository's history, so its recorded commit cannot be resolved here, and it recorded a workload-body digest that differs from the body on disk. Two of its five sources, the raw log and the device telemetry, are absent. The premise producer therefore accepts the failure record it names, because that record and its digest are present and verified, and reports the rest as unverifiable rather than implying that it re-verified them. This drift is why the premise is not inherited from this artifact: it is established by the two signed envelopes the premise note names, measured at the digests frozen here, and this artifact is retained as the disclosed non-release provenance of the earlier attempt. The single-device peak is the same story: the artifact records recorded_single_gpu_peak_memory_bytes from that other checkout, while measured_single_device_peak_memory_bytes is the peak the frozen workload body produces where the contract is measured now. The two readings differ because the environments differ and not because the shape does, which is why the stale reading is disclosed here and only the current one is the number a sealed baseline has to reproduce. The two digests differ for a second reason as well. rank_owned_initial_mps used to draw each distinct bond shape in the order the calling rank's own slice happened to visit it, so the tensor a wire received depended on where the rank boundaries fell and a sharded leg started from a different state than the single-device leg of the same frozen circuit; it now walks the shape sequence of the whole chain and keeps the wires the rank owns, so the initial state is a function of the wire's bonds alone. current_workload_body_sha256 is the digest of that revision.",
+      "recorded_commit": "9d56a6ecd78b06f11b9ee6e8aadcbe9644f2c708",
+      "recorded_commit_present_in_repository": false,
+      "recorded_single_gpu_peak_memory_bytes": 75148300800,
+      "recorded_workload_body_sha256": "e70b6c54b50c91ca9d75670a2088ad85df07ede15ef6af1884ef9353309f4c71",
+      "verified_sources": [
+        "benchmarks/results/local/mps_capacity_131072q_chi768_1xa800_oom_20260805.json",
+        "benchmarks/internal/evidence/general_mps_capacity_131072.py"
+      ]
+    },
+    "reverse_checkpoint_budget_formula": "2 * (logical_mps_bytes // world_size) + 1073741824",
+    "reverse_checkpoint_budget_note": "The reverse tape is bounded at the frozen formula's value for the world size that ran, because the bound changes a rank's memory profile and not the arithmetic. Every measurement records the value it ran under, so a reader can tell whether a rank completed because the device holds the workload or because the tape was bounded.",
+    "single_device_total_memory_bytes": 85093777408,
+    "single_gpu_baseline": {
+      "evidence_role": "provenance_evidence",
+      "evidence_scope": "one_gpu_local",
+      "rationale": "One device has no ranks to shard one logical MPS across: its site ownership map is the whole state on one rank, so a world_size 1 artifact can never be a release payload and is read only as the provenance that shows the frozen workload exceeds one device. The strict promotion audit requires every file under benchmarks/results/scalability to be release-grade sharded scalability evidence, so the sealed baseline is written to its own candidate directory and is never promoted. The directory named here holds that sealed baseline, mps_single_gpu_capacity.json: a signed measured_production_run envelope over a one_gpu_local run whose payload is the same flagquantum.issue092.mps_capacity_baseline.v2 record the capacity-failure role writes, signed against the workload_sha256 and workload_body_sha256 frozen here. The development-smoke record digest-bound under frozen_evidence is a second and older measurement of the same shape rather than the baseline: it is not release-grade, it carries no commit field, and it recorded the shape in a checkout whose workload body has since changed. Both readings are disclosed in premise_established_note; only the sealed one is the number a future premise is read against.",
+      "release_gate_payload": false,
+      "required_artifact_fields": [
+        "acceptance_case",
+        "capacity_baseline_device",
+        "capacity_failure_reason",
+        "commit",
+        "distribution_semantics",
+        "hardware_inventory",
+        "initial_max_bond",
+        "logical_mps_bytes",
+        "max_bond_dimension",
+        "measured_peak_memory_bytes",
+        "n_sites",
+        "parameter_count",
+        "raw_log_sha256",
+        "single_device_oom_observed",
+        "site_ownership",
+        "state_mode",
+        "workload_body_sha256",
+        "workload_sha256"
+      ],
+      "results_path": "benchmarks/results/smoke/release_candidates/mps_single_gpu_capacity"
+    },
+    "site_ownership_policy": "balanced",
+    "state_mode": "mps",
+    "steps": 1,
+    "svd_driver": "gesvda",
+    "target_world_size": 16,
+    "trained_max_bond": 768,
+    "truncation_error_budget": 0.1,
+    "workload_definition_path": "benchmarks/internal/evidence/general_mps_capacity_131072.py",
+    "workload_definition_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
+    "workload_definition_sources": [
+      {
+        "path": "benchmarks/internal/evidence/general_mps_capacity_131072.py",
+        "role": "launcher",
+        "sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae"
+      },
+      {
+        "path": "benchmarks/internal/evidence/general_mps_capacity_16.py",
+        "role": "workload body: site count, bond schedule, rank boundary set and the circuit the capacity step trains",
+        "sha256": "05ec5746166182a93d9b6f46d50931b91158b46bb839d0870f30b179df07c662"
+      }
+    ],
+    "workload_definition_sources_note": "The launcher pins the site count and the body builds the circuit, so both files define the frozen workload and both digests are checked. Digesting only the launcher would let the work the contract claims to have measured change under a stable filename.",
+    "workload_limitations": "The frozen workload carries one independent trainable leaf per gate: a rotation of its own on each of the 16 rank-owning wires and a coupling of its own on each of the 15 sharded boundaries, so 31 leaves rather than the two shared scalars an earlier revision of this contract declared. The count is frozen here and is what capacity_workload.parameter_count states; the workload body computes it from the same site count and world size the rest of the contract is derived from, and the producer refuses a run whose body or measured ownership disagrees with it. One leaf per gate is the minimum that makes the per-parameter ownership the release payload reports a measured property rather than a consequence of the circuit: the engine assigns parameter index to rank index modulo world size, so a circuit with fewer leaves than ranks would leave surplus ranks owning no parameter and no optimizer state while the payload still called the optimizer update sharded. The workload remains a systems workload: it trains one Adam step against a single-site Z observable, so it measures whether one logical MPS state can be held and updated across ranks, and it is not an application-quality or expressivity claim. The two-node transport probe this contract digest-binds under frozen_evidence used to carry toy_circuit_parameters_only, because its forward circuit was a fixed five-wire shape with two trainable scalars and no relation to any contract. It is now bound to this contract's own accepted rung: six wires, one independent leaf per parameterized gate, five rotation layers plus the single coupling that straddles the rank boundary, which is 31 leaves, and the probe reads that rung's shape and leaf count at run time from the ladder file frozen in speed_workload and from this contract's own workload builder rather than restating them. The probe therefore records the parameterization it bound, and the blocker that said its circuit was a toy is retired by that observation rather than by deleting the word: the same check that reports the blocker on a smaller circuit reports its absence on this one.",
+    "workload_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
+    "workload_sha256_note": "The digest every capacity artifact must carry as workload_sha256. It is the digest of the frozen workload definition named by workload_definition_path, because that file is what fixes the site count, the bond dimension and the rank boundaries a completion artifact is compared against."
+  },
+  "freeze_note": "This contract was frozen before any MPS release run exists. It freezes the capacity workload (131,072 sites, maximum bond dimension 768, batch size one, one Adam step, approximate two-site gradient), the release topology (16 ranks over two hosts of eight devices each, which is the cluster that exists and the only sharded MPS configuration measured), the per-rank and MPS-specific artifact field contract, and the matched-speed acceptance thresholds. Its matched-speed ladder was frozen after this note was written rather than before it, once each of the five rungs had been timed on one device: speed_workload.configuration_ladder and speed_workload.measured_single_device_floor carry those shapes and readings, and speed_workload.ladder_definition_path names the file the copy was taken from. Freezing a timed protocol only after measuring it is deliberate, and it is what the tensor-network ladder taught: that contract froze an acceptance configuration before timing it and the configuration it froze cannot run on this cluster. The contract also records capacity_workload.premise_established=false: the only MPS single-device exhaustion and the only MPS sharded completion on record are development smoke (see capacity_workload.premise_established_note), so the release contract has no measured premise yet and the gate must report the missing premise rather than assume one. Every measured artifact this contract rests on is digest-bound under capacity_workload.frozen_evidence.",
+  "frozen_before_release_run": true,
+  "release_payload_envelope": {
+    "artifact_class": "measured_production_run",
+    "carriable": true,
+    "device_counts_by_scope": {
+      "multi_node_16_gpu_scale": [
+        16
+      ],
+      "one_gpu_local": [
+        1
+      ],
+      "scheduled_4_8_gpu_scale": [
+        4,
+        8
+      ],
+      "two_gpu_semantic_regression": [
+        2
+      ]
+    },
+    "frozen_release_world_size": 16,
+    "note": "The frozen MPS release world is 16 ranks, eight devices on each of two hosts, and the envelope enforces that bound both when a payload is sealed and when it is verified, so the contract can be satisfied only by a scope whose device counts include 16. The first frozen vocabulary had no such scope: SCHEDULED_SCALE stops at eight devices, which is one full host here, so this world was unsealable rather than merely unmeasured. API change proposal 065 added EvidenceScope.MULTI_NODE_SCALE, which carries exactly sixteen devices, and this contract was re-frozen against it. carriable is true because the envelope can now describe the frozen world, not because any run has satisfied it: no MPS measured_production_run artifact exists yet, and the gate still reports every other missing or unestablished element. The bound is stated here as four lists of numbers rather than derived at read time because a manifest is a frozen document; the gate derives the same bound by asking the envelope, and a disagreement means this note must be re-frozen.",
+    "scope_vocabulary": "flagquantum.runtime.observability.evidence.EvidenceScope",
+    "sealer": "tools/seal_runtime_evidence.py --release-payload"
+  },
+  "required_artifact_fields": [
+    "acceptance_case",
+    "backward_execution",
+    "blockers",
+    "bond_shard_ownership",
+    "boundary_adjoint_exchange",
+    "boundary_gradient_ownership",
+    "capacity_baseline_device",
+    "capacity_failure_reason",
+    "collective_backend",
+    "commit",
+    "communication_fraction",
+    "distribution_semantics",
+    "fallback_semantics",
+    "gpu_activity",
+    "gradient_ownership",
+    "gradient_ownership_semantics",
+    "hardware_inventory",
+    "local_world_size",
+    "mps_backward_communication_plan",
+    "mps_backward_distribution_semantics",
+    "mps_backward_memory_plan",
+    "mps_forward_distribution_semantics",
+    "node_count",
+    "optimizer_update_ownership",
+    "optimizer_update_ownership_semantics",
+    "parameter_count",
+    "parameter_gradient_ownership",
+    "parameter_ownership",
+    "parameter_ownership_semantics",
+    "rank_gradients",
+    "rank_outputs",
+    "rank_peak_memory_bytes",
+    "rank_timings",
+    "raw_log_sha256",
+    "single_gpu_expected_oom",
+    "site_shard_ownership",
+    "state_mode",
+    "topology_scope",
+    "training_step_count",
+    "workload_body_sha256",
+    "workload_sha256",
+    "world_size"
+  ],
+  "runtime": {
+    "accepted_backward_execution_statuses": [
+      "executed_sharded_reverse_pass"
+    ],
+    "accepted_backward_execution_statuses_note": "The reverse-pass statuses the producer emits for a measured backward pass. The gate matches this list exactly rather than searching the label for 'executed' or 'production', because a projected or simulated reverse pass can name itself in the vocabulary of a measurement.",
+    "backend": "pytorch_native",
+    "collective_backend": "nccl",
+    "distributed_entry_point": "flagquantum.experimental.distributed.train_distributed_mps",
+    "dtype": "complex64",
+    "executor": "flagquantum.runtime.executors.mps.train_distributed_mps",
+    "fallback_semantics": "native_matrix_product_state_path_only",
+    "fallback_semantics_note": "The single fallback declaration a release payload may carry. MPS training is approximate, so a payload that recomputed the same workload through a statevector path, a replicated per-rank autograd replay, or one rank holding a full local MPS would report numbers that are not sharded MPS evidence. The gate requires this exact string and an empty fallback_events list, because the sealed envelope records the fallback events the run observed.",
+    "gradient_route": "bounded_dtype_owner_reduce",
+    "launcher": "torchrun",
+    "launcher_note": "The launcher is torchrun with one process per device, and it owns the process-group rendezvous: the executor does not initialize the group, so a rank that cannot reach its peers fails visibly instead of silently re-running the workload locally.",
+    "sharding_axis": "site_and_bond",
+    "state_mode": "mps",
+    "update_route": "owner_step_then_bounded_dtype_all_gather"
+  },
+  "schema_version": "flagquantum.mps.release_manifest.v1",
+  "speed_workload": {
+    "acceptance_case": "matched_speed",
+    "acceptance_configuration": "matched_speed_8192sites_chi64",
+    "confidence_interval_must_exclude_speedup": 1.0,
+    "confidence_level": 0.95,
+    "configuration_ladder": [
+      {
+        "n_sites": 512,
+        "name": "matched_speed_512sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      },
+      {
+        "n_sites": 1024,
+        "name": "matched_speed_1024sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      },
+      {
+        "n_sites": 2048,
+        "name": "matched_speed_2048sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      },
+      {
+        "n_sites": 4096,
+        "name": "matched_speed_4096sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      },
+      {
+        "n_sites": 8192,
+        "name": "matched_speed_8192sites_chi64",
+        "parameter_count": 31,
+        "trained_max_bond": 64
+      }
+    ],
+    "ladder_definition_path": "benchmarks/internal/evidence/general_mps_speed_ladder_v1.py",
+    "ladder_fingerprint": "58f88d24d1c08846a2e3ecc7c7989570dc2a3ae06372b21d21b689ff3c855b47",
+    "ladder_note": "The matched-speed ladder is now frozen. configuration_ladder repeats the rungs ladder_definition_path defines so the release gate can read the timed shapes without executing code, and both the producer and the contract tests fail if the two copies disagree. Every rung is a reduced shape of the same capacity workload built by the same frozen body, at the same target world size, with the same trainable-leaf-per-gate parameterization, optimizer, gradient policy and reverse-tape rule, so a sharded leg of the acceptance rung is the capacity premise's own construction sharded rather than a second, unrelated circuit. The thresholds in this block are protocol rather than measurement: they are the levels a timed comparison must reach to be accepted, fixed before the legs ran so they cannot be chosen after the numbers are known.",
+    "measured_serial_fraction": 0.8146523972125517,
+    "measured_single_device_floor": [
+      {
+        "build_seconds": 0.07824692688882351,
+        "checkpoint_budget_bytes": 1139452544,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.01577698066830635,
+        "logical_mps_bytes": 32855360,
+        "median_seconds": 0.51475,
+        "minimum_seconds": 0.4968,
+        "n_sites": 512,
+        "name": "matched_speed_512sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 62932480,
+        "samples_seconds": [
+          0.5257,
+          0.5216,
+          0.5093,
+          0.5027,
+          0.4968,
+          0.5004,
+          0.5161,
+          0.5134,
+          0.5215,
+          0.5188
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.009947,
+        "trained_max_bond": 64
+      },
+      {
+        "build_seconds": 0.07792303711175919,
+        "checkpoint_budget_bytes": 1206561408,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.01577727682888508,
+        "logical_mps_bytes": 66409792,
+        "median_seconds": 0.8254,
+        "minimum_seconds": 0.8121,
+        "n_sites": 1024,
+        "name": "matched_speed_1024sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 96486912,
+        "samples_seconds": [
+          0.8283,
+          0.8265,
+          0.827,
+          0.813,
+          0.8225,
+          0.8267,
+          0.8243,
+          0.8173,
+          0.8121,
+          0.8289
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.006297,
+        "trained_max_bond": 64
+      },
+      {
+        "build_seconds": 0.07931860536336899,
+        "checkpoint_budget_bytes": 1340779136,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.015777766704559326,
+        "logical_mps_bytes": 133518656,
+        "median_seconds": 1.4146,
+        "minimum_seconds": 1.4085,
+        "n_sites": 2048,
+        "name": "matched_speed_2048sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 163595776,
+        "samples_seconds": [
+          1.433,
+          1.4315,
+          1.4125,
+          1.4107,
+          1.4167,
+          1.4265,
+          1.4248,
+          1.4086,
+          1.4099,
+          1.4085
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.009744,
+        "trained_max_bond": 64
+      },
+      {
+        "build_seconds": 0.0820793118327856,
+        "checkpoint_budget_bytes": 1609214592,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.015778331086039543,
+        "logical_mps_bytes": 267736384,
+        "median_seconds": 2.6174,
+        "minimum_seconds": 2.6061,
+        "n_sites": 4096,
+        "name": "matched_speed_4096sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 297813504,
+        "samples_seconds": [
+          2.6126,
+          2.6259,
+          2.6225,
+          2.6172,
+          2.6061,
+          2.7962,
+          2.6211,
+          2.6176,
+          2.6129,
+          2.6066
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.057404,
+        "trained_max_bond": 64
+      },
+      {
+        "build_seconds": 0.09773963317275047,
+        "checkpoint_budget_bytes": 2146085504,
+        "device_name": "NVIDIA A800-SXM4-80GB",
+        "final_loss": -0.01577860116958618,
+        "logical_mps_bytes": 536171840,
+        "median_seconds": 5.15495,
+        "minimum_seconds": 5.1266,
+        "n_sites": 8192,
+        "name": "matched_speed_8192sites_chi64",
+        "parameter_count": 31,
+        "peak_memory_bytes": 566248960,
+        "samples_seconds": [
+          5.1561,
+          5.3279,
+          5.1398,
+          5.1447,
+          5.254,
+          5.1266,
+          5.1604,
+          5.1538,
+          5.2486,
+          5.1533
+        ],
+        "status": "completed",
+        "stdev_seconds": 0.066416,
+        "trained_max_bond": 64
+      }
+    ],
+    "measured_single_device_floor_note": "The floor below was measured on one A800-SXM4-80GB before any release payload was sealed, under the frozen protocol: two warmup calls and ten measured calls, one optimizer step per call, the frozen reverse-tape rule (2 * (logical_mps_bytes // world_size) + 1 GiB) at world_size 1, and the frozen gradient policy. The ladder's cost is linear in the site count at a fixed bond dimension -- 0.51 s at 512 sites through 5.16 s at 8192 -- so the widest rung is the acceptance configuration and the ratio is not dominated by per-call overhead. The same final loss appears at every rung to six decimals, which is the arithmetic check that one construction was timed at five sizes rather than five different circuits. These readings come from an exploratory probe run outside the release producer (fq_mps_speed_probe.py, revision ac1043b6), so they freeze the protocol and the shapes; they are not release evidence and no payload rests on them. What a release payload must show is measured afterwards by benchmarks/mps_release_evidence.py, sealed, and read by the gate.",
+    "measured_steps": 10,
+    "minimum_scaling_efficiency": 0.5,
+    "minimum_speedup": 1.05,
+    "name": "mps_matched_speed_v1",
+    "scaling_efficiency_definition": "measured_speedup_over_shardable_ceiling_speedup",
+    "scaling_efficiency_note": "This contract's scaling efficiency is measured against the speedup the timed workload's own arithmetic permits, not against the world size. The timed step is dominated by two environment scans that walk every site in a fixed global order, so a share of its per-site cost is a recurrence no partition divides; against such a workload speedup / world_size asks for a fraction of the shardable part that no number of devices can produce. The share was measured rather than assumed: the frozen ladder was timed at 1, 8 and 16 devices by benchmarks/internal/evidence/mps_matched_speed_sweep.sh, each world's per-site slope was fitted against the five rungs, and the two slopes were separated by least squares into a serial and a shardable term. The fit gives a serial fraction of 0.8146523972125517 with a largest per-world relative residual of 0.0016 and a two-point solve spread of 0.0028, so the reported fraction is the least-squares solution rather than one pair's exact solve. The records and the fit are committed beside each other under benchmarks/results/local/mps_matched_speed_shardability/, the fit as summary.json, which is an auxiliary report rather than a claim: it is the artifact this block is digest-bound to, and a payload cannot pass by reporting a fraction of its own. The denominator this replaces is still reported by every payload as linear_scaling_efficiency so the two remain comparable, and the threshold itself (minimum_scaling_efficiency 0.5) is unchanged. This is a deliberate change to the definition of one threshold, authorized as a contract revision rather than as a relaxation, and it lands with the measurement that justifies it rather than with a payload. Every other requirement in this contract is unchanged, including the 16-device capacity premise and minimum_speedup.",
+    "scaling_efficiency_replaced_definition": "measured_speedup_over_world_size",
+    "shardable_calibration_artifact": "benchmarks/results/local/mps_matched_speed_shardability/summary.json",
+    "shardable_calibration_artifact_sha256": "c8bef248ca41b95a9acf3df9fca6e6ba00f09d38c93c8be91410c300f177790f",
+    "timing_unit": "one full forward-and-reverse sharded MPS training step, measured end to end on the ranks it is sharded across",
+    "warmup_steps": 2,
+    "workload_sha256": "0ebbbdc7666bb4ea025fe92bd4d5c12b1db6ffa7c7828099400607569b847e69"
+  },
+  "standing_blockers": [
+    {
+      "name": "host_staging_in_measured_region",
+      "retractable_by_measurement": true,
+      "source": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",
+      "statement": "The two-node transport probe staged ranks through host memory inside the measured region, so its timing is not device-to-device transport. A later transfer measurement can retire this blocker. Such a measurement has now been taken, and it does not retire it: it replaces the claim with an inventory. Every explicit host transfer in the profiled region was attributed to the call site that issued it, by wrapping the host-read paths of torch.Tensor and recording the caller, and none of them stages a rank payload. The region carries thirty-six explicit transfers: twenty-eight device-to-host and eight host-to-device. Fourteen of the device-to-host reads are the load-balancing cost probe (global_mps_tensor_bytes, one all_reduce plus one readback per two-site gate), five are the point-to-point control descriptor that _recv_tensor_p2p reads to size its receive buffer, four are the truncation record exchange that all_gather_json performs and that the global error budget policy reads before it lets the run continue, and the remaining five are end-of-forward reporting: the canonicalization metric table, the canonicalization residual and centre norms, the global bond dimensions, and the per-rank tensor byte vector. The host-to-device copies are the receive buffers those descriptors size, the device scalars the counters are scaled onto, and the truncated metadatas the collective encodes. The blocker is not clearable on this pair by making the transfers smaller, because the profiler classifies an explicit transfer by its event name and count, and a one-scalar readback is one event exactly as a staged tensor is; it is clearable only by issuing fewer of them or none. Fewer is available and was measured: freezing ownership by running the forward with rebalance_threshold infinite removes all fourteen load-balancing reads and one host-to-device copy, and it is not a fix, because the same measurement shows the frozen run issuing four boundary gates and eight boundary messages where the dynamic run issues three and six. The cost probe pays for itself in inter-node traffic, so trading it away to reduce a host transfer count would report a better-looking profile while moving more bytes over the fabric. None is not available to a forward whose ownership plan is dynamic and whose control flow is host-driven, which is the construction this contract freezes. The blocker therefore stands, and it now stands for what was measured rather than for what was assumed: a control-plane readback profile, not rank staging, with the one rank-payload staging site this text used to describe -- the per-site host-to-device lift in _device_footprint -- already repaired before this measurement was taken."
+    },
+    {
+      "name": "two_node_pair_only_no_wider_topology",
+      "retractable_by_measurement": false,
+      "source": "artifacts/cuda_multinode_mps_a800_jp171_jp172_20260930.json",
+      "statement": "Only one pair of hosts exists here, so no measurement on this cluster can widen the topology. This is disclosed as a permanent boundary of the capability, not as a stage of its measurement, and it matches the frozen release topology of two nodes."
+    }
+  ],
+  "topologies": {
+    "devices_per_node": 8,
+    "local_world_size": 8,
+    "minimum_multi_node_count": 2,
+    "multi_node_required": true,
+    "note": "The measured cluster is one pair of hosts with eight A800 devices each, so the release topology is 16 ranks: eight per host, one rank per device, distributed across both hosts. Sixteen is not a preference but a floor for this contract: the frozen capacity workload holds 1,236,780,012,864 bytes of MPS state, which is 72.0 GiB on each of sixteen ranks against 79.25 GiB of usable device memory, and 144.0 GiB on each of eight, so eight ranks cannot hold the frozen shape at all. The frozen capacity workload fixes its 15 rank boundaries for that world size, so a different world size computes a different boundary set and a different topology fingerprint, and shrinking the world to fit a narrower evidence scope would mean shrinking the frozen workload, which would retire the capacity claim rather than certify it. No third host exists here, which is why the frozen topology is a pair of hosts rather than a ladder, and why the pair-only boundary is disclosed as a permanent limitation of the capability rather than as a stage of its measurement. The evidence envelope carries this world through EvidenceScope.MULTI_NODE_SCALE, added by API change proposal 065, so the topology is now sealable as well as frozen.",
+    "release_world_sizes": [
+      16
+    ]
+  }
+}

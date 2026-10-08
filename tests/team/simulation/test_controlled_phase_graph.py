@@ -60,6 +60,7 @@ def test_controlled_phase_graph_matches_rollback_and_input_gradient(
     monkeypatch: pytest.MonkeyPatch,
     dtype: torch.dtype,
 ) -> None:
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "0")
     generator = torch.Generator().manual_seed(215)
     inputs = torch.randn((2, 16), dtype=dtype, generator=generator, requires_grad=True)
     circuit = Circuit(4, dtype=dtype, inputs=inputs)
@@ -136,6 +137,7 @@ def test_qft_graphs_only_update_executor_owned_states_in_place(
 ) -> None:
     import flagquantum.simulation.statevector.local as local_statevector
 
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "0")
     circuit = Circuit(5, bsz=2, dtype=torch.complex128)
     circuit.h(0)
     _append_portable_controlled_phase(circuit, 1, 0, math.pi / 4)
@@ -156,7 +158,7 @@ def test_qft_graphs_only_update_executor_owned_states_in_place(
         local_statevector, "_apply_controlled_phase_graph_cpu", record_inplace
     )
     selected = circuit.state(refresh=True)
-    assert calls == [False, True]
+    assert calls == [True, True]
 
     calls.clear()
     monkeypatch.setenv("FQ_CPU_INPLACE_DIAGONAL_GRAPHS", "0")
@@ -169,17 +171,15 @@ def test_qft_graphs_only_update_executor_owned_states_in_place(
 def test_product_state_graph_cache_isolated_by_dtype(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    circuit = build_workload("truncated_qft_statevector", n_qubits=16)
     monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", "1")
-
-    circuit.dtype = torch.complex64
-    circuit.state(refresh=True)
-    circuit.dtype = torch.complex128
-    circuit.state(refresh=True)
-
-    cached_dtypes = {
-        value.dtype for value in circuit._statevector_fused_matrices.values()
-    }
+    cached_dtypes = set()
+    for dtype in (torch.complex64, torch.complex128):
+        circuit = build_workload("truncated_qft_statevector", n_qubits=16)
+        circuit.dtype = dtype
+        circuit.state(refresh=True)
+        cached_dtypes.update(
+            value.dtype for value in circuit._statevector_fused_matrices.values()
+        )
     assert cached_dtypes == {torch.complex64, torch.complex128}
 
 
@@ -188,6 +188,8 @@ def test_truncated_qft_graph_uses_product_state_and_matches_rollback(
     monkeypatch: pytest.MonkeyPatch,
     dtype: torch.dtype,
 ) -> None:
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "0")
+    monkeypatch.setenv("FQ_CPU_SWAP_SEQUENCE_FUSION", "0")
     graph_circuit = build_workload("truncated_qft_statevector", n_qubits=18)
     graph_circuit.dtype = dtype
     rollback_circuit = build_workload("truncated_qft_statevector", n_qubits=18)
@@ -207,3 +209,45 @@ def test_truncated_qft_graph_uses_product_state_and_matches_rollback(
     assert graph_circuit._initial_state_workspace is None
     assert rollback_applies == 75
     assert graph_applies == 44
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "0")
+    circuit = build_workload("truncated_qft_statevector", n_qubits=18)
+    circuit.dtype = dtype
+    monkeypatch.setenv("FQ_CPU_SWAP_SEQUENCE_FUSION", "0")
+
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    rollback_applies = circuit._last_statevector_runtime["statevector_apply_count"]
+
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    fused_applies = circuit._last_statevector_runtime["statevector_apply_count"]
+
+    torch.testing.assert_close(actual, expected)
+    assert rollback_applies == 44
+    assert fused_applies == 28
+
+
+def test_product_state_qft_uses_hadamard_phase_fusion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FQ_CPU_SWAP_SEQUENCE_FUSION", "0")
+    circuit = build_workload("truncated_qft_statevector", n_qubits=18)
+
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "0")
+    expected = circuit.state(refresh=True)
+    rollback_applies = circuit._last_statevector_runtime["statevector_apply_count"]
+
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "1")
+    actual = circuit.state(refresh=True)
+    fused_applies = circuit._last_statevector_runtime["statevector_apply_count"]
+
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+    assert rollback_applies == 44
+    assert fused_applies == 28

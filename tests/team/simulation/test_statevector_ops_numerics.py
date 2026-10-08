@@ -12,6 +12,7 @@ import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
 from flagquantum import Circuit
 from flagquantum.core import Instruction
 from flagquantum.simulation.native_cpu import native_cpu_one_qubit_layer_available
+from flagquantum.simulation.statevector.batching import _rotation_region_angles
 from flagquantum.simulation.statevector.cz_graph import (
     _apply_cz_graph_cpu,
     _cz_graph_signs_cpu,
@@ -27,7 +28,6 @@ from flagquantum.simulation.statevector.index_basis import (
 from flagquantum.simulation.statevector.local import (
     _batched_kronecker_product,
     _cpu_disjoint_dense_max_wires,
-    _rotation_region_angles,
 )
 from flagquantum.simulation.statevector.operations import (
     _apply_cross_wire_diagonal_cpu,
@@ -2430,7 +2430,7 @@ def test_cpu_product_state_execution_matches_dense_statevector(
     dense_circuit = _product_state_qft_circuit(18, dtype=dtype)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "0")
     expected = dense_circuit.state(refresh=True)
-    assert dense_circuit._initial_state_workspace is not None
+    assert dense_circuit._initial_state_workspace is None
 
     product_circuit = _product_state_qft_circuit(18, dtype=dtype)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1")
@@ -2472,7 +2472,7 @@ def test_cpu_product_state_swap_remapping_preserves_independent_components(
     rollback_circuit = _product_state_swap_routing_circuit(18)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", "0")
     expected = rollback_circuit.state(refresh=True)
-    assert rollback_circuit._initial_state_workspace is not None
+    assert rollback_circuit._initial_state_workspace is None
 
     remapped_circuit = _product_state_swap_routing_circuit(18)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", "1")
@@ -2505,6 +2505,31 @@ def test_cpu_product_state_execution_declines_entanglement_dense_plan(
             circuit.cx(control, target)
 
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1")
+    circuit.state(refresh=True)
+
+    assert circuit._initial_state_workspace is None
+
+
+def test_owned_zero_state_preserves_an_exposed_initial_state() -> None:
+    circuit = Circuit(6, dtype=torch.complex128)
+    initial = circuit.initial_state()
+    expected_initial = initial.clone()
+    for wire in range(circuit.n_qubits):
+        circuit.ry(wire, theta=0.03 * (wire + 1))
+    circuit.cx(0, 1).cx(2, 3)
+
+    result = circuit.state(refresh=True)
+
+    assert result.data_ptr() != initial.data_ptr()
+    assert circuit.initial_state().data_ptr() == initial.data_ptr()
+    torch.testing.assert_close(initial, expected_initial, rtol=0, atol=0)
+
+
+def test_owned_zero_state_has_an_environment_rollback(monkeypatch) -> None:
+    circuit = Circuit(6, dtype=torch.complex128)
+    circuit.h(0).cx(0, 1)
+    monkeypatch.setenv("FQ_CPU_STATEVECTOR_OWNED_ZERO_STATE", "0")
+
     circuit.state(refresh=True)
 
     assert circuit._initial_state_workspace is not None

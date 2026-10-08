@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from itertools import product
 from math import prod
 from typing import Any, TypeAlias
 
@@ -14,9 +15,11 @@ _FUSED_LAYOUT_BMM_SHAPES = frozenset({(16, 64, 1024, 64)})
 _FUSED_LAYOUT_BMM_SIGNATURES = frozenset(
     {("azcb,czdb->zad", (64, 16, 64, 16), (64, 16, 64, 16))}
 )
-_FUSED_LAYOUT_BMM_EQUATIONS = frozenset(
-    signature[0] for signature in _FUSED_LAYOUT_BMM_SIGNATURES
-)
+_FUSED_LAYOUT_BMM_SHAPES_BY_EQUATION = {
+    equation: (left_shape, right_shape)
+    for equation, left_shape, right_shape in _FUSED_LAYOUT_BMM_SIGNATURES
+}
+_NATIVE_EINSUM_RANK_CEILING = 25
 _CanonicalBMMLayout: TypeAlias = tuple[
     tuple[int, ...],
     tuple[int, ...],
@@ -28,6 +31,7 @@ _CanonicalBMMLayout: TypeAlias = tuple[
 _CANONICAL_LAYOUT_CACHE: dict[
     tuple[str, tuple[int, ...], tuple[int, ...]], _CanonicalBMMLayout | None
 ] = {}
+_LAYOUT_MATERIALIZATION_CACHE: dict[tuple[Any, ...], bool] = {}
 
 
 def _bmm_real_imag_eager(
@@ -113,6 +117,37 @@ def _canonical_bmm_layout(
     return layout
 
 
+def _group_axes(
+    tensor: torch.Tensor, permutation: tuple[int, ...], shape: tuple[int, ...]
+) -> torch.Tensor:
+    """Reorder ``tensor``'s axes and group them, whatever rank it carries.
+
+    Grouping an operand that is already in the target order is a view. Grouping
+    one that must first be transposed materializes a copy, and PyTorch performs
+    that copy through ``TensorIterator``, which refuses more than twenty-five
+    dimensions. A sliced wide network reaches that rank in both operands: an
+    unsliced twenty-four-qubit grid contracts a twenty-nine dimensional tensor
+    against a thirty dimensional one, and the second of the two is not in the
+    canonical order.
+
+    Above the ceiling the same copy is taken one slab at a time, with the
+    leading target axes fixed, which keeps every individual copy inside the
+    bound. The slabs are concatenated in row-major order over those axes, so the
+    result is the flat order the single copy would have produced.
+    """
+
+    reordered = tensor.permute(permutation)
+    if reordered.is_contiguous():
+        return reordered.reshape(shape)
+    head = reordered.ndim - _NATIVE_EINSUM_RANK_CEILING
+    if head <= 0:
+        return reordered.reshape(shape)
+    leading = [range(extent) for extent in reordered.shape[:head]]
+    return torch.cat(
+        [reordered[index].reshape(-1) for index in product(*leading)]
+    ).reshape(shape)
+
+
 def _canonical_bmm_inputs(
     equation: str, left: torch.Tensor, right: torch.Tensor
 ) -> tuple[tuple[torch.Tensor, ...], tuple[int, ...], tuple[int, ...]] | None:
@@ -128,8 +163,8 @@ def _canonical_bmm_inputs(
         _,
     ) = layout
     k = left.numel() // (b * m)
-    left_matrix = left.permute(left_permutation).reshape(b, m, k)
-    right_matrix = right.permute(right_permutation).reshape(b, k, n)
+    left_matrix = _group_axes(left, left_permutation, (b, m, k))
+    right_matrix = _group_axes(right, right_permutation, (b, k, n))
     return (left_matrix, right_matrix), canonical_shape, output_permutation
 
 
@@ -140,12 +175,97 @@ def _canonical_layout_requires_materialization(
 ) -> bool:
     left_permutation, right_permutation, (b, m, n), _, _, _ = layout
     k = left.numel() // (b * m)
+    cache_key = (
+        tuple(left.shape),
+        tuple(left.stride()),
+        tuple(right.shape),
+        tuple(right.stride()),
+        left_permutation,
+        right_permutation,
+        b,
+        m,
+        k,
+        n,
+    )
+    cached = _LAYOUT_MATERIALIZATION_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     try:
         left.permute(left_permutation).view(b, m, k)
         right.permute(right_permutation).view(b, k, n)
     except RuntimeError:
-        return True
-    return False
+        requires_materialization = True
+    else:
+        requires_materialization = False
+    _LAYOUT_MATERIALIZATION_CACHE[cache_key] = requires_materialization
+    return requires_materialization
+
+
+def _canonical_layout_pair(
+    left: torch.Tensor, right: torch.Tensor, layout: _CanonicalBMMLayout
+) -> torch.Tensor:
+    """Contract a pair through its grouped axes, at any rank.
+
+    ``torch.einsum`` refuses an operand with more than twenty-five dimensions,
+    and a wide tensor network reaches that rank long before its final
+    contraction: an unsliced twenty-four-qubit grid contracts a twenty-nine
+    dimensional tensor against a thirty dimensional one. The canonical layout
+    already separates the batch, free and contracted axes, so the same
+    arithmetic is available as a batched matmul on rank-three operands without
+    ever writing an equation over the network's full rank.
+
+    Grouping is a view when an operand is already in the canonical order and a
+    transposed copy otherwise; ``_group_axes`` reaches past the copy's own rank
+    bound, so both operands are grouped at any rank.
+    """
+
+    (
+        left_permutation,
+        right_permutation,
+        (b, m, n),
+        output_shape,
+        output_permutation,
+        _,
+    ) = layout
+    k = left.numel() // (b * m)
+    left_matrix = _group_axes(left, left_permutation, (b, m, k))
+    right_matrix = _group_axes(right, right_permutation, (b, k, n))
+    left_parts = torch.view_as_real(left_matrix.resolve_conj().resolve_neg())
+    right_parts = torch.view_as_real(right_matrix.resolve_conj().resolve_neg())
+    pair = _bmm_real_imag_eager(
+        left_parts[..., 0],
+        left_parts[..., 1],
+        right_parts[..., 0],
+        right_parts[..., 1],
+    )
+    result = torch.view_as_complex(pair.contiguous()).reshape(output_shape)
+    if output_permutation != tuple(range(len(output_permutation))):
+        result = result.permute(output_permutation)
+    return result
+
+
+def _pair_contraction(
+    equation: str, left: torch.Tensor, right: torch.Tensor
+) -> torch.Tensor:
+    """Contract complex operands, falling back to the canonical layout.
+
+    Native einsum is the cheapest route whenever it can express the contraction,
+    so it stays first and every measured fast path is unchanged. Native einsum
+    refuses an operand above twenty-five dimensions, which a wide sliced network
+    reaches on its interior tensors; only that failure is re-expressed as grouped
+    axes. Any other failure, or a failure the canonical layout cannot describe,
+    is re-raised rather than retried.
+    """
+
+    try:
+        return torch.einsum(equation, left, right)
+    except RuntimeError:
+        if max(left.ndim, right.ndim) <= _NATIVE_EINSUM_RANK_CEILING:
+            raise
+        layout = _canonical_bmm_layout(equation, left, right)
+        if layout is None:
+            raise
+        return _canonical_layout_pair(left, right, layout)
 
 
 def _layout_bmm_signature_supported(
@@ -153,10 +273,12 @@ def _layout_bmm_signature_supported(
     left: torch.Tensor,
     right: torch.Tensor,
 ) -> bool:
-    return (
-        not (left.requires_grad or right.requires_grad)
-        and (equation, tuple(left.shape), tuple(right.shape))
-        in _FUSED_LAYOUT_BMM_SIGNATURES
+    supported_shapes = _FUSED_LAYOUT_BMM_SHAPES_BY_EQUATION.get(equation)
+    return bool(
+        supported_shapes is not None
+        and not (left.requires_grad or right.requires_grad)
+        and left.shape == supported_shapes[0]
+        and right.shape == supported_shapes[1]
     )
 
 
@@ -199,7 +321,6 @@ def _real_imag_eager(
 
 
 def _fused_layout_bmm(
-    equation: str,
     left: torch.Tensor,
     right: torch.Tensor,
     layout: _CanonicalBMMLayout,
@@ -217,11 +338,12 @@ def _fused_layout_bmm(
     try:
         result = _apply_cataloged_layout_complex_bmm(
             left, right, left_permutation, right_permutation, shapes
-        ).reshape(output_shape)
+        )
     except ValueError as error:
         if "supports at most 8 axes per group" not in str(error):
             raise
-        return torch.einsum(equation, left, right)
+        return _canonical_layout_pair(left, right, layout)
+    result = result.reshape(output_shape)
     if output_permutation != tuple(range(len(output_permutation))):
         result = result.permute(output_permutation)
     return result
@@ -295,37 +417,41 @@ def complex_einsum_pair(
 ) -> torch.Tensor:
     """Contract two tensors without placing complex operators in the compiled graph."""
 
-    if equation in _FUSED_LAYOUT_BMM_EQUATIONS and not (
-        _layout_bmm_signature_supported(equation, left, right)
+    supported_shapes = _FUSED_LAYOUT_BMM_SHAPES_BY_EQUATION.get(equation)
+    if supported_shapes is not None and (
+        left.requires_grad
+        or right.requires_grad
+        or left.shape != supported_shapes[0]
+        or right.shape != supported_shapes[1]
     ):
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     if not (left.is_complex() and right.is_complex()):
         return torch.einsum(equation, left, right)
     if not left.is_cuda:
         # Native CPU complex einsum is faster than four real contractions.
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     if left.is_conj() or right.is_conj():
         # Preserve lazy conjugation for reverse-mode capacity: resolving a
         # multi-GiB operand would create a full-size temporary before the
         # contraction output is allocated.
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     if left.dtype != torch.complex64 or right.dtype != torch.complex64:
         # The layout BMM kernel is fused only for complex64. Its generic
         # complex128 fallback reshapes permuted high-rank operands and may
         # materialize multi-GiB contiguous copies. Native einsum avoids that
         # hidden workspace and is the production high-precision path.
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     if not _layout_bmm_signature_supported(equation, left, right):
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     layout = _canonical_bmm_layout(equation, left, right)
     if layout is not None:
         if _layout_bmm_dispatch_supported(equation, left, right, layout):
-            return _fused_layout_bmm(equation, left, right, layout)
-        return torch.einsum(equation, left, right)
+            return _fused_layout_bmm(left, right, layout)
+        return _pair_contraction(equation, left, right)
     if not compile_cuda:
         # Callers can suppress shape-specialized torch.compile kernels without
         # disabling the bounded-specialization fused canonical BMM path above.
-        return torch.einsum(equation, left, right)
+        return _pair_contraction(equation, left, right)
     return _compiled_real_imag_einsum(equation, left, right)
 
 
@@ -345,6 +471,7 @@ def kernel_cache_summary() -> dict[str, int]:
         "noncanonical_layouts": sum(
             layout is None for layout in _CANONICAL_LAYOUT_CACHE.values()
         ),
+        "materialization_decisions": len(_LAYOUT_MATERIALIZATION_CACHE),
     }
 
 
@@ -354,6 +481,7 @@ def clear_kernel_caches() -> None:
     _COMPILED_PAIR_CACHE.clear()
     _COMPILE_FAILURES.clear()
     _CANONICAL_LAYOUT_CACHE.clear()
+    _LAYOUT_MATERIALIZATION_CACHE.clear()
 
 
 __all__ = ["clear_kernel_caches", "complex_einsum_pair", "kernel_cache_summary"]

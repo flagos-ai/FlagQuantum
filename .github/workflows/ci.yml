@@ -14,10 +14,17 @@ on:
 # jobs, and this workflow fans out beyond the share one repository should hold.
 # Two constraints bound this repository's share of it.
 #
-# The block below cancels a superseded run of the same branch, so a push that
-# lands while an earlier one is still running does not queue a second full
-# matrix behind it. `github.ref` is the pull request's merge ref for a pull
-# request and the branch for a push, which is the granularity wanted here.
+# The block below cancels a superseded run of the same pull request, so a push to
+# a branch under review does not queue a second full matrix behind it, and it
+# deliberately does not cancel a superseded run of `main`. A pull request's older
+# tree is a tree nobody will merge, so its reading is replaceable. A revision of
+# `main` has already been merged, so cancelling its run leaves a merge commit that
+# no gate ever read, and nothing here reports the difference between that and a
+# passing revision: on 2026-10-08 the merges of #590 and #591 landed 17 seconds
+# apart and all 23 check runs attached to the first of them were `cancelled`,
+# `quality` among them (issue #579). A push run is therefore keyed to its own
+# commit and allowed to finish. The cost is a queued matrix per push to `main`
+# rather than a dropped one, and that is the trade this file makes knowingly.
 #
 # Every job below then joins one of eight named buckets scoped to this pull
 # request or pushed branch -- `cpucore-3.1x`, `coverage`, `distributed`, and
@@ -32,8 +39,8 @@ on:
 # keeps only the newest waiting job and cancels the ones behind it, which would
 # report nothing at all for the job that was dropped.
 concurrency:
-  group: flagquantum-ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: flagquantum-ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
@@ -113,6 +120,14 @@ jobs:
         run: python tools/check_pennylane_interop_contract.py
       - name: Verify construction-time composition contract
         run: python tools/check_circuit_composition_contract.py
+      - name: Verify the density-matrix output contract
+        run: python tools/check_density_matrix_output_contract.py
+      - name: Verify the von Neumann entropy output contract
+        run: python tools/check_vn_entropy_output_contract.py
+      - name: Verify primitives admission contract
+        run: python tools/check_primitives_admission_contract.py
+      - name: Verify construction-layer acceptance contract
+        run: python tools/check_construction_acceptance_contract.py
       - name: Verify interoperability capability-gap matrix
         run: python tools/check_interop_capability_gap_matrix.py
       - name: Verify OpenQASM import contract
@@ -151,6 +166,18 @@ jobs:
         run: python tools/check_domestic_single_card_contract.py
       - name: Verify operator capability manifest
         run: python tools/operator_manifest.py --check
+      - name: Verify batch parameter-shift coverage against the opcode declaration
+        run: python tools/check_parameter_shift_coverage_contract.py
+      - name: Verify parameter-shift Hessian against central differences
+        run: python tools/check_parameter_shift_hessian_contract.py
+      - name: Verify every differentiable opcode against an independent difference scheme
+        run: python tools/check_opcode_gradient_exactness.py
+      - name: Verify the gradient method and execution mode matrix by re-measuring it
+        run: python tools/check_gradient_methods_contract.py
+      - name: Verify the native gradient capability registration
+        run: python tools/check_native_gradients_contract.py
+      - name: Verify the metric tensor against its independent routes
+        run: python tools/check_metric_tensor_contract.py
       - name: Verify runtime contract schema
         run: python tools/runtime_contract_schema.py --check
       - name: Verify documentation sources of truth
@@ -185,6 +212,21 @@ jobs:
           tests/unit/test_capability_maturity.py
           tests/unit/test_docs_source_of_truth.py
           tests/unit/test_evidence_revisions.py
+          -q
+      # Three two-node probe contract tests recompute the digest of the contract
+      # each checked-in artifact recorded, from the revision the artifact names.
+      # That needs the commit, so those three assertions skip in a depth-1 lane
+      # rather than read a clone that never fetched the revision as a mismatch.
+      # They ran in the unit tier and errored there for exactly that reason,
+      # which is why the skip has to be paired with somewhere it reaches a
+      # verdict: this job, the only one that fetches full history. The rest of
+      # each module is about the artifact's own content and runs everywhere.
+      - name: Verify checked-in probe artifacts against their recorded contracts
+        run: >-
+          python -m pytest
+          tests/team/runtime/test_cuda_multinode_tn_probe.py
+          tests/team/runtime/test_cuda_multinode_mps_probe.py
+          tests/team/runtime/test_cuda_multinode_statevector_probe.py
           -q
       # The six artifact validators in this job resolve the revision of the one
       # artifact each of them names, so an artifact no validator names was never
@@ -247,6 +289,32 @@ jobs:
         run: python tools/ci_tier.py pr-runtime
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
+      - name: Prove NumPy and the 3.11 standard library are absent
+        # NumPy is not an external quantum framework, so it does not belong in
+        # the list below; it gets its own assertion because its absence is what
+        # makes a collected module that says `import numpy` fail on this lane
+        # and nowhere else. torch declares no NumPy requirement, so the absence
+        # is real -- every leg reports `Failed to initialize NumPy` and the
+        # suite still passes -- and asserting it turns that coincidence into a
+        # checked property.
+        #
+        # `tomllib` is the 3.11 standard library, so the oldest supported
+        # interpreter does not have it at all. A module that imports it behind
+        # `sys.version_info` passes on 3.11 and 3.12 and fails to collect on
+        # 3.10; the `try`/`except ModuleNotFoundError` form is the one that
+        # survives both this lane and a stripped standard library, and
+        # `tools/check_dependency_policy.py` holds every site to it. This step
+        # proves the lane is what that fallback assumes: the standard library
+        # module is there exactly where the version says, and where it is not,
+        # the substitute the fallback imports is installed.
+        run: >-
+          python -c "import importlib.util as u, sys;
+          has_stdlib = u.find_spec('tomllib') is not None;
+          assert u.find_spec('numpy') is None, 'NumPy must be absent from this lane';
+          assert has_stdlib == (sys.version_info >= (3, 11)),
+          'tomllib must be present exactly where the interpreter provides it';
+          assert has_stdlib or u.find_spec('tomli') is not None,
+          'the tomllib fallback must be installed where the standard library lacks it'"
       - name: Prove external quantum frameworks are absent from core
         run: >-
           python -c "import importlib.util;
@@ -350,6 +418,19 @@ jobs:
               'sympy>=1.13,<2'
             python tools/check_qiskit_interop_contract.py
             python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py tests/optional/test_qiskit_aer_backend.py -m qiskit -q
+            # Ten of the fifteen compiler benchmark contracts do not check this
+            # repository against itself. Each builds its payload in-process, reads
+            # a Qiskit anchor out of it, and compares the two, so the comparison
+            # exists only where Qiskit is importable and the file skips when it is
+            # not. The only lane that collected these files is `distributed-cpu`,
+            # which installs no Qiskit, so all ten comparisons skipped on every
+            # pull request and were reported as passes by the tier that owns their
+            # marker; a skipped agreement check reads exactly like an agreement.
+            # They are read here instead, on both certified lanes, because an
+            # anchor is only comparable with a release this repository certifies.
+            # `tests/benchmark_contract/qiskit_lane.py` holds that rule and fails
+            # rather than skips when a host is outside it.
+            python -m pytest tests/benchmark_contract/test_compiler_*.py -m benchmark_contract -q
             python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
           done
 

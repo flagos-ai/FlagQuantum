@@ -24,7 +24,7 @@ classification mechanism: `tools/check_team_scope.py` resolves *which domain own
 path*, which is what makes a boundary checkable. They are **not** eleven working groups.
 
 Read the roster honestly: there is one maintainer. No branch named in that file has ever
-existed, the work of the last 271 pull requests was done by one person plus two one-off
+existed, the work of the 560 merged pull requests was done by one person plus two one-off
 contributions, and a team whose `owns` list matched nothing was removed rather than kept
 as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 
@@ -32,7 +32,7 @@ as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 
 | Class | Examples | Who decides |
 | --- | --- | --- |
-| Ordinary change | A domain's internal implementation, its tests, and its documentation. | One reviewer; currently the maintainer |
+| Ordinary change | A domain's internal implementation, its tests, and its documentation. | The required checks on the pull request, merged by the maintainer |
 | Protected surface | `AGENTS.md`, `architecture.toml`, `team-ownership.toml`, `contracts/**`, `.github/**`, `tools/**`, `pyproject.toml`, `flagquantum/core/ir.py` | Integration owner. A separate integration change, before the team implementation proceeds |
 | Stable Core API | The 34 exports in `docs/public_api_v1.json` | An API change proposal plus recorded authorization, per `AGENTS.md` |
 | Capability level | A level in `capability-maturity.toml` | Evidence that satisfies `tools/check_capability_maturity.py`, approved by Integration |
@@ -45,29 +45,82 @@ matter of judgment.
 
 ## The current maintainer
 
-| Measurement | Value |
-| --- | --- |
-| Commits on `main` | 214 |
-| Authored by `Wei LIU <liuwei.chem.phys@gmail.com>` | 213 |
-| Authored by anyone else | 1 (`Qiming Teng <tengqm@outlook.com>`, 2026-09-18) |
-| Repository collaborators | 1 (`FlagQuantum`, `admin`) |
-| GitHub API contributors | 3 (`FlagQuantum` 1543 commits, `tengqm` 2, `aoyulong` 1) |
+Re-measured 2026-10-08 on a full clone (`git fetch --unshallow`); the 2026-10-01 figures
+are kept beside them because the earlier numbers are the baseline this document is
+compared against.
+
+| Measurement | 2026-10-01 | 2026-10-08 |
+| --- | --- | --- |
+| First-parent commits on `main` | 214 | 539 |
+| Authored by `Wei LIU <liuwei.chem.phys@gmail.com>` | 213 | 536 |
+| Authored by anyone else | 1 (`Qiming Teng <tengqm@outlook.com>`, 2026-09-18) | 3 (`Qiming Teng <tengqm@outlook.com>` 2, `Yulong Ao <aoyulong@outlook.com>` 1) |
+| Repository collaborators | 1 (`FlagQuantum`, `admin`) | 1 (`FlagQuantum`, `admin`) |
+| GitHub API contributors | 3 (`FlagQuantum` 1543 commits, `tengqm` 2, `aoyulong` 1) | 3 (`FlagQuantum` 2069 commits, `tengqm` 2, `aoyulong` 1) |
+| Merged pull requests | 271 | 560 |
+| Closed without merging | 2 | 22 |
+| Open pull requests | 7 | **0** |
 
 The API's contributor counts and the commit authors on `main` do not agree, because a
 squash merge attributes a whole pull request to its merger and history has been rewritten
-at least once. The git-side figures are the ones that describe `main`.
+at least once. The git-side figures are the ones that describe `main`, and since October
+2026 they include the merge commits themselves, which are attributed to the account that
+pressed merge: 73 of the 274 first-parent commits since 2026-10-01 are merges, so the
+maintainer's own share now counts merges as well as authored work.
 
-## Review requirements are nominal
+The open-pull-request count of zero is a measurement of that moment rather than a standing
+property: the review queue was empty and the only open item was
+[issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579). The pull request that
+closes it is the first entry the queue has held since, so the number is quoted with the
+date it was read rather than as a current count.
 
-Branch protection on `main` sets `required_approving_review_count: 2`, but
-`enforce_admins` is `false` and `require_code_owner_reviews` is `false`, and the
-authoring account holds `admin: true`. The measured consequence is that the last 14
-merges were authored and merged by the same account with zero reviews.
+## What protects `main`
 
-This is recorded rather than resolved. The two coherent options are to enforce the
-requirement — which needs a second reviewer who does not exist yet — or to remove it and
-state the actual rule. The current combination, a requirement that is neither met nor
-removed, is the option that cannot be audited. It is an open question below.
+Measured with `gh api repos/flagos-ai/FlagQuantum/branches/main/protection` on
+2026-10-08, after the change recorded in [issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579):
+
+| Setting | Value |
+| --- | --- |
+| `required_status_checks` | the eight names in `.github/required-checks.json` |
+| `required_status_checks.strict` | `true`: the head branch must be up to date with `main` |
+| `enforce_admins.enabled` | **`true`** |
+| `required_approving_review_count` | **`0`** |
+| `required_linear_history.enabled` | `false`, because `main` carries merge commits |
+| `allow_force_pushes.enabled` / `allow_deletions.enabled` | `false` |
+| `required_conversation_resolution.enabled` | `false` |
+
+Until that date the same endpoint returned `required_approving_review_count: 2` with
+`enforce_admins` `false` and **no required status checks at all**. Two required approvals
+were nominal in two ways at once: `enforce_admins` was off while the authoring account
+holds `admin: true`, so the requirement could be bypassed, and there was no second
+reviewer to meet it. The measured consequence was that the fourteen pull requests merged
+immediately before the 2026-10-01 measurement, #271 through #284, were each authored and
+merged by `FlagQuantum` with zero reviews, and that reading a merged tree was optional:
+two merges to `main` 17 seconds apart on 2026-10-08 cancelled all 23 check runs attached to
+the first of them.
+
+Both halves are now stated rather than left nominal:
+
+- **Zero required approvals.** A requirement nobody can meet is not a rule. The count now
+  says what this repository does, and the control that replaces it is the next bullet.
+- **The required checks are the review of record for `main`.** Each of the eight must
+  complete successfully, on a head branch up to date with `main`, before a merge is
+  accepted — including a merge by the maintainer, because `enforce_admins` is on.
+  `.github/required-checks.json` records the names and `tools/validate_required_checks.py`
+  proves each name is one a workflow job produces, so a required check cannot be a name
+  that reports nothing. The name is the check run's own name — the job key, or the job's
+  `name:` where it declares one, with GitHub's matrix suffix — and not a
+  `"<workflow> / <job>"` path to it. That distinction is not a preference: branch
+  protection was first given the `"<workflow> / <job>"` spelling of these eight names and
+  pull request #597 stayed `blocked` with all nineteen of its check runs `success`,
+  because no check run is reported under that spelling. Written as the job names alone,
+  the same contexts reported as required and the pull request went `clean`.
+- **A red `main` blocks release.** The answer to the third question in issue #579 is that
+  a revision of `main` whose required checks did not all complete successfully is not a
+  release candidate; [Version and release policy](docs/development/RELEASE_POLICY.md)
+  carries the operative sentence.
+
+What this does not do: it does not make a red `main` impossible, and it does not require a
+human to read a pull request. Both are stated consequences rather than unreported ones.
 
 ## Becoming a maintainer
 
@@ -122,15 +175,19 @@ above do.
    would place a differently licensed document in an Apache-2.0 repository. The current
    [code of conduct](CODE_OF_CONDUCT.md) states the standard this project already had
    and says plainly that it is not the Covenant.
-2. **Enforce the two-approval rule, or remove it?** Either answer is defensible; see
-   above. Enforcing it requires a second reviewer.
-3. **Generate `.github/CODEOWNERS` from `team-ownership.toml`?** There is one obvious
+2. **Generate `.github/CODEOWNERS` from `team-ownership.toml`?** There is one obvious
    benefit — GitHub would surface the owning domain in the review UI without any rule
    change — and one obvious cost: a generated file needs a check that it is current, which
    is a new protected tool.
-4. **Should the 11 teams be staffed, or renamed?** A team name that maps to no person is
+3. **Should the 11 teams be staffed, or renamed?** A team name that maps to no person is
    a truthful description of a path-ownership domain. It is a misleading description of an
    organization, and today the file can be read either way.
-5. **What replaces the "one maintainer" state?** The honest answer is more contributors.
+4. **What replaces the "one maintainer" state?** The honest answer is more contributors.
    The measurement above is the baseline to improve on, and it is recorded so progress is
    visible rather than asserted.
+
+## Resolved questions
+
+- **Should the two-approval requirement be enforced or removed?** *(closed 2026-10-08)*
+  Removed. The eight required checks, enforced against the maintainer as well, are the
+  control that replaces it; see [What protects `main`](#what-protects-main).

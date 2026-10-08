@@ -1,6 +1,26 @@
 """Experimental quantum-error-correction domain."""
 
 from .adapters import MatchingDependencyError, PyMatchingDecoder
+from .belief_propagation import (
+    BeliefPropagationDecoder,
+    BeliefPropagationDecodeResult,
+)
+from .chunks import (
+    ChunkLayout,
+    DemChunk,
+    DemChunkSpec,
+    DemChunksSpec,
+    DemSeam,
+    PhaseId,
+    SeamId,
+    dem_chunk_from_spec,
+    dem_chunks_from_spec,
+    dem_close,
+    dem_close_all,
+    dem_stitch,
+    dem_stitch_all,
+    dem_stitch_merged,
+)
 from .circuit import (
     Detector,
     DetectorLayout,
@@ -27,6 +47,7 @@ from .context import (
     MeasurementMap,
     decoder_context_from_memory_circuit,
 )
+from .css_code import CssCode
 from .decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -46,6 +67,7 @@ from .noise import (
 from .pauli import Pauli
 from .registry import (
     AUTHORITY_NAME,
+    BELIEF_PROPAGATION_NAME,
     CROSS_CHECK_NAME,
     DetectorErrorModelDecoder,
     decoder_names,
@@ -57,6 +79,13 @@ from .sampling import (
     MeasurementSamples,
     sample_memory_circuit,
     sample_memory_measurements,
+)
+from .sliding_window import (
+    SlidingWindowDecoder,
+    SlidingWindowDecodeResult,
+    dem_chunks_to_d_sparse,
+    dem_chunks_to_o_sparse,
+    dem_chunks_to_pcm,
 )
 from .types import (
     Correction,
@@ -73,8 +102,13 @@ from .types import (
 
 __all__ = (
     "AUTHORITY_NAME",
+    "BELIEF_PROPAGATION_NAME",
+    "BeliefPropagationDecodeResult",
+    "BeliefPropagationDecoder",
     "CROSS_CHECK_NAME",
+    "ChunkLayout",
     "CodeCheck",
+    "CssCode",
     "CssCodeMatrices",
     "Correction",
     "DecodeResult",
@@ -83,9 +117,13 @@ __all__ = (
     "DecoderInputs",
     "DecodingGraph",
     "DecodingGraphEdge",
+    "DemChunk",
+    "DemChunkSpec",
+    "DemChunksSpec",
     "DemError",
     "DemMergeRule",
     "DemSample",
+    "DemSeam",
     "DetectionEvent",
     "Detector",
     "DetectorErrorModel",
@@ -105,6 +143,7 @@ __all__ = (
     "ObservableLayout",
     "Pauli",
     "PauliFrame",
+    "PhaseId",
     "PhenomenologicalNoise",
     "PyMatchingDecoder",
     "RepetitionCode",
@@ -115,6 +154,9 @@ __all__ = (
     "RepetitionMemoryResult",
     "RepetitionMemoryShot",
     "RotatedSurfaceCode",
+    "SeamId",
+    "SlidingWindowDecodeResult",
+    "SlidingWindowDecoder",
     "StabilizerCode",
     "SteaneCode",
     "SyndromeRound",
@@ -125,6 +167,16 @@ __all__ = (
     "css_code_matrices",
     "decoder_context_from_memory_circuit",
     "decoder_names",
+    "dem_chunk_from_spec",
+    "dem_chunks_from_spec",
+    "dem_chunks_to_d_sparse",
+    "dem_chunks_to_o_sparse",
+    "dem_chunks_to_pcm",
+    "dem_close",
+    "dem_close_all",
+    "dem_stitch",
+    "dem_stitch_all",
+    "dem_stitch_merged",
     "get_code",
     "get_decoder",
     "register_code",

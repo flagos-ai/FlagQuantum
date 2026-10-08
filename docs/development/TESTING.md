@@ -362,9 +362,10 @@ second node:
   tensor-native gather to reach for.
 - **Real two-node transport.** One rank per node, the same rendezvous address,
   and `tools/probe_cuda_multinode_statevector.py` on both.
-  The probe retains one statevector shard per rank during execution, materializes
-  the tiny five-wire state only for validation, and records the selected NCCL
-  route from a rank-zero debug log. It covers the whole training path on that
+  The probe retains one statevector shard per rank during execution, exports the
+  whole amplitude vector as the product of a leg of its own rather than gathering
+  it to check an answer, and records the selected NCCL route from a rank-zero
+  debug log. It covers the whole training path on that
   shard: forward, the adjoint gradient, an owner-sharded optimizer step, and a
   checkpoint that a restarted run resumes from. Its output is correctness and
   communication evidence only; it is not a scalability or release claim.
@@ -377,8 +378,9 @@ second node:
   rather than reconstructed locally. The training legs run eagerly by design,
   because a checkpointed step is not a compiled-kernel step.
 - **Real two-node tensor-network transport.** The same pair and launcher again,
-  with `tools/probe_cuda_multinode_tn.py`: one five-wire contraction cut on the
-  two labels its entangling gate contracts, four slices, two owned per rank. The
+  with `tools/probe_cuda_multinode_tn.py`: one fourteen-wire contraction bound to
+  the release contract's own narrowest matched-speed rung, cut on the two labels
+  its entangling gate contracts, four slices, two owned per rank. The
   cut is declared rather than chosen by the memory-driven automatic slicer,
   because the cheapest cut on this circuit is carried by a state-copy node whose
   value is zero on every branch but one -- a partition that would report
@@ -572,6 +574,41 @@ The `cudaq` extra has its own Linux SDK matrix because its platform-specific
 toolchain is intentionally absent from portable and coverage environments.
 The lane is the evidence for the two declared tested versions; macOS is not a
 supported package target in this boundary.
+
+### `--standalone` does not rendezvous on macOS
+
+Every test that spawns ranks with `torch.distributed.run --standalone` fails on
+macOS with a subprocess timeout, and the cause is outside this repository. Two
+lines reproduce it:
+
+```python
+# /tmp/gloo_probe.py
+import torch.distributed as dist
+
+dist.init_process_group("gloo")
+print(dist.get_rank(), dist.get_world_size(), flush=True)
+dist.destroy_process_group()
+```
+
+```console
+$ python -m torch.distributed.run --standalone --nproc-per-node=2 /tmp/gloo_probe.py
+# hangs; killed after 60 s
+[W socket.cpp:764] [c10d] The IPv6 network addresses of
+(1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa, 55738)
+cannot be retrieved (gai error: 8 - nodename nor servname provided, or not known).
+```
+
+`--standalone` picks the wildcard address, the reverse lookup of its IPv6 form
+fails, and c10d retries with exponential backoff rather than falling back. On
+this Mac the consequence is that `python tools/ci_tier.py release`, whose first
+command is `pytest -m "not scalability"`, cannot pass: it reports 14 failures,
+all of them `subprocess.TimeoutExpired` in
+`tests/distributed/test_mps_stability_faults.py`. Those tests, their runtime
+helper, and the MPS executor they exercise are untouched by the campaign that
+observed this, and the probe above imports nothing from FlagQuantum, so the
+failures carry no information about the repository. Run the `release` tier on
+Linux, or select the suite's markers directly and read the macOS result as
+partial.
 
 The Braket circuit adapter owns only static object conversion. Its isolated SDK
 matrix proves both declared versions and local unitary conformance. Existing

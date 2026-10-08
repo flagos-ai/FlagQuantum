@@ -5,6 +5,8 @@ import flagquantum as fq
 import flagquantum.simulation.statevector.cx_sequence_dispatch as cx_sequence_dispatch
 import flagquantum.simulation.statevector.ry_rz_dispatch as ry_rz_dispatch
 import flagquantum.simulation.statevector.single_qubit_matrix_dispatch as single_qubit_matrix_dispatch
+import flagquantum.simulation.statevector.two_qubit_matrix_dispatch as two_qubit_matrix_dispatch
+from flagquantum.simulation.statevector.operations import _apply_matrix
 
 pytestmark = [pytest.mark.gpu, pytest.mark.integration, pytest.mark.triton]
 
@@ -12,6 +14,204 @@ pytestmark = [pytest.mark.gpu, pytest.mark.integration, pytest.mark.triton]
 def _require_cuda() -> None:
     if not torch.cuda.is_available():
         pytest.skip("requires CUDA")
+
+
+def _reference_local_2q(
+    state: torch.Tensor,
+    matrix: torch.Tensor,
+    first_bit_position: int,
+    second_bit_position: int,
+) -> torch.Tensor:
+    n_qubits = state.shape[1].bit_length() - 1
+    wires = (
+        n_qubits - 1 - first_bit_position,
+        n_qubits - 1 - second_bit_position,
+    )
+    rest = tuple(qubit for qubit in range(n_qubits) if qubit not in wires)
+    permutation = (0, wires[0] + 1, wires[1] + 1) + tuple(qubit + 1 for qubit in rest)
+    inverse = [0] * len(permutation)
+    for index, axis in enumerate(permutation):
+        inverse[axis] = index
+    tensor = state.reshape((state.shape[0],) + (2,) * n_qubits).permute(permutation)
+    flat = tensor.reshape(state.shape[0], 4, -1)
+    result = torch.matmul(matrix, flat)
+    return (
+        result.reshape((state.shape[0],) + (2,) * n_qubits)
+        .permute(tuple(inverse))
+        .reshape_as(state)
+    )
+
+
+def test_generic_local_2q_matches_layout_reference_and_exact_alias() -> None:
+    _require_cuda()
+    from flagquantum.kernels.triton.statevector_gates import apply_complex64_local_2q
+
+    torch.manual_seed(43)
+    state = torch.randn(2, 64, dtype=torch.complex64, device="cuda")
+    matrix = torch.randn(4, 4, dtype=torch.complex64, device="cuda")
+    for first_bit_position, second_bit_position in (
+        (0, 1),
+        (1, 0),
+        (0, 5),
+        (5, 0),
+        (1, 4),
+        (4, 2),
+    ):
+        expected = _reference_local_2q(
+            state,
+            matrix,
+            first_bit_position,
+            second_bit_position,
+        )
+        actual = apply_complex64_local_2q(
+            state,
+            matrix,
+            first_bit_position=first_bit_position,
+            second_bit_position=second_bit_position,
+        )
+        torch.testing.assert_close(actual, expected, atol=2e-6, rtol=2e-6)
+
+        aliased = state.clone()
+        returned = apply_complex64_local_2q(
+            aliased,
+            matrix,
+            first_bit_position=first_bit_position,
+            second_bit_position=second_bit_position,
+            output=aliased,
+        )
+        assert returned.data_ptr() == aliased.data_ptr()
+        torch.testing.assert_close(aliased, expected, atol=2e-6, rtol=2e-6)
+
+
+def test_generic_local_2q_rejects_unsupported_contracts() -> None:
+    _require_cuda()
+    from flagquantum.kernels.triton.statevector_gates import apply_complex64_local_2q
+
+    state = torch.randn(2, 64, dtype=torch.complex64, device="cuda")
+    matrix = torch.randn(4, 4, dtype=torch.complex64, device="cuda")
+    with pytest.raises(ValueError, match="two distinct local bit positions"):
+        apply_complex64_local_2q(
+            state,
+            matrix,
+            first_bit_position=2,
+            second_bit_position=2,
+        )
+    with pytest.raises(ValueError, match="4x4 matrix"):
+        apply_complex64_local_2q(
+            state,
+            matrix[:2, :2],
+            first_bit_position=1,
+            second_bit_position=4,
+        )
+    noncontiguous_output = torch.empty(
+        64, 2, dtype=torch.complex64, device="cuda"
+    ).transpose(0, 1)
+    with pytest.raises(ValueError, match="contiguous and match"):
+        apply_complex64_local_2q(
+            state,
+            matrix,
+            first_bit_position=1,
+            second_bit_position=4,
+            output=noncontiguous_output,
+        )
+
+
+def test_public_local_2q_runtime_uses_catalog(monkeypatch) -> None:
+    _require_cuda()
+    monkeypatch.setenv("FQ_TRITON_TWO_QUBIT_MATRIX", "1")
+    routes: list[str] = []
+    require_cataloged_kernel = (
+        two_qubit_matrix_dispatch._require_two_qubit_matrix_kernel
+    )
+
+    def capture_catalog_route(*, device_type: str, dtype: str):
+        implementation = require_cataloged_kernel(
+            device_type=device_type,
+            dtype=dtype,
+        )
+        routes.append(implementation.implementation_id)
+        return implementation
+
+    monkeypatch.setattr(
+        two_qubit_matrix_dispatch,
+        "_require_two_qubit_matrix_kernel",
+        capture_catalog_route,
+    )
+    generator = torch.Generator(device="cuda").manual_seed(47)
+    state = torch.randn(
+        1,
+        1 << 16,
+        generator=generator,
+        dtype=torch.complex64,
+        device="cuda",
+    )
+    matrix = torch.randn(
+        4,
+        4,
+        generator=generator,
+        dtype=torch.complex64,
+        device="cuda",
+    )
+    expected = _reference_local_2q(state, matrix, 15, 0)
+
+    actual = _apply_matrix(state, matrix, (0, 15), 16)
+
+    torch.testing.assert_close(actual, expected, atol=2e-6, rtol=2e-6)
+    assert routes == ["FQKI-TRITON-SV-009-A"]
+
+
+def test_public_local_2q_kill_switch_uses_reference(monkeypatch) -> None:
+    _require_cuda()
+    monkeypatch.setenv("FQ_TRITON_TWO_QUBIT_MATRIX", "0")
+    state = torch.randn(1, 1 << 16, dtype=torch.complex64, device="cuda")
+    matrix = torch.randn(4, 4, dtype=torch.complex64, device="cuda")
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("disabled SV-009 route must not execute")
+
+    monkeypatch.setattr(
+        two_qubit_matrix_dispatch,
+        "_apply_cataloged_two_qubit_matrix",
+        fail_if_called,
+    )
+    expected = _reference_local_2q(state, matrix, 15, 0)
+
+    actual = _apply_matrix(state, matrix, (0, 15), 16)
+
+    torch.testing.assert_close(actual, expected, atol=0.0, rtol=0.0)
+
+
+def test_public_local_2q_gradient_request_preserves_reference(monkeypatch) -> None:
+    _require_cuda()
+    monkeypatch.setenv("FQ_TRITON_TWO_QUBIT_MATRIX", "1")
+    state = torch.randn(
+        1,
+        1 << 16,
+        dtype=torch.complex64,
+        device="cuda",
+        requires_grad=True,
+    )
+    matrix = torch.randn(
+        4,
+        4,
+        dtype=torch.complex64,
+        device="cuda",
+        requires_grad=True,
+    )
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("gradient requests must stay on the reference path")
+
+    monkeypatch.setattr(
+        two_qubit_matrix_dispatch,
+        "_apply_cataloged_two_qubit_matrix",
+        fail_if_called,
+    )
+    output = _apply_matrix(state, matrix, (0, 15), 16)
+    output.real.sum().backward()
+
+    assert state.grad is not None
+    assert matrix.grad is not None
 
 
 def test_control_one_pack_unpack_matches_index_reference() -> None:

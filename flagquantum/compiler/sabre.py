@@ -30,6 +30,18 @@ adopt that layout as the next candidate whenever it lowers the total number of
 inserted SWAPs. A layout that starts away from the identity cannot be undone by
 replaying the forward SWAPs in reverse, so ``restore_swaps`` plans the explicit
 restore that returns every logical qubit to its own qubit.
+
+A dependency is not only a shared qubit. A measurement writes classical state that
+no qubit records and a conditional reads it, so a conditional and the measurement
+that produces the condition it tests are ordered by the classical channel alone,
+even when the two touch disjoint qubits. The planner therefore keeps program order
+over each classical bit: a read follows the write it observes, and a write follows
+the reads it would otherwise invalidate. Without those edges the front layer can
+emit a conditional before its measurement, and the dynamic runtime then refuses
+the routed program with "classical bit N was read before measurement" — a routing
+defect, not a caller error. Classical order is the only channel through which a
+reordering of measurements is observable, so a measurement whose bit is neither
+re-read nor re-written stays free to move past an operation on other qubits.
 """
 
 from __future__ import annotations
@@ -37,9 +49,10 @@ from __future__ import annotations
 import math
 from collections import deque
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from ..core.ir import CircuitIR
+from ..core.ir import CircuitIR, Instruction
+from .ordering_barrier import is_ordering_barrier
 
 if TYPE_CHECKING:
     from .routing import CouplingMap
@@ -92,6 +105,58 @@ class SabrePlan:
     swap_anchors: tuple[int, ...]
     initial_logical_to_physical: tuple[int, ...]
     final_logical_to_physical: tuple[int, ...]
+
+
+#: The opcode that writes classical state, the metadata key naming the bit it
+#: writes, and the two spellings a classical condition reads bits with. No other
+#: instruction in the IR writes a classical bit, so a program without a
+#: measurement has no classical dependency to preserve.
+_MEASURE_OPCODE = "measure"
+_CLASSICAL_BIT_KEY = "classical_bit"
+_CONDITION_KEYS = ("conditions", "condition_clauses")
+
+
+def _classical_accesses(
+    instruction: Instruction,
+) -> tuple[int | None, tuple[int, ...]]:
+    """Return the classical bit an instruction writes and the bits it reads.
+
+    The condition spellings are read here exactly as ``runtime.dynamic`` reads
+    them. The planner needs the bits itself rather than from that package because
+    Compiler may not depend on Runtime, and a metadata read is a smaller cost than
+    a cross-layer import.
+
+    Raises:
+        ValueError: If the instruction mixes the two condition spellings, or if
+            the spelling it uses is not a sequence of bit/value pairs.
+    """
+
+    written: int | None = None
+    if instruction.name == _MEASURE_OPCODE:
+        raw_bit = instruction.metadata.get(_CLASSICAL_BIT_KEY)
+        # A measurement that names no bit records nothing a later instruction can
+        # read, so it takes no place in the classical order.
+        written = None if raw_bit is None else int(raw_bit)
+
+    if all(key in instruction.metadata for key in _CONDITION_KEYS):
+        raise ValueError(
+            f"instruction {instruction.name}{instruction.wires} cannot define both "
+            "conditions and condition_clauses"
+        )
+    raw_clauses: Any = instruction.metadata.get("condition_clauses")
+    if raw_clauses is None and "conditions" in instruction.metadata:
+        raw_clauses = (instruction.metadata["conditions"],)
+    read: set[int] = set()
+    try:
+        for clause in raw_clauses or ():
+            for bit, _value in clause:
+                read.add(int(bit))
+    except (TypeError, ValueError) as error:
+        raise ValueError(
+            f"instruction {instruction.name}{instruction.wires} has malformed "
+            f"classical conditions: {error}"
+        ) from error
+    return written, tuple(sorted(read))
 
 
 def _validated_layout(
@@ -176,8 +241,9 @@ def plan_sabre_swaps(
         ValueError: If the coupling map has fewer qubits than the program, if
             ``initial_layout`` is not a permutation of the circuit qubits, if a
             two-qubit operation is connected on the device only through qubits the
-            circuit does not own, or if the front layer cannot be unblocked within
-            the stalled-SWAP limit.
+            circuit does not own, if an instruction states its classical condition
+            in a malformed or ambiguous way, or if the front layer cannot be
+            unblocked within the stalled-SWAP limit.
     """
 
     n_wires = program.n_wires
@@ -208,9 +274,13 @@ def plan_sabre_swaps(
     neighbours = tuple(planning.neighbors(wire) for wire in range(n_wires))
     wires = tuple(instruction.wires for instruction in instructions)
     # A channel occupies its qubits but must not be pulled onto a coupling edge,
-    # so it never blocks the front layer.
+    # so it never blocks the front layer. A barrier is in the same position for
+    # the same reason: neither one is a unitary the device has to host, so making
+    # either adjacent would buy nothing.
     blocks = tuple(
-        len(wire_pair) == 2 and not instruction.metadata.get("is_channel")
+        len(wire_pair) == 2
+        and not instruction.metadata.get("is_channel")
+        and not is_ordering_barrier(instruction)
         for instruction, wire_pair in zip(instructions, wires, strict=True)
     )
     # A SWAP along one coupling edge keeps each logical qubit inside its own
@@ -248,6 +318,32 @@ def plan_sabre_swaps(
                 successors[previous].append(index)
                 pending[index] += 1
             last_on_wire[wire] = index
+
+    # Classical order is order that no qubit records. Per bit, a read follows the
+    # write it observes, and a write follows both the read it would invalidate and
+    # the earlier write whose value it replaces. A bit no measurement ever writes
+    # contributes no edge, so a program without classical state keeps the
+    # qubit-only graph it had. Processing in program order keeps every edge
+    # forward, so the graph stays acyclic and the front layer still empties on
+    # every program.
+    last_writer: dict[int, int] = {}
+    last_reader: dict[int, int] = {}
+    for index, instruction in enumerate(instructions):
+        written, read = _classical_accesses(instruction)
+        for bit in read:
+            producer = last_writer.get(bit)
+            if producer is not None:
+                successors[producer].append(index)
+                pending[index] += 1
+        if written is not None:
+            predecessors = (last_writer.get(written), last_reader.pop(written, None))
+            for predecessor in predecessors:
+                if predecessor is not None:
+                    successors[predecessor].append(index)
+                    pending[index] += 1
+            last_writer[written] = index
+        for bit in read:
+            last_reader[bit] = index
 
     logical_to_physical = list(placement)
     physical_to_logical = [0] * n_wires

@@ -207,7 +207,36 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     if any(token not in optimizer_source for token in required_optimizer_tokens):
         errors.append("split real/imag P5 Double-Single SGD implementation drifted")
 
-    for name, raw_path in contract.get("verification", {}).items():
+    # The finite-difference diagnostic is an oracle over the parameter-shift
+    # route, and an oracle that carries its own quotient can disagree with the
+    # user-facing route it exists to check. It must therefore reach the one
+    # shared implementation and keep no local division of its own: the token
+    # below is the denominator the duplicate used to compute for itself.
+    verification = contract.get("verification", {})
+    if verification.get("difference_implementation") != (
+        "flagquantum/core/finite_differences.py"
+    ):
+        errors.append(
+            "split real/imag P5 must name the one finite-difference authority"
+        )
+    difference_conformance = verification.get("difference_conformance")
+    if not isinstance(difference_conformance, str):
+        errors.append("split real/imag P5 must name its difference diagnostic module")
+    else:
+        difference_source = (ROOT / difference_conformance).read_text(encoding="utf-8")
+        if "central_difference_gradient" not in difference_source:
+            errors.append(
+                "split real/imag P5 difference diagnostic must reuse the shared quotient"
+            )
+        if (
+            "/ (2.0 * epsilon)" in difference_source
+            or "/ (2.0 * step)" in difference_source
+        ):
+            errors.append(
+                "split real/imag P5 difference diagnostic must not keep a second quotient"
+            )
+
+    for name, raw_path in verification.items():
         if not isinstance(raw_path, str) or not (ROOT / raw_path).is_file():
             errors.append(f"split real/imag P5 verification path {name!r} is missing")
     return tuple(errors)

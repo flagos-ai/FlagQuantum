@@ -7,6 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core import OPERATOR_SCHEMAS, CircuitIR, Instruction
+from flagquantum.errors import CapabilityError
 from flagquantum.runtime.executors.statevector.control_subspace_dispatch import (
     _triton_control_subspace_pack_decision,
     _triton_control_subspace_unpack_decision,
@@ -19,8 +20,6 @@ from flagquantum.runtime.executors.statevector.forward import (
     FullStateMaterializationError,
     StatevectorExchangeWorkspace,
     _independent_tensor_bytes,
-    _triton_local_1q_requested,
-    _triton_local_cx_requested,
     _vectorized_cross_shard_cx,
     _vectorized_local_gate,
     _vectorized_pair_exchange_gate,
@@ -35,6 +34,10 @@ from flagquantum.runtime.executors.statevector.forward_sweep import (
 )
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
+)
+from flagquantum.runtime.executors.statevector.local_gate_dispatch import (
+    _triton_local_1q_requested,
+    _triton_local_cx_requested,
 )
 from flagquantum.runtime.executors.statevector.models import (
     StatevectorShard,
@@ -607,7 +610,7 @@ def test_unsupported_gate_fails_before_state_initialization(monkeypatch):
         "flagquantum.runtime.executors.statevector.forward_sweep.initialize_statevector_shard",
         forbidden,
     )
-    with pytest.raises((KeyError, ValueError)):
+    with pytest.raises(CapabilityError, match="carrying no Kraus operators"):
         execute_torch_distributed_statevector(ir)
     assert not initialized
 

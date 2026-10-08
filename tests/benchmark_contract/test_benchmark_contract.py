@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from benchmarks.audit_results import _json_files, audit_paths
+from benchmarks.audit_results import _json_files, audit_paths, sealed_evidence
 from flagquantum.runtime.audit import (
     DistributedScalabilityError,
     audit_distributed_scalability,
@@ -36,12 +36,54 @@ def test_benchmark_result_payloads_expose_contract_fields():
     assert payload_paths
     for path in payload_paths:
         payload = _load(path)
-        assert "benchmark" in payload, path
+        sealed = sealed_evidence(payload)
+        if sealed is None:
+            assert "benchmark" in payload, path
+            assert "scalability_blockers" in payload, path
+        else:
+            # A promoted artifact is a signed envelope. The fields the contract
+            # describes belong to the payload the executor measured, which the
+            # envelope encloses; the envelope itself carries the provenance and
+            # signature that make those fields verifiable, so its own shape is
+            # part of the contract too.
+            assert payload["artifact_class"] == "measured_production_run", path
+            assert set(payload) == {
+                "artifact_class",
+                "evidence",
+                "evidence_scope",
+                "integrity",
+                "provenance",
+                "schema",
+            }, path
+            assert set(payload["provenance"]) == {
+                "collective_backend",
+                "command",
+                "commit",
+                "devices",
+                "fallback_events",
+                "iterations",
+                "rank_mapping",
+                "raw_log_sha256",
+                "seeds",
+                "topology",
+                "warmup",
+                "workload_sha256",
+            }, path
+            payload = sealed
         assert "distribution_semantics" in payload, path
-        assert "scalability_claim_allowed" in payload, path
-        assert "release_gate_allowed" in payload, path
-        assert "scalability_blockers" in payload, path
-        if SCALABILITY_ROOT not in path.parents:
+        if SCALABILITY_ROOT in path.parents:
+            # Exactly one location states a release claim, and it states it
+            # explicitly rather than by omission.
+            assert payload["scalability_claim_allowed"] is True, path
+            assert payload["release_gate_allowed"] is True, path
+            continue
+        # Everywhere else the payload does not claim scalability. Sealed
+        # provenance evidence records no claim at all, and the audit reads an
+        # unrecorded claim as no claim rather than as a default, so this asserts
+        # that neither shape asserts one.
+        assert payload.get("scalability_claim_allowed") is not True, path
+        assert payload.get("release_gate_allowed") is not True, path
+        if sealed is None:
             assert payload["non_release_evidence"] is True, path
             assert payload["scalability_claim_allowed"] is False, path
             assert payload["release_gate_allowed"] is False, path
@@ -199,10 +241,20 @@ def test_non_release_payloads_do_not_pass_scalability_release_gate():
     assert non_release_paths
     for path in non_release_paths:
         payload = _load(path)
-        audit = audit_distributed_scalability(payload)
+        sealed = sealed_evidence(payload)
+        audited = payload if sealed is None else sealed
+        audit = audit_distributed_scalability(audited)
         assert audit.valid, path
         assert not audit.release_gate_allowed, path
-        assert payload["scalability_claim_allowed"] is False, path
+        if sealed is None:
+            assert payload["scalability_claim_allowed"] is False, path
+        # Sealed provenance evidence records no claim rather than a false one,
+        # and an unrecorded claim is read as no claim. Either way this payload
+        # cannot be required as scalability evidence -- neither the envelope,
+        # which states no distribution semantics at all, nor the payload inside
+        # it, which states semantics it is not entitled to claim.
+        with pytest.raises(DistributedScalabilityError):
+            require_distributed_scalability(audited)
         with pytest.raises(DistributedScalabilityError):
             require_distributed_scalability(payload)
 
@@ -236,9 +288,44 @@ def test_benchmark_audit_scanner_contract_excludes_generated_summaries():
     assert root_summary["file_count"] == len(root_paths)
     assert root_summary["invalid_count"] == 0
     assert root_summary["claimable_count"] == len(root_summary["claimable_paths"])
+    # The strict scan of the release directory is keyed: every promoted payload
+    # is a signed envelope, so without the campaign signing key none of them can
+    # be verified and the scan rejects all of them rather than trusting the
+    # claims inside them. A keyless scan that claimed any of them would be the
+    # defect. The keyed pass over this same directory is what the promotion gate
+    # enforces before a payload may be moved here.
     assert release_summary["file_count"] == len(release_paths)
     assert release_summary["claimable_count"] == 0
     assert release_summary["invalid_count"] == len(release_paths)
+    for record in release_summary["records"]:
+        assert record["status"] == "provenance_rejected", record["path"]
+        errors = record["scalability_audit"]["errors"]
+        assert any("signature mismatch" in error for error in errors), (
+            record["path"],
+            errors,
+        )
+
+
+@pytest.mark.skipif(
+    not _json_files(SCALABILITY_ROOT),
+    reason="no scalability payload is promoted in this checkout",
+)
+def test_promoted_scalability_payloads_are_valid_sharded_evidence():
+    for path in _json_files(SCALABILITY_ROOT):
+        payload = _load(path)
+        sealed = sealed_evidence(payload)
+        assert sealed is not None, path
+        audit = audit_distributed_scalability(sealed)
+        assert audit.valid, (path, audit.errors)
+        assert audit.release_gate_allowed, path
+        assert audit.distribution_semantics == "sharded_across_ranks", path
+        assert audit.claim_evidence_type in {
+            "production_training_benchmark",
+            "release_payload",
+        }, path
+        assert sealed["world_size"] > 1, path
+        assert sealed["release_payload"] is True, path
+        require_distributed_scalability(sealed)
 
 
 def _prepared_mps_release_payload() -> dict:

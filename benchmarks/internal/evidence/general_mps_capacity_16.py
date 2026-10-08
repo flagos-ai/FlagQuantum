@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Mapping
 from pathlib import Path
 
 import torch
@@ -50,25 +51,37 @@ def logical_mps_bytes(n_sites: int, max_bond: int) -> int:
 def rank_owned_initial_mps(
     n_sites: int, max_bond: int, device: torch.device
 ) -> dict[int, torch.Tensor]:
+    """Return this rank's slice of the frozen initial state.
+
+    The state is one left-canonical tensor-train whose tensor at a wire is a
+    function of that wire's bond pair alone, so every rank draws the distinct
+    bond shapes in the order the whole chain visits them and then keeps the
+    wires it owns. Drawing the shapes in the order this rank's own slice
+    happens to visit them would give a wire a different tensor at every rank
+    count: the generator advances once per newly seen shape, so a rank whose
+    slice begins deep in the chain would draw the tensor that belongs to an
+    earlier wire. The state would then depend on the rank boundaries, a
+    single-device leg and a sharded leg of the same frozen circuit would start
+    from different states, and the truncation a sharded leg reports would be a
+    property of its deployment rather than of the workload. The tensors
+    themselves are unchanged: the same generator, the same seed, and the same
+    draw order as a whole-chain walk, which is what a single-device leg builds.
+    """
+
     rank, world = dist.get_rank(), dist.get_world_size()
     first, last = rank * n_sites // world, (rank + 1) * n_sites // world
     bonds = bond_dimensions(n_sites, max_bond)
     generator = torch.Generator(device=device).manual_seed(520_052)
     cache: dict[tuple[int, int], torch.Tensor] = {}
-    tensors = {}
-    for wire in range(first, last):
+    for wire in range(n_sites):
         shape = (bonds[wire], bonds[wire + 1])
-        if shape not in cache:
-            real = torch.randn(
-                2 * shape[0], shape[1], device=device, generator=generator
-            )
-            imag = torch.randn(
-                2 * shape[0], shape[1], device=device, generator=generator
-            )
-            q, _ = torch.linalg.qr(torch.complex(real, imag), mode="reduced")
-            cache[shape] = q.reshape(1, shape[0], 2, shape[1]).contiguous()
-        tensors[wire] = cache[shape]
-    return tensors
+        if shape in cache:
+            continue
+        real = torch.randn(2 * shape[0], shape[1], device=device, generator=generator)
+        imag = torch.randn(2 * shape[0], shape[1], device=device, generator=generator)
+        q, _ = torch.linalg.qr(torch.complex(real, imag), mode="reduced")
+        cache[shape] = q.reshape(1, shape[0], 2, shape[1]).contiguous()
+    return {wire: cache[(bonds[wire], bonds[wire + 1])] for wire in range(first, last)}
 
 
 def reverse_checkpoint_capacity_bytes(logical_bytes: int, world_size: int) -> int:
@@ -89,11 +102,99 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _placement(arguments: argparse.Namespace, world: int) -> tuple[int, int]:
+    """Return the devices per host and the hosts this launch spanned.
+
+    A rank can read its own world size and its own local rank, and nothing about
+    how many hosts the world was spread over: the process group carries ranks,
+    not machines, so a launch over two hosts of eight devices and a launch over
+    sixteen hosts of one device are the same group from inside it. The launcher
+    placed the ranks, so the launcher states the placement, and it is checked
+    against the world size here rather than inferred: a launch that declares a
+    placement its own world cannot satisfy has misdescribed the run it measured,
+    and the payload it would write is the sharded-capacity evidence a reader
+    would have to trust.
+    """
+
+    if arguments.local_world_size is None or arguments.node_count is None:
+        if world != 1:
+            raise SystemExit(
+                f"a world of {world} spans more than one device, so the launch "
+                "has to state --local-world-size and --node-count; they are not "
+                "derivable from the rank count"
+            )
+        return 1, 1
+    local_world_size = int(arguments.local_world_size)
+    node_count = int(arguments.node_count)
+    if local_world_size <= 0 or node_count <= 0:
+        raise SystemExit(
+            "the declared placement has a non-positive device or host count"
+        )
+    if local_world_size * node_count != world:
+        raise SystemExit(
+            f"the declared placement of {node_count} host(s) of "
+            f"{local_world_size} device(s) does not place each of the {world} "
+            "ranks exactly once"
+        )
+    return local_world_size, node_count
+
+
 def target_boundaries() -> tuple[int, ...]:
     return tuple(
         (rank + 1) * N_SITES // TARGET_WORLD - 1
         for rank in range(TARGET_WORLD - 1)
     )
+
+
+def rank_parameter_wires() -> tuple[int, ...]:
+    """The wire on which each rank contributes a rotation of its own."""
+
+    return tuple(
+        (2 * rank + 1) * N_SITES // (2 * TARGET_WORLD) for rank in range(TARGET_WORLD)
+    )
+
+
+def parameter_count() -> int:
+    """The number of independent trainable leaves the frozen circuit carries.
+
+    One leaf per gate, which is the binding the release contract needs: the
+    optimizer assigns parameter ``index`` to rank ``index % world_size``, so a
+    circuit with fewer leaves than ranks leaves the surplus ranks owning no
+    parameter and no optimizer state, and the per-parameter ownership the
+    release payload reports is then true by construction rather than measured.
+    """
+
+    return len(rank_parameter_wires()) + len(target_boundaries())
+
+
+def initial_parameter_values() -> dict[str, float]:
+    """Return the starting angle of every leaf, keyed by the gate it drives.
+
+    The values alternate exactly as the two shared scalars they replace did, so
+    the forward arithmetic of the frozen circuit is unchanged by the rebinding
+    and the earlier single-device measurement still describes this workload.
+    """
+
+    values = {
+        f"ry:{wire}": 7e-5 if rank % 2 == 0 else -1.1e-4
+        for rank, wire in enumerate(rank_parameter_wires())
+    }
+    values.update(
+        {
+            f"rxx:{left}": -1.1e-4 if index % 2 == 0 else 7e-5
+            for index, left in enumerate(target_boundaries())
+        }
+    )
+    return values
+
+
+def frozen_parameters(device: torch.device) -> dict[str, torch.Tensor]:
+    """Return one trainable leaf per gate of the frozen circuit."""
+
+    return {
+        name: torch.tensor(value, device=device, requires_grad=True)
+        for name, value in initial_parameter_values().items()
+    }
 
 
 def topology_fingerprint() -> str:
@@ -106,13 +207,13 @@ def topology_fingerprint() -> str:
     return hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
 
 
-def workload(theta: torch.Tensor, phi: torch.Tensor) -> fq.Circuit:
-    circuit = fq.Circuit(N_SITES, device=theta.device)
-    for rank in range(TARGET_WORLD):
-        wire = (2 * rank + 1) * N_SITES // (2 * TARGET_WORLD)
-        circuit.ry(wire, theta if rank % 2 == 0 else phi)
-    for index, left in enumerate(target_boundaries()):
-        circuit.rxx(left, left + 1, phi if index % 2 == 0 else theta)
+def workload(parameters: Mapping[str, torch.Tensor]) -> fq.Circuit:
+    device = next(iter(parameters.values())).device
+    circuit = fq.Circuit(N_SITES, device=device)
+    for wire in rank_parameter_wires():
+        circuit.ry(wire, parameters[f"ry:{wire}"])
+    for left in target_boundaries():
+        circuit.rxx(left, left + 1, parameters[f"rxx:{left}"])
     return circuit
 
 
@@ -133,12 +234,30 @@ def main() -> None:
     parser.add_argument("--single-gpu-artifact", type=Path)
     parser.add_argument("--raw-log", type=Path)
     parser.add_argument("--gpu-samples", type=Path)
+    parser.add_argument(
+        "--local-world-size",
+        type=int,
+        default=None,
+        help=(
+            "devices per host. The launcher placed the ranks and the ranks "
+            "cannot see each other's hosts, so the placement is stated by the "
+            "launch and recorded as stated rather than inferred from a world "
+            "size that does not carry it"
+        ),
+    )
+    parser.add_argument(
+        "--node-count",
+        type=int,
+        default=None,
+        help="hosts the launch spanned, checked against the same placement",
+    )
     args = parser.parse_args()
     world = int(os.environ.get("WORLD_SIZE", "1"))
     rank = int(os.environ.get("RANK", "0"))
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
     if world not in {1, TARGET_WORLD}:
         raise SystemExit("16-rank capacity gate supports only 1 or 16 ranks")
+    local_world_size, node_count = _placement(args, world)
     if world == TARGET_WORLD and (
         args.single_gpu_artifact is None
         or args.raw_log is None
@@ -164,10 +283,9 @@ def main() -> None:
     started = time.perf_counter()
     try:
         initial = rank_owned_initial_mps(N_SITES, MAX_BOND, device)
-        theta = torch.tensor(7e-5, device=device, requires_grad=True)
-        phi = torch.tensor(-1.1e-4, device=device, requires_grad=True)
+        parameters = frozen_parameters(device)
         result = fqxd.train_distributed_mps(
-            workload(theta, phi),
+            workload(parameters),
             steps=1,
             observable={N_SITES // 2: "z"},
             optimizer="adam",
@@ -199,10 +317,8 @@ def main() -> None:
         del result
     if "initial" in locals():
         del initial
-    if "theta" in locals():
-        del theta
-    if "phi" in locals():
-        del phi
+    if "parameters" in locals():
+        del parameters
     gc.collect()
     torch.cuda.empty_cache()
     cleanup_allocated = int(torch.cuda.memory_allocated(device))
@@ -235,13 +351,24 @@ def main() -> None:
     if rank == 0 and world == 1:
         payload = {
             "schema": "flagquantum.issue092.mps_capacity_baseline.v2",
+            "benchmark": args.output.stem,
+            "benchmark_evidence_class": "local_non_release",
             "status": status,
             "world_size": 1,
+            "local_world_size": local_world_size,
+            "node_count": node_count,
+            "distribution_semantics": "single_device_fast_path",
+            "claim_evidence_type": "development_smoke",
+            "non_release_evidence": True,
+            "scalability_blockers": [
+                "measured single-device capacity failure is baseline evidence only"
+            ],
             "batch_size": 1,
             "n_sites": N_SITES,
             "initial_max_bond": MAX_BOND,
             "trained_max_bond": MAX_BOND,
             "logical_mps_bytes": logical_bytes,
+            "parameter_count": parameter_count(),
             "device_total_memory_bytes": local["device_total_memory_bytes"],
             "topology_fingerprint": topology_fingerprint(),
             "capacity_failure": status == "cuda_oom",
@@ -301,13 +428,23 @@ def main() -> None:
             ]
             payload = {
                 "schema": "flagquantum.issue092.general_mps_capacity.v1",
+                "benchmark": args.output.stem,
+                "benchmark_evidence_class": "local_non_release",
+                "claim_evidence_type": "development_smoke",
+                "non_release_evidence": True,
+                "scalability_blockers": [
+                    "development A800 capacity evidence is not release-certified"
+                ],
                 "batch_size": 1,
                 "n_sites": N_SITES,
                 "initial_max_bond": MAX_BOND,
                 "trained_max_bond": MAX_BOND,
                 "logical_mps_bytes": logical_bytes,
+                "parameter_count": parameter_count(),
                 "topology_fingerprint": topology_fingerprint(),
                 "world_size": TARGET_WORLD,
+                "local_world_size": local_world_size,
+                "node_count": node_count,
                 "distribution_semantics": "sharded_across_ranks",
                 "single_gpu_capacity_failure": True,
                 "sharded_completion": True,
@@ -321,6 +458,23 @@ def main() -> None:
                 ),
                 "truncation_error_budget": TRUNCATION_BUDGET,
                 "rank_records": records,
+                # The per-rank ownership and memory the release policy audit asks
+                # every sharded payload for. Both are read off the records the
+                # ranks published rather than restated from the launch: the wires
+                # a rank owns and the peak it reached are measurements, and the
+                # bytes it moved across its halo are the transport the same
+                # records report.
+                "rank_shards": [
+                    {
+                        "rank": record["rank"],
+                        "owned_wires": record["owned_wires"],
+                        "local_memory_bytes": record["peak_memory_bytes"],
+                    }
+                    for record in records
+                ],
+                "communication_bytes": sum(
+                    record["boundary_bytes"] for record in records
+                ),
                 "single_gpu_peak_memory_bytes": baseline["rank_record"][
                     "peak_memory_bytes"
                 ],

@@ -88,21 +88,3 @@ class AmplitudeOperator(Protocol):
     ) -> None:
         """Append ``I - 2|0><0|`` on ``qubits``, controlled on ``control``."""
         ...
-
-
-@runtime_checkable
-class StatePreparationOperator(Protocol):
-    """A state-preparation unitary paired with the subspace whose amplitude is estimated."""
-
-    @property
-    def n_qubits(self) -> int:
-        """The number of qubits the operator acts on."""
-        ...
-
-    def prepare(self, circuit: Circuit, qubits: Sequence[int]) -> None:
-        """Append the state-preparation unitary to ``circuit`` on ``qubits``."""
-        ...
-
-    def mark(self, circuit: Circuit, qubits: Sequence[int]) -> None:
-        """Append the phase marker for the good subspace."""
-        ...

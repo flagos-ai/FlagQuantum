@@ -22,7 +22,6 @@ from ....simulation.statevector.operations import (
 from .forward import (
     StatevectorExchangeWorkspace,
     _is_diagonal_instruction,
-    _triton_local_cx_enabled,
     _vectorized_cross_shard_cx,
     _vectorized_local_cx_gate,
     _vectorized_local_diagonal_gate,
@@ -30,6 +29,10 @@ from .forward import (
     _vectorized_pair_exchange_gate,
     _vectorized_subgroup_exchange_gate,
     _wait_for_exchange,
+)
+from .local_gate_dispatch import (
+    _flat_local_address_supported,
+    _triton_local_cx_enabled,
 )
 from .reverse_support import (
     BackwardExecutionEvidence,
@@ -280,6 +283,7 @@ def _apply_matrix_gate(
         if instruction.name == "cx" and _triton_local_cx_enabled(
             device_type=shard_state.amplitudes.device.type,
             dtype=str(shard_state.amplitudes.dtype).removeprefix("torch."),
+            addressable=_flat_local_address_supported(shard_state.amplitudes),
             shape=(
                 int(shard_state.amplitudes.shape[0]),
                 int(shard_state.amplitudes.shape[1]),

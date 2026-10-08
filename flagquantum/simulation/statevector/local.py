@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from numbers import Number
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 import torch
 
@@ -12,15 +12,15 @@ from ...core.ir import CircuitIR
 from ...core.operator_schema import canonical_opcode
 from ...core.runtime_config import runtime_config
 from ..gate_matrix import gate_matrix as _gate_matrix
-from ..matrices import X_MATRIX, Y_MATRIX, Z_MATRIX
-from ..numerics.complex_arithmetic import complex_conj, complex_mul
+from ..native_cpu.permutation import native_cpu_cx_rzz_swap_available
+from ..native_cpu.rotation import native_cpu_hadamard_controlled_phase_available
 from .batching import (
     _cpu_statevector_batch_budget_for_program,
     _cpu_statevector_batch_chunk_size,
     _cpu_statevector_batch_chunk_size_for,
     _execute_statevector_batch_windows,
     _gate_parameters,
-    _rotation_region_angles,
+    _prepare_batched_rotation_matrices,
     _statevector_batch_input,
 )
 from .clifford_matching import (
@@ -31,9 +31,11 @@ from .clifford_matching import (
 )
 from .controlled_phase import (
     _apply_controlled_phase_graph_cpu,
+    _apply_hadamard_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
 )
 from .cz_graph import _apply_cz_graph_cpu, _cached_cz_graph_signs, _cz_graph_signs_cpu
+from .dense_fusion_cpu import _apply_cx_rzz_swap_sequence
 from .execution_metrics import initial_runtime_metrics
 from .fixed_layer_cpu import (
     apply_native_fixed_one_qubit_layer,
@@ -48,6 +50,19 @@ from .fusion_config import (
     _cpu_controlled_phase_graph_fusion_enabled,
     _cpu_cz_graph_fusion_enabled,
     _cpu_disjoint_dense_max_wires,
+    _cpu_hadamard_controlled_phase_fusion_enabled,
+)
+from .measurement_ops import (
+    _expectation_from_operators as _expectation_from_operators,
+)
+from .measurement_ops import (
+    _expectation_pauli_string as _expectation_pauli_string,
+)
+from .measurement_ops import (
+    _expectation_z as _measurement_expectation_z,
+)
+from .measurement_ops import (
+    _sample_statevector as _sample_statevector,
 )
 from .operations import (
     _CPU_DISJOINT_DENSE_MAX_WIRES,
@@ -61,11 +76,9 @@ from .operations import (
     _apply_rx_rz_loop,
     _apply_single_qubit_fixed,
     _apply_single_wire_matrix,
-    _batched_rotation_sequence_matrices,
-    _batched_rx_ry_rz_matrices,
-    _bits_from_indices,
     _compile_statevector_program,
     _cpu_cross_wire_diagonal_fusion_enabled,
+    _cpu_cx_rzz_swap_fusion_enabled,
     _cpu_cx_sequence_gather_enabled,
     _cpu_disjoint_single_wire_fusion_enabled,
     _cpu_single_wire_elementwise_enabled,
@@ -73,6 +86,7 @@ from .operations import (
     _diagonal_region,
     _fused_gate_matrix,
     _StatevectorCrossWireDiagonalStep,
+    _StatevectorCXSequenceRZZSwapStep,
     _StatevectorCXSequenceStep,
     _StatevectorDenseRegion,
     _StatevectorDisjointDenseStep,
@@ -80,6 +94,7 @@ from .operations import (
     _StatevectorGateStep,
     _StatevectorProgramStep,
     _StatevectorRXRZLoopStep,
+    _StatevectorSwapSequenceStep,
     _triton_parameterized_single_qubit_matrix_enabled,
     _triton_ry_rz_pair_enabled,
     _triton_single_qubit_loop_enabled,
@@ -101,6 +116,7 @@ from .program import (
     _StatevectorControlledPhaseDecompositionStep,
     _StatevectorControlledPhaseGraphStep,
     _StatevectorCZGraphStep,
+    _StatevectorHadamardControlledPhaseGraphStep,
 )
 
 if TYPE_CHECKING:
@@ -186,7 +202,10 @@ def _controlled_phase_decomposition_matrix(
 
 def _controlled_phase_graph_factors(
     circuit: Circuit,
-    step: _StatevectorControlledPhaseGraphStep,
+    step: (
+        _StatevectorControlledPhaseGraphStep
+        | _StatevectorHadamardControlledPhaseGraphStep
+    ),
     state: torch.Tensor,
 ) -> tuple[torch.Tensor, tuple[int, ...]]:
     """Return cached factors for one compiled static controlled-phase graph."""
@@ -210,73 +229,6 @@ def _controlled_phase_graph_factors(
             )
         circuit._statevector_fused_matrices[key] = cached
     return cached, graph_wires
-
-
-def _prepare_batched_rotation_matrices(
-    circuit: Circuit,
-    program: Sequence[_StatevectorProgramStep],
-    state: torch.Tensor,
-    parameter_bindings: tuple[torch.Tensor, ...] | None,
-) -> tuple[dict[int, torch.Tensor], dict[int, torch.Tensor]]:
-    matrix_steps = tuple(
-        region
-        for step in program
-        for region in (
-            step.regions
-            if isinstance(
-                step,
-                (_StatevectorCrossWireDiagonalStep, _StatevectorDisjointDenseStep),
-            )
-            else (step,)
-        )
-    )
-    rx_ry_rz_steps = tuple(
-        step
-        for step in matrix_steps
-        if isinstance(step, _StatevectorFusedGateStep)
-        and tuple(item.name for item in step.instructions) == ("rx", "ry", "rz")
-        and len(step.wires) == 1
-    )
-    rx_ry_rz_matrices: dict[int, torch.Tensor] = {}
-    if rx_ry_rz_steps:
-        region_angles = _rotation_region_angles(
-            circuit, rx_ry_rz_steps, state, parameter_bindings
-        )
-        if region_angles is not None:
-            matrices = _batched_rx_ry_rz_matrices(region_angles).to(dtype=state.dtype)
-            rx_ry_rz_matrices = {
-                id(step): matrices[index] for index, step in enumerate(rx_ry_rz_steps)
-            }
-
-    rotation_matrices: dict[int, torch.Tensor] = {}
-    rotation_patterns = {
-        tuple(item.name for item in step.instructions)
-        for step in matrix_steps
-        if isinstance(step, _StatevectorFusedGateStep)
-        and len(step.instructions) >= 2
-        and all(item.name in {"rx", "ry", "rz"} for item in step.instructions)
-    }
-    for names in rotation_patterns:
-        rotation_steps = tuple(
-            step
-            for step in matrix_steps
-            if isinstance(step, _StatevectorFusedGateStep)
-            and tuple(item.name for item in step.instructions) == names
-        )
-        region_angles = _rotation_region_angles(
-            circuit, rotation_steps, state, parameter_bindings
-        )
-        if region_angles is None:
-            continue
-        matrices = _batched_rotation_sequence_matrices(
-            region_angles,
-            names=names,
-            dtype=state.dtype,
-        )
-        rotation_matrices.update(
-            {id(step): matrices[index] for index, step in enumerate(rotation_steps)}
-        )
-    return rx_ry_rz_matrices, rotation_matrices
 
 
 def _use_elementwise_single_wire(
@@ -679,6 +631,7 @@ def _execute_statevector_program(
     reuse_clifford_output = clifford_matching_output_reuse_enabled(program)
     owns_output = owns_input
     clifford_scratch: torch.Tensor | None = None
+    cx_rzz_swap_scratch: torch.Tensor | None = None
     for step in program:
         if isinstance(step, _StatevectorCliffordMatchingStep):
             native_output, clifford_scratch = apply_native_clifford_matching(
@@ -716,6 +669,18 @@ def _execute_statevector_program(
             factors, wires = _controlled_phase_graph_factors(circuit, step, output)
             output = _apply_controlled_phase_graph_cpu(
                 output, factors, wires, circuit.n_qubits, inplace=owns_output
+            )
+            owns_output = True
+            continue
+        if isinstance(step, _StatevectorHadamardControlledPhaseGraphStep):
+            factors, wires = _controlled_phase_graph_factors(circuit, step, output)
+            output = _apply_hadamard_controlled_phase_graph_cpu(
+                output,
+                factors,
+                wires,
+                step.target,
+                circuit.n_qubits,
+                inplace=owns_output,
             )
             owns_output = True
             continue
@@ -797,6 +762,28 @@ def _execute_statevector_program(
         if isinstance(step, _StatevectorCXSequenceStep):
             output = _apply_cx_sequence(circuit, step, output)
             continue
+        if isinstance(step, _StatevectorCXSequenceRZZSwapStep):
+            previous = output
+            output = _apply_cx_rzz_swap_sequence(
+                step,
+                output,
+                circuit.n_qubits,
+                scratch=cx_rzz_swap_scratch,
+            )
+            if owns_output and output.data_ptr() != previous.data_ptr():
+                cx_rzz_swap_scratch = previous
+            owns_output = True
+            continue
+        if isinstance(step, _StatevectorSwapSequenceStep):
+            from .swap_sequence_dispatch import _apply_swap_sequence_step
+
+            output = _apply_swap_sequence_step(
+                output,
+                swaps=step.swaps,
+                n_qubits=circuit.n_qubits,
+            )
+            owns_output = True
+            continue
         if isinstance(step, _StatevectorRXRZLoopStep):
             output = _apply_rx_rz_loop(
                 output,
@@ -817,6 +804,19 @@ def _execute_statevector_program(
             continue
         instruction = step.instruction
         name = canonical_opcode(instruction.name)
+        if name in {"ccx", "cswap"}:
+            from .reversible_3q_dispatch import _try_apply_cataloged_reversible_3q
+
+            first_qubit, second_qubit, third_qubit = instruction.wires
+            dispatched = _try_apply_cataloged_reversible_3q(
+                output,
+                qubits=(first_qubit, second_qubit, third_qubit),
+                n_qubits=circuit.n_qubits,
+                opcode=name,
+            )
+            if dispatched is not None:
+                output = dispatched
+                continue
         if name in {"x", "cx", "swap"}:
             output = _apply_fixed_permutation(
                 output, name, instruction.wires, circuit.n_qubits
@@ -826,6 +826,28 @@ def _execute_statevector_program(
                 output, name, instruction.wires[0], circuit.n_qubits
             )
         else:
+            if name in {"rxx", "ryy", "rzz"}:
+                parameters = _gate_parameters(
+                    circuit,
+                    instruction,
+                    output,
+                    parameter_bindings,
+                )
+                if parameters is not None:
+                    from .pauli_rotation_dispatch import (
+                        _try_apply_cataloged_pauli_rotation,
+                    )
+
+                    dispatched = _try_apply_cataloged_pauli_rotation(
+                        output,
+                        parameters[:, 0],
+                        qubits=instruction.wires,
+                        n_qubits=circuit.n_qubits,
+                        opcode=name,
+                    )
+                    if dispatched is not None:
+                        output = dispatched
+                        continue
             matrix = _gate_matrix(
                 instruction,
                 bsz=output.shape[0],
@@ -861,6 +883,11 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_controlled_phase_decomposition
             and _cpu_controlled_phase_graph_fusion_enabled()
         )
+        enable_cpu_hadamard_controlled_phase = bool(
+            enable_cpu_controlled_phase_graph
+            and _cpu_hadamard_controlled_phase_fusion_enabled()
+            and native_cpu_hadamard_controlled_phase_available()
+        )
         product_state_candidate = (
             _cpu_product_state_execution_enabled()
             and circuit._inputs is None
@@ -881,6 +908,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 "cpu_product_state",
                 enable_cpu_controlled_phase_decomposition,
                 enable_cpu_controlled_phase_graph,
+                enable_cpu_hadamard_controlled_phase,
                 product_clifford_matching,
                 product_native_clifford_matching,
             )
@@ -898,6 +926,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     ),
                     enable_cpu_controlled_phase_graph=(
                         enable_cpu_controlled_phase_graph
+                    ),
+                    enable_cpu_hadamard_controlled_phase=(
+                        enable_cpu_hadamard_controlled_phase
                     ),
                     enable_cpu_disjoint_clifford_matching=product_clifford_matching,
                     enable_cpu_native_clifford_matching=(
@@ -933,9 +964,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             circuit._last_statevector_runtime["batched_rotation_sequence_regions"] = 0
             circuit._state_cache = output
             return output
-        batch_size, initial_window_size, uses_bounded_zero_state, output = (
-            _statevector_batch_input(circuit)
-        )
+        (
+            batch_size,
+            initial_window_size,
+            uses_bounded_zero_state,
+            owns_zero_state,
+            output,
+        ) = _statevector_batch_input(circuit)
         enable_triton_loop = (
             _triton_single_qubit_loop_enabled()
             and output.is_cuda
@@ -944,6 +979,13 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
         enable_cpu_cross_wire_diagonal = (
             output.device.type == "cpu" and _cpu_cross_wire_diagonal_fusion_enabled()
         )
+        from .swap_sequence_dispatch import _swap_sequence_policy
+
+        (
+            enable_cpu_swap_sequence,
+            enable_triton_swap_sequence,
+            swap_sequence_fusion_bounds,
+        ) = _swap_sequence_policy(output)
         enable_cpu_cz_graph = (
             output.device.type == "cpu" and _cpu_cz_graph_fusion_enabled()
         )
@@ -965,6 +1007,11 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 output,
                 batch_size=batch_size,
             )
+        )
+        enable_cpu_cx_rzz_swap = bool(
+            enable_cpu_native_parameterized_one_qubit_layer
+            and _cpu_cx_rzz_swap_fusion_enabled()
+            and native_cpu_cx_rzz_swap_available()
         )
         native_fused_rotation_layer = native_fused_rotation_layer_compile_enabled()
         native_scalar_fused_rotation_layer = bool(
@@ -1010,6 +1057,14 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             enable_cpu_native_clifford_matching,
             "cpu_native_rotation_clifford_fusion",
             native_rotation_clifford_fusion_enabled(),
+            "cpu_swap_sequence",
+            enable_cpu_swap_sequence,
+            "triton_swap_sequence",
+            enable_triton_swap_sequence,
+            "cpu_hadamard_controlled_phase",
+            enable_cpu_hadamard_controlled_phase,
+            "cpu_cx_rzz_swap",
+            enable_cpu_cx_rzz_swap,
             "cpu_controlled_phase_decomposition",
             enable_cpu_controlled_phase_decomposition,
             "cpu_controlled_phase_graph",
@@ -1042,6 +1097,11 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                     enable_cpu_native_clifford_matching
                 ),
                 enable_cpu_native_rotation_clifford_fusion=native_rotation_clifford_fusion_enabled(),
+                swap_fusion_bounds=swap_sequence_fusion_bounds,
+                enable_cpu_hadamard_controlled_phase=(
+                    enable_cpu_hadamard_controlled_phase
+                ),
+                enable_cpu_cx_rzz_swap=enable_cpu_cx_rzz_swap,
                 enable_cpu_controlled_phase_decomposition=(
                     enable_cpu_controlled_phase_decomposition
                 ),
@@ -1077,6 +1137,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 program,
                 output,
                 parameter_bindings,
+                owns_input=owns_zero_state,
             )
         else:
             preallocate = _preallocated_batch_assembly_beneficial(program)
@@ -1087,6 +1148,7 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
                 batch_size=batch_size,
                 chunk_size=batch_chunk_size,
                 bounded_zero_state=uses_bounded_zero_state,
+                owns_zero_state=owns_zero_state,
                 preallocate=preallocate,
                 execute=lambda window, owns_input: _execute_statevector_program(
                     circuit,
@@ -1102,120 +1164,9 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
 
 
 def _expectation_z(circuit: Circuit, wires: tuple[int, ...]) -> torch.Tensor:
-    """Evaluate per-qubit Z expectations for a local statevector circuit."""
+    """Evaluate Z signs read from bit ``n_wires - 1 - wire``."""
 
-    # The sign of a qubit is read from bit ``n_wires - 1 - wire``.  A qubit outside
-    # the statevector makes that shift negative, and torch yields all ones for a
-    # negative shift, so the qubit silently reported +1 at every step instead of
-    # being refused.  The range is knowable here, before the state is built.
-    for wire in wires:
-        if not 0 <= wire < circuit.n_qubits:
-            raise ValueError("wire is outside the statevector")
-    probabilities = torch.abs(state(circuit)) ** 2
-    key = (wires, str(probabilities.device), probabilities.dtype)
-    signs = circuit._statevector_z_signs.get(key)
-    if signs is None:
-        basis = torch.arange(
-            probabilities.shape[-1],
-            dtype=torch.int64,
-            device=probabilities.device,
-        )
-        signs = torch.stack(
-            tuple(
-                1 - 2 * ((basis >> (circuit.n_qubits - 1 - wire)) & 1) for wire in wires
-            ),
-            dim=-1,
-        ).to(dtype=probabilities.dtype)
-        circuit._statevector_z_signs[key] = signs
-    return probabilities @ signs
-
-
-def _expectation_pauli_string(
-    circuit: Circuit,
-    *,
-    x: tuple[int, ...],
-    y: tuple[int, ...],
-    z: tuple[int, ...],
-) -> torch.Tensor:
-    """Evaluate one X/Y/Z product observable for a local statevector circuit."""
-
-    current_state = state(circuit)
-    operators = tuple(
-        (wire, axis) for axis, wires in (("X", x), ("Y", y), ("Z", z)) for wire in wires
-    )
-    from .pauli_expectation_dispatch import (
-        _try_apply_cataloged_statevector_pauli_expectation,
-    )
-
-    dispatched = _try_apply_cataloged_statevector_pauli_expectation(
-        current_state,
-        operators,
-    )
-    if dispatched is not None:
-        return dispatched
-    transformed = current_state
-    for operator, wires in ((X_MATRIX, x), (Y_MATRIX, y), (Z_MATRIX, z)):
-        matrix = operator.to(
-            device=current_state.device,
-            dtype=current_state.dtype,
-        )
-        for wire in wires:
-            # Every term is a single-qubit matrix, which is exactly what the
-            # elementwise kernel is for: a full string costs one pass per qubit.
-            # The shipped code sent Z through ``_apply_matrix`` as well rather
-            # than through the diagonal kernel, and that is kept.
-            transformed = _apply_gate_matrix(
-                transformed,
-                matrix,
-                (wire,),
-                circuit.n_qubits,
-                uses_diagonal_kernel=False,
-            )
-    value = complex_mul(complex_conj(current_state), transformed).sum(dim=-1)
-    return torch.real(value)
-
-
-def _sample_statevector(
-    circuit: Circuit,
-    *,
-    shots: int,
-    generator: torch.Generator | None,
-    return_bits: bool,
-) -> torch.Tensor:
-    """Sample local statevector probabilities as indices or bitstrings."""
-
-    probabilities = torch.abs(state(circuit)) ** 2
-    samples = torch.multinomial(
-        probabilities,
-        num_samples=shots,
-        replacement=True,
-        generator=generator,
-    )
-    return _bits_from_indices(samples, circuit.n_qubits) if return_bits else samples
-
-
-def _expectation_from_operators(
-    *ops: tuple[Any, Sequence[int]],
-    ket: torch.Tensor,
-) -> torch.Tensor:
-    """Evaluate a dense operator product against an explicit statevector."""
-
-    from ...circuit import Circuit
-
-    input_state = ket.reshape(1, -1) if ket.ndim == 1 else ket
-    n_wires = int(
-        torch.log2(torch.tensor(input_state.shape[-1], dtype=torch.float32)).item()
-    )
-    circuit = Circuit(
-        n_wires,
-        bsz=input_state.shape[0],
-        device=input_state.device,
-        dtype=input_state.dtype if input_state.is_complex() else None,
-        inputs=input_state,
-    )
-    for matrix, wires in ops:
-        circuit.any(*wires, unitary=matrix)
-    return complex_mul(complex_conj(input_state), state(circuit)).sum(dim=-1)
+    return _measurement_expectation_z(circuit, wires)
 
 
 def run_local_statevector(
