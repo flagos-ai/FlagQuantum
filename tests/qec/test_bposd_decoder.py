@@ -729,25 +729,28 @@ def test_the_module_is_reachable_from_a_fresh_interpreter() -> None:
     assert completed.returncode == 0, completed.stderr
 
 
-def test_the_decoder_is_outside_the_registry_by_contract_not_by_omission() -> None:
-    """The registry's protocol promises a graph this decoder cannot produce.
+def test_the_decoder_is_reached_by_name_once_the_graph_moved_to_the_sub_protocol() -> None:
+    """The registry promises a decoded syndrome; the graph is a narrower promise.
 
-    Three contracts state that this decoder is constructed directly rather than
-    reached through ``decoder_names()``, and the reason given is a protocol
-    promise rather than a missing method. That is a claim about the tree, so it
-    is measured here against a model both decoders accept: the matcher carries
-    the constructor the protocol requires and its instance carries the graph,
-    this decoder's does neither, and the registry's own admission check refuses
-    it for the reason its refusal message names.
+    This decoder was constructed directly because the registry's one protocol
+    promised a ``DecodingGraph`` view of what was built and a model carrying a
+    three-detector mechanism has no pair graph. The promise now lives in
+    ``GraphlikeDetectorErrorModelDecoder``, so the family protocol is satisfied
+    here and the name resolves -- while the graph stays out of reach, which is
+    the half that did not change. Both halves are measured against a model both
+    decoders accept, so the name is not merely present in ``decoder_names()``.
     """
 
     from flagquantum.qec.decoding_graph import DecodingGraph
     from flagquantum.qec.registry import (
         AUTHORITY_NAME,
+        BELIEF_PROPAGATION_OSD_NAME,
         CROSS_CHECK_NAME,
         SLIDING_WINDOW_NAME,
         DetectorErrorModelDecoder,
+        GraphlikeDetectorErrorModelDecoder,
         decoder_names,
+        get_decoder,
         register_decoder,
     )
 
@@ -755,20 +758,26 @@ def test_the_decoder_is_outside_the_registry_by_contract_not_by_omission() -> No
     matcher = MinimumWeightMatchingDecoder.from_detector_error_model(model)
     assert isinstance(matcher.graph, DecodingGraph)
     assert isinstance(matcher, DetectorErrorModelDecoder)
+    assert isinstance(matcher, GraphlikeDetectorErrorModelDecoder)
 
-    instance = BeliefPropagationOsdDecoder(model)
-    assert not hasattr(BeliefPropagationOsdDecoder, "from_detector_error_model")
-    assert not hasattr(instance, "graph")
-    assert not isinstance(instance, DetectorErrorModelDecoder)
+    assert hasattr(BeliefPropagationOsdDecoder, "from_detector_error_model")
+    through_name = get_decoder(BELIEF_PROPAGATION_OSD_NAME, model)
+    assert type(through_name) is BeliefPropagationOsdDecoder
+    assert isinstance(through_name, DetectorErrorModelDecoder)
+    assert not isinstance(through_name, GraphlikeDetectorErrorModelDecoder)
+    assert not hasattr(through_name, "graph")
+    assert through_name.decode([0, 1]) == BeliefPropagationOsdDecoder(model).decode(
+        [0, 1]
+    )
 
-    with pytest.raises(TypeError, match="from_detector_error_model"):
-        register_decoder("belief_propagation_osd")(BeliefPropagationOsdDecoder)
+    # Registering the class a second time is still refused, and for the reason
+    # the registry gives: one name answers to one class.
+    with pytest.raises(ValueError, match="already registered"):
+        register_decoder(BELIEF_PROPAGATION_OSD_NAME)(BeliefPropagationOsdDecoder)
 
-    # The refusal is not enough on its own: the name has to stay free, or a
-    # later registration would silently take a name this one was refused.
-    assert "belief_propagation_osd" not in decoder_names()
     assert set(decoder_names()) == {
         AUTHORITY_NAME,
+        BELIEF_PROPAGATION_OSD_NAME,
         CROSS_CHECK_NAME,
         SLIDING_WINDOW_NAME,
     }

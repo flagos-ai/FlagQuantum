@@ -194,17 +194,18 @@ domain is narrower than the authority's and never the reverse.
 
 A code whose mechanisms flip three detectors has no pair-graph, so the matcher
 declines it with a stated reason rather than projecting it onto an edge.
-`BeliefPropagationOsdDecoder` answers that model instead of declining it:
+`get_decoder("belief_propagation_osd", model)` answers that model instead of
+declining it:
 
 ```python
 from flagquantum.errors import CapabilityError
 from flagquantum.qec import (
-    BeliefPropagationOsdDecoder,
     DetectorErrorModel,
     MinimumWeightMatchingDecoder,
     PhenomenologicalNoise,
     SteaneCode,
     build_memory_circuit,
+    get_decoder,
 )
 
 memory = build_memory_circuit(SteaneCode(), rounds=1)
@@ -217,7 +218,7 @@ try:
 except CapabilityError as error:
     print(str(error).split(",", 1)[0])
 
-decoder = BeliefPropagationOsdDecoder(model)
+decoder = get_decoder("belief_propagation_osd", model)
 result = decoder.decode([0, 1, 2])
 print(result.observables, round(result.weight, 6), result.converged, result.iterations)
 ```
@@ -233,9 +234,15 @@ implied. On the one-round Steane model it reaches the least weight and the most
 likely observable for all 64 syndromes; on the one-round rotated surface code it
 carries more weight than the least-weight explanation on five syndromes of 256
 and differs from the most likely observable on three of them. A syndrome outside
-the span of the model's mechanisms is refused rather than answered, and this
-decoder is deliberately not in `decoder_names()`: the registry's protocol
-promises the decoding graph it built, and such a model has none.
+the span of the model's mechanisms is refused rather than answered. The
+registry reaches it by name -- `decoder_names()` holds this decoder beside the
+matcher, the windowed reading of it and the PyMatching cross-check -- and the
+reason the name was absent for a while is now the reason the registry states
+two protocols rather than one: what every name promises is the decoded
+syndrome, `DetectorErrorModelDecodeResult`, and the decoding graph the
+graphlike names build is `GraphlikeDetectorErrorModelDecoder`, which a model
+with a three-detector mechanism cannot satisfy. Asking this name for a
+`DecodingGraph` is refused with that reason.
 
 ## Build a model from matrices, without a circuit
 

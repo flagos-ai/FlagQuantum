@@ -1112,10 +1112,24 @@ one bands a graph the matcher can search.
 reaches a decoder through `get_decoder(name, H_or_dem_text_or_sparse_matrix,
 **options)` and registers one with a decorator, and this module offers
 `get_decoder(name, source, **options)`, `register_decoder(name, *,
-replace=False)`, `decoder_names()`, and the `DetectorErrorModelDecoder` protocol
-those three are written against. `AUTHORITY_NAME`, `CROSS_CHECK_NAME` and
-`SLIDING_WINDOW_NAME` name the three registrations this package ships: the
-authority, the optional cross-check, and the same authority read through a window.
+replace=False)`, `decoder_names()`, and the two protocols those three are
+written against. `AUTHORITY_NAME`, `CROSS_CHECK_NAME`, `SLIDING_WINDOW_NAME`
+and `BELIEF_PROPAGATION_OSD_NAME` name the four registrations this package
+ships: the authority, the optional cross-check, the same authority read through
+a window, and the decoder that answers the model the matcher refuses.
+
+Two protocols rather than one is the shape the family took when the fourth name
+was added, and it is what makes that name honest. `DetectorErrorModelDecoder`
+states what every registered name promises: `decode`, returning
+`DetectorErrorModelDecodeResult`, the observables the correction flips.
+`GraphlikeDetectorErrorModelDecoder` states the narrower promise the three
+matching names keep and the hyperedge decoder cannot: `graph`, the pair graph
+that was built. The graph route of `get_decoder` is that sub-protocol's only
+consumer, and it measures `graph` in the class's constructor signature before it
+hands a graph in, so a name whose implementation searches no pair graph is
+refused with its reason instead of failing inside a constructor. Splitting the
+promise rather than widening the class was the alternative to leaving the decoder
+out, and it is the one this module took.
 
 Three things about it are narrower than upstream on purpose, and each is a
 decision rather than an omission.
@@ -1126,7 +1140,8 @@ model, stim's text for one, and the decoding graph the model defines. A model is
 lifted through the class's own `from_detector_error_model`; a graph is passed to
 the constructor, because the graph is already the thing a matcher searches and
 rebuilding a model from it would lose the observable labels the caller has in
-hand; text is read through `DetectorErrorModel.from_stim_text` first. A
+hand, and only a class that takes the graph accepts this carrier; text is read
+through `DetectorErrorModel.from_stim_text` first. A
 parity-check matrix is not a carrier, although upstream's
 `H_or_dem_text_or_sparse_matrix` is, because `from_code_matrices` reads a noise
 model and a round count rather than defaulting them, so a factory that lifted a
@@ -1138,14 +1153,11 @@ decoders in this layer take an ordered syndrome history rather than detection
 events, and `DetectorErrorModelDecoder` requires
 `from_detector_error_model`, so one name space over two input protocols would
 make a name mean one of two things. They stay directly constructed, which is also
-why the registry is a module of its own rather than methods on `Decoder`. The
-belief-propagation decoder is the third case and the narrower one: it reads a
-detector error model like the registered three, and stays out because the protocol
-also promises the `DecodingGraph` that was built, which is exactly what a
-hyperedge model cannot produce. The section above states that reason in full.
+why the registry is a module of its own rather than methods on `Decoder`.
 
 The windowed decoder is registered rather than kept out, and the distinction is
-what the protocol promises. It builds the graph the model defines and holds it, so
+what the graphlike protocol promises. It builds the graph the model defines and
+holds it, so
 it carries the `DecodingGraph` the protocol requires, and its `decode` reads
 detection events and returns the same `MatchingDecodeResult` the authority
 returns; what it adds is a band width and a window width, and those are
@@ -1163,13 +1175,16 @@ decoder in this family shares. A `TypeError` at import time, naming the member
 that is missing, is a better failure than an `AttributeError` at the first call,
 where the name is all the caller has to go on.
 
-`get_decoder` fails closed in two more places. An unregistered name raises
+`get_decoder` fails closed in three more places. An unregistered name raises
 `ValueError` and lists the names that are registered, rather than reaching any
-implementation, and a source that is not one of the three carriers raises
+implementation; a source that is not one of the three carriers raises
 `TypeError` naming `DecodingGraph`, since that is the carrier a caller is most
-likely to have held. `**options` goes to whichever route the source selects and
-is not filtered here, so passing the text reader's `use_decomp_suggestions` to
-the graph route raises rather than being dropped.
+likely to have held; and a graph handed to a name whose class takes no graph
+raises `CapabilityError` naming the name, the class and the reason, rather than
+the `TypeError` the constructor itself would raise, because the registry chose
+the route and the registry is what should say so. `**options` goes to whichever
+route the source selects and is not filtered here, so passing the text reader's
+`use_decomp_suggestions` to the graph route raises rather than being dropped.
 
 The optional implementation is registered whether or not it is installed, so
 `pymatching` is part of this package's surface rather than the extra's: asking

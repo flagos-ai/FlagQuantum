@@ -296,11 +296,11 @@ the model for a matcher, because a decoded logical error rate at this distance
 does not separate the two routes while the per-shot agreement does -- the in-tree
 matcher and the PyMatching cross-check agree on every shot and belief propagation
 with ordered statistics differs on 1.7 percent of them. The second half is the
-registry: belief propagation with ordered statistics decodes a hyperedge model and
-is reachable from the package, but `register_decoder` requires a
-`from_detector_error_model` classmethod that class does not carry, so
-`decoder_names()` holds the matcher, the windowed reading of it and the
-cross-check. Naming only the graphlike reading as the migration route would have
+registry: belief propagation with ordered statistics decodes a hyperedge model, and
+the registry now reaches it too -- `decoder_names()` holds the matcher, the
+windowed reading of it, the cross-check and `belief_propagation_osd`, because the
+family contract was narrowed to the decoded syndrome and the pair graph the three
+matching names build moved to a sub-protocol beside it. Naming only the graphlike reading as the migration route would have
 been a silent numerical downgrade of the model the caller handed over, so the
 guide states the tradeoff instead, and the test that keeps it true executes every
 fence in one namespace and compares each print against the transcript quoted

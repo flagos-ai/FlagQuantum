@@ -56,9 +56,12 @@ from .qldpc import qldpc_code
 from .reed_muller import reed_muller_code
 from .registry import (
     AUTHORITY_NAME,
+    BELIEF_PROPAGATION_OSD_NAME,
     CROSS_CHECK_NAME,
     SLIDING_WINDOW_NAME,
+    DetectorErrorModelDecodeResult,
     DetectorErrorModelDecoder,
+    GraphlikeDetectorErrorModelDecoder,
     decoder_names,
     get_decoder,
     register_decoder,
@@ -82,6 +85,7 @@ from .types import (
 
 __all__ = (
     "AUTHORITY_NAME",
+    "BELIEF_PROPAGATION_OSD_NAME",
     "BeliefPropagationOsdDecodeResult",
     "BeliefPropagationOsdDecoder",
     "CROSS_CHECK_NAME",
@@ -101,10 +105,12 @@ __all__ = (
     "DetectionEvent",
     "Detector",
     "DetectorErrorModel",
+    "DetectorErrorModelDecodeResult",
     "DetectorErrorModelDecoder",
     "DetectorLayout",
     "ErrorEvent",
     "ErrorSchedule",
+    "GraphlikeDetectorErrorModelDecoder",
     "LogicalObservable",
     "MatchingDecodeResult",
     "MatchingDependencyError",

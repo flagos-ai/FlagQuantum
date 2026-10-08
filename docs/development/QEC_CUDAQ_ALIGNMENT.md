@@ -60,7 +60,7 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_chunking` | absent | later | — | No chunks and no seams, so the windowed decoder decides a whole history band by band rather than consuming a stream. |
 | `qec_dem_text_interchange` | partial | now | `qec_stim_integration` | Both directions present and independently checked; both separator readings offered under upstream's flag; input end is narrow. |
 | `qec_stim_sampling_join` | partial | now | `qec_stim_integration` | The join landed; the noise grammar is one channel at two placement classes, so arbitrary annotated circuits are still declined. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a windowed reading of it registered beside the exact one, its PyMatching cross-check, a name-keyed registry, and a belief-propagation decoder with ordered statistics all landed; no streaming entry point over a chunk seam, no name for the hyperedge decoder, no plugin boundary. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a windowed reading of it registered beside the exact one, its PyMatching cross-check, a name-keyed registry, and a belief-propagation decoder with ordered statistics all landed -- the last of those reached by name, through a family contract narrowed to the decoded syndrome with the pair graph moved to a graphlike sub-protocol beside it; no streaming entry point over a chunk seam, no plugin boundary. |
 | `qec_decoder_configuration` | absent | later | — | A band and a window are constructor options of one decoder rather than a configuration schema over several; a schema waits until a selection has to carry settings a caller cannot state at the constructor. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | partial | later | `qec_logical_operations` | Product rotation landed as a code-declaration operation: a candidate logical product is certified against the code's own checks and one observable's partner is derived over GF(2); lattice surgery and distillation are still absent. |
@@ -169,15 +169,19 @@ explanation on five syndromes of 256, by 0.6904 on two and 2.9444 on three, and
 differs from the most likely observable on three of those five; that is the whole
 of its gap to an optimal decoder on that model, and it is why
 `qec_belief_propagation_osd_decoder` is recorded at `development_evidence`
-rather than higher. It is deliberately not in `decoder_names()`, and the reason
-is the registry's protocol rather than a missing constructor: the protocol
-promises a `DecodingGraph` view of what was built, and a model with a
+rather than higher. It was outside `decoder_names()` for a while, and the reason
+was the registry's protocol rather than a missing constructor: the one protocol
+promised a `DecodingGraph` view of what was built, and a model with a
 three-detector mechanism has no pair-graph at all, because
-`DecodingGraph.from_detector_error_model` refuses one as a hyperedge. Adding the
-missing classmethod alone would therefore register a decoder that does not
-satisfy the protocol it is registered under, so naming it is a protocol decision
-that this row records rather than takes, and the capability itself is owned
-where it belongs.
+`DecodingGraph.from_detector_error_model` refuses one as a hyperedge. Widening the
+class while leaving that promise in place would have registered a decoder that
+does not satisfy the protocol it is registered under, so the protocol was split
+instead: `DetectorErrorModelDecoder` states the decoded syndrome every name
+promises, `GraphlikeDetectorErrorModelDecoder` states the pair graph the three
+matching names keep, and the decoder is now reached as
+`get_decoder("belief_propagation_osd", model)` while a `DecodingGraph` handed to
+that name is refused with its reason. The capability itself is owned where it
+belongs.
 
 The colour patch is the first shipped family whose decoding evidence is this
 route rather than the matcher's, and it says what the row's own scope boundary

@@ -71,6 +71,7 @@ from flagquantum.observables.fermion import (
 )
 from flagquantum.operators import SuperOperator
 from flagquantum.qec import (
+    BeliefPropagationOsdDecoder,
     CssCode,
     CssCodeMatrices,
     bivariate_bicycle_code,
@@ -128,7 +129,7 @@ pytestmark = pytest.mark.unit
 # values a Hartree-Fock solve consumes, and the entry point that builds one. The
 # driver module contributes three more: the Hartree-Fock solution, the returned
 # Hamiltonian with its energies, and the geometry-to-Hamiltonian entry point. The
-# error-correction package contributes five: the code record a caller constructs,
+# error-correction package contributes six: the code record a caller constructs,
 # the matrices that record is read back as, the bivariate-bicycle family, whose
 # example is the smallest member of the family rather than the published one,
 # because the published instance spends its time in the distance search and an
@@ -136,13 +137,16 @@ pytestmark = pytest.mark.unit
 # example is its smallest member and whose two numbers are the two family
 # distances rather than the code's distance alone, and the route that derives the
 # same record from a caller's check matrices, whose example is the Steane code
-# written as its three checks rather than as a record.
+# written as its three checks rather than as a record, and the hyperedge decoder's
+# model constructor, whose example is the name the registry reaches it by, since
+# that name is what the constructor exists for.
 ENTRIES = (
     adder_circuit,
     adder_wires,
     adjoint_gradient,
     amplitude_encode,
     angular_encode,
+    BeliefPropagationOsdDecoder.from_detector_error_model,
     BosonOperator,
     CssCode,
     CssCodeMatrices,

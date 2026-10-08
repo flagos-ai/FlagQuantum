@@ -39,7 +39,7 @@ import stim
 
 from flagquantum.errors import CapabilityError
 from flagquantum.qec import (
-    BeliefPropagationOsdDecoder,
+    BELIEF_PROPAGATION_OSD_NAME,
     DetectorErrorModel,
     MatchingDependencyError,
     decoder_names,
@@ -207,7 +207,7 @@ def cross_check(distance: int, rounds: int, shots: int, seed: int) -> None:
         return
     matching = decode_all(get_decoder("minimum_weight_matching", expanded), syndromes)
     crossed = decode_all(cross, syndromes)
-    hyperedge = decode_all(BeliefPropagationOsdDecoder(combined), syndromes)
+    hyperedge = decode_all(get_decoder(BELIEF_PROPAGATION_OSD_NAME, combined), syndromes)
     report("shots", shots)
     report("matcher LER", round(float(np.mean(matching != answers)), 4))
     report("pymatching LER", round(float(np.mean(crossed != answers)), 4))

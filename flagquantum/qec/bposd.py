@@ -188,6 +188,50 @@ class BeliefPropagationOsdDecoder:
         )
         object.__setattr__(self, "_decodable", flips.any(dim=0))
 
+    @classmethod
+    def from_detector_error_model(
+        cls,
+        model: DetectorErrorModel,
+        *,
+        max_iterations: int = _DEFAULT_ITERATIONS,
+        scaling: float = _DEFAULT_SCALING,
+    ) -> BeliefPropagationOsdDecoder:
+        """Build the decoder for one detector error model.
+
+        The model route exists so this decoder is reachable through the
+        name-keyed registry in :mod:`flagquantum.qec.registry`, whose family
+        contract is a model in and a decoded syndrome out. There is deliberately
+        no graph route beside it: a graph is a pair-graph view of a model, and
+        the model this decoder answers is one the graphlike scope refuses, so a
+        caller that holds a graph holds a graphlike model and wants a matcher for
+        it rather than this decoder.
+
+        Args:
+            model: The detector error model whose mechanisms explain a syndrome.
+            max_iterations: The belief-propagation passes to run before the
+                ordered-statistics pass decides the result.
+            scaling: The min-sum factor damping each check message.
+
+        Returns:
+            The decoder, built from the model.
+
+        Raises:
+            TypeError: The model or an option has the wrong type.
+            ValueError: ``max_iterations`` is below one, or ``scaling`` is outside
+                the half-open interval that keeps the min-sum iteration damped.
+
+        Examples:
+            >>> from flagquantum.qec import DetectorErrorModel, get_decoder
+            >>> model = DetectorErrorModel.from_stim_text(
+            ...     "error(0.1) D0 D1 D2\\ndetector D0\\ndetector D1\\ndetector D2\\n"
+            ... )
+            >>> decoder = get_decoder("belief_propagation_osd", model)
+            >>> decoder.decode([0, 1, 2]).observables
+            ()
+        """
+
+        return cls(model, max_iterations=max_iterations, scaling=scaling)
+
     def decode(
         self, detection_events: Iterable[int]
     ) -> BeliefPropagationOsdDecodeResult:

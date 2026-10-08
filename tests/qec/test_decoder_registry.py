@@ -31,10 +31,23 @@ success path differs.
 The other half of the row is the boundary this module does not cross, and it is
 pinned here too: the repetition-code decoders are *not* registered, because a
 registry that held two input protocols would make a name mean one of two things.
+
+The family contract is a decoded syndrome, and the pair graph is a sub-protocol.
+A fourth name reaches a decoder that answers a model the matcher refuses as a
+hyperedge, and that decoder has no pair graph to read back, so the graph cannot
+be part of what every name promises. What every name promises is the observables
+its correction flips, which is `DetectorErrorModelDecodeResult`; the graph is
+`GraphlikeDetectorErrorModelDecoder`, satisfied by the three graphlike classes
+and by no instance of the hyperedge decoder, and the graph route of
+`get_decoder` is the contract's only consumer. The tests below hold both halves:
+every name decodes its own model, the graph route is offered for the graphlike
+names and refused with a reason for the hyperedge one, and the two result records
+are the two kinds the family's one result protocol accepts.
 """
 
 from __future__ import annotations
 
+import inspect
 import subprocess
 import sys
 
@@ -43,15 +56,22 @@ import pytest
 from flagquantum.errors import CapabilityError
 from flagquantum.qec import (
     AUTHORITY_NAME,
+    BELIEF_PROPAGATION_OSD_NAME,
     CROSS_CHECK_NAME,
     SLIDING_WINDOW_NAME,
+    BeliefPropagationOsdDecoder,
+    BeliefPropagationOsdDecodeResult,
     DecodingGraph,
     DetectorErrorModel,
+    DetectorErrorModelDecodeResult,
     DetectorErrorModelDecoder,
+    GraphlikeDetectorErrorModelDecoder,
     MatchingDependencyError,
+    MatchingDecodeResult,
     MinimumWeightMatchingDecoder,
     PyMatchingDecoder,
     RepetitionLookupDecoder,
+    SlidingWindowMatchingDecoder,
     build_memory_circuit,
     decoder_names,
     get_decoder,
@@ -80,6 +100,14 @@ def _syndrome(model: DetectorErrorModel) -> list[int]:
     return [int(index) for index in sample.detectors[0].nonzero()[0]]
 
 
+def _hyperedge_model() -> DetectorErrorModel:
+    """A model the matcher refuses: one mechanism flips three detectors."""
+
+    return DetectorErrorModel.from_stim_text(
+        "error(0.1) D0 D1 D2\ndetector D0\ndetector D1\ndetector D2\n"
+    )
+
+
 def test_the_registry_names_the_authority_and_the_cross_check() -> None:
     names = decoder_names()
     assert AUTHORITY_NAME in names
@@ -88,7 +116,13 @@ def test_the_registry_names_the_authority_and_the_cross_check() -> None:
 
 
 @pytest.mark.parametrize(
-    "name", [AUTHORITY_NAME, CROSS_CHECK_NAME, SLIDING_WINDOW_NAME]
+    "name",
+    [
+        AUTHORITY_NAME,
+        CROSS_CHECK_NAME,
+        SLIDING_WINDOW_NAME,
+        BELIEF_PROPAGATION_OSD_NAME,
+    ],
 )
 def test_every_registered_name_builds_a_decoder_that_decodes(name: str) -> None:
     """Every name answers on every host, and the optional one says which host it is.
@@ -250,10 +284,107 @@ def test_a_registration_can_be_replaced_when_the_caller_says_so() -> None:
 
 def test_the_registry_keeps_the_input_family_and_not_the_repetition_decoders() -> None:
     registered = set(decoder_names())
-    assert {AUTHORITY_NAME, CROSS_CHECK_NAME, SLIDING_WINDOW_NAME} == registered
+    assert {
+        AUTHORITY_NAME,
+        CROSS_CHECK_NAME,
+        SLIDING_WINDOW_NAME,
+        BELIEF_PROPAGATION_OSD_NAME,
+    } == registered
     assert RepetitionLookupDecoder is not None
     assert not hasattr(RepetitionLookupDecoder, "from_detector_error_model")
     assert isinstance(get_decoder(AUTHORITY_NAME, _model()), DetectorErrorModelDecoder)
+
+
+def test_a_hyperedge_model_has_a_name_to_ask_for() -> None:
+    """The registry's point, seen from the model the matcher cannot take.
+
+    The graphlike half of the family refuses this model and says so, and the
+    hyperedge half answers it -- through a name, which is what the registry
+    exists for. Both halves are measured against the one model, so the name is
+    not merely present in `decoder_names()`.
+    """
+
+    model = _hyperedge_model()
+    with pytest.raises(CapabilityError) as excinfo:
+        get_decoder(AUTHORITY_NAME, model)
+    assert "graphlike" in str(excinfo.value)
+
+    decoder = get_decoder(BELIEF_PROPAGATION_OSD_NAME, model)
+    assert isinstance(decoder, BeliefPropagationOsdDecoder)
+    direct = BeliefPropagationOsdDecoder.from_detector_error_model(model)
+    assert decoder.decode([0, 1, 2]) == direct.decode([0, 1, 2])
+    # The model declares no logical observable, so the answer is the empty flip
+    # set rather than a named observable: the decode ran and the record is empty.
+    assert decoder.decode([0, 1, 2]).observables == ()
+
+
+def test_the_graph_route_is_offered_only_for_a_graphlike_name() -> None:
+    """The sub-protocol's only consumer, refused for the member that lacks it.
+
+    The graph handed in is a real graph of a graphlike model, because the refusal
+    is about the name and not about the graph: the point is that no graph could
+    be accepted by a decoder that searches none.
+    """
+
+    graph = DecodingGraph.from_detector_error_model(_model())
+
+    for name in (AUTHORITY_NAME, CROSS_CHECK_NAME, SLIDING_WINDOW_NAME):
+        try:
+            decoder = get_decoder(name, graph)
+        except MatchingDependencyError as exc:
+            assert name == CROSS_CHECK_NAME
+            assert "pymatching" in str(exc)
+            continue
+        assert decoder.graph is graph
+
+    with pytest.raises(CapabilityError) as excinfo:
+        get_decoder(BELIEF_PROPAGATION_OSD_NAME, graph)
+    message = str(excinfo.value)
+    assert BELIEF_PROPAGATION_OSD_NAME in message
+    assert "graph" in message
+
+
+def test_the_pair_graph_belongs_to_the_sub_protocol_and_not_to_the_family() -> None:
+    """One name reaches a graph and another does not, and both are family members.
+
+    The family protocol is satisfied by every registered decoder and the
+    sub-protocol by exactly the graphlike ones, so the graph is a narrower
+    contract rather than a member of the family contract. The class-level half of
+    the same fact is that a graphlike decoder takes ``graph`` as a constructor
+    parameter, which is what the graph route measures; it is measured here
+    against the class rather than assumed, because a required dataclass field is
+    not a class attribute and ``hasattr`` would answer it wrongly.
+    """
+
+    graphlike = [
+        MinimumWeightMatchingDecoder,
+        SlidingWindowMatchingDecoder,
+        PyMatchingDecoder,
+    ]
+    for cls in graphlike:
+        assert hasattr(cls, "from_detector_error_model")
+        assert "graph" in inspect.signature(cls).parameters
+
+    assert hasattr(BeliefPropagationOsdDecoder, "from_detector_error_model")
+    assert "graph" not in inspect.signature(BeliefPropagationOsdDecoder).parameters
+
+    model = _model()
+    matcher = get_decoder(AUTHORITY_NAME, model)
+    hyperedge = get_decoder(BELIEF_PROPAGATION_OSD_NAME, _hyperedge_model())
+
+    assert isinstance(matcher, DetectorErrorModelDecoder)
+    assert isinstance(hyperedge, DetectorErrorModelDecoder)
+    assert isinstance(matcher, GraphlikeDetectorErrorModelDecoder)
+    assert not isinstance(hyperedge, GraphlikeDetectorErrorModelDecoder)
+
+    syndrome = _syndrome(model)
+    matcher_result = matcher.decode(syndrome)
+    hyperedge_result = hyperedge.decode([0, 1, 2])
+    assert isinstance(matcher_result, MatchingDecodeResult)
+    assert isinstance(hyperedge_result, BeliefPropagationOsdDecodeResult)
+    assert isinstance(matcher_result, DetectorErrorModelDecodeResult)
+    assert isinstance(hyperedge_result, DetectorErrorModelDecodeResult)
+    assert isinstance(hyperedge_result.observables, tuple)
 
 
 def test_the_optional_name_is_registered_whether_or_not_it_is_installed() -> None:

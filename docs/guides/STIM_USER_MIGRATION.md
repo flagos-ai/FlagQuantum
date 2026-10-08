@@ -195,14 +195,12 @@ therefore a choice rather than a preference:
   model Stim wrote, and decode it with a decoder that carries hyperedges.
 
 ```python
-from flagquantum.qec import BeliefPropagationOsdDecoder
-
 events, observables = surface.compile_detector_sampler(seed=9).sample(
     shots=2000, separate_observables=True
 )
 syndromes = events.astype(bool)
 answers = observables[:, 0].astype(bool)
-hyperedge_decoder = BeliefPropagationOsdDecoder(combined)
+hyperedge_decoder = get_decoder("belief_propagation_osd", combined)
 matcher = get_decoder("minimum_weight_matching", graphlike)
 cross_check = get_decoder("pymatching", graphlike)
 
@@ -315,12 +313,18 @@ These are stated as boundaries rather than left for a caller to discover.
 - **No comment handling.** Comments are not part of the format this reader
   accepts, though Stim's own writer does not emit them into a detector error
   model.
-- **Belief propagation with ordered statistics is not in the decoder registry.**
-  `BeliefPropagationOsdDecoder` is constructed directly as above, because
-  `register_decoder` requires a `from_detector_error_model` classmethod the class
-  does not carry, so `decoder_names()` names the in-tree matcher, the windowed
-  matcher and the PyMatching cross-check only. A hyperedge model therefore has no
-  registry name today.
+- **The registry's promise is a decoded syndrome, and the pair graph is a
+  narrower one.** `decoder_names()` names the in-tree matcher, the windowed
+  reading of it, the PyMatching cross-check and, since
+  `DetectorErrorModelDecoder` was narrowed to `decode`, the hyperedge decoder
+  `belief_propagation_osd`. What no name promises is `graph`:
+  `GraphlikeDetectorErrorModelDecoder` states that on its own, the three matcher
+  names satisfy it, and asking the hyperedge name for a `DecodingGraph` is
+  refused with a reason rather than failing inside a constructor, because a
+  model with a three-detector mechanism has no pair graph. So `get_decoder`
+  takes the four names and three carriers -- a model, Stim's text for one, a
+  decoding graph -- and a parity-check matrix is not among them, since lifting
+  one would mean choosing the noise model and round count as well.
 - **The registry's third name is the matcher, banded.** `get_decoder` reaches
   `MinimumWeightMatchingDecoder` by name, and it reaches the same matcher over a
   window by name too: `sliding_window_matching` cuts a history into bands of
