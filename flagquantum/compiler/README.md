@@ -33,7 +33,7 @@ Use `optimize(program)` for target-independent optimization and
 | Commutation rules and the block partition | [commutation.py](commutation.py) |
 | Cancellation across a proven commuting gap | [commutation_cancellation.py](commutation_cancellation.py) |
 | Diagonal gates before a measurement | [diagonal_before_measure.py](diagonal_before_measure.py) |
-| Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
+| Connectivity and routing | [coupling.py](coupling.py), [directed_topology.py](directed_topology.py), [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
 | Wire layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |

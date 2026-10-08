@@ -10,33 +10,11 @@ from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import CompilationError
 from .directed_topology import DirectedCouplingMap
+from .operand_semantics import _operand_symmetry, _reverse_cx_rewrite
 
 
 class DirectionLegalizationError(CompilationError):
     """A native circuit cannot satisfy an ordered coupling graph."""
-
-
-# Operand semantics of native two-wire instructions on an ordered physical
-# graph. ``False`` marks a control/target opcode whose physical direction must
-# match the declared edge; ``True`` marks an opcode whose unitary is invariant
-# under exchanging its two operands, so either direction of a physical link
-# satisfies it. The table is total over the two-wire opcodes of
-# ``flagquantum.core.operator_schema.OPERATOR_SCHEMAS``; an unlisted opcode is
-# refused instead of being guessed, and a test fails when a new two-wire opcode
-# is added to Core without an entry here.
-_TWO_WIRE_OPERAND_SYMMETRY: dict[str, bool] = {
-    "cx": False,
-    "cy": False,
-    "crx": False,
-    "cry": False,
-    "crz": False,
-    "cz": True,
-    "cphase": True,
-    "rxx": True,
-    "ryy": True,
-    "rzz": True,
-    "swap": True,
-}
 
 
 def _operand_symmetric(instruction: Instruction) -> bool:
@@ -48,7 +26,7 @@ def _operand_symmetric(instruction: Instruction) -> bool:
             can be applied to it.
     """
 
-    symmetric = _TWO_WIRE_OPERAND_SYMMETRY.get(instruction.name)
+    symmetric = _operand_symmetry(instruction)
     if symmetric is None:
         raise DirectionLegalizationError(
             "directed topology does not define operand semantics for two-wire "
@@ -199,17 +177,12 @@ def legalize_directed_cx(
             raise DirectionLegalizationError(
                 "reverse-CX legalization requires target-native h and cx gates"
             )
-        rewrite = (
-            Instruction("h", (control,)),
-            Instruction("h", (target,)),
-            Instruction("cx", (target, control)),
-            Instruction("h", (control,)),
-            Instruction("h", (target,)),
-        )
-        for ordinal, replacement in enumerate(rewrite):
-            replacement = replace(replacement, metadata=dict(instruction.metadata))
+        # Each replacement carries the native instruction's metadata, so the
+        # provenance of the reversed gate survives the rewrite and the five
+        # instructions that replace it can be traced back to one source gate.
+        for ordinal, (name, wires) in enumerate(_reverse_cx_rewrite(control, target)):
             emit(
-                replacement,
+                Instruction(name, wires, metadata=dict(instruction.metadata)),
                 native_index=native_index,
                 ordinal=ordinal,
                 rewrite="reverse_cx_h_conjugation",

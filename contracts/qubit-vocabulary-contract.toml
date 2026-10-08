@@ -32,7 +32,7 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 343
 measured_deprecated_aliases = 11
-measured_private = 415
+measured_private = 418
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
@@ -153,16 +153,16 @@ canonical = [
     "flagquantum/circuit.py::Circuit.any::*wires",
     "flagquantum/circuit.py::Circuit.expectation_z::wires",
     "flagquantum/circuit.py::Circuit.gate::wires",
+    "flagquantum/compiler/coupling.py::CouplingMap.__init__::n_wires",
+    "flagquantum/compiler/coupling.py::CouplingMap.line::n_wires",
+    "flagquantum/compiler/coupling.py::CouplingMap.neighbors::wire",
+    "flagquantum/compiler/coupling.py::CouplingMap.ring::n_wires",
     "flagquantum/compiler/directed_topology.py::DirectedCouplingMap.__init__::n_wires",
     "flagquantum/compiler/layout.py::Layout.map_wires::wires",
     "flagquantum/compiler/layout.py::remove_layout_restore.rename::wires",
     "flagquantum/compiler/one_qubit_synthesis.py::synthesize_one_qubit_matrix::wire",
     "flagquantum/compiler/openqasm.py::emit_openqasm::result_wires",
     "flagquantum/compiler/qir.py::emit_qir::result_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.__init__::n_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.line::n_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.neighbors::wire",
-    "flagquantum/compiler/routing.py::CouplingMap.ring::n_wires",
     "flagquantum/compiler/two_qubit_synthesis.py::synthesize_two_qubit::wires",
     "flagquantum/core/ir/__init__.py::from_engine_qir::n_wires",
     "flagquantum/core/qubit_mapping.py::remap_qubits::wires",
@@ -589,12 +589,12 @@ files = [
     "flagquantum/benchmarking/simulator_workload_corpus.py",
     "flagquantum/benchmarking/statevector_cpu_paths.py",
     "flagquantum/benchmarking/statevector_local.py",
+    "flagquantum/compiler/coupling.py",
     "flagquantum/compiler/directed_topology.py",
     "flagquantum/compiler/layout.py",
     "flagquantum/compiler/one_qubit_synthesis.py",
     "flagquantum/compiler/openqasm.py",
     "flagquantum/compiler/qir.py",
-    "flagquantum/compiler/routing.py",
     "flagquantum/compiler/two_qubit_synthesis.py",
     "flagquantum/deployment/cloud.py",
     "flagquantum/deployment/routing_evidence.py",

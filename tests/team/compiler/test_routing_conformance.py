@@ -100,6 +100,7 @@ _SCHEMA: dict[str, type] = {
     "final_logical_to_physical": tuple,
     "mapping_restored": bool,
     "direction_semantics": str,
+    "direction_swap_count": int,
     "topology_gate_count": int,
     "routed_gate_count": int,
     "inserted_swap_count": int,
@@ -277,6 +278,16 @@ def _layout_restoration_failures(router: _Router) -> list[str]:
             failures.append(
                 f"{case.label}: direction_semantics "
                 f"{routing.get('direction_semantics')!r}"
+            )
+        if routing.get("direction_swap_count") != 0:
+            # Every device here is a ``CouplingMap``, whose links carry no
+            # direction, so no operand pair can run against one and no ordering
+            # swap can be inserted. A nonzero count would be a router pricing a
+            # repair this device cannot require, and it would be counted inside
+            # ``inserted_swap_count`` as well.
+            failures.append(
+                f"{case.label}: direction_swap_count "
+                f"{routing.get('direction_swap_count')!r} on an undirected device"
             )
     return failures
 
@@ -671,6 +682,11 @@ def _replacement_router(
         "final_logical_to_physical": tuple(range(ir.n_wires)),
         "mapping_restored": True,
         "direction_semantics": "logical_wire_order_preserved",
+        # This replacement routes on the undirected graph the case hands it, so no
+        # link has a direction an operand pair could run against and it inserts no
+        # ordering swap. The key is stated because the plan schema now carries it:
+        # a router that reads an ordered device has to count its repairs here.
+        "direction_swap_count": 0,
         "topology_gate_count": topology_gate_count,
         "routed_gate_count": topology_gate_count,
         "inserted_swap_count": inserted_swap_count,

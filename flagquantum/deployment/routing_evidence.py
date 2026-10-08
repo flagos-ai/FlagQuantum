@@ -8,10 +8,24 @@ from collections.abc import Mapping
 from typing import Any
 
 from ..compiler import CouplingMap
+from ..compiler.directed_topology import DirectedCouplingMap
 from ..compiler.routing import DEPLOYABLE_ROUTING_STRATEGIES
 
 DEPLOYMENT_ROUTING_EVIDENCE_SCHEMA = "flagquantum_deployment_routing_evidence_v1"
 DEPLOYMENT_PACKAGE_SCHEMA = "flagquantum_deployment_package_v1"
+
+# The two routing direction semantics a Compiler plan may state, and the device
+# type each one is the only correct answer for. A ``CouplingMap`` link carries no
+# direction, so a plan for one necessarily preserved the logical wire order and
+# cannot have inserted a swap to repair an ordering; a ``DirectedCouplingMap``
+# declares which way its links run, so a plan for one that claims the logical wire
+# order was preserved is a plan whose control/target operations may be reversed.
+# The two are kept as a table rather than inline so that a third device type
+# cannot be added to the accepted arguments without stating its semantics here.
+_DIRECTION_SEMANTICS_BY_DEVICE: tuple[tuple[type, str], ...] = (
+    (CouplingMap, "logical_wire_order_preserved"),
+    (DirectedCouplingMap, "directed_cx"),
+)
 
 
 class DeploymentRoutingEvidenceError(ValueError):
@@ -27,11 +41,20 @@ def _non_negative_int(plan: Mapping[str, Any], key: str) -> int:
     return value
 
 
+def _accepted_direction_semantics(coupling_map: object) -> str | None:
+    """Return the one direction semantics a device type may declare, if known."""
+
+    for device_type, semantics in _DIRECTION_SEMANTICS_BY_DEVICE:
+        if isinstance(coupling_map, device_type):
+            return semantics
+    return None
+
+
 def validate_deployment_routing_plan(
     routing_plan: Mapping[str, Any],
     *,
     n_wires: int,
-    coupling_map: CouplingMap | None,
+    coupling_map: CouplingMap | DirectedCouplingMap | None,
 ) -> dict[str, Any]:
     """Validate and normalize a routing plan for provider serialization."""
 
@@ -51,6 +74,22 @@ def validate_deployment_routing_plan(
     if strategy not in DEPLOYABLE_ROUTING_STRATEGIES:
         raise DeploymentRoutingEvidenceError("unsupported routing strategy")
 
+    semantics = plan.get("direction_semantics")
+    accepted = tuple(value for _, value in _DIRECTION_SEMANTICS_BY_DEVICE)
+    if semantics not in accepted:
+        raise DeploymentRoutingEvidenceError(
+            "routing direction semantics are missing or unsupported"
+        )
+    expected_semantics = _accepted_direction_semantics(coupling_map)
+    if expected_semantics is not None and semantics != expected_semantics:
+        # Named rather than described: the plan and the device disagree about
+        # whether this device's links carry a direction, and no later clause can
+        # repair that, because the emitted program's control/target ordering is
+        # already fixed by then.
+        raise DeploymentRoutingEvidenceError(
+            "routing direction semantics disagree with the deployment backend"
+        )
+
     expected_identity = tuple(range(int(n_wires)))
     initial = tuple(plan.get("initial_logical_to_physical", ()))
     final = tuple(plan.get("final_logical_to_physical", ()))
@@ -66,10 +105,6 @@ def validate_deployment_routing_plan(
     if sorted(pre_restore) != list(expected_identity):
         raise DeploymentRoutingEvidenceError(
             "routing pre-restore mapping must be a complete permutation"
-        )
-    if plan.get("direction_semantics") != "logical_wire_order_preserved":
-        raise DeploymentRoutingEvidenceError(
-            "routing direction semantics are missing or unsupported"
         )
 
     plan_edges = tuple(
@@ -89,6 +124,19 @@ def validate_deployment_routing_plan(
     if inserted != planned:
         raise DeploymentRoutingEvidenceError(
             "inserted SWAP compatibility count must equal planned count"
+        )
+    # A direction repair is two SWAPs inside the total, one on each side of the
+    # gate it orients, so the count is a part of the plan rather than a note
+    # beside it. A count that could not fit inside the total describes a program
+    # this plan does not describe.
+    direction_swaps = _non_negative_int(plan, "direction_swap_count")
+    if 2 * direction_swaps > planned:
+        raise DeploymentRoutingEvidenceError(
+            "routing direction swap count exceeds the planned SWAP count"
+        )
+    if expected_semantics == "logical_wire_order_preserved" and direction_swaps:
+        raise DeploymentRoutingEvidenceError(
+            "an undirected deployment backend cannot have required direction swaps"
         )
     retained = plan.get("post_optimization_inserted_swap_count")
     if retained is not None:
@@ -136,7 +184,7 @@ def build_deployment_routing_evidence(
     *,
     routing_reused: bool,
     n_wires: int,
-    coupling_map: CouplingMap | None,
+    coupling_map: CouplingMap | DirectedCouplingMap | None,
 ) -> dict[str, Any]:
     """Build the stable provider-facing deployment evidence envelope."""
 

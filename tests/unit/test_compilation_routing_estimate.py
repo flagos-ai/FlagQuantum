@@ -285,42 +285,89 @@ def test_the_automatic_choice_is_always_accepted_by_deployment() -> None:
     assert selection.selected_strategy in DEPLOYABLE_ROUTING_STRATEGIES
 
 
-def test_the_undirected_entries_refuse_a_directed_device_by_name() -> None:
-    """A directed device is refused here, not iterated into an opaque failure.
+def test_the_three_entries_read_a_directed_device_and_price_its_ordering() -> None:
+    """An ordered device is priced, and the price states what the ordering cost.
 
-    The Compiler does hold a direction-aware route -- ``legalize_circuit_topology``
-    reaches ``route_to_directed_topology`` -- and the three entries below price and
-    route against an undirected cost model. A ``DirectedCouplingMap`` is not
-    iterable, so before this refusal the coercion failed with the iteration's own
-    ``TypeError``, which named neither the accepted forms nor the entry that reads
-    direction. Each entry now refuses the argument itself.
+    This replaces an earlier test that pinned the opposite behaviour: all three
+    entries used to refuse a ``DirectedCouplingMap`` and named
+    ``legalize_circuit_topology`` as the entry that read direction. That refusal
+    was the row's own recorded gap -- the routers priced hop distance on the
+    undirected graph alone, so direction was a fact only a later legalization pass
+    paid for. Direction is now a term in this cost model: a placed gate whose
+    operands run against the direction its link is declared in is not executable
+    where it stands, and the router repairs it with a SWAP, so the repair is in
+    ``planned_inserted_swap_count`` and ``direction_swap_count`` states how much of
+    that total the ordering forced.
+
+    The refusal-by-name property the old test protected is kept below for an
+    argument that really is opaque, because the reason for naming the accepted
+    forms was the message, not the rejected type.
     """
 
     from flagquantum.compiler.directed_topology import DirectedCouplingMap
+    from flagquantum.compiler.operand_semantics import _TWO_WIRE_OPERAND_SYMMETRY
 
     program = _workload()
-    directed = DirectedCouplingMap(5, tuple(CouplingMap.line(5).edges))
+    edges = tuple(CouplingMap.line(5).edges)
+    ordered = DirectedCouplingMap(5, edges)
+    undirected = CouplingMap(5, edges)
+    ordering_is_free_somewhere = False
+
+    for strategy in ROUTING_STRATEGIES:
+        directed_price = estimate_routing_cost(program, ordered, strategy=strategy)
+        undirected_price = estimate_routing_cost(program, undirected, strategy=strategy)
+        assert directed_price.direction_semantics == "directed_cx"
+        assert undirected_price.direction_semantics == "logical_wire_order_preserved"
+        # An undirected device cannot produce an ordering swap at all, so a
+        # nonzero count there would be a price for a repair it never makes.
+        assert undirected_price.direction_swap_count == 0
+        # The count is a price, not an annotation: every repair it names is two
+        # SWAPs inside the total. It is not a claim that the ordered device is
+        # dearer overall -- the ordering can route a planner onto a cheaper
+        # mapping, and ``grid-3x4 depth-20`` under ``persistent_layout`` is a
+        # measured case where the ordered device is cheaper (46 against 48).
+        assert 2 * directed_price.direction_swap_count <= (
+            directed_price.planned_inserted_swap_count
+        )
+        if directed_price.direction_swap_count > 0:
+            ordering_is_free_somewhere = True
+
+        directed_program = route_to_topology(program, ordered, strategy=strategy)
+        assert directed_program.metadata["routing"]["direction_swap_count"] == (
+            directed_price.direction_swap_count
+        )
+        assert directed_program.metadata["routing"]["inserted_swap_count"] == (
+            directed_price.planned_inserted_swap_count
+        )
+        for instruction in directed_program:
+            if len(instruction.wires) != 2:
+                continue
+            # A symmetric opcode only needs the link; a control/target opcode has
+            # to run the way the device declares that link.
+            assert ordered.has_weak_edge(*instruction.wires)
+            if _TWO_WIRE_OPERAND_SYMMETRY.get(instruction.name) is False:
+                assert ordered.has_edge(*instruction.wires)
+
+    # The workload and the device do force at least one repair somewhere, so the
+    # loop above is not silently asserting nothing.
+    assert ordering_is_free_somewhere
+
+    selection = select_routing_strategy(program, ordered)
+    assert selection.selected_strategy in DEPLOYABLE_ROUTING_STRATEGIES
+    for candidate in selection.candidates.values():
+        assert candidate.direction_semantics == "directed_cx"
 
     for entry, call in (
-        (
-            "estimate_routing_cost",
-            lambda: estimate_routing_cost(program, directed),
-        ),
-        (
-            "select_routing_strategy",
-            lambda: select_routing_strategy(program, directed),
-        ),
-        (
-            "route_to_topology",
-            lambda: route_to_topology(program, directed),
-        ),
+        ("estimate_routing_cost", lambda: estimate_routing_cost(program, 3.5)),
+        ("select_routing_strategy", lambda: select_routing_strategy(program, 3.5)),
+        ("route_to_topology", lambda: route_to_topology(program, 3.5)),
     ):
         with pytest.raises(TypeError) as refusal:
             call()
         message = str(refusal.value)
         assert entry in message
+        assert "CouplingMap" in message
         assert "DirectedCouplingMap" in message
-        assert "legalize_circuit_topology" in message
         # The old failure described the iteration, not the argument.
         assert "not iterable" not in message
 

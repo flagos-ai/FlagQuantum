@@ -10,7 +10,7 @@ from dataclasses import dataclass, replace
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from .routing import _require_multi_wire_device_local
+from .operand_semantics import _require_multi_wire_device_local
 
 
 @dataclass(frozen=True)

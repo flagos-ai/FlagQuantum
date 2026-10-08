@@ -11,6 +11,7 @@ from typing import Any, cast
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config
 from .commutation import CommutationAnalysis, analyze_commutation
+from .directed_topology import DirectedCouplingMap
 from .pass_manager import (
     OPTIMIZATION_PIPELINE,
     AnalysisSpec,
@@ -430,7 +431,9 @@ def optimize(circuit_or_ir: Any) -> CircuitIR:
 def compile(
     circuit_or_ir: Any,
     *,
-    coupling_map: CouplingMap | Iterable[tuple[int, int]] | None = None,
+    coupling_map: (
+        CouplingMap | DirectedCouplingMap | Iterable[tuple[int, int]] | None
+    ) = None,
     routing_strategy: str = "restore_after_each_gate",
     optimize: bool = True,
     config: RuntimeConfig | None = None,
@@ -445,9 +448,13 @@ def compile(
     if optimize:
         ir = _optimize_to_fixed_point(ir)
     if coupling_map is not None:
+        # A device the router understands is handed over as it stands: an ordered
+        # device carries a rule an edge sequence cannot express, and rebuilding it
+        # as a ``CouplingMap`` here would settle the routing before the router saw
+        # it.
         coupling = (
             coupling_map
-            if isinstance(coupling_map, CouplingMap)
+            if isinstance(coupling_map, (CouplingMap, DirectedCouplingMap))
             else CouplingMap(ir.n_wires, coupling_map)
         )
         strategy_selection = None

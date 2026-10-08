@@ -72,6 +72,7 @@ def test_reverse_direction_and_multiple_routed_gates_preserve_state() -> None:
         "final_logical_to_physical": (0, 1, 2, 3),
         "mapping_restored": True,
         "direction_semantics": "logical_wire_order_preserved",
+        "direction_swap_count": 0,
         "topology_gate_count": 2,
         "routed_gate_count": 2,
         "inserted_swap_count": 6,
