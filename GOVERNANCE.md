@@ -67,9 +67,11 @@ at least once. The git-side figures are the ones that describe `main`, and since
 pressed merge: 73 of the 272 first-parent commits since 2026-10-01 are merges, so the
 maintainer's own share now counts merges as well as authored work.
 
-The open-pull-request count of zero is worth stating plainly: this repository's review
-queue is empty, and the only open item is
-[issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579).
+The open-pull-request count of zero is a measurement of that moment rather than a standing
+property: the review queue was empty and the only open item was
+[issue #579](https://github.com/flagos-ai/FlagQuantum/issues/579). The pull request that
+closes it is the first entry the queue has held since, so the number is quoted with the
+date it was read rather than as a current count.
 
 ## What protects `main`
 
@@ -90,10 +92,11 @@ Until that date the same endpoint returned `required_approving_review_count: 2` 
 `enforce_admins` `false` and **no required status checks at all**. Two required approvals
 were nominal in two ways at once: `enforce_admins` was off while the authoring account
 holds `admin: true`, so the requirement could be bypassed, and there was no second
-reviewer to meet it. The measured consequence was that the last 14 merges were authored
-and merged by the same account with zero reviews, and that reading a merged tree was
-optional: two merges to `main` 17 seconds apart on 2026-10-08 cancelled all 23 check runs
-attached to the first of them.
+reviewer to meet it. The measured consequence was that the fourteen pull requests merged
+immediately before the 2026-10-01 measurement, #271 through #284, were each authored and
+merged by `FlagQuantum` with zero reviews, and that reading a merged tree was optional:
+two merges to `main` 17 seconds apart on 2026-10-08 cancelled all 23 check runs attached to
+the first of them.
 
 Both halves are now stated rather than left nominal:
 
