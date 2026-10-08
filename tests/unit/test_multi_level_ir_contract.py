@@ -252,6 +252,131 @@ def test_a_well_formed_record_is_accepted():
     assert level_boundary.verify_program_record(_record_with()) == ()
 
 
+def test_a_graph_that_does_not_re_derive_its_payload_is_refused():
+    """A payload is an attestation, not a source.
+
+    Dropping the last operation from the graph leaves the recorded payload intact,
+    so nothing about the payload itself is wrong. The restore has to notice that
+    the graph no longer states the instruction sequence the payload records, which
+    is the difference between re-deriving the public IR and trusting a copy of it.
+    """
+
+    program = level_boundary.circuit_to_program(_static_circuit())
+    record = program.record
+    entry = record.functions[0].blocks[0]
+    edited = dataclasses.replace(
+        record,
+        functions=(
+            dataclasses.replace(
+                record.functions[0],
+                blocks=(dataclasses.replace(entry, operations=entry.operations[:-1]),),
+            ),
+        ),
+    )
+    conversion = level_boundary.program_to_circuit(edited)
+    assert conversion.state == level_boundary.UNSUPPORTED_WITH_DIAGNOSTICS
+    assert _codes(conversion) == {"level.round_trip_mismatch"}
+
+
+def test_an_operation_that_does_not_type_is_invalid_input():
+    """Every operation-level refusal names the code the contract declares for it."""
+
+    qubit = level_boundary.ValueRef("entry", 0, "qubit")
+    scalar = level_boundary.ValueRef("entry", 1, "scalar")
+    cases = {
+        "program.opcode_unknown": (
+            level_boundary.Operation(
+                "notagate", (qubit,), (level_boundary.ValueRef("entry", 2, "qubit"),)
+            ),
+        ),
+        "program.operand_arity": (
+            level_boundary.Operation(
+                "cx",
+                (qubit,),
+                (
+                    level_boundary.ValueRef("entry", 2, "qubit"),
+                    level_boundary.ValueRef("entry", 3, "qubit"),
+                ),
+            ),
+        ),
+        "program.operand_kind": (
+            level_boundary.Operation(
+                "h", (scalar,), (level_boundary.ValueRef("entry", 2, "qubit"),)
+            ),
+        ),
+        "program.parameter_missing": (
+            level_boundary.Operation(
+                "rz", (qubit,), (level_boundary.ValueRef("entry", 2, "qubit"),)
+            ),
+        ),
+        "program.result_kind": (
+            level_boundary.Operation(
+                "h", (qubit,), (level_boundary.ValueRef("entry", 2, "scalar"),)
+            ),
+        ),
+        "program.value_undefined": (
+            level_boundary.Operation(
+                "h",
+                (level_boundary.ValueRef("elsewhere", 7, "qubit"),),
+                (level_boundary.ValueRef("entry", 2, "qubit"),),
+            ),
+        ),
+    }
+    for code, operations in cases.items():
+        block = level_boundary.BlockRecord(
+            "entry", (qubit, scalar), terminator="return", operations=operations
+        )
+        record = level_boundary.ProgramRecord(
+            functions=(level_boundary.FunctionRecord("main", (block,)),)
+        )
+        conversion = level_boundary.program_to_circuit(record)
+        assert conversion.state == level_boundary.INVALID_INPUT, code
+        assert code in _codes(conversion), (code, _codes(conversion))
+
+    # A value is defined once per block, so a second definition of a live value is
+    # refused even when the operation that defines it is otherwise well typed.
+    first = level_boundary.Operation(
+        "h", (qubit,), (level_boundary.ValueRef("entry", 2, "qubit"),)
+    )
+    second = level_boundary.Operation(
+        "h", (qubit,), (level_boundary.ValueRef("entry", 2, "qubit"),)
+    )
+    repeated = level_boundary.BlockRecord(
+        "entry",
+        (qubit,),
+        terminator="return",
+        operations=(first, second),
+    )
+    conversion = level_boundary.program_to_circuit(
+        level_boundary.ProgramRecord(
+            functions=(level_boundary.FunctionRecord("main", (repeated,)),)
+        )
+    )
+    assert "program.value_redefined" in _codes(conversion), _codes(conversion)
+
+    # A compile constant that states no value cannot be reproduced as an operand.
+    silent = level_boundary.BlockRecord(
+        "entry",
+        (scalar,),
+        terminator="return",
+        operations=(
+            level_boundary.Operation(
+                "constant",
+                (),
+                (level_boundary.ValueRef("entry", 5, "scalar"),),
+                (),
+                None,
+            ),
+        ),
+    )
+    quiet = level_boundary.ProgramRecord(
+        functions=(level_boundary.FunctionRecord("main", (silent,)),)
+    )
+    assert "program.result_kind" in {
+        diagnostic.code for diagnostic in level_boundary.verify_program_record(quiet)
+    }
+
+
 # --------------------------------------------------------------------------
 # Value identity, linearity, and joins
 # --------------------------------------------------------------------------

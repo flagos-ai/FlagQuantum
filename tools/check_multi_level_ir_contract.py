@@ -11,11 +11,11 @@ copy of the same facts:
 
 * the declared levels, support states, value kinds, linear kinds, terminators,
   and realized exits are compared with ``flagquantum.core.ir.levels``;
-* every declared diagnostic code must be raised by a literal call in that
-  module, and every literal call must be declared, so the vocabulary cannot
-  drift from what the boundary refuses with;
+* every declared diagnostic code must be raised by a literal call somewhere in
+  the internal boundary, and every literal call must be declared, so the
+  vocabulary cannot drift from what the boundary refuses with;
 * ``forbidden_states`` must be unreachable: absent from the declared states and
-  absent from every string literal the module contains;
+  absent from every string literal the boundary contains;
 * the boundary must stay internal -- no root export, no entry in the Stable Core
   snapshot, and no pass manager, pass registry, analysis spec, executable
   artifact, or runtime adapter of its own;
@@ -33,14 +33,22 @@ from pathlib import Path
 from typing import Any
 
 import flagquantum as fq
-from flagquantum.core.ir import IR_VERSION
+from flagquantum.core.ir import IR_VERSION, CircuitIR
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "multi-level-ir-internal-v1-candidate.json"
 BOUNDARY = ROOT / "flagquantum" / "core" / "ir" / "levels.py"
 BOUNDARY_MODULE = "flagquantum.core.ir.levels"
+IR_PACKAGE = ROOT / "flagquantum" / "core" / "ir"
+PUBLIC_IR_MODULE = IR_PACKAGE / "__init__.py"
 PUBLIC_SNAPSHOT = ROOT / "docs" / "public_api_v1.json"
 WITNESS_TESTS = ROOT / "tests" / "unit" / "test_multi_level_ir_contract.py"
+
+#: Directories whose JSON is not part of the recorded public IR.
+SKIPPED_DIRECTORIES = frozenset(
+    {".git", ".venv", ".scratch", "__pycache__", "node_modules"}
+)
+CANONICAL_KIND = "flagquantum.circuit_ir"
 
 EXPECTED_SCHEMA = "flagquantum.multi_level_ir_internal_contract"
 EXPECTED_VERSION = "0.1"
@@ -134,6 +142,7 @@ RULE_READERS: dict[str, tuple[str, ...]] = {
         "test_static_circuit_round_trips_exactly",
         "test_a_restored_circuit_is_equal_to_the_one_that_entered",
         "test_a_payload_that_is_not_canonical_is_refused",
+        "tool:committed_payloads_round_trip",
     ),
     "rejection": (
         "test_dynamic_instruction_is_refused",
@@ -156,7 +165,24 @@ TOOL_CHECKS = (
     "forbidden_states_are_unreachable",
     "no_second_boundary",
     "no_root_export",
+    "committed_payloads_round_trip",
 )
+
+
+def refusal_sources() -> tuple[Path, ...]:
+    """Return every module that belongs to the internal level boundary.
+
+    The boundary module states the vocabulary and delegates the lowering to the
+    level packages beside it, so the codes it refuses with and the states it must
+    not spell live in more than one file. Reading only `levels.py` would accept a
+    code that a delegated module raises without declaring, and would miss one it
+    raises without declaring it. The public IR root module is the only file under
+    the package that is not part of the internal boundary.
+    """
+
+    return tuple(
+        sorted(path for path in IR_PACKAGE.rglob("*.py") if path != PUBLIC_IR_MODULE)
+    )
 
 
 def _tree(path: Path = BOUNDARY) -> ast.Module:
@@ -304,11 +330,13 @@ def forbidden_states_are_unreachable(
             )
         if state in tuple(getattr(boundary, "SUPPORT_STATES", ())):
             errors.append(f"the boundary declares the forbidden state {state!r}")
-        if state in _string_literals():
-            errors.append(
-                f"the boundary module contains the literal {state!r}; a state that "
-                "is not a support state must not be spelled anywhere in it"
-            )
+        for source in refusal_sources():
+            if state in _string_literals(source):
+                errors.append(
+                    f"{source.relative_to(ROOT)} contains the literal {state!r}; a "
+                    "state that is not a support state must not be spelled anywhere "
+                    "in the internal boundary"
+                )
     return tuple(errors)
 
 
@@ -359,6 +387,74 @@ def no_root_export(
         errors.append(
             "the boundary module must not declare __all__; it is not a public surface"
         )
+    return tuple(errors)
+
+
+def _committed_payloads() -> list[tuple[str, dict[str, Any]]]:
+    """Every canonical `CircuitIR` payload recorded under this tree."""
+
+    found: list[tuple[str, dict[str, Any]]] = []
+    for path in sorted(ROOT.rglob("*.json")):
+        if SKIPPED_DIRECTORIES & set(path.relative_to(ROOT).parts):
+            continue
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        stack: list[tuple[str, Any]] = [("", document)]
+        while stack:
+            where, node = stack.pop()
+            if isinstance(node, dict):
+                if node.get("kind") == CANONICAL_KIND:
+                    found.append((f"{path.relative_to(ROOT)}{where}", node))
+                for key, value in node.items():
+                    stack.append((f"{where}.{key}", value))
+            elif isinstance(node, list):
+                for index, value in enumerate(node):
+                    stack.append((f"{where}[{index}]", value))
+    return found
+
+
+def committed_payloads_round_trip(*, boundary: Any = None) -> tuple[str, ...]:
+    """Every canonical payload recorded here must still cross and come back.
+
+    The public IR did not change, so this is the migration evidence: the circuits
+    this tree already records are read back through the level boundary and must
+    return the payload they entered with. A payload that is refused on the way in,
+    or that comes back different, is a broken read of the public IR rather than a
+    conversion the boundary may skip.
+    """
+
+    if boundary is None:
+        boundary = importlib.import_module(BOUNDARY_MODULE)
+    payloads = _committed_payloads()
+    if not payloads:
+        return (
+            "no canonical circuit payload is recorded in this tree, so nothing here "
+            "demonstrates that reading the public IR still works",
+        )
+    errors: list[str] = []
+    for where, payload in payloads:
+        try:
+            circuit = CircuitIR.from_dict(payload)
+        except Exception as exc:
+            errors.append(f"{where} no longer reads as CircuitIR: {exc}")
+            continue
+        conversion = boundary.circuit_to_program(circuit)
+        if conversion.state != "supported_exact" or conversion.record is None:
+            errors.append(
+                f"{where} is refused on the way in with "
+                f"{sorted({item.code for item in conversion.diagnostics})}"
+            )
+            continue
+        restored = boundary.program_to_circuit(conversion.record)
+        if restored.state != "supported_exact":
+            errors.append(
+                f"{where} does not come back: "
+                f"{sorted({item.code for item in restored.diagnostics})}"
+            )
+        elif restored.canonical_payload != circuit.to_dict():
+            errors.append(f"{where} comes back as a different payload")
     return tuple(errors)
 
 
@@ -552,11 +648,22 @@ def main(argv: list[str] | None = None) -> int:
         print("the internal level contract must be a JSON object")
         return 1
 
-    codes, dynamic = _raised_codes()
+    sources = refusal_sources()
+    codes: set[str] = set()
+    dynamic: list[str] = []
+    for source in sources:
+        found, computed = _raised_codes(source)
+        codes |= found
+        dynamic.extend(f"{source.relative_to(ROOT)}:{entry}" for entry in computed)
     errors = list(contract_errors(contract))
+    if BOUNDARY not in sources:
+        errors.append(
+            f"the refusal scan does not cover {BOUNDARY.relative_to(ROOT)}, so the "
+            "gate would pass on a boundary it never read"
+        )
     if dynamic:
         errors.append(
-            "the boundary raises a computed diagnostic code at "
+            "the internal boundary raises a computed diagnostic code at "
             f"{', '.join(dynamic)}; every refusal must name a declared literal code"
         )
     registry = dict(
@@ -572,6 +679,7 @@ def main(argv: list[str] | None = None) -> int:
     errors.extend(forbidden_states_are_unreachable(contract))
     errors.extend(no_second_boundary(contract))
     errors.extend(no_root_export(contract))
+    errors.extend(committed_payloads_round_trip())
     if IR_VERSION != "1.0":
         errors.append(f"the internal levels assume IR version 1.0, found {IR_VERSION}")
 

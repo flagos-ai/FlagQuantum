@@ -138,9 +138,44 @@
       "meaning": "a program record holds no function"
     },
     {
+      "code": "program.opcode_unknown",
+      "level": "program",
+      "meaning": "an operation uses an opcode outside the canonical operator vocabulary this level types"
+    },
+    {
+      "code": "program.operand_arity",
+      "level": "program",
+      "meaning": "an operation consumes a different number of values than its opcode signature states"
+    },
+    {
+      "code": "program.operand_kind",
+      "level": "program",
+      "meaning": "an operation consumes a value whose kind differs from the kind its opcode signature states"
+    },
+    {
+      "code": "program.parameter_missing",
+      "level": "program",
+      "meaning": "an operation binds parameter names that differ from the ones its opcode signature declares"
+    },
+    {
+      "code": "program.result_kind",
+      "level": "program",
+      "meaning": "an operation defines a different number of results, or results of different kinds, than its opcode signature states"
+    },
+    {
       "code": "program.terminator_unknown",
       "level": "program",
       "meaning": "a block ends with a terminator outside the declared vocabulary"
+    },
+    {
+      "code": "program.value_redefined",
+      "level": "program",
+      "meaning": "an operation defines a value that is already live in the same block"
+    },
+    {
+      "code": "program.value_undefined",
+      "level": "program",
+      "meaning": "an operation consumes a value that is not live in the block that consumes it"
     },
     {
       "code": "value.identity",
