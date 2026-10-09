@@ -79,6 +79,14 @@ azure = [
     "qdk[azure]>=1.32.3,<2",
 ]
 
+# The open-source FlagQuantum adapter converts provider matrices and returned
+# samples at the NumPy boundary.  The separately licensed Kaiwu SDK is
+# intentionally not redistributed by this extra and must be installed from the
+# artifact approved by the user's QBoson organization.
+kaiwu = [
+    "numpy>=1.24,<3",
+]
+
 braket = [
     "amazon-braket-sdk>=1.117,<2; python_version >= '3.11'",
 ]

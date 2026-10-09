@@ -19,6 +19,7 @@ stim = ["stim>=1.16,<2"]
 pymatching = ["pymatching>=2.3,<3"]
 cuda = ["triton>=3.1,<4"]
 azure = ["qdk[azure]>=1.32.3,<2"]
+kaiwu = ["numpy>=1.24,<3"]
 braket = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'"]
 cirq = ["cirq-core>=1.6.1,<1.8; python_version >= '3.11'"]
 cudaq = ["cudaq>=0.15.1,<0.17; python_version >= '3.11'"]
@@ -40,7 +41,7 @@ interop = ["braket", "cirq", "pennylane", "quafu", "qiskit"]
 # A remote QPU provider SDK is neither an interop translation of a circuit
 # object nor an aggregate member: it only ever runs inside `flagquantum.remote`,
 # and the core install must stay without it.
-remote_provider = ["azure"]
+remote_provider = ["azure", "kaiwu"]
 user_experience = ["examples", "viz"]
 compatibility = ["invertible"]
 aggregate = ["all", "interop-all"]
