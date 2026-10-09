@@ -13,8 +13,13 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 from tools.check_dependency_policy import policy_errors
 from tools.check_import_time import sample_imports
 from tools.check_repository_hygiene import (
+    DEFAULT_MAX_DEVELOPMENT_DOC_FILES,
     DEFAULT_MAX_FILE_BYTES,
+    DEFAULT_MAX_RESULT_BYTES,
+    DEFAULT_MAX_RESULT_FILES,
     DEFAULT_MAX_TOTAL_BYTES,
+    DEFAULT_MAX_TRACKED_FILES,
+    repository_metrics,
     violations,
 )
 from tools.fetch_example_assets import verify_asset
@@ -31,8 +36,38 @@ def test_repository_has_no_tracked_cache_dataset_model_or_oversized_artifact():
             ROOT,
             max_file_bytes=DEFAULT_MAX_FILE_BYTES,
             max_total_bytes=DEFAULT_MAX_TOTAL_BYTES,
+            max_tracked_files=DEFAULT_MAX_TRACKED_FILES,
+            max_result_bytes=DEFAULT_MAX_RESULT_BYTES,
+            max_result_files=DEFAULT_MAX_RESULT_FILES,
+            max_development_doc_files=DEFAULT_MAX_DEVELOPMENT_DOC_FILES,
         )
         == ()
+    )
+
+
+def test_repository_budgets_are_ratchets_above_the_current_tree() -> None:
+    metrics = repository_metrics(ROOT)
+    assert metrics["tracked_files"] <= DEFAULT_MAX_TRACKED_FILES
+    assert metrics["tracked_bytes"] <= DEFAULT_MAX_TOTAL_BYTES
+    assert metrics["benchmark_result_files"] <= DEFAULT_MAX_RESULT_FILES
+    assert metrics["benchmark_result_bytes"] <= DEFAULT_MAX_RESULT_BYTES
+    assert metrics["development_doc_files"] <= DEFAULT_MAX_DEVELOPMENT_DOC_FILES
+
+
+def test_repository_budgets_fail_closed_when_a_ceiling_is_exceeded() -> None:
+    errors = violations(
+        ROOT,
+        max_file_bytes=DEFAULT_MAX_FILE_BYTES,
+        max_total_bytes=0,
+        max_tracked_files=0,
+        max_result_bytes=0,
+        max_result_files=0,
+        max_development_doc_files=0,
+    )
+    assert any(error.startswith("tracked tree has") for error in errors)
+    assert any(error.startswith("benchmark results has") for error in errors)
+    assert any(
+        error.startswith("development documentation has") for error in errors
     )
 
 

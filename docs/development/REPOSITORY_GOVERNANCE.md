@@ -66,3 +66,23 @@ Every change adding generated evidence should state:
 
 Generated files larger than 1 MiB or result batches larger than 20 files should
 default to external storage unless a release or regression gate requires them.
+
+## Size budgets
+
+`python tools/check_repository_hygiene.py --report` prints the measurements used
+by the repository gate. The checked-in budgets deliberately sit just above the
+current tree:
+
+| Scope | Budget |
+| --- | ---: |
+| Any tracked file | 1,800,000 bytes |
+| Entire tracked tree | 75,000,000 bytes |
+| Entire tracked tree | 3,300 files |
+| `benchmarks/results/` | 36,000,000 bytes |
+| `benchmarks/results/` | 600 files |
+| `docs/development/` | 230 files |
+
+These values are ceilings, not allocations. A change that needs more room must
+replace or archive existing material instead of raising a limit. Whenever a
+cleanup reduces one of the measurements materially, the same change lowers its
+corresponding budget so the removed volume cannot silently return.
