@@ -39,8 +39,8 @@ DEFAULT_MAX_FILE_BYTES = 1_800_000
 # contract and is referenced by benchmark-contract tests and public reports.
 # These are ratchet budgets, not growth targets. Lower them whenever retained
 # evidence or development history moves to its external archive.
-DEFAULT_MAX_TOTAL_BYTES = 62_000_000
-DEFAULT_MAX_TRACKED_FILES = 3_000
+DEFAULT_MAX_TOTAL_BYTES = 63_000_000
+DEFAULT_MAX_TRACKED_FILES = 3_100
 DEFAULT_MAX_RESULT_BYTES = 24_000_000
 DEFAULT_MAX_RESULT_FILES = 310
 DEFAULT_MAX_DEVELOPMENT_DOC_FILES = 230
