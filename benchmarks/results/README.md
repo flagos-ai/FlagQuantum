@@ -19,10 +19,12 @@ the minimal curated evidence retained here; see
 
 Large raw profiler traces, exploratory result matrices, per-iteration hardware
 telemetry, and superseded optimization artifacts are stored outside the source
-repository. The repository retains only evidence required by a current public
-claim, regression, or release gate. External archives are development records
-and are not release evidence until they are restored, normalized, audited, and
-promoted through the release gate.
+repository in the public
+[FlagQuantum evidence archive](https://github.com/FlagQuantum/FlagQuantum-evidence).
+The repository retains only evidence required by a current public claim,
+regression, or release gate. External archives are development records and are
+not release evidence until they are restored, normalized, audited, and promoted
+through the release gate.
 
 Non-release JSON should make that obvious with fields such as
 `benchmark_evidence_class`, `non_release_evidence=true`,

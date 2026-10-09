@@ -25,9 +25,11 @@ and for where to report a vulnerability, see the repository-level
 
 Store raw profiler traces, repeated experiment matrices, temporary cloud task
 payloads, intermediate plots, checkpoints, and superseded result sets in the
-team evidence store or a dedicated research/evidence repository. A retained
-summary should record provenance, hashes, reproduction commands, and the
-external archive identifier without claiming a stronger maturity level.
+team evidence store or the public
+[FlagQuantum evidence archive](https://github.com/FlagQuantum/FlagQuantum-evidence).
+A retained summary should record provenance, hashes, reproduction commands, the
+immutable release tag, and the external archive identifier without claiming a
+stronger maturity level.
 
 ## Evidence lifecycle
 
