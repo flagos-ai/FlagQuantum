@@ -78,9 +78,9 @@ current tree:
 | Scope | Budget |
 | --- | ---: |
 | Any tracked file | 1,800,000 bytes |
-| Entire tracked tree | 61,000,000 bytes |
+| Entire tracked tree | 62,000,000 bytes |
 | Entire tracked tree | 3,020 files |
-| `benchmarks/results/` | 22,500,000 bytes |
+| `benchmarks/results/` | 23,800,000 bytes |
 | `benchmarks/results/` | 290 files |
 | `docs/development/` | 200 files |
 
