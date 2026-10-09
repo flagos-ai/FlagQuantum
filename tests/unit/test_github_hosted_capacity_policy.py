@@ -82,7 +82,7 @@ BUCKETS = frozenset(
 )
 
 CEILING = 8
-BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=loadscope --durations=50"
+BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
 _MATRIX_REFERENCE = re.compile(r"\$\{\{\s*matrix\.([A-Za-z0-9_-]+)\s*\}\}")
@@ -247,7 +247,7 @@ def test_a_superseded_pull_request_run_is_cancelled_and_a_main_push_is_not() -> 
     )
 
 
-def test_cpu_pytest_tiers_use_two_bounded_workers() -> None:
+def test_cpu_pytest_tiers_use_two_bounded_work_stealing_workers() -> None:
     tier_steps = [
         step
         for step in _steps("ci.yml", "cpu-core")
@@ -285,7 +285,7 @@ def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
         assert not isinstance(env, dict) or "PYTEST_ADDOPTS" not in env
 
 
-def test_coverage_uses_the_same_bounded_worker_policy() -> None:
+def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
     steps = [
         step
         for step in _steps("ci.yml", "coverage")
@@ -294,7 +294,7 @@ def test_coverage_uses_the_same_bounded_worker_policy() -> None:
     assert len(steps) == 2
     for step in steps:
         command = str(step.get("run", ""))
-        for token in ("-n 2", "--dist=loadscope", "--durations=50"):
+        for token in ("-n 2", "--dist=worksteal", "--durations=50"):
             assert token in command
 
 
