@@ -25,13 +25,11 @@ def test_readme_avoids_implicit_accelerator_resolution() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     cpu_torch = readme.index(CPU_TORCH_INDEX)
-    released_install = readme.index("python -m pip install flagquantum")
-    source_install = readme.index(
-        'python -m pip install --no-build-isolation -e ".[dev]"'
-    )
+    cpu_install = readme.index("python -m pip install flagquantum", cpu_torch)
 
-    assert cpu_torch < released_install < source_install
-    assert "python -m pip install --no-deps flagquantum" in readme
+    assert cpu_torch < cpu_install
+    assert "downloads about 200 MB" in readme
+    assert "CONTRIBUTING.md" in readme
 
 
 def test_contributor_install_reuses_the_selected_torch() -> None:
@@ -52,6 +50,22 @@ def test_ci_editable_installs_reuse_the_cpu_torch_environment() -> None:
 
         assert all("--no-build-isolation" in command for command in editable), name
         assert any(CPU_TORCH_INDEX in command for command in commands), name
+
+
+def test_ci_measures_a_bounded_cold_cpu_install() -> None:
+    workflow = _workflow(".github/workflows/ci.yml")
+    steps = workflow["jobs"]["package"]["steps"]
+    measured = [
+        step
+        for step in steps
+        if isinstance(step, dict) and "Cold-install CPU wheel" in step.get("name", "")
+    ]
+
+    assert len(measured) == 1
+    step = measured[0]
+    assert step["timeout-minutes"] <= 5
+    assert step["env"]["PIP_CACHE_DIR"].startswith("/tmp/")
+    assert "GITHUB_STEP_SUMMARY" in step["run"]
 
 
 def test_release_build_reuses_the_validated_torch_environment() -> None:

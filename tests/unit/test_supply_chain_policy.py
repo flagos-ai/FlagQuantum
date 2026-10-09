@@ -14,10 +14,7 @@ def test_ci_has_coverage_security_and_sbom_gates():
     assert "python tools/check_coverage.py" in workflow
     assert "flagquantum/benchmarking/*" in coverage_config
     assert "flagquantum/kernels/triton/*" in coverage_config
-    assert "pip list --format freeze --exclude flagquantum" in workflow
-    assert (
-        "pip-audit --strict --no-deps --requirement audit-requirements.txt" in workflow
-    )
+    assert "pip-audit --strict --local" in workflow
     assert "bandit -q -lll -r flagquantum" in workflow
     assert "cyclonedx-py environment" in workflow
     assert "tools/validate_sbom.py" in workflow

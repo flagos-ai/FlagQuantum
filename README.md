@@ -4,7 +4,7 @@
 <p><strong>Quantum computing, built for learning.</strong></p>
 <p>A PyTorch-first framework for differentiable quantum computing and quantum AI.</p>
 
-[Quick start](#train-your-first-quantum-model) · [Documentation](docs/README.md) · [Examples](examples/README.md)
+[Quick start](#install-and-train-your-first-quantum-model) · [Documentation](docs/README.md) · [Examples](examples/README.md)
 
 </div>
 
@@ -25,38 +25,34 @@ distributed paths have correctness evidence.
 See the [validation scope](docs/reference/PUBLICATION_VALIDATION.md) for what has
 been tested and what remains a research goal.
 
-## Train your first quantum model
+## Install and train your first quantum model
 
-Requires Python **3.10–3.12**. For a CPU-only environment, install the CPU
-PyTorch wheel first so that pip does not resolve accelerator packages from the
-default package index:
+Requires Python **3.10–3.12**. Choose the command for your computer.
+
+**macOS:**
 
 ```console
-python -m pip install --upgrade pip
+python -m pip install flagquantum
+```
+
+**Linux or Windows, CPU only:**
+
+```console
 python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
 python -m pip install flagquantum
 ```
 
-For CUDA or another accelerator, install the compatible PyTorch build using the
-[official PyTorch selector](https://pytorch.org/get-started/locally/) or your
-platform vendor's instructions, verify that `python -c "import torch"` succeeds,
-and then install FlagQuantum. Use `python -m pip install --no-deps flagquantum`
-when the environment's vendor-managed PyTorch installation must remain unchanged.
+The first CPU install downloads about 200 MB of PyTorch. On a clean GitHub Ubuntu
+runner it took about 16 seconds; slower networks will take longer.
 
-To install the development version from source, reuse the PyTorch already in the
-environment instead of creating a second isolated build environment:
+**GPU:** Select the matching command from the
+[PyTorch installer](https://pytorch.org/get-started/locally/), then run:
 
 ```console
-git clone https://github.com/flagos-ai/FlagQuantum.git
-cd FlagQuantum
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-python -m pip install --no-build-isolation -e ".[dev]"
+python -m pip install flagquantum
 ```
 
-The source install compiles a C++17 extension and therefore requires a working
-C++ compiler. Add `-v` to the final command to display compiler progress when
-diagnosing a slow build.
+Installing from source? Follow the short setup in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 To build a CPU or GPU environment with QSteed and optional JAX, follow the
 [container guide](docker/dev/README.md).

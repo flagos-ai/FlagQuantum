@@ -670,11 +670,17 @@ jobs:
           cp dist-a/* dist/
       - name: Verify artifact contents
         run: python tools/verify_distribution_artifacts.py dist
-      - name: Clean-install wheel and run quick start
+      - name: Cold-install CPU wheel and run quick start
+        timeout-minutes: 5
+        env:
+          PIP_CACHE_DIR: /tmp/fq-user-install-cache
         run: |
           python -m venv /tmp/fq-wheel
+          install_started=$SECONDS
           /tmp/fq-wheel/bin/python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
           /tmp/fq-wheel/bin/python -m pip install dist/*.whl
+          install_elapsed=$((SECONDS - install_started))
+          echo "Cold Linux CPU wheel install: ${install_elapsed}s" >> "$GITHUB_STEP_SUMMARY"
           pushd /tmp
           /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
           /tmp/fq-wheel/bin/python -c "from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)"
@@ -817,9 +823,9 @@ jobs:
           python -m pip install --no-build-isolation -e '.[dev]'
           pip-audit bandit cyclonedx-bom
       - name: Audit installed dependencies
-        run: |
-          python -m pip list --format freeze --exclude flagquantum > audit-requirements.txt
-          pip-audit --strict --no-deps --requirement audit-requirements.txt
+        # Audit the environment directly. Re-resolving a freeze file against
+        # PyPI cannot find the `+cpu` PyTorch build from the PyTorch CPU index.
+        run: pip-audit --strict --local
       - name: Static security analysis
         run: bandit -q -lll -r flagquantum -x flagquantum/testing
       - name: Generate CycloneDX SBOM
