@@ -26,6 +26,12 @@ regression, or release gate. External archives are development records and are
 not release evidence until they are restored, normalized, audited, and promoted
 through the release gate.
 
+Every newly added result file (other than a directory README) must declare its
+reason and lifecycle in
+[`benchmarks/evidence-retention.json`](../evidence-retention.json). Existing
+results are grandfathered; the registry is a review gate for new accumulation,
+not a demand to delete useful evidence.
+
 Non-release JSON should make that obvious with fields such as
 `benchmark_evidence_class`, `non_release_evidence=true`,
 `release_gate_allowed=false`, and a `scalability_blockers` explanation. Historical

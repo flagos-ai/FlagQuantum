@@ -42,6 +42,20 @@ stronger maturity level.
    are committed.
 5. Superseded or bulky raw material is archived outside the source repository.
 
+New files under `benchmarks/results/` must also be listed in
+[`benchmarks/evidence-retention.json`](../../benchmarks/evidence-retention.json).
+The registry applies only to newly added evidence; it does not make existing
+artifacts deletion targets. Each entry explains why the artifact stays and uses
+one of these lifecycle classes:
+
+- `temporary`: records a `review_after` date;
+- `current_claim`: names the checked-in documentation or contract that consumes it;
+- `regression_baseline`: names the checked-in test, contract, or tool that consumes it.
+
+An entry may name the older result it `supersedes`. Remove the entry when its
+artifact is archived or removed. The CI and pre-push gates check this relationship
+with `python tools/check_evidence_retention.py --base <revision>`.
+
 Historical benchmark families, provider batches, paper workspaces, task
 fragments, and agent-specific authoring workflows are stored outside the source
 repository. New compact, non-release artifact outputs use
@@ -87,4 +101,6 @@ current tree:
 These values are ceilings, not allocations. A change that needs more room must
 replace or archive existing material instead of raising a limit. Whenever a
 cleanup reduces one of the measurements materially, the same change lowers its
-corresponding budget so the removed volume cannot silently return.
+corresponding budget so the removed volume cannot silently return. The budgets
+are guardrails against accidental growth, not quotas or instructions to remove
+useful, current evidence.

@@ -97,6 +97,16 @@ def test_pre_push_gate_checks_ownership_of_the_changed_paths() -> None:
     ) in commands
 
 
+def test_pre_push_gate_checks_new_evidence_retention() -> None:
+    commands = {check.command for check in checks("python")}
+    assert (
+        "python",
+        "tools/check_evidence_retention.py",
+        "--base",
+        "origin/main",
+    ) in commands
+
+
 def test_pre_push_gate_resolves_tools_next_to_active_python(tmp_path: Path) -> None:
     python = tmp_path / "bin" / "python"
     mypy = tmp_path / "bin" / "mypy"

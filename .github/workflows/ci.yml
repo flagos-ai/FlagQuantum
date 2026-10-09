@@ -85,6 +85,7 @@ jobs:
           --follow-imports skip
           tools/ci_tier.py
           tools/check_evidence_revisions.py
+          tools/check_evidence_retention.py
       - name: Enforce package boundaries and module budgets
         run: python tools/check_architecture.py
       - name: Validate multi-team ownership policy
@@ -107,6 +108,15 @@ jobs:
             exit 0
           fi
           python tools/check_team_scope.py --require-classified --base "$BASE_SHA"
+      - name: Require retention metadata for new benchmark evidence
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "no base revision is available for this event; skipping"
+            exit 0
+          fi
+          python tools/check_evidence_retention.py --base "$BASE_SHA"
       - name: Enforce core, extras, interop, and external-platform dependencies
         run: python tools/check_dependency_policy.py
       - name: Verify Amazon Braket circuit interoperability contract
