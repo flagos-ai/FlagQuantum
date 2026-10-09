@@ -43,7 +43,7 @@ stronger maturity level.
 5. Superseded or bulky raw material is archived outside the source repository.
 
 New files under `benchmarks/results/` must also be listed in
-[`benchmarks/evidence-retention.json`](../../benchmarks/evidence-retention.json).
+[`benchmarks/evidence-retention.toml`](../../benchmarks/evidence-retention.toml).
 The registry applies only to newly added evidence; it does not make existing
 artifacts deletion targets. Each entry explains why the artifact stays and uses
 one of these lifecycle classes:

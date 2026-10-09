@@ -31,7 +31,7 @@ def test_new_evidence_needs_a_retention_entry(tmp_path: Path) -> None:
 
     assert errors == (
         f"{path}: new benchmark evidence needs an entry in "
-        "benchmarks/evidence-retention.json",
+        "benchmarks/evidence-retention.toml",
     )
 
 

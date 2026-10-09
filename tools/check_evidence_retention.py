@@ -3,7 +3,7 @@
 
 Existing evidence is deliberately grandfathered. The gate reads the files added
 by a change, then requires each new artifact under ``benchmarks/results/`` to be
-registered in ``benchmarks/evidence-retention.json``. This keeps the decision
+registered in ``benchmarks/evidence-retention.toml``. This keeps the decision
 about retaining evidence reviewable without turning repository size into a
 deletion target.
 """
@@ -11,16 +11,19 @@ deletion target.
 from __future__ import annotations
 
 import argparse
-import json
 import subprocess
 import sys
 from collections.abc import Iterable, Mapping, Sequence
 from datetime import date
 from pathlib import Path, PurePosixPath
-from typing import Any
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
+    import tomli as tomllib  # type: ignore[no-redef]
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST_PATH = Path("benchmarks/evidence-retention.json")
+MANIFEST_PATH = Path("benchmarks/evidence-retention.toml")
 RESULTS_PREFIX = "benchmarks/results/"
 SCHEMA = "flagquantum.benchmark_evidence_retention.v1"
 RETENTION_CLASSES = frozenset({"temporary", "current_claim", "regression_baseline"})
@@ -51,11 +54,9 @@ def _string_list(value: object, *, field: str) -> tuple[str, ...]:
 def load_manifest(*, root: Path = ROOT) -> Mapping[str, object]:
     path = root / MANIFEST_PATH
     try:
-        payload: Any = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        payload = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as exc:
         raise RetentionError(f"cannot read {MANIFEST_PATH}: {exc}") from exc
-    if not isinstance(payload, dict):
-        raise RetentionError(f"{MANIFEST_PATH} must contain a JSON object")
     return payload
 
 

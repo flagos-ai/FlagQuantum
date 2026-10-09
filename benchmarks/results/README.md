@@ -28,7 +28,7 @@ through the release gate.
 
 Every newly added result file (other than a directory README) must declare its
 reason and lifecycle in
-[`benchmarks/evidence-retention.json`](../evidence-retention.json). Existing
+[`benchmarks/evidence-retention.toml`](../evidence-retention.toml). Existing
 results are grandfathered; the registry is a review gate for new accumulation,
 not a demand to delete useful evidence.
 
