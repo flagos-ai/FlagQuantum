@@ -54,12 +54,16 @@ distribution's own requirements as the citation, rather than exempted per file.
 scripts whose module-level imports are entry points, not modules any marker
 selects.
 
-`numpy` is itself on `core_forbidden_imports`. It appears in no extra, `torch`
-declares no numpy requirement, and `import flagquantum` loads it nowhere, so
-every `cpu-core` leg reports `Failed to initialize NumPy` while the suite still
-passes. Recording that as policy makes the existing absence proofs — the
-`cpu-core` assertion, `tests/unit/test_dependency_policy.py`, and the
-`check_import_time.py` probe — cover numpy without a second scanner.
+`numpy` is itself on `core_forbidden_imports`. It appears only in the `kaiwu`
+remote-provider extra; `torch` declares no numpy requirement, and
+`import flagquantum` loads it nowhere, so every `cpu-core` leg reports
+`Failed to initialize NumPy` while the suite still passes. The `kaiwu` extra
+contains only the open adapter's NumPy boundary and deliberately does not
+redistribute the separately reviewed Kaiwu SDK. Recording NumPy as forbidden
+in core makes the existing absence proofs — the `cpu-core` assertion,
+`tests/unit/test_dependency_policy.py`, and the `check_import_time.py` probe —
+cover it without a second scanner, while the coverage lane installs the extra
+and executes the adapter tests.
 
 A standard-library module added in a later supported Python needs the
 `try`/`except ModuleNotFoundError` fallback, not a `sys.version_info` test.

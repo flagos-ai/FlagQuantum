@@ -1,0 +1,138 @@
+{
+  "schema": "flagquantum.qboson_qdiffusion_config",
+  "version": "1.0",
+  "preregistered_at": "<required>",
+  "primary_host": "jp-a800-171",
+  "replay_host": "jp-a800-172",
+  "host_identities": {
+    "jp-a800-171": "<required>",
+    "jp-a800-172": "<required>"
+  },
+  "software": {
+    "source_revision": "<required>",
+    "flagquantum_version": "0.2.0",
+    "kaiwu_pytorch_plugin_revision": "<required>",
+    "python_version": "3.10.<required>",
+    "torch_version": "2.7.0",
+    "kaiwu_sdk_version": "1.3.1",
+    "environment_lock_sha256": "<required>"
+  },
+  "kaiwu_sdk": {
+    "schema": "flagquantum.qboson_kaiwu_sdk_approval",
+    "version": "1.1",
+    "distribution": "kaiwu",
+    "sdk_version": "1.3.1",
+    "wheel_filename": "kaiwu-1.3.1-cp310-none-manylinux1_x86_64.whl",
+    "source_url": "https://pypi.org/pypi/kaiwu/1.3.1/json",
+    "sha256": "7334cabd4ff0ae02e042d1c38ed292211573e83e2ed8e92fdf41af52e8991455",
+    "service_terms_url": "https://platform.qboson.com/agreement?type=QBoson-SPQC-Platform-Users-Agreement",
+    "service_terms_effective_date": "2026-07-09",
+    "rights_reviewed_at": "<required>",
+    "approval_reference": "<required>",
+    "project_no": null,
+    "project_assignment_reviewed_at": "<required>",
+    "project_assignment_reference": "<required>",
+    "organizational_use_approved": "<required>",
+    "isolated_container_use_approved": "<required>",
+    "host_staging_approved": "<required>",
+    "adapter_distribution_approved": "<required>",
+    "sdk_redistribution_policy": "no-sdk-redistribution"
+  },
+  "dataset": {
+    "name": "<required>",
+    "revision": "<required>",
+    "source_url": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640/UP000005640_9606.fasta.gz",
+    "source_archive_sha256": "<required>",
+    "source_archive_bytes": 7728297,
+    "source_archive_format": "gzip",
+    "decompression_policy": "gzip-exact-bytes-v1",
+    "license_id": "CC-BY-4.0",
+    "license_evidence_url": "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640/RELEASE.metalink",
+    "license_reviewed_at": "<required>",
+    "split": "deterministic-shuffle-v1",
+    "sha256": "<required>",
+    "min_length": 50,
+    "max_length": 256,
+    "max_records": 640,
+    "validation_ratio": 0.05,
+    "test_ratio": 0.05
+  },
+  "checkpoint": {
+    "name": "<required>",
+    "revision": "<required>",
+    "source_url": "https://huggingface.co/airkingbd/dplm_150m",
+    "license_id": "<required>",
+    "license_evidence_url": "<required>",
+    "license_reviewed_at": "<required>",
+    "sha256": "<required>"
+  },
+  "tokenizer": {
+    "name": "<required>",
+    "revision": "<required>",
+    "source_url": "https://huggingface.co/airkingbd/dplm_150m",
+    "license_id": "<required>",
+    "license_evidence_url": "<required>",
+    "license_reviewed_at": "<required>",
+    "sha256": "<required>"
+  },
+  "evaluation_model": {
+    "name": "esm2_t33_650M_UR50D",
+    "revision": "<required>",
+    "source_url": "https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt",
+    "license_id": "MIT",
+    "license_evidence_url": "https://github.com/facebookresearch/esm/blob/main/LICENSE",
+    "license_reviewed_at": "<required>",
+    "sha256": "<required>"
+  },
+  "training": {
+    "freeze_proposal": true,
+    "epochs": 20,
+    "min_epochs": 3,
+    "batch_size": 4,
+    "num_candidates": 4,
+    "learning_rate": 0.00005,
+    "weight_decay": 0.01,
+    "grad_clip_norm": 1.0,
+    "validation_steps": 3,
+    "scheduler_factor": 0.5,
+    "scheduler_patience": 1,
+    "early_stop_patience": 4,
+    "remote_call_budget_per_seed": "<required>"
+  },
+  "generation": {
+    "sequence_count": 32,
+    "max_steps": 64,
+    "num_candidates": 4,
+    "proposal_temperature": 0.3,
+    "proposal_noise_scale": 1.0,
+    "energy_temperature": 1.25,
+    "disable_resample": false,
+    "resample_ratio": 0.2,
+    "resample_top_p": 0.9,
+    "portability_training_seed": 1701,
+    "portability_fixture_index": 0,
+    "portability_steps": 3
+  },
+  "evaluation": {
+    "pair_mode": "order",
+    "pooling": "mean",
+    "batch_size": 1
+  },
+  "seeds": [1701, 1702, 1703],
+  "requested_samples": 10,
+  "remote_call_budget": 128,
+  "precision_policy": {
+    "name": "explicit-int8",
+    "target_min": -127,
+    "target_max": 127
+  },
+  "primary_metric": {
+    "name": "mean_cosine_distance",
+    "direction": "lower"
+  },
+  "thresholds": {
+    "uniqueness_baseline_fraction_min": 0.95,
+    "repeat_ratio_absolute_increase_max": 0.05,
+    "invalid_sequence_count_max": 0
+  }
+}

@@ -104,10 +104,12 @@ references are reached only in an environment that has it.
 
 ### 2. `numpy` joins `core_forbidden_imports`
 
-`numpy` is on no extra, `torch` declares no `numpy` requirement, and nothing on
-the core path imports it — the package references it only inside the optional JAX
-backend, as above. Recording it as forbidden makes three existing proofs cover it
-with no new machinery: the `cpu-core` assertion, the subprocess check in
+At the time of this core-lane change, `numpy` was on no extra. The later QBoson
+adapter placed it in the isolated `kaiwu` remote-provider extra, without adding
+it to core and without redistributing the Kaiwu SDK. `torch` still declares no
+`numpy` requirement, and nothing on the core path imports it. Recording it as
+forbidden makes three existing proofs cover it with no new machinery: the
+`cpu-core` assertion, the subprocess check in
 `tests/unit/test_dependency_policy.py`, and the `check_import_time.py` probe that
 already reads this list and fails when a forbidden module is loaded.
 

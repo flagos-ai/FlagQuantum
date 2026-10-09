@@ -1,0 +1,22 @@
+{
+  "schema": "flagquantum.qboson_kaiwu_provider_reconciliation",
+  "version": "2.0",
+  "captured_at": "<aware-utc-timestamp>",
+  "source": "authenticated_resource_bill",
+  "component_record_sha256": "<sha256-of-immutable-local-component-record>",
+  "local_task_name": "<exact-local-task-name>",
+  "local_submitted_at": "<exact-local-submitted-at>",
+  "matrix_sha256": "<exact-local-matrix-sha256>",
+  "mode": "sampling",
+  "requested_samples": 10,
+  "provider_batch_id": "<provider-batch-id>",
+  "associated_task_id": "<associated-provider-task-id>",
+  "provider_target": "SPQC-1000",
+  "transaction_channel": "SDK Create Task",
+  "transaction_type": "Consumption",
+  "resource_delta": -10,
+  "unique_account_match": true,
+  "hardware_acceptance": false,
+  "qdiffusion_acceptance": false,
+  "claim_boundary": "Post-hoc account-bill identity evidence for one immutable local provider task; it is not a runtime SDK receipt and is not acceptance by itself."
+}
