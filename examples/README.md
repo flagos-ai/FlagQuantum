@@ -20,6 +20,21 @@ These examples do not use that alias:
   explicit ten-credit acknowledgement, starts from a FlagQuantum
   `QuboProblem`, and uses the provider-specific ecosystem and remote
   boundaries without exposing a matrix or enabling a local fallback.
+  The same reviewed workflow also contains the following directly imported
+  provider, evidence, and validation modules: `a800_sampler_smoke.py`,
+  `assemble_acceptance.py`, `audit_readiness.py`, `build_environment_lock.py`,
+  `build_transfer_bundle.py`, `failure_evidence.py`, `inspect_sdk_wheel.py`,
+  `offline_guard/sitecustomize.py`, `plan_quota.py`,
+  `preflight_protein_artifacts.py`, `private_io.py`, `provider_inputs.py`,
+  `provider_reconciliation.py`, `provider_resources.py`,
+  `qboson_live_smoke.py`, `qboson_optimization_probe.py`, `qboson_resume.py`,
+  `qboson_sampling_probe.py`, `qdiffusion_portability_replay_live.py`,
+  `qdiffusion_protein_evaluate.py`, `qdiffusion_protein_training_live.py`,
+  `qdiffusion_system_development_probe.py`, `qdiffusion_system_live.py`,
+  `sdk_approval.py`, `source_preflight.py`, `stable_source_tree.py`,
+  `stream_development_evidence.py`, `strict_json.py`,
+  `validate_acceptance.py`, `verify_environment_lock.py`,
+  `verify_extracted_bundle.py`, and `verify_transfer_bundle.py`.
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
   `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py` and
   `error_mitigation.py`, which import the unit they demonstrate from the
