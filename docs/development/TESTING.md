@@ -494,8 +494,8 @@ The checked-in `ci.yml` defines nineteen jobs:
   interpreter;
 - `cpu-runtime`: the Python 3.12 integration tier and launched CPU-distributed
   proofs, running in parallel with the complete unit suite;
-- `cpu-core (3.12)`: the required aggregation gate that succeeds only when both
-  Python 3.12 suites pass;
+- `cpu-core-3-12`: the required aggregation gate, reported to branch protection
+  as `cpu-core (3.12)`, that succeeds only when both Python 3.12 suites pass;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
 - `triton-optional`: the `cuda` extra and the Triton kernels that run without a
   device; the ones that launch a kernel belong to the accelerator tier;

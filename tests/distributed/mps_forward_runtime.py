@@ -236,6 +236,12 @@ def main() -> None:
                 ),
                 flush=True,
             )
+        # Every rank has completed the assertions above, but their Python and
+        # native cleanup can otherwise reach ``destroy_process_group`` at
+        # different times. On GitHub's Gloo runner that race has produced a
+        # successful payload followed by rank-local SIGABRT during teardown.
+        # Synchronize the successful path before any rank releases transport.
+        dist.barrier()
     finally:
         dist.all_gather_object = original_all_gather_object
         dist.gather_object = original_gather_object
