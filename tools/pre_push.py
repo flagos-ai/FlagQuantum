@@ -77,6 +77,7 @@ def checks(python_executable: str) -> tuple[Check, ...]:
                 "--follow-imports",
                 "skip",
                 "tools/ci_tier.py",
+                "tools/check_evidence_retention.py",
             ),
         ),
         Check(
@@ -275,6 +276,15 @@ def checks(python_executable: str) -> tuple[Check, ...]:
                 python_executable,
                 "tools/check_team_scope.py",
                 "--require-classified",
+                "--base",
+                "origin/main",
+            ),
+        ),
+        Check(
+            "retention metadata for new benchmark evidence",
+            (
+                python_executable,
+                "tools/check_evidence_retention.py",
                 "--base",
                 "origin/main",
             ),
