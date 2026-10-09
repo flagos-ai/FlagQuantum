@@ -480,19 +480,22 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines sixteen jobs:
+The checked-in `ci.yml` defines nineteen jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
   dependency-policy synchronization, architecture-boundary, generated-document,
   capability-maturity, evidence-revision-origin, Braket/Cirq/CUDA-Q/Qiskit/
   PennyLane interoperability contracts, and repository-hygiene checks;
-- `cpu-core`: Python 3.10-3.12 smoke/unit coverage with core dependencies only;
-  Python 3.12 additionally runs the repository-wide integration tier and the
-  launched CPU-distributed proofs. This keeps interpreter compatibility broad
-  without repeating the same runtime proof three times. Every interpreter
-  still proves that importing and differentiating a native circuit does not
-  import JAX;
+- `cpu-core`: Python 3.10 and 3.11 compile, import, dependency-isolation, and
+  smoke compatibility on pull requests; pushes to `main` retain the complete
+  smoke/unit suite on both interpreters;
+- `cpu-core-3-12-tests`: the complete smoke/unit suite on the newest supported
+  interpreter;
+- `cpu-runtime`: the Python 3.12 integration tier and launched CPU-distributed
+  proofs, running in parallel with the complete unit suite;
+- `cpu-core (3.12)`: the required aggregation gate that succeeds only when both
+  Python 3.12 suites pass;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
 - `triton-optional`: the `cuda` extra and the Triton kernels that run without a
   device; the ones that launch a kernel belong to the accelerator tier;
@@ -521,9 +524,9 @@ The checked-in `ci.yml` defines sixteen jobs:
   commit/environment/checksum manifest;
 - `distributed-cpu`: the `pr-distributed` tier — CPU distributed semantics and
   release-contract checks — run separately from the core matrix;
-- `coverage-shard`: two deterministic halves of the maintained package measured
+- `coverage-shard`: three deterministic thirds of the maintained package measured
   under the same marker expression on separate runners;
-- `coverage`: the required aggregation gate, which combines both raw coverage
+- `coverage`: the required aggregation gate, which combines all raw coverage
   data files before enforcing the floors in `contracts/coverage-policy.toml`
   with `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
@@ -535,9 +538,9 @@ FlagQuantum install happen once per framework instead of once per version. This
 preserves the certified compatibility matrix while reducing runner cold starts
 and the serial queue behind the `light-b` and `light-c` capacity buckets.
 
-The GitHub-hosted jobs are partitioned across nine concurrency buckets per
+The GitHub-hosted jobs are partitioned across eleven concurrency buckets per
 pull request or pushed branch. The scope is part of every bucket name: it keeps
-one run at nine concurrent jobs without forcing a new pull request to wait for
+one run at eleven concurrent jobs without forcing a new pull request to wait for
 an older pull request's coverage or interpreter lane. The organisation-level
 20-runner pool remains the aggregate admission limit. Superseding a run of the
 same branch still cancels the older run.
@@ -557,11 +560,14 @@ developer still gets those checks before pushing.
 Each CPU core and coverage-shard pytest phase uses exactly two xdist workers
 with work-stealing scheduling. The fixed count shortens the critical path
 without letting a runner-image CPU change silently widen process fan-out. The
-two coverage shards use a stable node-ID partition, then merge raw data before
+three coverage shards use a stable node-ID partition, then merge raw data before
 applying the unchanged coverage policy; their union is the former selection,
-not a reduced test set. Smoke/unit
-runs on Python 3.10-3.12; the integration tier runs once on Python 3.12 because
-it proves repository runtime behavior rather than interpreter compatibility.
+not a reduced test set. Pull requests run complete smoke/unit coverage once on
+Python 3.12 while Python 3.10 and 3.11 run the compatibility smoke; pushes to
+`main` retain complete smoke/unit coverage on all supported interpreters. The
+integration tier runs once on Python 3.12, in parallel with its unit suite,
+because it proves repository runtime behavior rather than interpreter
+compatibility.
 Only the ordinary smoke, unit, integration, and coverage phases are
 parallelized: `torchrun` and `distributed_launch` remain explicit serial
 workflow steps on Python 3.12 so xdist never creates a second process topology
@@ -570,7 +576,7 @@ to keep the next optimization grounded in measured durations.
 
 The full P5 optimizer-trajectory and autograd conformance tests carry both
 `integration` and `slow`. On pull requests they run once in the Python 3.12
-`cpu-core` integration tier; the instrumented coverage phase excludes `slow`
+`cpu-runtime` integration tier; the instrumented coverage phase excludes `slow`
 to avoid repeating the same 96-119 second proofs. A push to `main` runs the
 complete coverage selector, including those tests, so the post-merge coverage
 artifact and package floors still measure their production paths.

@@ -8,7 +8,7 @@ queues every other repository in the organisation behind it.
 The ceiling is expressed the way GitHub expresses it. A concurrency group
 admits one job at a time, so the number of distinct groups one workflow run
 uses *is* the number of GitHub-hosted runners that run can hold at once.
-`ci.yml` and `pre-commit.yaml` partition their jobs across the nine scoped
+`ci.yml` and `pre-commit.yaml` partition their jobs across the eleven scoped
 buckets below, and this module holds that partition still. The pull-request or
 branch scope prevents an unrelated older run from serializing a newer run;
 the organisation's 20-runner pool remains the aggregate ceiling.
@@ -57,8 +57,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The per-push workflows: every job in them runs on a GitHub-hosted runner.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these nine scoped names are a
-# ceiling of nine concurrent GitHub-hosted runners for one run.
+# One concurrency group admits one job, so these eleven scoped names are a
+# ceiling of eleven concurrent GitHub-hosted runners for one run.
 #
 # The scope is the pull request number where there is one and the branch name
 # otherwise, so an unrelated branch's older run cannot serialize a newer one.
@@ -75,14 +75,16 @@ BUCKETS = frozenset(
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-0",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-1",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-2",
         f"flagquantum-gh-{RUN_SCOPE}-distributed",
+        f"flagquantum-gh-{RUN_SCOPE}-runtime",
         f"flagquantum-gh-{RUN_SCOPE}-light-a",
         f"flagquantum-gh-{RUN_SCOPE}-light-b",
         f"flagquantum-gh-{RUN_SCOPE}-light-c",
     }
 )
 
-CEILING = 9
+CEILING = 11
 BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
@@ -161,6 +163,9 @@ def test_the_scan_finds_the_github_hosted_jobs_it_is_meant_to_police() -> None:
     assert {
         "ci.yml:quality",
         "ci.yml:cpu-core",
+        "ci.yml:cpu-core-3-12-tests",
+        "ci.yml:cpu-runtime",
+        "ci.yml:cpu-core-3-12",
         "ci.yml:coverage-shard",
         "ci.yml:coverage",
         "ci.yml:package",
@@ -250,34 +255,82 @@ def test_a_superseded_pull_request_run_is_cancelled_and_a_main_push_is_not() -> 
 
 
 def test_cpu_pytest_tiers_use_two_bounded_work_stealing_workers() -> None:
-    tier_steps = [
-        step
-        for step in _steps("ci.yml", "cpu-core")
-        if "ci_tier.py pr-" in str(step.get("run", ""))
-    ]
-    assert len(tier_steps) == 2
+    tier_steps = []
+    for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
+        tier_steps.extend(
+            step
+            for step in _steps("ci.yml", job)
+            if "pytest -m smoke" in str(step.get("run", ""))
+            or "ci_tier.py pr-" in str(step.get("run", ""))
+        )
+    assert len(tier_steps) == 4
     for step in tier_steps:
         env = step.get("env")
         assert isinstance(env, dict)
         assert env.get("PYTEST_ADDOPTS") == BOUNDED_PYTEST_ADDOPTS
 
 
+def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
+    document = _document("ci.yml")
+    jobs = document.get("jobs")
+    assert isinstance(jobs, dict)
+    core = jobs["cpu-core"]
+    assert isinstance(core, dict)
+    assert core["strategy"]["matrix"] == {"python-version": ["3.10", "3.11"]}
+
+    commands = {
+        str(step.get("if", "")): str(step.get("run", ""))
+        for step in _steps("ci.yml", "cpu-core")
+        if "pytest -m smoke" in str(step.get("run", ""))
+        or "ci_tier.py pr-default" in str(step.get("run", ""))
+    }
+    assert commands == {
+        "github.event_name == 'pull_request'": "python -m pytest -m smoke -q",
+        "github.event_name != 'pull_request'": "python tools/ci_tier.py pr-default",
+    }
+
+
+def test_python_312_required_check_aggregates_parallel_suites() -> None:
+    document = _document("ci.yml")
+    jobs = document.get("jobs")
+    assert isinstance(jobs, dict)
+    final = jobs["cpu-core-3-12"]
+    assert isinstance(final, dict)
+    assert final.get("name") == "cpu-core (3.12)"
+    assert set(final.get("needs", ())) == {"cpu-core-3-12-tests", "cpu-runtime"}
+    command = "\n".join(
+        str(step.get("run", "")) for step in _steps("ci.yml", "cpu-core-3-12")
+    )
+    assert "needs.cpu-core-3-12-tests.result" in command
+    assert "needs.cpu-runtime.result" in command
+
+
 def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
     expensive_steps = [
         step
-        for step in _steps("ci.yml", "cpu-core")
+        for step in _steps("ci.yml", "cpu-runtime")
         if "ci_tier.py pr-runtime" in str(step.get("run", ""))
         or "torchrun" in str(step.get("run", ""))
     ]
     assert len(expensive_steps) == 3
-    for step in expensive_steps:
-        assert step.get("if") == "matrix.python-version == '3.12'"
+
+    document = _document("ci.yml")
+    jobs = document.get("jobs")
+    assert isinstance(jobs, dict)
+    runtime = jobs["cpu-runtime"]
+    assert isinstance(runtime, dict)
+    setup = next(
+        step
+        for step in runtime["steps"]
+        if isinstance(step, dict) and step.get("uses") == "actions/setup-python@v5"
+    )
+    assert setup["with"]["python-version"] == "3.12"
 
 
 def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
     launched = [
         step
-        for step in _steps("ci.yml", "cpu-core")
+        for step in _steps("ci.yml", "cpu-runtime")
         if "torchrun" in str(step.get("run", ""))
     ]
     assert launched
@@ -300,7 +353,7 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
             assert token in command
         for token in (
             "-p tools.pytest_shard",
-            "--fq-shard-count 2",
+            "--fq-shard-count 3",
             "--fq-shard-index ${{ matrix.shard }}",
         ):
             assert token in command
@@ -324,7 +377,7 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     shard = _github_hosted_jobs("ci.yml")["coverage-shard"]
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
-    assert strategy.get("matrix") == {"shard": [0, 1]}
+    assert strategy.get("matrix") == {"shard": [0, 1, 2]}
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
     assert final.get("needs") == "coverage-shard"
