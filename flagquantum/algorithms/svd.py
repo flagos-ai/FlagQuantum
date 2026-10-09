@@ -54,13 +54,13 @@ circuit: the block's column ``j`` is the post-selected amplitude vector of the b
 
 **The phase is not the singular value.** At the exponent ``pi`` the embedding's eigenvalue
 ``mu`` is carried by the eigenphase ``exp(-i * pi * mu / alpha)``, which is the phase
-``phi = (-mu / (2 * alpha)) mod 1``. A counting register of ``m`` wires resolves a phase
+``phi = (-mu / (2 * alpha)) mod 1``. A counting register of ``m`` qubits resolves a phase
 to ``1 / 2**m``, so a counter value ``k`` reads the singular value
 ``2 * alpha * (1 - k / 2**m)``. A counter value in the register's lower half reads a value
 above ``alpha``, and such a readout is **refused rather than returned**, which is what
 makes the readout's range ``(0, alpha]``: the range is enforced by that refusal and not by
-which counter value the sample happens to peak on. At one counting wire the register holds
-two counter values, one of which is the refused half, so the only value a one-wire run can
+which counter value the sample happens to peak on. At one counting qubit the register holds
+two counter values, one of which is the refused half, so the only value a one-qubit run can
 return is ``alpha`` itself, and a run of that width whose mode falls in the refused half
 raises. The inversion is part of the readout and not a cosmetic detail: dropping the
 ``2 * alpha`` factor reports a phase, which is a wrong singular value rather than an error.
@@ -83,12 +83,12 @@ counter values the register has, which the module does not compute.
 :meth:`SingularValueResult.within` states the accuracy contract and nothing more, so a
 caller who needs the largest singular value specifically has to check the readout.
 
-**Wire layout.** The counting register is wires ``0 .. m - 1``; the embedding's block
+**Qubit layout.** The counting register is qubits ``0 .. m - 1``; the embedding's block
 qubit follows it, and the embedding's data register follows that. The counting register's
 bits lead every sample key, as :meth:`flagquantum.circuit.Circuit.counts` returns them,
-one character per wire with wire 0 the most significant.
+one character per qubit with qubit 0 the most significant.
 
-**The unit is bounded at four rows and four columns.** The embedding of an ``n``-wire
+**The unit is bounded at four rows and four columns.** The embedding of an ``n``-qubit
 matrix is ``2 ** (n + 1)``-dimensional, and every form of the phase unitary is a dense
 gate on it, so that is the demonstration scale the unit is written at.
 
@@ -113,10 +113,10 @@ __all__ = ["SingularValueResult", "estimate_singular_values"]
 # The default sample size, matching the other sampling units in this package.
 _DEFAULT_SHOTS = 4096
 
-# The embedding of a matrix with ``n`` index wires is ``2 ** (n + 1)``-dimensional and
+# The embedding of a matrix with ``n`` index qubits is ``2 ** (n + 1)``-dimensional and
 # every form of the phase unitary is a dense gate on it, so the unit is bounded at two
-# index wires: matrices of at most four rows and four columns.
-_MAX_DATA_WIRES = 2
+# index qubits: matrices of at most four rows and four columns.
+_MAX_DATA_QUBITS = 2
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -136,7 +136,7 @@ class SingularValueResult:
 
     Attributes:
         dominant_singular_value: The singular value read out at the mode ``k`` of
-            ``distribution``, which is ``2 * alpha * (1 - k / 2**n_counting_wires)``. The
+            ``distribution``, which is ``2 * alpha * (1 - k / 2**n_counting_qubits)``. The
             module does not claim this is the largest singular value of the matrix and
             does not predict which singular value it will be; the mode is simply the
             counter value with the largest share. :meth:`within` is how a caller checks a
@@ -148,14 +148,14 @@ class SingularValueResult:
             spreads each eigenvalue's share over neighbouring counter values: see the
             module docstring.
         distribution: The counting register's marginal distribution, keyed by its
-            big-endian bit string, one character per counting wire. Shares of the sample,
-            so the values sum to one. The embedding's wires are folded away rather than
-            ignored: a key is truncated to its leading ``n_counting_wires`` characters,
+            big-endian bit string, one character per counting qubit. Shares of the sample,
+            so the values sum to one. The embedding's qubits are folded away rather than
+            ignored: a key is truncated to its leading ``n_counting_qubits`` characters,
             because reading the full-register keys instead would follow the embedding's
-            wires wherever the counting register is correlated with them.
-        n_counting_wires: The width of the counting register the estimate came from.
+            qubits wherever the counting register is correlated with them.
+        n_counting_qubits: The width of the counting register the estimate came from.
         resolution: The phase step the counting register resolves, expressed in
-            singular-value units as ``2 * alpha / 2**n_counting_wires``. A resolved
+            singular-value units as ``2 * alpha / 2**n_counting_qubits``. A resolved
             singular value is accurate to about half of it, which is the accuracy
             :meth:`within` checks and the whole of the accuracy contract.
         alpha: The subnormalisation the embedding was read at, which is the factor the
@@ -167,7 +167,7 @@ class SingularValueResult:
     dominant_singular_value: float
     dominant_share: float
     distribution: Mapping[str, float]
-    n_counting_wires: int
+    n_counting_qubits: int
     resolution: float
     alpha: float
 
@@ -204,10 +204,10 @@ class SingularValueResult:
                 "the counting distribution must not be empty; with no counter value "
                 "there is no singular value to read"
             )
-        if self.n_counting_wires < 1:
+        if self.n_counting_qubits < 1:
             raise ValueError(
-                "the counting register needs at least one wire, got "
-                f"n_counting_wires={self.n_counting_wires}"
+                "the counting register needs at least one qubit, got "
+                f"n_counting_qubits={self.n_counting_qubits}"
             )
         if self.resolution <= 0.0:
             raise ValueError(
@@ -248,7 +248,7 @@ class SingularValueResult:
 def estimate_singular_values(
     A: torch.Tensor,  # noqa: N803
     *,
-    n_counting_wires: int,
+    n_counting_qubits: int,
     shots: int = _DEFAULT_SHOTS,
     seed: int | None = None,
 ) -> SingularValueResult:
@@ -262,20 +262,20 @@ def estimate_singular_values(
     described in the module docstring: the embedding ``[[0, A], [A^T, 0]]`` is
     exponentiated as a dense matrix, the state whose overlap with each ``+sigma_i``
     eigenvector is ``sigma_i / ||A||_F`` and whose overlap with each ``-sigma_i``
-    eigenvector is zero is prepared on the embedding's wires, and phase estimation reads
+    eigenvector is zero is prepared on the embedding's qubits, and phase estimation reads
     the counting register. The embedding, its exponential and the input state's amplitudes
     are all formed classically; see the module docstring for what that costs and what it
     gives up.
 
     Args:
         A: The data matrix, a real floating-point tensor, square, of at least two rows,
-            its dimension a power of two so that the embedding's wires are whole. It must
+            its dimension a power of two so that the embedding's qubits are whole. It must
             not be the zero matrix, whose embedding has no positive subnormalisation to
             normalise by.
-        n_counting_wires: The width of the counting register, at least one. The resolution
-            is ``2 * alpha / 2**n_counting_wires`` in singular-value units. At one wire the
+        n_counting_qubits: The width of the counting register, at least one. The resolution
+            is ``2 * alpha / 2**n_counting_qubits`` in singular-value units. At one qubit the
             register holds two counter values, one of which is the refused half, so the
-            only value a one-wire run can return is ``alpha`` itself and a run of that
+            only value a one-qubit run can return is ``alpha`` itself and a run of that
             width whose mode falls in the other half raises rather than returning.
         shots: The number of samples to draw, at least one. Every share in the returned
             distribution is a count over exactly this many samples.
@@ -293,7 +293,7 @@ def estimate_singular_values(
         ValueError: If ``A`` is not a square two-dimensional real floating-point tensor
             whose dimension is a power of two of at least two and at most four; if ``A``
             holds a non-finite entry; if ``A`` is the zero matrix, whose embedding has no
-            positive subnormalisation; if ``n_counting_wires`` is less than one; or if
+            positive subnormalisation; if ``n_counting_qubits`` is less than one; or if
             ``shots`` is less than one. And, **on the drawn sample rather than on the
             arguments**, if the counting register's mode falls in its lower half: such a
             counter value reads a singular value above ``alpha``, which
@@ -301,7 +301,7 @@ def estimate_singular_values(
             outcome of the run and not a precondition, and every argument can be legal when
             it happens.
     """
-    _validated_counting_width(n_counting_wires)
+    _validated_counting_width(n_counting_qubits)
     _validated_shots(shots)
     embedding = _embedding_of(A)
     alpha = _subnormalisation(embedding, None)
@@ -310,7 +310,7 @@ def estimate_singular_values(
         embedding,
         amplitudes,
         alpha=alpha,
-        n_counting_wires=n_counting_wires,
+        n_counting_qubits=n_counting_qubits,
     )
     generator = torch.Generator().manual_seed(seed) if seed is not None else None
     observed = circuit.counts(shots, generator=generator)[0]
@@ -318,18 +318,18 @@ def estimate_singular_values(
     # this call takes the default "bin", so every key is already the bit string this
     # mapping is typed as, and the coercion below is a no-op at run time.
     counts = {str(key): count for key, count in observed.items()}
-    distribution = _counting_distribution(counts, n_counting_wires)
+    distribution = _counting_distribution(counts, n_counting_qubits)
     mode = max(distribution, key=distribution.__getitem__)
     # The base is a float because the stubs type ``int ** int`` as ``Any``, since a
     # negative exponent yields a float, and an ``Any`` expression fails the type gate.
-    resolution = 2.0 * alpha / 2.0**n_counting_wires
+    resolution = 2.0 * alpha / 2.0**n_counting_qubits
     return SingularValueResult(
         dominant_singular_value=2.0
         * alpha
-        * (1.0 - int(mode, 2) / 2.0**n_counting_wires),
+        * (1.0 - int(mode, 2) / 2.0**n_counting_qubits),
         dominant_share=distribution[mode],
         distribution=distribution,
-        n_counting_wires=n_counting_wires,
+        n_counting_qubits=n_counting_qubits,
         resolution=resolution,
         alpha=alpha,
     )
@@ -340,8 +340,8 @@ class _PhaseFromEmbedding:
 
     The unitary is one dense matrix, so every form is that matrix or a power of it with
     the identity prepended on the control branch: a controlled ``U`` is ``diag(I,
-    U**power)`` in the control wire's block order, which is the block diagonal of the two.
-    The unconditional ``apply`` embeds the matrix on the embedding's own wires.
+    U**power)`` in the control qubit's block order, which is the block diagonal of the two.
+    The unconditional ``apply`` embeds the matrix on the embedding's own qubits.
 
     The exponential is taken of the block the private construction extracts, which is the
     embedding over ``alpha`` rather than the embedding itself. The readout's inversion is
@@ -359,48 +359,48 @@ class _PhaseFromEmbedding:
         self._matrix = torch.matrix_exp(-1j * math.pi * block.to(torch.complex128)).to(
             torch.complex64
         )
-        self._n_wires = int(self._matrix.shape[0]).bit_length() - 1
+        self._n_qubits = int(self._matrix.shape[0]).bit_length() - 1
 
     @property
-    def n_wires(self) -> int:
-        """The number of wires the embedding occupies, block qubit and data register."""
-        return self._n_wires
+    def n_qubits(self) -> int:
+        """The number of qubits the embedding occupies, block qubit and data register."""
+        return self._n_qubits
 
-    def apply(self, circuit: Circuit, wires: Sequence[int]) -> None:
-        """Append ``U`` to ``circuit`` on the embedding's wires.
+    def apply(self, circuit: Circuit, qubits: Sequence[int]) -> None:
+        """Append ``U`` to ``circuit`` on the embedding's qubits.
 
         Args:
             circuit: The circuit to extend.
-            wires: The embedding's wires.
+            qubits: The embedding's qubits.
         """
-        circuit.any(*wires, unitary=self._matrix, name="embedding_phase")
+        circuit.any(*qubits, unitary=self._matrix, name="embedding_phase")
 
     def apply_controlled(
-        self, circuit: Circuit, control: int, wires: Sequence[int]
+        self, circuit: Circuit, control: int, qubits: Sequence[int]
     ) -> None:
         """Append ``U`` controlled on ``control``, its power form at exponent one.
 
         Args:
             circuit: The circuit to extend.
-            control: The wire ``U`` is controlled on.
-            wires: The embedding's wires.
+            control: The qubit ``U`` is controlled on.
+            qubits: The embedding's qubits.
         """
-        self.apply_power_controlled(circuit, control, wires, 1)
+        self.apply_power_controlled(circuit, control, qubits, 1)
 
     def apply_power_controlled(
-        self, circuit: Circuit, control: int, wires: Sequence[int], power: int
+        self, circuit: Circuit, control: int, qubits: Sequence[int], power: int
     ) -> None:
         """Append ``U`` raised to ``power``, controlled on ``control``.
 
-        The exponent is the counting wire's significance, so it reaches
-        ``2 ** (n_counting_wires - 1)``; the power is taken of the unitary itself rather
+        The exponent is the counting qubit's significance, so it reaches
+        ``2 ** (n_counting_qubits - 1)``; the power is taken of the unitary itself rather
         than of its exponent, which keeps the emitted gate one dense matrix on the
-        embedding's wires.
+        embedding's qubits.
 
         Args:
             circuit: The circuit to extend.
-            control: The wire ``U`` is controlled on.
-            wires: The embedding's wires.
+            control: The qubit ``U`` is controlled on.
+            qubits: The embedding's qubits.
             power: The exponent, at least zero.
         """
         block = torch.linalg.matrix_power(self._matrix, power)
@@ -413,7 +413,7 @@ class _PhaseFromEmbedding:
             ),
             dim=0,
         )
-        circuit.any(control, *wires, unitary=controlled, name="embedding_phase_power")
+        circuit.any(control, *qubits, unitary=controlled, name="embedding_phase_power")
 
 
 # A block encoding is a construction the primitive layer would admit only if a second
@@ -427,7 +427,7 @@ def _append_block_encoding(
     alpha: float,
     *,
     ancilla: int,
-    wires: Sequence[int],
+    qubits: Sequence[int],
 ) -> None:
     """Append the block encoding of ``embedding`` over ``alpha`` to ``circuit``.
 
@@ -439,8 +439,8 @@ def _append_block_encoding(
     unit-modulus pair whose mean is ``mu / alpha``. ``PREP`` is then the preparation whose
     two amplitudes are equal, which is the Hadamard on the ancilla; the ``h`` gates below
     are that preparation and its adjoint, and they are the general construction's special
-    case of one ancilla wire with equal coefficients rather than a decoration. The block
-    the composition extracts is ``<0| U |0> = (U_0 + U_1) / 2`` on the embedding's wires.
+    case of one ancilla qubit with equal coefficients rather than a decoration. The block
+    the composition extracts is ``<0| U |0> = (U_0 + U_1) / 2`` on the embedding's qubits.
 
     ``embedding`` must be Hermitian, which is what makes the eigenvalues real and the
     pair's mean their quotient by ``alpha``: the decomposition is the spectral one, and
@@ -453,9 +453,9 @@ def _append_block_encoding(
         circuit: The circuit to extend.
         embedding: The Hermitian matrix to encode, of power-of-two dimension.
         alpha: The subnormalisation, at least the embedding's spectral norm.
-        ancilla: The wire the preparation and the selection are controlled on, outside
-            ``wires``.
-        wires: The embedding's wires, block qubit first.
+        ancilla: The qubit the preparation and the selection are controlled on, outside
+            ``qubits``.
+        qubits: The embedding's qubits, block qubit first.
 
     Raises:
         ValueError: If ``alpha`` fails the validation :func:`_subnormalisation` applies to
@@ -469,7 +469,7 @@ def _append_block_encoding(
     circuit.gate("h", ancilla)
     circuit.any(
         ancilla,
-        *wires,
+        *qubits,
         unitary=select,
         name="block_encoding_select",
     )
@@ -477,7 +477,7 @@ def _append_block_encoding(
 
 
 def _select_unitary(embedding: torch.Tensor, alpha: float) -> torch.Tensor:
-    """Return the ``SELECT`` matrix of the block encoding on the ancilla and ``wires``.
+    """Return the ``SELECT`` matrix of the block encoding on the ancilla and ``qubits``.
 
     The matrix is ``diag(U_0, U_1)`` in the ancilla's block order, which is the two
     branches' unitaries stacked along the diagonal the prepared ancilla selects between.
@@ -490,7 +490,7 @@ def _select_unitary(embedding: torch.Tensor, alpha: float) -> torch.Tensor:
         alpha: The subnormalisation, at least the embedding's spectral norm.
 
     Returns:
-        The dense ``SELECT`` gate, ``2 ** (n + 1)`` by ``2 ** (n + 1)`` for an ``n``-wire
+        The dense ``SELECT`` gate, ``2 ** (n + 1)`` by ``2 ** (n + 1)`` for an ``n``-qubit
         embedding.
 
     Raises:
@@ -565,12 +565,12 @@ def _embedding_of(A: torch.Tensor) -> torch.Tensor:  # noqa: N803
     if rows < 2 or rows & (rows - 1):
         raise ValueError(
             f"A's dimension must be a power of two of at least two, got {rows}; a "
-            "register of whole wires carries a power-of-two number of amplitudes"
+            "register of whole qubits carries a power-of-two number of amplitudes"
         )
-    if rows.bit_length() - 1 > _MAX_DATA_WIRES:
+    if rows.bit_length() - 1 > _MAX_DATA_QUBITS:
         raise ValueError(
-            f"this unit is bounded at {_MAX_DATA_WIRES} index wires, so at most "
-            f"{2**_MAX_DATA_WIRES} rows and columns, got {rows}: the embedding is twice "
+            f"this unit is bounded at {_MAX_DATA_QUBITS} index qubits, so at most "
+            f"{2**_MAX_DATA_QUBITS} rows and columns, got {rows}: the embedding is twice "
             "as wide as the matrix and every form of the phase unitary is a dense gate "
             "on it, which is the demonstration scale the unit is written at"
         )
@@ -675,12 +675,12 @@ def _estimation_circuit(
     amplitudes: torch.Tensor,
     *,
     alpha: float,
-    n_counting_wires: int,
+    n_counting_qubits: int,
 ) -> Circuit:
     """Build the phase estimation circuit of ``embedding`` over ``alpha``.
 
-    The circuit prepares the input state on the embedding's wires, then hands the counting
-    register and the embedding's wires to
+    The circuit prepares the input state on the embedding's qubits, then hands the counting
+    register and the embedding's qubits to
     :func:`~flagquantum.algorithms.primitives.phase_estimation.append_phase_estimation`,
     which emits the counting register's Hadamards, the controlled powers of the
     exponential, and the inverse Fourier transform itself.
@@ -689,10 +689,10 @@ def _estimation_circuit(
         embedding: The Hermitian embedding of the data matrix.
         amplitudes: The input state's amplitudes, the block qubit's ``|0>`` branch first.
         alpha: The subnormalisation the exponential is taken over.
-        n_counting_wires: The width of the counting register, at least one.
+        n_counting_qubits: The width of the counting register, at least one.
 
     Returns:
-        A circuit over ``n_counting_wires`` plus the embedding's own wires, the counting
+        A circuit over ``n_counting_qubits`` plus the embedding's own qubits, the counting
         register leading.
 
     Raises:
@@ -701,60 +701,60 @@ def _estimation_circuit(
             :func:`~flagquantum.algorithms.primitives.phase_estimation.append_phase_estimation`
             or :func:`_subnormalisation` applies to them.
     """
-    n_embedding_wires = int(embedding.shape[0]).bit_length() - 1
-    evaluation = list(range(n_counting_wires, n_counting_wires + n_embedding_wires))
-    circuit = Circuit(n_counting_wires + n_embedding_wires)
+    n_embedding_qubits = int(embedding.shape[0]).bit_length() - 1
+    evaluation = list(range(n_counting_qubits, n_counting_qubits + n_embedding_qubits))
+    circuit = Circuit(n_counting_qubits + n_embedding_qubits)
     append_arbitrary_state(circuit, amplitudes, evaluation)
     append_phase_estimation(
         circuit,
         unitary=_PhaseFromEmbedding(embedding, alpha),
-        counting_wires=list(range(n_counting_wires)),
-        evaluation_wires=evaluation,
+        counting_qubits=list(range(n_counting_qubits)),
+        evaluation_qubits=evaluation,
     )
     return circuit
 
 
 def _counting_distribution(
-    counts: Mapping[str, int], n_counting_wires: int
+    counts: Mapping[str, int], n_counting_qubits: int
 ) -> dict[str, float]:
     """Return the counting register's marginal distribution as shares of the sample.
 
-    Each count key carries every wire, so the embedding's wires are folded away before the
-    distribution is formed: a key is truncated to its leading ``n_counting_wires``
+    Each count key carries every qubit, so the embedding's qubits are folded away before the
+    distribution is formed: a key is truncated to its leading ``n_counting_qubits``
     characters and its count accumulated onto that counter value. Reading the full-register
-    keys instead would follow the embedding's wires wherever the counting register is
+    keys instead would follow the embedding's qubits wherever the counting register is
     correlated with them and return a distribution that is not the counting register's,
     without raising.
 
     Args:
         counts: The sample counts, keyed by the big-endian bit string of the whole
             register.
-        n_counting_wires: The width of the counting register, at least one.
+        n_counting_qubits: The width of the counting register, at least one.
 
     Returns:
         One share per observed counter value, summing to one.
     """
     folded: dict[str, int] = {}
     for key, count in counts.items():
-        counter = key[:n_counting_wires]
+        counter = key[:n_counting_qubits]
         folded[counter] = folded.get(counter, 0) + count
     total = sum(folded.values())
     return {key: count / total for key, count in folded.items()}
 
 
-def _validated_counting_width(n_counting_wires: int) -> None:
+def _validated_counting_width(n_counting_qubits: int) -> None:
     """Check the width of the counting register.
 
     Args:
-        n_counting_wires: The register width as given.
+        n_counting_qubits: The register width as given.
 
     Raises:
-        ValueError: If ``n_counting_wires`` is less than one.
+        ValueError: If ``n_counting_qubits`` is less than one.
     """
-    if n_counting_wires < 1:
+    if n_counting_qubits < 1:
         raise ValueError(
-            "singular-value estimation needs at least one counting wire, got "
-            f"n_counting_wires={n_counting_wires}; a register with no wires resolves no "
+            "singular-value estimation needs at least one counting qubit, got "
+            f"n_counting_qubits={n_counting_qubits}; a register with no qubits resolves no "
             "phase and reads no singular value"
         )
 

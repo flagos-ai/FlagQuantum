@@ -234,8 +234,8 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
     declared_wires = 0
     for term in hamiltonian.terms:
         pauli = term.pauli
-        if term.wires:
-            declared_wires = max(declared_wires, 1 + max(term.wires))
+        if term.qubits:
+            declared_wires = max(declared_wires, 1 + max(term.qubits))
         raw = term.coefficient
         if isinstance(raw, complex) or (
             isinstance(raw, torch.Tensor) and raw.is_complex()
@@ -247,10 +247,10 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
         if pauli == "I":
             constant += coefficient
         elif pauli == "Z":
-            wire = term.wires[0]
+            wire = term.qubits[0]
             linear_weights[wire] = linear_weights.get(wire, 0.0) + coefficient
         elif pauli == "ZZ":
-            first, second = sorted(term.wires)
+            first, second = sorted(term.qubits)
             quadratic[first, second] = quadratic.get((first, second), 0.0) + coefficient
         else:
             raise ValueError(
@@ -272,7 +272,7 @@ def ising_to_qubo(hamiltonian: Hamiltonian) -> QuboProblem:
     }
     recovered = {pair: 4.0 * coefficient for pair, coefficient in quadratic.items()}
     offset = constant - sum(linear_weights.values()) + sum(quadratic.values())
-    n_variables = max(hamiltonian.n_wires, declared_wires)
+    n_variables = max(hamiltonian.n_qubits, declared_wires)
     return QuboProblem(
         n_variables=n_variables,
         linear=linear,

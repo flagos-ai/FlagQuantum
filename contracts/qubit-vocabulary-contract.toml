@@ -36,7 +36,7 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 372
+measured_private = 331
 private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous"
 
 [naming]
@@ -538,6 +538,58 @@ sites = [
     "flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py::cpu_cx_permutation_images::n_wires",
     "flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py::cpu_cx_permutation_index::n_wires",
     "flagquantum/runtime/executors/statevector/training.py::train_distributed_statevector::observable_wire",
+    "flagquantum/algorithms/amplitude_estimation.py::amplitude_estimation_circuit::n_counting_wires",
+    "flagquantum/algorithms/amplitude_estimation.py::amplitude_resolution::n_counting_wires",
+    "flagquantum/algorithms/amplitude_estimation.py::maximum_likelihood_estimate::n_counting_wires",
+    "flagquantum/algorithms/amplitude_estimation.py::maximum_likelihood_estimate::n_evaluation_wires",
+    "flagquantum/algorithms/amplitude_estimation.py::run_amplitude_estimation::n_counting_wires",
+    "flagquantum/algorithms/core.py::HamiltonianTerm.__init__::wires",
+    "flagquantum/algorithms/core.py::hardware_efficient_ansatz::n_wires",
+    "flagquantum/algorithms/core.py::hardware_efficient_parameter_count::n_wires",
+    "flagquantum/algorithms/core.py::heisenberg_chain_hamiltonian::n_wires",
+    "flagquantum/algorithms/core.py::heisenberg_hva::n_wires",
+    "flagquantum/algorithms/core.py::heisenberg_hva_parameter_count::n_wires",
+    "flagquantum/algorithms/core.py::pauli_term::wires",
+    "flagquantum/algorithms/core.py::qaoa_circuit::n_wires",
+    "flagquantum/algorithms/core.py::qaoa_loss::n_wires",
+    "flagquantum/algorithms/core.py::transverse_field_ising::n_wires",
+    "flagquantum/algorithms/core.py::zz_chain_hamiltonian::n_wires",
+    "flagquantum/algorithms/grover.py::grover_circuit::n_wires",
+    "flagquantum/algorithms/grover.py::optimal_iterations::n_wires",
+    "flagquantum/algorithms/grover.py::run_grover::n_wires",
+    "flagquantum/algorithms/pca.py::principal_components::n_counting_wires",
+    "flagquantum/algorithms/primitives/oracle.py::append_bit_oracle::wires",
+    "flagquantum/algorithms/primitives/oracle.py::append_phase_oracle::wires",
+    "flagquantum/algorithms/primitives/oracle.py::bit_oracle::n_wires",
+    "flagquantum/algorithms/primitives/oracle.py::marked_states::n_wires",
+    "flagquantum/algorithms/primitives/oracle.py::phase_oracle::n_wires",
+    "flagquantum/algorithms/primitives/phase_estimation.py::append_phase_estimation::counting_wires",
+    "flagquantum/algorithms/primitives/phase_estimation.py::append_phase_estimation::evaluation_wires",
+    "flagquantum/algorithms/primitives/phase_estimation.py::phase_estimation_circuit::n_counting_wires",
+    "flagquantum/algorithms/primitives/qft.py::append_qft::wires",
+    "flagquantum/algorithms/primitives/qft.py::qft::n_wires",
+    "flagquantum/algorithms/primitives/state_preparation.py::append_arbitrary_state::wires",
+    "flagquantum/algorithms/primitives/state_preparation.py::arbitrary_state::wires",
+    "flagquantum/algorithms/primitives/state_preparation.py::uniform_state::n_wires",
+    "flagquantum/algorithms/primitives/types.py::AmplitudeOperator.apply_a::wires",
+    "flagquantum/algorithms/primitives/types.py::AmplitudeOperator.apply_a_dagger::wires",
+    "flagquantum/algorithms/primitives/types.py::AmplitudeOperator.apply_mark::wires",
+    "flagquantum/algorithms/primitives/types.py::AmplitudeOperator.apply_plain::wires",
+    "flagquantum/algorithms/primitives/types.py::AmplitudeOperator.apply_zero_reflection::wires",
+    "flagquantum/algorithms/primitives/types.py::ControlledUnitary.apply::wires",
+    "flagquantum/algorithms/primitives/types.py::ControlledUnitary.apply_controlled::wires",
+    "flagquantum/algorithms/primitives/types.py::ControlledUnitary.apply_power_controlled::wires",
+    "flagquantum/algorithms/primitives/types.py::StatePreparationOperator.mark::wires",
+    "flagquantum/algorithms/primitives/types.py::StatePreparationOperator.prepare::wires",
+    "flagquantum/algorithms/qarm.py::FrequentItemsetOperator.apply_a::wires",
+    "flagquantum/algorithms/qarm.py::FrequentItemsetOperator.apply_a_dagger::wires",
+    "flagquantum/algorithms/qarm.py::FrequentItemsetOperator.apply_mark::wires",
+    "flagquantum/algorithms/qarm.py::FrequentItemsetOperator.apply_plain::wires",
+    "flagquantum/algorithms/qarm.py::FrequentItemsetOperator.apply_zero_reflection::wires",
+    "flagquantum/algorithms/qarm.py::frequent_itemset_operator::n_support_wires",
+    "flagquantum/algorithms/qarm.py::run_frequent_itemset::n_counting_wires",
+    "flagquantum/algorithms/qarm.py::run_frequent_itemset::n_support_wires",
+    "flagquantum/algorithms/svd.py::estimate_singular_values::n_counting_wires",
 ]
 
 [[slices]]
@@ -644,7 +696,7 @@ files = [
 [[slices]]
 id = "WQ-5"
 title = "algorithms"
-owner_team = "algorithms"
+owner_team = "algorithms + remote + simulation"
 canonical_count = 52
 attribute_count = 15
 attribute_field_count = 8
@@ -1428,6 +1480,67 @@ site = "flagquantum/runtime/trajectories/result.py::MPSMonteCarloResult::n_wires
 replacement = "n_qubits"
 declaration = "member"
 
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/amplitude_estimation.py::AmplitudeEstimationResult::n_counting_wires"
+replacement = "n_counting_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/amplitude_estimation.py::AmplitudeEstimationResult::n_evaluation_wires"
+replacement = "n_evaluation_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/core.py::Hamiltonian::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/core.py::HamiltonianTerm::max_wire"
+replacement = "max_qubit"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/core.py::HamiltonianTerm::wires"
+replacement = "qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/pca.py::PcaResult::n_counting_wires"
+replacement = "n_counting_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/primitives/phase_estimation.py::PhaseEstimationSpec::n_counting_wires"
+replacement = "n_counting_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/primitives/phase_estimation.py::PhaseEstimationSpec::n_evaluation_wires"
+replacement = "n_evaluation_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/primitives/types.py::AmplitudeOperator::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/primitives/types.py::ControlledUnitary::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/primitives/types.py::StatePreparationOperator::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/qarm.py::FrequentItemsetOperator::n_item_wires"
+replacement = "n_item_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/qarm.py::FrequentItemsetOperator::n_support_wires"
+replacement = "n_support_qubits"
+declaration = "field"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/qarm.py::FrequentItemsetOperator::n_wires"
+replacement = "n_qubits"
+declaration = "member"
+[[attribute_retirement.sites]]
+site = "flagquantum/algorithms/svd.py::SingularValueResult::n_counting_wires"
+replacement = "n_counting_qubits"
+declaration = "field"
+
 [definition_ledger]
 measured_canonical = 10
 
@@ -1501,5 +1614,6 @@ attribute_proposal = "docs/development/API_CHANGE_PROPOSAL_067_QUBIT_VOCABULARY_
 attribute_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ATTRIBUTES-20261006.md"
 runtime_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-RUNTIME-20261007.md"
 executor_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-EXECUTORS-20261008.md"
+algorithms_authorization = "docs/api-changes/FQ-QUBIT-VOCABULARY-ALGORITHMS-20261009.md"
 ci_workflow = ".github/workflows/ci.yml"
 pre_push = "tools/pre_push.py"

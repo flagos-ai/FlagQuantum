@@ -453,7 +453,7 @@ def create_pauli_measurement_plan(
     )
     if not isinstance(source_ir, CircuitIR):
         raise TypeError("Pauli measurement planning requires Circuit or CircuitIR")
-    if hamiltonian.n_wires > source_ir.n_wires:
+    if hamiltonian.n_qubits > source_ir.n_wires:
         raise ValueError("Hamiltonian references wires outside the source circuit")
     if int(shots) <= 0:
         raise ValueError("shots must be a positive integer")
@@ -619,7 +619,7 @@ def hamiltonian_expectation_from_counts(
     """Estimate an I/Z-only Hamiltonian from computational-basis counts."""
 
     n_wires, shot_count = _validate_count_histogram(counts)
-    if hamiltonian.n_wires > n_wires:
+    if hamiltonian.n_qubits > n_wires:
         raise ValueError("Hamiltonian references wires outside the measured register.")
     shots = float(shot_count)
     total = 0.0

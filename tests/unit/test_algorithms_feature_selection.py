@@ -10,9 +10,9 @@ the size penalty a testable property rather than a reading of the code.
 
 The Ising side has a reference path of its own. The objective's binary variable is
 ``x_i = (1 + s_i) / 2``, so a selected feature sits at spin ``+1``: a ``Z`` product is
-``+1`` where a wire's bit is 1 and ``-1`` where it is 0, and a term contributes its
-coefficient times that product over its wires. An identity term contributes its
-coefficient outright -- it is the constant, and the wire it declares carries the
+``+1`` where a qubit's bit is 1 and ``-1`` where it is 0, and a term contributes its
+coefficient times that product over its qubits. An identity term contributes its
+coefficient outright -- it is the constant, and the qubit it declares carries the
 register's width rather than an operator -- so the Hamiltonian's value at a configuration
 is computable from the term list without going through the QUBO form, which is what makes
 the mapping's own claim checkable.
@@ -128,10 +128,10 @@ def _hamiltonian_value(hamiltonian: Hamiltonian, assignment: tuple[int, ...]) ->
     """The Ising value of an assignment's spin configuration, read off the term list.
 
     The substitution ``x_i = (1 + s_i) / 2`` puts a selected feature at spin ``+1`` and an
-    unselected one at spin ``-1``, so a ``Z`` product is ``+1`` on a wire whose bit is 1
-    and ``-1`` on a wire whose bit is 0, and the term is weighted by that product over its
-    wires. An identity term is the constant: it is **not** weighted by its wires. The
-    declared wire an identity term carries is where the register's width survives the
+    unselected one at spin ``-1``, so a ``Z`` product is ``+1`` on a qubit whose bit is 1
+    and ``-1`` on a qubit whose bit is 0, and the term is weighted by that product over its
+    qubits. An identity term is the constant: it is **not** weighted by its qubits. The
+    declared qubit an identity term carries is where the register's width survives the
     round trip, and reading it as an operator would negate the constant. The value is the
     sum of the weighted terms, which is what a spin Hamiltonian means and not what the
     QUBO form computes.
@@ -142,8 +142,8 @@ def _hamiltonian_value(hamiltonian: Hamiltonian, assignment: tuple[int, ...]) ->
             total += float(term.coefficient)
             continue
         product = 1.0
-        for wire in term.wires:
-            product *= 1.0 if assignment[wire] else -1.0
+        for qubit in term.qubits:
+            product *= 1.0 if assignment[qubit] else -1.0
         total += float(term.coefficient) * product
     return total
 
@@ -344,11 +344,11 @@ def test_the_ising_form_round_trips_through_the_packages_own_mapping() -> None:
 
 
 def test_the_ising_form_carries_a_term_per_feature_a_pair_and_the_constant() -> None:
-    """Measured on instance A: four single-wire terms, six pair terms, one identity."""
+    """Measured on instance A: four single-qubit terms, six pair terms, one identity."""
     hamiltonian = _problem().to_ising()
     paulis = [term.pauli for term in hamiltonian.terms]
     assert sorted(paulis) == ["I"] + ["Z"] * 4 + ["ZZ"] * 6
-    assert len({term.wires for term in hamiltonian.terms if term.pauli == "ZZ"}) == 6
+    assert len({term.qubits for term in hamiltonian.terms if term.pauli == "ZZ"}) == 6
 
 
 def test_the_energy_refuses_an_assignment_that_is_not_one_bit_per_feature() -> None:
