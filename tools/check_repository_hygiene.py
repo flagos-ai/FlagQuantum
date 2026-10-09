@@ -34,12 +34,16 @@ FORBIDDEN_PAPER_SUFFIXES = {
     ".out",
 }
 ALLOWED_LARGE_FILES: dict[Path, int] = {}
-DEFAULT_MAX_FILE_BYTES = 2_000_000
+DEFAULT_MAX_FILE_BYTES = 1_800_000
 # The integrated MPS/statevector evidence corpus is part of the reproducibility
 # contract and is referenced by benchmark-contract tests and public reports.
-# Keep a bounded repository-wide budget while retaining the stricter per-file
-# and forbidden-artifact checks above.
-DEFAULT_MAX_TOTAL_BYTES = 110_000_000
+# These are ratchet budgets, not growth targets. Lower them whenever retained
+# evidence or development history moves to its external archive.
+DEFAULT_MAX_TOTAL_BYTES = 63_000_000
+DEFAULT_MAX_TRACKED_FILES = 3_100
+DEFAULT_MAX_RESULT_BYTES = 24_000_000
+DEFAULT_MAX_RESULT_FILES = 310
+DEFAULT_MAX_DEVELOPMENT_DOC_FILES = 230
 CANONICAL_RESULT_DIRECTORIES = {"comparison", "local", "scalability", "smoke"}
 ARTIFACT_CONTAINER_DIRECTORIES = {"development"}
 PACKAGE_ROOT_FILES = {
@@ -81,17 +85,43 @@ def tracked_files(root: Path) -> tuple[Path, ...]:
     return tuple(root / item.decode() for item in output.split(b"\0") if item)
 
 
+def repository_metrics(root: Path) -> dict[str, int]:
+    """Return the tracked-tree measurements governed by repository budgets."""
+    files = tuple(path for path in tracked_files(root) if path.is_file())
+    relative_files = tuple(path.relative_to(root) for path in files)
+    result_files = tuple(
+        path for path in relative_files if path.parts[:2] == ("benchmarks", "results")
+    )
+    development_docs = tuple(
+        path for path in relative_files if path.parts[:2] == ("docs", "development")
+    )
+    return {
+        "tracked_files": len(files),
+        "tracked_bytes": sum((root / path).stat().st_size for path in relative_files),
+        "benchmark_result_files": len(result_files),
+        "benchmark_result_bytes": sum(
+            (root / path).stat().st_size for path in result_files
+        ),
+        "development_doc_files": len(development_docs),
+    }
+
+
 def violations(
-    root: Path, *, max_file_bytes: int, max_total_bytes: int
+    root: Path,
+    *,
+    max_file_bytes: int,
+    max_total_bytes: int,
+    max_tracked_files: int = DEFAULT_MAX_TRACKED_FILES,
+    max_result_bytes: int = DEFAULT_MAX_RESULT_BYTES,
+    max_result_files: int = DEFAULT_MAX_RESULT_FILES,
+    max_development_doc_files: int = DEFAULT_MAX_DEVELOPMENT_DOC_FILES,
 ) -> tuple[str, ...]:
     errors = []
-    total = 0
     for path in tracked_files(root):
         if not path.is_file():
             continue
         relative = path.relative_to(root)
         size = path.stat().st_size
-        total += size
         if FORBIDDEN_PARTS.intersection(relative.parts):
             errors.append(f"generated cache tracked: {relative}")
         if path.suffix.lower() in FORBIDDEN_SUFFIXES:
@@ -104,10 +134,37 @@ def violations(
         allowed_size = ALLOWED_LARGE_FILES.get(relative, max_file_bytes)
         if size > allowed_size:
             errors.append(f"tracked file exceeds {max_file_bytes} bytes: {relative}")
-        if path.read_bytes()[:43] == b"version https://git-lfs.github.com/spec/v1":
+        with path.open("rb") as stream:
+            header = stream.read(43)
+        if header == b"version https://git-lfs.github.com/spec/v1":
             errors.append(f"Git-LFS pointer is not allowed in source: {relative}")
-    if total > max_total_bytes:
-        errors.append(f"tracked tree is {total} bytes; limit is {max_total_bytes}")
+    metrics = repository_metrics(root)
+    budget_checks = (
+        ("tracked tree", "tracked_bytes", max_total_bytes, "bytes"),
+        ("tracked tree", "tracked_files", max_tracked_files, "files"),
+        (
+            "benchmark results",
+            "benchmark_result_bytes",
+            max_result_bytes,
+            "bytes",
+        ),
+        (
+            "benchmark results",
+            "benchmark_result_files",
+            max_result_files,
+            "files",
+        ),
+        (
+            "development documentation",
+            "development_doc_files",
+            max_development_doc_files,
+            "files",
+        ),
+    )
+    for label, metric, limit, unit in budget_checks:
+        measured = metrics[metric]
+        if measured > limit:
+            errors.append(f"{label} has {measured} {unit}; limit is {limit}")
     return tuple(errors)
 
 
@@ -160,13 +217,40 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-file-bytes", type=int, default=DEFAULT_MAX_FILE_BYTES)
     parser.add_argument("--max-total-bytes", type=int, default=DEFAULT_MAX_TOTAL_BYTES)
+    parser.add_argument(
+        "--max-tracked-files", type=int, default=DEFAULT_MAX_TRACKED_FILES
+    )
+    parser.add_argument(
+        "--max-result-bytes", type=int, default=DEFAULT_MAX_RESULT_BYTES
+    )
+    parser.add_argument(
+        "--max-result-files", type=int, default=DEFAULT_MAX_RESULT_FILES
+    )
+    parser.add_argument(
+        "--max-development-doc-files",
+        type=int,
+        default=DEFAULT_MAX_DEVELOPMENT_DOC_FILES,
+    )
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="print the tracked-tree measurements checked by the budgets",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
+    metrics = repository_metrics(root)
+    if args.report:
+        for name, value in metrics.items():
+            print(f"{name}={value}")
     errors = (
         violations(
             root,
             max_file_bytes=args.max_file_bytes,
             max_total_bytes=args.max_total_bytes,
+            max_tracked_files=args.max_tracked_files,
+            max_result_bytes=args.max_result_bytes,
+            max_result_files=args.max_result_files,
+            max_development_doc_files=args.max_development_doc_files,
         )
         + layout_violations(root)
         + tuple(

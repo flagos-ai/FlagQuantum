@@ -1,3 +1,0 @@
-[rank0]:[W1007 03:13:00.294038798 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 20971520 bytes (free: 5111808, total: 85093777408).
-[rank0]:[W1007 03:13:00.295055305 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 20971520 bytes (free: 7208960, total: 85093777408).
-{"output": "/nfs/fq-scratch/fqcamp/benchmarks/results/local/mps_capacity_131072q_chi768_1xa800_oom_20261009.json", "status": "cuda_oom"}

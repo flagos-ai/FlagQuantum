@@ -25,9 +25,11 @@ and for where to report a vulnerability, see the repository-level
 
 Store raw profiler traces, repeated experiment matrices, temporary cloud task
 payloads, intermediate plots, checkpoints, and superseded result sets in the
-team evidence store or a dedicated research/evidence repository. A retained
-summary should record provenance, hashes, reproduction commands, and the
-external archive identifier without claiming a stronger maturity level.
+team evidence store or the public
+[FlagQuantum evidence archive](https://github.com/FlagQuantum/FlagQuantum-evidence).
+A retained summary should record provenance, hashes, reproduction commands, the
+immutable release tag, and the external archive identifier without claiming a
+stronger maturity level.
 
 ## Evidence lifecycle
 
@@ -66,3 +68,23 @@ Every change adding generated evidence should state:
 
 Generated files larger than 1 MiB or result batches larger than 20 files should
 default to external storage unless a release or regression gate requires them.
+
+## Size budgets
+
+`python tools/check_repository_hygiene.py --report` prints the measurements used
+by the repository gate. The checked-in budgets deliberately sit just above the
+current tree:
+
+| Scope | Budget |
+| --- | ---: |
+| Any tracked file | 1,800,000 bytes |
+| Entire tracked tree | 63,000,000 bytes |
+| Entire tracked tree | 3,100 files |
+| `benchmarks/results/` | 24,000,000 bytes |
+| `benchmarks/results/` | 310 files |
+| `docs/development/` | 230 files |
+
+These values are ceilings, not allocations. A change that needs more room must
+replace or archive existing material instead of raising a limit. Whenever a
+cleanup reduces one of the measurements materially, the same change lowers its
+corresponding budget so the removed volume cannot silently return.

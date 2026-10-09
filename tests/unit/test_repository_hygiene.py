@@ -13,8 +13,13 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 from tools.check_dependency_policy import policy_errors
 from tools.check_import_time import sample_imports
 from tools.check_repository_hygiene import (
+    DEFAULT_MAX_DEVELOPMENT_DOC_FILES,
     DEFAULT_MAX_FILE_BYTES,
+    DEFAULT_MAX_RESULT_BYTES,
+    DEFAULT_MAX_RESULT_FILES,
     DEFAULT_MAX_TOTAL_BYTES,
+    DEFAULT_MAX_TRACKED_FILES,
+    repository_metrics,
     violations,
 )
 from tools.fetch_example_assets import verify_asset
@@ -31,9 +36,56 @@ def test_repository_has_no_tracked_cache_dataset_model_or_oversized_artifact():
             ROOT,
             max_file_bytes=DEFAULT_MAX_FILE_BYTES,
             max_total_bytes=DEFAULT_MAX_TOTAL_BYTES,
+            max_tracked_files=DEFAULT_MAX_TRACKED_FILES,
+            max_result_bytes=DEFAULT_MAX_RESULT_BYTES,
+            max_result_files=DEFAULT_MAX_RESULT_FILES,
+            max_development_doc_files=DEFAULT_MAX_DEVELOPMENT_DOC_FILES,
         )
         == ()
     )
+
+
+def test_repository_budgets_are_ratchets_above_the_current_tree() -> None:
+    metrics = repository_metrics(ROOT)
+    assert metrics["tracked_files"] <= DEFAULT_MAX_TRACKED_FILES
+    assert metrics["tracked_bytes"] <= DEFAULT_MAX_TOTAL_BYTES
+    assert metrics["benchmark_result_files"] <= DEFAULT_MAX_RESULT_FILES
+    assert metrics["benchmark_result_bytes"] <= DEFAULT_MAX_RESULT_BYTES
+    assert metrics["development_doc_files"] <= DEFAULT_MAX_DEVELOPMENT_DOC_FILES
+
+
+def test_repository_budgets_fail_closed_when_a_ceiling_is_exceeded() -> None:
+    errors = violations(
+        ROOT,
+        max_file_bytes=DEFAULT_MAX_FILE_BYTES,
+        max_total_bytes=0,
+        max_tracked_files=0,
+        max_result_bytes=0,
+        max_result_files=0,
+        max_development_doc_files=0,
+    )
+    assert any(error.startswith("tracked tree has") for error in errors)
+    assert any(error.startswith("benchmark results has") for error in errors)
+    assert any(error.startswith("development documentation has") for error in errors)
+
+
+def test_evidence_archive_index_uses_immutable_verified_releases() -> None:
+    payload = json.loads((ROOT / "docs/development/evidence-archives.json").read_text())
+    assert payload["schema"] == "flagquantum_evidence_archives_v1"
+    assert payload["archives"]
+
+    for archive in payload["archives"]:
+        tag = archive["release_tag"]
+        assert re.fullmatch(r"evidence-\d{4}-\d{2}-\d{2}\.\d+", tag)
+        assert archive["release_url"].endswith(f"/releases/tag/{tag}")
+        assert f"/releases/download/{tag}/" in archive["archive_url"]
+        assert f"/releases/download/{tag}/" in archive["manifest_url"]
+        assert re.fullmatch(r"[0-9a-f]{40}", archive["source_commit"])
+        assert re.fullmatch(r"[0-9a-f]{64}", archive["sha256"])
+        assert archive["archive_bytes"] > 0
+        assert archive["file_count"] > 0
+        assert archive["uncompressed_bytes"] >= archive["archive_bytes"]
+        assert archive["root"] == "benchmarks/results"
 
 
 def test_repository_root_has_no_generated_benchmark_or_retired_logo() -> None:
