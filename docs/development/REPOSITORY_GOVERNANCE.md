@@ -104,3 +104,28 @@ cleanup reduces one of the measurements materially, the same change lowers its
 corresponding budget so the removed volume cannot silently return. The budgets
 are guardrails against accidental growth, not quotas or instructions to remove
 useful, current evidence.
+
+### Phase 2 closeout baseline
+
+The evidence cleanup closed on 2026-10-09 at source revision `252acf67a`. The
+post-merge baseline, measured before this note was added, is:
+
+| Scope | Measured value |
+| --- | ---: |
+| Entire tracked tree | 2,996 files |
+| Entire tracked tree | 61,781,105 bytes |
+| `benchmarks/results/` | 280 files |
+| `benchmarks/results/` | 23,664,402 bytes |
+| `docs/development/` | 192 files |
+
+The closeout audit found no byte-identical files under `benchmarks/results/`.
+It also found no further artifact that met all removal conditions at once: no
+checked-in consumer, clear supersession or obsolescence, reproducibility or a
+verified archive copy, and a passing contract suite after removal. Large files
+alone were not treated as candidates. In particular, the largest raw GPU sample
+CSV is named by its retained capacity result, and the matched-speed calibration
+records are consumed by the release manifest and contract tests.
+
+Phase 2 therefore closes with no additional deletion batch. A future cleanup may
+reopen an individual artifact only when it has evidence for every removal
+condition above; a zero exact-reference search by itself is not sufficient.
