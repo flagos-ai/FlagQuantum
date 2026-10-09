@@ -629,7 +629,9 @@ def _unmet(probes: set[str], extras: frozenset[str]) -> list[str]:
 def test_the_coverage_job_installs_every_integration_it_selects() -> None:
     """A lane that measures must run what it selects, or the numbers are wrong."""
     coverage = next(
-        job for job in lanes() if job.workflow == CI_WORKFLOW and job.name == "coverage"
+        job
+        for job in lanes()
+        if job.workflow == CI_WORKFLOW and job.name == "coverage-shard"
     )
 
     offenders: list[str] = []
@@ -815,9 +817,9 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
     jobs = lanes()
     by_name = {job.name: job for job in jobs}
 
-    assert {"coverage", "triton-optional", "distributed-cpu"} <= set(by_name)
+    assert {"coverage-shard", "triton-optional", "distributed-cpu"} <= set(by_name)
 
-    coverage = by_name["coverage"]
+    coverage = by_name["coverage-shard"]
     assert coverage.extras == frozenset(
         {
             "dev",

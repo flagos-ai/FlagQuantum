@@ -8,7 +8,7 @@ queues every other repository in the organisation behind it.
 The ceiling is expressed the way GitHub expresses it. A concurrency group
 admits one job at a time, so the number of distinct groups one workflow run
 uses *is* the number of GitHub-hosted runners that run can hold at once.
-`ci.yml` and `pre-commit.yaml` partition their jobs across the eight scoped
+`ci.yml` and `pre-commit.yaml` partition their jobs across the nine scoped
 buckets below, and this module holds that partition still. The pull-request or
 branch scope prevents an unrelated older run from serializing a newer run;
 the organisation's 20-runner pool remains the aggregate ceiling.
@@ -57,8 +57,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The per-push workflows: every job in them runs on a GitHub-hosted runner.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these eight scoped names are a
-# ceiling of eight concurrent GitHub-hosted runners for one run.
+# One concurrency group admits one job, so these nine scoped names are a
+# ceiling of nine concurrent GitHub-hosted runners for one run.
 #
 # The scope is the pull request number where there is one and the branch name
 # otherwise, so an unrelated branch's older run cannot serialize a newer one.
@@ -73,7 +73,8 @@ BUCKETS = frozenset(
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.10",
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.11",
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
-        f"flagquantum-gh-{RUN_SCOPE}-coverage",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-0",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-1",
         f"flagquantum-gh-{RUN_SCOPE}-distributed",
         f"flagquantum-gh-{RUN_SCOPE}-light-a",
         f"flagquantum-gh-{RUN_SCOPE}-light-b",
@@ -81,7 +82,7 @@ BUCKETS = frozenset(
     }
 )
 
-CEILING = 8
+CEILING = 9
 BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
@@ -160,6 +161,7 @@ def test_the_scan_finds_the_github_hosted_jobs_it_is_meant_to_police() -> None:
     assert {
         "ci.yml:quality",
         "ci.yml:cpu-core",
+        "ci.yml:coverage-shard",
         "ci.yml:coverage",
         "ci.yml:package",
         "ci.yml:distributed-cpu",
@@ -288,7 +290,7 @@ def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
 def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
     steps = [
         step
-        for step in _steps("ci.yml", "coverage")
+        for step in _steps("ci.yml", "coverage-shard")
         if "python -m pytest" in str(step.get("run", ""))
     ]
     assert len(steps) == 2
@@ -296,12 +298,18 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
         command = str(step.get("run", ""))
         for token in ("-n 2", "--dist=worksteal", "--durations=50"):
             assert token in command
+        for token in (
+            "-p tools.pytest_shard",
+            "--fq-shard-count 2",
+            "--fq-shard-index ${{ matrix.shard }}",
+        ):
+            assert token in command
 
 
 def test_pull_request_coverage_deduplicates_full_slow_conformance() -> None:
     steps = {
         str(step.get("if", "")): str(step.get("run", ""))
-        for step in _steps("ci.yml", "coverage")
+        for step in _steps("ci.yml", "coverage-shard")
         if "python -m pytest" in str(step.get("run", ""))
     }
     assert set(steps) == {
@@ -310,6 +318,24 @@ def test_pull_request_coverage_deduplicates_full_slow_conformance() -> None:
     }
     assert "and not slow" in steps["github.event_name == 'pull_request'"]
     assert "and not slow" not in steps["github.event_name != 'pull_request'"]
+
+
+def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
+    shard = _github_hosted_jobs("ci.yml")["coverage-shard"]
+    strategy = shard.get("strategy")
+    assert isinstance(strategy, dict)
+    assert strategy.get("matrix") == {"shard": [0, 1]}
+
+    final = _github_hosted_jobs("ci.yml")["coverage"]
+    assert final.get("needs") == "coverage-shard"
+    commands = "\n".join(
+        str(step.get("run", "")) for step in _steps("ci.yml", "coverage")
+    )
+    assert "needs.coverage-shard.result" in commands
+    assert "coverage combine coverage-data" in commands
+    assert commands.index("coverage combine coverage-data") < commands.index(
+        "tools/check_coverage.py"
+    )
 
 
 def test_each_optional_compatibility_matrix_reuses_one_runner() -> None:

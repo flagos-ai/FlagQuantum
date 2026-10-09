@@ -480,7 +480,7 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines fifteen jobs:
+The checked-in `ci.yml` defines sixteen jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
@@ -521,9 +521,11 @@ The checked-in `ci.yml` defines fifteen jobs:
   commit/environment/checksum manifest;
 - `distributed-cpu`: the `pr-distributed` tier — CPU distributed semantics and
   release-contract checks — run separately from the core matrix;
-- `coverage`: the maintained package measured under the marker expression above,
-  with the floors in `contracts/coverage-policy.toml` enforced by
-  `tools/check_coverage.py`;
+- `coverage-shard`: two deterministic halves of the maintained package measured
+  under the same marker expression on separate runners;
+- `coverage`: the required aggregation gate, which combines both raw coverage
+  data files before enforcing the floors in `contracts/coverage-policy.toml`
+  with `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
 
 Each two-version ecosystem compatibility job reuses one runner for its minimum
@@ -533,9 +535,9 @@ FlagQuantum install happen once per framework instead of once per version. This
 preserves the certified compatibility matrix while reducing runner cold starts
 and the serial queue behind the `light-b` and `light-c` capacity buckets.
 
-The GitHub-hosted jobs are partitioned across eight concurrency buckets per
+The GitHub-hosted jobs are partitioned across nine concurrency buckets per
 pull request or pushed branch. The scope is part of every bucket name: it keeps
-one run at eight concurrent jobs without forcing a new pull request to wait for
+one run at nine concurrent jobs without forcing a new pull request to wait for
 an older pull request's coverage or interpreter lane. The organisation-level
 20-runner pool remains the aggregate admission limit. Superseding a run of the
 same branch still cancels the older run.
@@ -552,9 +554,12 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
-The CPU core and coverage pytest phases use exactly two xdist workers with
-load-scope scheduling. The fixed count shortens the critical path without
-letting a runner-image CPU change silently widen process fan-out. Smoke/unit
+Each CPU core and coverage-shard pytest phase uses exactly two xdist workers
+with work-stealing scheduling. The fixed count shortens the critical path
+without letting a runner-image CPU change silently widen process fan-out. The
+two coverage shards use a stable node-ID partition, then merge raw data before
+applying the unchanged coverage policy; their union is the former selection,
+not a reduced test set. Smoke/unit
 runs on Python 3.10-3.12; the integration tier runs once on Python 3.12 because
 it proves repository runtime behavior rather than interpreter compatibility.
 Only the ordinary smoke, unit, integration, and coverage phases are
