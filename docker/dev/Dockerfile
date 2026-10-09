@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=python:3.12-slim-bookworm
 FROM ${BASE_IMAGE} AS base
 
-ARG TORCH_VERSION=2.10.0
+ARG TORCH_VERSION=2.13.0
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
 ARG SOURCE_URL=https://github.com/flagos-ai/FlagQuantum
 ARG SOURCE_REVISION=development
