@@ -21,8 +21,8 @@ jobs:
       - name: Install and validate release candidate
         run: |
           pip install --upgrade pip
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -e '.[dev]'
+          pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-build-isolation -e '.[dev]'
           python tools/ci_tier.py pr-default
           python tools/ci_tier.py pr-runtime
           python tools/ci_tier.py pr-distributed
@@ -32,10 +32,10 @@ jobs:
       # `id-token: write`, so a tool that is not used is a supply-chain surface
       # that does not need to be present.
       - name: Install build tools
-        run: python -m pip install build
+        run: python -m pip install build setuptools wheel
 
       - name: Build package
-        run: python -m build
+        run: python -m build --no-isolation
 
       # `ci.yml`'s `package` job verifies the artifacts it builds, but it builds
       # them with `--no-isolation` on a runner whose torch came from the CPU

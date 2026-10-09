@@ -27,19 +27,36 @@ been tested and what remains a research goal.
 
 ## Train your first quantum model
 
-Requires Python **3.10–3.12**. Install the released version:
+Requires Python **3.10–3.12**. For a CPU-only environment, install the CPU
+PyTorch wheel first so that pip does not resolve accelerator packages from the
+default package index:
 
 ```console
+python -m pip install --upgrade pip
+python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
 python -m pip install flagquantum
 ```
 
-Or install the development version from source (editable, with development tools):
+For CUDA or another accelerator, install the compatible PyTorch build using the
+[official PyTorch selector](https://pytorch.org/get-started/locally/) or your
+platform vendor's instructions, verify that `python -c "import torch"` succeeds,
+and then install FlagQuantum. Use `python -m pip install --no-deps flagquantum`
+when the environment's vendor-managed PyTorch installation must remain unchanged.
+
+To install the development version from source, reuse the PyTorch already in the
+environment instead of creating a second isolated build environment:
 
 ```console
 git clone https://github.com/flagos-ai/FlagQuantum.git
 cd FlagQuantum
-python -m pip install -e ".[dev]"
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+python -m pip install --no-build-isolation -e ".[dev]"
 ```
+
+The source install compiles a C++17 extension and therefore requires a working
+C++ compiler. Add `-v` to the final command to display compiler progress when
+diagnosing a slow build.
 
 To build a CPU or GPU environment with QSteed and optional JAX, follow the
 [container guide](docker/dev/README.md).

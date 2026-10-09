@@ -65,7 +65,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --upgrade pip setuptools wheel
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: English repository content
         run: python tools/check_repository_language.py
       - name: Ruff production and test surface
@@ -284,7 +286,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Compile the package on the supported interpreter
         run: python -m compileall -q flagquantum
       - name: Run pull-request compatibility smoke tests
@@ -346,7 +348,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Run smoke and unit tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
@@ -376,7 +378,7 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
@@ -413,7 +415,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax]'
+      - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
 
   azure-optional:
@@ -432,7 +434,7 @@ jobs:
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - name: Install the declared Azure extra
-        run: python -m pip install -e '.[dev,azure]'
+        run: python -m pip install --no-build-isolation -e '.[dev,azure]'
       - name: Verify the certified QDK Azure versions and the offline provider suite
         # No Azure credential, workspace resource id, or network submission is
         # used here. The suite exercises the fake workspace and target path plus
@@ -459,7 +461,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,cuda]'
+      - run: python -m pip install --no-build-isolation -e '.[dev,cuda]'
       - name: Run the Triton kernels that do not need a device
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
 
@@ -478,7 +480,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Qiskit and Aer versions
         run: |
           set -euxo pipefail
@@ -520,7 +522,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Cirq Core versions
         run: |
           set -euxo pipefail
@@ -545,7 +547,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Amazon Braket SDK versions
         run: |
           set -euxo pipefail
@@ -570,7 +572,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified CUDA-Q versions
         run: |
           set -euxo pipefail
@@ -596,7 +598,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified PennyLane versions
         run: |
           set -euxo pipefail
@@ -627,7 +629,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install pytest
-      - run: python -m pip install -e . --no-deps
+      - run: python -m pip install --no-build-isolation -e . --no-deps
       - run: python -m pytest tests/smoke tests/test_native_circuit.py -q
       # The declared development floor is a claim about this repository's own
       # toolchain, so it is installed and run rather than trusted. Only the 3.12
@@ -710,7 +712,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax]'
+      - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python tools/ci_tier.py pr-distributed
 
   coverage-shard:
@@ -732,7 +734,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
+      - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
       - name: Run maintained-runtime tests with coverage on pull requests
         if: github.event_name == 'pull_request'
         # The two full P5 trajectory conformance tests already run in the
@@ -808,9 +810,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - run: python -m pip install --upgrade pip setuptools wheel
+      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - name: Install project and security tooling
         run: >-
-          python -m pip install -e '.[dev]'
+          python -m pip install --no-build-isolation -e '.[dev]'
           pip-audit bandit cyclonedx-bom
       - name: Audit installed dependencies
         run: |
