@@ -101,7 +101,7 @@ python -m flagquantum.benchmarking.batched_statevector_memory \
 The complete machine-readable evidence is in the
 [JSON artifact](batched_statevector_preallocated_assembly_cpu_arm64_20261002.json),
 and the adjacent
-[generated table](BATCHED_STATEVECTOR_PREALLOCATED_ASSEMBLY_CPU_ARM64_20261002.md)
+[generated table](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 is a compact rendering of the same run.
 
 ## Limits and next action

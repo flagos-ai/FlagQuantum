@@ -78,11 +78,11 @@ current tree:
 | Scope | Budget |
 | --- | ---: |
 | Any tracked file | 1,800,000 bytes |
-| Entire tracked tree | 63,000,000 bytes |
-| Entire tracked tree | 3,100 files |
-| `benchmarks/results/` | 24,000,000 bytes |
-| `benchmarks/results/` | 310 files |
-| `docs/development/` | 230 files |
+| Entire tracked tree | 61,000,000 bytes |
+| Entire tracked tree | 3,020 files |
+| `benchmarks/results/` | 22,500,000 bytes |
+| `benchmarks/results/` | 290 files |
+| `docs/development/` | 200 files |
 
 These values are ceilings, not allocations. A change that needs more room must
 replace or archive existing material instead of raising a limit. Whenever a
