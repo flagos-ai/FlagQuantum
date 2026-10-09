@@ -45,3 +45,10 @@ release gate and when the directory holds no JSON at all, so a nonzero exit on
 an empty `scalability/` means "nothing is certified yet", not "the tool is
 broken". Generated audit summary JSON files are not inputs to release-gate
 scans.
+
+## Archived snapshots
+
+Sealed result snapshots and their verified download metadata are recorded in
+[`benchmarks/evidence-archives.json`](../evidence-archives.json). An archived
+file keeps its repository-relative path inside the release bundle, so it can be
+inspected or restored without guessing its former location.

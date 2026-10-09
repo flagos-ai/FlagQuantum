@@ -1,0 +1,17 @@
+{
+  "schema": "flagquantum_evidence_archives_v1",
+  "archives": [
+    {
+      "release_tag": "evidence-2026-10-09.1",
+      "source_commit": "31808f3b08a92210040b436199cc4350cfe3b29e",
+      "release_url": "https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.1",
+      "archive_url": "https://github.com/FlagQuantum/FlagQuantum-evidence/releases/download/evidence-2026-10-09.1/flagquantum-evidence-2026-10-09.1.tar.zst",
+      "manifest_url": "https://github.com/FlagQuantum/FlagQuantum-evidence/releases/download/evidence-2026-10-09.1/flagquantum-evidence-2026-10-09.1.manifest.json",
+      "sha256": "135d415be1a5001967dfb5f2b151f75c667d878fe17f01a9134ed763222257f9",
+      "archive_bytes": 5744230,
+      "file_count": 591,
+      "uncompressed_bytes": 35301403,
+      "root": "benchmarks/results"
+    }
+  ]
+}
