@@ -47,6 +47,7 @@ def _load(name: str) -> Any:
 
 _CENSUS = _load("census_wire_vocabulary")
 _GATE = _load("check_qubit_vocabulary")
+_SNAPSHOT = _GATE.scan_vocabulary()
 
 
 def _contract() -> dict[str, Any]:
@@ -54,7 +55,7 @@ def _contract() -> dict[str, Any]:
 
 
 def _errors(contract: dict[str, Any]) -> tuple[str, ...]:
-    return _GATE.contract_errors(contract)
+    return _GATE.contract_errors(contract, snapshot=_SNAPSHOT)
 
 
 def _package(tmp_path: Path, files: dict[str, str]) -> Path:
@@ -178,7 +179,14 @@ def _some(error_fragments: tuple[str, ...], needle: str) -> None:
 
 
 def test_the_checked_in_contract_passes() -> None:
-    assert _errors(_contract()) == ()
+    # Exercise the public fresh-scan path once. Mutation tests below reuse the
+    # immutable reading because they alter only the contract, not the source.
+    assert _GATE.contract_errors(_contract()) == ()
+
+
+def test_a_snapshot_cannot_be_combined_with_a_package_root(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        _GATE.contract_errors(_contract(), package_root=tmp_path, snapshot=_SNAPSHOT)
 
 
 def test_the_gate_reports_docstring_progress() -> None:
@@ -1226,7 +1234,7 @@ def test_the_report_names_the_aliases_apart_from_retirement(
     """
 
     contract = _contract()
-    _GATE._report(contract)
+    _GATE._report(contract, _SNAPSHOT)
     lines = capsys.readouterr().out.splitlines()
 
     for surface, index, label, ledger, table in (
