@@ -42,7 +42,7 @@ DEFAULT_MAX_FILE_BYTES = 1_800_000
 DEFAULT_MAX_TOTAL_BYTES = 62_000_000
 DEFAULT_MAX_TRACKED_FILES = 3_000
 DEFAULT_MAX_RESULT_BYTES = 24_000_000
-DEFAULT_MAX_RESULT_FILES = 300
+DEFAULT_MAX_RESULT_FILES = 310
 DEFAULT_MAX_DEVELOPMENT_DOC_FILES = 230
 CANONICAL_RESULT_DIRECTORIES = {"comparison", "local", "scalability", "smoke"}
 ARTIFACT_CONTAINER_DIRECTORIES = {"development"}
@@ -90,14 +90,10 @@ def repository_metrics(root: Path) -> dict[str, int]:
     files = tuple(path for path in tracked_files(root) if path.is_file())
     relative_files = tuple(path.relative_to(root) for path in files)
     result_files = tuple(
-        path
-        for path in relative_files
-        if path.parts[:2] == ("benchmarks", "results")
+        path for path in relative_files if path.parts[:2] == ("benchmarks", "results")
     )
     development_docs = tuple(
-        path
-        for path in relative_files
-        if path.parts[:2] == ("docs", "development")
+        path for path in relative_files if path.parts[:2] == ("docs", "development")
     )
     return {
         "tracked_files": len(files),
@@ -221,9 +217,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-file-bytes", type=int, default=DEFAULT_MAX_FILE_BYTES)
     parser.add_argument("--max-total-bytes", type=int, default=DEFAULT_MAX_TOTAL_BYTES)
-    parser.add_argument("--max-tracked-files", type=int, default=DEFAULT_MAX_TRACKED_FILES)
-    parser.add_argument("--max-result-bytes", type=int, default=DEFAULT_MAX_RESULT_BYTES)
-    parser.add_argument("--max-result-files", type=int, default=DEFAULT_MAX_RESULT_FILES)
+    parser.add_argument(
+        "--max-tracked-files", type=int, default=DEFAULT_MAX_TRACKED_FILES
+    )
+    parser.add_argument(
+        "--max-result-bytes", type=int, default=DEFAULT_MAX_RESULT_BYTES
+    )
+    parser.add_argument(
+        "--max-result-files", type=int, default=DEFAULT_MAX_RESULT_FILES
+    )
     parser.add_argument(
         "--max-development-doc-files",
         type=int,

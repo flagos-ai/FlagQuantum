@@ -66,13 +66,11 @@ def test_repository_budgets_fail_closed_when_a_ceiling_is_exceeded() -> None:
     )
     assert any(error.startswith("tracked tree has") for error in errors)
     assert any(error.startswith("benchmark results has") for error in errors)
-    assert any(
-        error.startswith("development documentation has") for error in errors
-    )
+    assert any(error.startswith("development documentation has") for error in errors)
 
 
 def test_evidence_archive_index_uses_immutable_verified_releases() -> None:
-    payload = json.loads((ROOT / "benchmarks/evidence-archives.json").read_text())
+    payload = json.loads((ROOT / "docs/development/evidence-archives.json").read_text())
     assert payload["schema"] == "flagquantum_evidence_archives_v1"
     assert payload["archives"]
 

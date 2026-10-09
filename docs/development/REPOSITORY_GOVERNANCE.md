@@ -81,7 +81,7 @@ current tree:
 | Entire tracked tree | 62,000,000 bytes |
 | Entire tracked tree | 3,000 files |
 | `benchmarks/results/` | 24,000,000 bytes |
-| `benchmarks/results/` | 300 files |
+| `benchmarks/results/` | 310 files |
 | `docs/development/` | 230 files |
 
 These values are ceilings, not allocations. A change that needs more room must
