@@ -56,7 +56,7 @@ measurements passed the `0.20` relative-median-absolute-deviation threshold.
 The complete raw samples and environment metadata are in
 [`batched_statevector_corpus_cpu_arm64_20260930.json`](batched_statevector_corpus_cpu_arm64_20260930.json).
 The generated full table is in
-[`BATCHED_STATEVECTOR_CORPUS_CPU_ARM64_20260930.md`](BATCHED_STATEVECTOR_CORPUS_CPU_ARM64_20260930.md).
+[`BATCHED_STATEVECTOR_CORPUS_CPU_ARM64_20260930.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2).
 The stability rerun is recorded in
 [`batched_statevector_corpus_stability_cpu_arm64_20260930.json`](batched_statevector_corpus_stability_cpu_arm64_20260930.json).
 

@@ -71,7 +71,7 @@ def test_repository_budgets_fail_closed_when_a_ceiling_is_exceeded() -> None:
 
 def test_evidence_archive_index_uses_immutable_verified_releases() -> None:
     payload = json.loads((ROOT / "docs/development/evidence-archives.json").read_text())
-    assert payload["schema"] == "flagquantum_evidence_archives_v1"
+    assert payload["schema"] == "flagquantum_evidence_archives_v2"
     assert payload["archives"]
 
     for archive in payload["archives"]:
@@ -85,7 +85,10 @@ def test_evidence_archive_index_uses_immutable_verified_releases() -> None:
         assert archive["archive_bytes"] > 0
         assert archive["file_count"] > 0
         assert archive["uncompressed_bytes"] >= archive["archive_bytes"]
-        assert archive["root"] == "benchmarks/results"
+        roots = archive["roots"]
+        assert roots
+        assert roots == sorted(set(roots))
+        assert set(roots) <= {"benchmarks/results", "docs/development"}
 
 
 def test_repository_root_has_no_generated_benchmark_or_retired_logo() -> None:
