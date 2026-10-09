@@ -25,7 +25,9 @@ elif sys.platform == "darwin":
     CPP_FLAGS = ["-O3", "-g0", "-std=c++17"] + (
         ["-Xpreprocessor", "-fopenmp"] if TORCH_USES_OPENMP else []
     )
-    LINK_FLAGS = ["-lomp"] if TORCH_USES_OPENMP else []
+    LINK_FLAGS = ["-Wl,-rpath,@loader_path/../../../torch/lib"] + (
+        ["-lomp"] if TORCH_USES_OPENMP else []
+    )
 else:
     CPP_FLAGS = ["-O3", "-g0", "-std=c++17"] + (
         ["-fopenmp"] if TORCH_USES_OPENMP else []

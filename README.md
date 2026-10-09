@@ -38,14 +38,15 @@ python -m pip install flagquantum
 **Linux or Windows, CPU only:**
 
 ```console
-python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
 python -m pip install flagquantum
 ```
 
-The first CPU install downloads about 200 MB of PyTorch. On a clean GitHub Ubuntu
-runner it took about 16 seconds; slower networks will take longer.
+FlagQuantum's compiled extension currently supports PyTorch 2.13.x. The first CPU
+install downloads about 200 MB of PyTorch. On a clean GitHub Ubuntu runner it
+took about 16 seconds; slower networks will take longer.
 
-**GPU:** Select the matching command from the
+**GPU:** Select a PyTorch 2.13.x command matching your accelerator from the
 [PyTorch installer](https://pytorch.org/get-started/locally/), then run:
 
 ```console

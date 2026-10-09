@@ -70,11 +70,23 @@ def test_ci_measures_a_bounded_cold_cpu_install() -> None:
 
 def test_release_build_reuses_the_validated_torch_environment() -> None:
     workflow = _workflow(".github/workflows/cd.yml")
-    commands = _run_commands(workflow["jobs"]["publish"])
+    validate_commands = _run_commands(workflow["jobs"]["validate"])
+    sdist_commands = _run_commands(workflow["jobs"]["build-sdist"])
 
-    editable = next(command for command in commands if " -e " in command)
-    build = next(command for command in commands if "python -m build" in command)
+    editable = next(command for command in validate_commands if " -e " in command)
+    build = next(command for command in sdist_commands if "python -m build" in command)
 
-    assert CPU_TORCH_INDEX in "\n".join(commands)
+    assert CPU_TORCH_INDEX in "\n".join(validate_commands + sdist_commands)
     assert "--no-build-isolation" in editable
     assert "--no-isolation" in build
+
+
+def test_cibuildwheel_covers_supported_python_and_torch_abi() -> None:
+    configuration = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert 'build = "cp310-* cp311-* cp312-*"' in configuration
+    assert "torch>=2.13,<2.14" in configuration
+    assert "torch==2.5.*" not in configuration
+    assert "manylinux_2_28" in configuration
+    assert "delocate-wheel" in configuration
+    assert "delvewheel repair" in configuration
