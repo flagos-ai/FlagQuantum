@@ -524,8 +524,9 @@ The checked-in `ci.yml` defines nineteen jobs:
   commit/environment/checksum manifest;
 - `distributed-cpu`: the `pr-distributed` tier — CPU distributed semantics and
   release-contract checks — run separately from the core matrix;
-- `coverage-shard`: three deterministic thirds of the maintained package measured
-  under the same marker expression on separate runners;
+- `coverage-shard`: eight deterministic, duration-balanced partitions of the
+  maintained package measured under the same marker expression on separate
+  runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
   data files before enforcing the floors in `contracts/coverage-policy.toml`
   with `tools/check_coverage.py`;
@@ -538,9 +539,9 @@ FlagQuantum install happen once per framework instead of once per version. This
 preserves the certified compatibility matrix while reducing runner cold starts
 and the serial queue behind the `light-b` and `light-c` capacity buckets.
 
-The GitHub-hosted jobs are partitioned across eleven concurrency buckets per
+The GitHub-hosted jobs are partitioned across sixteen concurrency buckets per
 pull request or pushed branch. The scope is part of every bucket name: it keeps
-one run at eleven concurrent jobs without forcing a new pull request to wait for
+one run at sixteen concurrent jobs without forcing a new pull request to wait for
 an older pull request's coverage or interpreter lane. The organisation-level
 20-runner pool remains the aggregate admission limit. Superseding a run of the
 same branch still cancels the older run.
@@ -560,9 +561,12 @@ developer still gets those checks before pushing.
 Each CPU core and coverage-shard pytest phase uses exactly two xdist workers
 with work-stealing scheduling. The fixed count shortens the critical path
 without letting a runner-image CPU change silently widen process fan-out. The
-three coverage shards use a stable node-ID partition, then merge raw data before
-applying the unchanged coverage policy; their union is the former selection,
-not a reduced test set. Pull requests run complete smoke/unit coverage once on
+eight coverage shards use checked-in duration hints from a cited CI run and a
+deterministic least-loaded assignment, then merge raw data before applying the
+unchanged coverage policy; their union is the former selection, not a reduced
+test set. Unmeasured tests receive a small default weight, so new tests remain
+evenly distributed without making the historical timing data authoritative.
+Pull requests run complete smoke/unit coverage once on
 Python 3.12 while Python 3.10 and 3.11 run the compatibility smoke; pushes to
 `main` retain complete smoke/unit coverage on all supported interpreters. The
 integration tier runs once on Python 3.12, in parallel with its unit suite,

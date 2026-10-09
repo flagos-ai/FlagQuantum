@@ -8,7 +8,7 @@ queues every other repository in the organisation behind it.
 The ceiling is expressed the way GitHub expresses it. A concurrency group
 admits one job at a time, so the number of distinct groups one workflow run
 uses *is* the number of GitHub-hosted runners that run can hold at once.
-`ci.yml` and `pre-commit.yaml` partition their jobs across the eleven scoped
+`ci.yml` and `pre-commit.yaml` partition their jobs across the sixteen scoped
 buckets below, and this module holds that partition still. The pull-request or
 branch scope prevents an unrelated older run from serializing a newer run;
 the organisation's 20-runner pool remains the aggregate ceiling.
@@ -57,8 +57,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The per-push workflows: every job in them runs on a GitHub-hosted runner.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these eleven scoped names are a
-# ceiling of eleven concurrent GitHub-hosted runners for one run.
+# One concurrency group admits one job, so these sixteen scoped names are a
+# ceiling of sixteen concurrent GitHub-hosted runners for one run.
 #
 # The scope is the pull request number where there is one and the branch name
 # otherwise, so an unrelated branch's older run cannot serialize a newer one.
@@ -76,6 +76,11 @@ BUCKETS = frozenset(
         f"flagquantum-gh-{RUN_SCOPE}-coverage-0",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-1",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-2",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-3",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-4",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-5",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-6",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-7",
         f"flagquantum-gh-{RUN_SCOPE}-distributed",
         f"flagquantum-gh-{RUN_SCOPE}-runtime",
         f"flagquantum-gh-{RUN_SCOPE}-light-a",
@@ -84,7 +89,7 @@ BUCKETS = frozenset(
     }
 )
 
-CEILING = 11
+CEILING = 16
 BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
@@ -353,7 +358,7 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
             assert token in command
         for token in (
             "-p tools.pytest_shard",
-            "--fq-shard-count 3",
+            "--fq-shard-count 8",
             "--fq-shard-index ${{ matrix.shard }}",
         ):
             assert token in command
@@ -377,7 +382,7 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     shard = _github_hosted_jobs("ci.yml")["coverage-shard"]
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
-    assert strategy.get("matrix") == {"shard": [0, 1, 2]}
+    assert strategy.get("matrix") == {"shard": list(range(8))}
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
     assert final.get("needs") == "coverage-shard"

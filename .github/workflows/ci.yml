@@ -26,13 +26,13 @@ on:
 # commit and allowed to finish. The cost is a queued matrix per push to `main`
 # rather than a dropped one, and that is the trade this file makes knowingly.
 #
-# Every job below then joins one of eleven named buckets scoped to this pull
-# request or pushed branch -- `cpucore-3.1x`, `runtime`, three `coverage`
+# Every job below then joins one of sixteen named buckets scoped to this pull
+# request or pushed branch -- `cpucore-3.1x`, `runtime`, eight `coverage`
 # shards, `distributed`, and
 # `light-a`/`b`/`c`. The scope is essential: repository-global buckets made an
 # unrelated pull request wait behind every older run in the same bucket, so a
 # healthy 15-minute matrix regularly took an hour to report. A concurrency
-# group admits one job at a time, so the eleven bucket suffixes remain the
+# group admits one job at a time, so the sixteen bucket suffixes remain the
 # per-run ceiling while the organisation's 20-runner pool remains the aggregate
 # ceiling across repositories and pull requests.
 #
@@ -46,7 +46,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -258,7 +258,7 @@ jobs:
 
   cpu-core:
     runs-on: ubuntu-latest
-    # Two of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # Two of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
       queue: max
@@ -392,7 +392,7 @@ jobs:
 
   jax-optional:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -408,7 +408,7 @@ jobs:
 
   azure-optional:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -438,7 +438,7 @@ jobs:
 
   triton-optional:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -455,7 +455,7 @@ jobs:
 
   qiskit-optional:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -497,7 +497,7 @@ jobs:
 
   cirq-optional:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -573,7 +573,7 @@ jobs:
 
   pennylane-optional:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -599,7 +599,7 @@ jobs:
 
   dependency-bounds:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
@@ -638,7 +638,7 @@ jobs:
     # Ubuntu 22.04 keeps the distributable native extension honest on GCC 11,
     # which is still the default compiler on a maintained Linux LTS release.
     runs-on: ubuntu-22.04
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -690,7 +690,7 @@ jobs:
 
   distributed-cpu:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-distributed
       queue: max
@@ -705,14 +705,14 @@ jobs:
 
   coverage-shard:
     runs-on: ubuntu-latest
-    # Three of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # Eight of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     env:
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     steps:
@@ -732,7 +732,7 @@ jobs:
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
           -n 2 --dist=worksteal --durations=50
           -p tools.pytest_shard
-          --fq-shard-count 3 --fq-shard-index ${{ matrix.shard }}
+          --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
       - name: Run complete maintained-runtime tests with coverage after merge
@@ -741,7 +741,7 @@ jobs:
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
           -n 2 --dist=worksteal --durations=50
           -p tools.pytest_shard
-          --fq-shard-count 3 --fq-shard-index ${{ matrix.shard }}
+          --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
       - uses: actions/upload-artifact@v4
@@ -786,7 +786,7 @@ jobs:
 
   supply-chain:
     runs-on: ubuntu-latest
-    # One of the eleven GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max

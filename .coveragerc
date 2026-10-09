@@ -1,4 +1,6 @@
 [run]
+source = flagquantum
+relative_files = True
 omit =
     flagquantum/benchmarking/*
     flagquantum/runtime/executors/statevector/triton.py
