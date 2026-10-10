@@ -1,7 +1,7 @@
 # version.py
 """Version information for the distributed quantum device package."""
 
-__version__ = "0.3.0rc1"
+__version__ = "0.3.0rc2"
 
 VERSION_INFO = {
     "major": 0,

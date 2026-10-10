@@ -10,7 +10,7 @@
   },
   "software": {
     "source_revision": "<required>",
-    "flagquantum_version": "0.3.0rc1",
+    "flagquantum_version": "0.3.0rc2",
     "kaiwu_pytorch_plugin_revision": "<required>",
     "python_version": "3.10.<required>",
     "torch_version": "2.7.0",

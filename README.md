@@ -117,7 +117,7 @@ name is discovered automatically. See
 [repeated low-latency workspace execution](docs/guides/JIUDING.md#repeated-low-latency-workspace-execution).
 
 Direct Quafu submission is available in the 0.3 release line, including the
-`0.3.0rc1` prerelease. With the older 0.2.0 release, use the documented local
+`0.3.0rc2` prerelease. With the older 0.2.0 release, use the documented local
 QSteed compilation path instead: pass `compiler="qsteed"` after installing the
 separate
 [FlagQuantum Compiler QSteed](https://github.com/FlagQuantum/FlagQuantum-Compiler-QSteed)
