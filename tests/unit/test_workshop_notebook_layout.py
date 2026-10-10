@@ -75,6 +75,29 @@ def test_quafu_hardware_labs_use_the_current_task_api(relative_path: str) -> Non
     assert 'compiler="qsteed"' not in source
 
 
+@pytest.mark.parametrize(
+    "relative_path",
+    ("cloud/04_jiuding_jobs.ipynb", "cloud/16_cloud_sweep.ipynb"),
+)
+def test_jiuding_labs_use_the_current_submit_contract(relative_path: str) -> None:
+    source = _code_source(relative_path)
+
+    assert 'target = "jiuding:cpu"' in source
+    assert "target=target" in source
+    assert "gpus=" not in source
+
+
+def test_jiuding_helper_uses_target_instead_of_removed_gpus_argument() -> None:
+    source = (
+        ROOT / "workshops" / "flagos2026" / "scripts" / "jiuding_job.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"--target"' in source
+    assert 'parser.error("submit requires --target")' in source
+    assert "target=args.target" in source
+    assert "gpus=" not in source
+
+
 def test_first_lab_reports_configuration_without_exposing_values() -> None:
     source = _code_source("basics/01_first_circuit.ipynb")
 

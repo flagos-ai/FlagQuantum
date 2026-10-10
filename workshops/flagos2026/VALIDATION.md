@@ -24,10 +24,13 @@ This revision addresses those findings without changing the numerical lessons th
 - Automated layout tests cover all seven locators in both deployment structures and the missing-layout error.
 
 The 18 source notebooks pass JSON and Python syntax checks and contain no saved execution state. The 15 layout
-regression cases pass. A clean execution of all 18 notebooks in the actual workshop kernel, followed by a
-separately authorized Task API submission, is still required before recording the deployment as fully passed.
-No remote task was submitted while preparing this revision. Rotate any credential that appeared in an autosaved
-notebook or terminal output; deleting the visible cell does not revoke an exposed key.
+regression cases pass. On October 10, 2026, all 18 notebooks also completed in the deployed workshop kernel with
+remote switches disabled. Separately authorized live checks then completed on both providers: a 1024-shot Quafu
+Dongling task reached `completed`, and a two-CPU Jiuding task reached `Succeed` with Bell probabilities close to
+`[0.5, 0, 0, 0.5]`. The Jiuding rehearsal exposed stale workshop calls that omitted the required compute target
+and still passed the removed `gpus` keyword; labs 04 and 16 and the standalone helper now use the current
+`target="jiuding:..."` contract. Rotate any credential that appeared in an autosaved notebook or terminal output;
+deleting the visible cell does not revoke an exposed key.
 
 ## Local execution
 

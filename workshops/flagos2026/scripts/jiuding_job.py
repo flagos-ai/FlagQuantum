@@ -2,8 +2,8 @@
 
 import argparse
 import json
-import sys
 from pathlib import Path
+
 from flagquantum.remote.compute.jiuding import JiudingClient
 
 
@@ -13,29 +13,35 @@ def main():
     parser.add_argument("--receipt", required=True, type=Path)
     parser.add_argument("--image")
     parser.add_argument("--workspace")
-    parser.add_argument("--gpus", type=int, choices=(0, 1), default=0)
-    parser.add_argument("--python", default=sys.executable)
+    parser.add_argument(
+        "--target",
+        help="Jiuding compute target, for example jiuding:cpu or jiuding:gpu/A100",
+    )
+    parser.add_argument("--python", default="python3")
     parser.add_argument("--timeout", type=float, default=180)
     args = parser.parse_args()
     client = JiudingClient(workspace=args.workspace)
     if args.action == "submit":
         if not args.image:
             parser.error("submit requires --image")
+        if not args.target:
+            parser.error("submit requires --target")
         root = Path(__file__).resolve().parents[3]
+        gpu = args.target.partition(":")[2].partition("/")[0].lower() == "gpu"
         script = (
             root / "examples/remote/jiuding_bell_gpu.py"
-            if args.gpus
+            if gpu
             else Path(__file__).with_name("bell.py")
         )
         receipt = client.submit(
             script,
+            target=args.target,
             image=args.image,
             receipt=args.receipt,
             python=args.python,
             pythonpath=root,
-            gpus=args.gpus,
-            cpus=4 if args.gpus else 2,
-            memory_gib=8 if args.gpus else 2,
+            cpus=4 if gpu else 2,
+            memory_gib=8 if gpu else 2,
         )
         print(json.dumps(receipt, indent=2))
         return
