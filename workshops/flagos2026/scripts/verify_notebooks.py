@@ -19,6 +19,14 @@ REMOTE_SWITCHES = {
     "compile_for_hardware",
     "collect",
 }
+SENSITIVE_NAMES = {
+    "QUAFU_API_KEY",
+    "QUAFU_API_TOKEN",
+    "JIUDING_AK",
+    "JIUDING_SK",
+    "QBOSON_SDK_CODE",
+}
+BANNED_CODE = ("export QUAFU_", "pip install flagquantum")
 
 
 def main():
@@ -43,9 +51,24 @@ def main():
         for cell in notebook.cells:
             if cell.cell_type != "code":
                 continue
+            if cell.execution_count is not None or cell.outputs:
+                raise ValueError(f"{path.name}: clear saved execution state")
+            lowered = cell.source.lower()
+            for snippet in BANNED_CODE:
+                if snippet.lower() in lowered:
+                    raise ValueError(f"{path.name}: remove `{snippet}` from code cells")
             for node in ast.walk(ast.parse(cell.source)):
                 if isinstance(node, ast.Assign):
                     for target in node.targets:
+                        if (
+                            isinstance(target, ast.Name)
+                            and target.id in SENSITIVE_NAMES
+                            and isinstance(node.value, ast.Constant)
+                            and node.value.value
+                        ):
+                            raise ValueError(
+                                f"{path.name}: do not assign credentials in a notebook"
+                            )
                         if (
                             isinstance(target, ast.Name)
                             and target.id in REMOTE_SWITCHES

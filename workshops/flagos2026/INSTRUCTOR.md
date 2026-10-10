@@ -20,10 +20,10 @@ Fill in these details before sharing the materials:
 | Item | What to arrange |
 | --- | --- |
 | Liangzhi Cloud | Event URL, sign-in instructions, environment entry point, and support contact |
-| Software | FlagQuantum commit, QSteed plugin version, and notebook kernel |
+| Software | FlagQuantum commit, package path, notebook kernel, and optional QSteed plugin version |
 | Jiuding | Full image address, Python executable, shared project path, and each participant's output directory |
 | Compute resources | Expected attendance, reserved CPU/GPU capacity, group quotas, and who will clean up |
-| Quafu | A currently available backend, credentials, shot allowance, and submission schedule |
+| Quafu | A currently available backend, Task API key and URL, shot allowance, and submission schedule |
 
 Plan for the number of people who will submit at the same time. If hardware access is limited,
 let each group submit one task and discuss its result together.
@@ -81,11 +81,12 @@ A replay keeps the analysis lesson moving, but it does not count as a successful
 
 | Symptom | What to check or do |
 | --- | --- |
-| Wrong FlagQuantum version | Check the `source` reported by preflight and the selected notebook kernel. |
+| Wrong FlagQuantum version | Check `source`, `source_commit`, and the selected notebook kernel; then restart it. |
 | CUDA unavailable | Continue on CPU, then check the allocated device, driver, and image. Mark the GPU exercise as skipped. |
 | Jiuding stays Pending | Keep the receipt and check status. Cancel if necessary; do not submit another job just to check progress. |
 | File or Python executable missing | Check shared mounts and the executable path inside the job image. |
 | Authentication fails | Ask platform support to check credentials and permissions privately. |
+| Quafu credentials appear missing | Check that `QUAFU_API_KEY` and any required `QUAFU_TASK_SERVER_URL` are injected into the kernel process. Never print their values. |
 | QSteed compilation fails | Check the plugin version, selected backend, and current calibration. Read the reported error before retrying. |
 | Quafu wait is interrupted | Keep the output file and check the platform task list. The submission may already have succeeded. |
 | No hardware result arrives during class | Use the labeled replay and record which live exercise remains unfinished. |

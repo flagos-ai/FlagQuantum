@@ -3,6 +3,32 @@
 The original course checks were run on September 9, 2026. This record concerns the learning materials,
 not event capacity or platform certification.
 
+## Deployment regression reported on October 10, 2026
+
+A workshop-only Jupyter deployment ran all 18 notebooks with every remote-submission switch set to `False`.
+Ten notebooks passed and eight failed. Seven failures shared a repository-root lookup that assumed the complete
+Git checkout was present; notebook 01 also contained deployment-side credential and shell-command edits that
+were not valid Python. The deployed environment imported FlagQuantum 0.2.0 from site-packages, and the Quafu
+exercise still selected the legacy QSteed/SQC path even though the platform supplied current Task API settings.
+
+This revision addresses those findings without changing the numerical lessons that passed:
+
+- The seven affected notebooks locate `flagos2026/notebooks` in either a full checkout or a workshop-only tree,
+  create `flagos2026/outputs`, and raise a clear error when the workshop cannot be located.
+- Notebook 01 reports the imported package version, path, and source commit. Notebook validation rejects saved
+  outputs, saved execution counts, in-cell FlagQuantum installation, shell credential exports, and literal
+  credential assignments.
+- Quafu labs 05 and 13 use the current Task API through `fq.run(..., compiler=None)`, read `QUAFU_API_KEY` and
+  the optional `QUAFU_TASK_SERVER_URL` only from the process environment, and preserve an error record when a
+  submission outcome needs reconciliation.
+- Automated layout tests cover all seven locators in both deployment structures and the missing-layout error.
+
+The 18 source notebooks pass JSON and Python syntax checks and contain no saved execution state. The 15 layout
+regression cases pass. A clean execution of all 18 notebooks in the actual workshop kernel, followed by a
+separately authorized Task API submission, is still required before recording the deployment as fully passed.
+No remote task was submitted while preparing this revision. Rotate any credential that appeared in an autosaved
+notebook or terminal output; deleting the visible cell does not revoke an exposed key.
+
 ## Local execution
 
 - Python 3.12.14 and PyTorch 2.13.0.
@@ -21,7 +47,8 @@ local links resolved, and no Chinese text remained in the workshop materials.
 The local machine had no CUDA GPU, so notebook 02 skipped that branch.
 The submission switches in notebooks 04 and 05 remained off. No participant credentials were used and no new cloud or hardware jobs were created.
 
-The event login flow, concurrent users, GPU images, and current QSteed/Quafu configuration must still be rehearsed using [the instructor guide](INSTRUCTOR.md).
+The event login flow, concurrent users, GPU images, current Quafu Task API configuration, and optional QSteed
+exercise must still be rehearsed using [the instructor guide](INSTRUCTOR.md).
 
 To repeat the local numerical checks from the repository root:
 

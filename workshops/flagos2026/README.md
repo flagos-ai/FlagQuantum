@@ -55,7 +55,7 @@ the routes above; each notebook still runs independently.
 | [02 · CPU and GPU](notebooks/basics/02_cpu_gpu.ipynb) | Can I run the same circuit on another device? | Beginner | Optional CUDA GPU |
 | [03 · Training from scratch](notebooks/training/03_quantum_training.ipynb) | How does a quantum parameter learn? | Beginner | None |
 | [04 · A cloud job](notebooks/cloud/04_jiuding_jobs.ipynb) | How do I submit my own Python program and retrieve its result? | Intermediate | Jiuding for submission |
-| [05 · Quantum hardware](notebooks/cloud/05_quafu_hardware.ipynb) | How do I execute the circuit I wrote on a QPU? | Intermediate | Quafu and QSteed for submission |
+| [05 · Quantum hardware](notebooks/cloud/05_quafu_hardware.ipynb) | How do I execute the circuit I wrote on a QPU? | Intermediate | Quafu Task API credentials for submission |
 | [06 · Result comparison](notebooks/cloud/06_compare_results.ipynb) | What do hardware counts tell me? | Beginner | Recorded data included |
 | [07 · Hybrid model](notebooks/training/07_hybrid_model.ipynb) | Can one optimizer train classical and quantum layers? | Intermediate | None |
 | [08 · VQE](notebooks/applications/08_vqe.ipynb) | Can a circuit learn a low-energy state? | Intermediate | None |
@@ -63,7 +63,7 @@ the routes above; each notebook still runs independently.
 | [10 · Noise](notebooks/simulation/10_noise.ipynb) | How does relaxation change the answer? | Intermediate | None |
 | [11 · MPS](notebooks/simulation/11_mps.ipynb) | When can an entangled state be stored compactly? | Advanced | None |
 | [12 · Compilation](notebooks/compilation/12_compilation.ipynb) | What can a compiler remove without changing the result? | Intermediate | Optional QSteed and calibration access |
-| [13 · Learned parameter on hardware](notebooks/cloud/13_trained_hardware.ipynb) | Does a locally trained circuit give the expected hardware measurement? | Intermediate | Optional Quafu and QSteed |
+| [13 · Learned parameter on hardware](notebooks/cloud/13_trained_hardware.ipynb) | Does a locally trained circuit give the expected hardware measurement? | Intermediate | Optional Quafu Task API credentials |
 | [14 · Gradient checks](notebooks/training/14_gradients.ipynb) | How can I verify a gradient before trusting training? | Advanced | None |
 | [15 · QAOA and Max-Cut](notebooks/applications/15_maxcut.ipynb) | How does a graph problem become a circuit objective? | Intermediate/advanced | None |
 | [16 · Cloud sweep](notebooks/cloud/16_cloud_sweep.ipynb) | How do I manage several reproducible experiments? | Advanced | Jiuding for submission |
@@ -110,7 +110,8 @@ The standalone scripts in `scripts/` are reference programs for later use; you d
 **FlagQuantum** is the Python framework used throughout these experiments.
 **Liangzhi Cloud** is the event portal; the instructor supplies its address and navigation.
 **Jiuding** runs Python jobs on classical CPUs and GPUs.
-**Quafu** executes quantum circuits on hardware, and **QSteed** compiles circuits for a selected device.
+**Quafu** executes quantum circuits on hardware. The hardware labs use its Task API with server-side compilation;
+**QSteed** remains an optional tool for the separate compilation lab.
 
 Cloud and hardware actions are disabled until you enable the relevant switch in a notebook.
 Lab 12's optional hardware compilation can contact the calibration service without submitting an execution task.
