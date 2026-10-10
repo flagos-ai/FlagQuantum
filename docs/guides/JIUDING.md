@@ -120,7 +120,7 @@ result type but have different latency and lifecycle semantics.
 | Need | Entry point | Required resource | Lifecycle |
 | --- | --- | --- | --- |
 | Interactive or repeated execution | [`fq.run(..., target="jiuding:...")`](#repeated-low-latency-workspace-execution) | A running development workspace | Reuses one resident process and SSH channel; no Job ID |
-| Native detached circuits (development version) | [`fq.submit(...)`](REMOTE_JOBS.md#jiuding-native-jobs) | Project, queue and runtime image | HTTP submission and bounded log results; no SSH or workspace |
+| Native detached circuits (0.3 release line) | [`fq.submit(...)`](REMOTE_JOBS.md#jiuding-native-jobs) | Project, queue and runtime image | HTTP submission and bounded log results; no SSH or workspace |
 | Shared-storage, recoverable work | [`JiudingClient.submit_program(...)`](#recoverable-batch-execution) | A running workspace, runtime image and queue capacity | Creates a batch Job; recoverable by Job ID |
 
 Use `fq.run` when startup latency would dominate the calculation. Use

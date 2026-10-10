@@ -1,6 +1,7 @@
 # Submit and resume remote jobs
 
-This API requires the development version; it is not in PyPI 0.2.0.
+This API is available in the 0.3 release line, including the `0.3.0rc1`
+prerelease; it is not in PyPI 0.2.0.
 `fq.run()` still waits for a result. Use `fq.submit()` when a Notebook should
 remain available while a remote task is queued or running. Submission waits only
 for preparation and the provider's acknowledgement, not for execution completion.

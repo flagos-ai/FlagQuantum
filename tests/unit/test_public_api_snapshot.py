@@ -15,6 +15,20 @@ def test_public_api_matches_reviewed_retained_baseline() -> None:
     assert public_api_snapshot.validate() == ()
 
 
+def test_release_version_literal_is_not_pinned_to_v02(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    changed = public_api_snapshot.generate()
+    changed["exports"]["__version__"] = {
+        "kind": "value",
+        "qualified_type": "builtins.str",
+        "value": {"kind": "literal", "value": "99.0.0rc1"},
+    }
+    monkeypatch.setattr(public_api_snapshot, "generate", lambda: changed)
+
+    assert public_api_snapshot.validate() == ()
+
+
 def test_baseline_covers_current_stable_export_manifest() -> None:
     manifest = json.loads((ROOT / "docs/public_api_v1.json").read_text())
     baseline = json.loads(
