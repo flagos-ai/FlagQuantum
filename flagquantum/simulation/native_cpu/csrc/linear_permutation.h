@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ATen/ATen.h>
+#include <torch/csrc/stable/tensor.h>
 
 #include <array>
 #include <cstdint>
@@ -9,7 +9,7 @@ namespace flagquantum_native {
 
 using LinearLookup = std::array<std::array<uint64_t, 256>, 8>;
 
-inline LinearLookup build_linear_lookup(const at::Tensor& images) {
+inline LinearLookup build_linear_lookup(const torch::stable::Tensor& images) {
   const int64_t n_wires = images.numel();
   const int64_t* image_data = images.const_data_ptr<int64_t>();
   LinearLookup lookup{};
@@ -29,7 +29,7 @@ inline LinearLookup build_linear_lookup(const at::Tensor& images) {
   return lookup;
 }
 
-inline int64_t linear_shift_mode(const at::Tensor& images) {
+inline int64_t linear_shift_mode(const torch::stable::Tensor& images) {
   const int64_t n_wires = images.numel();
   const int64_t* image_data = images.const_data_ptr<int64_t>();
   const uint64_t state_mask = (uint64_t{1} << n_wires) - 1;

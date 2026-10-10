@@ -321,18 +321,18 @@ The Quafu examples use the independently maintained
 plugin. Installing FlagQuantum alone, or its `quafu` extra, does not install
 this compiler plugin. The `quafu` extra supplies the optional calibration reader.
 
-Use Python 3.12 for the verified setup below. From a FlagQuantum source checkout:
+Python 3.10 through 3.12 are supported. From a FlagQuantum source checkout:
 
 ```bash
 python -m pip install -e .
-python -m pip install "qsteed @ git+https://github.com/BAQIS-Quantum/qsteed.git@46584efde731aea9eec27b5466919b76fe5f3184"
-python -m pip install flagquantum-compiler-qsteed==0.1.0
+python -m pip install flagquantum-compiler-qsteed==0.2.0
 ```
 
-The plugin requires FlagQuantum `>=0.2,<0.3` and QSteed
-`0.2.3+quafu.sqc`. Install the pinned upstream build before the plugin;
-PyPI QSteed `0.2.2` is not a supported substitute. The plugin itself is
-[published on PyPI](https://pypi.org/project/flagquantum-compiler-qsteed/0.1.0/).
+The plugin requires FlagQuantum `>=0.2` and privately vendors the verified
+compiler-only closure of QSteed `0.2.3+quafu.sqc`. Do not separately install
+QSteed, QuarkCircuit, QuarkStudio, a database, or a web service for this local
+compiler path. The plugin is
+[published on PyPI](https://pypi.org/project/flagquantum-compiler-qsteed/0.2.0/).
 
 FlagQuantum discovers the installed `compiler.qsteed` entry point automatically.
 Verify installation without provider credentials or a hardware submission:

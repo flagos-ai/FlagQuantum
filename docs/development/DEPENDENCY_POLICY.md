@@ -1,10 +1,11 @@
 # Python and dependency policy
 
 The executable support matrix is `dependency-policy.toml`. FlagQuantum core
-supports Python 3.10–3.12 and installs only PyTorch 2.13.x. The native extension
-uses the PyTorch ATen ABI, so the package metadata rejects other PyTorch minor
-versions instead of allowing an installation that can fail with an unresolved
-native symbol. Every optional dependency
+supports Python 3.10–3.12 and PyTorch 2.13.x–2.14.x. The native extension is
+built once against the PyTorch 2.10 Stable ABI and shipped as a CPython 3.10+
+limited-API wheel. CI then loads that same binary with every declared PyTorch
+minor instead of assuming source compatibility implies binary compatibility.
+Every optional dependency
 group in `pyproject.toml` must have an exact, classified entry in that matrix;
 `python tools/check_dependency_policy.py` rejects missing groups, requirement
 drift, unclassified extras and aggregate extras that no longer equal their
@@ -86,10 +87,11 @@ activated. Native CPU and CUDA paths remain independent of Torch-FL.
 
 The CI matrix tests the oldest and newest supported Python lines. Dependency
 lower bounds are exercised by a dedicated compatibility lane and current local
-acceptance exercises the upper supported environment. PyTorch is deliberately
-limited to one minor ABI line; widening that range requires either rebuilding
-for a new declared line or migrating the extension to PyTorch's stable ABI.
-Ranges describe tested support, not aspirational compatibility.
+acceptance exercises the upper supported environment. The native wheel is
+compiled against the oldest Stable ABI target, then tested without rebuilding
+on the oldest and newest supported PyTorch runtimes. Widening the range still
+requires that cross-version binary check. Ranges describe tested support, not
+aspirational compatibility.
 
 The `dev` extra is bounded like the runtime extras, because it is the toolchain
 this repository installs to check itself: an unbounded entry lets an upstream

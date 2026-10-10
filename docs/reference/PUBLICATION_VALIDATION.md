@@ -10,7 +10,7 @@ this review does not promote their maturity levels.
 
 | Area | Implemented and checked | Boundary |
 | --- | --- | --- |
-| Local learning | Circuit construction, PyTorch Module/autograd, optimizers and local measurements; Python 3.10, 3.11 and 3.12 with PyTorch 2.13.x | The compiled extension is tied to the PyTorch 2.13 ABI; gradient support depends on representation and backend, with no blanket higher-order-gradient claim |
+| Local learning | Circuit construction, PyTorch Module/autograd, optimizers and local measurements; Python 3.10, 3.11 and 3.12 with PyTorch 2.13.x–2.14.x | The compiled extension uses the PyTorch 2.10 Stable ABI and is loaded cross-version in CI; gradient support depends on representation and backend, with no blanket higher-order-gradient claim |
 | GPU and distributed execution | A800 single-GPU gate checks; two-GPU statevector forward, reverse and training; MPS training on 2, 4 and 8 GPUs with checkpoint/resume | Selected correctness workloads, not a performance comparison or capacity certification |
 | Cross-node statevector | Two nodes, one A800 per node: forward, gradients and training/resume over NCCL/TCP | The forward probe uses five qubits; no RDMA, throughput, strong-scaling or large-state capacity claim follows |
 | Tensor networks | Native slicing and distributed CPU correctness checks | The A800 results above do not certify all tensor-network execution or gradient paths |

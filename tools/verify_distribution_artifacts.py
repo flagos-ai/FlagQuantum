@@ -38,10 +38,11 @@ FORBIDDEN_BUNDLED_TORCH_LIBRARIES = (
     "torch_python.dll",
 )
 SUPPORTED_TORCH_REQUIREMENTS = {
-    "torch>=2.13,<2.14",
-    "torch<2.14,>=2.13",
+    "torch>=2.13,<2.15",
+    "torch<2.15,>=2.13",
 }
-RELEASE_INTERPRETERS = ("cp310", "cp311", "cp312")
+RELEASE_PYTHON_TAG = "cp310"
+RELEASE_ABI_TAG = "abi3"
 RELEASE_PLATFORMS = (
     "manylinux_x86_64",
     "macos_arm64",
@@ -142,7 +143,7 @@ def _release_wheel_target(path: Path) -> tuple[str, str] | None:
     if len(fields) < 5:
         return None
     interpreter, abi, platform_field = fields[-3:]
-    if interpreter not in RELEASE_INTERPRETERS or abi != interpreter:
+    if interpreter != RELEASE_PYTHON_TAG or abi != RELEASE_ABI_TAG:
         return None
     platforms = platform_field.split(".")
     if "manylinux_2_28_x86_64" in platforms:
@@ -164,11 +165,7 @@ def release_matrix_errors(paths: tuple[Path, ...]) -> tuple[str, ...]:
     if len(sdists) != 1:
         errors.append(f"release must contain exactly one sdist, found {len(sdists)}")
 
-    expected = {
-        (interpreter, platform)
-        for interpreter in RELEASE_INTERPRETERS
-        for platform in RELEASE_PLATFORMS
-    }
+    expected = {(RELEASE_PYTHON_TAG, platform) for platform in RELEASE_PLATFORMS}
     targets: dict[tuple[str, str], list[str]] = {}
     for path in (candidate for candidate in paths if candidate.suffix == ".whl"):
         target = _release_wheel_target(path)
@@ -236,7 +233,7 @@ def artifact_errors(path: Path) -> tuple[str, ...]:
             )
         elif torch_requirements[0].replace(" ", "") not in SUPPORTED_TORCH_REQUIREMENTS:
             errors.append(
-                "wheel must require the supported PyTorch 2.13 ABI, "
+                "wheel must require the supported PyTorch 2.13-2.14 range, "
                 f"got {torch_requirements[0]!r}"
             )
         elif not (

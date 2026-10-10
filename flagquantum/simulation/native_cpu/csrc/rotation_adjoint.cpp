@@ -1,9 +1,9 @@
-#include <ATen/ATen.h>
-#include <ATen/Dispatch.h>
-#include <ATen/Parallel.h>
-#include <c10/util/complex.h>
-#include <torch/library.h>
-#include <pybind11/pybind11.h>
+#include <torch/csrc/stable/library.h>
+#include <torch/csrc/stable/ops.h>
+#include <torch/csrc/stable/tensor.h>
+#include <torch/headeronly/core/Dispatch_v2.h>
+#include <torch/headeronly/core/ScalarType.h>
+#include <torch/headeronly/macros/Macros.h>
 
 #include <algorithm>
 #include <array>
@@ -15,6 +15,20 @@
 #include <vector>
 
 #include "linear_permutation.h"
+
+#define FQ_DISPATCH_COMPLEX_TYPES(TYPE, NAME, ...)                        \
+  [&] {                                                                  \
+    const auto scalar_type = (TYPE);                                     \
+    if (scalar_type == torch::headeronly::ScalarType::ComplexFloat) {    \
+      using scalar_t = c10::complex<float>;                              \
+      return (__VA_ARGS__)();                                            \
+    }                                                                    \
+    if (scalar_type == torch::headeronly::ScalarType::ComplexDouble) {   \
+      using scalar_t = c10::complex<double>;                             \
+      return (__VA_ARGS__)();                                            \
+    }                                                                    \
+    STD_TORCH_CHECK(false, NAME, " supports complex tensors only");      \
+  }()
 
 // GCC 11 rejects OpenMP SIMD directives nested in the ATen dispatch and
 // parallel lambdas below, even though newer GCC and Clang accept them. Keep
@@ -30,85 +44,92 @@
 
 namespace {
 
+uint32_t stable_thread_index() {
+  uint32_t index = 0;
+  TORCH_ERROR_CODE_CHECK(torch_get_thread_idx(&index));
+  return index;
+}
+
 using flagquantum_native::LinearLookup;
 using flagquantum_native::apply_linear_lookup;
 using flagquantum_native::build_linear_lookup;
 using flagquantum_native::linear_shift_mode;
 
-at::Tensor fused_observable_expectation_cpu(
-    const at::Tensor& ket,
-    const at::Tensor& weights) {
-  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
-  TORCH_CHECK(weights.device().is_cpu(), "weights must be on CPU");
-  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
-  TORCH_CHECK(weights.is_contiguous(), "weights must be contiguous");
-  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
-  TORCH_CHECK(weights.dim() == 1, "weights must be one-dimensional");
-  TORCH_CHECK(weights.numel() == ket.size(1), "weight count must match ket width");
-  TORCH_CHECK(
-      ket.scalar_type() == at::kComplexFloat || ket.scalar_type() == at::kComplexDouble,
+torch::stable::Tensor fused_observable_expectation_cpu(
+    const torch::stable::Tensor& ket,
+    const torch::stable::Tensor& weights) {
+  STD_TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  STD_TORCH_CHECK(weights.device().is_cpu(), "weights must be on CPU");
+  STD_TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  STD_TORCH_CHECK(weights.is_contiguous(), "weights must be contiguous");
+  STD_TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(weights.dim() == 1, "weights must be one-dimensional");
+  STD_TORCH_CHECK(weights.numel() == ket.size(1), "weight count must match ket width");
+  STD_TORCH_CHECK(
+      ket.scalar_type() == torch::headeronly::ScalarType::ComplexFloat || ket.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(
-      (ket.scalar_type() == at::kComplexFloat && weights.scalar_type() == at::kFloat) ||
-          (ket.scalar_type() == at::kComplexDouble && weights.scalar_type() == at::kDouble),
+  STD_TORCH_CHECK(
+      (ket.scalar_type() == torch::headeronly::ScalarType::ComplexFloat && weights.scalar_type() == torch::headeronly::ScalarType::Float) ||
+          (ket.scalar_type() == torch::headeronly::ScalarType::ComplexDouble && weights.scalar_type() == torch::headeronly::ScalarType::Double),
       "weight dtype must match the real component of ket");
 
   const int64_t width = ket.size(1);
   const int64_t item_count = ket.numel();
-  const int64_t thread_count = std::max<int64_t>(1, at::get_num_threads());
-  at::Tensor partials = at::zeros({thread_count}, weights.options());
-  at::Tensor result = at::empty({}, weights.options());
-  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_observable_expectation_cpu", [&] {
+  const int64_t thread_count = std::max<int64_t>(1, torch::stable::get_num_threads());
+  torch::stable::Tensor partials =
+      torch::stable::new_zeros(weights, {thread_count});
+  torch::stable::Tensor result = torch::stable::new_empty(weights, {});
+  FQ_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_observable_expectation_cpu", [&] {
     using real_t = typename scalar_t::value_type;
     const scalar_t* ket_data = ket.const_data_ptr<scalar_t>();
     const real_t* weight_data = weights.const_data_ptr<real_t>();
-    real_t* partial_data = partials.data_ptr<real_t>();
-    at::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+    real_t* partial_data = partials.mutable_data_ptr<real_t>();
+    torch::stable::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
       real_t local = real_t{0};
       for (int64_t item = begin; item < end; ++item) {
         const scalar_t value = ket_data[item];
         local += (value.real() * value.real() + value.imag() * value.imag()) *
             weight_data[item % width];
       }
-      partial_data[at::get_thread_num()] += local;
+      partial_data[stable_thread_index()] += local;
     });
     real_t total = real_t{0};
     for (int64_t thread = 0; thread < thread_count; ++thread) {
       total += partial_data[thread];
     }
-    *result.data_ptr<real_t>() = total;
+    *result.mutable_data_ptr<real_t>() = total;
   });
   return result;
 }
 
-at::Tensor fused_observable_adjoint_seed_cpu(
-    const at::Tensor& ket,
-    const at::Tensor& weights) {
-  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
-  TORCH_CHECK(weights.device().is_cpu(), "weights must be on CPU");
-  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
-  TORCH_CHECK(weights.is_contiguous(), "weights must be contiguous");
-  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
-  TORCH_CHECK(weights.dim() == 1, "weights must be one-dimensional");
-  TORCH_CHECK(weights.numel() == ket.size(1), "weight count must match ket width");
-  TORCH_CHECK(
-      ket.scalar_type() == at::kComplexFloat ||
-          ket.scalar_type() == at::kComplexDouble,
+torch::stable::Tensor fused_observable_adjoint_seed_cpu(
+    const torch::stable::Tensor& ket,
+    const torch::stable::Tensor& weights) {
+  STD_TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  STD_TORCH_CHECK(weights.device().is_cpu(), "weights must be on CPU");
+  STD_TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  STD_TORCH_CHECK(weights.is_contiguous(), "weights must be contiguous");
+  STD_TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(weights.dim() == 1, "weights must be one-dimensional");
+  STD_TORCH_CHECK(weights.numel() == ket.size(1), "weight count must match ket width");
+  STD_TORCH_CHECK(
+      ket.scalar_type() == torch::headeronly::ScalarType::ComplexFloat ||
+          ket.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(
-      (ket.scalar_type() == at::kComplexFloat && weights.scalar_type() == at::kFloat) ||
-          (ket.scalar_type() == at::kComplexDouble && weights.scalar_type() == at::kDouble),
+  STD_TORCH_CHECK(
+      (ket.scalar_type() == torch::headeronly::ScalarType::ComplexFloat && weights.scalar_type() == torch::headeronly::ScalarType::Float) ||
+          (ket.scalar_type() == torch::headeronly::ScalarType::ComplexDouble && weights.scalar_type() == torch::headeronly::ScalarType::Double),
       "weight dtype must match the real component of ket");
 
-  at::Tensor adjoint = at::empty_like(ket);
+  torch::stable::Tensor adjoint = torch::stable::empty_like(ket);
   const int64_t width = ket.size(1);
   const int64_t item_count = ket.numel();
-  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_observable_adjoint_seed_cpu", [&] {
+  FQ_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_observable_adjoint_seed_cpu", [&] {
     using real_t = typename scalar_t::value_type;
     const scalar_t* ket_data = ket.const_data_ptr<scalar_t>();
     const real_t* weight_data = weights.const_data_ptr<real_t>();
-    scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
-    at::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+    scalar_t* adjoint_data = adjoint.mutable_data_ptr<scalar_t>();
+    torch::stable::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
       for (int64_t item = begin; item < end; ++item) {
         adjoint_data[item] = ket_data[item] * (real_t{2} * weight_data[item % width]);
       }
@@ -126,36 +147,36 @@ inline int64_t popcount(uint64_t value) {
   return count;
 }
 
-at::Tensor fused_hadamard_controlled_phase_graph_cpu(
-    at::Tensor state,
-    const at::Tensor& factors,
-    const at::Tensor& wires,
+torch::stable::Tensor fused_hadamard_controlled_phase_graph_cpu(
+    torch::stable::Tensor state,
+    const torch::stable::Tensor& factors,
+    const torch::stable::Tensor& wires,
     int64_t target,
     int64_t n_wires) {
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       state.device().is_cpu() && factors.device().is_cpu() && wires.device().is_cpu(),
       "Hadamard/phase inputs must be on CPU");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       state.is_contiguous() && factors.is_contiguous() && wires.is_contiguous(),
       "Hadamard/phase inputs must be contiguous");
-  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
-  TORCH_CHECK(factors.dim() == 1, "factors must be one-dimensional");
-  TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
-  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
-  TORCH_CHECK(
-      state.scalar_type() == at::kComplexFloat ||
-          state.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(factors.dim() == 1, "factors must be one-dimensional");
+  STD_TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  STD_TORCH_CHECK(wires.scalar_type() == torch::headeronly::ScalarType::Long, "wires must be int64");
+  STD_TORCH_CHECK(
+      state.scalar_type() == torch::headeronly::ScalarType::ComplexFloat ||
+          state.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(factors.scalar_type() == state.scalar_type(),
+  STD_TORCH_CHECK(factors.scalar_type() == state.scalar_type(),
               "factor dtype must match state");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
-  TORCH_CHECK(target >= 0 && target < n_wires, "target is out of range");
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(target >= 0 && target < n_wires, "target is out of range");
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
   const int64_t wire_count = wires.numel();
-  TORCH_CHECK(wire_count > 1 && wire_count < 63,
+  STD_TORCH_CHECK(wire_count > 1 && wire_count < 63,
               "phase graph must contain between two and 62 wires");
-  TORCH_CHECK(factors.numel() == (int64_t{1} << wire_count),
+  STD_TORCH_CHECK(factors.numel() == (int64_t{1} << wire_count),
               "factor count does not match graph wires");
 
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
@@ -164,27 +185,27 @@ at::Tensor fused_hadamard_controlled_phase_graph_cpu(
   int64_t target_factor_mask = 0;
   for (int64_t index = 0; index < wire_count; ++index) {
     const int64_t wire = wire_data[index];
-    TORCH_CHECK(wire >= 0 && wire < n_wires, "phase graph wire is out of range");
+    STD_TORCH_CHECK(wire >= 0 && wire < n_wires, "phase graph wire is out of range");
     const int64_t mask = int64_t{1} << (n_wires - wire - 1);
-    TORCH_CHECK((occupied & mask) == 0, "phase graph wires must be unique");
+    STD_TORCH_CHECK((occupied & mask) == 0, "phase graph wires must be unique");
     occupied |= mask;
     wire_masks[index] = mask;
     if (wire == target) {
       target_factor_mask = int64_t{1} << (wire_count - index - 1);
     }
   }
-  TORCH_CHECK(target_factor_mask != 0, "target must belong to the phase graph");
+  STD_TORCH_CHECK(target_factor_mask != 0, "target must belong to the phase graph");
 
   const int64_t target_mask = int64_t{1} << (n_wires - target - 1);
   const int64_t pairs_per_row = amplitudes / 2;
   const int64_t pair_count = state.size(0) * pairs_per_row;
-  AT_DISPATCH_COMPLEX_TYPES(
+  FQ_DISPATCH_COMPLEX_TYPES(
       state.scalar_type(), "fused_hadamard_controlled_phase_graph_cpu", [&] {
         using real_t = typename scalar_t::value_type;
-        scalar_t* state_data = state.data_ptr<scalar_t>();
+        scalar_t* state_data = state.mutable_data_ptr<scalar_t>();
         const scalar_t* factor_data = factors.const_data_ptr<scalar_t>();
         const real_t scale = std::sqrt(real_t{0.5});
-        at::parallel_for(
+        torch::stable::parallel_for(
             int64_t{0}, pair_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
               for (int64_t item = begin; item < end; ++item) {
                 const int64_t row = item / pairs_per_row;
@@ -211,32 +232,32 @@ at::Tensor fused_hadamard_controlled_phase_graph_cpu(
   return state;
 }
 
-at::Tensor fused_static_product_state_initialization_cpu(
-    at::Tensor state,
-    const at::Tensor& gate_codes,
-    const at::Tensor& wires,
+torch::stable::Tensor fused_static_product_state_initialization_cpu(
+    torch::stable::Tensor state,
+    const torch::stable::Tensor& gate_codes,
+    const torch::stable::Tensor& wires,
     int64_t n_wires) {
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       state.device().is_cpu() && gate_codes.device().is_cpu() &&
           wires.device().is_cpu(),
       "static product-state initialization inputs must be on CPU");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       state.is_contiguous() && gate_codes.is_contiguous() && wires.is_contiguous(),
       "static product-state initialization inputs must be contiguous");
-  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
-  TORCH_CHECK(
-      state.scalar_type() == at::kComplexFloat ||
-          state.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(
+      state.scalar_type() == torch::headeronly::ScalarType::ComplexFloat ||
+          state.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(gate_codes.scalar_type() == at::kChar, "gate_codes must be int8");
-  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(gate_codes.scalar_type() == torch::headeronly::ScalarType::Char, "gate_codes must be int8");
+  STD_TORCH_CHECK(wires.scalar_type() == torch::headeronly::ScalarType::Long, "wires must be int64");
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(
       gate_codes.dim() == 1 && wires.dim() == 1 &&
           gate_codes.numel() == n_wires && wires.numel() == n_wires,
       "one static Clifford gate is required for every wire");
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
 
   const int8_t* code_data = gate_codes.const_data_ptr<int8_t>();
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
@@ -246,14 +267,14 @@ at::Tensor fused_static_product_state_initialization_cpu(
   uint64_t occupied_mask = 0;
   uint64_t required_one_mask = 0;
   for (int64_t gate = 0; gate < n_wires; ++gate) {
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         wire_data[gate] >= 0 && wire_data[gate] < n_wires,
         "static product-state wire is out of range");
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         code_data[gate] >= 1 && code_data[gate] <= 6,
         "static product-state gate code is invalid");
     const uint64_t mask = uint64_t{1} << (n_wires - wire_data[gate] - 1);
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         (occupied_mask & mask) == 0,
         "static product-state wires must be unique");
     occupied_mask |= mask;
@@ -265,10 +286,10 @@ at::Tensor fused_static_product_state_initialization_cpu(
     }
   }
 
-  state.zero_();
+  torch::stable::fill_(state, 0.0);
   const int64_t support_size = int64_t{1} << hadamard_count;
   const int64_t item_count = state.size(0) * support_size;
-  AT_DISPATCH_COMPLEX_TYPES(
+  FQ_DISPATCH_COMPLEX_TYPES(
       state.scalar_type(), "fused_static_product_state_initialization_cpu", [&] {
         using real_t = typename scalar_t::value_type;
         scalar_t value(
@@ -286,8 +307,8 @@ at::Tensor fused_static_product_state_initialization_cpu(
           default:
             break;
         }
-        scalar_t* state_data = state.data_ptr<scalar_t>();
-        at::parallel_for(
+        scalar_t* state_data = state.mutable_data_ptr<scalar_t>();
+        torch::stable::parallel_for(
             int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
               for (int64_t item = begin; item < end; ++item) {
                 const int64_t row = item / support_size;
@@ -305,36 +326,36 @@ at::Tensor fused_static_product_state_initialization_cpu(
   return state;
 }
 
-at::Tensor fused_static_clifford_layer_cpu(
-    at::Tensor state,
-    const at::Tensor& gate_codes,
-    const at::Tensor& wires,
+torch::stable::Tensor fused_static_clifford_layer_cpu(
+    torch::stable::Tensor state,
+    const torch::stable::Tensor& gate_codes,
+    const torch::stable::Tensor& wires,
     int64_t n_wires) {
-  TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
-  TORCH_CHECK(gate_codes.device().is_cpu(), "gate_codes must be on CPU");
-  TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
+  STD_TORCH_CHECK(gate_codes.device().is_cpu(), "gate_codes must be on CPU");
+  STD_TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
+  STD_TORCH_CHECK(
       state.is_contiguous() && gate_codes.is_contiguous() && wires.is_contiguous(),
       "Clifford layer inputs must be contiguous");
-  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
-  TORCH_CHECK(
-      state.scalar_type() == at::kComplexFloat ||
-          state.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(
+      state.scalar_type() == torch::headeronly::ScalarType::ComplexFloat ||
+          state.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(gate_codes.scalar_type() == at::kChar, "gate_codes must be int8");
-  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(gate_codes.scalar_type() == torch::headeronly::ScalarType::Char, "gate_codes must be int8");
+  STD_TORCH_CHECK(wires.scalar_type() == torch::headeronly::ScalarType::Long, "wires must be int64");
+  STD_TORCH_CHECK(
       gate_codes.dim() == 1 && wires.dim() == 1 &&
           gate_codes.numel() == wires.numel(),
       "gate_codes and wires must be matching vectors");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
 
   const int64_t gate_count = wires.numel();
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       gate_count >= 2 && gate_count <= n_wires,
       "a Clifford layer must contain between two and n_wires gates");
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
 
   const int8_t* code_data = gate_codes.const_data_ptr<int8_t>();
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
@@ -349,20 +370,20 @@ at::Tensor fused_static_clifford_layer_cpu(
   uint64_t y_mask = 0;
   int64_t y_count = 0;
   for (int64_t gate = 0; gate < gate_count; ++gate) {
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         wire_data[gate] >= 0 && wire_data[gate] < n_wires,
         "Clifford layer wire is out of range");
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         code_data[gate] >= 1 && code_data[gate] <= 6,
         "Clifford gate code is invalid");
     const int64_t bit_position = n_wires - wire_data[gate] - 1;
     const uint64_t mask = uint64_t{1} << bit_position;
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         (occupied_mask & mask) == 0,
         "Clifford layer wires must be unique");
     occupied_mask |= mask;
     if (code_data[gate] == 1) {
-      TORCH_CHECK(
+      STD_TORCH_CHECK(
           hadamard_count < 11,
           "a Clifford layer supports at most 11 Hadamards");
       hadamard_masks[hadamard_count] = static_cast<int64_t>(mask);
@@ -404,10 +425,10 @@ at::Tensor fused_static_clifford_layer_cpu(
   // the anchor bit cleared lets one task load both sources before either is
   // overwritten, so the transform remains in-place and race-free.
   const uint64_t flip_anchor = flip_mask & (~flip_mask + 1);
-  AT_DISPATCH_COMPLEX_TYPES(
+  FQ_DISPATCH_COMPLEX_TYPES(
       state.scalar_type(), "fused_static_clifford_layer_cpu", [&] {
         using real_t = typename scalar_t::value_type;
-        scalar_t* state_data = state.data_ptr<scalar_t>();
+        scalar_t* state_data = state.mutable_data_ptr<scalar_t>();
         const real_t normalization =
             real_t{1} / std::sqrt(static_cast<real_t>(local_size));
         const auto phase = [&](uint64_t basis) -> scalar_t {
@@ -444,7 +465,7 @@ at::Tensor fused_static_clifford_layer_cpu(
             }
           }
         };
-        at::parallel_for(
+        torch::stable::parallel_for(
             int64_t{0}, item_count, int64_t{64}, [&](int64_t begin, int64_t end) {
               std::array<scalar_t, 2048> first{};
               std::array<scalar_t, 2048> second{};
@@ -583,90 +604,90 @@ inline void rotation_pair_gradients(
        adjoint_one.imag() * ket_one.real()));
 }
 
-at::Tensor fused_rotation_block_forward_cpu(
-    at::Tensor state,
-    const at::Tensor& matrices,
-    const at::Tensor& wires,
+torch::stable::Tensor fused_rotation_block_forward_cpu(
+    torch::stable::Tensor state,
+    const torch::stable::Tensor& matrices,
+    const torch::stable::Tensor& wires,
     int64_t n_wires,
-    const c10::optional<at::Tensor>& rzz_angles,
-    const c10::optional<at::Tensor>& rzz_first_wires,
-    const c10::optional<at::Tensor>& rzz_second_wires,
+    const std::optional<torch::stable::Tensor>& rzz_angles,
+    const std::optional<torch::stable::Tensor>& rzz_first_wires,
+    const std::optional<torch::stable::Tensor>& rzz_second_wires,
     bool specialized_rotations,
-    const c10::optional<at::Tensor>& cx_controls,
-    const c10::optional<at::Tensor>& cx_targets) {
-  TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
-  TORCH_CHECK(matrices.device().is_cpu(), "matrices must be on CPU");
-  TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
-  TORCH_CHECK(state.is_contiguous(), "state must be contiguous");
-  TORCH_CHECK(matrices.is_contiguous(), "matrices must be contiguous");
-  TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
-  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
-  TORCH_CHECK(
+    const std::optional<torch::stable::Tensor>& cx_controls,
+    const std::optional<torch::stable::Tensor>& cx_targets) {
+  STD_TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
+  STD_TORCH_CHECK(matrices.device().is_cpu(), "matrices must be on CPU");
+  STD_TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
+  STD_TORCH_CHECK(state.is_contiguous(), "state must be contiguous");
+  STD_TORCH_CHECK(matrices.is_contiguous(), "matrices must be contiguous");
+  STD_TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
+  STD_TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(
       matrices.dim() == 3 || matrices.dim() == 4,
       "matrices must have shape [gates, 2, 2] or [batch, gates, 2, 2]");
   const bool batched_matrices = matrices.dim() == 4;
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       matrices.size(-2) == 2 && matrices.size(-1) == 2,
       "every rotation matrix must be 2 by 2");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       !batched_matrices || matrices.size(0) == state.size(0),
       "batched matrix rows must match the state batch");
-  TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
-  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  STD_TORCH_CHECK(wires.scalar_type() == torch::headeronly::ScalarType::Long, "wires must be int64");
+  STD_TORCH_CHECK(
       matrices.scalar_type() == state.scalar_type(),
       "matrix dtype must match state");
-  TORCH_CHECK(
-      state.scalar_type() == at::kComplexFloat ||
-          state.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(
+      state.scalar_type() == torch::headeronly::ScalarType::ComplexFloat ||
+          state.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
 
   const int64_t gate_count = matrices.size(batched_matrices ? 1 : 0);
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       gate_count >= 2 && gate_count <= 11,
       "a fused rotation block must contain between two and eleven wires");
-  TORCH_CHECK(wires.numel() == gate_count, "wire and matrix counts must match");
+  STD_TORCH_CHECK(wires.numel() == gate_count, "wire and matrix counts must match");
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
   const bool fuse_rzz = rzz_angles.has_value();
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       fuse_rzz == rzz_first_wires.has_value() && fuse_rzz == rzz_second_wires.has_value(),
       "all fused RZZ metadata must be provided together");
   int64_t rzz_count = 0;
   uint64_t rzz_transition_mask = 0;
   if (fuse_rzz) {
-    const at::Tensor& angle_tensor = rzz_angles.value();
-    const at::Tensor& first_tensor = rzz_first_wires.value();
-    const at::Tensor& second_tensor = rzz_second_wires.value();
-    TORCH_CHECK(angle_tensor.device().is_cpu() && first_tensor.device().is_cpu() &&
+    const torch::stable::Tensor& angle_tensor = rzz_angles.value();
+    const torch::stable::Tensor& first_tensor = rzz_first_wires.value();
+    const torch::stable::Tensor& second_tensor = rzz_second_wires.value();
+    STD_TORCH_CHECK(angle_tensor.device().is_cpu() && first_tensor.device().is_cpu() &&
                     second_tensor.device().is_cpu(), "fused RZZ metadata must be on CPU");
-    TORCH_CHECK(angle_tensor.is_contiguous() && first_tensor.is_contiguous() &&
+    STD_TORCH_CHECK(angle_tensor.is_contiguous() && first_tensor.is_contiguous() &&
                     second_tensor.is_contiguous(), "fused RZZ metadata must be contiguous");
     rzz_count = angle_tensor.numel();
-    TORCH_CHECK(rzz_count > 1 && first_tensor.numel() == rzz_count &&
+    STD_TORCH_CHECK(rzz_count > 1 && first_tensor.numel() == rzz_count &&
                     second_tensor.numel() == rzz_count, "fused RZZ metadata lengths must match");
-    TORCH_CHECK(first_tensor.scalar_type() == at::kLong &&
-                    second_tensor.scalar_type() == at::kLong, "fused RZZ wires must be int64");
+    STD_TORCH_CHECK(first_tensor.scalar_type() == torch::headeronly::ScalarType::Long &&
+                    second_tensor.scalar_type() == torch::headeronly::ScalarType::Long, "fused RZZ wires must be int64");
     const int64_t* first_data = first_tensor.const_data_ptr<int64_t>();
     const int64_t* second_data = second_tensor.const_data_ptr<int64_t>();
     for (int64_t gate = 0; gate < rzz_count; ++gate) {
-      TORCH_CHECK(first_data[gate] >= 0 && first_data[gate] < n_wires &&
+      STD_TORCH_CHECK(first_data[gate] >= 0 && first_data[gate] < n_wires &&
                       second_data[gate] >= 0 && second_data[gate] < n_wires,
                   "fused RZZ wire is out of range");
-      TORCH_CHECK(std::abs(first_data[gate] - second_data[gate]) == 1,
+      STD_TORCH_CHECK(std::abs(first_data[gate] - second_data[gate]) == 1,
                   "fused RZZ gates must connect adjacent wires");
       const int64_t first_mask = int64_t{1} << (n_wires - first_data[gate] - 1);
       const int64_t second_mask = int64_t{1} << (n_wires - second_data[gate] - 1);
       const uint64_t transition_bit = std::min(first_mask, second_mask);
-      TORCH_CHECK((rzz_transition_mask & transition_bit) == 0,
+      STD_TORCH_CHECK((rzz_transition_mask & transition_bit) == 0,
                   "fused RZZ gates must have unique adjacent pairs");
       rzz_transition_mask |= transition_bit;
     }
   }
 
   const bool fuse_cx = cx_controls.has_value();
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       fuse_cx == cx_targets.has_value(),
       "both fused CX wire tensors must be provided together");
 
@@ -675,12 +696,12 @@ at::Tensor fused_rotation_block_forward_cpu(
   std::array<int64_t, 11> bit_positions{};
   int64_t target_mask = 0;
   for (int64_t gate = 0; gate < gate_count; ++gate) {
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         wire_data[gate] >= 0 && wire_data[gate] < n_wires,
         "rotation wire is out of range");
     const int64_t bit_position = n_wires - wire_data[gate] - 1;
     const int64_t mask = int64_t{1} << bit_position;
-    TORCH_CHECK((target_mask & mask) == 0, "rotation wires must be unique");
+    STD_TORCH_CHECK((target_mask & mask) == 0, "rotation wires must be unique");
     masks[gate] = mask;
     bit_positions[gate] = bit_position;
     target_mask |= mask;
@@ -691,23 +712,23 @@ at::Tensor fused_rotation_block_forward_cpu(
   std::array<int64_t, 5> cx_target_local_masks{};
   int64_t cx_count = 0;
   if (fuse_cx) {
-    const at::Tensor& control_tensor = cx_controls.value();
-    const at::Tensor& target_tensor = cx_targets.value();
-    TORCH_CHECK(
+    const torch::stable::Tensor& control_tensor = cx_controls.value();
+    const torch::stable::Tensor& target_tensor = cx_targets.value();
+    STD_TORCH_CHECK(
         control_tensor.device().is_cpu() && target_tensor.device().is_cpu(),
         "fused CX wires must be on CPU");
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         control_tensor.is_contiguous() && target_tensor.is_contiguous(),
         "fused CX wires must be contiguous");
-    TORCH_CHECK(
-        control_tensor.scalar_type() == at::kLong &&
-            target_tensor.scalar_type() == at::kLong,
+    STD_TORCH_CHECK(
+        control_tensor.scalar_type() == torch::headeronly::ScalarType::Long &&
+            target_tensor.scalar_type() == torch::headeronly::ScalarType::Long,
         "fused CX wires must be int64");
-    TORCH_CHECK(
-        control_tensor.dim() == 1 && target_tensor.sizes() == control_tensor.sizes(),
+    STD_TORCH_CHECK(
+        control_tensor.dim() == 1 && target_tensor.sizes().equals(control_tensor.sizes()),
         "fused CX controls and targets must have matching one-dimensional shapes");
     cx_count = control_tensor.numel();
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         cx_count > 0 && cx_count <= 5,
         "a fused rotation tile supports between one and five CX gates");
     const int64_t* control_data = control_tensor.const_data_ptr<int64_t>();
@@ -720,12 +741,12 @@ at::Tensor fused_rotation_block_forward_cpu(
         control_gate = wire_data[gate] == control_data[edge] ? gate : control_gate;
         target_gate = wire_data[gate] == target_data[edge] ? gate : target_gate;
       }
-      TORCH_CHECK(
+      STD_TORCH_CHECK(
           control_gate >= 0 && target_gate >= 0 && control_gate != target_gate,
           "every fused CX wire must belong to its rotation tile");
       const int64_t control_mask = int64_t{1} << control_gate;
       const int64_t target_mask = int64_t{1} << target_gate;
-      TORCH_CHECK(
+      STD_TORCH_CHECK(
           (occupied_local_wires & (control_mask | target_mask)) == 0,
           "fused CX gates must be wire-disjoint");
       occupied_local_wires |= control_mask | target_mask;
@@ -756,9 +777,9 @@ at::Tensor fused_rotation_block_forward_cpu(
 
   const int64_t blocks_per_row = amplitudes >> gate_count;
   const int64_t item_count = state.size(0) * blocks_per_row;
-  AT_DISPATCH_COMPLEX_TYPES(state.scalar_type(), "fused_rotation_block_forward_cpu", [&] {
+  FQ_DISPATCH_COMPLEX_TYPES(state.scalar_type(), "fused_rotation_block_forward_cpu", [&] {
     using real_t = typename scalar_t::value_type;
-    scalar_t* state_data = state.data_ptr<scalar_t>();
+    scalar_t* state_data = state.mutable_data_ptr<scalar_t>();
     const scalar_t* matrix_data = matrices.const_data_ptr<scalar_t>();
     const int64_t matrix_rows = batched_matrices ? state.size(0) : 1;
     std::array<uint8_t, 11> shared_rotation_kinds{};
@@ -808,12 +829,12 @@ at::Tensor fused_rotation_block_forward_cpu(
     }
     std::vector<scalar_t> rzz_phases;
     if (fuse_rzz) {
-      const at::Tensor& angle_tensor = rzz_angles.value();
-      TORCH_CHECK(angle_tensor.scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+      const torch::stable::Tensor& angle_tensor = rzz_angles.value();
+      STD_TORCH_CHECK(angle_tensor.scalar_type() == torch::headeronly::CppTypeToScalarType<real_t>::value,
                   "fused RZZ angle dtype must match state precision");
       const real_t* angle_data = angle_tensor.const_data_ptr<real_t>();
       for (int64_t gate = 1; gate < rzz_count; ++gate) {
-        TORCH_CHECK(angle_data[gate] == angle_data[0],
+        STD_TORCH_CHECK(angle_data[gate] == angle_data[0],
                     "fused RZZ gates must share one angle");
       }
       rzz_phases.resize(rzz_count + 1);
@@ -823,7 +844,7 @@ at::Tensor fused_rotation_block_forward_cpu(
         rzz_phases[transitions] = scalar_t(std::cos(phase), std::sin(phase));
       }
     }
-    at::parallel_for(int64_t{0}, item_count, int64_t{128}, [&](int64_t begin, int64_t end) {
+    torch::stable::parallel_for(int64_t{0}, item_count, int64_t{128}, [&](int64_t begin, int64_t end) {
       std::array<scalar_t, 2048> values{};
       for (int64_t item = begin; item < end; ++item) {
         const int64_t row = item / blocks_per_row;
@@ -964,63 +985,63 @@ at::Tensor fused_rotation_block_forward_cpu(
   return state;
 }
 
-at::Tensor fused_product_state_initialization_cpu(
-    at::Tensor state,
-    const at::Tensor& matrices,
-    const at::Tensor& wires,
+torch::stable::Tensor fused_product_state_initialization_cpu(
+    torch::stable::Tensor state,
+    const torch::stable::Tensor& matrices,
+    const torch::stable::Tensor& wires,
     int64_t n_wires,
-    const at::Tensor& cx_controls,
-    const at::Tensor& cx_targets) {
-  TORCH_CHECK(
+    const torch::stable::Tensor& cx_controls,
+    const torch::stable::Tensor& cx_targets) {
+  STD_TORCH_CHECK(
       state.device().is_cpu() && matrices.device().is_cpu() &&
           wires.device().is_cpu() && cx_controls.device().is_cpu() &&
           cx_targets.device().is_cpu(),
       "product-state initialization inputs must be on CPU");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       state.is_contiguous() && matrices.is_contiguous() &&
           wires.is_contiguous() && cx_controls.is_contiguous() &&
           cx_targets.is_contiguous(),
       "product-state initialization inputs must be contiguous");
-  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(
       matrices.dim() == 3 || matrices.dim() == 4,
       "matrices must be shared or batched");
-  TORCH_CHECK(
-      state.scalar_type() == at::kComplexFloat ||
-          state.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(
+      state.scalar_type() == torch::headeronly::ScalarType::ComplexFloat ||
+          state.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       matrices.scalar_type() == state.scalar_type(),
       "matrix dtype must match state");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
   const bool batched_matrices = matrices.dim() == 4;
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       matrices.size(-3) == n_wires && matrices.size(-2) == 2 &&
           matrices.size(-1) == 2,
       "one 2 by 2 matrix is required for every wire");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       !batched_matrices || matrices.size(0) == state.size(0),
       "batched matrix rows must match the state batch");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       wires.dim() == 1 && wires.numel() == n_wires &&
-          wires.scalar_type() == at::kLong,
+          wires.scalar_type() == torch::headeronly::ScalarType::Long,
       "wires must be an int64 permutation of every wire");
-  TORCH_CHECK(
-      cx_controls.dim() == 1 && cx_targets.sizes() == cx_controls.sizes() &&
-          cx_controls.scalar_type() == at::kLong &&
-          cx_targets.scalar_type() == at::kLong,
+  STD_TORCH_CHECK(
+      cx_controls.dim() == 1 && cx_targets.sizes().equals(cx_controls.sizes()) &&
+          cx_controls.scalar_type() == torch::headeronly::ScalarType::Long &&
+          cx_targets.scalar_type() == torch::headeronly::ScalarType::Long,
       "CX controls and targets must be matching int64 vectors");
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
 
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
   std::array<int64_t, 62> gate_by_wire{};
   gate_by_wire.fill(-1);
   for (int64_t gate = 0; gate < n_wires; ++gate) {
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         wire_data[gate] >= 0 && wire_data[gate] < n_wires,
         "rotation wire is out of range");
-    TORCH_CHECK(gate_by_wire[wire_data[gate]] < 0, "rotation wires must be unique");
+    STD_TORCH_CHECK(gate_by_wire[wire_data[gate]] < 0, "rotation wires must be unique");
     gate_by_wire[wire_data[gate]] = gate;
   }
 
@@ -1036,11 +1057,11 @@ at::Tensor fused_product_state_initialization_cpu(
   for (int64_t edge = 0; edge < cx_controls.numel(); ++edge) {
     const int64_t control = control_data[edge];
     const int64_t target = target_data[edge];
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         control >= 0 && control < n_wires && target >= 0 &&
             target < n_wires && control != target,
         "CX wire is out of range");
-    TORCH_CHECK(!consumed[control] && !consumed[target], "CX gates must be disjoint");
+    STD_TORCH_CHECK(!consumed[control] && !consumed[target], "CX gates must be disjoint");
     consumed[control] = true;
     consumed[target] = true;
     first_gates[component_count] = gate_by_wire[control];
@@ -1060,9 +1081,9 @@ at::Tensor fused_product_state_initialization_cpu(
     ++component_count;
   }
 
-  AT_DISPATCH_COMPLEX_TYPES(
+  FQ_DISPATCH_COMPLEX_TYPES(
       state.scalar_type(), "fused_product_state_initialization_cpu", [&] {
-        scalar_t* state_data = state.data_ptr<scalar_t>();
+        scalar_t* state_data = state.mutable_data_ptr<scalar_t>();
         const scalar_t* matrix_data = matrices.const_data_ptr<scalar_t>();
         const int64_t matrix_rows = batched_matrices ? state.size(0) : 1;
         std::vector<scalar_t> factors(
@@ -1087,7 +1108,7 @@ at::Tensor fused_product_state_initialization_cpu(
           }
         }
         const int64_t item_count = state.numel();
-        at::parallel_for(
+        torch::stable::parallel_for(
             int64_t{0}, item_count, int64_t{4096},
             [&](int64_t begin, int64_t end) {
               for (int64_t item = begin; item < end; ++item) {
@@ -1113,48 +1134,48 @@ at::Tensor fused_product_state_initialization_cpu(
   return state;
 }
 
-at::Tensor fused_hadamard_block_adjoint_cpu(
-    at::Tensor ket,
-    at::Tensor adjoint,
-    const at::Tensor& wires,
+torch::stable::Tensor fused_hadamard_block_adjoint_cpu(
+    torch::stable::Tensor ket,
+    torch::stable::Tensor adjoint,
+    const torch::stable::Tensor& wires,
     int64_t n_wires) {
-  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
-  TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
-  TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
-  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
-  TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
-  TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
-  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
-  TORCH_CHECK(adjoint.sizes() == ket.sizes(), "adjoint shape must match ket");
-  TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
-  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  STD_TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
+  STD_TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
+  STD_TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  STD_TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
+  STD_TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
+  STD_TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(adjoint.sizes().equals(ket.sizes()), "adjoint shape must match ket");
+  STD_TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  STD_TORCH_CHECK(wires.scalar_type() == torch::headeronly::ScalarType::Long, "wires must be int64");
+  STD_TORCH_CHECK(
       ket.scalar_type() == adjoint.scalar_type(),
       "ket and adjoint dtypes must match");
-  TORCH_CHECK(
-      ket.scalar_type() == at::kComplexFloat ||
-          ket.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(
+      ket.scalar_type() == torch::headeronly::ScalarType::ComplexFloat ||
+          ket.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
 
   const int64_t gate_count = wires.numel();
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       gate_count >= 2 && gate_count <= 11,
       "a fused Hadamard block must contain between two and eleven wires");
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
 
   const int64_t* wire_data = wires.const_data_ptr<int64_t>();
   std::array<int64_t, 11> masks{};
   std::array<int64_t, 11> bit_positions{};
   int64_t target_mask = 0;
   for (int64_t gate = 0; gate < gate_count; ++gate) {
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         wire_data[gate] >= 0 && wire_data[gate] < n_wires,
         "fixed-block wire is out of range");
     const int64_t bit_position = n_wires - wire_data[gate] - 1;
     const int64_t mask = int64_t{1} << bit_position;
-    TORCH_CHECK((target_mask & mask) == 0, "fixed-block wires must be unique");
+    STD_TORCH_CHECK((target_mask & mask) == 0, "fixed-block wires must be unique");
     masks[gate] = mask;
     bit_positions[gate] = bit_position;
     target_mask |= mask;
@@ -1175,12 +1196,12 @@ at::Tensor fused_hadamard_block_adjoint_cpu(
 
   const int64_t blocks_per_row = amplitudes >> gate_count;
   const int64_t item_count = ket.size(0) * blocks_per_row;
-  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_hadamard_block_adjoint_cpu", [&] {
+  FQ_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_hadamard_block_adjoint_cpu", [&] {
     using real_t = typename scalar_t::value_type;
     constexpr real_t inverse_sqrt_two = static_cast<real_t>(0.7071067811865475244);
-    scalar_t* ket_data = ket.data_ptr<scalar_t>();
-    scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
-    at::parallel_for(int64_t{0}, item_count, int64_t{32}, [&](int64_t begin, int64_t end) {
+    scalar_t* ket_data = ket.mutable_data_ptr<scalar_t>();
+    scalar_t* adjoint_data = adjoint.mutable_data_ptr<scalar_t>();
+    torch::stable::parallel_for(int64_t{0}, item_count, int64_t{32}, [&](int64_t begin, int64_t end) {
       std::array<scalar_t, 2048> ket_values{};
       std::array<scalar_t, 2048> adjoint_values{};
       for (int64_t item = begin; item < end; ++item) {
@@ -1233,68 +1254,82 @@ at::Tensor fused_hadamard_block_adjoint_cpu(
   return ket;
 }
 
-at::Tensor fused_rotation_adjoint_cpu(
-    at::Tensor ket,
-    at::Tensor adjoint,
-    const at::Tensor& matrix,
+torch::stable::Tensor fused_rotation_adjoint_cpu(
+    torch::stable::Tensor ket,
+    torch::stable::Tensor adjoint,
+    const torch::stable::Tensor& matrix,
     int64_t wire,
     int64_t second_wire,
     int64_t n_wires,
     int64_t gate_kind) {
-  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
-  TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
-  TORCH_CHECK(matrix.device().is_cpu(), "matrix must be on CPU");
-  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
-  TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
-  TORCH_CHECK(matrix.is_contiguous(), "matrix must be contiguous");
-  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
-  TORCH_CHECK(adjoint.sizes() == ket.sizes(), "adjoint shape must match ket");
-  TORCH_CHECK(
-      (gate_kind == 3 && matrix.sizes() == at::IntArrayRef({4, 4})) ||
-          (gate_kind != 3 && matrix.sizes() == at::IntArrayRef({2, 2})),
+  STD_TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  STD_TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
+  STD_TORCH_CHECK(matrix.device().is_cpu(), "matrix must be on CPU");
+  STD_TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  STD_TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
+  STD_TORCH_CHECK(matrix.is_contiguous(), "matrix must be contiguous");
+  STD_TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(adjoint.sizes().equals(ket.sizes()), "adjoint shape must match ket");
+  STD_TORCH_CHECK(
+      (gate_kind == 3 && matrix.sizes().equals({4, 4})) ||
+          (gate_kind != 3 && matrix.sizes().equals({2, 2})),
       "matrix shape does not match the rotation kind");
-  TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "adjoint dtype must match ket");
-  TORCH_CHECK(matrix.scalar_type() == ket.scalar_type(), "matrix dtype must match ket");
-  TORCH_CHECK(
-      ket.scalar_type() == at::kComplexFloat || ket.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "adjoint dtype must match ket");
+  STD_TORCH_CHECK(matrix.scalar_type() == ket.scalar_type(), "matrix dtype must match ket");
+  STD_TORCH_CHECK(
+      ket.scalar_type() == torch::headeronly::ScalarType::ComplexFloat || ket.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(n_wires > 0 && n_wires < 63, "n_wires must be in [1, 62]");
-  TORCH_CHECK(wire >= 0 && wire < n_wires, "wire is out of range");
-  TORCH_CHECK(gate_kind >= 0 && gate_kind <= 3, "unsupported rotation kind");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(n_wires > 0 && n_wires < 63, "n_wires must be in [1, 62]");
+  STD_TORCH_CHECK(wire >= 0 && wire < n_wires, "wire is out of range");
+  STD_TORCH_CHECK(gate_kind >= 0 && gate_kind <= 3, "unsupported rotation kind");
+  STD_TORCH_CHECK(
       gate_kind != 3 ||
           (second_wire >= 0 && second_wire < n_wires && second_wire != wire),
       "second wire is invalid for RZZ");
 
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
   const int64_t stride = int64_t{1} << (n_wires - wire - 1);
   const int64_t pairs_per_row = amplitudes >> 1;
   const int64_t item_count =
       ket.size(0) * (gate_kind == 3 ? amplitudes : pairs_per_row);
 
-  at::Tensor result;
-  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_rotation_adjoint_cpu", [&] {
+  torch::stable::Tensor result;
+  FQ_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_rotation_adjoint_cpu", [&] {
     using real_t = typename scalar_t::value_type;
-    scalar_t* ket_data = ket.data_ptr<scalar_t>();
-    scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
+    scalar_t* ket_data = ket.mutable_data_ptr<scalar_t>();
+    scalar_t* adjoint_data = adjoint.mutable_data_ptr<scalar_t>();
     const scalar_t* matrix_data = matrix.const_data_ptr<scalar_t>();
 
-    const scalar_t inverse_00 = std::conj(matrix_data[0]);
+    const scalar_t inverse_00 =
+        scalar_t{matrix_data[0].real(), -matrix_data[0].imag()};
     const scalar_t inverse_01 =
-        gate_kind == 3 ? scalar_t{0} : std::conj(matrix_data[2]);
+        gate_kind == 3
+        ? scalar_t{0}
+        : scalar_t{matrix_data[2].real(), -matrix_data[2].imag()};
     const scalar_t inverse_10 =
-        gate_kind == 3 ? scalar_t{0} : std::conj(matrix_data[1]);
+        gate_kind == 3
+        ? scalar_t{0}
+        : scalar_t{matrix_data[1].real(), -matrix_data[1].imag()};
     const scalar_t inverse_11 =
-        gate_kind == 3 ? std::conj(matrix_data[5]) : std::conj(matrix_data[3]);
+        gate_kind == 3
+        ? scalar_t{matrix_data[5].real(), -matrix_data[5].imag()}
+        : scalar_t{matrix_data[3].real(), -matrix_data[3].imag()};
     const int64_t first_mask = int64_t{1} << (n_wires - wire - 1);
     const int64_t second_mask = gate_kind == 3
         ? int64_t{1} << (n_wires - second_wire - 1)
         : int64_t{0};
 
-    const real_t gradient = at::parallel_reduce(
-        int64_t{0}, item_count, int64_t{4096}, real_t{0},
-        [&](int64_t begin, int64_t end, real_t subtotal) -> real_t {
+    const int64_t thread_count =
+        std::max<int64_t>(1, torch::stable::get_num_threads());
+    torch::stable::Tensor partials = torch::stable::new_zeros(
+        ket, {thread_count},
+        torch::headeronly::CppTypeToScalarType<real_t>::value);
+    real_t* partial_data = partials.mutable_data_ptr<real_t>();
+    torch::stable::parallel_for(
+        int64_t{0}, item_count, int64_t{4096},
+        [&](int64_t begin, int64_t end) {
+          real_t subtotal = real_t{0};
           if (gate_kind == 3) {
             for (int64_t item = begin; item < end; ++item) {
               const int64_t basis = item & (amplitudes - 1);
@@ -1309,9 +1344,8 @@ at::Tensor fused_rotation_adjoint_cpu(
               ket_data[item] = inverse * ket_value;
               adjoint_data[item] = inverse * adjoint_value;
             }
-            return subtotal;
-          }
-          for (int64_t pair = begin; pair < end; ++pair) {
+          } else {
+            for (int64_t pair = begin; pair < end; ++pair) {
             const int64_t row = pair >> (n_wires - 1);
             const int64_t local_pair = pair & (pairs_per_row - 1);
             const int64_t offset_mask = stride - 1;
@@ -1343,52 +1377,58 @@ at::Tensor fused_rotation_adjoint_cpu(
             ket_data[one] = inverse_10 * ket_zero + inverse_11 * ket_one;
             adjoint_data[zero] = inverse_00 * adjoint_zero + inverse_01 * adjoint_one;
             adjoint_data[one] = inverse_10 * adjoint_zero + inverse_11 * adjoint_one;
+            }
           }
-          return subtotal;
-        },
-        [](real_t left, real_t right) -> real_t { return left + right; });
+          partial_data[stable_thread_index()] += subtotal;
+        });
 
-    result = at::empty({}, ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
-    *result.data_ptr<real_t>() = gradient;
+    real_t gradient = real_t{0};
+    for (int64_t thread = 0; thread < thread_count; ++thread) {
+      gradient += partial_data[thread];
+    }
+
+    result = torch::stable::new_empty(
+        ket, {}, torch::headeronly::CppTypeToScalarType<real_t>::value);
+    *result.mutable_data_ptr<real_t>() = gradient;
   });
   return result;
 }
 
-at::Tensor fused_rzz_segment_forward_cpu(
-    at::Tensor state,
-    const at::Tensor& angles,
-    const at::Tensor& first_wires,
-    const at::Tensor& second_wires,
+torch::stable::Tensor fused_rzz_segment_forward_cpu(
+    torch::stable::Tensor state,
+    const torch::stable::Tensor& angles,
+    const torch::stable::Tensor& first_wires,
+    const torch::stable::Tensor& second_wires,
     int64_t n_wires,
     bool enable_shared_phase_lookup) {
-  TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(state.device().is_cpu(), "state must be on CPU");
+  STD_TORCH_CHECK(
       angles.device().is_cpu() && first_wires.device().is_cpu() &&
           second_wires.device().is_cpu(),
       "segment metadata must be on CPU");
-  TORCH_CHECK(state.is_contiguous(), "state must be contiguous");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(state.is_contiguous(), "state must be contiguous");
+  STD_TORCH_CHECK(
       angles.is_contiguous() && first_wires.is_contiguous() &&
           second_wires.is_contiguous(),
       "segment metadata must be contiguous");
-  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
-  TORCH_CHECK(
-      state.scalar_type() == at::kComplexFloat ||
-          state.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(
+      state.scalar_type() == torch::headeronly::ScalarType::ComplexFloat ||
+          state.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(first_wires.scalar_type() == at::kLong, "first_wires must be int64");
-  TORCH_CHECK(second_wires.scalar_type() == at::kLong, "second_wires must be int64");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(first_wires.scalar_type() == torch::headeronly::ScalarType::Long, "first_wires must be int64");
+  STD_TORCH_CHECK(second_wires.scalar_type() == torch::headeronly::ScalarType::Long, "second_wires must be int64");
+  STD_TORCH_CHECK(
       angles.dim() == 1 && first_wires.dim() == 1 && second_wires.dim() == 1,
       "segment metadata must be one-dimensional");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       angles.numel() > 1 && first_wires.numel() == angles.numel() &&
           second_wires.numel() == angles.numel(),
       "segment metadata lengths must match and contain at least two gates");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
 
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
   const int64_t gate_count = angles.numel();
   const int64_t* first_data = first_wires.const_data_ptr<int64_t>();
   const int64_t* second_data = second_wires.const_data_ptr<int64_t>();
@@ -1397,7 +1437,7 @@ at::Tensor fused_rzz_segment_forward_cpu(
   uint64_t transition_mask = 0;
   bool shared_path = true;
   for (int64_t gate = 0; gate < gate_count; ++gate) {
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         first_data[gate] >= 0 && first_data[gate] < n_wires &&
             second_data[gate] >= 0 && second_data[gate] < n_wires &&
             first_data[gate] != second_data[gate],
@@ -1416,10 +1456,10 @@ at::Tensor fused_rzz_segment_forward_cpu(
     transition_mask |= transition_bit;
   }
 
-  AT_DISPATCH_COMPLEX_TYPES(state.scalar_type(), "fused_rzz_segment_forward_cpu", [&] {
+  FQ_DISPATCH_COMPLEX_TYPES(state.scalar_type(), "fused_rzz_segment_forward_cpu", [&] {
     using real_t = typename scalar_t::value_type;
-    TORCH_CHECK(
-        angles.scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+    STD_TORCH_CHECK(
+        angles.scalar_type() == torch::headeronly::CppTypeToScalarType<real_t>::value,
         "angle dtype must match the state precision");
     const real_t* angle_data = angles.const_data_ptr<real_t>();
     for (int64_t gate = 1; gate < gate_count; ++gate) {
@@ -1428,7 +1468,7 @@ at::Tensor fused_rzz_segment_forward_cpu(
         break;
       }
     }
-    scalar_t* state_data = state.data_ptr<scalar_t>();
+    scalar_t* state_data = state.mutable_data_ptr<scalar_t>();
     const int64_t item_count = state.numel();
     std::vector<scalar_t> shared_phases;
     if (shared_path && enable_shared_phase_lookup) {
@@ -1439,7 +1479,7 @@ at::Tensor fused_rzz_segment_forward_cpu(
         shared_phases[transitions] = scalar_t(std::cos(phase), std::sin(phase));
       }
     }
-    at::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+    torch::stable::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
       for (int64_t item = begin; item < end; ++item) {
         const int64_t basis = item & (amplitudes - 1);
         real_t phase = real_t{0};
@@ -1470,12 +1510,12 @@ at::Tensor fused_rzz_segment_forward_cpu(
   return state;
 }
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cpu(
-    at::Tensor ket,
-    at::Tensor adjoint,
-    const at::Tensor& angles,
-    const at::Tensor& gate_kinds,
-    const at::Tensor& wires,
+std::tuple<torch::stable::Tensor, torch::stable::Tensor, torch::stable::Tensor> fused_rotation_segment_adjoint_cpu(
+    torch::stable::Tensor ket,
+    torch::stable::Tensor adjoint,
+    const torch::stable::Tensor& angles,
+    const torch::stable::Tensor& gate_kinds,
+    const torch::stable::Tensor& wires,
     int64_t n_wires,
     bool aggregate_shared_parameter,
     int64_t max_tile_wires,
@@ -1485,120 +1525,120 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
     bool enable_euler_post_reduction,
     bool restore_state,
     bool fuse_preceding_hadamards,
-    const c10::optional<at::Tensor>& rzz_angles,
-    const c10::optional<at::Tensor>& rzz_first_wires,
-    const c10::optional<at::Tensor>& rzz_second_wires,
-    const c10::optional<at::Tensor>& observable_weights,
-    const c10::optional<at::Tensor>& cx_index,
-    const c10::optional<at::Tensor>& cx_images) {
-  TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
-  TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
-  TORCH_CHECK(angles.device().is_cpu(), "angles must be on CPU");
-  TORCH_CHECK(gate_kinds.device().is_cpu(), "gate kinds must be on CPU");
-  TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
-  TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
-  TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
-  TORCH_CHECK(angles.is_contiguous(), "angles must be contiguous");
-  TORCH_CHECK(gate_kinds.is_contiguous(), "gate kinds must be contiguous");
-  TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
-  TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
-  TORCH_CHECK(adjoint.sizes() == ket.sizes(), "adjoint shape must match ket");
-  TORCH_CHECK(angles.dim() == 1, "angles must be one-dimensional");
-  TORCH_CHECK(gate_kinds.dim() == 1, "gate kinds must be one-dimensional");
-  TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
-  TORCH_CHECK(
+    const std::optional<torch::stable::Tensor>& rzz_angles,
+    const std::optional<torch::stable::Tensor>& rzz_first_wires,
+    const std::optional<torch::stable::Tensor>& rzz_second_wires,
+    const std::optional<torch::stable::Tensor>& observable_weights,
+    const std::optional<torch::stable::Tensor>& cx_index,
+    const std::optional<torch::stable::Tensor>& cx_images) {
+  STD_TORCH_CHECK(ket.device().is_cpu(), "ket must be on CPU");
+  STD_TORCH_CHECK(adjoint.device().is_cpu(), "adjoint must be on CPU");
+  STD_TORCH_CHECK(angles.device().is_cpu(), "angles must be on CPU");
+  STD_TORCH_CHECK(gate_kinds.device().is_cpu(), "gate kinds must be on CPU");
+  STD_TORCH_CHECK(wires.device().is_cpu(), "wires must be on CPU");
+  STD_TORCH_CHECK(ket.is_contiguous(), "ket must be contiguous");
+  STD_TORCH_CHECK(adjoint.is_contiguous(), "adjoint must be contiguous");
+  STD_TORCH_CHECK(angles.is_contiguous(), "angles must be contiguous");
+  STD_TORCH_CHECK(gate_kinds.is_contiguous(), "gate kinds must be contiguous");
+  STD_TORCH_CHECK(wires.is_contiguous(), "wires must be contiguous");
+  STD_TORCH_CHECK(ket.dim() == 2, "ket must have shape [batch, amplitudes]");
+  STD_TORCH_CHECK(adjoint.sizes().equals(ket.sizes()), "adjoint shape must match ket");
+  STD_TORCH_CHECK(angles.dim() == 1, "angles must be one-dimensional");
+  STD_TORCH_CHECK(gate_kinds.dim() == 1, "gate kinds must be one-dimensional");
+  STD_TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  STD_TORCH_CHECK(
       parallel_grain >= 0,
       "parallel grain must be zero (adaptive) or positive");
-  TORCH_CHECK(gate_kinds.scalar_type() == at::kLong, "gate kinds must be int64");
-  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
-  TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
-  TORCH_CHECK(
-      ket.scalar_type() == at::kComplexFloat || ket.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(gate_kinds.scalar_type() == torch::headeronly::ScalarType::Long, "gate kinds must be int64");
+  STD_TORCH_CHECK(wires.scalar_type() == torch::headeronly::ScalarType::Long, "wires must be int64");
+  STD_TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
+  STD_TORCH_CHECK(
+      ket.scalar_type() == torch::headeronly::ScalarType::ComplexFloat || ket.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(
       max_tile_wires >= 2 && max_tile_wires <= 11,
       "max_tile_wires must be in [2, 11]");
 
   const int64_t gate_count = angles.size(0);
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       gate_count >= 2 && gate_count <= 256,
       "a fused rotation segment must contain between two and two hundred fifty-six gates");
-  TORCH_CHECK(gate_kinds.numel() == gate_count, "gate-kind count must match matrices");
-  TORCH_CHECK(wires.numel() == gate_count, "wire count must match matrices");
+  STD_TORCH_CHECK(gate_kinds.numel() == gate_count, "gate-kind count must match matrices");
+  STD_TORCH_CHECK(wires.numel() == gate_count, "wire count must match matrices");
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
   const bool fuse_rzz = rzz_angles.has_value();
   const bool seed_observable = observable_weights.has_value();
   const bool fuse_cx_index = cx_index.has_value();
   const bool fuse_cx_images = cx_images.has_value();
   const bool fuse_cx = fuse_cx_index || fuse_cx_images;
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       !(fuse_cx_index && fuse_cx_images),
       "CX index and compact images are mutually exclusive");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       !fuse_preceding_hadamards || fuse_rzz,
       "preceding Hadamards require a fused RZZ boundary");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       restore_state || (!fuse_rzz && !fuse_preceding_hadamards),
       "terminal no-restore cannot absorb an earlier RZZ or Hadamard boundary");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       fuse_rzz == rzz_first_wires.has_value() && fuse_rzz == rzz_second_wires.has_value(),
       "all fused RZZ metadata must be provided together");
   int64_t rzz_count = 0;
   uint64_t rzz_transition_mask = 0;
   if (fuse_rzz) {
-    const at::Tensor& rzz_angle_tensor = rzz_angles.value();
-    const at::Tensor& first_tensor = rzz_first_wires.value();
-    const at::Tensor& second_tensor = rzz_second_wires.value();
-    TORCH_CHECK(rzz_angle_tensor.device().is_cpu() && first_tensor.device().is_cpu() &&
+    const torch::stable::Tensor& rzz_angle_tensor = rzz_angles.value();
+    const torch::stable::Tensor& first_tensor = rzz_first_wires.value();
+    const torch::stable::Tensor& second_tensor = rzz_second_wires.value();
+    STD_TORCH_CHECK(rzz_angle_tensor.device().is_cpu() && first_tensor.device().is_cpu() &&
                     second_tensor.device().is_cpu(), "fused RZZ metadata must be on CPU");
-    TORCH_CHECK(rzz_angle_tensor.is_contiguous() && first_tensor.is_contiguous() &&
+    STD_TORCH_CHECK(rzz_angle_tensor.is_contiguous() && first_tensor.is_contiguous() &&
                     second_tensor.is_contiguous(), "fused RZZ metadata must be contiguous");
     rzz_count = rzz_angle_tensor.numel();
-    TORCH_CHECK(rzz_count > 1 && first_tensor.numel() == rzz_count &&
+    STD_TORCH_CHECK(rzz_count > 1 && first_tensor.numel() == rzz_count &&
                     second_tensor.numel() == rzz_count, "fused RZZ metadata lengths must match");
-    TORCH_CHECK(first_tensor.scalar_type() == at::kLong &&
-                    second_tensor.scalar_type() == at::kLong, "fused RZZ wires must be int64");
+    STD_TORCH_CHECK(first_tensor.scalar_type() == torch::headeronly::ScalarType::Long &&
+                    second_tensor.scalar_type() == torch::headeronly::ScalarType::Long, "fused RZZ wires must be int64");
     const int64_t* first_data = first_tensor.const_data_ptr<int64_t>();
     const int64_t* second_data = second_tensor.const_data_ptr<int64_t>();
     for (int64_t gate = 0; gate < rzz_count; ++gate) {
-      TORCH_CHECK(first_data[gate] >= 0 && first_data[gate] < n_wires &&
+      STD_TORCH_CHECK(first_data[gate] >= 0 && first_data[gate] < n_wires &&
                       second_data[gate] >= 0 && second_data[gate] < n_wires,
                   "fused RZZ wire is out of range");
-      TORCH_CHECK(std::abs(first_data[gate] - second_data[gate]) == 1,
+      STD_TORCH_CHECK(std::abs(first_data[gate] - second_data[gate]) == 1,
                   "fused RZZ gates must connect adjacent wires");
       const int64_t first_mask = int64_t{1} << (n_wires - first_data[gate] - 1);
       const int64_t second_mask = int64_t{1} << (n_wires - second_data[gate] - 1);
       const uint64_t transition_bit = std::min(first_mask, second_mask);
-      TORCH_CHECK((rzz_transition_mask & transition_bit) == 0,
+      STD_TORCH_CHECK((rzz_transition_mask & transition_bit) == 0,
                   "fused RZZ gates must have unique adjacent pairs");
       rzz_transition_mask |= transition_bit;
     }
   }
   if (seed_observable) {
-    const at::Tensor& weights = observable_weights.value();
-    TORCH_CHECK(weights.device().is_cpu(), "observable weights must be on CPU");
-    TORCH_CHECK(weights.is_contiguous(), "observable weights must be contiguous");
-    TORCH_CHECK(weights.dim() == 1 && weights.numel() == amplitudes,
+    const torch::stable::Tensor& weights = observable_weights.value();
+    STD_TORCH_CHECK(weights.device().is_cpu(), "observable weights must be on CPU");
+    STD_TORCH_CHECK(weights.is_contiguous(), "observable weights must be contiguous");
+    STD_TORCH_CHECK(weights.dim() == 1 && weights.numel() == amplitudes,
                 "observable weight count must match state width");
   }
   if (fuse_cx_index) {
-    const at::Tensor& index = cx_index.value();
-    TORCH_CHECK(index.device().is_cpu(), "CX index must be on CPU");
-    TORCH_CHECK(index.is_contiguous(), "CX index must be contiguous");
-    TORCH_CHECK(index.dim() == 1 && index.numel() == amplitudes,
+    const torch::stable::Tensor& index = cx_index.value();
+    STD_TORCH_CHECK(index.device().is_cpu(), "CX index must be on CPU");
+    STD_TORCH_CHECK(index.is_contiguous(), "CX index must be contiguous");
+    STD_TORCH_CHECK(index.dim() == 1 && index.numel() == amplitudes,
                 "CX index width must match state width");
-    TORCH_CHECK(index.scalar_type() == at::kInt || index.scalar_type() == at::kLong,
+    STD_TORCH_CHECK(index.scalar_type() == torch::headeronly::ScalarType::Int || index.scalar_type() == torch::headeronly::ScalarType::Long,
                 "CX index must be int32 or int64");
   }
   if (fuse_cx_images) {
-    const at::Tensor& images = cx_images.value();
-    TORCH_CHECK(images.device().is_cpu(), "CX images must be on CPU");
-    TORCH_CHECK(images.is_contiguous(), "CX images must be contiguous");
-    TORCH_CHECK(images.dim() == 1 && images.numel() == n_wires,
+    const torch::stable::Tensor& images = cx_images.value();
+    STD_TORCH_CHECK(images.device().is_cpu(), "CX images must be on CPU");
+    STD_TORCH_CHECK(images.is_contiguous(), "CX images must be contiguous");
+    STD_TORCH_CHECK(images.dim() == 1 && images.numel() == n_wires,
                 "CX image count must match n_wires");
-    TORCH_CHECK(images.scalar_type() == at::kLong, "CX images must be int64");
+    STD_TORCH_CHECK(images.scalar_type() == torch::headeronly::ScalarType::Long, "CX images must be int64");
   }
 
   const int64_t* kind_data = gate_kinds.const_data_ptr<int64_t>();
@@ -1607,29 +1647,29 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
   int64_t previous_wire = -1;
   int64_t unique_wire_count = 0;
   for (int64_t gate = 0; gate < gate_count; ++gate) {
-    TORCH_CHECK(kind_data[gate] >= 0 && kind_data[gate] <= 2, "unsupported gate kind");
-    TORCH_CHECK(
+    STD_TORCH_CHECK(kind_data[gate] >= 0 && kind_data[gate] <= 2, "unsupported gate kind");
+    STD_TORCH_CHECK(
         wire_data[gate] >= 0 && wire_data[gate] < n_wires,
         "rotation wire is out of range");
     if (wire_data[gate] != previous_wire) {
       if (previous_wire >= 0) {
         completed_wires |= uint64_t{1} << previous_wire;
       }
-      TORCH_CHECK(
+      STD_TORCH_CHECK(
           (completed_wires & (uint64_t{1} << wire_data[gate])) == 0,
           "rotation wires must form contiguous groups");
       previous_wire = wire_data[gate];
       ++unique_wire_count;
     }
   }
-  TORCH_CHECK(unique_wire_count >= 2, "a fused rotation segment requires at least two wires");
+  STD_TORCH_CHECK(unique_wire_count >= 2, "a fused rotation segment requires at least two wires");
   if (!restore_state) {
-    TORCH_CHECK(enable_pair_fast_path && enable_flat_pair_simd,
+    STD_TORCH_CHECK(enable_pair_fast_path && enable_flat_pair_simd,
                 "terminal no-restore requires the flat Euler fast path");
-    TORCH_CHECK(gate_count % 3 == 0,
+    STD_TORCH_CHECK(gate_count % 3 == 0,
                 "terminal no-restore requires complete Euler triples");
     for (int64_t gate = 0; gate < gate_count; gate += 3) {
-      TORCH_CHECK(
+      STD_TORCH_CHECK(
           kind_data[gate] == 2 && kind_data[gate + 1] == 1 &&
               kind_data[gate + 2] == 0 &&
               wire_data[gate] == wire_data[gate + 1] &&
@@ -1637,25 +1677,25 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
           "terminal no-restore requires contiguous RZ-RY-RX triples");
     }
   }
-  at::Tensor result;
-  at::Tensor transformed_ket = fuse_cx && restore_state ? at::empty_like(ket) : ket;
-  at::Tensor transformed_adjoint =
-      fuse_cx && restore_state ? at::empty_like(adjoint) : adjoint;
-  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_rotation_segment_adjoint_cpu", [&] {
+  torch::stable::Tensor result;
+  torch::stable::Tensor transformed_ket = fuse_cx && restore_state ? torch::stable::empty_like(ket) : ket;
+  torch::stable::Tensor transformed_adjoint =
+      fuse_cx && restore_state ? torch::stable::empty_like(adjoint) : adjoint;
+  FQ_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_rotation_segment_adjoint_cpu", [&] {
     using real_t = typename scalar_t::value_type;
     constexpr real_t inverse_sqrt_two =
         static_cast<real_t>(0.7071067811865475244);
-    TORCH_CHECK(
-        angles.scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+    STD_TORCH_CHECK(
+        angles.scalar_type() == torch::headeronly::CppTypeToScalarType<real_t>::value,
         "angle dtype must match the state precision");
     const scalar_t* source_ket_data = ket.const_data_ptr<scalar_t>();
     const scalar_t* source_adjoint_data = adjoint.const_data_ptr<scalar_t>();
-    scalar_t* ket_data = transformed_ket.data_ptr<scalar_t>();
-    scalar_t* adjoint_data = transformed_adjoint.data_ptr<scalar_t>();
-    const int32_t* cx_index32 = fuse_cx_index && cx_index.value().scalar_type() == at::kInt
+    scalar_t* ket_data = transformed_ket.mutable_data_ptr<scalar_t>();
+    scalar_t* adjoint_data = transformed_adjoint.mutable_data_ptr<scalar_t>();
+    const int32_t* cx_index32 = fuse_cx_index && cx_index.value().scalar_type() == torch::headeronly::ScalarType::Int
         ? cx_index.value().const_data_ptr<int32_t>()
         : nullptr;
-    const int64_t* cx_index64 = fuse_cx_index && cx_index.value().scalar_type() == at::kLong
+    const int64_t* cx_index64 = fuse_cx_index && cx_index.value().scalar_type() == torch::headeronly::ScalarType::Long
         ? cx_index.value().const_data_ptr<int64_t>()
         : nullptr;
     const int64_t cx_chunk_count = fuse_cx_images ? (n_wires + 7) / 8 : 0;
@@ -1669,9 +1709,9 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
     const real_t* angle_data = angles.const_data_ptr<real_t>();
     const real_t* observable_weight_data = nullptr;
     if (seed_observable) {
-      TORCH_CHECK(
+      STD_TORCH_CHECK(
           observable_weights.value().scalar_type() ==
-              c10::CppTypeToScalarType<real_t>::value,
+              torch::headeronly::CppTypeToScalarType<real_t>::value,
           "observable weight dtype must match state precision");
       observable_weight_data =
           observable_weights.value().const_data_ptr<real_t>();
@@ -1679,11 +1719,11 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
     const real_t* rzz_angle_data = nullptr;
     std::vector<scalar_t> rzz_inverses;
     if (fuse_rzz) {
-      TORCH_CHECK(rzz_angles.value().scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+      STD_TORCH_CHECK(rzz_angles.value().scalar_type() == torch::headeronly::CppTypeToScalarType<real_t>::value,
                   "fused RZZ angle dtype must match state precision");
       rzz_angle_data = rzz_angles.value().const_data_ptr<real_t>();
       for (int64_t gate = 1; gate < rzz_count; ++gate) {
-        TORCH_CHECK(rzz_angle_data[gate] == rzz_angle_data[0],
+        STD_TORCH_CHECK(rzz_angle_data[gate] == rzz_angle_data[0],
                     "fused RZZ gates must share one angle");
       }
       rzz_inverses.resize(rzz_count + 1);
@@ -1735,13 +1775,14 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
         euler_inverses[gate * 4 + 3] = column_one;
       }
     }
-    const int64_t thread_count = at::get_num_threads();
+    const int64_t thread_count = torch::stable::get_num_threads();
     const int64_t gradient_count = aggregate_shared_parameter ? 1 : gate_count;
     const int64_t result_gradient_count = gradient_count + (fuse_rzz ? 1 : 0);
-    at::Tensor partial = at::zeros(
+    torch::stable::Tensor partial = torch::stable::new_zeros(
+        ket,
         {thread_count, result_gradient_count},
-        ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
-    real_t* partial_data = partial.data_ptr<real_t>();
+        torch::headeronly::CppTypeToScalarType<real_t>::value);
+    real_t* partial_data = partial.mutable_data_ptr<real_t>();
 
     int64_t segment_start = 0;
     while (segment_start < gate_count) {
@@ -1792,7 +1833,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
           parallel_grain == 0
           ? std::max<int64_t>(1, item_count / (4 * thread_count))
           : parallel_grain;
-      at::parallel_for(
+      torch::stable::parallel_for(
           int64_t{0},
           item_count,
           effective_parallel_grain,
@@ -1800,7 +1841,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
         std::array<scalar_t, 2048> ket_values{};
         std::array<scalar_t, 2048> adjoint_values{};
         real_t* local_gradients =
-            partial_data + at::get_thread_num() * result_gradient_count;
+            partial_data + stable_thread_index() * result_gradient_count;
         for (int64_t item = begin; item < end; ++item) {
           const int64_t row = item / blocks_per_row;
           int64_t base = item - row * blocks_per_row;
@@ -2146,9 +2187,11 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
       });
       segment_start = segment_end;
     }
-    result = at::zeros(
-        {result_gradient_count}, ket.options().dtype(c10::CppTypeToScalarType<real_t>::value));
-    real_t* result_data = result.data_ptr<real_t>();
+    result = torch::stable::new_zeros(
+        ket,
+        {result_gradient_count},
+        torch::headeronly::CppTypeToScalarType<real_t>::value);
+    real_t* result_data = result.mutable_data_ptr<real_t>();
     for (int64_t thread = 0; thread < thread_count; ++thread) {
       for (int64_t gradient = 0; gradient < result_gradient_count; ++gradient) {
         result_data[gradient] +=
@@ -2159,39 +2202,39 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
   return std::make_tuple(result, transformed_ket, transformed_adjoint);
 }
 
-at::Tensor fused_rzz_segment_adjoint_cpu(
-    at::Tensor ket,
-    at::Tensor adjoint,
-    const at::Tensor& angles,
-    const at::Tensor& first_wires,
-    const at::Tensor& second_wires,
+torch::stable::Tensor fused_rzz_segment_adjoint_cpu(
+    torch::stable::Tensor ket,
+    torch::stable::Tensor adjoint,
+    const torch::stable::Tensor& angles,
+    const torch::stable::Tensor& first_wires,
+    const torch::stable::Tensor& second_wires,
     int64_t n_wires,
     bool aggregate_shared_parameter) {
-  TORCH_CHECK(ket.device().is_cpu() && adjoint.device().is_cpu(), "states must be on CPU");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(ket.device().is_cpu() && adjoint.device().is_cpu(), "states must be on CPU");
+  STD_TORCH_CHECK(
       angles.device().is_cpu() && first_wires.device().is_cpu() && second_wires.device().is_cpu(),
       "segment metadata must be on CPU");
-  TORCH_CHECK(ket.is_contiguous() && adjoint.is_contiguous(), "states must be contiguous");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(ket.is_contiguous() && adjoint.is_contiguous(), "states must be contiguous");
+  STD_TORCH_CHECK(
       angles.is_contiguous() && first_wires.is_contiguous() && second_wires.is_contiguous(),
       "segment metadata must be contiguous");
-  TORCH_CHECK(ket.dim() == 2 && adjoint.sizes() == ket.sizes(), "state shapes must match");
-  TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
-  TORCH_CHECK(
-      ket.scalar_type() == at::kComplexFloat || ket.scalar_type() == at::kComplexDouble,
+  STD_TORCH_CHECK(ket.dim() == 2 && adjoint.sizes().equals(ket.sizes()), "state shapes must match");
+  STD_TORCH_CHECK(adjoint.scalar_type() == ket.scalar_type(), "state dtypes must match");
+  STD_TORCH_CHECK(
+      ket.scalar_type() == torch::headeronly::ScalarType::ComplexFloat || ket.scalar_type() == torch::headeronly::ScalarType::ComplexDouble,
       "only complex64 and complex128 are supported");
-  TORCH_CHECK(first_wires.scalar_type() == at::kLong, "first_wires must be int64");
-  TORCH_CHECK(second_wires.scalar_type() == at::kLong, "second_wires must be int64");
-  TORCH_CHECK(angles.dim() == 1 && first_wires.dim() == 1 && second_wires.dim() == 1,
+  STD_TORCH_CHECK(first_wires.scalar_type() == torch::headeronly::ScalarType::Long, "first_wires must be int64");
+  STD_TORCH_CHECK(second_wires.scalar_type() == torch::headeronly::ScalarType::Long, "second_wires must be int64");
+  STD_TORCH_CHECK(angles.dim() == 1 && first_wires.dim() == 1 && second_wires.dim() == 1,
               "segment metadata must be one-dimensional");
-  TORCH_CHECK(
+  STD_TORCH_CHECK(
       angles.numel() > 1 && first_wires.numel() == angles.numel() &&
           second_wires.numel() == angles.numel(),
       "segment metadata lengths must match and contain at least two gates");
-  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  STD_TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
 
   const int64_t amplitudes = int64_t{1} << n_wires;
-  TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
+  STD_TORCH_CHECK(ket.size(1) == amplitudes, "state width does not match n_wires");
   const int64_t gate_count = angles.numel();
   const int64_t item_count = ket.numel();
   const int64_t* first_data = first_wires.const_data_ptr<int64_t>();
@@ -2200,7 +2243,7 @@ at::Tensor fused_rzz_segment_adjoint_cpu(
   std::vector<int64_t> second_masks(gate_count);
   uint64_t transition_mask = 0;
   for (int64_t gate = 0; gate < gate_count; ++gate) {
-    TORCH_CHECK(
+    STD_TORCH_CHECK(
         first_data[gate] >= 0 && first_data[gate] < n_wires &&
             second_data[gate] >= 0 && second_data[gate] < n_wires &&
             first_data[gate] != second_data[gate],
@@ -2208,41 +2251,41 @@ at::Tensor fused_rzz_segment_adjoint_cpu(
     first_masks[gate] = int64_t{1} << (n_wires - first_data[gate] - 1);
     second_masks[gate] = int64_t{1} << (n_wires - second_data[gate] - 1);
     if (aggregate_shared_parameter) {
-      TORCH_CHECK(
+      STD_TORCH_CHECK(
           std::abs(first_data[gate] - second_data[gate]) == 1,
           "shared-parameter RZZ fusion requires adjacent wire pairs");
       const int64_t transition_bit =
           std::min(first_masks[gate], second_masks[gate]);
-      TORCH_CHECK(
+      STD_TORCH_CHECK(
           (transition_mask & transition_bit) == 0,
           "shared-parameter RZZ fusion requires unique wire pairs");
       transition_mask |= transition_bit;
     }
   }
 
-  at::Tensor result;
-  AT_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_rzz_segment_adjoint_cpu", [&] {
+  torch::stable::Tensor result;
+  FQ_DISPATCH_COMPLEX_TYPES(ket.scalar_type(), "fused_rzz_segment_adjoint_cpu", [&] {
     using real_t = typename scalar_t::value_type;
-    TORCH_CHECK(
-        angles.scalar_type() == c10::CppTypeToScalarType<real_t>::value,
+    STD_TORCH_CHECK(
+        angles.scalar_type() == torch::headeronly::CppTypeToScalarType<real_t>::value,
         "angle dtype must match the state precision");
-    scalar_t* ket_data = ket.data_ptr<scalar_t>();
-    scalar_t* adjoint_data = adjoint.data_ptr<scalar_t>();
+    scalar_t* ket_data = ket.mutable_data_ptr<scalar_t>();
+    scalar_t* adjoint_data = adjoint.mutable_data_ptr<scalar_t>();
     const real_t* angle_data = angles.const_data_ptr<real_t>();
     if (aggregate_shared_parameter) {
       for (int64_t gate = 1; gate < gate_count; ++gate) {
-        TORCH_CHECK(
+        STD_TORCH_CHECK(
             angle_data[gate] == angle_data[0],
             "shared-parameter RZZ fusion requires equal angles");
       }
     }
-    const int64_t thread_count = std::max<int64_t>(1, at::get_num_threads());
-    at::Tensor partials = at::zeros(
-        {thread_count, gate_count}, angles.options());
-    real_t* partial_data = partials.data_ptr<real_t>();
+    const int64_t thread_count = std::max<int64_t>(1, torch::stable::get_num_threads());
+    torch::stable::Tensor partials =
+        torch::stable::new_zeros(angles, {thread_count, gate_count});
+    real_t* partial_data = partials.mutable_data_ptr<real_t>();
 
-    at::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
-      real_t* local = partial_data + at::get_thread_num() * gate_count;
+    torch::stable::parallel_for(int64_t{0}, item_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+      real_t* local = partial_data + stable_thread_index() * gate_count;
       for (int64_t item = begin; item < end; ++item) {
         const int64_t basis = item & (amplitudes - 1);
         const scalar_t ket_value = ket_data[item];
@@ -2273,8 +2316,8 @@ at::Tensor fused_rzz_segment_adjoint_cpu(
       }
     });
 
-    result = at::zeros({gate_count}, angles.options());
-    real_t* result_data = result.data_ptr<real_t>();
+    result = torch::stable::new_zeros(angles, {gate_count});
+    real_t* result_data = result.mutable_data_ptr<real_t>();
     for (int64_t thread = 0; thread < thread_count; ++thread) {
       for (int64_t gate = 0; gate < gate_count; ++gate) {
         result_data[gate] += partial_data[thread * gate_count + gate];
@@ -2286,7 +2329,7 @@ at::Tensor fused_rzz_segment_adjoint_cpu(
 
 }  // namespace
 
-TORCH_LIBRARY(flagquantum_native, library) {
+STABLE_TORCH_LIBRARY(flagquantum_native, library) {
   library.def(
       "fused_observable_expectation(Tensor ket, Tensor weights) -> Tensor");
   library.def(
@@ -2339,34 +2382,40 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "bool aggregate_shared_parameter) -> Tensor");
 }
 
-TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
-  library.impl("fused_observable_expectation", &fused_observable_expectation_cpu);
+STABLE_TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
   library.impl(
-      "fused_observable_adjoint_seed", &fused_observable_adjoint_seed_cpu);
-  library.impl("fused_rotation_block_forward_", &fused_rotation_block_forward_cpu);
+      "fused_observable_expectation",
+      TORCH_BOX(&fused_observable_expectation_cpu));
+  library.impl(
+      "fused_observable_adjoint_seed",
+      TORCH_BOX(&fused_observable_adjoint_seed_cpu));
+  library.impl(
+      "fused_rotation_block_forward_",
+      TORCH_BOX(&fused_rotation_block_forward_cpu));
   library.impl(
       "fused_product_state_initialization_",
-      &fused_product_state_initialization_cpu);
+      TORCH_BOX(&fused_product_state_initialization_cpu));
   library.impl(
       "fused_static_product_state_initialization_",
-      &fused_static_product_state_initialization_cpu);
-  library.impl("fused_static_clifford_layer_", &fused_static_clifford_layer_cpu);
+      TORCH_BOX(&fused_static_product_state_initialization_cpu));
+  library.impl(
+      "fused_static_clifford_layer_",
+      TORCH_BOX(&fused_static_clifford_layer_cpu));
   library.impl(
       "fused_hadamard_controlled_phase_graph_",
-      &fused_hadamard_controlled_phase_graph_cpu);
-  library.impl("fused_hadamard_block_adjoint_", &fused_hadamard_block_adjoint_cpu);
-  library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);
-  library.impl("fused_rzz_segment_forward_", &fused_rzz_segment_forward_cpu);
-  library.impl("fused_rotation_segment_adjoint_", &fused_rotation_segment_adjoint_cpu);
-  library.impl("fused_rzz_segment_adjoint_", &fused_rzz_segment_adjoint_cpu);
-}
-
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, module) {
-  module.def("parallel_build_available", []() {
-#ifdef INTRA_OP_PARALLEL
-    return true;
-#else
-    return false;
-#endif
-  });
+      TORCH_BOX(&fused_hadamard_controlled_phase_graph_cpu));
+  library.impl(
+      "fused_hadamard_block_adjoint_",
+      TORCH_BOX(&fused_hadamard_block_adjoint_cpu));
+  library.impl(
+      "fused_rotation_adjoint_", TORCH_BOX(&fused_rotation_adjoint_cpu));
+  library.impl(
+      "fused_rzz_segment_forward_",
+      TORCH_BOX(&fused_rzz_segment_forward_cpu));
+  library.impl(
+      "fused_rotation_segment_adjoint_",
+      TORCH_BOX(&fused_rotation_segment_adjoint_cpu));
+  library.impl(
+      "fused_rzz_segment_adjoint_",
+      TORCH_BOX(&fused_rzz_segment_adjoint_cpu));
 }

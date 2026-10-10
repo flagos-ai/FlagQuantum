@@ -64,12 +64,12 @@ RUN python -m pip install --no-build-isolation "torch==${TORCH_VERSION}" "${JAX_
     && JAX_PLATFORMS=cpu python docker/dev/smoke.py \
     && python docker/dev/check_notebook.py
 
-# QSteed/pyquafu require NumPy 1.x, while JAX requires NumPy 2.x.
+# The QSteed plugin requires NumPy 1.x, while JAX requires NumPy 2.x.
 # Keep the compiler in an isolated environment; never bypass dependency checks.
 RUN python -m venv /opt/qsteed \
     && /opt/qsteed/bin/python -m pip install --upgrade pip setuptools wheel \
     && /opt/qsteed/bin/python -m pip install "torch==${TORCH_VERSION}" --index-url https://download.pytorch.org/whl/cpu \
-    && /opt/qsteed/bin/python -m pip install --no-build-isolation "torch==${TORCH_VERSION}" -e ".[quafu]" -r docker/dev/requirements-qsteed.txt "ipykernel>=6,<8" \
+    && /opt/qsteed/bin/python -m pip install --no-build-isolation "torch==${TORCH_VERSION}" -e . -r docker/dev/requirements-qsteed.txt "ipykernel>=6,<8" \
     && /opt/qsteed/bin/python -m pip check \
     && /opt/qsteed/bin/python docker/dev/smoke.py --qsteed \
     && /opt/qsteed/bin/python -m ipykernel install --prefix=/usr/local --name flagquantum-qsteed --display-name "FlagQuantum (QSteed)" \

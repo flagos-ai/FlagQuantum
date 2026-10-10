@@ -1,6 +1,6 @@
 schema = "flagquantum_dependency_policy_v2"
 python = ["3.10", "3.11", "3.12"]
-core = ["torch>=2.13,<2.14", "tomli>=2.0,<3; python_version < '3.11'"]
+core = ["torch>=2.13,<2.15", "tomli>=2.0,<3; python_version < '3.11'"]
 
 [extras]
 # The development extra is the toolchain this repository installs to check
@@ -76,7 +76,7 @@ core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "
 numpy = ["jax", "matplotlib", "pymatching", "qiskit", "stim"]
 
 [tested]
-torch = ["2.13"]
+torch = ["2.13", "2.14"]
 jax = ["0.10"]
 stim = ["1.16"]
 pymatching = ["2.3"]
