@@ -81,7 +81,11 @@ setup(
                 "flagquantum/simulation/native_cpu/csrc/permutation.cpp",
                 "flagquantum/simulation/native_cpu/csrc/rotation_adjoint.cpp",
             ],
-            extra_compile_args=CPP_FLAGS,
+            # BuildExtension's keyed form reliably forwards host flags on
+            # Windows as well as POSIX.  The plain list was dropped by the
+            # MSVC wrapper in the release wheel build, leaving PyTorch's C++17
+            # headers to be compiled in the compiler's older default mode.
+            extra_compile_args={"cxx": CPP_FLAGS},
             extra_link_args=LINK_FLAGS,
         )
     ],

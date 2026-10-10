@@ -60,7 +60,10 @@ def test_dependency_policy_rejects_core_framework_contamination() -> None:
     policy, pyproject = _inputs()
     pyproject["project"]["dependencies"].append("qiskit>=2")
     errors = policy_errors(policy, pyproject)
-    assert any("core dependencies must contain only torch" in error for error in errors)
+    assert any(
+        "core dependencies must contain torch and the Python 3.10 tomli" in error
+        for error in errors
+    )
 
 
 def test_dependency_policy_reports_malformed_requirements() -> None:
