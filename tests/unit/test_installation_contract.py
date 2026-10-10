@@ -54,7 +54,8 @@ def test_ci_editable_installs_reuse_the_cpu_torch_environment() -> None:
 
 def test_ci_measures_a_bounded_cold_cpu_install() -> None:
     workflow = _workflow(".github/workflows/ci.yml")
-    steps = workflow["jobs"]["package"]["steps"]
+    package = workflow["jobs"]["package"]
+    steps = package["steps"]
     measured = [
         step
         for step in steps
@@ -67,6 +68,10 @@ def test_ci_measures_a_bounded_cold_cpu_install() -> None:
     assert step["env"]["PIP_CACHE_DIR"].startswith("/tmp/")
     assert "GITHUB_STEP_SUMMARY" in step["run"]
 
+    commands = "\n".join(_run_commands(package))
+    assert "torch>=2.10,<2.11" in commands
+    assert "torch>=2.13,<2.14" in commands
+
 
 def test_release_build_reuses_the_validated_torch_environment() -> None:
     workflow = _workflow(".github/workflows/cd.yml")
@@ -77,6 +82,8 @@ def test_release_build_reuses_the_validated_torch_environment() -> None:
     build = next(command for command in sdist_commands if "python -m build" in command)
 
     assert CPU_TORCH_INDEX in "\n".join(validate_commands + sdist_commands)
+    assert "torch>=2.13,<2.14" in "\n".join(validate_commands)
+    assert "torch>=2.10,<2.11" in "\n".join(sdist_commands)
     assert "--no-build-isolation" in editable
     assert "--no-isolation" in build
 
@@ -103,11 +110,12 @@ def test_release_validation_lanes_are_parallel_and_dependency_complete() -> None
         assert checkout["with"]["ref"] == "${{ env.RELEASE_REF }}"
 
 
-def test_cibuildwheel_covers_supported_python_and_torch_abi() -> None:
+def test_cibuildwheel_builds_one_abi3_wheel_against_the_stable_torch_abi() -> None:
     configuration = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert 'build = "cp310-* cp311-* cp312-*"' in configuration
-    assert "torch>=2.13,<2.14" in configuration
+    assert 'build = "cp310-*"' in configuration
+    assert "torch>=2.10,<2.11" in configuration
+    assert "torch>=2.14,<2.15" in configuration
     assert "torch==2.5.*" not in configuration
     assert "manylinux_2_28" in configuration
     assert "delocate-wheel" in configuration
@@ -117,3 +125,5 @@ def test_cibuildwheel_covers_supported_python_and_torch_abi() -> None:
     setup_configuration = (ROOT / "setup.py").read_text(encoding="utf-8")
     assert 'extra_compile_args={"cxx": CPP_FLAGS}' in setup_configuration
     assert '"/std:c++17"' in setup_configuration
+    assert "py_limited_api=True" in setup_configuration
+    assert '"py_limited_api": "cp310"' in setup_configuration
