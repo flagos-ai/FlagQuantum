@@ -83,13 +83,26 @@ class ReproducibleBuildExtension(BuildExtension):
     def build_extensions(self) -> None:
         if self.compiler.compiler_type == "msvc":
             # PyTorch 2.10's non-Ninja MSVC wrapper can drop an extension's
-            # extra_compile_args before spawning cl.exe.  Put the required
-            # language level and Stable ABI defines in the compiler's base
-            # option lists as well, so source installs and release wheels use
-            # them even when that wrapper loses its post-arguments.
-            for attribute in ("compile_options", "compile_options_debug"):
-                options = getattr(self.compiler, attribute)
-                options.extend(flag for flag in CPP_FLAGS if flag not in options)
+            # extra_compile_args before spawning cl.exe.  Wrap the public spawn
+            # hook so the actual compiler command receives the required flags.
+            # This deliberately avoids setuptools' version-specific private
+            # compile_options attributes, which no longer exist in its current
+            # MSVC Compiler implementation.
+            original_spawn = self.compiler.spawn
+
+            def spawn(command: list[str], **kwargs: Any) -> Any:
+                executable = os.path.basename(str(command[0])).lower()
+                if executable in {"cl", "cl.exe"}:
+                    command = list(command)
+                    command.extend(flag for flag in CPP_FLAGS if flag not in command)
+                return original_spawn(command, **kwargs)
+
+            self.compiler.spawn = spawn
+            try:
+                super().build_extensions()
+            finally:
+                self.compiler.spawn = original_spawn
+            return
         super().build_extensions()
 
     def build_extension(self, ext: Any) -> None:
