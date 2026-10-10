@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- No changes yet.
+
+## 0.3.0rc1 (2026-10-10)
+
+This release candidate packages the user-visible work completed since 0.2.0 for
+installation and provider-workflow validation before the final 0.3.0 release.
+
 These entries were written while the release that shipped as `0.2.0` was still
 called the first alpha, which is why some of them say the "first-alpha API
 freeze" remains pending. That freeze landed as the protected Stable Core

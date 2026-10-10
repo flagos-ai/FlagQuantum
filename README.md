@@ -112,9 +112,10 @@ name when it is invoked from outside that workspace; inside the workspace the
 name is discovered automatically. See
 [repeated low-latency workspace execution](docs/guides/JIUDING.md#repeated-low-latency-workspace-execution).
 
-Direct Quafu submission requires the development version containing this feature.
-With the published 0.2.0 release, use the documented local QSteed compilation path
-instead: pass `compiler="qsteed"` after installing the separate
+Direct Quafu submission is available in the 0.3 release line, including the
+`0.3.0rc1` prerelease. With the older 0.2.0 release, use the documented local
+QSteed compilation path instead: pass `compiler="qsteed"` after installing the
+separate
 [FlagQuantum Compiler QSteed](https://github.com/FlagQuantum/FlagQuantum-Compiler-QSteed)
 plugin, as described in
 [optional local compiler plugin](docs/guides/QUAFU_BACKEND.md#optional-local-compiler-plugin).

@@ -306,8 +306,8 @@ print(result.counts[0])
 Call `job.cancel()` to request cancellation. A task already sent to hardware may
 stop being observed without refunding consumed capacity.
 
-The published 0.2.0 release predates this direct-submission feature. Use a source
-checkout containing this change until the next release is published.
+The published 0.2.0 release predates this direct-submission feature. Install the
+`0.3.0rc1` prerelease or use a source checkout containing this change.
 
 For local compilation before submission, explicitly pass `compiler="qsteed"`
 and install the plugin below. The service compiler option is distinct from the
@@ -321,7 +321,7 @@ The Quafu examples use the independently maintained
 plugin. Installing FlagQuantum alone, or its `quafu` extra, does not install
 this compiler plugin. The `quafu` extra supplies the optional calibration reader.
 
-Use Python 3.12 for the verified setup below. From a FlagQuantum 0.2 checkout:
+Use Python 3.12 for the verified setup below. From a FlagQuantum source checkout:
 
 ```bash
 python -m pip install -e .
