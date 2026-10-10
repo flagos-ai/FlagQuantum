@@ -111,4 +111,9 @@ def test_cibuildwheel_covers_supported_python_and_torch_abi() -> None:
     assert "torch==2.5.*" not in configuration
     assert "manylinux_2_28" in configuration
     assert "delocate-wheel" in configuration
+    assert "--ignore-missing-dependencies" in configuration
     assert "delvewheel repair" in configuration
+
+    setup_configuration = (ROOT / "setup.py").read_text(encoding="utf-8")
+    assert 'extra_compile_args={"cxx": CPP_FLAGS}' in setup_configuration
+    assert '"/std:c++17"' in setup_configuration

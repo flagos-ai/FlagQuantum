@@ -17,6 +17,7 @@ readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "torch>=2.13,<2.14",
+    "tomli>=2.0,<3; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -208,7 +209,7 @@ repair-wheel-command = "auditwheel repair --exclude libc10.so --exclude libtorch
 archs = ["native"]
 # PyTorch remains an external runtime dependency. Bundling its dylibs would
 # turn a small FlagQuantum wheel into another copy of PyTorch.
-repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} --no-sanitize-rpaths -e libc10 -e libtorch -e libtorch_cpu -e libtorch_python -w {dest_dir} {wheel}"
+repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} --no-sanitize-rpaths --ignore-missing-dependencies -e libc10 -e libtorch -e libtorch_cpu -e libtorch_python -e libomp -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]

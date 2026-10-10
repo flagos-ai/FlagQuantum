@@ -45,7 +45,6 @@ RELEASE_INTERPRETERS = ("cp310", "cp311", "cp312")
 RELEASE_PLATFORMS = (
     "manylinux_x86_64",
     "macos_arm64",
-    "macos_x86_64",
     "windows_amd64",
 )
 # `setup.py` declares the `flagquantum.simulation.native_cpu._C` extension
@@ -150,10 +149,6 @@ def _release_wheel_target(path: Path) -> tuple[str, str] | None:
         platform = "manylinux_x86_64"
     elif any(tag.startswith("macosx_") and tag.endswith("_arm64") for tag in platforms):
         platform = "macos_arm64"
-    elif any(
-        tag.startswith("macosx_") and tag.endswith("_x86_64") for tag in platforms
-    ):
-        platform = "macos_x86_64"
     elif "win_amd64" in platforms:
         platform = "windows_amd64"
     else:
@@ -220,16 +215,35 @@ def artifact_errors(path: Path) -> tuple[str, ...]:
             for requirement in _wheel_metadata(path)
             if "extra ==" not in requirement
         )
-        if len(core_requirements) != 1 or not core_requirements[0].lower().startswith(
-            "torch"
-        ):
+        torch_requirements = tuple(
+            requirement
+            for requirement in core_requirements
+            if requirement.lower().startswith("torch")
+        )
+        tomli_requirements = tuple(
+            requirement
+            for requirement in core_requirements
+            if requirement.lower().startswith("tomli")
+        )
+        if len(torch_requirements) != 1 or len(tomli_requirements) != 1 or len(
+            core_requirements
+        ) != 2:
             errors.append(
-                f"core dependencies must contain only torch, got {core_requirements}"
+                "core dependencies must contain torch and the Python 3.10 tomli "
+                f"compatibility dependency, got {core_requirements}"
             )
-        elif core_requirements[0].replace(" ", "") not in SUPPORTED_TORCH_REQUIREMENTS:
+        elif torch_requirements[0].replace(" ", "") not in SUPPORTED_TORCH_REQUIREMENTS:
             errors.append(
                 "wheel must require the supported PyTorch 2.13 ABI, "
-                f"got {core_requirements[0]!r}"
+                f"got {torch_requirements[0]!r}"
+            )
+        elif not (
+            "python_version" in tomli_requirements[0]
+            and "3.11" in tomli_requirements[0]
+        ):
+            errors.append(
+                "tomli must be conditional on Python versions below 3.11, "
+                f"got {tomli_requirements[0]!r}"
             )
     return tuple(errors)
 

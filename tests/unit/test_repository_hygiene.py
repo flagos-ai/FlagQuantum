@@ -114,7 +114,10 @@ def test_dependency_groups_keep_core_minimal_and_ranges_executable():
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
     project = pyproject["project"]
     assert project["requires-python"] == ">=3.10,<3.13"
-    assert project["dependencies"] == ["torch>=2.13,<2.14"]
+    assert project["dependencies"] == [
+        "torch>=2.13,<2.14",
+        "tomli>=2.0,<3; python_version < '3.11'",
+    ]
     extras = project["optional-dependencies"]
     assert extras["jax"] == ["jax>=0.10,<0.11"]
     assert all("jax" not in item for item in extras["dev"])

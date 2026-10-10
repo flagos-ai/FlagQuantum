@@ -539,8 +539,11 @@ def policy_errors(policy: dict[str, Any], pyproject: dict[str, Any]) -> tuple[st
     if core_names is None:
         errors.append("core dependencies must be a list of valid requirements")
         core_names = ()
-    if core_names != ("torch",):
-        errors.append(f"core dependencies must contain only torch, got {core_names}")
+    if core_names != ("torch", "tomli"):
+        errors.append(
+            "core dependencies must contain torch and the Python 3.10 tomli "
+            f"compatibility dependency, got {core_names}"
+        )
 
     project_extras = project.get("optional-dependencies")
     policy_extras = policy.get("extras")

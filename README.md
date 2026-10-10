@@ -29,11 +29,14 @@ been tested and what remains a research goal.
 
 Requires Python **3.10–3.12**. Choose the command for your computer.
 
-**macOS:**
+**macOS (Apple Silicon):**
 
 ```console
 python -m pip install flagquantum
 ```
+
+PyTorch 2.13 does not publish macOS Intel (`x86_64`) wheels, so this
+FlagQuantum release cannot provide a working Intel macOS installation.
 
 **Linux or Windows, CPU only:**
 

@@ -68,7 +68,8 @@ def _fake_wheel(
         archive.writestr(
             f"{DIST_INFO}/METADATA",
             "Metadata-Version: 2.1\nName: flagquantum\n"
-            f"Requires-Dist: {torch_requirement}\n",
+            f"Requires-Dist: {torch_requirement}\n"
+            'Requires-Dist: tomli>=2.0,<3; python_version < "3.11"\n',
         )
     return path
 
@@ -193,7 +194,6 @@ def test_release_matrix_requires_every_supported_wheel_and_one_sdist(
     platforms = (
         "manylinux_2_28_x86_64",
         "macosx_11_0_arm64",
-        "macosx_10_9_x86_64",
         "win_amd64",
     )
     artifacts = tuple(
@@ -289,7 +289,6 @@ def test_release_builds_the_supported_platform_and_interpreter_matrix() -> None:
     assert platforms == {
         ("ubuntu-22.04", "manylinux-x86_64"),
         ("macos-14", "macos-arm64"),
-        ("macos-15-intel", "macos-x86_64"),
         ("windows-2022", "windows-amd64"),
     }
     assert job["strategy"]["max-parallel"] <= 4
