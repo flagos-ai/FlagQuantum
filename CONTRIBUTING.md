@@ -89,7 +89,17 @@ Bugs and suggestions are tracked as [GitHub issues](https://guides.github.com/fe
 
 To get your contribution reviewed and merged:
 
-1. Install the development environment with `pip install -e '.[dev]'`.
+1. Install PyTorch explicitly, then reuse it while building the editable
+   development environment:
+
+   ```bash
+   python -m pip install --upgrade pip setuptools wheel
+   python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+   python -m pip install --no-build-isolation -e '.[dev]'
+   ```
+
+   For accelerator development, replace the CPU wheel command with the
+   platform-specific PyTorch installation command.
 2. Install the versioned commit and push gates:
 
    ```bash

@@ -28,7 +28,26 @@ FORBIDDEN_SUFFIXES = {
     ".pth",
 }
 MAX_DISTRIBUTION_BYTES = 5_000_000
-ALLOWED_WHEEL_PACKAGE_ROOTS = ("flagquantum/",)
+ALLOWED_WHEEL_PACKAGE_ROOTS = ("flagquantum/", "flagquantum.libs/")
+FORBIDDEN_BUNDLED_TORCH_LIBRARIES = (
+    "c10.dll",
+    "libc10",
+    "libtorch",
+    "torch.dll",
+    "torch_cpu.dll",
+    "torch_python.dll",
+)
+SUPPORTED_TORCH_REQUIREMENTS = {
+    "torch>=2.13,<2.14",
+    "torch<2.14,>=2.13",
+}
+RELEASE_INTERPRETERS = ("cp310", "cp311", "cp312")
+RELEASE_PLATFORMS = (
+    "manylinux_x86_64",
+    "macos_arm64",
+    "macos_x86_64",
+    "windows_amd64",
+)
 # `setup.py` declares the `flagquantum.simulation.native_cpu._C` extension
 # unconditionally, and `ci.yml` installs the built wheel and asserts
 # `native_cpu_adjoint_available()`. The required member list named the package
@@ -112,6 +131,66 @@ def _allowed_wheel_member(name: str) -> bool:
     return name.startswith(ALLOWED_WHEEL_PACKAGE_ROOTS) or ".dist-info/" in name
 
 
+def _bundled_torch_library(name: str) -> bool:
+    filename = PurePosixPath(name).name.lower()
+    return any(marker in filename for marker in FORBIDDEN_BUNDLED_TORCH_LIBRARIES)
+
+
+def _release_wheel_target(path: Path) -> tuple[str, str] | None:
+    """Return the supported interpreter and platform represented by a wheel."""
+
+    fields = path.name.removesuffix(".whl").split("-")
+    if len(fields) < 5:
+        return None
+    interpreter, abi, platform_field = fields[-3:]
+    if interpreter not in RELEASE_INTERPRETERS or abi != interpreter:
+        return None
+    platforms = platform_field.split(".")
+    if "manylinux_2_28_x86_64" in platforms:
+        platform = "manylinux_x86_64"
+    elif any(tag.startswith("macosx_") and tag.endswith("_arm64") for tag in platforms):
+        platform = "macos_arm64"
+    elif any(
+        tag.startswith("macosx_") and tag.endswith("_x86_64") for tag in platforms
+    ):
+        platform = "macos_x86_64"
+    elif "win_amd64" in platforms:
+        platform = "windows_amd64"
+    else:
+        return None
+    return interpreter, platform
+
+
+def release_matrix_errors(paths: tuple[Path, ...]) -> tuple[str, ...]:
+    """Require one sdist and one wheel for every supported release target."""
+
+    errors: list[str] = []
+    sdists = [path for path in paths if path.name.endswith(".tar.gz")]
+    if len(sdists) != 1:
+        errors.append(f"release must contain exactly one sdist, found {len(sdists)}")
+
+    expected = {
+        (interpreter, platform)
+        for interpreter in RELEASE_INTERPRETERS
+        for platform in RELEASE_PLATFORMS
+    }
+    targets: dict[tuple[str, str], list[str]] = {}
+    for path in (candidate for candidate in paths if candidate.suffix == ".whl"):
+        target = _release_wheel_target(path)
+        if target is None:
+            errors.append(f"unsupported release wheel tag: {path.name}")
+            continue
+        targets.setdefault(target, []).append(path.name)
+    for target in sorted(expected - targets.keys()):
+        errors.append(f"release wheel is missing: {target[0]} {target[1]}")
+    for target, names in sorted(targets.items()):
+        if len(names) != 1:
+            errors.append(
+                f"release wheel target {target[0]} {target[1]} has {len(names)} files"
+            )
+    return tuple(errors)
+
+
 def artifact_errors(path: Path) -> tuple[str, ...]:
     members = _members(path)
     errors = [f"forbidden member: {name}" for name in members if _forbidden(name)]
@@ -126,6 +205,11 @@ def artifact_errors(path: Path) -> tuple[str, ...]:
     if path.suffix == ".whl":
         invalid_roots = [name for name in members if not _allowed_wheel_member(name)]
         errors.extend(f"unexpected wheel member: {name}" for name in invalid_roots)
+        errors.extend(
+            f"PyTorch runtime library must remain external: {name}"
+            for name in members
+            if _bundled_torch_library(name)
+        )
         if _missing_native_extension(members):
             errors.append(
                 "compiled native extension is missing: "
@@ -142,11 +226,17 @@ def artifact_errors(path: Path) -> tuple[str, ...]:
             errors.append(
                 f"core dependencies must contain only torch, got {core_requirements}"
             )
+        elif core_requirements[0].replace(" ", "") not in SUPPORTED_TORCH_REQUIREMENTS:
+            errors.append(
+                "wheel must require the supported PyTorch 2.13 ABI, "
+                f"got {core_requirements[0]!r}"
+            )
     return tuple(errors)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--release-matrix", action="store_true")
     parser.add_argument("directory", type=Path)
     args = parser.parse_args(argv)
     artifacts = tuple(sorted(args.directory.glob("*.whl"))) + tuple(
@@ -156,9 +246,13 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"no wheel or sdist found in {args.directory}")
     violations = {path.name: artifact_errors(path) for path in artifacts}
     violations = {name: members for name, members in violations.items() if members}
+    matrix_errors = release_matrix_errors(artifacts) if args.release_matrix else ()
     if violations:
         for name, members in violations.items():
             print(f"{name}: artifact errors: {members}")
+    for error in matrix_errors:
+        print(f"release matrix error: {error}")
+    if violations or matrix_errors:
         return 1
     print(f"verified {len(artifacts)} distribution artifacts")
     return 0

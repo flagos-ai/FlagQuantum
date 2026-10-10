@@ -4,7 +4,7 @@
 <p><strong>Quantum computing, built for learning.</strong></p>
 <p>A PyTorch-first framework for differentiable quantum computing and quantum AI.</p>
 
-[Quick start](#train-your-first-quantum-model) · [Documentation](docs/README.md) · [Examples](examples/README.md)
+[Quick start](#install-and-train-your-first-quantum-model) · [Documentation](docs/README.md) · [Examples](examples/README.md)
 
 </div>
 
@@ -25,21 +25,35 @@ distributed paths have correctness evidence.
 See the [validation scope](docs/reference/PUBLICATION_VALIDATION.md) for what has
 been tested and what remains a research goal.
 
-## Train your first quantum model
+## Install and train your first quantum model
 
-Requires Python **3.10–3.12**. Install the released version:
+Requires Python **3.10–3.12**. Choose the command for your computer.
+
+**macOS:**
 
 ```console
 python -m pip install flagquantum
 ```
 
-Or install the development version from source (editable, with development tools):
+**Linux or Windows, CPU only:**
 
 ```console
-git clone https://github.com/flagos-ai/FlagQuantum.git
-cd FlagQuantum
-python -m pip install -e ".[dev]"
+python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+python -m pip install flagquantum
 ```
+
+FlagQuantum's compiled extension currently supports PyTorch 2.13.x. The first CPU
+install downloads about 200 MB of PyTorch. On a clean GitHub Ubuntu runner it
+took about 16 seconds; slower networks will take longer.
+
+**GPU:** Select a PyTorch 2.13.x command matching your accelerator from the
+[PyTorch installer](https://pytorch.org/get-started/locally/), then run:
+
+```console
+python -m pip install flagquantum
+```
+
+Installing from source? Follow the short setup in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 To build a CPU or GPU environment with QSteed and optional JAX, follow the
 [container guide](docker/dev/README.md).

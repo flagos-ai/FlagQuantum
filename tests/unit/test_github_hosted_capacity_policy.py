@@ -13,7 +13,7 @@ buckets below, and this module holds that partition still. The pull-request or
 branch scope prevents an unrelated older run from serializing a newer run;
 the organisation's 20-runner pool remains the aggregate ceiling.
 
-Five invariants:
+Six invariants:
 
 1. Every GitHub-hosted Ubuntu job joins one of the buckets, and every bucket
    is used: an unused bucket is a ceiling lower than the comment claims, and
@@ -37,8 +37,9 @@ Five invariants:
    because its legs build container images and serializing them all would cost
    more than the slots are worth. It keeps cancelling a superseded run of `main`:
    a superseded container build is superseded work, and no merge gate reads it.
-   `cd.yml` is out of scope: it publishes on a release and holds one job, so it
-   cannot occupy more than one runner.
+6. `cd.yml` runs only for a release, but its cross-platform wheel matrix is
+   still capped at four concurrent builders. Together with the one sdist build,
+   a release can hold at most five runners after validation completes.
 """
 
 from __future__ import annotations
@@ -439,3 +440,12 @@ def test_the_container_matrix_does_not_land_all_at_once() -> None:
             "the container matrix is not capped, so one push to main holds a "
             "runner per variant"
         )
+
+
+def test_the_release_matrix_leaves_capacity_for_other_repositories() -> None:
+    jobs = _document("cd.yml")["jobs"]
+    wheel_strategy = jobs["build-wheels"]["strategy"]
+    wheel_parallelism = wheel_strategy["max-parallel"]
+
+    assert wheel_parallelism == 4
+    assert wheel_parallelism + 1 <= 5  # one concurrent sdist build
