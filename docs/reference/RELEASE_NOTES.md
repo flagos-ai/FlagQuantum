@@ -19,6 +19,17 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 - No changes yet.
 
+## 0.3.0rc3 (2026-10-10)
+
+- Corrected the cross-platform Stable ABI release build after rc2 validation:
+  Linux x86_64, macOS arm64, and Windows amd64 now each produce and test one
+  `cp310-abi3` wheel for the supported Python 3.10 through 3.12 range.
+- Made the native CPU extension portable to MSVC, including Stable ABI flag
+  propagation, OpenMP SIMD compilation, and portable bit lookup, without
+  changing the public Python API or the supported PyTorch runtime range.
+- Kept `0.3.0rc2` immutable. rc3 is the release candidate that includes the
+  verified macOS arm64 and Windows amd64 wheel pipeline corrections.
+
 ## 0.3.0rc2 (2026-10-10)
 
 - Migrated the native CPU extension to CPython's limited API and PyTorch's
