@@ -55,6 +55,23 @@ if TORCH_USES_OPENMP:
     )
 
 
+def _configure_msvc_environment() -> None:
+    """Give cl.exe its required flags independently of packaging internals."""
+
+    configured = os.environ.get("CL", "").strip()
+    configured_flags = configured.split()
+    missing = [flag for flag in CPP_FLAGS if flag not in configured_flags]
+    os.environ["CL"] = " ".join(part for part in (configured, *missing) if part)
+
+
+if os.name == "nt":
+    # MSVC reads CL itself and prepends its contents to every compiler command.
+    # This public compiler interface is the fallback for PyTorch 2.10's
+    # non-Ninja wrapper, whose post-arguments are bypassed by current
+    # setuptools' MSVC Compiler implementation.
+    _configure_msvc_environment()
+
+
 def _normalize_macho_uuid(path: Path) -> None:
     """Replace a thin Mach-O UUID with a deterministic content-derived UUID."""
 
@@ -79,31 +96,6 @@ def _normalize_macho_uuid(path: Path) -> None:
 
 class ReproducibleBuildExtension(BuildExtension):
     """Keep compiled wheels byte-reproducible on Mach-O platforms."""
-
-    def build_extensions(self) -> None:
-        if self.compiler.compiler_type == "msvc":
-            # PyTorch 2.10's non-Ninja MSVC wrapper can drop an extension's
-            # extra_compile_args before spawning cl.exe.  Wrap the public spawn
-            # hook so the actual compiler command receives the required flags.
-            # This deliberately avoids setuptools' version-specific private
-            # compile_options attributes, which no longer exist in its current
-            # MSVC Compiler implementation.
-            original_spawn = self.compiler.spawn
-
-            def spawn(command: list[str], **kwargs: Any) -> Any:
-                executable = os.path.basename(str(command[0])).lower()
-                if executable in {"cl", "cl.exe"}:
-                    command = list(command)
-                    command.extend(flag for flag in CPP_FLAGS if flag not in command)
-                return original_spawn(command, **kwargs)
-
-            self.compiler.spawn = spawn
-            try:
-                super().build_extensions()
-            finally:
-                self.compiler.spawn = original_spawn
-            return
-        super().build_extensions()
 
     def build_extension(self, ext: Any) -> None:
         super().build_extension(ext)
@@ -143,10 +135,9 @@ setup(
                 "flagquantum/simulation/native_cpu/csrc/rotation_adjoint.cpp",
                 "flagquantum/simulation/native_cpu/csrc/module.cpp",
             ],
-            # BuildExtension's keyed form reliably forwards host flags on
-            # Windows as well as POSIX.  The plain list was dropped by the
-            # MSVC wrapper in the release wheel build, leaving PyTorch's C++17
-            # headers to be compiled in the compiler's older default mode.
+            # Keep the keyed form as the normal PyTorch forwarding route.  On
+            # Windows the CL compiler environment above independently carries
+            # the same flags for packaging stacks that bypass post-arguments.
             extra_compile_args={"cxx": CPP_FLAGS},
             extra_link_args=LINK_FLAGS,
             py_limited_api=True,

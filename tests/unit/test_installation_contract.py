@@ -164,7 +164,6 @@ def test_cibuildwheel_builds_one_abi3_wheel_against_the_stable_torch_abi() -> No
     assert '"/std:c++17"' in setup_configuration
     assert "py_limited_api=True" in setup_configuration
     assert '"py_limited_api": "cp310"' in setup_configuration
-    assert 'self.compiler.compiler_type == "msvc"' in setup_configuration
-    assert "original_spawn = self.compiler.spawn" in setup_configuration
-    assert 'executable in {"cl", "cl.exe"}' in setup_configuration
-    assert "self.compiler.spawn = original_spawn" in setup_configuration
+    assert 'os.environ.get("CL", "")' in setup_configuration
+    assert 'os.environ["CL"] =' in setup_configuration
+    assert "_configure_msvc_environment()" in setup_configuration
