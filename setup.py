@@ -80,6 +80,18 @@ def _normalize_macho_uuid(path: Path) -> None:
 class ReproducibleBuildExtension(BuildExtension):
     """Keep compiled wheels byte-reproducible on Mach-O platforms."""
 
+    def build_extensions(self) -> None:
+        if self.compiler.compiler_type == "msvc":
+            # PyTorch 2.10's non-Ninja MSVC wrapper can drop an extension's
+            # extra_compile_args before spawning cl.exe.  Put the required
+            # language level and Stable ABI defines in the compiler's base
+            # option lists as well, so source installs and release wheels use
+            # them even when that wrapper loses its post-arguments.
+            for attribute in ("compile_options", "compile_options_debug"):
+                options = getattr(self.compiler, attribute)
+                options.extend(flag for flag in CPP_FLAGS if flag not in options)
+        super().build_extensions()
+
     def build_extension(self, ext: Any) -> None:
         super().build_extension(ext)
         if sys.platform == "darwin":
