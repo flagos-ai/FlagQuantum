@@ -480,7 +480,7 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines nineteen jobs:
+The checked-in `ci.yml` defines twenty jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
@@ -522,6 +522,9 @@ The checked-in `ci.yml` defines nineteen jobs:
   newest, so a declared lower bound is exercised rather than assumed;
 - `package`: wheel/sdist construction, forbidden-content inspection, and a
   commit/environment/checksum manifest;
+- `release-wheel-platform`: the exact release-wheel route on macOS arm64 and
+  Windows amd64, including native compilation, runtime smoke tests, repaired
+  wheel inspection, and uploadable-artifact verification;
 - `distributed-cpu`: the `pr-distributed` tier — CPU distributed semantics and
   release-contract checks — run separately from the core matrix;
 - `coverage-shard`: eight deterministic, duration-balanced partitions of the

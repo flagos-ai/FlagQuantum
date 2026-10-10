@@ -721,6 +721,45 @@ jobs:
           name: flagquantum-distributions-${{ github.sha }}
           path: dist/
 
+  release-wheel-platform:
+    # Linux is exercised by `package`; these are the two native toolchains that
+    # cannot be represented by an Ubuntu source build.  Keeping the exact
+    # cibuildwheel route in pull-request CI prevents a release tag from being
+    # the first time MSVC or the macOS artifact verifier is exercised.
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            artifact: macos-arm64
+            identifier: cp310-macosx_arm64
+          - os: windows-2022
+            artifact: windows-amd64
+            identifier: cp310-win_amd64
+    # Reuse an existing light bucket rather than increasing the repository's
+    # share of the organisation-wide runner pool.
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and test the release wheel
+        uses: pypa/cibuildwheel@v4.3.0
+        with:
+          only: ${{ matrix.identifier }}
+          output-dir: wheelhouse
+      - name: Verify release wheel contents
+        run: python tools/verify_distribution_artifacts.py wheelhouse
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flagquantum-${{ matrix.artifact }}-${{ github.sha }}
+          path: wheelhouse/
+
   distributed-cpu:
     runs-on: ubuntu-latest
     # One of the sixteen GitHub-hosted buckets -- see the capacity note above.

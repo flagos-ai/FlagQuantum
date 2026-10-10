@@ -88,6 +88,43 @@ def test_release_build_reuses_the_validated_torch_environment() -> None:
     assert "--no-isolation" in build
 
 
+def test_release_wheel_jobs_provision_the_artifact_verifier() -> None:
+    workflow = _workflow(".github/workflows/cd.yml")
+    steps = workflow["jobs"]["build-wheels"]["steps"]
+
+    setup_python = [
+        step
+        for step in steps
+        if str(step.get("uses", "")).startswith("actions/setup-python")
+    ]
+    assert len(setup_python) == 1
+    assert setup_python[0]["with"]["python-version"] == "3.12"
+
+    verify = next(step for step in steps if step.get("name") == "Verify wheel contents")
+    assert verify["run"].startswith("python ")
+
+
+def test_pull_request_ci_builds_native_release_wheels() -> None:
+    workflow = _workflow(".github/workflows/ci.yml")
+    job = workflow["jobs"]["release-wheel-platform"]
+    matrix = job["strategy"]["matrix"]["include"]
+
+    assert {
+        (entry["os"], entry["artifact"], entry["identifier"]) for entry in matrix
+    } == {
+        ("macos-14", "macos-arm64", "cp310-macosx_arm64"),
+        ("windows-2022", "windows-amd64", "cp310-win_amd64"),
+    }
+    assert any(
+        str(step.get("uses", "")).startswith("pypa/cibuildwheel@")
+        for step in job["steps"]
+    )
+    assert any(
+        step.get("run") == "python tools/verify_distribution_artifacts.py wheelhouse"
+        for step in job["steps"]
+    )
+
+
 def test_release_validation_lanes_are_parallel_and_dependency_complete() -> None:
     workflow = _workflow(".github/workflows/cd.yml")
     validate = workflow["jobs"]["validate"]
@@ -125,5 +162,18 @@ def test_cibuildwheel_builds_one_abi3_wheel_against_the_stable_torch_abi() -> No
     setup_configuration = (ROOT / "setup.py").read_text(encoding="utf-8")
     assert 'extra_compile_args={"cxx": CPP_FLAGS}' in setup_configuration
     assert '"/std:c++17"' in setup_configuration
+    assert '["/openmp:experimental"]' in setup_configuration
     assert "py_limited_api=True" in setup_configuration
     assert '"py_limited_api": "cp310"' in setup_configuration
+    assert 'os.environ.get("CL", "")' in setup_configuration
+    assert 'os.environ["CL"] =' in setup_configuration
+    assert "_configure_msvc_environment()" in setup_configuration
+
+
+def test_native_extension_avoids_compiler_specific_bit_builtins() -> None:
+    source = (
+        ROOT / "flagquantum/simulation/native_cpu/csrc/linear_permutation.h"
+    ).read_text(encoding="utf-8")
+
+    assert "__builtin_" not in source
+    assert "trailing_zero_count" in source

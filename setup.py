@@ -18,7 +18,7 @@ TORCH_USES_OPENMP = "ATen parallel backend: OpenMP" in torch.__config__.parallel
 
 if os.name == "nt":
     CPP_FLAGS = ["/O2", "/std:c++17", "/Brepro"] + (
-        ["/openmp"] if TORCH_USES_OPENMP else []
+        ["/openmp:experimental"] if TORCH_USES_OPENMP else []
     )
     LINK_FLAGS = ["/Brepro"]
 elif sys.platform == "darwin":
@@ -53,6 +53,23 @@ if TORCH_USES_OPENMP:
         if os.name == "nt"
         else "-DFQ_NATIVE_CPU_PARALLEL=1"
     )
+
+
+def _configure_msvc_environment() -> None:
+    """Give cl.exe its required flags independently of packaging internals."""
+
+    configured = os.environ.get("CL", "").strip()
+    configured_flags = configured.split()
+    missing = [flag for flag in CPP_FLAGS if flag not in configured_flags]
+    os.environ["CL"] = " ".join(part for part in (configured, *missing) if part)
+
+
+if os.name == "nt":
+    # MSVC reads CL itself and prepends its contents to every compiler command.
+    # This public compiler interface is the fallback for PyTorch 2.10's
+    # non-Ninja wrapper, whose post-arguments are bypassed by current
+    # setuptools' MSVC Compiler implementation.
+    _configure_msvc_environment()
 
 
 def _normalize_macho_uuid(path: Path) -> None:
@@ -118,10 +135,9 @@ setup(
                 "flagquantum/simulation/native_cpu/csrc/rotation_adjoint.cpp",
                 "flagquantum/simulation/native_cpu/csrc/module.cpp",
             ],
-            # BuildExtension's keyed form reliably forwards host flags on
-            # Windows as well as POSIX.  The plain list was dropped by the
-            # MSVC wrapper in the release wheel build, leaving PyTorch's C++17
-            # headers to be compiled in the compiler's older default mode.
+            # Keep the keyed form as the normal PyTorch forwarding route.  On
+            # Windows the CL compiler environment above independently carries
+            # the same flags for packaging stacks that bypass post-arguments.
             extra_compile_args={"cxx": CPP_FLAGS},
             extra_link_args=LINK_FLAGS,
             py_limited_api=True,
