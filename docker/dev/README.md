@@ -3,7 +3,7 @@
 The JAX-enabled variants' main Python environment installs FlagQuantum from the repository checkout,
 JAX, plotting and example dependencies, and the Braket, PennyLane, Quafu and
 Qiskit interoperability dependencies. A second environment in the same image
-installs FlagQuantum, QSteed and `flagquantum-compiler-qsteed`.
+installs FlagQuantum and `flagquantum-compiler-qsteed`.
 
 | Tag | Platform | Numerical stack |
 | --- | --- | --- |
@@ -12,16 +12,17 @@ installs FlagQuantum, QSteed and `flagquantum-compiler-qsteed`.
 | `cpu-no-jax` | Linux amd64 | CPU PyTorch and QSteed in one environment |
 | `cuda-amd64-no-jax` | Linux amd64 | PyTorch CUDA 13.0, Triton and QSteed in one environment |
 
-All four images target Linux AMD64. The pinned Quafu/QSteed dependencies do
+All four images target Linux AMD64. The pinned Quafu/compiler dependencies do
 not provide the required Linux ARM64 distributions, so these images do not
 claim native ARM64 support. On Apple Silicon, CPU images require AMD64
 emulation (`--platform linux/amd64`); GPU images require an NVIDIA Linux host.
 Compose selects AMD64 explicitly for every variant.
 
 The CUDA image includes CPU execution as well. Images install PyTorch 2.10.0;
-other dependency constraints come from `pyproject.toml`. QSteed is installed from
-the tested upstream commit in `requirements-qsteed.txt`, followed by the released
-adapter (in `/opt/qsteed` for JAX-enabled variants). The compiler remains independently replaceable through FlagQuantum's
+other dependency constraints come from `pyproject.toml`. The self-contained
+`flagquantum-compiler-qsteed==0.2.0` package is installed from PyPI (in
+`/opt/qsteed` for JAX-enabled variants); it vendors its verified compiler-only
+QSteed closure. The compiler remains independently replaceable through FlagQuantum's
 extension interface. No provider credentials are included.
 
 ## JupyterLab
@@ -71,7 +72,7 @@ docker run --rm --gpus all ghcr.io/flagos-ai/flagquantum-dev:cuda-amd64-no-jax \
 
 ## Use QSteed with JAX-enabled variants
 
-QSteed and pyquafu currently require NumPy < 2, while JAX 0.10 requires NumPy >= 2.
+The QSteed plugin currently requires NumPy < 2, while JAX 0.10 requires NumPy >= 2.
 They cannot share one Python environment. The image isolates the compiler and
 provides an explicit command:
 
