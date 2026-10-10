@@ -81,6 +81,28 @@ def test_release_build_reuses_the_validated_torch_environment() -> None:
     assert "--no-isolation" in build
 
 
+def test_release_validation_lanes_are_parallel_and_dependency_complete() -> None:
+    workflow = _workflow(".github/workflows/cd.yml")
+    validate = workflow["jobs"]["validate"]
+    lanes = validate["strategy"]["matrix"]["include"]
+
+    assert lanes == [
+        {"tier": "pr-default", "extras": "dev"},
+        {"tier": "pr-runtime", "extras": "dev"},
+        {"tier": "pr-distributed", "extras": "dev,jax"},
+    ]
+    assert validate["strategy"]["fail-fast"] is False
+    assert validate["timeout-minutes"] >= 45
+
+    for job_name in ("validate", "build-sdist", "build-wheels", "publish"):
+        checkout = next(
+            step
+            for step in workflow["jobs"][job_name]["steps"]
+            if str(step.get("uses", "")).startswith("actions/checkout")
+        )
+        assert checkout["with"]["ref"] == "${{ env.RELEASE_REF }}"
+
+
 def test_cibuildwheel_covers_supported_python_and_torch_abi() -> None:
     configuration = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
