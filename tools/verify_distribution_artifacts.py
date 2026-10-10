@@ -225,9 +225,11 @@ def artifact_errors(path: Path) -> tuple[str, ...]:
             for requirement in core_requirements
             if requirement.lower().startswith("tomli")
         )
-        if len(torch_requirements) != 1 or len(tomli_requirements) != 1 or len(
-            core_requirements
-        ) != 2:
+        if (
+            len(torch_requirements) != 1
+            or len(tomli_requirements) != 1
+            or len(core_requirements) != 2
+        ):
             errors.append(
                 "core dependencies must contain torch and the Python 3.10 tomli "
                 f"compatibility dependency, got {core_requirements}"
