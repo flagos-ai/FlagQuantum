@@ -363,7 +363,7 @@ def _broadcast_parameters(
             buffer.zero_()
             if bucket.pack_targets:
                 torch._foreach_copy_(bucket.pack_targets, bucket.pack_sources)
-            dist.all_gather_single(bucket.output_buffer, buffer)
+            dist.all_gather_into_tensor(bucket.output_buffer, buffer)
             byte_count += bucket.payload_bytes
             if bucket.unpack_targets:
                 torch._foreach_copy_(bucket.unpack_targets, bucket.unpack_sources)

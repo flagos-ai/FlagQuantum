@@ -1,6 +1,6 @@
 schema = "flagquantum_dependency_policy_v2"
 python = ["3.10", "3.11", "3.12"]
-core = ["torch>=2.13,<2.14", "tomli>=2.0,<3; python_version < '3.11'"]
+core = ["torch>=2.10,<2.11", "tomli>=2.0,<3; python_version < '3.11'"]
 
 [extras]
 # The development extra is the toolchain this repository installs to check
@@ -28,7 +28,7 @@ qiskit = ["qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1", "sympy>=1.13,<2"]
 pennylane = ["pennylane>=0.44.1,<0.46; python_version >= '3.11'"]
 examples = ["datasets>=2.20.0", "transformers>=4.40.0"]
 viz = ["matplotlib>=3.5.0"]
-invertible = ["torch>=2.13,<2.14"]
+invertible = ["torch>=2.10,<2.11"]
 all = ["pytest>=7.0.0,<10", "pytest-cov>=4.0.0,<8", "pytest-xdist>=3.0.0,<4", "ruff>=0.15.0,<0.17", "black>=24.1.0,<27", "mypy>=2.0.0,<3", "build>=1.2.0,<2", "pre-commit>=3.7.0,<5", "tomli>=2.0,<3; python_version < '3.11'", "pyyaml>=6.0,<7", "matplotlib>=3.5.0", "jax>=0.10,<0.11", "datasets>=2.20.0", "transformers>=4.40.0", "triton>=3.1,<4"]
 interop-all = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'", "cirq-core>=1.6.1,<1.8; python_version >= '3.11'", "pennylane>=0.44.1,<0.46; python_version >= '3.11'", "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'", "qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1", "sympy>=1.13,<2"]
 
@@ -69,14 +69,14 @@ core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "
 # below is that distribution's own `requires_dist`: stim 1.16.0 requires numpy,
 # jax 0.11.2 requires numpy>=2.1, matplotlib 3.11.2 requires numpy>=1.25,
 # pymatching 2.4.0 requires numpy, and the pinned qiskit requires numpy<3,>=1.17.
-# numpy itself is forbidden because torch 2.13 declares no numpy requirement at
+# numpy itself is forbidden because torch 2.10 declares no numpy requirement at
 # all: the core lane has no numpy, and every `cpu-core` leg reports `Failed to
 # initialize NumPy` while the suite still passes.
 [import_policy.guard_implications]
 numpy = ["jax", "matplotlib", "pymatching", "qiskit", "stim"]
 
 [tested]
-torch = ["2.13"]
+torch = ["2.10"]
 jax = ["0.10"]
 stim = ["1.16"]
 pymatching = ["2.3"]

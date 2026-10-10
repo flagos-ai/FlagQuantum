@@ -221,12 +221,13 @@ class KaiwuSampler:
         """Solve a FlagQuantum Z-basis Hamiltonian and return logical spins."""
 
         import numpy as np
+        import torch
 
         from .matrix import decode_hamiltonian_spins, encode_hamiltonian_as_ising
 
         encoding = encode_hamiltonian_as_ising(hamiltonian)
         auxiliary_spins = self.solve(encoding.matrix)
-        logical_spins = decode_hamiltonian_spins(auxiliary_spins)
+        logical_spins = decode_hamiltonian_spins(torch.as_tensor(auxiliary_spins))
         return np.asarray(logical_spins, dtype=np.int8)
 
     def solve_qubo(self, problem: QuboProblem) -> np.ndarray:

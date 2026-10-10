@@ -107,7 +107,7 @@ def test_cibuildwheel_covers_supported_python_and_torch_abi() -> None:
     configuration = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
     assert 'build = "cp310-* cp311-* cp312-*"' in configuration
-    assert "torch>=2.13,<2.14" in configuration
+    assert "torch>=2.10,<2.11" in configuration
     assert "torch==2.5.*" not in configuration
     assert "manylinux_2_28" in configuration
     assert "delocate-wheel" in configuration

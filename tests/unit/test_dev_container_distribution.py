@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_development_image_is_fail_closed_for_sc27_evidence() -> None:
     dockerfile = (ROOT / "docker/dev/Dockerfile").read_text(encoding="utf-8")
 
-    assert "ARG TORCH_VERSION=2.13.0" in dockerfile
+    assert "ARG TORCH_VERSION=2.10.0" in dockerfile
     assert 'org.flagquantum.image.class="development_only"' in dockerfile
     assert 'org.flagquantum.sc27.release_evidence="false"' in dockerfile
     assert "org.opencontainers.image.source" in dockerfile
@@ -28,7 +28,7 @@ def test_ghcr_workflow_publishes_cpu_and_cuda_variants() -> None:
     assert "target: no-jax" in workflow
     assert "variant: cpu" in workflow
     assert "variant: cuda-amd64" in workflow
-    assert "TORCH_VERSION=2.13.0" in workflow
+    assert "TORCH_VERSION=2.10.0" in workflow
     assert "https://download.pytorch.org/whl/cu130" in workflow
     assert "jax[cuda12]>=0.10,<0.11" in workflow
     assert "type=raw,value=${{ matrix.variant }}" in workflow

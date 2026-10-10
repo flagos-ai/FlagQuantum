@@ -94,7 +94,7 @@ To get your contribution reviewed and merged:
 
    ```bash
    python -m pip install --upgrade pip setuptools wheel
-   python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+   python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
    python -m pip install --no-build-isolation -e '.[dev]'
    ```
 

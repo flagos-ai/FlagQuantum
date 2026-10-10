@@ -25,7 +25,7 @@ def _select_rank(values: Any, *, max_bond: int | None, cutoff: float) -> int:
     rank = int(values_np.shape[-1])
     if float(cutoff) > 0:
         counts = (values_np > float(cutoff)).sum(axis=-1)
-        rank = max(1, int(counts.min()))
+        rank = max(1, int(np.min(counts, initial=rank)))
     if max_bond is not None:
         rank = min(rank, int(max_bond))
     return max(1, rank)

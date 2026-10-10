@@ -38,6 +38,15 @@ RUNNER = "socket_local_throughput"
 _STABILITY_THRESHOLD = 0.20
 
 
+def _process_affinity() -> set[int]:
+    """Return Linux process affinity with a portable import-time boundary."""
+
+    get_affinity = getattr(os, "sched_getaffinity", None)
+    if not callable(get_affinity):
+        raise RuntimeError("process CPU affinity requires Linux")
+    return {int(cpu) for cpu in get_affinity(0)}
+
+
 def parse_cpu_list(value: str) -> tuple[int, ...]:
     """Parse Linux taskset notation into an ordered, duplicate-free CPU tuple."""
 
@@ -161,7 +170,7 @@ def _worker_subprocess_main(payload_text: str) -> int:
                 "worker": worker,
                 "pid": os.getpid(),
                 "taskset_cpus": assigned_cpus,
-                "observed_main_thread_cpus": sorted(os.sched_getaffinity(0)),
+                "observed_main_thread_cpus": sorted(_process_affinity()),
             }
         ),
         flush=True,
@@ -424,7 +433,7 @@ def _validate_matrix(
         split_cpu_groups(cpus, count)
         if total_tasks < count or total_tasks % count:
             raise ValueError("total_tasks must be divisible by every worker count")
-    available = os.sched_getaffinity(0)
+    available = _process_affinity()
     unavailable = sorted(set(cpus) - available)
     if unavailable:
         raise ValueError(f"requested CPUs are outside process affinity: {unavailable}")

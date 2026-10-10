@@ -1,7 +1,7 @@
 # Python and dependency policy
 
 The executable support matrix is `dependency-policy.toml`. FlagQuantum core
-supports Python 3.10–3.12 and installs only PyTorch 2.13.x. The native extension
+supports Python 3.10–3.12 and installs only PyTorch 2.10.x. The native extension
 uses the PyTorch ATen ABI, so the package metadata rejects other PyTorch minor
 versions instead of allowing an installation that can fail with an unresolved
 native symbol. Every optional dependency

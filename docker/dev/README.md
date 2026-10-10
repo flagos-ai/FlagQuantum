@@ -18,7 +18,7 @@ claim native ARM64 support. On Apple Silicon, CPU images require AMD64
 emulation (`--platform linux/amd64`); GPU images require an NVIDIA Linux host.
 Compose selects AMD64 explicitly for every variant.
 
-The CUDA image includes CPU execution as well. Images install PyTorch 2.13.0;
+The CUDA image includes CPU execution as well. Images install PyTorch 2.10.0;
 other dependency constraints come from `pyproject.toml`. QSteed is installed from
 the tested upstream commit in `requirements-qsteed.txt`, followed by the released
 adapter (in `/opt/qsteed` for JAX-enabled variants). The compiler remains independently replaceable through FlagQuantum's

@@ -19,6 +19,25 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 - No changes yet.
 
+## 0.3.0rc2 (2026-10-10)
+
+- Rebuilt the release line against PyTorch `>=2.10,<2.11`, the minor line
+  supported by current Torch-FL. FlagQuantum's ATen extension remains tied to
+  one declared PyTorch minor ABI rather than accepting unverified future
+  versions.
+- Added release and dependency-bound checks for Python 3.10, 3.11 and 3.12.
+  Source builds of the native extension and the focused statevector, MPS,
+  autograd and training suite passed with PyTorch 2.10.0 on all three Python
+  versions during release preparation.
+- Updated distributed MPS and tensor-network parameter synchronization to the
+  public `torch.distributed.all_gather_into_tensor` API provided by PyTorch
+  2.10, replacing the unavailable legacy `all_gather_single` name.
+- This compatibility change does not itself certify a Torch-FL accelerator,
+  distributed transport or vendor runtime. Those paths retain their existing
+  capability and evidence boundaries.
+- Preserved the existing `0.3.0rc1` tag and release artifacts as immutable
+  records; rc2 is a new release candidate rather than a replacement tag.
+
 ## 0.3.0rc1 (2026-10-10)
 
 This release candidate packages the user-visible work completed since 0.2.0 for

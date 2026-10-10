@@ -251,7 +251,7 @@ def execute_rank_owned_tn_sgd_step(
             dtype=reference.dtype,
             device=reference.device,
         )
-        dist.all_gather_single(gathered, local_chunk, group=process_group)
+        dist.all_gather_into_tensor(gathered, local_chunk, group=process_group)
         for index, (parameter, owner) in enumerate(
             zip(parameters, owners, strict=True)
         ):

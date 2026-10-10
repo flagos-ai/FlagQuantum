@@ -85,7 +85,7 @@ def _execute_minimal_mps_owner_rank_parameter_vjp(
                 "gate_id": gate_id,
                 "gate_kind": gate_kind,
                 "wires": wires,
-                "shape": tuple(int(item) for item in tensor.shape),
+                "shape": tuple(map(int, tensor.shape)),
                 "dtype": str(tensor.dtype),
                 "bytes": int(tensor.nbytes),
             }
@@ -102,7 +102,7 @@ def _execute_minimal_mps_owner_rank_parameter_vjp(
                 "gradient_owner_rank": rank,
                 "site_range": (2 * rank, 2 * rank + 1),
                 "wires": wires,
-                "local_tensor_shape": tuple(int(item) for item in tensor.shape),
+                "local_tensor_shape": tuple(map(int, tensor.shape)),
                 "local_tensor_dtype": str(tensor.dtype),
                 "gradient_value": float(gradients[rank]),
                 "gradient_bytes": int(gradients[rank].nbytes),

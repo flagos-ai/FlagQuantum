@@ -35,21 +35,21 @@ Requires Python **3.10–3.12**. Choose the command for your computer.
 python -m pip install flagquantum
 ```
 
-PyTorch 2.13 does not publish macOS Intel (`x86_64`) wheels, so this
-FlagQuantum release cannot provide a working Intel macOS installation.
+The macOS release wheel is validated on Apple Silicon. Intel macOS is outside
+this release matrix.
 
 **Linux or Windows, CPU only:**
 
 ```console
-python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
 python -m pip install flagquantum
 ```
 
-FlagQuantum's compiled extension currently supports PyTorch 2.13.x. The first CPU
+FlagQuantum's compiled extension currently supports PyTorch 2.10.x. The first CPU
 install downloads about 200 MB of PyTorch. On a clean GitHub Ubuntu runner it
 took about 16 seconds; slower networks will take longer.
 
-**GPU:** Select a PyTorch 2.13.x command matching your accelerator from the
+**GPU:** Select a PyTorch 2.10.x command matching your accelerator from the
 [PyTorch installer](https://pytorch.org/get-started/locally/), then run:
 
 ```console
@@ -116,7 +116,7 @@ name is discovered automatically. See
 [repeated low-latency workspace execution](docs/guides/JIUDING.md#repeated-low-latency-workspace-execution).
 
 Direct Quafu submission is available in the 0.3 release line, including the
-`0.3.0rc1` prerelease. With the older 0.2.0 release, use the documented local
+`0.3.0rc2` prerelease. With the older 0.2.0 release, use the documented local
 QSteed compilation path instead: pass `compiler="qsteed"` after installing the
 separate
 [FlagQuantum Compiler QSteed](https://github.com/FlagQuantum/FlagQuantum-Compiler-QSteed)

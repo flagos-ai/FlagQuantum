@@ -115,7 +115,7 @@ def test_dependency_groups_keep_core_minimal_and_ranges_executable():
     project = pyproject["project"]
     assert project["requires-python"] == ">=3.10,<3.13"
     assert project["dependencies"] == [
-        "torch>=2.13,<2.14",
+        "torch>=2.10,<2.11",
         "tomli>=2.0,<3; python_version < '3.11'",
     ]
     extras = project["optional-dependencies"]

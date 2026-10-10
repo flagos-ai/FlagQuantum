@@ -107,7 +107,7 @@ jobs:
           build-args: |
             BASE_IMAGE=python:3.12-slim-bookworm
             EXTRAS=${{ matrix.extras }}
-            TORCH_VERSION=2.13.0
+            TORCH_VERSION=2.10.0
             TORCH_INDEX_URL=${{ matrix.torch-index }}
             JAX_SPEC=${{ matrix.jax-spec }}
             SOURCE_URL=https://github.com/${{ github.repository }}

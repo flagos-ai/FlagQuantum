@@ -466,7 +466,7 @@ def _install_single_rank_group(monkeypatch: pytest.MonkeyPatch) -> None:
     def all_gather(outputs: list[torch.Tensor], tensor: torch.Tensor, **_: Any) -> None:
         outputs[0].copy_(tensor)
 
-    def all_gather_single(
+    def all_gather_into_tensor(
         gathered: torch.Tensor, local: torch.Tensor, **_: Any
     ) -> torch.Tensor:
         gathered.copy_(local.reshape(-1))
@@ -474,7 +474,9 @@ def _install_single_rank_group(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(torch.distributed, "all_gather", all_gather)
     monkeypatch.setattr(
-        torch.distributed, "all_gather_single", all_gather_single, raising=False
+        torch.distributed,
+        "all_gather_into_tensor",
+        all_gather_into_tensor,
     )
 
 
