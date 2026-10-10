@@ -25,6 +25,7 @@ from flagquantum.remote.kaiwu import (
     new_receipt,
 )
 from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+from flagquantum.version import __version__ as flagquantum_version
 
 np = pytest.importorskip("numpy")
 
@@ -105,7 +106,7 @@ def _config() -> dict[str, object]:
         },
         "software": {
             "source_revision": "a" * 40,
-            "flagquantum_version": "0.2.0",
+            "flagquantum_version": flagquantum_version,
             "kaiwu_pytorch_plugin_revision": "b" * 40,
             "python_version": platform.python_version(),
             "torch_version": str(torch.__version__),
