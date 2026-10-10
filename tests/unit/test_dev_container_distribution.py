@@ -15,6 +15,18 @@ def test_development_image_is_fail_closed_for_sc27_evidence() -> None:
     assert "org.opencontainers.image.source" in dockerfile
 
 
+def test_qsteed_plugin_is_installed_without_an_external_qsteed_checkout() -> None:
+    requirements = (ROOT / "docker/dev/requirements-qsteed.txt").read_text(
+        encoding="utf-8"
+    )
+    smoke = (ROOT / "docker/dev/smoke.py").read_text(encoding="utf-8")
+
+    assert "flagquantum-compiler-qsteed==0.2.0" in requirements
+    assert "git+" not in requirements
+    assert "qsteed @" not in requirements
+    assert '("qsteed", "flagquantum-compiler-qsteed")' not in smoke
+
+
 def test_ghcr_workflow_publishes_cpu_and_cuda_variants() -> None:
     workflow = (ROOT / ".github/workflows/publish-dev-container.yml").read_text(
         encoding="utf-8"
