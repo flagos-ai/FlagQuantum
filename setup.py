@@ -36,6 +36,24 @@ else:
         ["-fopenmp"] if TORCH_USES_OPENMP else []
     )
 
+CPP_FLAGS.extend(
+    [
+        "/DPy_LIMITED_API=0x030A0000",
+        "/DTORCH_TARGET_VERSION=0x020A000000000000",
+    ]
+    if os.name == "nt"
+    else [
+        "-DPy_LIMITED_API=0x030A0000",
+        "-DTORCH_TARGET_VERSION=0x020A000000000000",
+    ]
+)
+if TORCH_USES_OPENMP:
+    CPP_FLAGS.append(
+        "/DFQ_NATIVE_CPU_PARALLEL=1"
+        if os.name == "nt"
+        else "-DFQ_NATIVE_CPU_PARALLEL=1"
+    )
+
 
 def _normalize_macho_uuid(path: Path) -> None:
     """Replace a thin Mach-O UUID with a deterministic content-derived UUID."""
@@ -66,6 +84,24 @@ class ReproducibleBuildExtension(BuildExtension):
         super().build_extension(ext)
         if sys.platform == "darwin":
             extension_path = Path(self.get_ext_fullpath(ext.name))
+            if TORCH_USES_OPENMP:
+                torch_openmp = Path(torch.__file__).parent / "lib" / "libomp.dylib"
+                openmp_install_name = subprocess.run(
+                    ("otool", "-D", str(torch_openmp)),
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.splitlines()[1]
+                subprocess.run(
+                    (
+                        "install_name_tool",
+                        "-change",
+                        openmp_install_name,
+                        "@rpath/libomp.dylib",
+                        str(extension_path),
+                    ),
+                    check=True,
+                )
             _normalize_macho_uuid(extension_path)
             subprocess.run(
                 ("codesign", "--force", "--sign", "-", str(extension_path)),
@@ -80,6 +116,7 @@ setup(
             [
                 "flagquantum/simulation/native_cpu/csrc/permutation.cpp",
                 "flagquantum/simulation/native_cpu/csrc/rotation_adjoint.cpp",
+                "flagquantum/simulation/native_cpu/csrc/module.cpp",
             ],
             # BuildExtension's keyed form reliably forwards host flags on
             # Windows as well as POSIX.  The plain list was dropped by the
@@ -87,7 +124,9 @@ setup(
             # headers to be compiled in the compiler's older default mode.
             extra_compile_args={"cxx": CPP_FLAGS},
             extra_link_args=LINK_FLAGS,
+            py_limited_api=True,
         )
     ],
     cmdclass={"build_ext": ReproducibleBuildExtension.with_options(use_ninja=False)},
+    options={"bdist_wheel": {"py_limited_api": "cp310"}},
 )

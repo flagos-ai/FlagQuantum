@@ -622,6 +622,8 @@ jobs:
             torch: "torch>=2.13,<2.14"
           - python: "3.12"
             torch: "torch>=2.13,<2.14"
+          - python: "3.12"
+            torch: "torch>=2.14,<2.15"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -674,7 +676,9 @@ jobs:
       - name: Build and test the publishable manylinux wheel
         uses: pypa/cibuildwheel@v4.3.0
         with:
-          only: cp312-manylinux_x86_64
+          # cp310-abi3 is the single wheel for every supported CPython.
+          # cibuildwheel builds it against torch 2.10 and tests it on 2.14.
+          only: cp310-manylinux_x86_64
           output-dir: wheelhouse
       - name: Verify publishable manylinux wheel contents
         run: python tools/verify_distribution_artifacts.py wheelhouse

@@ -41,15 +41,16 @@ FlagQuantum release cannot provide a working Intel macOS installation.
 **Linux or Windows, CPU only:**
 
 ```console
-python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+python -m pip install "torch>=2.13,<2.15" --index-url https://download.pytorch.org/whl/cpu
 python -m pip install flagquantum
 ```
 
-FlagQuantum's compiled extension currently supports PyTorch 2.13.x. The first CPU
-install downloads about 200 MB of PyTorch. On a clean GitHub Ubuntu runner it
-took about 16 seconds; slower networks will take longer.
+FlagQuantum's compiled extension uses PyTorch's Stable ABI and is tested with
+PyTorch 2.13.x and 2.14.x. The first CPU install downloads about 200 MB of
+PyTorch. On a clean GitHub Ubuntu runner it took about 16 seconds; slower
+networks will take longer.
 
-**GPU:** Select a PyTorch 2.13.x command matching your accelerator from the
+**GPU:** Select a PyTorch 2.13.x or 2.14.x command matching your accelerator from the
 [PyTorch installer](https://pytorch.org/get-started/locally/), then run:
 
 ```console

@@ -31,9 +31,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
 DIST_INFO = "flagquantum-0.2.0.dist-info"
-NATIVE_EXTENSION = (
-    "flagquantum/simulation/native_cpu/_C.cpython-312-x86_64-linux-gnu.so"
-)
+NATIVE_EXTENSION = "flagquantum/simulation/native_cpu/_C.abi3.so"
 
 RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "cd.yml"
 
@@ -44,7 +42,7 @@ def _fake_wheel(
     tmp_path: Path,
     *,
     native_extension: str | None,
-    torch_requirement: str = "torch>=2.13,<2.14",
+    torch_requirement: str = "torch>=2.13,<2.15",
 ) -> Path:
     """A minimal wheel that satisfies every artifact rule except the extension.
 
@@ -141,10 +139,27 @@ def test_distribution_rejects_an_abi_incompatible_torch_requirement(
     wheel = _fake_wheel(
         tmp_path,
         native_extension=NATIVE_EXTENSION,
-        torch_requirement="torch>=2.5,<2.14",
+        torch_requirement="torch>=2.5,<2.15",
     )
 
-    assert any("PyTorch 2.13 ABI" in error for error in artifact_errors(wheel))
+    assert any("PyTorch 2.13-2.14 range" in error for error in artifact_errors(wheel))
+
+
+def test_native_extension_uses_only_pytorch_stable_or_header_only_apis() -> None:
+    source_root = ROOT / "flagquantum" / "simulation" / "native_cpu" / "csrc"
+    sources = tuple(source_root.glob("*.cpp")) + tuple(source_root.glob("*.h"))
+    assert sources
+    forbidden = ("#include <ATen/", "#include <torch/extension.h>", "at::")
+
+    for source in sources:
+        contents = source.read_text(encoding="utf-8")
+        assert not [marker for marker in forbidden if marker in contents], source
+        torch_headers = re.findall(r"#include <(torch/[^>]+)>", contents)
+        assert not [
+            header
+            for header in torch_headers
+            if not header.startswith(("torch/csrc/stable/", "torch/headeronly/"))
+        ], source
 
 
 def test_distribution_requires_runtime_profiles_and_numerical_contract() -> None:
@@ -197,8 +212,7 @@ def test_release_matrix_requires_every_supported_wheel_and_one_sdist(
         "win_amd64",
     )
     artifacts = tuple(
-        tmp_path / f"flagquantum-0.2.0-{python}-{python}-{platform}.whl"
-        for python in ("cp310", "cp311", "cp312")
+        tmp_path / f"flagquantum-0.2.0-cp310-abi3-{platform}.whl"
         for platform in platforms
     ) + (tmp_path / "flagquantum-0.2.0.tar.gz",)
 
