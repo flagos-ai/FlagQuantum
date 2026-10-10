@@ -19,6 +19,23 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 - No changes yet.
 
+## 0.3.0rc2 (2026-10-10)
+
+- Migrated the native CPU extension to CPython's limited API and PyTorch's
+  Stable ABI. Each supported platform now ships one `cp310-abi3` wheel for
+  Python 3.10 through 3.12 instead of rebuilding the extension for every
+  interpreter minor.
+- Compiled release artifacts against the PyTorch 2.10 Stable ABI baseline and
+  validated them on the supported PyTorch `>=2.13,<2.15` runtime range. PyTorch
+  2.10 is a build baseline, not the user runtime dependency.
+- Updated development images to install the self-contained
+  `flagquantum-compiler-qsteed==0.2.0` package. The plugin vendors its verified
+  compiler-only closure and no longer requires cloning QSteed during image
+  builds.
+- Preserved the existing `v0.3.0rc1` tag and incomplete GitHub prerelease as an
+  immutable record. Its wheel build did not complete and no `0.3.0rc1`
+  distribution was uploaded to PyPI; rc2 is the corrected release candidate.
+
 ## 0.3.0rc1 (2026-10-10)
 
 This release candidate packages the user-visible work completed since 0.2.0 for
