@@ -18,7 +18,7 @@ TORCH_USES_OPENMP = "ATen parallel backend: OpenMP" in torch.__config__.parallel
 
 if os.name == "nt":
     CPP_FLAGS = ["/O2", "/std:c++17", "/Brepro"] + (
-        ["/openmp"] if TORCH_USES_OPENMP else []
+        ["/openmp:experimental"] if TORCH_USES_OPENMP else []
     )
     LINK_FLAGS = ["/Brepro"]
 elif sys.platform == "darwin":

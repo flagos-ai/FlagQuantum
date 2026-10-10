@@ -162,6 +162,7 @@ def test_cibuildwheel_builds_one_abi3_wheel_against_the_stable_torch_abi() -> No
     setup_configuration = (ROOT / "setup.py").read_text(encoding="utf-8")
     assert 'extra_compile_args={"cxx": CPP_FLAGS}' in setup_configuration
     assert '"/std:c++17"' in setup_configuration
+    assert '["/openmp:experimental"]' in setup_configuration
     assert "py_limited_api=True" in setup_configuration
     assert '"py_limited_api": "cp310"' in setup_configuration
     assert 'os.environ.get("CL", "")' in setup_configuration
