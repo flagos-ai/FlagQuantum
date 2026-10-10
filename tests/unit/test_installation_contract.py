@@ -167,3 +167,12 @@ def test_cibuildwheel_builds_one_abi3_wheel_against_the_stable_torch_abi() -> No
     assert 'os.environ.get("CL", "")' in setup_configuration
     assert 'os.environ["CL"] =' in setup_configuration
     assert "_configure_msvc_environment()" in setup_configuration
+
+
+def test_native_extension_avoids_compiler_specific_bit_builtins() -> None:
+    source = (
+        ROOT / "flagquantum/simulation/native_cpu/csrc/linear_permutation.h"
+    ).read_text(encoding="utf-8")
+
+    assert "__builtin_" not in source
+    assert "trailing_zero_count" in source
