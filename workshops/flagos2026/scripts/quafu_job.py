@@ -5,6 +5,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+
 import flagquantum as fq
 
 
@@ -23,14 +24,14 @@ def main():
         parser.error("shots must be a positive multiple of 1024")
     if not args.submit:
         print(
-            "Preview only: Bell circuit, compiler=qsteed, target="
+            "Preview only: Bell circuit, compiler=task-service, target="
             + args.target
             + ", shots="
             + str(args.shots)
         )
         return
-    if not os.getenv("QUAFU_API_TOKEN"):
-        parser.error("Set QUAFU_API_TOKEN outside the notebook/source")
+    if not os.getenv("QUAFU_API_KEY"):
+        parser.error("Set QUAFU_API_KEY outside the notebook/source")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     # Reserve the path before submission. An uncertain outcome must not be retried blindly.
     record = {
@@ -42,19 +43,28 @@ def main():
     }
     with args.output.open("x") as stream:
         json.dump(record, stream, indent=2)
-    result = fq.run(
-        fq.Circuit(2).h(0).cx(0, 1),
-        compiler="qsteed",
-        target=args.target,
-        shots=args.shots,
-        name="flagos2026_bell",
-    )
+    try:
+        result = fq.run(
+            fq.Circuit(2).h(0).cx(0, 1),
+            compiler=None,
+            target=args.target,
+            shots=args.shots,
+            name="flagos2026_bell",
+        )
+    except Exception as exc:
+        record.update(status="submission_error", error_type=type(exc).__name__)
+        args.output.write_text(json.dumps(record, indent=2), encoding="utf-8")
+        raise RuntimeError(
+            "Quafu submission failed. Check QUAFU_API_KEY, "
+            "QUAFU_TASK_SERVER_URL, and backend availability; reconcile the "
+            "platform task list before retrying."
+        ) from exc
     record.update(
         status="completed",
         task_id=str(result.provenance["task_id"]),
         counts=result.counts[0],
     )
-    args.output.write_text(json.dumps(record, indent=2))
+    args.output.write_text(json.dumps(record, indent=2), encoding="utf-8")
     print(json.dumps(record, indent=2))
 
 

@@ -17,7 +17,8 @@ and available devices. It checks whether credentials are present without display
 It does not contact a cloud service or submit a task.
 
 Look for a successful `cpu_check`. The `source` field should point to the course's copy of FlagQuantum.
-Missing CUDA, a Quafu token, or the QSteed plugin does not prevent you from completing the local exercises.
+The `source_commit` field should match the revision announced by the instructor. Missing CUDA,
+Quafu credentials, or the optional QSteed plugin does not prevent you from completing the local exercises.
 Ask the instructor to help configure these before trying the corresponding remote exercise.
 
 Open notebook 01 and select the **FlagQuantum Workshop** kernel, or the equivalent kernel supplied by the instructor.
@@ -42,6 +43,25 @@ and activate it using `.venv\Scripts\Activate.ps1` in PowerShell before running 
 
 In Jupyter, select **FlagQuantum Workshop** as the notebook kernel.
 If imports fail or show an unexpected version, check the kernel first: it may be using a different Python installation.
+Notebook 01 prints the imported package path, version, and source commit without installing or replacing the package.
+
+If a kernel says `Disconnected`, select **FlagQuantum Workshop** again and restart it before running the notebook.
+Use a clean kernel for each batch validation so imports and environment variables do not leak from an earlier run.
+
+## Deploy only the workshop directory
+
+The notebooks support both a full Git checkout and a deployment containing only the `flagos2026` directory.
+For a source-based event image, install the reviewed checkout in editable mode and ensure its root is ahead of
+site-packages. A Liangzhi Cloud deployment that checks out FlagQuantum at `/share/project/flagquantum` can use:
+
+```bash
+export PYTHONPATH=/share/project/flagquantum${PYTHONPATH:+:$PYTHONPATH}
+export FLAGQUANTUM_SOURCE_COMMIT="$(git -C /share/project/flagquantum rev-parse HEAD)"
+```
+
+Put these settings in the kernel or environment startup configuration, not in notebook cells. If the event image
+uses a wheel instead, record the exact wheel version and commit in `FLAGQUANTUM_SOURCE_COMMIT`. Do not run
+`pip install flagquantum` inside a notebook: that can silently replace the version being tested.
 
 ## Before submitting a Jiuding job
 
@@ -55,9 +75,10 @@ See the [Jiuding guide](../../docs/guides/JIUDING.md) for configuration details.
 
 ## Before submitting a Quafu task
 
-The environment needs a compatible `flagquantum-compiler-qsteed` plugin and a valid `QUAFU_API_TOKEN`.
-The instructor should install the plugin and supply credentials through the platform's secret settings or process environment.
-Do not type tokens into notebook cells or commit them to Git.
+The hardware notebooks use the current Quafu Task API with server-side compilation. They read `QUAFU_API_KEY`
+and, when a non-default endpoint is required, `QUAFU_TASK_SERVER_URL` from the process environment. The instructor
+should supply these through the platform's secret settings. Do not type keys into notebook cells, print them, or
+commit them to Git. The optional QSteed plugin and legacy `QUAFU_API_TOKEN` are not required for notebooks 05 and 13.
 See the [Quafu guide](../../docs/guides/QUAFU_BACKEND.md) for details.
 
 ## When you finish
