@@ -30,7 +30,7 @@ marker filter and the paths `tests/unit` produced the unit-tier list in
 `/tmp/probe_any_plugin.py`'s `/tmp/audit_run.txt`.
 
 This proposal is a companion to
-`docs/development/API_CHANGE_PROPOSAL_067_OPERATOR_MODIFIERS.md`, not a
+`docs/development/API_CHANGE_PROPOSAL_075_OPERATOR_MODIFIERS.md`, not a
 replacement for it, and "Problem" section 14 measures exactly what 067 already
 covers so that the two can be read as one design. The repository's
 `docs/development/PUBLIC_API_PROTECTION.md` is the policy this document follows.

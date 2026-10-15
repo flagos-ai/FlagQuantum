@@ -446,7 +446,7 @@ surface rather than absent. `evolve` is the genuinely missing name, and the reas
 it was not built here is recorded in the row rather than left to be rediscovered:
 the integrators behind `flagquantum.lindblad` accept a constant generator with no
 time argument, so a time-dependent schedule is a new contract and not a reuse,
-which is what `API_CHANGE_PROPOSAL_065` asks to change. The four rows share one
+which is what `API_CHANGE_PROPOSAL_073` asks to change. The four rows share one
 limit worth naming, because it explains why a reader could believe all four were
 absent: none of `draw`, `translate`, or `evolve` is among the thirty-six root
 exports, so each is reachable only by its own module path, and the parity row is

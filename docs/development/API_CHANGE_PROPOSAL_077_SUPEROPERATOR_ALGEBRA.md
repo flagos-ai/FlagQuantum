@@ -1,4 +1,4 @@
-# API Change Proposal 069: A superoperator algebra in `flagquantum.operators`
+# API Change Proposal 077: A superoperator algebra in `flagquantum.operators`
 
 ## Status
 
@@ -208,7 +208,7 @@ compares the classified symbol set against the baseline plus the authorized
 additions, so a declared symbol without the matching authorization fails, and
 `test_every_stable_migration_destination_is_importable` imports every declared
 symbol, so an authorization without the declaration fails. API Change Proposal
-067 measured both negative controls on this same file by patching it and
+075 measured both negative controls on this same file by patching it and
 restoring it; this proposal reuses that result rather than repeating it.
 
 `flagquantum/operators` is a `stable_extensions` entry and not a Stable Core

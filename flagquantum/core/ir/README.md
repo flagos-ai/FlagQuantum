@@ -61,7 +61,7 @@ this package except the public `__init__.py`, so a refusal that moves into a
 level package is still checked against the declared vocabulary.
 
 Read `docs/architecture/decisions/ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md` and
-`docs/development/API_CHANGE_PROPOSAL_062_MULTI_LEVEL_IR_PHASE_4_ACTIVATION.md`
+`docs/development/API_CHANGE_PROPOSAL_072_MULTI_LEVEL_IR_PHASE_4_ACTIVATION.md`
 before widening this boundary.
 
 ## Shortest path for a typical change

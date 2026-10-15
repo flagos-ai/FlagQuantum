@@ -1,4 +1,4 @@
-# API Change Proposal 062: Multi-Level IR Phase 4 activation for hybrid and dynamic execution
+# API Change Proposal 072: Multi-Level IR Phase 4 activation for hybrid and dynamic execution
 
 ## Status
 
@@ -16,7 +16,7 @@ whose own `Status` is updated to `Approved` in the same change. That is a
 consequence rather than a second decision: `IR-007` fixes the Phase 4 scope this
 proposal activates, both
 [the `DynamicCircuit` promotion proposal](API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md)
-and [`API_CHANGE_PROPOSAL_066`](API_CHANGE_PROPOSAL_066_DYNAMIC_CIRCUIT_V1.md)
+and [`API_CHANGE_PROPOSAL_074`](API_CHANGE_PROPOSAL_074_DYNAMIC_CIRCUIT_V1.md)
 state that their scope "is ratified by `IR-007`", and `IR-007`'s own background
 records an unratified scope as a failure mode. Activating the phase without its
 scope would leave every downstream row citing a `Proposed` authority.

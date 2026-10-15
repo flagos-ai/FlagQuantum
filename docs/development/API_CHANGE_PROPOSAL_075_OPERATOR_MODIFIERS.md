@@ -1,4 +1,4 @@
-# API Change Proposal 067: Control and adjoint modifiers, and an operator registration table
+# API Change Proposal 075: Control and adjoint modifiers, and an operator registration table
 
 ## Status
 
@@ -164,7 +164,7 @@ $ grep -n "differentiation" flagquantum/algorithms/core.py | head -3
 ```
 
 That option selects a *gradient* method and is scope of the plan row W2-03 and
-`API_CHANGE_PROPOSAL_068_SV_GRADIENT_CONTRACT.md`, not of this document. The
+`API_CHANGE_PROPOSAL_076_SV_GRADIENT_CONTRACT.md`, not of this document. The
 schema field is the third thing, and it is the one this proposal extends.
 
 **Re-measured.** Revision 1 called the schema field "a three-value metadata
@@ -1185,7 +1185,7 @@ it and observing a test fail.
   existing opcode, and any form of reloading the manifest at import time.
 - The adjoint differentiation option in `flagquantum/algorithms/core.py:191` and
   the reverse-mode sweepers. Those are the plan row W2-03 and
-  `API_CHANGE_PROPOSAL_068_SV_GRADIENT_CONTRACT.md`. This proposal reuses the
+  `API_CHANGE_PROPOSAL_076_SV_GRADIENT_CONTRACT.md`. This proposal reuses the
   word and does not touch the machinery.
 - Fermion and boson operator algebra. That is W6-01, which reads this document as
   a dependency; it extends the vocabulary fixed here and is not this proposal's

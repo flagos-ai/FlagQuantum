@@ -3,7 +3,7 @@
 Status: Approved
 Date: 2026-10-06
 Ratified: 2026-10-08 by the repository owner, together with the Phase 4 activation
-in [`API_CHANGE_PROPOSAL_062`](../../development/API_CHANGE_PROPOSAL_062_MULTI_LEVEL_IR_PHASE_4_ACTIVATION.md).
+in [`API_CHANGE_PROPOSAL_072`](../../development/API_CHANGE_PROPOSAL_072_MULTI_LEVEL_IR_PHASE_4_ACTIVATION.md).
 That proposal admits the internal level structure and names this document as the
 ratified scope, so the two carry one decision rather than two.
 Applicable phase: Phase 4 functions, classical control, and dynamic migration.
@@ -234,6 +234,6 @@ verifier taxonomy, and pass contract in Decisions 1-8 are unchanged.
       `__init__.py` holding the former module's contents and the glob added to
       `team-ownership.toml` protected paths beside it.
 - [x] Repository owner approves the Phase 4 scope. (2026-10-08, together with the
-      Phase 4 activation in `API_CHANGE_PROPOSAL_062`.)
+      Phase 4 activation in `API_CHANGE_PROPOSAL_072`.)
 - [ ] Compiler and runtime owners confirm the pass-contract and defect-semantics
       details during review.

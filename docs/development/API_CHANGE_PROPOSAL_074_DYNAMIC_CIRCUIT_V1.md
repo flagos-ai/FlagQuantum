@@ -1,4 +1,4 @@
-# API Change Proposal 066: Typed classical control for the dynamic-circuit path
+# API Change Proposal 074: Typed classical control for the dynamic-circuit path
 
 ## Status
 

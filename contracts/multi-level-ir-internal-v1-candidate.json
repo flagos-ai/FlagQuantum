@@ -3,7 +3,7 @@
   "version": "0.1",
   "status": "implementation_authorized",
   "owner": "core",
-  "approval_basis": "docs/development/API_CHANGE_PROPOSAL_062_MULTI_LEVEL_IR_PHASE_4_ACTIVATION.md",
+  "approval_basis": "docs/development/API_CHANGE_PROPOSAL_072_MULTI_LEVEL_IR_PHASE_4_ACTIVATION.md",
   "decision": "docs/architecture/decisions/IR_007_PHASE_4_HYBRID_DYNAMIC_SCOPE.md",
   "taxonomy_source": "docs/architecture/decisions/IR_006_PHASE1_REVERSIBLE_SCOPE.md",
   "existing_authorities": {

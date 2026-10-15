@@ -1,4 +1,4 @@
-# API Change Proposal 068: The statevector adjoint gradient contract
+# API Change Proposal 076: The statevector adjoint gradient contract
 
 ## Status
 
@@ -181,7 +181,7 @@ cannot identify.
 `cudaq-parity-pr-plan.md:944` its out-of-scope list states, in the plan's own
 words, that adjoint gradients were not implemented, that the half-sentence
 about adding them was moved out of that row and left to `W2-03` in
-`API_CHANGE_PROPOSAL_068`, and that what the row delivered is the live autograd
+`API_CHANGE_PROPOSAL_076`, and that what the row delivered is the live autograd
 graph of the existing integrators, whose reverse cost grows as a constant
 multiple of the forward count rather than being adjoint's one forward and one
 reverse. The statevector adjoint is a different object and this proposal must
@@ -840,7 +840,7 @@ No root export is added, no `docs/public_api_v1.json` entry is added, and no
 signature, default, or serialized field in the Stable Core changes. `adjoint.py`
 gains a documented reachability path inside the Simulation namespace it already
 lives in; the zero new public name count is the same posture
-`API_CHANGE_PROPOSAL_065` took for a different row. A user-facing
+`API_CHANGE_PROPOSAL_073` took for a different row. A user-facing
 `fq.adjoint_gradient`-shaped entry point is refused here because the arithmetic
 is selected by execution policy rather than called directly, and exposing it as
 a callable would create a second way to obtain one gradient with no rule
@@ -952,7 +952,7 @@ case-insensitively; the single `Reverse` hit is `MPSReverseCheckpointPolicy` at
 line 195, which is an MPS checkpoint field and not a statevector adjoint
 surface, and `flagquantum.training` at line 140 is a namespace entry, not a
 gradient surface. Both contract files are therefore unchanged by this proposal,
-which is the same finding `API_CHANGE_PROPOSAL_065` reported for its own entry
+which is the same finding `API_CHANGE_PROPOSAL_073` reported for its own entry
 points.
 
 The names this proposal touches are the six in
