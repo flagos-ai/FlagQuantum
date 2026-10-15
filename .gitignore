@@ -76,3 +76,9 @@ benchmarks/results/smoke/hardware-certification-*/
 
 # Private research manuscripts and submission plans are excluded from publication.
 /paper/
+
+# Local scratch space: throwaway probes, mutation harnesses, and one-off edit
+# scripts written while investigating a claim. They are working material, not
+# evidence, and none has ever been tracked. Leaving this unignored means a bare
+# `git add -A` sweeps ~140 of them into whichever commit is next.
+/.scratch/
