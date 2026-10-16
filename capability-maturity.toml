@@ -135,6 +135,26 @@ integration_tests = "tests/test_backends.py"
 hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/architecture/RUNTIME_ARCHITECTURE.md"
 
+[capabilities.research_capability_services]
+title = "Research capability discovery, execution, and evidence"
+summary = "Discover and execute the bounded local ground-state research slice through one transport-neutral service contract with preflight, scientific validation, and tamper-evident evidence."
+category = "simulation_and_training"
+user_goals = ["Discover an executable scientific operation", "Preflight a bounded VQE request before numerical work", "Execute VQE with exact-reference and energy-variance validation", "Audit a transport-neutral evidence bundle"]
+public_apis = ["flagquantum.services.search_research_capabilities", "flagquantum.services.describe_research_capability", "flagquantum.services.estimate_research_capability", "flagquantum.services.validate_research_capability_input", "flagquantum.services.execute_research_capability", "flagquantum.services.validate_research_evidence", "flagquantum.services.list_research_schemas", "flagquantum.services.describe_research_schema"]
+runtime_modes = ["statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md"
+documentation = "flagquantum/services/README.md"
+level = "production_supported"
+owner = "FlagQuantum services maintainers"
+limitations = "Approved namespace-scoped service contract at production-supported maturity for a bounded local CPU slice; it is not a Stable Core root API. A thin external adapter may call the public service, but FlagQuantum remains the only owner of its domain semantics. The executable scope is exactly three local CPU operations: two-qubit real Pauli-sum VQE in the fixed weight-one sector, exact diagonalization in that sector, and energy-variance validation of a normalized full statevector. Inputs use Hartree coefficients and wire_0_is_leftmost ordering. The VQE path uses the existing single-excitation ansatz and bounded Adam workflow; it is deterministic and records no random seed because this slice performs no stochastic sampling. VQE defaults to flagquantum-native and may explicitly select the optional local qiskit-aer or pennylane-lightning adapters. Multiple providers require separate fallback authorization; fallback advances only past an unknown or locally unavailable adapter, never an execution failure or scientific-validation failure, and all route assessments and attempts are content-hashed. Remote targets, QPUs, shot execution, noise models, broader Hamiltonians, alternate ansatzes, alternate optimizers, persistence, tenant control, natural-language routing, MCP dependencies, and every fallback axis outside that unavailable-only provider policy are unsupported. Evidence hashes detect accidental or untrusted mutation but are not signatures or runtime certification."
+focused_tests = "tests/team/services/test_research_execution.py"
+integration_tests = "tests/optional/test_research_external_provider_parity.py"
+hardware_evidence = ".github/workflows/ci.yml"
+operational_runbook = "flagquantum/services/README.md"
+
 [capabilities.gradient_methods]
 title = "One gradient entry point with a reported method"
 summary = "Differentiate a parameterized circuit through any exact execution mode without choosing an executor-specific route, and read which method produced the derivative."

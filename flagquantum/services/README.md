@@ -39,6 +39,32 @@ never falls back to another provider. `exact_sector_reference(...)` is a
 separate dense reference operation so its evidence cannot be confused with the
 variational simulation.
 
+The experimental research-capability surface adds deterministic discovery and
+preflight over that bounded workflow. It currently describes exactly three
+operation identities: `ground_state.solve.vqe`, `ground_state.solve.exact`, and
+`validate.energy_variance`. `search_research_capabilities(...)` accepts only
+structured filters; it does not parse natural language or make research
+decisions. Validation and estimation run before numerical work and support only
+the existing two-qubit local CPU scope. Target facts and fallback authorization
+remain owned by Core and Runtime; MCP and other protocol adapters remain outside
+this repository.
+
+The first M3 routing slice accepts an explicit `provider_order` for
+`ground_state.solve.vqe`. A list with more than one provider is rejected unless
+`allow_provider_fallback=True`, and authorized fallback advances only past an
+unknown or locally unavailable provider. Execution failures and scientific
+validation failures never trigger substitution. The Evidence Bundle retains the
+ordered route, every attempt, the selected provider, and whether fallback was
+used. Only `flagquantum-native` is installed today; provider registration is not
+a public mutable API.
+
+`list_research_schemas()` and `describe_research_schema(schema_id)` publish the
+installed JSON Schema Draft 2020-12 documents for those operations. They are
+resource lookups, not additional scientific operations. An edge adapter must
+serve these documents from installed FlagQuantum and must not keep a copied
+schema catalog. Unknown schema identities fail closed, and each lookup returns
+an isolated copy so an adapter cannot mutate process-wide contract state.
+
 ```bash
 python -m pytest tests/team/services tests/test_service_preflight.py -q
 python tools/check_architecture.py

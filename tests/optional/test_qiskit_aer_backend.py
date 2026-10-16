@@ -17,6 +17,15 @@ from flagquantum.ecosystem.extensions import (
     ExtensionRegistry,
 )
 from flagquantum.ecosystem.qiskit import QiskitAerBackend, run
+from flagquantum.ecosystem.qiskit.research_provider import (
+    QiskitAerResearchVQEProvider,
+)
+from flagquantum.services import (
+    GroundStateOptimizer,
+    GroundStateVQERequest,
+    PauliSum,
+    PauliSumTerm,
+)
 
 pytestmark = [
     pytest.mark.qiskit,
@@ -58,6 +67,27 @@ def test_statevector_matches_native_wire_order(dtype: torch.dtype) -> None:
     assert result.runtime["fallback_used"] is False
     assert result.compatibility["external_backend_explicit"] is True
     assert result.provenance["flagquantum_ir_hash"] == circuit.to_ir().content_hash
+
+
+def test_research_provider_executes_real_aer_statevectors() -> None:
+    provider = QiskitAerResearchVQEProvider()
+    request = GroundStateVQERequest(
+        hamiltonian=PauliSum(
+            n_qubits=2,
+            terms=(PauliSumTerm(1.0, "ZI"),),
+        ),
+        fixed_hamming_weight=1,
+        optimizer=GroundStateOptimizer(max_evaluations=2),
+    )
+
+    assert provider.availability().available
+    result = provider.run_vqe(request)
+
+    assert result.status == "completed"
+    assert result.resources is not None
+    assert result.resources.objective_evaluations == 2
+    assert result.resources.backend_executions == 4
+    assert result.provenance.provider == "Qiskit Aer"
 
 
 def test_seeded_samples_and_counts_use_requested_wire_order() -> None:
