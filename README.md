@@ -170,9 +170,9 @@ running workspace name when it is invoked from outside that workspace; inside
 the workspace the name is discovered automatically. See
 [repeated low-latency workspace execution](docs/guides/JIUDING.md#repeated-low-latency-workspace-execution).
 
-Direct Quafu submission is available in the 0.3 release line, including the
-`0.3.0rc3` prerelease. With the older 0.2.0 release, use the documented local
-QSteed compilation path instead: pass `compiler="qsteed"` after installing the
+Direct Quafu submission is available in the 0.3 release line. Install
+`flagquantum==0.3.0` for this path. With the older 0.2.0 release, use the
+documented local QSteed compilation path instead: pass `compiler="qsteed"` after installing the
 separate
 [FlagQuantum Compiler QSteed](https://github.com/FlagQuantum/FlagQuantum-Compiler-QSteed)
 plugin, as described in
