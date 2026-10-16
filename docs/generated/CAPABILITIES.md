@@ -42,6 +42,10 @@ This catalog is generated from the machine-validated
 | Simulate a small or medium circuit exactly | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Train a parameterized quantum circuit | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Run local VQE and quantum machine learning | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
+| Discover an executable scientific operation | Research capability discovery, execution, and evidence | Production supported | [Run example](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
+| Preflight a bounded VQE request before numerical work | Research capability discovery, execution, and evidence | Production supported | [Run example](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
+| Execute VQE with exact-reference and energy-variance validation | Research capability discovery, execution, and evidence | Production supported | [Run example](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
+| Audit a transport-neutral evidence bundle | Research capability discovery, execution, and evidence | Production supported | [Run example](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
 | Differentiate a circuit without importing an internal gradient helper | One gradient entry point with a reported method | Production supported | [Run example](../../examples/gradient_methods/README.md) |
 | Find out which gradient method a program can use | One gradient entry point with a reported method | Production supported | [Run example](../../examples/gradient_methods/README.md) |
 | Train a circuit in statevector, MPS, or tensor-network mode | One gradient entry point with a reported method | Production supported | [Run example](../../examples/gradient_methods/README.md) |
@@ -346,6 +350,20 @@ Run exact circuits and differentiable quantum workloads on a CPU or one GPU.
 - **Start:** [quick example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py)
 - **Documentation:** [guide](../../examples/single_machine_quantum_ai/README.md)
 - **Known boundary:** Capacity is bounded by one device; distributed capacity claims use the sharded capability.
+
+### Research capability discovery, execution, and evidence
+
+Discover and execute the bounded local ground-state research slice through one transport-neutral service contract with preflight, scientific validation, and tamper-evident evidence.
+
+- **Maturity:** Production supported
+- **Public API:** `flagquantum.services.search_research_capabilities`, `flagquantum.services.describe_research_capability`, `flagquantum.services.estimate_research_capability`, `flagquantum.services.validate_research_capability_input`, `flagquantum.services.execute_research_capability`, `flagquantum.services.validate_research_evidence`, `flagquantum.services.list_research_schemas`, `flagquantum.services.describe_research_schema`
+- **Runtime modes:** `statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `not_applicable`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md)
+- **Documentation:** [guide](../../flagquantum/services/README.md)
+- **Known boundary:** Approved namespace-scoped service contract at production-supported maturity for a bounded local CPU slice; it is not a Stable Core root API. A thin external adapter may call the public service, but FlagQuantum remains the only owner of its domain semantics. The executable scope is exactly three local CPU operations: two-qubit real Pauli-sum VQE in the fixed weight-one sector, exact diagonalization in that sector, and energy-variance validation of a normalized full statevector. Inputs use Hartree coefficients and wire_0_is_leftmost ordering. The VQE path uses the existing single-excitation ansatz and bounded Adam workflow; it is deterministic and records no random seed because this slice performs no stochastic sampling. VQE defaults to flagquantum-native and may explicitly select the optional local qiskit-aer or pennylane-lightning adapters. Multiple providers require separate fallback authorization; fallback advances only past an unknown or locally unavailable adapter, never an execution failure or scientific-validation failure, and all route assessments and attempts are content-hashed. Remote targets, QPUs, shot execution, noise models, broader Hamiltonians, alternate ansatzes, alternate optimizers, persistence, tenant control, natural-language routing, MCP dependencies, and every fallback axis outside that unavailable-only provider policy are unsupported. Evidence hashes detect accidental or untrusted mutation but are not signatures or runtime certification.
 
 ### One gradient entry point with a reported method
 

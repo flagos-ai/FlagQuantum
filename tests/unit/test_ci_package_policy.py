@@ -164,9 +164,21 @@ def test_native_extension_uses_only_pytorch_stable_or_header_only_apis() -> None
 
 def test_distribution_requires_runtime_profiles_and_numerical_contract() -> None:
     assert _missing_required_members(REQUIRED_MEMBER_SUFFIXES) == ()
-    assert _missing_required_members(REQUIRED_MEMBER_SUFFIXES[1:]) == (
-        "flagquantum/simulation/numerics/double-single-contract.toml",
-    )
+    assert _missing_required_members(
+        tuple(
+            name
+            for name in REQUIRED_MEMBER_SUFFIXES
+            if name != "flagquantum/simulation/numerics/double-single-contract.toml"
+        )
+    ) == ("flagquantum/simulation/numerics/double-single-contract.toml",)
+
+
+def test_distribution_requires_research_service_modules() -> None:
+    required = "flagquantum/services/research_execution.py"
+    assert required in REQUIRED_MEMBER_SUFFIXES
+    assert _missing_required_members(
+        tuple(name for name in REQUIRED_MEMBER_SUFFIXES if name != required)
+    ) == (required,)
 
 
 def test_distribution_requires_the_compiled_native_extension(tmp_path) -> None:
@@ -230,8 +242,7 @@ def test_project_description_matches_the_readme_positioning() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert description == (
-        "A PyTorch-first framework for differentiable quantum computing "
-        "and quantum AI."
+        "A PyTorch-first framework for differentiable quantum computing and quantum AI."
     )
     assert description in readme
 

@@ -721,6 +721,7 @@ jobs:
           /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
           /tmp/fq-wheel/bin/python -c "from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)"
           /tmp/fq-wheel/bin/python -c "from flagquantum.runtime.capabilities import load_operator_profile; assert load_operator_profile('statevector_local_p0').name == 'statevector_local_p0'"
+          /tmp/fq-wheel/bin/python -c "from flagquantum import services; assert callable(services.search_research_capabilities); assert callable(services.execute_research_capability); assert any(item.capability_id == 'ground_state.solve.vqe' for item in services.search_research_capabilities({}))"
           /tmp/fq-wheel/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
           /tmp/fq-wheel/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('jax', 'datasets', 'transformers', 'matplotlib', 'cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
           popd

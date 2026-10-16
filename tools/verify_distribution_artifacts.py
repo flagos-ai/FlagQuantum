@@ -62,6 +62,11 @@ RELEASE_PLATFORMS = (
 NATIVE_EXTENSION_DIRECTORY = "flagquantum/simulation/native_cpu/"
 NATIVE_EXTENSION_SUFFIXES = (".so", ".pyd")
 REQUIRED_MEMBER_SUFFIXES = (
+    "flagquantum/services/research_capabilities.py",
+    "flagquantum/services/research_execution.py",
+    "flagquantum/services/research_evidence_shape.py",
+    "flagquantum/services/research_options.py",
+    "flagquantum/services/research_schemas.py",
     "flagquantum/simulation/numerics/double-single-contract.toml",
     "flagquantum/runtime/profiles/split_real_imag_statevector_p0.json",
     "flagquantum/runtime/profiles/split_real_imag_statevector_p1.json",

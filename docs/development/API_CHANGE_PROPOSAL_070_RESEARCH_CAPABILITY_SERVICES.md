@@ -28,8 +28,10 @@ The owner decision approved the exact namespace operations, signatures, value
 shapes, schema identities, fail-closed behavior, and initial experimental
 binding recorded in the machine-readable candidate. A subsequent explicit
 release/maturity decision promoted only this bounded local slice to
-`production_supported` and selected `0.3.0rc3` with the MCP-compatible range
-`flagquantum>=0.3.0rc3,<0.4`. Neither decision authorizes remote execution,
+`production_supported`. An earlier record selected `0.3.0rc3` as the first
+compatible release, but the published `0.3.0rc3` and `0.3.0` wheels omit this
+service API. The first compatible released version and MCP dependency range
+remain unset until an installed-wheel check passes. Neither decision authorizes remote execution,
 automatic provider substitution beyond the explicit local unavailable-only
 policy below, MCP dependencies in this repository, or an MCP execution tool
 before the separate adapter gate is satisfied.
