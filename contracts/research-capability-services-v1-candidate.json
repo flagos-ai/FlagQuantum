@@ -1,0 +1,274 @@
+{
+  "schema": "flagquantum.research_capability_services_candidate.v1",
+  "status": "approved_for_external_adapter",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md",
+  "stable_core_change": false,
+  "transport_neutral": true,
+  "authorities": {
+    "research_capability_contract": "flagquantum",
+    "target_requirement_matching": "flagquantum.core.target_capabilities",
+    "product_maturity": "capability-maturity.toml",
+    "protocol_adaptation": "external",
+    "natural_language_reasoning": "external",
+    "tenant_and_durable_task_control": "external"
+  },
+  "existing_contracts": {
+    "target_requirements_and_facts": "ARCH-003",
+    "execution_request_and_policy": "ARCH-004",
+    "execution_result_and_evidence": "ARCH-005"
+  },
+  "namespace": "flagquantum.services",
+  "operations": [
+    "search_research_capabilities",
+    "describe_research_capability",
+    "estimate_research_capability",
+    "validate_research_capability_input",
+    "execute_research_capability",
+    "validate_research_evidence"
+  ],
+  "operation_signatures": {
+    "search_research_capabilities": "(query: 'ResearchCapabilityQuery | Mapping[str, Any] | None' = None) -> 'tuple[ResearchCapabilityCandidate, ...]'",
+    "describe_research_capability": "(capability_id: 'str', version: 'str | None' = None) -> 'ResearchCapabilityManifest'",
+    "estimate_research_capability": "(capability_id: 'str', request: 'object', target: 'str | None' = None) -> 'ResearchResourceEstimate'",
+    "validate_research_capability_input": "(capability_id: 'str', request: 'object') -> 'ResearchValidationReport'",
+    "execute_research_capability": "(capability_id: 'str', request: 'object', options: 'ResearchExecutionOptions | Mapping[str, Any] | None' = None) -> 'ResearchCapabilityEvidenceBundle'",
+    "validate_research_evidence": "(validator_id: 'str', evidence: 'ResearchCapabilityEvidenceBundle | Mapping[str, Any]') -> 'ResearchValidationReport'"
+  },
+  "schema_resource_operations": {
+    "list_research_schemas": "() -> 'tuple[ResearchSchemaDocument, ...]'",
+    "describe_research_schema": "(schema_id: 'str') -> 'ResearchSchemaDocument'"
+  },
+  "schema_resource_policy": {
+    "authority": "installed_flagquantum",
+    "adapter_may_copy_or_redefine": false,
+    "unknown_schema_ids_fail_closed": true,
+    "returned_documents_are_isolated_copies": true,
+    "json_schema_dialect": "https://json-schema.org/draft/2020-12/schema"
+  },
+  "schema_identities": {
+    "pauli_sum": "flagquantum.pauli_sum.v1",
+    "manifest": "flagquantum.research_capability_manifest.v1",
+    "vqe_request": "flagquantum.ground_state_vqe_request.v1",
+    "vqe_result": "flagquantum.ground_state_vqe_result.v1",
+    "exact_request": "flagquantum.exact_ground_state_request.v1",
+    "exact_result": "flagquantum.exact_sector_reference.v1",
+    "variance_request": "flagquantum.energy_variance_request.v1",
+    "variance_result": "flagquantum.energy_variance_reference.v1",
+    "validation_report": "flagquantum.research_validation_report.v1",
+    "structured_error": "flagquantum.research_capability_error.v1",
+    "evidence_bundle": "flagquantum.research_capability_evidence_bundle.v1"
+  },
+  "capabilities": [
+    {
+      "capability_id": "ground_state.solve.vqe",
+      "version": "1.0.0",
+      "provider": "flagquantum-native",
+      "implementation_status": "available_experimental_service",
+      "implementation": "flagquantum.services.execute_research_capability",
+      "mandatory_validators": [
+        "ground_state.solve.exact",
+        "validate.energy_variance"
+      ],
+      "fallback_allowed": true,
+      "fallback_policy": "explicit_provider_unavailable_only"
+    },
+    {
+      "capability_id": "ground_state.solve.exact",
+      "version": "1.0.0",
+      "provider": "flagquantum-native",
+      "implementation_status": "available_experimental_service",
+      "implementation": "flagquantum.services.execute_research_capability",
+      "mandatory_validators": [],
+      "fallback_allowed": false
+    },
+    {
+      "capability_id": "validate.energy_variance",
+      "version": "1.0.0",
+      "provider": "flagquantum-native",
+      "implementation_status": "available_experimental_service",
+      "implementation": "flagquantum.services.execute_research_capability",
+      "mandatory_validators": [],
+      "fallback_allowed": false
+    }
+  ],
+  "value_types": [
+    "ResearchCapabilityManifest",
+    "ResearchCapabilityCandidate",
+    "ResearchValidationReport",
+    "ResearchCapabilityError",
+    "ResearchCapabilityEvidenceBundle"
+  ],
+  "evidence_bundle": {
+    "composition": "application_service_aggregation",
+    "replaces_execution_result": false,
+    "replaces_arch_005_execution_record": false,
+    "required_fields": [
+      "schema",
+      "run_id",
+      "capability",
+      "status",
+      "result",
+      "metrics",
+      "artifacts",
+      "execution",
+      "validation",
+      "attempts",
+      "warnings",
+      "provenance",
+      "error"
+    ],
+    "schema_validation": {
+      "unknown_top_level_fields_fail": true,
+      "unknown_capability_fields_fail": true,
+      "unknown_provenance_fields_fail": true,
+      "unsupported_schema_versions_fail": true,
+      "installed_capability_identity_required": true,
+      "provenance_is_content_hashed": true
+    },
+    "provenance_required_fields": [
+      "package",
+      "package_version",
+      "python_version",
+      "torch_version",
+      "input_sha256",
+      "deterministic",
+      "random_seed",
+      "fallback_used",
+      "content_sha256"
+    ],
+    "execution_required_observability": [
+      "target",
+      "execution_mode",
+      "started_at",
+      "completed_at",
+      "duration_seconds",
+      "provider_order",
+      "fallback_used",
+      "stage_durations_seconds",
+      "call_counts"
+    ]
+  },
+  "statuses": [
+    "succeeded",
+    "unsupported",
+    "validation_failed",
+    "failed"
+  ],
+  "error_stages": [
+    "catalog_match",
+    "input_validation",
+    "resource_estimation",
+    "environment_preflight",
+    "compilation",
+    "execution",
+    "result_parsing",
+    "scientific_validation",
+    "artifact_persistence"
+  ],
+  "p0_scope": {
+    "qubits": [2],
+    "coefficient_domain": "finite_real",
+    "coefficient_units": [
+      "hartree"
+    ],
+    "basis_conventions": [
+      "wire_0_is_leftmost"
+    ],
+    "fixed_hamming_weights": [1],
+    "ansatzes": [
+      "two_qubit_single_excitation"
+    ],
+    "optimizers": [
+      "adam"
+    ],
+    "execution_modes": [
+      "local_statevector"
+    ],
+    "optimizer_convergence_diagnostic": {
+      "window": 5,
+      "energy_span_tolerance_hartree": 0.000005,
+      "budget_exhaustion_requires_unestablished_convergence": true,
+      "substitutes_for_scientific_validation": false
+    },
+    "fallback_authorizations": {
+      "provider": "explicit_only",
+      "backend": false,
+      "device": false,
+      "cpu": false,
+      "precision": false,
+      "algorithm": false,
+      "approximation": false
+    }
+  },
+  "prohibited_in_main_repository": [
+    "mcp_sdk_dependency",
+    "mcp_tool_registration",
+    "natural_language_router",
+    "tenant_state",
+    "durable_task_control_plane",
+    "credential_storage"
+  ],
+  "external_adapter_gate": {
+    "description_allowed_before_maturity_binding": true,
+    "execution_tool_allowed_before_api_approval": false,
+    "domain_logic_reimplementation_allowed": false
+  },
+  "approval": {
+    "approval_token": "approve API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES",
+    "approval_record_target": "docs/api-changes/FQ-RESEARCH-CAPABILITY-SERVICES-20261013.md",
+    "api_owner": "approved",
+    "services_domain_owner": "approved",
+    "approved_at": "2026-10-13",
+    "approved_by": "API owner and Services domain owner via explicit user directive",
+    "external_execution_adapter_authorized": true,
+    "maturity_owner": "approved",
+    "approved_maturity": "production_supported",
+    "released_version": null,
+    "external_compatible_range": null,
+    "release_artifact_gate": "blocked: PyPI 0.3.0rc3 and 0.3.0 wheels omit the approved research service API",
+    "requested_decision": "approve the exact namespace operations, signatures, value shapes, schemas, fail-closed behavior, and experimental maturity binding"
+  },
+  "provider_conformance": {
+    "native_and_fake_share_consumer": true,
+    "semantic_projection_equivalent": true,
+    "provider_exception_maps_to_structured_failure": true,
+    "fake_registration_public": false,
+    "multi_provider_routing_deferred_to_m3": false,
+    "test": "tests/team/services/test_research_provider_conformance.py"
+  },
+  "provider_routing": {
+    "status": "m3_route_explanation_implemented",
+    "capability_scope": [
+      "ground_state.solve.vqe"
+    ],
+    "default_provider_order": [
+      "flagquantum-native"
+    ],
+    "provider_order_is_explicit": true,
+    "multiple_providers_require_authorization": true,
+    "fallback_trigger": "provider_unavailable_only",
+    "unknown_provider_is_audited": true,
+    "ordinary_execution_failure_triggers_fallback": false,
+    "scientific_validation_failure_triggers_fallback": false,
+    "attempt_history_is_content_hashed": true,
+    "provider_registration_public": false,
+    "installed_external_providers": [
+      "qiskit-aer",
+      "pennylane-lightning"
+    ],
+    "external_provider_dependency_is_optional": true,
+    "external_provider_gradient_method": "exact_parameter_shift",
+    "backend_executions_reported_separately": true,
+    "candidate_scoring": "caller_order_rank_without_reordering",
+    "route_explanation_is_content_hashed": true,
+    "provider_backend_execution_estimate": true,
+    "tests": [
+      "tests/team/services/test_research_provider_routing.py",
+      "tests/team/ecosystem/test_qiskit_research_provider.py",
+      "tests/optional/test_qiskit_aer_backend.py",
+      "tests/team/ecosystem/test_pennylane_research_provider.py",
+      "tests/test_pennylane_interop.py",
+      "tests/optional/test_research_external_provider_parity.py"
+    ]
+  }
+}

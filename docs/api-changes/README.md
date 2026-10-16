@@ -52,6 +52,7 @@ process.
 - [Quafu service compilation through `fq.run`](FQ-QUAFU-SERVICE-COMPILATION.md)
 - [OpenQASM import subset and `fq.from_openqasm`](FQ-OPENQASM-IMPORT-20261002.md)
 - [Remote job lifecycle](FQ-REMOTE-JOBS.md)
+- [Research capability services](FQ-RESEARCH-CAPABILITY-SERVICES-20261013.md)
 - [Zero-noise extrapolation as a native capability](FQ-ERROR-MITIGATION-ZNE-20261002.md)
 - [A native SPSA optimizer for objectives with no gradient](FQ-SPSA-OPTIMIZER-20261002.md)
 - [A global phase on the program](FQ-IR-GLOBAL-PHASE-20261006.md)
