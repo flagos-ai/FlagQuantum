@@ -191,7 +191,7 @@ def _reverse_case(
     )
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=observable,
+        observable_qubit=observable,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="interval", interval=3),
         device=device,
     )

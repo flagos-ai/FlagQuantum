@@ -68,7 +68,7 @@ DEFAULT_DENSE_MATRIX_BYTES = 16 * 1024 * 1024
 #
 # The dense form is ``(2**n)**4`` entries, so it is a reference for small systems and
 # the exact generator of a dense matrix exponential, never a production path. The
-# default ceiling admits a four-wire map and refuses the next size up.
+# default ceiling admits a four-qubit map and refuses the next size up.
 
 _BASIS_TOLERANCE_IN_EPSILON = 8.0
 # How far a basis may sit from orthonormal under ``trace(B_i^dag B_j)``, counted in
@@ -82,7 +82,7 @@ _BASIS_TOLERANCE_IN_EPSILON = 8.0
 # Pauli basis deviates by 2.22e-16 (one epsilon) in complex128 and 5.96e-08 (half an
 # epsilon) in complex64, while the smallest non-orthonormality a caller can introduce
 # by accident -- handing over the unnormalized Pauli words -- is exactly ``d - 1``,
-# 1.0 at one wire and 3.0 at two. Eight epsilons sit roughly sixteen times above the
+# 1.0 at one qubit and 3.0 at two. Eight epsilons sit roughly sixteen times above the
 # worst accepted basis and six to fifteen orders below the worst refused one, so no
 # basis is admitted or refused here by a rounding accident.
 
@@ -905,7 +905,7 @@ class SuperOperator:
         dropping either makes the returned matrix a different quantity under the
         same name. ``k == d**2`` entries are required so the matrix represents the
         whole map rather than its projection onto a subspace; without it a caller
-        who passed four of sixteen two-wire Pauli words would receive a 4x4
+        who passed four of sixteen two-qubit Pauli words would receive a 4x4
         matrix that looks like a small map and is not one.
         ``trace(B_i^dag B_j) == delta_ij`` is required so ``P^dag`` is ``P^-1``;
         with a merely spanning basis the product is the Gram-corrected

@@ -35,7 +35,7 @@ class RuntimeSelectionPlan:
             "world_size": self.world_size,
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
-            "n_wires": self.analysis.n_wires,
+            "n_wires": self.analysis.n_qubits,
             "n_instructions": self.analysis.n_instructions,
             "depth": self.analysis.depth,
             "two_qubit_gates": self.analysis.two_qubit_gates,

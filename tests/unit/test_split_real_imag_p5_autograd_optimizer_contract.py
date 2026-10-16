@@ -28,6 +28,42 @@ def test_split_p5_contract_rejects_missing_optimizer_implementation_claim() -> N
     assert "optimizer_available" in " ".join(contract_errors(contract))
 
 
+def test_split_p5_contract_rejects_an_unnamed_difference_authority() -> None:
+    """The diagnostic's authority is a recorded fact, not a convention.
+
+    Without the key the gate cannot tell a shared quotient from a local one, so
+    dropping it has to fail rather than silently stop checking.
+    """
+
+    contract = load_toml(CONTRACT)
+    del contract["verification"]["difference_implementation"]
+    assert "one finite-difference authority" in " ".join(contract_errors(contract))
+
+
+def test_split_p5_contract_rejects_a_diagnostic_call_site_that_is_gone() -> None:
+    """A module that exists but no longer carries the shared quotient is refused.
+
+    The plant has to be a module the tree actually has: an unresolvable name is
+    a different defect, reported by the next test.
+    """
+
+    contract = load_toml(CONTRACT)
+    contract["verification"][
+        "difference_conformance"
+    ] = "flagquantum/core/ir/__init__.py"
+    assert "reuse the shared quotient" in " ".join(contract_errors(contract))
+
+
+def test_split_p5_contract_rejects_a_diagnostic_call_site_that_does_not_resolve() -> (
+    None
+):
+    """A named module the tree does not have is a finding, not a crash."""
+
+    contract = load_toml(CONTRACT)
+    contract["verification"]["difference_conformance"] = "flagquantum/core/ir.py"
+    assert "flagquantum/core/ir.py' is missing" in " ".join(contract_errors(contract))
+
+
 def test_split_p5_contract_rejects_single_word_double_single_gradient_claim() -> None:
     contract = load_toml(CONTRACT)
     precision = contract["precision_boundary"]

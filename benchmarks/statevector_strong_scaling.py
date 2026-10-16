@@ -66,7 +66,7 @@ def _global_indices(result: Any, device: torch.device) -> torch.Tensor:
         return shard.global_indices
     local = torch.arange(shard.shard.local_amplitudes, dtype=torch.long, device=device)
     if result.plan.distribution == "qubit_address_sharded":
-        return (local << len(result.plan.sharded_wires)) | shard.rank
+        return (local << len(result.plan.sharded_qubits)) | shard.rank
     return local + shard.shard.amplitude_start
 
 
@@ -75,9 +75,9 @@ def _invariants(result: Any, device: torch.device) -> dict[str, Any]:
     probabilities = amplitudes.abs().square().sum(dim=0)
     indices = _global_indices(result, device)
     values = [probabilities.sum()]
-    observed_wires = tuple(range(min(3, result.plan.n_wires)))
+    observed_wires = tuple(range(min(3, result.plan.n_qubits)))
     for wire in observed_wires:
-        bits = (indices >> (result.plan.n_wires - wire - 1)) & 1
+        bits = (indices >> (result.plan.n_qubits - wire - 1)) & 1
         signs = 1 - 2 * bits.to(probabilities.dtype)
         values.append((probabilities * signs).sum())
     packed = torch.stack(values)

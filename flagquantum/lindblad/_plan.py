@@ -13,14 +13,19 @@ import torch
 from ..errors import SerializationError
 from ..simulation.lindblad import (
     EvolutionPlan,
+    plan_density_matrix_evolution,
+)
+from ..simulation.lindblad_integrators import DEFAULT_INTEGRATOR
+
+# The request normalizers are read from the module that owns them, so this file
+# never relies on `lindblad` re-exporting a name it does not define.
+from ..simulation.lindblad_request import (
     _normalize_collapse_terms,
     _normalize_hamiltonian,
     _normalize_initial_state,
     _normalize_observables,
     _normalize_times,
-    plan_density_matrix_evolution,
 )
-from ..simulation.lindblad_integrators import DEFAULT_INTEGRATOR
 from ..simulation.matrix_free_hamiltonian import PauliSum
 
 _SCHEMA = "flagquantum.lindblad_plan"
@@ -371,7 +376,7 @@ def build_lindblad_plan(
     live = {
         "hamiltonian": hamiltonian_representation,
         "initial_state": density_matrix,
-        "n_wires": n_qubits,
+        "n_qubits": n_qubits,
         "times": time_grid,
         "collapse_operators": list(collapse_terms),
         "observables": dict(observable_matrices),
@@ -451,7 +456,7 @@ def _decode_request(
             dtype=dtype,
             field="initial_density_matrix",
         ),
-        "n_wires": n_qubits,
+        "n_qubits": n_qubits,
         "times": times,
         "collapse_operators": collapse_operators,
         "observables": observables,

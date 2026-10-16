@@ -10,7 +10,11 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 import pytest
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - the 3.10 interpreter
+    import tomli as tomllib
 import torch
 
 import flagquantum as fq

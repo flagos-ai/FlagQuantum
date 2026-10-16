@@ -21,9 +21,22 @@ class ArtifactClass(str, Enum):
 
 
 class EvidenceScope(str, Enum):
+    """The device-count classes a runtime-evidence artifact can describe.
+
+    A scope is the claim that a run's provenance record is complete for a class
+    of device counts, so each member fixes exactly the counts it carries and the
+    envelope refuses a provenance record of any other size. ``SCHEDULED_SCALE``
+    stops at eight devices, which is one full host of the measured cluster;
+    ``MULTI_NODE_SCALE`` exists because a workload can require more devices than
+    one host has, and a run that spans two hosts is not a wider
+    ``SCHEDULED_SCALE`` run but a different class with a different failure
+    domain.
+    """
+
     ONE_GPU_LOCAL = "one_gpu_local"
     TWO_GPU_SEMANTIC = "two_gpu_semantic_regression"
     SCHEDULED_SCALE = "scheduled_4_8_gpu_scale"
+    MULTI_NODE_SCALE = "multi_node_16_gpu_scale"
 
 
 MEASURED_FIELD_NAMES = frozenset(
@@ -117,6 +130,7 @@ def _scope_errors(
         EvidenceScope.ONE_GPU_LOCAL: {1},
         EvidenceScope.TWO_GPU_SEMANTIC: {2},
         EvidenceScope.SCHEDULED_SCALE: {4, 8},
+        EvidenceScope.MULTI_NODE_SCALE: {16},
     }[scope]
     errors = []
     if device_count not in expected:

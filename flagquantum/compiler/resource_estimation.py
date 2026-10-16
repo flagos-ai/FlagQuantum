@@ -69,16 +69,16 @@ class ResourceEstimate:
     refused by :func:`estimate_resources` instead of estimated, because no single
     static count describes it.
 
-    ``depth`` and ``per_wire_depth`` come from the ASAP schedule the compiler
+    ``depth`` and ``per_qubit_depth`` come from the ASAP schedule the compiler
     already builds: ``depth`` is the number of schedule layers, and
-    ``per_wire_depth`` holds, per wire, the number of layers up to and including
+    ``per_qubit_depth`` holds, per qubit, the number of layers up to and including
     the last layer that touches it.  ``t_count`` and ``t_depth`` both cover T and
     T-dagger operations, the pair a T-depth is defined over.
 
     ``max_operation_width`` is the widest single operation, so a program of
-    three-wire operations has width 3 however many wires it declares: that is the
+    three-qubit operations has width 3 however many qubits it declares: that is the
     operation width, not the register size, which is :attr:`n_qubits`.
-    ``used_wires`` counts the wires at least one operation touches, so it is
+    ``used_qubits`` counts the qubits at least one operation touches, so it is
     narrower than :attr:`n_qubits` for a program that does not use its whole
     register, and ``channel_count`` counts the noise channels a lowered noise
     model injected, which keeps a caller from reading noise-injected counts as
@@ -93,29 +93,18 @@ class ResourceEstimate:
     count over a rewritten sequence is traceable to the rewrite that produced it.
     """
 
-    n_wires: int
-    used_wires: int
+    n_qubits: int
+    used_qubits: int
     n_operations: int
     operation_counts: dict[str, int]
     max_operation_width: int
     depth: int
-    per_wire_depth: tuple[int, ...]
+    per_qubit_depth: tuple[int, ...]
     t_count: int
     t_depth: int
     channel_count: int
     basis: str = ESTIMATE_BASIS
     conversion_identity: str | None = None
-
-    @property
-    def n_qubits(self) -> int:
-        """Return the peak qubit count, which is the allocated register size.
-
-        ``CircuitIR`` allocates its whole register before the first operation, so
-        no operation can raise a watermark above :attr:`n_wires`: the peak is
-        fixed by the program's declared width rather than reached during a run.
-        """
-
-        return self.n_wires
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible record that states the basis of the count."""
@@ -125,12 +114,12 @@ class ResourceEstimate:
             "estimate_basis": self.basis,
             "conversion_identity": self.conversion_identity,
             "n_qubits": self.n_qubits,
-            "used_wires": self.used_wires,
+            "used_qubits": self.used_qubits,
             "n_operations": self.n_operations,
             "operation_counts": dict(self.operation_counts),
             "max_operation_width": self.max_operation_width,
             "depth": self.depth,
-            "per_wire_depth": list(self.per_wire_depth),
+            "per_qubit_depth": list(self.per_qubit_depth),
             "t_count": self.t_count,
             "t_depth": self.t_depth,
             "channel_count": self.channel_count,
@@ -240,8 +229,8 @@ def estimate_resources(
     max_operation_width = 0
     channel_count = 0
     t_count = 0
-    per_wire_depth = [0] * ir.n_wires
-    per_wire_t_depth = [0] * ir.n_wires
+    per_qubit_depth = [0] * ir.n_wires
+    per_qubit_t_depth = [0] * ir.n_wires
 
     for layer_index, layer in enumerate(layers):
         for instruction in layer:
@@ -253,30 +242,30 @@ def estimate_resources(
             is_t_family = name in _T_FAMILY_OPCODES
             if is_t_family:
                 t_count += 1
-            # A layer holds operations sharing no wire, so every operation in it
-            # reads the wire state left by the layers before it and the order
+            # A layer holds operations sharing no qubit, so every operation in it
+            # reads the qubit state left by the layers before it and the order
             # within a layer cannot matter.  A T-family operation opens a new T
-            # layer on top of the deepest one among the wires it touches; every
-            # other operation carries each wire's T layer forward.
-            next_t_depth = max(per_wire_t_depth[wire] for wire in instruction.wires)
+            # layer on top of the deepest one among the qubits it touches; every
+            # other operation carries each qubit's T layer forward.
+            next_t_depth = max(per_qubit_t_depth[wire] for wire in instruction.wires)
             if is_t_family:
                 next_t_depth += 1
             for wire in instruction.wires:
-                per_wire_depth[wire] = layer_index + 1
-                per_wire_t_depth[wire] = next_t_depth
+                per_qubit_depth[wire] = layer_index + 1
+                per_qubit_t_depth[wire] = next_t_depth
 
     return ResourceEstimate(
-        n_wires=ir.n_wires,
-        # A wire belongs to a layer only if an operation touches it, so a wire is
-        # touched exactly when it belongs to at least one layer.
-        used_wires=sum(1 for depth in per_wire_depth if depth > 0),
+        n_qubits=ir.n_wires,
+        # A qubit belongs to a layer only if an operation touches it, so a qubit
+        # is touched exactly when it belongs to at least one layer.
+        used_qubits=sum(1 for depth in per_qubit_depth if depth > 0),
         n_operations=len(ir),
         operation_counts=operation_counts,
         max_operation_width=max_operation_width,
         depth=len(layers),
-        per_wire_depth=tuple(per_wire_depth),
+        per_qubit_depth=tuple(per_qubit_depth),
         t_count=t_count,
-        t_depth=max(per_wire_t_depth),
+        t_depth=max(per_qubit_t_depth),
         channel_count=channel_count,
         basis=basis,
         conversion_identity=conversion_identity,

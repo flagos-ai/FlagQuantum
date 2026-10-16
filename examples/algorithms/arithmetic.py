@@ -35,7 +35,7 @@ import torch
 import flagquantum as fq
 from flagquantum.algorithms.arithmetic import (
     adder_circuit,
-    adder_wires,
+    adder_qubits,
 )
 from flagquantum.algorithms.logical_resources import estimate_logical_resources
 from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
@@ -101,8 +101,8 @@ def run_adder(n_bits: int, a: int, b: int, *, carry: int = 0, carry_out: int = 0
     basis state of largest weight out of it.
     """
 
-    wires = adder_wires(n_bits)
-    width = wires.n_wires
+    wires = adder_qubits(n_bits)
+    width = wires.n_qubits
     vector = torch.zeros(2**width, dtype=torch.complex128)
     vector[basis_label(n_bits, a, b, carry, carry_out)] = 1.0
     register = fq.Circuit(width, inputs=vector.reshape(1, -1), dtype=torch.complex128)
@@ -156,7 +156,7 @@ def main() -> None:
     print(f"the construction at {n_bits} bits")
     circuit = adder_circuit(n_bits)
     names = [instruction.name for instruction in circuit.to_ir().instructions]
-    wires = adder_wires(n_bits)
+    wires = adder_qubits(n_bits)
     report("wires", circuit.n_wires)
     report("operations", len(names))
     report("ccx", names.count("ccx"))
@@ -354,7 +354,7 @@ def main() -> None:
         ("a width given as text", "3"),
         ("a width given as a truth value", True),
     ):
-        for entry in (adder_circuit, adder_wires):
+        for entry in (adder_circuit, adder_qubits):
             try:
                 entry(width)
             except Exception as exc:

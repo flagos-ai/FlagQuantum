@@ -384,7 +384,7 @@ def main() -> None:
             backend="jax",
             interface="torch",
             mode="tensor_network" if args.mode == "tn" else args.mode,
-            n_wires=args.n_wires,
+            n_qubits=args.n_wires,
             observable="z_sum" if args.observable == "z_sum" else "hamiltonian",
             hamiltonian=hamiltonian,
             jit=not args.no_jax_jit,
@@ -435,7 +435,7 @@ def main() -> None:
             grad_max_abs_error=grad_max_abs_error,
             observable=args.observable,
             batch_size=args.batch_size,
-            n_wires=args.n_wires,
+            n_qubits=args.n_wires,
             layers=args.layers,
             device=device,
         )

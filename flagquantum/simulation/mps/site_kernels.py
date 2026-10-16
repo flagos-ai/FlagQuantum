@@ -30,8 +30,10 @@ class SiteKernelStats:
     triton_environment_channels_calls: int = 0
     triton_observable_adjoint_calls: int = 0
     observable_adjoint_fallback_calls: int = 0
-    triton_wire_probability_calls: int = 0
-    wire_probability_fallback_calls: int = 0
+    triton_qubit_probability_calls: int = 0
+    qubit_probability_fallback_calls: int = 0
+    triton_sampling_collapse_calls: int = 0
+    sampling_collapse_fallback_calls: int = 0
     compiled_calls: int = 0
     compile_seconds: float = 0.0
     dynamo_graphs: int = 0
@@ -201,11 +203,11 @@ def _record_mps_observable_adjoint_fallback() -> None:
     _STATS.observable_adjoint_fallback_calls += 1
 
 
-def _record_mps_wire_probability_route() -> None:
+def _record_mps_qubit_probability_route() -> None:
     """Record one catalog-authorized MPS-007 execution."""
 
-    _STATS.triton_wire_probability_calls += 1
-    if _STATS.triton_wire_probability_calls == 1:
+    _STATS.triton_qubit_probability_calls += 1
+    if _STATS.triton_qubit_probability_calls == 1:
         _log_triton_catalog_route(
             kind="wire_probabilities",
             semantic_id="mps.measurement.wire_probabilities.local",
@@ -213,10 +215,28 @@ def _record_mps_wire_probability_route() -> None:
         )
 
 
-def _record_mps_wire_probability_fallback() -> None:
-    """Record one wire-probability request retained on the reference path."""
+def _record_mps_qubit_probability_fallback() -> None:
+    """Record one qubit-probability request retained on the reference path."""
 
-    _STATS.wire_probability_fallback_calls += 1
+    _STATS.qubit_probability_fallback_calls += 1
+
+
+def _record_mps_sampling_collapse_route() -> None:
+    """Record one catalog-authorized MPS-008 execution."""
+
+    _STATS.triton_sampling_collapse_calls += 1
+    if _STATS.triton_sampling_collapse_calls == 1:
+        _log_triton_catalog_route(
+            kind="sampling_collapse",
+            semantic_id="mps.sampling.collapse_wire.local",
+            implementation_id="FQKI-TRITON-MPS-008-A",
+        )
+
+
+def _record_mps_sampling_collapse_fallback() -> None:
+    """Record one sampling-collapse request retained on the reference path."""
+
+    _STATS.sampling_collapse_fallback_calls += 1
 
 
 def _tensor_bytes(tensor: torch.Tensor) -> int:

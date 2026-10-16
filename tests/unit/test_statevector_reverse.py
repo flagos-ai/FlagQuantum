@@ -522,7 +522,7 @@ def test_address_sharded_reverse_always_uses_compact_global_indices():
 @pytest.mark.parametrize("world_size", (2, 4, 8))
 def test_address_sharded_indices_are_built_from_local_ordinal(world_size):
     plan = plan_distributed_statevector(fq.Circuit(8), world_size=world_size)
-    rank_bits = len(plan.sharded_wires)
+    rank_bits = len(plan.sharded_qubits)
 
     for rank in range(world_size):
         indices = _rank_global_indices(plan, rank, device=torch.device("cpu"))
@@ -663,7 +663,7 @@ def test_multi_layer_multi_parameter_gradients_match_dense_autograd():
     dense = circuit.expectation_z(2)
     dense_grad = torch.autograd.grad(dense, (theta, phi), retain_graph=True)
 
-    result = execute_torch_distributed_statevector_reverse(circuit, observable_wire=2)
+    result = execute_torch_distributed_statevector_reverse(circuit, observable_qubit=2)
     pending = result.summary()
     assert pending["parameter_gradient_ready"] is False
     assert pending["backward_status"] == "pending"
@@ -748,7 +748,7 @@ def test_multi_z_sum_uses_one_forward_and_one_combined_adjoint(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wires=(0, 1),
+        observable_qubits=(0, 1),
     )
     result.backward()
 
@@ -825,14 +825,14 @@ def test_multi_z_sum_rejects_empty_or_invalid_wire_sets():
     circuit = fq.Circuit(1).rx(0, theta)
 
     with pytest.raises(ValueError, match="at least one"):
-        execute_torch_distributed_statevector_reverse(circuit, observable_wires=())
+        execute_torch_distributed_statevector_reverse(circuit, observable_qubits=())
     with pytest.raises(TypeError, match="integers"):
         execute_torch_distributed_statevector_reverse(
             circuit,
-            observable_wires=(0.5,),
+            observable_qubits=(0.5,),
         )
     with pytest.raises(ValueError, match="outside"):
-        execute_torch_distributed_statevector_reverse(circuit, observable_wires=(1,))
+        execute_torch_distributed_statevector_reverse(circuit, observable_qubits=(1,))
 
 
 def test_checkpoint_policy_is_versioned_and_fail_closed():
@@ -858,7 +858,7 @@ def test_rematerialization_skips_reversible_cx_optimization(
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy=strategy, interval=1),
     )
     result.backward()
@@ -989,7 +989,7 @@ def test_budgeted_block_checkpoints_reduce_replay_and_preserve_gradient(
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(memory_budget_bytes=512),
     )
     result.backward()
@@ -1015,7 +1015,7 @@ def test_low_memory_cpu_cx_reversible_path_preserves_gradient():
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(memory_budget_bytes=512),
     )
     result.backward()
@@ -1051,7 +1051,7 @@ def test_budgeted_compact_cpu_cx_cycles_preserve_gradient():
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=3,
+        observable_qubit=3,
         checkpoint_policy=StatevectorCheckpointPolicy(memory_budget_bytes=1168),
     )
     result.backward()
@@ -1197,7 +1197,7 @@ def test_reversible_adjoint_matches_dense_autograd_on_all_active_wires():
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
     )
     result.backward()
@@ -1231,7 +1231,7 @@ def test_reverse_local_cnot_uses_cataloged_triton_route(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=1,
+        observable_qubit=1,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
         device="cuda",
     )
@@ -1255,7 +1255,7 @@ def test_reverse_local_adjoint_vjp_records_catalog_identity(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=0,
+        observable_qubit=0,
         device="cuda",
     )
     result.backward()
@@ -1288,7 +1288,7 @@ def test_reverse_local_reversible_vjp_records_catalog_identity(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=0,
+        observable_qubit=0,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
         device="cuda",
     )
@@ -1321,7 +1321,7 @@ def test_reverse_local_cnot_sequence_records_catalog_identity(monkeypatch):
 
     result = execute_torch_distributed_statevector_reverse(
         circuit,
-        observable_wire=2,
+        observable_qubit=2,
         checkpoint_policy=StatevectorCheckpointPolicy(strategy="reversible_adjoint"),
         device="cuda",
     )
@@ -1388,3 +1388,173 @@ def test_backward_failure_is_reported_and_never_marks_gradient_ready(monkeypatch
     assert summary["parameter_gradient_ready"] is False
     assert "injected backward failure" in summary["backward_error"]
     assert result.ownership[0].distribution == "failed"
+
+
+class _SimulatedWorld:
+    """A whole process group simulated inside one test process.
+
+    The real collective is NCCL's; what these tests can check is the packing the
+    collective is handed and what is done with the block it returns. So every
+    rank's own packed input is built here, the block that ``rank`` would receive
+    is computed by summing those inputs, and the reducer is then given that
+    block exactly as a real reduce-scatter would deliver it.
+    """
+
+    def __init__(self, world_size: int, rank: int) -> None:
+        self.world_size = world_size
+        self.rank = rank
+        self.segments: list[int] = []
+        self.inputs: list[torch.Tensor] = []
+        self.calls = 0
+
+    def install(self, monkeypatch) -> None:
+        def get_world_size(group=None):
+            return self.world_size
+
+        def get_rank(group=None):
+            return self.rank
+
+        def reduce_scatter_tensor(output, tensor, **kwargs):
+            self.calls += 1
+            segment = tensor.numel() // self.world_size
+            self.segments.append(segment)
+            self.inputs.append(tensor.detach().clone())
+            output.copy_(
+                tensor.detach()[self.rank * segment : (self.rank + 1) * segment]
+            )
+
+        monkeypatch.setattr(torch.distributed, "get_world_size", get_world_size)
+        monkeypatch.setattr(torch.distributed, "get_rank", get_rank)
+        monkeypatch.setattr(
+            torch.distributed, "reduce_scatter_tensor", reduce_scatter_tensor
+        )
+
+
+def _sharded_reducer(gradients, owners, *, evidence=None, rank=0, world_size=2):
+    return AsyncGradientReducer(
+        gradients,
+        process_group=None,
+        evidence=evidence if evidence is not None else BackwardExecutionEvidence(),
+        owners=owners,
+        async_op=True,
+        max_parameters=len(gradients),
+        max_bytes=1 << 20,
+    )
+
+
+def test_owner_sharded_reduction_packs_each_owner_block_contiguously(monkeypatch):
+    world = _SimulatedWorld(world_size=2, rank=0)
+    world.install(monkeypatch)
+    gradients = [
+        torch.tensor([1.0, 2.0]),
+        torch.tensor([3.0]),
+        torch.tensor([4.0, 5.0]),
+    ]
+    evidence = BackwardExecutionEvidence(
+        ownership=[
+            SimpleNamespace(
+                owner_rank=None, reduction="pending", distribution="pending"
+            )
+            for _ in gradients
+        ]
+    )
+    reducer = _sharded_reducer(gradients, [0, 1, 1], evidence=evidence)
+
+    for index in range(len(gradients)):
+        reducer.mark_ready(index)
+    reducer.finish()
+
+    # Owner 0 holds two amplitudes, owner 1 holds three, so the widest block
+    # sets the segment and owner 0's lane is padded with zeros.
+    assert world.calls == 1
+    assert world.segments == [3]
+    assert world.inputs[0].tolist() == [1.0, 2.0, 0.0, 3.0, 4.0, 5.0]
+    # Rank 0 owns only parameter 0, so only its block survives here.
+    assert [gradient.tolist() for gradient in gradients] == [
+        [1.0, 2.0],
+        [0.0],
+        [0.0, 0.0],
+    ]
+    assert evidence.gradient_reduction_scheme == "owner_sharded_reduce_scatter"
+    assert evidence.gradient_collective_count == 1
+    assert evidence.gradient_collective_bytes == 6 * 4
+
+
+def test_owner_sharded_reduction_delivers_the_other_ranks_block(monkeypatch):
+    world = _SimulatedWorld(world_size=2, rank=1)
+    world.install(monkeypatch)
+    gradients = [
+        torch.tensor([1.0, 2.0]),
+        torch.tensor([3.0]),
+        torch.tensor([4.0, 5.0]),
+    ]
+    reducer = _sharded_reducer(gradients, [0, 1, 1])
+
+    for index in range(len(gradients)):
+        reducer.mark_ready(index)
+    reducer.finish()
+
+    assert [gradient.tolist() for gradient in gradients] == [
+        [0.0, 0.0],
+        [3.0],
+        [4.0, 5.0],
+    ]
+
+
+def test_owner_sharded_reduction_groups_separate_dtypes_into_separate_collectives(
+    monkeypatch,
+):
+    world = _SimulatedWorld(world_size=2, rank=0)
+    world.install(monkeypatch)
+    gradients = [
+        torch.tensor([1.0], dtype=torch.float32),
+        torch.tensor([2.0], dtype=torch.float64),
+    ]
+    reducer = _sharded_reducer(gradients, [0, 1])
+
+    for index in range(len(gradients)):
+        reducer.mark_ready(index)
+    reducer.finish()
+
+    assert world.calls == 2
+    assert [item.dtype for item in world.inputs] == [torch.float32, torch.float64]
+
+
+def test_owner_sharded_reduction_rejects_a_mismatched_owner_count():
+    gradients = [torch.tensor(1.0), torch.tensor(2.0)]
+
+    with pytest.raises(ValueError, match="one owner per gradient"):
+        AsyncGradientReducer(
+            gradients,
+            process_group=None,
+            evidence=BackwardExecutionEvidence(),
+            owners=[0],
+        )
+
+
+def test_reducer_without_owners_keeps_the_replicated_all_reduce(monkeypatch):
+    calls = []
+
+    def fake_all_reduce(tensor, **kwargs):
+        calls.append(tensor.detach().clone())
+        tensor.mul_(2)
+
+    monkeypatch.setattr(torch.distributed, "all_reduce", fake_all_reduce)
+    gradients = [torch.tensor([1.0]), torch.tensor([2.0])]
+    evidence = BackwardExecutionEvidence()
+    reducer = AsyncGradientReducer(
+        gradients,
+        process_group=None,
+        evidence=evidence,
+        max_parameters=2,
+        max_bytes=1 << 20,
+        async_op=False,
+    )
+
+    for index in range(len(gradients)):
+        reducer.mark_ready(index)
+    reducer.finish()
+
+    assert len(calls) == 1
+    assert [gradient.tolist() for gradient in gradients] == [[2.0], [4.0]]
+    assert evidence.gradient_reduction_scheme == "replicated_all_reduce"

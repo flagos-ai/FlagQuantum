@@ -596,7 +596,7 @@ def test_rank_local_jax_kernel_summary_points_to_distributed_plan():
         circuit.rx(0, theta=theta[0, 0, 0])
         return circuit
 
-    kernel = compile_quantum_kernel(build, params, n_wires=1, mode="statevector")
+    kernel = compile_quantum_kernel(build, params, n_qubits=1, mode="statevector")
     summary = kernel.summary()
 
     assert summary["distribution_semantics"] == "rank_local_replicated_kernel"
@@ -736,7 +736,7 @@ def test_jax_sharded_statevector_parameter_gradient_matches_jax_kernel(monkeypat
     sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
-        n_wires=3,
+        n_qubits=3,
         world_size=2,
         observable="z_sum",
         jit=False,
@@ -744,7 +744,7 @@ def test_jax_sharded_statevector_parameter_gradient_matches_jax_kernel(monkeypat
     kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=3,
+        n_qubits=3,
         mode="statevector",
         observable="z_sum",
         jit=False,
@@ -796,7 +796,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_indexed_all_to_all_fail
         jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
-            n_wires=3,
+            n_qubits=3,
             world_size=3,
             observable="z_sum",
             backward_backend="pmap",
@@ -829,7 +829,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_no_transport_requires_d
         jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
-            n_wires=3,
+            n_qubits=3,
             world_size=2,
             observable="z_sum",
             backward_backend="pmap",
@@ -861,7 +861,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_pair_exchange_requires_
         jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
-            n_wires=3,
+            n_qubits=3,
             world_size=2,
             observable="z_sum",
             backward_backend="pmap",
@@ -894,7 +894,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_all_to_all_requires_dev
         jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
-            n_wires=3,
+            n_qubits=3,
             world_size=2,
             observable="z_sum",
             backward_backend="pmap",
@@ -948,7 +948,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_no_transport_matches_ke
     sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
-        n_wires=3,
+        n_qubits=3,
         world_size=2,
         observable="z_sum",
         backward_backend="pmap",
@@ -957,7 +957,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_no_transport_matches_ke
     kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=3,
+        n_qubits=3,
         mode="statevector",
         observable="z_sum",
         jit=False,
@@ -1001,7 +1001,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_pair_exchange_matches_k
     sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
-        n_wires=3,
+        n_qubits=3,
         world_size=2,
         observable="z_sum",
         backward_backend="pmap",
@@ -1010,7 +1010,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_pair_exchange_matches_k
     kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=3,
+        n_qubits=3,
         mode="statevector",
         observable="z_sum",
         jit=False,
@@ -1055,7 +1055,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_all_to_all_matches_kern
     sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
-        n_wires=3,
+        n_qubits=3,
         world_size=2,
         observable="z_sum",
         backward_backend="pmap",
@@ -1064,7 +1064,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_all_to_all_matches_kern
     kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=3,
+        n_qubits=3,
         mode="statevector",
         observable="z_sum",
         jit=False,
@@ -1110,7 +1110,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_4rank_multi_sharded_all
     sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=4,
         observable="z_sum",
         backward_backend="pmap",
@@ -1120,7 +1120,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_4rank_multi_sharded_all
     kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=4,
+        n_qubits=4,
         mode="statevector",
         observable="z_sum",
         jit=False,
@@ -1182,7 +1182,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_8rank_multi_sharded_all
     sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
-        n_wires=5,
+        n_qubits=5,
         world_size=8,
         observable="z_sum",
         backward_backend="pmap",
@@ -1192,7 +1192,7 @@ def test_jax_sharded_statevector_parameter_gradient_pmap_8rank_multi_sharded_all
     kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=5,
+        n_qubits=5,
         mode="statevector",
         observable="z_sum",
         jit=False,
@@ -1252,7 +1252,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_multiprocess_fails
         jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
-            n_wires=4,
+            n_qubits=4,
             world_size=4,
             observable="z_sum",
             backward_backend="shard_map",
@@ -1289,7 +1289,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_all_to_all_fails_c
         jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
-            n_wires=4,
+            n_qubits=4,
             world_size=4,
             observable="z_sum",
             backward_backend="shard_map",
@@ -1319,7 +1319,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_pair_exchange_matc
     sharded = jax_sharded_statevector_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=4,
         observable="z_sum",
         backward_backend="shard_map",
@@ -1329,7 +1329,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_pair_exchange_matc
     kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=4,
+        n_qubits=4,
         mode="statevector",
         observable="z_sum",
         jit=False,
@@ -1398,7 +1398,7 @@ def test_jax_sharded_statevector_parameter_gradient_shard_map_requires_local_mes
         jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
-            n_wires=4,
+            n_qubits=4,
             world_size=4,
             observable="z_sum",
             backward_backend="shard_map",
@@ -1433,7 +1433,7 @@ def test_jax_sharded_statevector_parameter_gradient_production_auto_fails_closed
         jax_sharded_statevector_parameter_value_and_grad(
             build,
             params,
-            n_wires=3,
+            n_qubits=3,
             world_size=2,
             observable="z_sum",
         )
@@ -1522,7 +1522,7 @@ def test_jax_sharded_mps_parameter_gradient_matches_jax_mps_kernel_without_state
     sharded = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=2,
         max_bond=8,
         observable="z_sum",
@@ -1531,7 +1531,7 @@ def test_jax_sharded_mps_parameter_gradient_matches_jax_mps_kernel_without_state
     kernel = compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=4,
+        n_qubits=4,
         mode="mps",
         observable="z_sum",
         max_bond=8,
@@ -1619,7 +1619,7 @@ def test_jax_sharded_mps_parameter_gradient_emits_rank_owned_attribution(monkeyp
     result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=2,
         max_bond=8,
         observable="z_sum",
@@ -1758,7 +1758,7 @@ def test_jax_sharded_mps_optimizer_evidence_rejects_invalid_learning_rate(
     result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=2,
         max_bond=8,
         observable="z_sum",
@@ -1786,7 +1786,7 @@ def test_jax_sharded_mps_optimizer_evidence_rejects_incomplete_owner_records(
     result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=2,
         max_bond=8,
         observable="z_sum",
@@ -1820,7 +1820,7 @@ def test_jax_sharded_mps_parameter_gradient_shared_cross_rank_owner_fails_closed
     result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=2,
         max_bond=8,
         observable="z_sum",
@@ -1877,7 +1877,7 @@ def test_jax_sharded_mps_parameter_gradient_dependency_mapping_fails_closed(
     result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=2,
         max_bond=8,
         observable="z_sum",
@@ -1919,7 +1919,7 @@ def test_jax_sharded_mps_backward_resource_evidence_accounts_every_rank(
     result = jax_sharded_mps_parameter_value_and_grad(
         build,
         params,
-        n_wires=4,
+        n_qubits=4,
         world_size=2,
         max_bond=8,
         observable="z_sum",
@@ -2161,7 +2161,7 @@ def test_jax_sharded_mps_parameter_gradient_pmap_fails_closed(monkeypatch):
         jax_sharded_mps_parameter_value_and_grad(
             build,
             params,
-            n_wires=4,
+            n_qubits=4,
             world_size=2,
             max_bond=8,
             observable="z_sum",
@@ -2184,7 +2184,7 @@ def test_jax_sharded_mps_parameter_gradient_shard_map_fails_closed(monkeypatch):
         jax_sharded_mps_parameter_value_and_grad(
             build,
             params,
-            n_wires=4,
+            n_qubits=4,
             world_size=2,
             max_bond=8,
             observable="z_sum",
@@ -2207,7 +2207,7 @@ def test_jax_sharded_mps_parameter_gradient_production_auto_fails_closed(monkeyp
         jax_sharded_mps_parameter_value_and_grad(
             build,
             params,
-            n_wires=4,
+            n_qubits=4,
             world_size=2,
             max_bond=8,
             observable="z_sum",
@@ -2381,7 +2381,7 @@ def test_jax_sliced_tensor_network_parameter_gradient_matches_jax_tn_kernel(
     sharded = jax_sliced_tensor_network_parameter_value_and_grad(
         build,
         params,
-        n_wires=3,
+        n_qubits=3,
         world_size=2,
         sliced_labels=(sliced_label,),
         observable="z_sum",
@@ -2390,7 +2390,7 @@ def test_jax_sliced_tensor_network_parameter_gradient_matches_jax_tn_kernel(
     kernel = compile_quantum_kernel(
         build,
         params.detach(),
-        n_wires=3,
+        n_qubits=3,
         mode="tensor_network",
         observable="z_sum",
         jit=False,
@@ -2439,7 +2439,7 @@ def test_jax_sliced_tensor_network_parameter_gradient_pmap_compute_fails_closed_
         jax_sliced_tensor_network_parameter_value_and_grad(
             build,
             params,
-            n_wires=3,
+            n_qubits=3,
             world_size=2,
             sliced_labels=(sliced_label,),
             compute_backend="pmap",

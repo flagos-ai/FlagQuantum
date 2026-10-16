@@ -33,8 +33,8 @@ import itertools
 import random
 import sys
 
-import numpy as np
 import pytest
+import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import MeasurementNode
@@ -47,11 +47,13 @@ from flagquantum.simulation.stabilizer import (
 
 pytestmark = pytest.mark.unit
 
+_COMPLEX = torch.complex128
+
 _PAULI_MATRICES = {
-    "I": np.eye(2, dtype=complex),
-    "X": np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex),
-    "Y": np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex),
-    "Z": np.array([[1.0, 0.0], [0.0, -1.0]], dtype=complex),
+    "I": torch.eye(2, dtype=_COMPLEX),
+    "X": torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=_COMPLEX),
+    "Y": torch.tensor([[0.0, -1.0j], [1.0j, 0.0]], dtype=_COMPLEX),
+    "Z": torch.tensor([[1.0, 0.0], [0.0, -1.0]], dtype=_COMPLEX),
 }
 
 # One generic call per Clifford gate. None of them takes a parameter, so the
@@ -80,12 +82,12 @@ _GATE_CALLS: dict[str, tuple[object, ...]] = {
 DENSE_TOLERANCE = 1e-5
 
 
-def _pauli(label: str) -> np.ndarray:
+def _pauli(label: str) -> torch.Tensor:
     """Return the tensor-product Pauli named by `label`, first character highest."""
 
-    matrix = np.array([[1.0]], dtype=complex)
+    matrix = torch.ones((1, 1), dtype=_COMPLEX)
     for character in label:
-        matrix = np.kron(matrix, _PAULI_MATRICES[character])
+        matrix = torch.kron(matrix, _PAULI_MATRICES[character])
     return matrix
 
 
@@ -110,7 +112,7 @@ def _basis_circuit(n_wires: int, index: int) -> fq.Circuit:
     return circuit
 
 
-def _gate_unitary(name: str) -> np.ndarray:
+def _gate_unitary(name: str) -> torch.Tensor:
     """Return the gate's dense unitary, built by running `Circuit` on basis states.
 
     Building it from statevectors rather than from a matrix table keeps this
@@ -125,14 +127,13 @@ def _gate_unitary(name: str) -> np.ndarray:
         getattr(_basis_circuit(arity, index), str(call[0]))(*call[1:])
         .state()
         .reshape(-1)
-        .numpy()
-        .astype(complex)
+        .to(_COMPLEX)
         for index in range(2**arity)
     ]
-    return np.stack(columns, axis=1)
+    return torch.stack(columns, dim=1)
 
 
-def _embed(unitary: np.ndarray, wires: tuple[int, ...], n_wires: int) -> np.ndarray:
+def _embed(unitary: torch.Tensor, wires: tuple[int, ...], n_wires: int) -> torch.Tensor:
     """Return the gate unitary acting on `wires` inside an `n_wires` register.
 
     Wire 0 is the highest Kronecker factor, which is the order the Pauli labels
@@ -142,9 +143,9 @@ def _embed(unitary: np.ndarray, wires: tuple[int, ...], n_wires: int) -> np.ndar
     """
 
     assert wires == tuple(range(wires[0], wires[0] + len(wires))), wires
-    left = np.eye(2 ** wires[0], dtype=complex)
-    right = np.eye(2 ** (n_wires - wires[-1] - 1), dtype=complex)
-    return np.kron(np.kron(left, unitary), right)
+    left = torch.eye(2 ** wires[0], dtype=_COMPLEX)
+    right = torch.eye(2 ** (n_wires - wires[-1] - 1), dtype=_COMPLEX)
+    return torch.kron(torch.kron(left, unitary), right)
 
 
 def _one_gate_circuit(name: str) -> fq.Circuit:
@@ -180,13 +181,13 @@ def _dense_conjugations(circuit: fq.Circuit, label: str) -> tuple[complex, compl
 
     ir = circuit.to_ir()
     n_wires = ir.n_wires
-    unitary = np.eye(2**n_wires, dtype=complex)
+    unitary = torch.eye(2**n_wires, dtype=_COMPLEX)
     for instruction in ir.instructions:
         wires = tuple(int(wire) for wire in instruction.wires)
         gate = _embed(_gate_unitary(str(instruction.name)), wires, n_wires)
         unitary = gate @ unitary
     pauli = _pauli(label)
-    zero = np.zeros(2**n_wires, dtype=complex)
+    zero = torch.zeros(2**n_wires, dtype=_COMPLEX)
     zero[0] = 1.0
     backwards = (unitary.conj().T @ pauli @ unitary) @ zero
     forwards = (unitary @ pauli @ unitary.conj().T) @ zero
@@ -225,7 +226,9 @@ def test_every_gate_conjugates_every_pauli_as_its_dense_unitary_does(
         assert readout.letters in {
             "".join(letters) for letters in itertools.product("IXYZ", repeat=arity)
         }, (gate, label, readout)
-        assert np.allclose((1j**readout.phase) * _pauli(readout.letters), expected), (
+        assert torch.allclose(
+            (1j**readout.phase) * _pauli(readout.letters), expected
+        ), (
             gate,
             label,
             readout,

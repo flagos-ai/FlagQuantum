@@ -386,9 +386,9 @@ def cost(weights, data):
     for layer in weights:
         for j, p in enumerate(layer):
             if p > 0:
-                rx(p, wire=j)
+                rx(p, wires=j)
             elif p < 0:
-                ry(p, wire=j)
+                ry(p, wires=j)
         for j in range(4):
             cx(j, (j + 1) % 4)
     return expectation(z(0) + z(3))
@@ -552,7 +552,7 @@ Exit gate:
 - scalar and index state are visible in the verified `scf.for` signature;
 - every iteration consumes the prior carried value and yields its successor;
 - post-loop quantum operations consume the explicit loop result;
-- dynamic execution observes the expected accumulated angles and wire choices;
+- dynamic execution observes the expected accumulated angles and qubit choices;
 - invalid carry types, target shadowing, nested/conditional writes, and loop
   measurement fail closed;
 - no Runtime, Simulation, public API, default-path, or performance change is
@@ -577,7 +577,7 @@ Exit gate:
 
 - scalar, index, bool, and effect values have matching branch signatures;
 - one-sided assignments have explicit unchanged-value pass-through;
-- post-branch gates and measurement wires consume `scf.if` results;
+- post-branch gates and measurement qubits consume `scf.if` results;
 - both specialized paths produce deterministic expected circuits and outcomes;
 - tensor, nested, and measurement-dependent carried state fail closed;
 - Runtime, Simulation, public API, default path, and performance claims remain
@@ -592,7 +592,7 @@ continuous SSA chain from the entry value through each region argument, yield,
 and result to the post-structure consumer.
 
 The accepted vertical slice covers an outer bounded loop containing branches
-that update angle, wire, and selector state, and an outer branch containing a
+that update angle, qubit, and selector state, and an outer branch containing a
 bounded loop that accumulates an angle. Lowering still specializes all
 classical predicates and bounded trip counts before handing one bound
 `CircuitIR` to Runtime.
@@ -679,7 +679,7 @@ Exit gate:
 
 - a measurement branch exports scalar, index, and bool values together;
 - post-branch arithmetic preserves the correct per-shot scalar parameter;
-- conditional wire selection splits gates under exclusive predicates;
+- conditional qubit selection splits gates under exclusive predicates;
 - a carried bool controls a later structured branch exactly;
 - reference and batched trajectories agree with recorded measurement bits;
 - case growth is bounded by the configured predicate ceiling;
@@ -724,7 +724,7 @@ execution; the compiled lookup remains the policy that performs feedback.
 Exit gate:
 
 - zero-error logical-zero memory is preserved;
-- one X error on each data wire produces the expected first syndrome;
+- one X error on each data qubit produces the expected first syndrome;
 - compiled same-round lookup feedback restores the data register;
 - later syndromes clear and temporal detection events are explicit;
 - reference and batched trajectory strategies agree;
@@ -735,8 +735,8 @@ Exit gate:
 
 ### Phase 17 — timed errors, history decoding, and offline Pauli frames
 
-Replace the initial single-wire injection shortcut with a bounded canonical
-schedule of deterministic X-error events located by round and data wire.
+Replace the initial single-qubit injection shortcut with a bounded canonical
+schedule of deterministic X-error events located by round and data qubit.
 Specialize those events into the unrolled program before each round's parity
 checks. Keep this test instrumentation QEC-owned and leave generic dynamic
 control with Compiler and Runtime.
@@ -750,7 +750,7 @@ Record actual feedback independently from decoder recommendations.
 Exit gate:
 
 - the schedule is canonical, bounded, and rejects ambiguous duplicate events;
-- every data wire may receive one X error in any verified round;
+- every data qubit may receive one X error in any verified round;
 - compiled feedback and offline frame correction both restore single errors;
 - syndrome onset and feedback clearance appear as detection events;
 - two same-round errors produce an explicit logical failure rather than a
@@ -766,7 +766,7 @@ Runtime owns seeded random-stream lifecycle, channel placement after matching
 executed gates, true/observed measurement separation, feedback from observed
 bits, and event statistics. Simulation supplies the numerical sampling kernels.
 
-Limit the first profile to independent one-wire bit-flip channels and
+Limit the first profile to independent one-qubit bit-flip channels and
 independent readout confusion. Apply readout confusion to explicit measurements
 and final sampling while collapsing the physical state on the true bit. Reject
 general Kraus channels, correlated readout, device-timing profiles, reset noise,
@@ -972,7 +972,7 @@ Support explicit restore-after-each-gate and persistent-layout strategies plus
 the existing deterministic `auto` selection. Clone the coupling map before
 planning so path-cache history does not alter routing evidence or identity.
 
-Require every routed two-wire instruction to occupy an undirected coupling
+Require every routed two-qubit instruction to occupy an undirected coupling
 edge, require identity output layout restoration, and bind the audit identity
 to source/routed circuits, topology, selected target snapshot, and strategy.
 Bound routing growth to 256 added instructions by default. Run topology routing
@@ -981,7 +981,7 @@ gates and the final Phase 25 operation limit sees the expanded artifact.
 
 Exit gate:
 
-- nonlocal two-wire gates route entirely onto coupling edges;
+- nonlocal two-qubit gates route entirely onto coupling edges;
 - restore and persistent strategies return identity output layout;
 - source and routed statevectors and parameter gradients agree;
 - repeated auto routing is byte deterministic despite coupling cache state;
@@ -998,7 +998,7 @@ Exit gate:
 Construct a deterministic ASAP schedule over the final legalized `CircuitIR`
 without creating another executable IR. Record instruction indices by logical
 unit-time layer and explicit predecessor evidence. Preserve source order on
-every wire and add cross-wire dependencies from classical-bit producers to all
+every qubit and add cross-qubit dependencies from classical-bit producers to all
 conditioned consumers.
 
 Treat dynamic operations, conditioned operations, and channels as conservative
@@ -1010,9 +1010,9 @@ explicit maximum logical depth and fail closed when it is exceeded.
 Exit gate:
 
 - independent gates share one deterministic ASAP layer;
-- operations touching the same wire retain source order;
+- operations touching the same qubit retain source order;
 - condition consumers depend on every referenced prior measurement, including
-  measurements on other wires;
+  measurements on other qubits;
 - malformed conditions and reads before measurement fail closed;
 - logical-depth policy is checked on the final routed and decomposed circuit;
 - repeated construction produces the same schedule identity;
@@ -1054,7 +1054,7 @@ Reproduce the expected Phase 29 emission from its legalization input, require
 exact payload and audit equality, and independently parse the canonical emitted
 subset. OpenQASM 2 and 3 parsing validates exact headers, register widths,
 terminal full-register measurement, gate syntax, arity, scalar parameters, and
-wire ranges. QCIS parsing validates the exact native instructions produced by
+qubit ranges. QCIS parsing validates the exact native instructions produced by
 the current emitter and lowers them into equivalent Core operations.
 
 The reconstructed artifact is the existing Core `CircuitIR`, not another IR.
@@ -1070,7 +1070,7 @@ Exit gate:
 - QCIS native text reconstructs an equivalent Core circuit within its decimal
   precision;
 - payload, digest, snapshot, emission identity, and legalization mismatch fail;
-- unsupported syntax, parameters, gates, registers, and wires fail closed;
+- unsupported syntax, parameters, gates, registers, and qubit identifiers fail closed;
 - deterministic reconstruction and conformance identities are verified;
 - no Compiler numerical execution, hardware certification, generic artifact,
   Runtime adapter, submission, TargetIR, public API, or performance claim is
@@ -1225,9 +1225,9 @@ Exit gate:
   objects and verify the corresponding source hashes;
 - routing-generated and mapped instructions carry exact source indexes;
 - mapping transitions replay to the recorded final layout;
-- every final two-wire instruction is legal on the evidenced coupling map;
+- every final two-qubit instruction is legal on the evidenced coupling map;
 - final native instructions retain source, routed-instruction, decomposition,
-  physical-wire, logical-wire, layer, predecessor, and dependency evidence;
+  physical_wires, logical_wires, layer, predecessor, and dependency evidence;
 - a deterministic plan identity covers all mapping and schedule evidence;
 - artifact-to-artifact compilation requires and retains the physical plan;
 - dependency layers are not represented as duration, pulse, calibration, or

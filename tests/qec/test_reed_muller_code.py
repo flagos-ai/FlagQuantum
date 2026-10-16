@@ -65,7 +65,7 @@ def _bits(rows: list[list[int]]) -> list[int]:
 def _pack(observable: Pauli, code: CssCode) -> int:
     """Return one observable as a bit mask over the code's own data wires."""
 
-    positions = {wire: index for index, wire in enumerate(code.data_wires)}
+    positions = {wire: index for index, wire in enumerate(code.data_qubits)}
     return sum(1 << positions[wire] for wire in observable.support)
 
 
@@ -242,13 +242,13 @@ def test_every_declared_operator_is_a_logical_operator(m: int) -> None:
 
     for observable in observables:
         for check in checks:
-            opposite = bool(observable.z_wires) != bool(check.z_wires)
+            opposite = bool(observable.z_qubits) != bool(check.z_qubits)
             if opposite:
                 assert observable.commutes_with(check)
         # Its own family's rows, as masks over the code's own wire order.
-        positions = {wire: index for index, wire in enumerate(code.data_wires)}
+        positions = {wire: index for index, wire in enumerate(code.data_qubits)}
         mask = sum(1 << positions[wire] for wire in observable.support)
-        if observable.z_wires:
+        if observable.z_qubits:
             family = _bits([list(row) for row in code.hz])
         else:
             family = _bits([list(row) for row in code.hx])
@@ -274,10 +274,10 @@ def test_the_two_families_pair_as_the_identity(m: int) -> None:
 
     code = _code(m)
     z_observables = [
-        observable for observable in code.logical_observables if observable.z_wires
+        observable for observable in code.logical_observables if observable.z_qubits
     ]
     x_observables = [
-        observable for observable in code.logical_observables if observable.x_wires
+        observable for observable in code.logical_observables if observable.x_qubits
     ]
     pairing = [
         [0 if z.commutes_with(x) else 1 for x in x_observables] for z in z_observables
@@ -346,7 +346,7 @@ def test_the_record_runs_a_memory_experiment(m: int) -> None:
 
     assert len(circuit.detectors) > 0
     assert len(circuit.observables.observables) == len(code.logical_observables) // 2
-    assert all(entry.pauli.z_wires for entry in circuit.observables.observables)
+    assert all(entry.pauli.z_qubits for entry in circuit.observables.observables)
 
 
 @pytest.mark.parametrize("m", [0, 1, 2, 3, -1])

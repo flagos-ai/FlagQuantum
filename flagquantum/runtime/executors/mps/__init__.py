@@ -13,8 +13,10 @@ __all__ = (
     "MPSProductionAcceptanceError",
     "MPSProductionPlan",
     "MPSProductionSupport",
+    "DistributedMPSExportResult",
     "NonlocalMPSCompilationError",
     "build_mps_release_artifact",
+    "export_distributed_mps",
     "execute_torch_distributed_mps_forward",
     "execute_torch_distributed_mps_reverse",
     "plan_production_mps",
@@ -60,6 +62,14 @@ _EXPORTS = {
     "build_mps_release_artifact": (
         "flagquantum.runtime.executors.mps.production",
         "build_mps_release_artifact",
+    ),
+    "DistributedMPSExportResult": (
+        "flagquantum.runtime.executors.mps.gather",
+        "DistributedMPSExportResult",
+    ),
+    "export_distributed_mps": (
+        "flagquantum.runtime.executors.mps.gather",
+        "export_distributed_mps",
     ),
     "execute_torch_distributed_mps_forward": (
         "flagquantum.runtime.executors.mps.forward",

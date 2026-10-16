@@ -11,7 +11,7 @@ The decoder mirrors ``MinimumWeightMatchingDecoder.decode``: both accept the
 detector indices a syndrome names and both return a record carrying the logical
 observables the correction flips, so either can be substituted at a call site. It
 deliberately does not satisfy the repetition-code ``Decoder`` protocol, whose
-``Correction`` names one data wire and cannot express the correction a detector
+``Correction`` names one data qubit and cannot express the correction a detector
 error model implies.
 
 Two limits are stated rather than implied. Order-zero post-processing leaves the

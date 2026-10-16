@@ -12,12 +12,27 @@ if TYPE_CHECKING:
 _DEFAULT_ELEMENT_BUDGET = 4_000_000
 
 
-def _collapse_sampled_wire(state: MPSState, wire: int, bits: torch.Tensor) -> None:
+def _collapse_sampled_wire(state: MPSState, qubit: int, bits: torch.Tensor) -> None:
     """Collapse one left-to-right sample step without rank-deficient QR."""
 
-    tensor = state.tensors[wire]
+    tensor = state.tensors[qubit]
     if tensor.shape[1] != 1:
         raise RuntimeError("sequential MPS sampling requires a unit left bond")
+    if qubit + 1 < state.n_qubits:
+        from .sampling_collapse_dispatch import (
+            _try_apply_cataloged_mps_sampling_collapse,
+        )
+
+        collapsed = _try_apply_cataloged_mps_sampling_collapse(
+            tensor,
+            state.tensors[qubit + 1],
+            bits,
+        )
+        if collapsed is not None:
+            state.tensors[qubit], state.tensors[qubit + 1] = collapsed
+            state.orthogonality_center = qubit + 1
+            state._canonical_center_valid = True
+            return
     batches = torch.arange(state.bsz, device=state.device)
     boundary = tensor[batches, 0, bits, :]
     norms = torch.linalg.vector_norm(boundary, dim=-1)
@@ -34,16 +49,16 @@ def _collapse_sampled_wire(state: MPSState, wire: int, bits: torch.Tensor) -> No
         device=state.device,
     )
     basis[batches, 0, bits, 0] = 1
-    state.tensors[wire] = basis
-    if wire + 1 < state.n_wires:
-        state.tensors[wire + 1] = torch.einsum(
+    state.tensors[qubit] = basis
+    if qubit + 1 < state.n_qubits:
+        state.tensors[qubit + 1] = torch.einsum(
             "bl,blsr->bsr",
             boundary,
-            state.tensors[wire + 1],
+            state.tensors[qubit + 1],
         ).unsqueeze(1)
-        state.orthogonality_center = wire + 1
+        state.orthogonality_center = qubit + 1
     else:
-        state.orthogonality_center = wire
+        state.orthogonality_center = qubit
     state._canonical_center_valid = True
 
 
@@ -59,7 +74,7 @@ def sample_mps_bits(
     outputs = torch.zeros(
         state.bsz,
         shots,
-        state.n_wires,
+        state.n_qubits,
         dtype=torch.int64,
         device=state.device,
     )
@@ -75,16 +90,16 @@ def sample_mps_bits(
         )
         work.orthogonality_center = state.orthogonality_center
         work._canonical_center_valid = state._canonical_center_valid
-        for wire in range(state.n_wires):
-            probabilities = work._wire_probabilities(wire)
+        for qubit in range(state.n_qubits):
+            probabilities = work._qubit_probabilities(qubit)
             bit = torch.multinomial(
                 probabilities,
                 num_samples=1,
                 replacement=True,
                 generator=generator,
             ).squeeze(-1)
-            outputs[:, start : start + count, wire] = bit.reshape(state.bsz, count)
-            _collapse_sampled_wire(work, wire, bit)
+            outputs[:, start : start + count, qubit] = bit.reshape(state.bsz, count)
+            _collapse_sampled_wire(work, qubit, bit)
     return outputs
 
 
@@ -97,7 +112,7 @@ def sample_mps_indices(
 ) -> torch.Tensor:
     """Sample integer basis indices when they fit in signed int64."""
 
-    if state.n_wires > 63:
+    if state.n_qubits > 63:
         raise ValueError(
             "integer-index MPS samples support at most 63 qubits; "
             "request format='bits' for wider circuits"
@@ -108,7 +123,7 @@ def sample_mps_indices(
         generator=generator,
         element_budget=element_budget,
     )
-    shifts = torch.arange(state.n_wires - 1, -1, -1, device=state.device)
+    shifts = torch.arange(state.n_qubits - 1, -1, -1, device=state.device)
     return torch.sum(bits << shifts, dim=-1)
 
 

@@ -1,4 +1,4 @@
-"""The realtime RPC wire format: a fixed header, an opaque payload, one slot.
+"""The realtime RPC frame format: a fixed header, an opaque payload, one slot.
 
 A realtime device call reaches a classical service while a program is still
 running. The service sits behind a ring buffer, so the unit of interchange is
@@ -74,7 +74,7 @@ class RealtimeProtocolError(ValueError):
 class RealtimeCallError(RuntimeError):
     """A device call refused before or around the exchange itself.
 
-    Wire and payload malformation raises :class:`RealtimeProtocolError`; a
+    Frame and payload malformation raises :class:`RealtimeProtocolError`; a
     channel that is not open, a channel name nobody registered, or an
     unregistered device id is a lifecycle mistake instead, and separating the
     two lets a caller retry one and not the other.

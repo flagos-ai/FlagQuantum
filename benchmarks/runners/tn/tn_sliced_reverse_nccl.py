@@ -577,6 +577,10 @@ def main() -> None:
     step_records: list[dict[str, object]] = []
     result = None
     optimizer = None
+    # One decision for the whole run: reference-comparison mode can afford a
+    # fully replicated gradient, the comparison-free mode cannot, so it reduces
+    # each gradient to the rank that owns the parameter.
+    gradient_reduction = "owner_reduce" if arguments.skip_reference else "all_reduce"
     for step in range(arguments.training_steps):
         if step > 0:
             expectation = _build_expectation(
@@ -606,9 +610,7 @@ def main() -> None:
             compiled_reverse=arguments.compiled_reverse,
             deferred_parameter_pullback=arguments.deferred_parameter_pullback,
             slice_batch_size=arguments.slice_batch_size,
-            gradient_reduction=(
-                "owner_reduce" if arguments.skip_reference else "all_reduce"
-            ),
+            gradient_reduction=gradient_reduction,
         )
         if rank == 0 and not arguments.skip_reference and step == 0:
             reference = expectation.contract(strategy="greedy")
@@ -642,6 +644,7 @@ def main() -> None:
             parameters,
             result.parameter_gradients,
             learning_rate=arguments.learning_rate,
+            gradient_reduction=gradient_reduction,
         )
         torch.cuda.synchronize(device)
         step_records.append(
@@ -754,8 +757,8 @@ def main() -> None:
             "gradient_aggregation_semantics": (
                 result.gradient_aggregation_semantics
             ),
-            "gradient_ownership_semantics": "sharded_across_ranks",
-            "gradient_ownership": optimizer.ownership,
+            "gradient_ownership_semantics": optimizer.gradient_ownership_semantics,
+            "gradient_ownership": optimizer.gradient_ownership,
             "optimizer": optimizer.summary(),
             "optimizer_update_semantics": "sharded_across_ranks",
             "optimizer_update_ownership_semantics": "sharded_across_ranks",
@@ -822,8 +825,8 @@ def main() -> None:
             "gradient_aggregation_semantics": (
                 result.gradient_aggregation_semantics
             ),
-            "gradient_ownership_semantics": "sharded_across_ranks",
-            "gradient_ownership": optimizer.ownership,
+            "gradient_ownership_semantics": optimizer.gradient_ownership_semantics,
+            "gradient_ownership": optimizer.gradient_ownership,
             "optimizer": optimizer.summary(),
             "optimizer_update_semantics": "sharded_across_ranks",
             "optimizer_update_ownership_semantics": "sharded_across_ranks",

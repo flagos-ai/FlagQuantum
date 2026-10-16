@@ -68,7 +68,7 @@ def test_depth_follows_dependencies_and_not_per_wire_operation_counts() -> None:
 
     estimate = _estimate(fq.Circuit(2).h(0).cx(0, 1).h(1))
 
-    assert estimate.per_wire_depth == (2, 3)
+    assert estimate.per_qubit_depth == (2, 3)
     assert estimate.depth == 3
 
 
@@ -91,8 +91,8 @@ def test_a_wire_that_no_operation_touches_is_unused_but_still_allocated() -> Non
     estimate = _estimate(fq.Circuit(4).h(0))
 
     assert estimate.n_qubits == 4
-    assert estimate.used_wires == 1
-    assert estimate.per_wire_depth == (1, 0, 0, 0)
+    assert estimate.used_qubits == 1
+    assert estimate.per_qubit_depth == (1, 0, 0, 0)
 
 
 def test_the_operation_width_is_not_the_declared_register_width() -> None:
@@ -106,7 +106,7 @@ def test_the_operation_width_is_not_the_declared_register_width() -> None:
     assert two_wire.n_qubits == 4
 
 
-def test_per_wire_depth_records_the_last_layer_that_touches_the_wire() -> None:
+def test_per_qubit_depth_records_the_last_layer_that_touches_the_wire() -> None:
     """Wire 0 is idle in the second layer, so it stays one layer deep, not two.
 
     Counting the layers in which a wire appears would report two for both wires and
@@ -121,9 +121,9 @@ def test_per_wire_depth_records_the_last_layer_that_touches_the_wire() -> None:
     idle_last = _estimate(fq.Circuit(2).cx(0, 1).h(1))
     skipped_layer = _estimate(fq.Circuit(2).cx(0, 1).h(1).cx(0, 1))
 
-    assert idle_last.per_wire_depth == (1, 2)
+    assert idle_last.per_qubit_depth == (1, 2)
     assert idle_last.depth == 2
-    assert skipped_layer.per_wire_depth == (3, 3)
+    assert skipped_layer.per_qubit_depth == (3, 3)
     assert skipped_layer.depth == 3
 
 
@@ -185,7 +185,7 @@ def test_a_program_that_uses_two_wires_of_a_wide_register_is_estimated_without_r
     elapsed = time.perf_counter() - started
 
     assert estimate.n_qubits == 30
-    assert estimate.used_wires == 2
+    assert estimate.used_qubits == 2
     assert estimate.depth == 3
     assert elapsed < 2.0
 
@@ -198,8 +198,8 @@ def test_an_empty_program_estimates_to_nothing() -> None:
     assert estimate.n_operations == 0
     assert estimate.operation_counts == {}
     assert estimate.depth == 0
-    assert estimate.per_wire_depth == (0, 0, 0)
-    assert estimate.used_wires == 0
+    assert estimate.per_qubit_depth == (0, 0, 0)
+    assert estimate.used_qubits == 0
     assert estimate.max_operation_width == 0
     assert estimate.t_depth == 0
 
@@ -265,8 +265,8 @@ def test_the_estimate_agrees_with_the_compilers_own_schedule() -> None:
         assert estimate.depth == len(schedule_layers(ir))
         assert estimate.n_operations == len(ir)
         assert sum(estimate.operation_counts.values()) == estimate.n_operations
-        assert estimate.used_wires == sum(
-            1 for depth in estimate.per_wire_depth if depth
+        assert estimate.used_qubits == sum(
+            1 for depth in estimate.per_qubit_depth if depth
         )
 
 
@@ -453,10 +453,10 @@ def test_counting_in_a_named_basis_is_counting_the_converted_program() -> None:
 
     assert in_basis.operation_counts == counted_directly.operation_counts
     assert in_basis.depth == counted_directly.depth
-    assert in_basis.per_wire_depth == counted_directly.per_wire_depth
+    assert in_basis.per_qubit_depth == counted_directly.per_qubit_depth
     assert in_basis.t_count == counted_directly.t_count
     assert in_basis.t_depth == counted_directly.t_depth
-    assert in_basis.n_wires == counted_directly.n_wires
+    assert in_basis.n_qubits == counted_directly.n_qubits
 
 
 def test_a_basis_that_cannot_express_the_program_is_refused_rather_than_approximated() -> (

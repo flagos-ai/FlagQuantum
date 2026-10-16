@@ -21,7 +21,7 @@ import flagquantum.lindblad as fql
 
 # A 0.5 * X drive on one qubit, damped from |1> once per unit time.
 result = fql.run(
-    [{"operator": "X", "wires": [0], "coefficient": 0.5}],
+    [{"operator": "X", "qubits": [0], "coefficient": 0.5}],
     "1",
     [0.0, 1.0, 2.0],
     collapse_operators=[fql.amplitude_damping(rate=1.0, qubit=0)],

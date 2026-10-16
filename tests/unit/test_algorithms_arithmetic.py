@@ -36,9 +36,9 @@ import pytest
 import torch
 
 from flagquantum.algorithms.arithmetic import (
-    AdderWires,
+    AdderQubits,
     adder_circuit,
-    adder_wires,
+    adder_qubits,
 )
 from flagquantum.algorithms.logical_resources import estimate_logical_resources
 from flagquantum.circuit import Circuit
@@ -234,12 +234,12 @@ def test_the_construction_costs_eight_operations_per_bit(n_bits: int) -> None:
 @pytest.mark.parametrize("n_bits", CHECKED_WIDTHS)
 def test_the_register_map_covers_every_wire_exactly_once(n_bits: int) -> None:
     """The map is a partition of the circuit's wires, so no wire is unaccounted."""
-    wires = adder_wires(n_bits)
+    wires = adder_qubits(n_bits)
     circuit_wires = set(range(adder_circuit(n_bits).n_wires))
 
-    assert isinstance(wires, AdderWires)
+    assert isinstance(wires, AdderQubits)
     assert wires.n_bits == n_bits
-    assert wires.n_wires == 2 * n_bits + 2
+    assert wires.n_qubits == 2 * n_bits + 2
     assert len(wires.a) == len(wires.b) == n_bits
     assert set(wires.a) | set(wires.b) | {wires.carry, wires.carry_out} == circuit_wires
     # Most significant bit first in both registers, with the two ancillas above
@@ -268,7 +268,7 @@ def test_the_ripple_runs_on_the_working_wire(n_bits: int) -> None:
     five times and a ``b`` wire six, twice and four times as a target.
     """
     circuit = adder_circuit(n_bits)
-    wires = adder_wires(n_bits)
+    wires = adder_qubits(n_bits)
     reached: Counter[int] = Counter()
     targeted: Counter[int] = Counter()
     for instruction in circuit.to_ir().instructions:
@@ -303,7 +303,7 @@ def test_a_width_that_is_not_a_positive_integer_is_refused(
     width: object, message: str, error: type[Exception]
 ) -> None:
     """Both entry points refuse a width that is not a positive integer."""
-    for entry in (adder_circuit, adder_wires):
+    for entry in (adder_circuit, adder_qubits):
         with pytest.raises(error, match=message):
             entry(width)
 

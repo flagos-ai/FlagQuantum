@@ -2,8 +2,8 @@
 
 Serve measurement outcomes and exact Pauli expectations for a Clifford circuit
 whose state is a Pauli tableau rather than an amplitude store. The tableau grows
-with the square of the wire count, so this is the only representation that reaches
-wire counts a dense state cannot hold.
+with the square of the qubit count, so this is the only representation that
+reaches qubit counts a dense state cannot hold.
 
 A program that carries a noise channel is served here too. A scene-level
 `NoiseModel` reaches this route already lowered into positioned channel

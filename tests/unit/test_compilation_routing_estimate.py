@@ -267,7 +267,7 @@ def test_the_automatic_choice_is_always_accepted_by_deployment() -> None:
             route_to_topology(program, coupling, strategy=strategy).metadata["routing"]
         )
         assert validate_deployment_routing_plan(
-            plan, n_wires=program.n_qubits, coupling_map=coupling
+            plan, n_qubits=program.n_qubits, coupling_map=coupling
         )
 
     undeployable = dict(
@@ -280,7 +280,7 @@ def test_the_automatic_choice_is_always_accepted_by_deployment() -> None:
         DeploymentRoutingEvidenceError, match="unsupported routing strategy"
     ):
         validate_deployment_routing_plan(
-            undeployable, n_wires=program.n_qubits, coupling_map=coupling
+            undeployable, n_qubits=program.n_qubits, coupling_map=coupling
         )
     assert selection.selected_strategy in DEPLOYABLE_ROUTING_STRATEGIES
 

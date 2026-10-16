@@ -33,6 +33,29 @@ because the reversible adjoint sweep is the backward pass behind PyTorch
 autograd and no result reports whether backward used it. Use `"autograd"` and
 read the execution mode instead.
 
+## Several outputs at once
+
+`fq.gradient` needs one scalar. A program that returns a probability vector or
+one expectation value per qubit has no single scalar gradient, so the run also
+differentiates `two_expectations`, which returns both qubit expectations:
+
+```python
+jacobian = fq.jacobian(two_expectations, parameters)   # shape (2, 1, 3)
+forward = fq.jvp(two_expectations, parameters, tangent)  # J @ tangent
+reverse = fq.vjp(two_expectations, parameters, cotangent)  # cotangent @ J
+```
+
+`fq.jacobian` costs one backward pass per output element, `fq.jvp` costs two
+whatever the output size, and `fq.vjp` costs one whatever the parameter count.
+The two products are adjoint, `<Jv, c> == <v, J^T c>`, which the run prints; the
+residual is `6e-08` because the circuit is `complex64` by default while the
+parameters are `float64`, not because either product is derived differently.
+
+None of the three takes a `method`: there is no shift rule for a vector output
+and no displacement to report, so a program whose output carries no PyTorch
+graph is refused rather than answered with a zero derivative. Every result is
+detached, so a second derivative needs an explicit route rather than a nest.
+
 The full reference is the
 [differentiation section](../../docs/reference/API.md#differentiate-a-program)
 of the API reference.

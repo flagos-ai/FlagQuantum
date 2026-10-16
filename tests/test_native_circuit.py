@@ -192,17 +192,17 @@ def test_a_batch_size_assignment_follows_the_constructor_rule(value):
 
 @pytest.mark.parametrize("value", [2.7, 2.0, "3", True, False, None, 3 + 0j])
 def test_a_qubit_count_assignment_follows_the_constructor_rule(value):
-    """``circuit.n_wires = value`` is the same write as ``Circuit(value)``."""
+    """``circuit.n_qubits = value`` is the same write as ``Circuit(value)``."""
 
     circuit = fq.Circuit(2, bsz=3)
 
-    with pytest.raises(TypeError, match="Circuit n_wires must be an integer"):
-        circuit.n_wires = value
+    with pytest.raises(TypeError, match="Circuit n_qubits must be an integer"):
+        circuit.n_qubits = value
 
-    assert circuit.n_wires == 2
+    assert circuit.n_qubits == 2
 
 
-@pytest.mark.parametrize("name", ["bsz", "n_wires"])
+@pytest.mark.parametrize("name", ["bsz", "n_qubits"])
 @pytest.mark.parametrize("value", [0, -1, -1024])
 def test_a_non_positive_count_assignment_is_refused_where_it_is_written(name, value):
     """A count no execution could honor fails at the assignment, not inside a run.
@@ -217,7 +217,7 @@ def test_a_non_positive_count_assignment_is_refused_where_it_is_written(name, va
         setattr(circuit, name, value)
 
     assert circuit.bsz == 3
-    assert circuit.n_wires == 2
+    assert circuit.n_qubits == 2
 
 
 def test_a_refused_assignment_leaves_a_runnable_circuit():
@@ -233,7 +233,7 @@ def test_a_refused_assignment_leaves_a_runnable_circuit():
     torch.testing.assert_close(after, before)
 
 
-@pytest.mark.parametrize("name, value", [("bsz", 7), ("n_wires", 4)])
+@pytest.mark.parametrize("name, value", [("bsz", 7), ("n_qubits", 4)])
 def test_an_assignment_reaches_the_program_that_is_executed(name, value):
     """The declared count and the program the circuit hands to a backend agree.
 
@@ -254,7 +254,7 @@ def test_an_assignment_reaches_the_program_that_is_executed(name, value):
     else:
         assert ir.n_wires == declared
     probabilities = fq.run(circuit, outputs=fq.probabilities()).probabilities
-    assert probabilities.shape == (circuit.bsz, 2**circuit.n_wires)
+    assert probabilities.shape == (circuit.bsz, 2**circuit.n_qubits)
 
 
 def test_an_assignment_reaches_every_derived_view_of_the_circuit():
@@ -272,21 +272,21 @@ def test_an_assignment_reaches_every_derived_view_of_the_circuit():
     assert fq.run(compiled, outputs=fq.probabilities()).probabilities.shape == (7, 4)
 
 
-def test_a_qubit_count_cannot_be_lowered_onto_a_wire_in_use():
+def test_a_qubit_count_cannot_be_lowered_onto_a_qubit_in_use():
     """A width that would strand a recorded instruction is refused at the write.
 
-    ``circuit.n_wires = 2`` on a circuit holding a gate on wire 3 was accepted, and
-    the object then failed later with
-    ``IRValidationError: instruction 0 references wire(s) (3,) outside circuit
+    ``circuit.n_qubits = 2`` on a circuit holding a gate on qubit 3 was accepted,
+    and the object then failed later with
+    ``IRValidationError: instruction 0 references qubit(s) (3,) outside circuit
     range`` -- an error about the program, not about the assignment that broke it.
     """
 
     circuit = fq.Circuit(4).h(3)
 
-    with pytest.raises(ValueError, match="wire 3"):
-        circuit.n_wires = 2
+    with pytest.raises(ValueError, match="qubit 3"):
+        circuit.n_qubits = 2
 
-    assert circuit.n_wires == 4
+    assert circuit.n_qubits == 4
     assert fq.run(circuit, outputs=fq.probabilities()).probabilities.shape == (1, 16)
 
 
@@ -294,7 +294,7 @@ def test_growing_a_qubit_count_keeps_the_recorded_instructions():
     """Widening is allowed, and the new wires are usable afterwards."""
 
     circuit = fq.Circuit(2).h(0)
-    circuit.n_wires = 4
+    circuit.n_qubits = 4
     circuit.h(3)
 
     assert circuit.to_ir().n_wires == 4
@@ -840,8 +840,22 @@ def test_batched_parameter_shift_uses_one_evaluation_and_matches_autograd():
             "enter its gate angle directly",
         ),
         (
-            lambda values: fq.Circuit(2).rzz(0, 1, theta=values[0]),
-            "supports only H, X, RX, RY, RZ, and CX",
+            lambda values: fq.Circuit(2).crz(0, 1, theta=values[0]),
+            r"crz declares frequencies \(0\.5, 1\.0\) and needs 2 evaluation pairs",
+        ),
+        (
+            lambda values: fq.Circuit(1, dtype=torch.complex128).u3(
+                0, theta=values[0], phi=values[0], lbd=0.3
+            ),
+            "must control exactly one gate occurrence; found 2",
+        ),
+        (
+            lambda values: fq.Circuit(1).bit_flip(0, probability=values[0]),
+            "bit_flip is a channel",
+        ),
+        (
+            lambda values: fq.Circuit(1).sdg(0).rx(0, theta=values[0]),
+            "sdg carries no declared parameter",
         ),
     ],
 )
@@ -855,6 +869,57 @@ def test_batched_parameter_shift_rejects_unsupported_parameter_use(build, messag
             torch.tensor([0.2]),
             unexpected_batch,
         )
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda values: fq.Circuit(2, dtype=torch.complex128).rzz(0, 1, theta=values[0]),
+        lambda values: fq.Circuit(2, dtype=torch.complex128)
+        .rzz(0, 1, theta=values[0])
+        .cx(0, 1),
+        lambda values: fq.Circuit(1, dtype=torch.complex128).u2(
+            0, phi=values[0], lbd=0.3
+        ),
+        lambda values: fq.Circuit(1, dtype=torch.complex128).u3(
+            0, theta=values[0], phi=0.2, lbd=0.3
+        ),
+        lambda values: fq.Circuit(1, dtype=torch.complex128).phase(0, theta=values[0]),
+        lambda values: fq.Circuit(1, dtype=torch.complex128).u1(0, theta=values[0]),
+        lambda values: fq.Circuit(2, dtype=torch.complex128).cphase(
+            0, 1, theta=values[0]
+        ),
+        lambda values: fq.Circuit(2, dtype=torch.complex128)
+        .h(0)
+        .rxx(0, 1, theta=values[0])
+        .x(1),
+    ],
+)
+def test_batched_parameter_shift_admits_every_one_frequency_gate(build):
+    """A one-frequency gate needs one evaluation pair, whatever its opcode.
+
+    The circuit is complex128 so that the agreement asserted here is the rule's
+    arithmetic and not the storage precision of the simulator.
+    """
+
+    params = torch.tensor([0.23], dtype=torch.float64)
+    autograd_params = params.detach().clone().requires_grad_(True)
+
+    def loss(circuit):
+        return circuit.expectation_z(tuple(range(circuit.n_qubits))).sum()
+
+    reference = loss(build(autograd_params))
+    reference.backward()
+    gradient = batched_parameter_shift_gradient(
+        build,
+        params,
+        lambda circuits: torch.tensor(
+            [float(loss(circuit)) for circuit in circuits], dtype=torch.float64
+        ),
+    )
+
+    assert autograd_params.grad is not None
+    torch.testing.assert_close(gradient, autograd_params.grad, rtol=0, atol=1e-12)
 
 
 def test_native_named_parameters_bind_before_execution_and_export():
@@ -1084,7 +1149,7 @@ def test_native_planner_analysis_and_execution_plan():
     analysis = circuit.analysis()
     plan = fqxp.plan_advanced(circuit, bsz=2, world_size=2, memory_limit_bytes=1)
 
-    assert analysis.n_wires == 3
+    assert analysis.n_qubits == 3
     assert analysis.n_instructions == 4
     assert analysis.gate_counts == {"h": 1, "cx": 2, "rz": 1}
     assert analysis.two_qubit_gates == 2
@@ -1742,7 +1807,7 @@ def test_distributed_mps_mode_exposes_rank_shards_and_matches_mps():
     )
     assert result.summary()["state_mode"] == "distributed_mps"
     assert result.summary()["world_size"] == 2
-    assert tuple(shard.wires for shard in result.shards) == ((0, 1), (2, 3))
+    assert tuple(shard.qubits for shard in result.shards) == ((0, 1), (2, 3))
     assert torch.allclose(
         result.to_statevector(),
         fqr.run_native(circuit, mode="mps").to_statevector(),
@@ -2091,13 +2156,13 @@ def test_distributed_mps_site_local_two_qubit_gate_uses_tensor_sync():
 def test_sharded_mps_apply_one_local_matches_mps_kernel():
     mps = MPSState.zero(2)
     sharded = ShardedMPSState(
-        n_wires=2,
+        n_qubits=2,
         bsz=1,
         config=mps.config,
         local_tensors={0: mps.tensors[0]},
         shards=(
             DistributedShardPlan(
-                rank=0, world_size=1, wires=(0,), left_boundary=None, right_boundary=0
+                rank=0, world_size=1, qubits=(0,), left_boundary=None, right_boundary=0
             ),
         ),
     )
@@ -2112,13 +2177,17 @@ def test_sharded_mps_apply_one_local_matches_mps_kernel():
 def test_sharded_mps_apply_two_local_matches_mps_kernel():
     mps = MPSState.zero(2)
     sharded = ShardedMPSState(
-        n_wires=2,
+        n_qubits=2,
         bsz=1,
         config=mps.config,
         local_tensors={0: mps.tensors[0], 1: mps.tensors[1]},
         shards=(
             DistributedShardPlan(
-                rank=0, world_size=1, wires=(0, 1), left_boundary=None, right_boundary=1
+                rank=0,
+                world_size=1,
+                qubits=(0, 1),
+                left_boundary=None,
+                right_boundary=1,
             ),
         ),
     )
@@ -2147,14 +2216,14 @@ def test_distributed_mps_identifies_cross_shard_boundary_gate():
     instruction = circuit.to_ir().instructions[0]
     shards = dist_runtime._mps_shards(4, 2)
 
-    assert tuple(shard.wires for shard in shards) == ((0, 1), (2, 3))
+    assert tuple(shard.qubits for shard in shards) == ((0, 1), (2, 3))
     assert dist_runtime._instruction_is_boundary_local(instruction, shards)
     assert not dist_runtime._instruction_is_site_local(instruction, shards)
     assert dist_runtime._boundary_touched_wires(instruction) == (1, 2)
     record = dist_runtime._boundary_sync_record(instruction, shards)
     assert isinstance(record, DistributedBoundarySync)
-    assert record.left_wire == 1
-    assert record.right_wire == 2
+    assert record.left_qubit == 1
+    assert record.right_qubit == 2
     assert record.left_rank == 0
     assert record.right_rank == 1
     assert record.owner_rank == 0

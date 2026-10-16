@@ -181,7 +181,7 @@ def test_tensor_network_wrapper_delegates_local_numerics(monkeypatch):
                 "contraction_strategy": "greedy",
                 "max_intermediate_size": None,
                 "sliced_labels": None,
-                "dense_observable_wires": 0,
+                "dense_observable_qubits": 0,
                 "max_intermediate_bytes": None,
             },
         )
@@ -301,7 +301,7 @@ def test_tensor_network_expectation_plan_is_public_and_matches_circuit():
     expectation_plan = build_tensor_network_expectation(plan, x=[0, 2], z=[1])
 
     assert isinstance(expectation_plan, TensorNetworkExpectationPlan)
-    assert expectation_plan.observable_wires == (0, 1, 2)
+    assert expectation_plan.observable_qubits == (0, 1, 2)
     assert expectation_plan.summary()["contraction"] == "expectation"
     assert torch.allclose(
         tensor_network_expectation_ps(plan, x=[0, 2], z=[1]),
@@ -317,7 +317,7 @@ def test_build_tensor_network_exposes_contraction_plan():
     plan = build_tensor_network(circuit)
 
     assert isinstance(plan, TensorNetworkContractionPlan)
-    assert plan.n_wires == 2
+    assert plan.n_qubits == 2
     assert plan.n_nodes == 4
     assert len(plan.path) == plan.n_nodes
     assert torch.allclose(plan.contract(), circuit.state(), atol=1e-6)
@@ -381,7 +381,7 @@ def test_tensor_network_memory_greedy_avoids_outer_products_while_connected():
         TensorNetworkNode(torch.ones(2), (2,), name="component_b"),
     )
     plan = TensorNetworkContractionPlan(
-        n_wires=0,
+        n_qubits=0,
         bsz=1,
         nodes=nodes,
         output_labels=(),
@@ -542,7 +542,7 @@ def test_tensor_network_slicing_budget_fails_closed():
         name="output",
     )
     plan = TensorNetworkContractionPlan(
-        n_wires=1,
+        n_qubits=1,
         bsz=1,
         nodes=(node,),
         output_labels=(0, 1),
@@ -574,7 +574,7 @@ def test_tensor_network_dry_run_uses_meta_for_huge_intermediate():
         ),
     )
     plan = TensorNetworkContractionPlan(
-        n_wires=0,
+        n_qubits=0,
         bsz=1,
         nodes=nodes,
         output_labels=(0, 1),
@@ -874,7 +874,7 @@ def test_small_tn_reuses_one_state_contraction_for_many_z_observables():
     theta = torch.tensor(0.2, requires_grad=True)
     state = fqtn.run_tensor_network(
         fq.Circuit(4).ry(0, theta).cx(0, 1).cx(1, 2).cx(2, 3),
-        dense_observable_wires=12,
+        dense_observable_qubits=12,
     )
 
     values = state.expectation_z((0, 1, 2, 3))
@@ -890,7 +890,7 @@ def test_compiled_z_observable_batch_avoids_full_state_materialization():
     theta = torch.tensor(0.2, requires_grad=True)
     state = fqtn.run_tensor_network(
         fq.Circuit(3).ry(0, theta).cx(0, 1).cx(1, 2),
-        dense_observable_wires=0,
+        dense_observable_qubits=0,
     )
 
     values = state.expectation_z((0, 1, 2))
@@ -909,9 +909,9 @@ def test_compiled_z_observable_batch_avoids_full_state_materialization():
 def test_compiled_z_observable_program_is_reused_across_runs():
     circuit = fq.Circuit(3).ry(0, 0.2).cx(0, 1).cx(1, 2)
 
-    first = fqtn.run_tensor_network(circuit, dense_observable_wires=0)
+    first = fqtn.run_tensor_network(circuit, dense_observable_qubits=0)
     first_values = first.expectation_z((0, 1, 2))
-    second = fqtn.run_tensor_network(circuit, dense_observable_wires=0)
+    second = fqtn.run_tensor_network(circuit, dense_observable_qubits=0)
     second_values = second.expectation_z((0, 1, 2))
 
     assert first.summary()["observable_program_cache_hit"] is False
@@ -1443,6 +1443,70 @@ def test_distributed_observable_batch_uses_one_shared_reduction():
     assert summary["reduction_payload_bytes"] == (
         result.values.numel() * result.values.element_size()
     )
+
+
+def test_amplitude_projectors_cross_the_host_boundary_independently_of_batch():
+    """Projector construction must not move any host value onto the device.
+
+    A projector built element by element reads one host scalar per target per
+    projected wire, and the projection is attached inside the region a caller
+    times, so the contraction looks like it staged data through the host when it
+    only built its plan. Lifting the target table instead already bounded that at
+    one copy, but one copy is still a host-to-device transfer inside the timed
+    region, so the batch is now built by indexing a device-resident identity and
+    the count is zero for any batch.
+    """
+
+    circuit = fq.Circuit(6)
+    for wire in range(6):
+        circuit.ry(wire, theta=0.02)
+    plan = build_tensor_network(circuit)
+
+    def host_lifts(bitstrings):
+        original = torch.as_tensor
+        lifted: list[object] = []
+
+        def counting(value, *args, **kwargs):
+            lifted.append(value)
+            return original(value, *args, **kwargs)
+
+        torch.as_tensor = counting
+        try:
+            nodes, outputs = tensor_execution._amplitude_batch_projection(
+                plan, bitstrings
+            )
+        finally:
+            torch.as_tensor = original
+        return nodes, outputs, lifted
+
+    single_nodes, _, single_lifts = host_lifts(("010101",))
+    batch_nodes, batch_outputs, batch_lifts = host_lifts(
+        ("010101", "101010", "000000", "111111")
+    )
+
+    assert single_lifts == []
+    assert batch_lifts == []
+
+    expected_target = max(label for node in plan.nodes for label in node.labels) + 1
+    assert batch_outputs == (plan.output_labels[0], expected_target)
+    assert len(single_nodes) == len(plan.nodes) + len(plan.output_labels) - 1
+
+    projectors = [
+        node.tensor for node in batch_nodes if node.name.startswith("amplitude_batch_")
+    ]
+    assert len(projectors) == len(plan.output_labels) - 1
+    for wire, projector in enumerate(projectors):
+        assert projector.shape == (4, 2)
+        assert projector.dtype == plan.nodes[0].tensor.dtype
+        assert projector.device == plan.nodes[0].tensor.device
+        for target, bitstring in enumerate(("010101", "101010", "000000", "111111")):
+            expected = torch.zeros(2, dtype=torch.float64)
+            expected[int(bitstring[wire])] = 1.0
+            assert torch.equal(projector[target].real.to(torch.float64), expected)
+    # A projector aliasing another target's row would satisfy the value checks
+    # above only by accident, so the rows must also be independent storage.
+    projectors[0][0, 0] = 0.0
+    assert projectors[0][1, 1] == 1.0
 
 
 def test_parallel_slice_planner_reduces_rank_local_cost_vs_label_order():

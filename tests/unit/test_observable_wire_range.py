@@ -51,8 +51,8 @@ def state(request: pytest.FixtureRequest) -> State:
 def test_expectation_z_refuses_a_wire_outside_the_state(
     state: State, wire: int
 ) -> None:
-    with pytest.raises(ValueError, match="observable wire index out of range"):
-        state.expectation_z(wires=[wire])  # type: ignore[attr-defined]
+    with pytest.raises(ValueError, match="observable qubit index out of range"):
+        state.expectation_z(qubits=[wire])  # type: ignore[attr-defined]
 
 
 @pytest.mark.parametrize("wire", OUT_OF_RANGE)
@@ -60,7 +60,7 @@ def test_expectation_z_refuses_a_wire_outside_the_state(
 def test_expectation_ps_refuses_a_wire_outside_the_state(
     state: State, wire: int, axis: str
 ) -> None:
-    with pytest.raises(ValueError, match="observable wire index out of range"):
+    with pytest.raises(ValueError, match="observable qubit index out of range"):
         state.expectation_ps(**{axis: [wire]})  # type: ignore[attr-defined]
 
 
@@ -72,16 +72,16 @@ def test_a_refused_wire_does_not_return_a_plausible_expectation(state: State) ->
     """
     for wire in OUT_OF_RANGE:
         with pytest.raises(ValueError):
-            state.expectation_z(wires=[wire])  # type: ignore[attr-defined]
+            state.expectation_z(qubits=[wire])  # type: ignore[attr-defined]
 
 
 def test_in_range_observable_wires_still_evaluate(state: State) -> None:
     """The guard must not reject a wire the state does have."""
 
-    z = state.expectation_z(wires=[0, 1, 2])  # type: ignore[attr-defined]
+    z = state.expectation_z(qubits=[0, 1, 2])  # type: ignore[attr-defined]
     assert z.shape[-1] == 3
 
-    single = state.expectation_z(wires=[2])  # type: ignore[attr-defined]
+    single = state.expectation_z(qubits=[2])  # type: ignore[attr-defined]
     assert torch.allclose(single.reshape(-1), z.reshape(-1)[-1:], atol=1e-6)
 
     for axis in ("x", "y", "z"):

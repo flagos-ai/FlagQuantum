@@ -70,7 +70,7 @@ def _provider():
     provider = AzureQuantumProvider(
         workspace,
         target.name,
-        n_wires=32,
+        n_qubits=32,
         basis_gates=("rz", "rzz"),
         program_factory=compile_qasm,
     )
@@ -92,7 +92,7 @@ def test_azure_target_builds_explicit_fail_closed_profile() -> None:
 
     profile = azure_backend_profile(
         target,
-        n_wires=32,
+        n_qubits=32,
         basis_gates=("RZ", "RZZ"),
     )
 
@@ -219,7 +219,7 @@ def test_resource_id_workspace_requires_the_azure_extra(
     _hide_qdk(monkeypatch)
 
     with pytest.raises(ImportError, match=r"qdk\[azure\]"):
-        AzureQuantumProvider("resource-id", "quantinuum.qpu.h2-1", n_wires=32)
+        AzureQuantumProvider("resource-id", "quantinuum.qpu.h2-1", n_qubits=32)
 
 
 def test_submission_without_a_compiler_fails_closed_before_the_target(
@@ -230,7 +230,7 @@ def test_submission_without_a_compiler_fails_closed_before_the_target(
     provider = AzureQuantumProvider(
         FakeAzureWorkspace(target),
         target.name,
-        n_wires=32,
+        n_qubits=32,
         basis_gates=("rz", "rzz"),
     )
 

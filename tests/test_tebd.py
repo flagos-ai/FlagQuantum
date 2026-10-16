@@ -35,7 +35,7 @@ def test_tebd_is_explicitly_experimental_not_stable_root_api() -> None:
 def test_tebd_plus_x_initial_energy_and_auditable_metadata() -> None:
     result = fq.experimental.simulation.run_tebd(
         _ising(n_wires=4, field=0.7),
-        n_wires=4,
+        n_qubits=4,
         total_time=0.02,
         time_step=0.02,
         max_bond=8,
@@ -62,7 +62,7 @@ def test_two_site_tebd_converges_to_exact_ground_energy() -> None:
     field = 0.7
     result = fq.experimental.simulation.run_tebd(
         _ising(coupling=coupling, field=field),
-        n_wires=2,
+        n_qubits=2,
         total_time=4.0,
         time_step=0.02,
         max_bond=4,
@@ -87,7 +87,9 @@ def test_tebd_combines_terms_on_the_same_sites() -> None:
             pauli_term(0.75, "ZZ", (0, 1)),
         ]
     )
-    layers = _local_layers(hamiltonian, n_wires=2, device="cpu", dtype=torch.complex128)
+    layers = _local_layers(
+        hamiltonian, n_qubits=2, device="cpu", dtype=torch.complex128
+    )
     x = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex128)
     z = torch.diag(torch.tensor([1, -1], dtype=torch.complex128))
 
@@ -107,7 +109,7 @@ def test_tebd_combines_terms_on_the_same_sites() -> None:
         (_ising(), {"dtype": torch.float64}, "dtype"),
         (
             Hamiltonian([pauli_term(1.0, "ZZ", (0, 2))]),
-            {"n_wires": 3},
+            {"n_qubits": 3},
             "adjacent",
         ),
         (
@@ -117,7 +119,7 @@ def test_tebd_combines_terms_on_the_same_sites() -> None:
         ),
         (
             Hamiltonian([pauli_term(1.0, "XYZ", (0, 1, 2))]),
-            {"n_wires": 3},
+            {"n_qubits": 3},
             "one-site and two-site",
         ),
     ],
@@ -126,7 +128,7 @@ def test_tebd_rejects_unsupported_or_ambiguous_contracts(
     hamiltonian, kwargs, match
 ) -> None:
     inputs = {
-        "n_wires": 2,
+        "n_qubits": 2,
         "total_time": 0.1,
         "time_step": 0.1,
         "max_bond": 4,
@@ -145,7 +147,7 @@ def test_tebd_does_not_materialize_a_dense_state(monkeypatch) -> None:
     monkeypatch.setattr(MPSState, "to_statevector", reject_dense_materialization)
     result = fq.experimental.simulation.run_tebd(
         _ising(n_wires=4),
-        n_wires=4,
+        n_qubits=4,
         total_time=0.04,
         time_step=0.02,
         max_bond=8,
@@ -157,7 +159,7 @@ def test_tebd_does_not_materialize_a_dense_state(monkeypatch) -> None:
 
 def test_tebd_program_hash_binds_execution_configuration() -> None:
     common = {
-        "n_wires": 2,
+        "n_qubits": 2,
         "total_time": 0.2,
         "time_step": 0.02,
         "max_bond": 4,

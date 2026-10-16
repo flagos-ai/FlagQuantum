@@ -20,7 +20,7 @@ def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument("--n-wires",type=int,required=True);p.add_argument("--depth",type=int,default=2);p.add_argument("--warmup",type=int,default=1);p.add_argument("--repeats",type=int,default=3);p.add_argument("--seed",type=int,default=260720);p.add_argument("--output",type=Path,required=True);a=p.parse_args()
  if not torch.cuda.is_available():raise RuntimeError("CUDA required")
  torch.manual_seed(a.seed);count=fqa.heisenberg_hva_parameter_count(a.n_wires,a.depth);block=count//a.depth;params=(.02*torch.randn(count,device="cuda")).requires_grad_();initial=fqa.heisenberg_hva(a.n_wires,a.depth,torch.zeros_like(params)).state().detach().reshape(-1);h=fqa.heisenberg_chain_hamiltonian(a.n_wires);eye=torch.eye(count,device="cuda")
- def triton_tangent():return heisenberg_hva_forward_tangents(initial,params.detach(),n_wires=a.n_wires,depth=a.depth)
+ def triton_tangent():return heisenberg_hva_forward_tangents(initial,params.detach(),n_qubits=a.n_wires,depth=a.depth)
  def reference_tangent():return reference(a.n_wires,a.depth,params)
  def triton_geometry():
   state,tangents=triton_tangent();return metric(state,tangents,block)

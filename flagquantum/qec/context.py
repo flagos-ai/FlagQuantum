@@ -50,6 +50,7 @@ from numbers import Integral
 
 import torch
 
+from ..noise import NoiseModel
 from .circuit import MeasurementRef, MemoryCircuit
 from .codes import CodeCheck
 from .dem import DetectorErrorModel
@@ -233,7 +234,7 @@ def _measurement_columns(
     One syndrome round records one measurement per check, in the code's declared
     check order, so round ``r``'s check at position ``p`` is column
     ``r * n_checks + p``. The terminal data readout follows the last round and
-    is column ``rounds * n_checks + q`` for the data wire at position ``q``.
+    is column ``rounds * n_checks + q`` for the data qubit at position ``q``.
 
     Both halves are read from the circuit's declaration rather than from a
     lowered program, which is what makes a context cheap; that the sampler's
@@ -244,13 +245,13 @@ def _measurement_columns(
     checks = tuple(circuit.code.checks)
     per_round = len(checks)
     syndrome = {
-        (round_index, check.ancilla_wire): round_index * per_round + position
+        (round_index, check.ancilla_qubit): round_index * per_round + position
         for round_index in range(circuit.rounds)
         for position, check in enumerate(checks)
     }
     terminal = {
         wire: per_round * circuit.rounds + position
-        for position, wire in enumerate(circuit.code.data_wires)
+        for position, wire in enumerate(circuit.code.data_qubits)
     }
     return syndrome, terminal
 
@@ -263,12 +264,12 @@ def _measurement_index(
     """Return the record column one measurement reference addresses."""
 
     if reference.round_index is None:
-        column = terminal.get(reference.wire)
-        described = f"the terminal readout of data wire {reference.wire}"
+        column = terminal.get(reference.qubit)
+        described = f"the terminal readout of data qubit {reference.qubit}"
     else:
-        column = syndrome.get((reference.round_index, reference.wire))
+        column = syndrome.get((reference.round_index, reference.qubit))
         described = (
-            f"the syndrome measurement of wire {reference.wire} in round "
+            f"the syndrome measurement of qubit {reference.qubit} in round "
             f"{reference.round_index}"
         )
     if column is None:
@@ -304,11 +305,11 @@ def _detector_checks(circuit: MemoryCircuit) -> tuple[CodeCheck, ...]:
     neighbour.
     """
 
-    by_ancilla = {check.ancilla_wire: check for check in circuit.code.checks}
+    by_ancilla = {check.ancilla_qubit: check for check in circuit.code.checks}
     owners: list[CodeCheck] = []
     for detector in circuit.detectors.detectors:
         ancillas = {
-            reference.wire
+            reference.qubit
             for reference in detector.parity
             if reference.round_index is not None
         }
@@ -386,12 +387,13 @@ class DecoderContext:
     a detector is carried by the check whose ancilla it reads, so the X
     component is the detectors of the code's X-type checks and the Z component
     the detectors of its Z-type checks. The terminal detectors -- the ones
-    comparing the last syndrome round with the data readout -- are carried by
-    Z-type checks and are therefore part of the Z component rather than a third
-    category. Upstream needs a separate boundary-aware variant because its D
-    matrix is laid out in uniform per-round blocks; here the layout states the
-    boundary detectors themselves, so the union needs no separate bookkeeping,
-    and ``full_component`` is the model as built.
+    comparing the last syndrome round with the data readout -- are carried by the
+    checks of the experiment's own readout basis, so they belong to that basis'
+    component rather than to a third category. Upstream needs a separate
+    boundary-aware variant because its D matrix is laid out in uniform per-round
+    blocks; here the layout states the boundary detectors themselves, so the
+    union needs no separate bookkeeping, and ``full_component`` is the model as
+    built.
 
     The split is defined only for a code whose checks are pure: a check carrying
     both factors has one ancilla that reports both fault families, so its
@@ -424,11 +426,11 @@ class DecoderContext:
 
         This is upstream's ``num_measurements``: the width of the buffer the
         component maps index, one measurement per check per round plus one
-        terminal readout per data wire.
+        terminal readout per data qubit.
         """
 
         return len(self.circuit.code.checks) * self.circuit.rounds + len(
-            self.circuit.code.data_wires
+            self.circuit.code.data_qubits
         )
 
     def full_component(self) -> DecoderInputs:
@@ -449,9 +451,11 @@ class DecoderContext:
     def z_component(self) -> DecoderInputs:
         """Return the model read over the detectors of the code's Z-type checks.
 
-        The terminal detectors are included: they are carried by Z-type checks,
-        because a terminal detector compares a Z-type check's readout with the
-        Z-basis data readout.
+        A Z-basis experiment's terminal detectors are included here, because they
+        are carried by its Z-type checks: a terminal detector compares such a
+        check's readout with the data readout taken in the same basis. In an
+        X-basis experiment the same role is played by the X-type checks, so the
+        terminal detectors are in the X component instead.
         """
 
         return self._basis(x_type=False)
@@ -499,7 +503,7 @@ class DecoderContext:
             (
                 check
                 for check in self.circuit.code.checks
-                if check.stabilizer.x_wires and check.stabilizer.z_wires
+                if check.stabilizer.x_qubits and check.stabilizer.z_qubits
             ),
             None,
         )
@@ -515,7 +519,7 @@ class DecoderContext:
             for detector, owner in zip(
                 self.circuit.detectors.detectors, owners, strict=True
             )
-            if bool(owner.stabilizer.x_wires) is x_type
+            if bool(owner.stabilizer.x_qubits) is x_type
         )
         if kept:
             return self._inputs(_projected(self.dem, kept), kept)
@@ -530,7 +534,7 @@ class DecoderContext:
 
 
 def decoder_context_from_memory_circuit(
-    circuit: MemoryCircuit, *, noise: PhenomenologicalNoise
+    circuit: MemoryCircuit, *, noise: PhenomenologicalNoise | NoiseModel
 ) -> DecoderContext:
     """Build a memory experiment's decoder inputs, constructing the model once.
 
@@ -538,15 +542,22 @@ def decoder_context_from_memory_circuit(
     ``decoder_context_from_memory_circuit(code, statePrep, numRounds, noise)``.
     Here the memory circuit already carries the code, the round count and the
     state preparation the experiment is configured with, so the circuit is the
-    whole configuration and the noise is the only second argument. The model is
-    built eagerly and stored, because a context is asked for exactly to be read
-    a basis at a time, and every one of those reads needs the same model.
+    whole configuration and the noise is the only second argument. The noise may
+    be stated either as the round-boundary
+    `~flagquantum.qec.PhenomenologicalNoise` record or as a gate-bound
+    `~flagquantum.noise.NoiseModel`, and the model is built from whichever record
+    it is. The model is built eagerly and stored, because a context is asked for
+    exactly to be read a basis at a time, and every one of those reads needs the
+    same model.
     """
 
     if not isinstance(circuit, MemoryCircuit):
         raise TypeError("circuit must be a MemoryCircuit")
-    if not isinstance(noise, PhenomenologicalNoise):
-        raise TypeError("noise must be a PhenomenologicalNoise")
+    if not isinstance(noise, (PhenomenologicalNoise, NoiseModel)):
+        raise TypeError(
+            "noise must be a PhenomenologicalNoise or a NoiseModel, got "
+            f"{type(noise).__name__}"
+        )
     return DecoderContext(
         circuit=circuit,
         dem=DetectorErrorModel.from_memory_circuit(circuit, noise=noise),

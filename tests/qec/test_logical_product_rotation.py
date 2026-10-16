@@ -52,49 +52,49 @@ def test_certification_rejects_the_identity() -> None:
 
 def test_certification_rejects_a_y_type_product() -> None:
     with pytest.raises(ValueError, match="pure X-type or pure Z-type"):
-        certify_logical_product(RepetitionCode(3), Pauli(x_wires=(0,), z_wires=(0,)))
+        certify_logical_product(RepetitionCode(3), Pauli(x_qubits=(0,), z_qubits=(0,)))
 
 
 def test_certification_rejects_an_undeclared_wire() -> None:
     with pytest.raises(ValueError, match=r"not declared data\s+wires"):
-        certify_logical_product(RepetitionCode(3), Pauli(z_wires=(9,)))
+        certify_logical_product(RepetitionCode(3), Pauli(z_qubits=(9,)))
 
 
 def test_certification_rejects_a_product_that_anticommutes_with_a_check() -> None:
     """``X0`` does not preserve the repetition code's code space."""
 
     with pytest.raises(ValueError, match="anticommutes with check 0"):
-        certify_logical_product(RepetitionCode(3), Pauli(x_wires=(0,)))
+        certify_logical_product(RepetitionCode(3), Pauli(x_qubits=(0,)))
 
 
 def test_certification_rejects_a_product_inside_the_stabilizer_span() -> None:
     """``Z0*Z1`` is the repetition code's first check, so its outcome is fixed."""
 
     with pytest.raises(ValueError, match="stabilizer span"):
-        certify_logical_product(RepetitionCode(3), Pauli(z_wires=(0, 1)))
+        certify_logical_product(RepetitionCode(3), Pauli(z_qubits=(0, 1)))
 
 
 def test_certification_accepts_a_declared_observable() -> None:
-    product = Pauli(z_wires=(0, 1, 2))
+    product = Pauli(z_qubits=(0, 1, 2))
     assert certify_logical_product(RepetitionCode(3), product) is product
 
 
 def test_certification_accepts_the_derived_x_type_conjugate() -> None:
-    product = Pauli(x_wires=(0, 1, 2))
+    product = Pauli(x_qubits=(0, 1, 2))
     assert certify_logical_product(RepetitionCode(3), product) is product
 
 
 def test_certification_accepts_a_stabilizer_multiple_of_a_logical_class() -> None:
     """``Z0`` differs from the declared logical by the code's second check."""
 
-    product = Pauli(z_wires=(0,))
+    product = Pauli(z_qubits=(0,))
     assert certify_logical_product(RepetitionCode(3), product) is product
 
 
 def test_certification_accepts_another_representative_of_the_other_class() -> None:
     """Any representative of the class is measurable, not just the derived one."""
 
-    product = Pauli(x_wires=(0, 3, 6))
+    product = Pauli(x_qubits=(0, 3, 6))
     assert certify_logical_product(RotatedSurfaceCode(3), product) is product
 
 
@@ -117,7 +117,7 @@ def test_derivation_returns_a_weight_d_partner(
 ) -> None:
     derived = derive_anticommuting_logical_product(code, 0)
 
-    assert derived == Pauli(x_wires=expected)
+    assert derived == Pauli(x_qubits=expected)
     assert derived.weight == code.distance
     assert certify_logical_product(code, derived) == derived
     assert not derived.commutes_with(code.logical_observables[0])
@@ -148,12 +148,13 @@ def test_derivation_on_a_mixed_check_code_reads_the_z_factors_alone(
     derived = derive_anticommuting_logical_product(patch, 0)
 
     assert all(
-        check.stabilizer.x_wires and check.stabilizer.z_wires for check in patch.checks
+        check.stabilizer.x_qubits and check.stabilizer.z_qubits
+        for check in patch.checks
     )
     assert derived == declared_x
     assert derived.weight == distance
-    assert derived != Pauli(x_wires=patch.data_wires)
-    assert set(derived.support) < set(patch.data_wires)
+    assert derived != Pauli(x_qubits=patch.data_qubits)
+    assert set(derived.support) < set(patch.data_qubits)
     assert not derived.commutes_with(patch.logical_observables[0])
     assert certify_logical_product(patch, derived) == derived
 
@@ -204,16 +205,22 @@ def test_declared_readout_reproduces_the_default_experiment(
     assert explicit.source == default.source
     assert explicit.detectors == default.detectors
     assert explicit.observables == default.observables
-    assert explicit.x_readout_wires == ()
+    assert explicit.x_readout_qubits == ()
 
 
 def test_rotated_source_rotates_both_ends_and_nothing_else() -> None:
     rotated = build_memory_circuit(
-        RepetitionCode(3), rounds=2, product=Pauli(x_wires=(0, 1, 2))
+        RepetitionCode(3), rounds=2, product=Pauli(x_qubits=(0, 1, 2))
     )
     rotations = ["    qp.H(wires=0)\n", "    qp.H(wires=1)\n", "    qp.H(wires=2)\n"]
 
-    head = "def memory_experiment(rounds):\n    last = False\n"
+    # The preparation precedes the accumulator's initialiser, which is the order
+    # ``test_memory_circuit.py`` pins for the same gates under an explicit
+    # ``readout_basis``; the two surfaces emit one program, so they emit one
+    # statement order.
+    head = (
+        "def memory_experiment(rounds):\n" + "".join(rotations) + "    last = False\n"
+    )
     body = (
         "    for round_index in range(rounds):\n"
         "        qp.CNOT(wires=[0, 3])\n"
@@ -225,15 +232,13 @@ def test_rotated_source_rotates_both_ends_and_nothing_else() -> None:
         "        last = qp.measure(wires=4)\n"
         "        qp.reset(wires=4)\n"
     )
-    expected = (
-        head + "".join(rotations) + body + "".join(rotations) + "    return last\n"
-    )
+    expected = head + body + "".join(rotations) + "    return last\n"
     assert rotated.source == expected
 
 
 def test_rotating_a_subset_leaves_the_other_wires_in_the_z_basis() -> None:
     rotated = build_memory_circuit(
-        RotatedSurfaceCode(3), rounds=2, product=Pauli(x_wires=(0, 3, 6))
+        RotatedSurfaceCode(3), rounds=2, product=Pauli(x_qubits=(0, 3, 6))
     )
     counts: dict[int, int] = {}
     for line in rotated.source.splitlines():
@@ -246,7 +251,7 @@ def test_rotating_a_subset_leaves_the_other_wires_in_the_z_basis() -> None:
         assert counts[wire] == 2
     for wire in (1, 2, 4, 5, 7, 8):
         assert counts.get(wire, 0) == 0
-    assert rotated.x_readout_wires == (0, 3, 6)
+    assert rotated.x_readout_qubits == (0, 3, 6)
 
 
 def test_rotating_a_wire_already_rotated_by_its_check_adds_two_more_gates() -> None:
@@ -254,7 +259,7 @@ def test_rotating_a_wire_already_rotated_by_its_check_adds_two_more_gates() -> N
 
     default = build_memory_circuit(RotatedSurfaceCode(3), rounds=2)
     rotated = build_memory_circuit(
-        RotatedSurfaceCode(3), rounds=2, product=Pauli(x_wires=(0, 3, 6))
+        RotatedSurfaceCode(3), rounds=2, product=Pauli(x_qubits=(0, 3, 6))
     )
 
     assert (
@@ -262,14 +267,14 @@ def test_rotating_a_wire_already_rotated_by_its_check_adds_two_more_gates() -> N
     )
 
 
-def test_a_rotated_readout_declares_one_observable_on_exactly_its_x_wires() -> None:
+def test_a_rotated_readout_declares_one_observable_on_exactly_its_x_qubits() -> None:
     rotated = build_memory_circuit(
-        RotatedSurfaceCode(3), rounds=2, product=Pauli(x_wires=(0, 3, 6))
+        RotatedSurfaceCode(3), rounds=2, product=Pauli(x_qubits=(0, 3, 6))
     )
     (observable,) = rotated.observables.observables
 
     assert observable.index == 0
-    assert observable.pauli == Pauli(x_wires=(0, 3, 6))
+    assert observable.pauli == Pauli(x_qubits=(0, 3, 6))
     assert observable.measurement_parity == (
         MeasurementRef(None, 0),
         MeasurementRef(None, 3),
@@ -282,7 +287,7 @@ def test_a_rotated_readout_keeps_only_the_checks_the_preparation_pins() -> None:
 
     default = build_memory_circuit(RotatedSurfaceCode(3), rounds=2)
     rotated = build_memory_circuit(
-        RotatedSurfaceCode(3), rounds=2, product=Pauli(x_wires=(0, 3, 6))
+        RotatedSurfaceCode(3), rounds=2, product=Pauli(x_qubits=(0, 3, 6))
     )
     pinned_ancillas = (14, 16)
 
@@ -298,9 +303,9 @@ def test_a_rotated_readout_keeps_only_the_checks_the_preparation_pins() -> None:
 
         references = detector.parity
         if references[0].round_index == 0 and len(references) == 1:
-            return references[0].wire in pinned_ancillas
+            return references[0].qubit in pinned_ancillas
         if any(reference.round_index is None for reference in references):
-            return references[0].wire in pinned_ancillas
+            return references[0].qubit in pinned_ancillas
         return True
 
     assert len(default.detectors) == 16
@@ -310,7 +315,7 @@ def test_a_rotated_readout_keeps_only_the_checks_the_preparation_pins() -> None:
     )
     assert (
         tuple(
-            detector.parity[0].wire
+            detector.parity[0].qubit
             for detector in rotated.detectors.detectors
             if detector.parity[0].round_index == 0
         )
@@ -323,7 +328,7 @@ def test_a_fully_rotated_repetition_code_loses_every_pinned_check() -> None:
     """Every check becomes volatile, so only round-to-round detectors remain."""
 
     rotated = build_memory_circuit(
-        RepetitionCode(3), rounds=3, product=Pauli(x_wires=(0, 1, 2))
+        RepetitionCode(3), rounds=3, product=Pauli(x_qubits=(0, 1, 2))
     )
 
     assert len(rotated.detectors) == 4
@@ -335,7 +340,7 @@ def test_a_fully_rotated_repetition_code_loses_every_pinned_check() -> None:
 
 def test_a_rotated_steane_patch_keeps_the_check_that_misses_the_rotated_wires() -> None:
     rotated = build_memory_circuit(
-        SteaneCode(), rounds=2, product=Pauli(x_wires=(0, 1, 2))
+        SteaneCode(), rounds=2, product=Pauli(x_qubits=(0, 1, 2))
     )
 
     assert len(rotated.detectors) == 8
@@ -352,13 +357,13 @@ def test_a_rotated_steane_patch_keeps_the_check_that_misses_the_rotated_wires() 
 def test_a_single_round_rotated_experiment_with_no_pinned_check_is_refused() -> None:
     with pytest.raises(ValueError, match="increase the round count"):
         build_memory_circuit(
-            RepetitionCode(3), rounds=1, product=Pauli(x_wires=(0, 1, 2))
+            RepetitionCode(3), rounds=1, product=Pauli(x_qubits=(0, 1, 2))
         )
 
 
 def test_builder_refuses_an_uncertified_product() -> None:
     with pytest.raises(ValueError, match="anticommutes with check 0"):
-        build_memory_circuit(RepetitionCode(3), rounds=2, product=Pauli(x_wires=(0,)))
+        build_memory_circuit(RepetitionCode(3), rounds=2, product=Pauli(x_qubits=(0,)))
 
 
 def test_memory_circuit_refuses_an_x_observable_whose_wires_were_not_rotated() -> None:
@@ -368,9 +373,9 @@ def test_memory_circuit_refuses_an_x_observable_whose_wires_were_not_rotated() -
     )
     elsewhere = LogicalObservable(
         index=0,
-        pauli=Pauli(x_wires=tuple(code.data_wires)),
+        pauli=Pauli(x_qubits=tuple(code.data_qubits)),
         measurement_parity=tuple(
-            MeasurementRef(None, wire) for wire in code.data_wires
+            MeasurementRef(None, wire) for wire in code.data_qubits
         ),
     )
 
@@ -381,19 +386,19 @@ def test_memory_circuit_refuses_an_x_observable_whose_wires_were_not_rotated() -
             source=built.source,
             detectors=built.detectors,
             observables=ObservableLayout((elsewhere,)),
-            x_readout_wires=built.x_readout_wires,
+            x_readout_qubits=built.x_readout_qubits,
         )
 
 
 def test_memory_circuit_refuses_two_observables_in_a_rotated_readout() -> None:
     built = build_memory_circuit(
-        RepetitionCode(3), rounds=2, product=Pauli(x_wires=(0, 1, 2))
+        RepetitionCode(3), rounds=2, product=Pauli(x_qubits=(0, 1, 2))
     )
     doubled = ObservableLayout(
         (
             LogicalObservable(
                 index=0,
-                pauli=Pauli(x_wires=(0, 1, 2)),
+                pauli=Pauli(x_qubits=(0, 1, 2)),
                 measurement_parity=(
                     MeasurementRef(None, 0),
                     MeasurementRef(None, 1),
@@ -402,7 +407,7 @@ def test_memory_circuit_refuses_two_observables_in_a_rotated_readout() -> None:
             ),
             LogicalObservable(
                 index=1,
-                pauli=Pauli(z_wires=(0, 1, 2)),
+                pauli=Pauli(z_qubits=(0, 1, 2)),
                 measurement_parity=(
                     MeasurementRef(None, 0),
                     MeasurementRef(None, 1),
@@ -419,21 +424,21 @@ def test_memory_circuit_refuses_two_observables_in_a_rotated_readout() -> None:
             source=built.source,
             detectors=built.detectors,
             observables=doubled,
-            x_readout_wires=built.x_readout_wires,
+            x_readout_qubits=built.x_readout_qubits,
         )
 
 
-def test_memory_circuit_refuses_an_undeclared_readout_wire() -> None:
+def test_memory_circuit_refuses_an_undeclared_readout_qubit() -> None:
     built = build_memory_circuit(RepetitionCode(3), rounds=2)
 
-    with pytest.raises(ValueError, match="declared data wires"):
+    with pytest.raises(ValueError, match="declared data qubits"):
         type(built)(
             code=built.code,
             rounds=built.rounds,
             source=built.source,
             detectors=built.detectors,
             observables=built.observables,
-            x_readout_wires=(0, 9),
+            x_readout_qubits=(0, 9),
         )
 
 
@@ -447,7 +452,7 @@ def test_memory_circuit_refuses_an_unordered_readout_frame() -> None:
             source=built.source,
             detectors=built.detectors,
             observables=built.observables,
-            x_readout_wires=(1, 0),
+            x_readout_qubits=(1, 0),
         )
 
 
@@ -457,7 +462,7 @@ def test_the_declared_frame_still_refuses_a_non_z_type_observable() -> None:
     built = build_memory_circuit(RepetitionCode(3), rounds=2)
     x_type = LogicalObservable(
         index=0,
-        pauli=Pauli(x_wires=(0, 1, 2)),
+        pauli=Pauli(x_qubits=(0, 1, 2)),
         measurement_parity=(
             MeasurementRef(None, 0),
             MeasurementRef(None, 1),
@@ -487,7 +492,7 @@ def test_memory_circuit_refuses_an_uncertified_rotated_observable() -> None:
     code = RotatedSurfaceCode(2)
     observable = LogicalObservable(
         index=0,
-        pauli=Pauli(x_wires=(0,)),
+        pauli=Pauli(x_qubits=(0,)),
         measurement_parity=(MeasurementRef(None, 0),),
     )
 
@@ -498,21 +503,21 @@ def test_memory_circuit_refuses_an_uncertified_rotated_observable() -> None:
             source=_check_source(code, x_readout=(0,)),
             detectors=_detector_layout(code, rounds=2, x_readout=(0,)),
             observables=ObservableLayout((observable,)),
-            x_readout_wires=(0,),
+            x_readout_qubits=(0,),
         )
 
 
-def test_memory_circuit_refuses_a_non_integer_readout_wire() -> None:
+def test_memory_circuit_refuses_a_non_integer_readout_qubit() -> None:
     built = build_memory_circuit(RepetitionCode(3), rounds=2)
 
-    with pytest.raises(TypeError, match="X readout wires must be integers"):
+    with pytest.raises(TypeError, match="X readout qubits must be integers"):
         type(built)(
             code=built.code,
             rounds=built.rounds,
             source=built.source,
             detectors=built.detectors,
             observables=built.observables,
-            x_readout_wires=(1.5,),  # type: ignore[arg-type]
+            x_readout_qubits=(1.5,),  # type: ignore[arg-type]
         )
 
 
@@ -521,11 +526,11 @@ def test_a_derived_conjugate_is_the_only_readout_a_repetition_patch_offers() -> 
 
     code = RepetitionCode(3)
     products = [check.stabilizer for check in code.checks]
-    assert products == [Pauli(z_wires=(0, 1)), Pauli(z_wires=(1, 2))]
+    assert products == [Pauli(z_qubits=(0, 1)), Pauli(z_qubits=(1, 2))]
 
-    conjugate = Pauli(x_wires=(0, 1, 2))
+    conjugate = Pauli(x_qubits=(0, 1, 2))
     assert certify_logical_product(code, conjugate) == conjugate
-    assert code.logical_observables[0] == Pauli(z_wires=(0, 1, 2))
+    assert code.logical_observables[0] == Pauli(z_qubits=(0, 1, 2))
 
 
 def test_a_surface_patch_reads_out_the_class_it_does_not_declare() -> None:
@@ -535,8 +540,8 @@ def test_a_surface_patch_reads_out_the_class_it_does_not_declare() -> None:
     (declared,) = code.logical_observables
     partner = derive_anticommuting_logical_product(code, 0)
 
-    assert declared.z_wires and not declared.x_wires
-    assert partner.x_wires and not partner.z_wires
+    assert declared.z_qubits and not declared.x_qubits
+    assert partner.x_qubits and not partner.z_qubits
     assert not declared.commutes_with(partner)
     assert code.logical_observables == (declared,)
 
@@ -550,5 +555,5 @@ def test_a_repetition_patch_declares_and_reads_out_the_two_classes_of_one_wire()
     (declared,) = code.logical_observables
     partner = derive_anticommuting_logical_product(code, 0)
 
-    assert declared == Pauli(z_wires=(0, 1, 2))
-    assert partner == Pauli(x_wires=(0, 1, 2))
+    assert declared == Pauli(z_qubits=(0, 1, 2))
+    assert partner == Pauli(x_qubits=(0, 1, 2))

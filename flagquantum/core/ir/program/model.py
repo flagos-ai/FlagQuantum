@@ -173,9 +173,9 @@ class LevelConversion:
 class OpcodeSignature:
     """The kinds one opcode consumes and defines, plus the names it binds.
 
-    A circuit opcode consumes one qubit per wire and defines its successor value
-    for the same wire, which is what makes the value flow a chain rather than a
-    tree: a channel maps a qubit to its successor just as a unitary does. The one
+    A circuit opcode consumes one qubit value per operand and defines its successor
+    value for the same qubit, which is what makes the value flow a chain rather than
+    a tree: a channel maps a qubit to its successor just as a unitary does. The one
     opcode that is not a circuit opcode, `CONSTANT_OPCODE`, consumes nothing and
     defines one `scalar`.
 

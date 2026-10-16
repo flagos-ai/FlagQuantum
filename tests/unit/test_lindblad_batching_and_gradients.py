@@ -717,7 +717,7 @@ class TestBatchedKrylovWork:
             PauliSumTerm(coefficient=0.25, mask=0, signs=(1,)),
             PauliSumTerm(coefficient=0.1, mask=0b11, signs=(0,)),
         ]
-        pauli = PauliSum(terms, n_wires=2, dimension=4, dtype=DTYPE, device=DEVICE)
+        pauli = PauliSum(terms, n_qubits=2, dimension=4, dtype=DTYPE, device=DEVICE)
         batch = torch.stack(
             [torch.outer(vector, vector.conj()) for vector in _two_wire_batch()]
         )

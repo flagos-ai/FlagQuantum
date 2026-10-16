@@ -34,7 +34,7 @@ def test_cost_aware_mps_ownership_is_contiguous_and_reduces_peak_proxy():
     # Open boundaries with a broad chi=8 plateau emulate a variable-bond MPS.
     bonds = (1, 2, 4, 8, 8, 8, 8, 8, 4, 2, 1)
     ownership = cost_aware_mps_ownership(bonds, world_size=4)
-    assert validate_mps_ownership(ownership, n_wires=10, world_size=4) == ownership
+    assert validate_mps_ownership(ownership, n_qubits=10, world_size=4) == ownership
 
     costs = mps_factorization_site_costs(bonds)
     balanced_peak = max(sum(costs[wire] for wire in shard) for shard in ownership)
@@ -46,7 +46,7 @@ def test_cost_aware_mps_ownership_is_contiguous_and_reduces_peak_proxy():
 def test_gate_aligned_cost_aware_ownership_keeps_all_internal_cuts_even():
     bonds = (1, 2, 4, 8, 8, 8, 8, 8, 8, 8, 4, 2, 1)
     ownership = gate_aligned_cost_aware_mps_ownership(bonds, world_size=4)
-    assert validate_mps_ownership(ownership, n_wires=12, world_size=4) == ownership
+    assert validate_mps_ownership(ownership, n_qubits=12, world_size=4) == ownership
     assert all((shard[-1] + 1) % 2 == 0 for shard in ownership[:-1])
 
 
@@ -97,4 +97,4 @@ def test_topology_aware_ownership_rejects_invalid_topology(
 )
 def test_validate_mps_ownership_rejects_invalid_partitions(ownership):
     with pytest.raises(ValueError):
-        validate_mps_ownership(ownership, n_wires=4, world_size=2)
+        validate_mps_ownership(ownership, n_qubits=4, world_size=2)

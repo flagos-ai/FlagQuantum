@@ -122,7 +122,7 @@ def _statevector_signature_from_plan(plan: Any) -> dict[str, Any]:
             {
                 "kind": segment.kind,
                 "communication": segment.communication,
-                "wires": tuple(segment.wires),
+                "wires": tuple(segment.qubits),
                 "gate_indices": tuple(segment.gate_indices),
             }
             for segment in plan.execution_segments

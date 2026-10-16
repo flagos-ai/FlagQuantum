@@ -15,6 +15,18 @@ from __future__ import annotations
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
+#: Largest amplitude count the flat local-gate kernels have been shown to address.
+#:
+#: The statevector gate kernels turn amplitude indices into one linear element
+#: offset and add it to a ``float32`` view of the state. Measured on an
+#: A800-SXM4-80GB, ``apply_complex64_local_cx_inplace`` returns the correct
+#: permutation at 2**31 and 2**32 amplitudes and dies with an illegal memory
+#: access at 2**33, which leaves the CUDA context unusable for the rest of the
+#: process. Launch wrappers refuse a larger state, and runtime dispatch keeps that
+#: shape on the index-based eager path, where the same run reports an ordinary
+#: out-of-memory error instead of an unrecoverable fault.
+FLAT_LOCAL_MAX_AMPLITUDES = 1 << 32
+
 _EXPORT_MODULES = {
     "fused_complex_bmm": "complex_bmm",
     "fused_complex_layout_bmm": "complex_bmm",
@@ -26,6 +38,9 @@ _EXPORT_MODULES = {
     "repeated_rx_rz_tangents": "single_qubit_loop",
     "ry_rz_pair": "statevector_gates",
     "single_qubit_matrix": "statevector_gates",
+    "statevector_marginal_probabilities": "statevector_measurement",
+    "statevector_pauli_expectation": "statevector_measurement",
+    "statevector_probabilities": "statevector_measurement",
     "repeated_rxx_ryy_rzz_tangents": "two_qubit_pauli_tangent",
 }
 
@@ -39,6 +54,11 @@ if TYPE_CHECKING:
         cx_sequence,
         ry_rz_pair,
         single_qubit_matrix,
+    )
+    from .statevector_measurement import (
+        statevector_marginal_probabilities,
+        statevector_pauli_expectation,
+        statevector_probabilities,
     )
     from .two_qubit_pauli_tangent import repeated_rxx_ryy_rzz_tangents
 
@@ -55,6 +75,7 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
+    "FLAT_LOCAL_MAX_AMPLITUDES",
     "fused_complex_bmm",
     "fused_complex_layout_bmm",
     "fused_mps_one_site",
@@ -65,5 +86,8 @@ __all__ = [
     "repeated_rx_rz_tangents",
     "ry_rz_pair",
     "single_qubit_matrix",
+    "statevector_marginal_probabilities",
+    "statevector_pauli_expectation",
+    "statevector_probabilities",
     "repeated_rxx_ryy_rzz_tangents",
 ]

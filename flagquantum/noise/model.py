@@ -64,7 +64,7 @@ class CorrelatedReadoutError:
             raise ValueError("each readout confusion row must sum to 1")
 
     @property
-    def n_wires(self) -> int:
+    def n_qubits(self) -> int:
         return (len(self.probabilities)).bit_length() - 1
 
 
@@ -124,11 +124,13 @@ class NoiseModel:
         model = cls()
         for encoded in payload.get("rules", ()):
             names = tuple(str(name) for name in encoded.get("gate_names", ()))
-            wires = encoded.get("wires")
+            qubits = encoded.get("wires")
             model.add(
                 names,
                 KrausChannel.from_dict(encoded["channel"]),
-                wires=None if wires is None else tuple(int(wire) for wire in wires),
+                qubits=(
+                    None if qubits is None else tuple(int(qubit) for qubit in qubits)
+                ),
             )
         for encoded in payload.get("readout_rules", ()):
             if encoded.get("correlated"):
@@ -164,7 +166,7 @@ class NoiseModel:
         gate_names: str | Iterable[str],
         channel: KrausChannel,
         *,
-        wires: Iterable[int] | int | None = None,
+        qubits: Iterable[int] | int | None = None,
     ) -> "NoiseModel":
         names: tuple[str, ...]
         if isinstance(gate_names, str):
@@ -173,52 +175,52 @@ class NoiseModel:
             names = tuple(name.lower() for name in gate_names)
         if not names or any(not name for name in names):
             raise ValueError("noise rules require at least one non-empty gate name")
-        target_wires: tuple[int, ...] | None
-        if wires is None:
-            target_wires = None
-        elif isinstance(wires, int):
-            target_wires = (wires,)
+        target_qubits: tuple[int, ...] | None
+        if qubits is None:
+            target_qubits = None
+        elif isinstance(qubits, int):
+            target_qubits = (qubits,)
         else:
-            target_wires = tuple(int(wire) for wire in wires)
-        self.rules.append(NoiseRule(names, channel, target_wires))
+            target_qubits = tuple(int(qubit) for qubit in qubits)
+        self.rules.append(NoiseRule(names, channel, target_qubits))
         return self
 
     def add_readout(
         self,
-        wires: Iterable[int] | int,
+        qubits: Iterable[int] | int,
         error: ReadoutError,
     ) -> "NoiseModel":
-        target_wires = (
-            (int(wires),)
-            if isinstance(wires, int)
-            else tuple(int(wire) for wire in wires)
+        target_qubits = (
+            (int(qubits),)
+            if isinstance(qubits, int)
+            else tuple(int(qubit) for qubit in qubits)
         )
-        if not target_wires or any(wire < 0 for wire in target_wires):
-            raise ValueError("readout wires must be non-empty and non-negative")
-        if len(set(target_wires)) != len(target_wires):
-            raise ValueError("readout wires must be unique")
-        occupied = {wire for rule in self.readout_rules for wire in rule.wires}
-        if occupied.intersection(target_wires):
-            raise ValueError("a wire can have only one readout error rule")
-        self.readout_rules.append(ReadoutRule(target_wires, error))
+        if not target_qubits or any(qubit < 0 for qubit in target_qubits):
+            raise ValueError("readout qubits must be non-empty and non-negative")
+        if len(set(target_qubits)) != len(target_qubits):
+            raise ValueError("readout qubits must be unique")
+        occupied = {qubit for rule in self.readout_rules for qubit in rule.wires}
+        if occupied.intersection(target_qubits):
+            raise ValueError("a qubit can have only one readout error rule")
+        self.readout_rules.append(ReadoutRule(target_qubits, error))
         return self
 
     def add_correlated_readout(
         self,
-        wires: Iterable[int],
+        qubits: Iterable[int],
         error: CorrelatedReadoutError,
     ) -> "NoiseModel":
-        target_wires = tuple(int(wire) for wire in wires)
-        if len(target_wires) != error.n_wires:
-            raise ValueError("correlated readout matrix size must match wires")
-        if any(wire < 0 for wire in target_wires) or len(set(target_wires)) != len(
-            target_wires
+        target_qubits = tuple(int(qubit) for qubit in qubits)
+        if len(target_qubits) != error.n_qubits:
+            raise ValueError("correlated readout matrix size must match qubits")
+        if any(qubit < 0 for qubit in target_qubits) or len(set(target_qubits)) != len(
+            target_qubits
         ):
-            raise ValueError("readout wires must be unique and non-negative")
-        occupied = {wire for rule in self.readout_rules for wire in rule.wires}
-        if occupied.intersection(target_wires):
-            raise ValueError("a wire can have only one readout error rule")
-        self.readout_rules.append(ReadoutRule(target_wires, error))
+            raise ValueError("readout qubits must be unique and non-negative")
+        occupied = {qubit for rule in self.readout_rules for qubit in rule.wires}
+        if occupied.intersection(target_qubits):
+            raise ValueError("a qubit can have only one readout error rule")
+        self.readout_rules.append(ReadoutRule(target_qubits, error))
         return self
 
     @classmethod
@@ -237,24 +239,24 @@ class NoiseModel:
         self,
         probabilities: torch.Tensor,
         *,
-        n_wires: int,
+        n_qubits: int,
     ) -> torch.Tensor:
         """Apply independent classical readout confusion after state evolution."""
 
         values = torch.as_tensor(probabilities)
-        if values.shape[-1] != 2**n_wires:
-            raise ValueError("probability dimension does not match n_wires")
-        output = values.reshape(*values.shape[:-1], *((2,) * n_wires))
+        if values.shape[-1] != 2**n_qubits:
+            raise ValueError("probability dimension does not match n_qubits")
+        output = values.reshape(*values.shape[:-1], *((2,) * n_qubits))
         for rule in self.readout_rules:
             if isinstance(rule.error, CorrelatedReadoutError):
-                if any(wire >= n_wires for wire in rule.wires):
-                    raise ValueError("correlated readout wire is outside the circuit")
-                batch_dims = output.ndim - n_wires
-                selected = [batch_dims + wire for wire in rule.wires]
+                if any(qubit >= n_qubits for qubit in rule.wires):
+                    raise ValueError("correlated readout qubit is outside the circuit")
+                batch_dims = output.ndim - n_qubits
+                selected = [batch_dims + qubit for qubit in rule.wires]
                 unselected = [
-                    batch_dims + wire
-                    for wire in range(n_wires)
-                    if wire not in rule.wires
+                    batch_dims + qubit
+                    for qubit in range(n_qubits)
+                    if qubit not in rule.wires
                 ]
                 permutation = [*range(batch_dims), *unselected, *selected]
                 inverse = [permutation.index(index) for index in range(output.ndim)]
@@ -270,42 +272,42 @@ class NoiseModel:
                     inverse
                 )
                 continue
-            for wire in rule.wires:
-                if wire >= n_wires:
-                    raise ValueError(f"readout wire {wire} is outside the circuit")
+            for qubit in rule.wires:
+                if qubit >= n_qubits:
+                    raise ValueError(f"readout qubit {qubit} is outside the circuit")
                 matrix = torch.as_tensor(
                     rule.error.probabilities,
                     device=output.device,
                     dtype=output.dtype,
                 )
                 output = torch.tensordot(
-                    output, matrix, dims=([output.ndim - n_wires + wire], [0])
+                    output, matrix, dims=([output.ndim - n_qubits + qubit], [0])
                 )
-                output = torch.movedim(output, -1, output.ndim - n_wires + wire)
+                output = torch.movedim(output, -1, output.ndim - n_qubits + qubit)
         return output.reshape_as(values)
 
     def apply_readout_expectation_z(self, expectation: torch.Tensor) -> torch.Tensor:
-        """Apply independent readout confusion directly to per-wire Z means."""
+        """Apply independent readout confusion directly to per-qubit Z means."""
 
         output = torch.as_tensor(expectation).clone()
-        n_wires = output.shape[-1]
+        n_qubits = output.shape[-1]
         for rule in self.readout_rules:
             if isinstance(rule.error, CorrelatedReadoutError):
                 raise ValueError(
                     "correlated readout cannot be applied to marginal Z expectations"
                 )
-            for wire in rule.wires:
-                if wire >= n_wires:
-                    raise ValueError(f"readout wire {wire} is outside the circuit")
+            for qubit in rule.wires:
+                if qubit >= n_qubits:
+                    raise ValueError(f"readout qubit {qubit} is outside the circuit")
                 matrix = torch.as_tensor(
                     rule.error.probabilities,
                     device=output.device,
                     dtype=output.dtype,
                 )
-                true_z = output[..., wire]
+                true_z = output[..., qubit]
                 true_zero = (1 + true_z) / 2
                 true_one = (1 - true_z) / 2
-                output[..., wire] = true_zero * (
+                output[..., qubit] = true_zero * (
                     matrix[0, 0] - matrix[0, 1]
                 ) + true_one * (matrix[1, 0] - matrix[1, 1])
         return output
@@ -320,16 +322,16 @@ class NoiseModel:
 
         output = torch.as_tensor(samples).clone()
         if output.ndim < 2:
-            raise ValueError("readout samples must end in a wire dimension")
+            raise ValueError("readout samples must end in a qubit dimension")
         if output.dtype != torch.int64:
             output = output.to(torch.int64)
-        n_wires = int(output.shape[-1])
+        n_qubits = int(output.shape[-1])
         if bool(((output != 0) & (output != 1)).any()):
             raise ValueError("readout samples must contain only 0 and 1")
 
         for rule in self.readout_rules:
-            if any(wire >= n_wires for wire in rule.wires):
-                raise ValueError("readout wire is outside the circuit")
+            if any(qubit >= n_qubits for qubit in rule.wires):
+                raise ValueError("readout qubit is outside the circuit")
             matrix = torch.as_tensor(
                 rule.error.probabilities,
                 device=output.device,
@@ -339,21 +341,21 @@ class NoiseModel:
                 true_index = torch.zeros(
                     output.shape[:-1], dtype=torch.int64, device=output.device
                 )
-                for wire in rule.wires:
-                    true_index = (true_index << 1) | output[..., wire]
+                for qubit in rule.wires:
+                    true_index = (true_index << 1) | output[..., qubit]
                 observed = torch.multinomial(
                     matrix[true_index.reshape(-1)],
                     num_samples=1,
                     replacement=True,
                     generator=generator,
                 ).reshape(true_index.shape)
-                for offset, wire in enumerate(rule.wires):
+                for offset, qubit in enumerate(rule.wires):
                     shift = len(rule.wires) - offset - 1
-                    output[..., wire] = (observed >> shift) & 1
+                    output[..., qubit] = (observed >> shift) & 1
                 continue
-            for wire in rule.wires:
-                probabilities = matrix[output[..., wire].reshape(-1)]
-                output[..., wire] = torch.multinomial(
+            for qubit in rule.wires:
+                probabilities = matrix[output[..., qubit].reshape(-1)]
+                output[..., qubit] = torch.multinomial(
                     probabilities,
                     num_samples=1,
                     replacement=True,
@@ -372,15 +374,15 @@ class NoiseModel:
                 if not set(rule.wires).issubset(instruction.wires):
                     continue
                 yield rule.channel, rule.wires
-            elif rule.channel.n_wires == len(instruction.wires):
+            elif rule.channel.n_qubits == len(instruction.wires):
                 yield rule.channel, instruction.wires
-            elif rule.channel.n_wires == 1:
-                for wire in instruction.wires:
-                    yield rule.channel, (wire,)
+            elif rule.channel.n_qubits == 1:
+                for qubit in instruction.wires:
+                    yield rule.channel, (qubit,)
             else:
                 raise ValueError(
                     f"Channel {rule.channel.name!r} cannot be inferred for "
-                    f"instruction {instruction.name!r} on wires "
+                    f"instruction {instruction.name!r} on qubits "
                     f"{instruction.wires}."
                 )
 

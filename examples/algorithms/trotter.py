@@ -142,7 +142,7 @@ def main() -> None:
         [f"{t.coefficient} * {''.join(t.pauli)}" for t in hamiltonian.terms],
     )
     report("term count", f"{len(hamiltonian.terms)} in declared order")
-    report("wires", hamiltonian.n_wires)
+    report("wires", hamiltonian.n_qubits)
     report("time", args.time)
     report("dtype", DTYPE)
     print()
@@ -239,7 +239,7 @@ def main() -> None:
     report("basis", ESTIMATE_BASIS)
     report(
         "operations",
-        f"{estimate.n_operations} over {estimate.used_wires} of {estimate.n_wires} wires",
+        f"{estimate.n_operations} over {estimate.used_qubits} of {estimate.n_qubits} wires",
     )
     report("counts", dict(sorted(estimate.operation_counts.items())))
     report("depth", estimate.depth)

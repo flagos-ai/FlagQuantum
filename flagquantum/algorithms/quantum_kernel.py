@@ -24,8 +24,8 @@ in supervised machine learning", *Nature Physics* **17**, 1013-1017 (2021), DOI
 noisy intermediate-scale devices and does not require fault tolerance.
 
 **The feature map is this module's own angle encoding, not the cited paper's.** A
-Hadamard on every wire, then a phase rotation carrying each feature on its own wire and
-an entangling phase rotation on every pair of wires. The state is
+Hadamard on every qubit, then a phase rotation carrying each feature on its own qubit and
+an entangling phase rotation on every pair of qubits. The state is
 
     |Phi(x)> = prod_{j<k} exp(i (pi - x_j) (pi - x_k) Z_j Z_k)
                prod_k exp(i x_k Z_k) H^{tensor n} |0...0>,
@@ -55,10 +55,10 @@ computes no margin, no bound and no accuracy estimate. The tie rule at exactly z
 stated on :meth:`KernelRidgeClassifier.predict`, because a sign has no value at zero and
 the choice has to be made somewhere.
 
-**Wire layout.** One kernel entry is one circuit: the ancilla on wire 0, the left feature
-state on the next ``n`` wires and the right feature state on the last ``n``, where ``n``
-is the feature count. Wire 0 leads every sample key as
-:meth:`flagquantum.circuit.Circuit.counts` returns them, one character per wire with wire
+**Qubit layout.** One kernel entry is one circuit: the ancilla on qubit 0, the left feature
+state on the next ``n`` qubits and the right feature state on the last ``n``, where ``n``
+is the feature count. Qubit 0 leads every sample key as
+:meth:`flagquantum.circuit.Circuit.counts` returns them, one character per qubit with qubit
 0 the most significant.
 
 This unit is demonstration scale. It makes no performance, capacity, or hardware claim,
@@ -87,7 +87,7 @@ __all__ = [
 _DEFAULT_SHOTS = 4096
 
 # A kernel entry prepares two feature states plus an ancilla, so the circuit is
-# ``2 * n + 1`` wires wide and the state it evolves grows as ``2 ** (2 * n + 1)``. The
+# ``2 * n + 1`` qubits wide and the state it evolves grows as ``2 ** (2 * n + 1)``. The
 # unit is bounded at three features, which is also the width the tests' classical
 # reference enumerates.
 _MAX_FEATURES = 3
@@ -520,7 +520,7 @@ def _swap_test_overlap(
 ) -> float:
     """Append the swap test to ``circuit`` and estimate the squared overlap from it.
 
-    The swap test is a Hadamard on the ancilla, a controlled swap per wire pair, and a
+    The swap test is a Hadamard on the ancilla, a controlled swap per qubit pair, and a
     Hadamard on the ancilla again. It estimates the squared overlap of the two states
     and not their signed overlap: the ancilla is found set with probability
     ``1/2 - 1/2 |<a|b>|^2``, which is the same number for ``|<a|b>|`` and for
@@ -534,7 +534,7 @@ def _swap_test_overlap(
     already carry the two states** when this is called: the swaps act on whatever the
     registers hold. **The ancilla must be in ``|0>`` on entry**, the same contract
     :func:`~flagquantum.algorithms.primitives.oracle.append_multi_controlled_x` states
-    for its ladder wires. An ancilla that enters in ``|1>`` **negates** the readout
+    for its ladder qubits. An ancilla that enters in ``|1>`` **negates** the readout
     instead of raising: the two Hadamards then leave the ancilla found set with
     probability ``1/2 + 1/2 |<a|b>|^2`` rather than ``1/2 - 1/2 |<a|b>|^2``, so the
     estimate is ``-|<a|b>|^2``, the negation of what a clean ancilla gives and not a
@@ -544,11 +544,11 @@ def _swap_test_overlap(
 
     Args:
         circuit: The circuit to extend.
-        ancilla: The wire the Hadamards and the controlled swaps are controlled on.
-        left: The wires carrying the first state, one per wire of the register.
-        right: The wires carrying the second state, the same length as ``left`` and
-            holding the same wires in the same order, so that ``left[k]`` and
-            ``right[k]`` are the two wires of one controlled swap.
+        ancilla: The qubit the Hadamards and the controlled swaps are controlled on.
+        left: The qubits carrying the first state, one per qubit of the register.
+        right: The qubits carrying the second state, the same length as ``left`` and
+            holding the same qubits in the same order, so that ``left[k]`` and
+            ``right[k]`` are the two qubits of one controlled swap.
         shots: The number of samples to draw, at least one.
         generator: The sampler's generator, or ``None`` for the ambient one.
 
@@ -575,17 +575,17 @@ def _swap_test_overlap(
 def _ancilla_share(counts: Mapping[str | int, int], ancilla: int) -> float:
     """Return the share of a sample whose ``ancilla`` bit is set.
 
-    A sample key carries every wire, one character per wire with wire 0 the most
+    A sample key carries every qubit, one character per qubit with qubit 0 the most
     significant, so the ancilla's outcome is one character of the key. The shares are
     taken over the sample the counts were drawn from, which is what makes the readout a
     share of exactly that many samples.
 
     Args:
         counts: The sample counts, keyed by the bit string of the whole register.
-        ancilla: The wire to read.
+        ancilla: The qubit to read.
 
     Returns:
-        The fraction of the sample whose key has that wire set.
+        The fraction of the sample whose key has that qubit set.
     """
     total = sum(counts.values())
     ones = sum(count for key, count in counts.items() if str(key)[ancilla] == "1")
@@ -601,8 +601,8 @@ def _kernel_entry(
 ) -> float:
     """Estimate one kernel entry, the squared overlap of two feature vectors.
 
-    One circuit is built per entry: the ancilla on wire 0, the left feature state on the
-    wires that follow it and the right feature state on the wires after those.
+    One circuit is built per entry: the ancilla on qubit 0, the left feature state on the
+    qubits that follow it and the right feature state on the qubits after those.
 
     Args:
         left: The first feature vector.
@@ -634,8 +634,8 @@ def _append_feature_state(
 ) -> None:
     """Append the angle-encoded feature state of ``features`` to ``circuit``.
 
-    The state is a Hadamard on every wire, then a phase rotation carrying one feature on
-    each of its own wires and an entangling phase rotation on every pair of them:
+    The state is a Hadamard on every qubit, then a phase rotation carrying one feature on
+    each of its own qubits and an entangling phase rotation on every pair of them:
 
         |Phi(x)> = prod_{j<k} exp(i (pi - x_j)(pi - x_k) Z_j Z_k)
                    prod_k exp(i x_k Z_k) H^{tensor n} |0...0>.
@@ -648,8 +648,8 @@ def _append_feature_state(
 
     Args:
         circuit: The circuit to extend.
-        features: The feature vector, one feature per wire.
-        wires: The wires to prepare, at most three and one per feature.
+        features: The feature vector, one feature per qubit.
+        qubits: The qubits to prepare, at most three and one per feature.
     """
     for wire in wires:
         circuit.gate("h", wire)

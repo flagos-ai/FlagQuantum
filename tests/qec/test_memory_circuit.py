@@ -13,30 +13,38 @@ from flagquantum.qec.circuit import (
     ObservableLayout,
     build_memory_circuit,
 )
-from flagquantum.qec.codes import CodeCheck, RepetitionCode
+from flagquantum.qec.codes import CodeCheck, RepetitionCode, SteaneCode
 from flagquantum.qec.pauli import Pauli
 
 pytestmark = pytest.mark.unit
 
 
 class _TwoQubitParityCode:
-    """A second code, to prove the builder is not pinned to the repetition code."""
+    """A second code, to prove the builder is not pinned to the repetition code.
+
+    It declares a logical observable in each basis, as the Steane code does, so
+    it is also the smallest record that can be read out either way.
+    """
 
     distance = 2
     num_data_qubits = 2
     num_ancilla_qubits = 1
-    data_wires = (0, 1)
-    ancilla_wires = (2,)
+    num_ancilla_x_qubits = 0
+    num_ancilla_z_qubits = 1
+    num_x_stabilizers = 0
+    num_z_stabilizers = 1
+    data_qubits = (0, 1)
+    ancilla_qubits = (2,)
     checks = (
         CodeCheck(
             index=0,
-            stabilizer=Pauli(z_wires=(0, 1)),
-            ancilla_wire=2,
-            cnot_wires=((0, 2), (1, 2)),
+            stabilizer=Pauli(z_qubits=(0, 1)),
+            ancilla_qubit=2,
+            cnot_qubits=((0, 2), (1, 2)),
         ),
     )
-    stabilizers = (Pauli(z_wires=(0, 1)),)
-    logical_observables = (Pauli(z_wires=(0, 1)),)
+    stabilizers = (Pauli(z_qubits=(0, 1)),)
+    logical_observables = (Pauli(z_qubits=(0, 1)), Pauli(x_qubits=(0, 1)))
 
 
 class _ThreeCheckParityCode:
@@ -45,30 +53,38 @@ class _ThreeCheckParityCode:
     distance = 3
     num_data_qubits = 3
     num_ancilla_qubits = 3
-    data_wires = (0, 1, 2)
-    ancilla_wires = (3, 4, 5)
+    num_ancilla_x_qubits = 0
+    num_ancilla_z_qubits = 3
+    num_x_stabilizers = 0
+    num_z_stabilizers = 3
+    data_qubits = (0, 1, 2)
+    ancilla_qubits = (3, 4, 5)
     checks = (
         CodeCheck(
             index=0,
-            stabilizer=Pauli(z_wires=(0, 1)),
-            ancilla_wire=3,
-            cnot_wires=((0, 3), (1, 3)),
+            stabilizer=Pauli(z_qubits=(0, 1)),
+            ancilla_qubit=3,
+            cnot_qubits=((0, 3), (1, 3)),
         ),
         CodeCheck(
             index=1,
-            stabilizer=Pauli(z_wires=(1, 2)),
-            ancilla_wire=4,
-            cnot_wires=((1, 4), (2, 4)),
+            stabilizer=Pauli(z_qubits=(1, 2)),
+            ancilla_qubit=4,
+            cnot_qubits=((1, 4), (2, 4)),
         ),
         CodeCheck(
             index=2,
-            stabilizer=Pauli(z_wires=(0, 2)),
-            ancilla_wire=5,
-            cnot_wires=((0, 5), (2, 5)),
+            stabilizer=Pauli(z_qubits=(0, 2)),
+            ancilla_qubit=5,
+            cnot_qubits=((0, 5), (2, 5)),
         ),
     )
-    stabilizers = (Pauli(z_wires=(0, 1)), Pauli(z_wires=(1, 2)), Pauli(z_wires=(0, 2)))
-    logical_observables = (Pauli(z_wires=(0, 1, 2)),)
+    stabilizers = (
+        Pauli(z_qubits=(0, 1)),
+        Pauli(z_qubits=(1, 2)),
+        Pauli(z_qubits=(0, 2)),
+    )
+    logical_observables = (Pauli(z_qubits=(0, 1, 2)),)
 
 
 def test_detector_count_matches_the_stated_formula() -> None:
@@ -120,7 +136,7 @@ def test_observable_layout_declares_the_terminal_data_parity() -> None:
     assert len(built.observables) == 1
     (observable,) = built.observables.observables
     assert observable.index == 0
-    assert observable.pauli == Pauli(z_wires=(0, 1, 2))
+    assert observable.pauli == Pauli(z_qubits=(0, 1, 2))
     assert observable.measurement_parity == (
         MeasurementRef(None, 0),
         MeasurementRef(None, 1),
@@ -136,6 +152,137 @@ def test_source_declares_every_check_and_returns_the_last_measurement() -> None:
     assert "qp.measure(wires=4)" in built.source
     assert "qp.reset(wires=4)" in built.source
     assert built.source.rstrip().endswith("return last")
+
+
+def test_the_z_basis_source_carries_no_rotation_at_all() -> None:
+    """The Z experiment is the runtime's own preparation and readout.
+
+    The runtime starts every qubit in ``|0>`` and returns the terminal sample of
+    each data qubit, so a Z-basis experiment needs no gate of its own: the source
+    is exactly the round loop, and its first statement is the loop itself.
+    """
+
+    built = build_memory_circuit(RepetitionCode(3), rounds=3)
+
+    assert built.readout_basis == "z"
+    assert "qp.H(" not in built.source
+    lines = built.source.splitlines()
+    assert lines[1] == "    last = False"
+    assert lines[2] == "    for round_index in range(rounds):"
+
+
+def test_the_x_basis_source_rotates_the_data_qubits_on_both_ends() -> None:
+    """The X experiment is the Z one conjugated by ``H`` on the data qubits.
+
+    The loop is untouched -- an ancilla's Z-basis readout is its check's
+    eigenvalue under either data basis -- so the rotation is one gate per data
+    qubit before the loop and the same gates again after it, which is what makes
+    the terminal sample a readout in the X basis.
+    """
+
+    code = _TwoQubitParityCode()
+    built = build_memory_circuit(code, rounds=2, readout_basis="x")
+
+    body = built.source.splitlines()
+    prep = ["    qp.H(wires=0)", "    qp.H(wires=1)"]
+    assert body[1:3] == prep
+    assert body[-3:-1] == prep
+    # One anchor either way, so a forced flip has a single round loop to inject
+    # into and the loop is not split by the rotation.
+    assert built.source.count("for round_index in range(rounds):") == 1
+    assert "qp.H(wires=2)" not in built.source
+
+
+def test_x_type_checks_are_the_ones_deterministic_under_an_x_readout() -> None:
+    """The two bases are the same layout read over the two check classes.
+
+    Under a ``|+>`` preparation the code's X-type checks are deterministic in
+    round zero and again at the terminal readout, and its Z-type checks are
+    deterministic only against the round before, which is the mirror of the
+    Z-basis layout rather than a second rule.
+    """
+
+    code = SteaneCode()
+    z_layout = build_memory_circuit(code, rounds=3, readout_basis="z")
+    x_layout = build_memory_circuit(code, rounds=3, readout_basis="x")
+
+    x_ancillas = tuple(
+        check.ancilla_qubit for check in code.checks if check.stabilizer.x_qubits
+    )
+    z_ancillas = tuple(
+        check.ancilla_qubit for check in code.checks if check.stabilizer.z_qubits
+    )
+    assert len(x_ancillas) == len(z_ancillas) == 3
+
+    assert len(x_layout.detectors) == len(z_layout.detectors)
+    # Round zero: the readout basis' checks, and only those.
+    assert tuple(item.parity for item in x_layout.detectors.detectors[:3]) == tuple(
+        (MeasurementRef(0, qubit),) for qubit in x_ancillas
+    )
+    assert tuple(item.parity for item in z_layout.detectors.detectors[:3]) == tuple(
+        (MeasurementRef(0, qubit),) for qubit in z_ancillas
+    )
+    # Terminal: again the readout basis' checks, joined to their own support.
+    assert tuple(item.parity for item in x_layout.detectors.detectors[-3:]) == tuple(
+        (MeasurementRef(2, check.ancilla_qubit),)
+        + tuple(MeasurementRef(None, qubit) for qubit in check.stabilizer.support)
+        for check in code.checks
+        if check.stabilizer.x_qubits
+    )
+    # Between rounds: every check, in both bases.
+    assert tuple(item.parity for item in x_layout.detectors.detectors[6:9]) == tuple(
+        (MeasurementRef(1, qubit), MeasurementRef(0, qubit)) for qubit in x_ancillas
+    )
+
+
+def test_the_x_basis_observable_is_the_codes_x_type_logical_operator() -> None:
+    """The Steane code declares one observable in each basis, so the basis picks one.
+
+    The two share a support here, so the Pauli type is the whole difference and
+    the parity that realizes it reads the same data qubits in either case; what
+    changes is which basis those terminal samples were taken in.
+    """
+
+    code = SteaneCode()
+    z_observable = build_memory_circuit(code, rounds=2).observables.observables[0]
+    x_observable = build_memory_circuit(
+        code, rounds=2, readout_basis="x"
+    ).observables.observables[0]
+
+    assert z_observable.pauli == Pauli(z_qubits=(0, 1, 2))
+    assert x_observable.pauli == Pauli(x_qubits=(0, 1, 2))
+    assert z_observable.measurement_parity == x_observable.measurement_parity
+
+
+def test_the_readout_basis_must_name_a_basis() -> None:
+    with pytest.raises(ValueError, match="must be one of"):
+        build_memory_circuit(RepetitionCode(3), rounds=2, readout_basis="y")
+
+    with pytest.raises(TypeError, match="must be a string"):
+        build_memory_circuit(
+            RepetitionCode(3), rounds=2, readout_basis=0  # type: ignore[arg-type]
+        )
+
+
+def test_a_hand_built_circuit_defaults_to_the_z_basis() -> None:
+    """The field is trailing and optional, so an existing caller is unchanged.
+
+    A caller that states the five original fields gets the experiment those
+    fields have always described, which is the Z one, rather than a refusal to
+    choose.
+    """
+
+    built = build_memory_circuit(RepetitionCode(3), rounds=2)
+    rebuilt = MemoryCircuit(
+        code=built.code,
+        rounds=built.rounds,
+        source=built.source,
+        detectors=built.detectors,
+        observables=built.observables,
+    )
+
+    assert rebuilt.readout_basis == "z"
+    assert rebuilt == built
 
 
 def test_builder_accepts_a_second_code_without_repetition_assumptions() -> None:
@@ -270,8 +417,35 @@ def test_logical_observable_rejects_a_mixed_type_operator() -> None:
     with pytest.raises(ValueError, match="pure X-type or pure Z-type"):
         LogicalObservable(
             index=0,
-            pauli=Pauli(x_wires=(0,), z_wires=(0,)),
+            pauli=Pauli(x_qubits=(0,), z_qubits=(0,)),
             measurement_parity=(MeasurementRef(None, 0),),
+        )
+
+
+def test_logical_observable_accepts_a_pure_x_type_operator() -> None:
+    """Both bases are readable, so neither pure Pauli type is refused.
+
+    Which of the two an experiment reads is the experiment's readout basis, which
+    is stated on the circuit rather than on the observable record. The record's
+    own job is narrower: it refuses an operator that no single readout basis can
+    measure, which is the mixed case below.
+    """
+
+    observable = LogicalObservable(
+        index=0,
+        pauli=Pauli(x_qubits=(0,)),
+        measurement_parity=(MeasurementRef(None, 0),),
+    )
+
+    assert observable.pauli == Pauli(x_qubits=(0,))
+
+
+def test_logical_observable_rejects_a_mixed_operator() -> None:
+    with pytest.raises(ValueError, match="pure X(-type)? or pure Z(-type)?"):
+        LogicalObservable(
+            index=0,
+            pauli=Pauli(x_qubits=(0,), z_qubits=(1,)),
+            measurement_parity=(MeasurementRef(None, 0), MeasurementRef(None, 1)),
         )
 
 
@@ -280,10 +454,10 @@ def test_logical_observable_admits_an_x_type_operator() -> None:
 
     observable = LogicalObservable(
         index=0,
-        pauli=Pauli(x_wires=(0, 1)),
+        pauli=Pauli(x_qubits=(0, 1)),
         measurement_parity=(MeasurementRef(None, 0), MeasurementRef(None, 1)),
     )
-    assert observable.pauli == Pauli(x_wires=(0, 1))
+    assert observable.pauli == Pauli(x_qubits=(0, 1))
 
 
 def test_observable_layout_requires_a_dense_ordering() -> None:
@@ -292,7 +466,7 @@ def test_observable_layout_requires_a_dense_ordering() -> None:
             (
                 LogicalObservable(
                     index=2,
-                    pauli=Pauli(z_wires=(0,)),
+                    pauli=Pauli(z_qubits=(0,)),
                     measurement_parity=(MeasurementRef(None, 0),),
                 ),
             )
@@ -316,11 +490,15 @@ class _ChecklessCode:
     distance = 3
     num_data_qubits = 3
     num_ancilla_qubits = 2
-    data_wires = (0, 1, 2)
-    ancilla_wires = (3, 4)
+    num_ancilla_x_qubits = 0
+    num_ancilla_z_qubits = 0
+    num_x_stabilizers = 0
+    num_z_stabilizers = 0
+    data_qubits = (0, 1, 2)
+    ancilla_qubits = (3, 4)
     checks: tuple[CodeCheck, ...] = ()
     stabilizers: tuple[Pauli, ...] = ()
-    logical_observables = (Pauli(z_wires=(0, 1, 2)),)
+    logical_observables = (Pauli(z_qubits=(0, 1, 2)),)
 
 
 class _RogueLogicalCode:
@@ -336,11 +514,15 @@ class _RogueLogicalCode:
     distance = 3
     num_data_qubits = 3
     num_ancilla_qubits = 2
-    data_wires = (0, 1, 2)
-    ancilla_wires = (3, 4)
+    num_ancilla_x_qubits = 0
+    num_ancilla_z_qubits = 2
+    num_x_stabilizers = 0
+    num_z_stabilizers = 2
+    data_qubits = (0, 1, 2)
+    ancilla_qubits = (3, 4)
     checks = RepetitionCode(3).checks
     stabilizers = RepetitionCode(3).stabilizers
-    logical_observables = (Pauli(z_wires=(0, 1, 99)),)
+    logical_observables = (Pauli(z_qubits=(0, 1, 99)),)
 
 
 def _built_layout() -> MemoryCircuit:
@@ -370,10 +552,10 @@ def test_memory_circuit_rejects_a_non_code_object() -> None:
         )
 
 
-def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_wire() -> None:
+def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_qubit() -> None:
     built = _built_layout()
 
-    with pytest.raises(ValueError, match="declared ancilla wire"):
+    with pytest.raises(ValueError, match="declared ancilla qubit"):
         MemoryCircuit(
             code=built.code,
             rounds=built.rounds,
@@ -383,10 +565,10 @@ def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_wire() -> None:
         )
 
 
-def test_memory_circuit_rejects_a_terminal_readout_on_an_ancilla_wire() -> None:
+def test_memory_circuit_rejects_a_terminal_readout_on_an_ancilla_qubit() -> None:
     built = _built_layout()
 
-    with pytest.raises(ValueError, match="declared data wire"):
+    with pytest.raises(ValueError, match="declared data qubit"):
         MemoryCircuit(
             code=built.code,
             rounds=built.rounds,
@@ -411,14 +593,14 @@ def test_memory_circuit_rejects_a_syndrome_round_beyond_the_configuration() -> N
 
 def test_logical_observable_rejects_an_empty_readout() -> None:
     with pytest.raises(ValueError, match="at least one measurement"):
-        LogicalObservable(index=0, pauli=Pauli(z_wires=(0,)), measurement_parity=())
+        LogicalObservable(index=0, pauli=Pauli(z_qubits=(0,)), measurement_parity=())
 
 
 def test_logical_observable_rejects_a_round_indexed_readout() -> None:
     with pytest.raises(ValueError, match="terminal"):
         LogicalObservable(
             index=0,
-            pauli=Pauli(z_wires=(0,)),
+            pauli=Pauli(z_qubits=(0,)),
             measurement_parity=(MeasurementRef(0, 0),),
         )
 
@@ -427,7 +609,7 @@ def test_logical_observable_rejects_a_readout_outside_the_operator_support() -> 
     with pytest.raises(ValueError, match="support"):
         LogicalObservable(
             index=0,
-            pauli=Pauli(z_wires=(0, 1)),
+            pauli=Pauli(z_qubits=(0, 1)),
             measurement_parity=(MeasurementRef(None, 0),),
         )
 
@@ -442,7 +624,7 @@ def test_memory_circuit_rejects_an_observable_that_disagrees_with_the_code() -> 
     (observable,) = built.observables.observables
     incoherent = LogicalObservable(
         index=0,
-        pauli=Pauli(z_wires=(99,)),
+        pauli=Pauli(z_qubits=(99,)),
         measurement_parity=(MeasurementRef(None, 99),),
     )
 
@@ -454,14 +636,14 @@ def test_memory_circuit_rejects_an_observable_that_disagrees_with_the_code() -> 
             detectors=built.detectors,
             observables=ObservableLayout((incoherent,)),
         )
-    assert observable.pauli == Pauli(z_wires=(0, 1, 2))
+    assert observable.pauli == Pauli(z_qubits=(0, 1, 2))
 
 
 def test_memory_circuit_rejects_an_observable_readout_on_an_undeclared_wire() -> None:
     built = build_memory_circuit(RepetitionCode(3), rounds=3)
     incoherent = LogicalObservable(
         index=0,
-        pauli=Pauli(z_wires=(0, 1, 99)),
+        pauli=Pauli(z_qubits=(0, 1, 99)),
         measurement_parity=(
             MeasurementRef(None, 0),
             MeasurementRef(None, 1),
@@ -469,7 +651,7 @@ def test_memory_circuit_rejects_an_observable_readout_on_an_undeclared_wire() ->
         ),
     )
 
-    with pytest.raises(ValueError, match="declared data wire"):
+    with pytest.raises(ValueError, match="declared data qubit"):
         MemoryCircuit(
             code=_RogueLogicalCode(),
             rounds=built.rounds,

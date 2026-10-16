@@ -22,9 +22,12 @@ import torch
 import flagquantum.compiler as compiler
 from flagquantum.compiler.one_qubit_optimization import (
     _IDENTITY,
+    _declines_vocabulary,
+    _emit,
     _fold_run,
     _instruction_matrix,
     _matmul,
+    _run_product,
     _single_basis_pair,
     collapse_one_qubit_runs,
 )
@@ -174,9 +177,12 @@ def test_a_folded_run_keeps_the_runs_matrix(length: int) -> None:
 
 
 def test_a_run_that_cannot_be_shorter_is_declined() -> None:
-    # A run the fold cannot shorten is returned unchanged rather than rewritten
-    # into the same number of gates, which is what makes the pass idempotent and
-    # the fixed-point loop in the pipeline terminate.
+    # A run whose replacement would be no shorter is returned unchanged rather
+    # than rewritten into the same number of gates, which is what makes the pass
+    # idempotent and the fixed-point loop in the pipeline terminate. `sx sx`
+    # reaches one `u3`, so its refusal is not about length -- the vocabulary
+    # decline is what declines it, and the test below is where that is pinned.
+    # What is pinned here is that a refused run is left exactly as it was.
     run = [Instruction("sx", (0,)), Instruction("sx", (0,))]
     assert _single_basis_pair(run) == ("rz", "sx")
     assert _fold_run(run) is None
@@ -218,6 +224,151 @@ def test_a_run_one_target_vocabulary_spells_is_declined() -> None:
     assert _single_basis_pair(mixed) is None
     assert len(collapse_one_qubit_runs(CircuitIR(1, tuple(mixed))).instructions) < len(
         mixed
+    )
+
+
+def test_a_vocabulary_run_whose_product_is_the_identity_is_deleted() -> None:
+    """The decline is about writing a run back, and there is nothing to write.
+
+    A run spelled in one z-rotation/pulse vocabulary is what a target that
+    publishes those two gates emits and consumes, so re-spelling it here would
+    only be undone downstream. That reason needs a replacement: when the run's
+    product is the identity the replacement is empty, and no lowering can put
+    back what was never written. Both shapes below are what makes this a real gain
+    rather than a restatement of `remove_identity`: neither is reachable by
+    deleting a single gate, because no gate in either run is itself the identity.
+    A run of two full `rz` turns also composes to the identity, but it is not
+    spelled in the vocabulary -- it has no pulse -- so it was never declined and
+    is not this rule's business.
+    """
+
+    shapes = (
+        [Instruction("sx", (0,))] * 4,
+        [
+            Instruction("rx", (0,), params={"theta": 0.7}),
+            Instruction("rx", (0,), params={"theta": -0.7}),
+        ],
+    )
+    for run in shapes:
+        assert _single_basis_pair(run) is not None
+        for instruction in run:
+            assert _instruction_matrix(instruction) != _IDENTITY
+        assert _emit(_run_product(run), qubit=0, metadata={}) == ()
+        assert _fold_run(list(run)) == ()
+        assert collapse_one_qubit_runs(CircuitIR(1, tuple(run))).instructions == ()
+
+
+def test_the_vocabulary_decline_still_holds_when_the_replacement_has_gates() -> None:
+    """The exemption is the empty replacement, not a relaxation of the decline.
+
+    `sx sx` reaches one `u3`, and a `u3` is exactly what the target's lowering
+    re-spells into five gates; that is the case the decline was measured on and
+    it is deliberately unchanged.
+    """
+
+    run = [Instruction("sx", (0,)), Instruction("sx", (0,))]
+    replacement = _emit(_run_product(run), qubit=0, metadata={})
+    assert [item.name for item in replacement] == ["u3"]
+    assert _declines_vocabulary(run, replacement) is True
+
+    # The rule is asked about the replacement as well as the run, so the same run
+    # is not declined once its replacement is empty. Asserting both halves of the
+    # rule on one run is what stops the exemption from being read as a rewrite of
+    # `_single_basis_pair`.
+    assert _declines_vocabulary(run, ()) is False
+    assert _declines_vocabulary([Instruction("x", (0,))] * 2, replacement) is False
+
+
+def test_a_minus_identity_vocabulary_run_is_not_deleted() -> None:
+    """The edge the exemption must not cross: `-I` is a global phase.
+
+    `CircuitIR` has no field for a global phase, so `rx(pi) rx(pi)` has to be
+    written back as a rotation. Deleting it would be a smaller program than the
+    one asked for, which is the wrong direction for this pass to fail in.
+    """
+
+    run = [
+        Instruction("rx", (0,), params={"theta": cmath.pi}),
+        Instruction("rx", (0,), params={"theta": cmath.pi}),
+    ]
+    product = _run_product(run)
+    assert _gap(product, [[-1 + 0j, 0j], [0j, -1 + 0j]]) < 1e-12
+    assert [item.name for item in _emit(product, qubit=0, metadata={})] == ["rz"]
+    assert _fold_run(list(run)) is None
+    assert collapse_one_qubit_runs(CircuitIR(1, tuple(run))).instructions == tuple(run)
+
+
+def test_no_run_is_deleted_unless_its_product_is_the_identity() -> None:
+    """A dense sweep, because a deletion is the direction that needs evidence.
+
+    The fold reads a product of floats, so "the replacement is empty" is a
+    tolerance test rather than an equality test. This pins what that tolerance
+    actually reaches: every emptied run in the sweep is within `1e-12` of the
+    identity, and the sweep is asserted to have emptied something, because a
+    sweep that deletes nothing would pass this test while proving nothing.
+    """
+
+    rng = random.Random(20261119)
+    angles = (
+        0.0,
+        1e-16,
+        1e-12,
+        1e-8,
+        1e-4,
+        1e-3,
+        0.3,
+        cmath.pi / 2,
+        cmath.pi,
+        2 * cmath.pi,
+        2 * cmath.pi - 1e-9,
+        2 * cmath.pi + 1e-9,
+        4 * cmath.pi,
+        -2 * cmath.pi,
+        6 * cmath.pi,
+    )
+    emptied = 0
+    wrong = 0
+    minus_identity = 0
+    minus_identity_emptied = 0
+    worst = 0.0
+    for _ in range(4000):
+        run = [
+            _random_angle_instruction(rng.choice(SINGLE_QUBIT_OPCODES), angles, rng)
+            for _ in range(rng.randint(2, 5))
+        ]
+        product = _run_product(run)
+        if product is None:
+            continue
+        if _emit(product, qubit=0, metadata={}):
+            if _gap(product, [[-1 + 0j, 0j], [0j, -1 + 0j]]) < 1e-12:
+                minus_identity += 1
+            continue
+        emptied += 1
+        distance = _gap(product, _IDENTITY)
+        worst = max(worst, distance)
+        if distance > 1e-12:
+            wrong += 1
+        if _gap(product, [[-1 + 0j, 0j], [0j, -1 + 0j]]) < 1e-12:
+            minus_identity_emptied += 1
+    assert emptied > 0
+    assert wrong == 0
+    # Both halves of the boundary are populated: the sweep saw `-I` products, and
+    # it deleted none of them. Without the first assertion the second would hold
+    # on a population that never reached the edge.
+    assert minus_identity > 0
+    assert minus_identity_emptied == 0
+    assert worst < 1e-12
+
+
+def _random_angle_instruction(
+    opcode: str, angles: tuple[float, ...], rng: random.Random
+) -> Instruction:
+    schema = get_operator_schema(opcode)
+    assert schema is not None, opcode
+    return Instruction(
+        opcode,
+        (0,),
+        params={name: rng.choice(angles) for name in schema.parameters},
     )
 
 

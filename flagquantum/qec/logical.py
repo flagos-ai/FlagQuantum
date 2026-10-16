@@ -1,7 +1,7 @@
 """Certification of a code's logical operators in a chosen readout frame.
 
-A code declares its distance, its wires, its checks, and its logical
-observables. The declared observables are read out by measuring every data wire
+A code declares its distance, its qubits, its checks, and its logical
+observables. The declared observables are read out by measuring every data qubit
 in the Z basis, which is the frame a memory experiment is normally stated in. A
 memory experiment stated in another frame measures a *product* of the same
 code's logical operators instead, and such a product is only a logical operator
@@ -26,11 +26,11 @@ if TYPE_CHECKING:
 
 
 def _symplectic_mask(pauli: Pauli, positions: dict[int, int], width: int) -> int:
-    """Return ``pauli`` as one X bit and one Z bit per data wire.
+    """Return ``pauli`` as one X bit and one Z bit per data qubit.
 
     The two halves are packed into one integer so that a whole stabilizer group is
-    a set of GF(2) rows: bit ``p`` is the X factor on the ``p``-th data wire and
-    bit ``width + p`` its Z factor. A wire listed in both carries ``Y``, which is
+    a set of GF(2) rows: bit ``p`` is the X factor on the ``p``-th data qubit and
+    bit ``width + p`` its Z factor. A qubit listed in both carries ``Y``, which is
     what makes this the correct mask for a **mixed** check -- a check that is a
     product of the two families is neither an X-type row nor a Z-type row, and a
     mask that recorded only its support would conflate it with an operator of a
@@ -38,25 +38,25 @@ def _symplectic_mask(pauli: Pauli, positions: dict[int, int], width: int) -> int
     """
 
     bits = 0
-    for wire in pauli.x_wires:
+    for wire in pauli.x_qubits:
         bits |= 1 << positions[wire]
-    for wire in pauli.z_wires:
+    for wire in pauli.z_qubits:
         bits |= 1 << (width + positions[wire])
     return bits
 
 
 def _z_part_mask(pauli: Pauli, positions: dict[int, int]) -> int:
-    """Return only ``pauli``'s Z support, as one bit per data wire.
+    """Return only ``pauli``'s Z support, as one bit per data qubit.
 
     An X-type candidate commutes with an operator exactly when the two agree on an
-    even number of wires the operator carries a ``Z`` factor on, so a Z factor is
+    even number of qubits the operator carries a ``Z`` factor on, so a Z factor is
     the whole of what constrains it and an X factor constrains it not at all. This
     is the mask a commutation constraint is stated with, and it is why a mixed
     check constrains an X-type candidate as much as a pure Z-type check does.
     """
 
     bits = 0
-    for wire in pauli.z_wires:
+    for wire in pauli.z_qubits:
         bits |= 1 << positions[wire]
     return bits
 
@@ -100,8 +100,8 @@ def certify_logical_product(code: StabilizerCode, product: Pauli) -> Pauli:
     therefore carries no information. Both are refused rather than repaired,
     because a candidate that fails either is not the operator the caller named.
 
-    Only a pure X-type or pure Z-type candidate is accepted. Each wire of the
-    product is measured in one basis, and a wire carrying both an ``X`` and a
+    Only a pure X-type or pure Z-type candidate is accepted. Each qubit of the
+    product is measured in one basis, and a qubit carrying both an ``X`` and a
     ``Z`` factor would need a third basis. Identity is refused for the same
     reason an identity observable is: it is measured by nothing.
 
@@ -117,13 +117,13 @@ def certify_logical_product(code: StabilizerCode, product: Pauli) -> Pauli:
         raise TypeError("logical product must be a Pauli operator")
     if product.is_identity:
         raise ValueError("logical product must not be the identity")
-    if product.x_wires and product.z_wires:
+    if product.x_qubits and product.z_qubits:
         raise ValueError(
             "logical product must be a pure X-type or pure Z-type operator, "
             "because each wire of the product is read out in a single basis "
             "and a Y factor would need a second rotation"
         )
-    undeclared = sorted(set(product.support) - set(code.data_wires))
+    undeclared = sorted(set(product.support) - set(code.data_qubits))
     if undeclared:
         raise ValueError(
             f"logical product wires {tuple(undeclared)} are not declared data "
@@ -135,8 +135,8 @@ def certify_logical_product(code: StabilizerCode, product: Pauli) -> Pauli:
                 "logical product must commute with every check of the code, and "
                 f"it anticommutes with check {check.index}"
             )
-    positions = {wire: index for index, wire in enumerate(code.data_wires)}
-    width = len(code.data_wires)
+    positions = {wire: index for index, wire in enumerate(code.data_qubits)}
+    width = len(code.data_qubits)
     # Every check constrains the candidate, of whichever type it is. An operator
     # that is a product of checks is the identity element of the stabilizer group
     # only as a symplectic vector, so the span is asked of the full X-and-Z
@@ -162,9 +162,9 @@ def derive_anticommuting_logical_product(code: StabilizerCode, index: int = 0) -
     one of them, and a code need not declare that operator: the surface patches
     declare only their Z-type logical observable. This function derives it.
 
-    The derivation is a GF(2) linear system over the code's data wires. An X-type
+    The derivation is a GF(2) linear system over the code's data qubits. An X-type
     operator commutes with an operator exactly when it overlaps that operator's
-    ``Z`` factor on an even number of wires, so a check constrains the candidate
+    ``Z`` factor on an even number of qubits, so a check constrains the candidate
     through its ``Z`` factor alone and a check carrying none constrains it not at
     all. A pure X-type check is therefore free, a pure Z-type check is a full
     constraint, and a **mixed** check is a constraint of exactly the size of its
@@ -184,14 +184,14 @@ def derive_anticommuting_logical_product(code: StabilizerCode, index: int = 0) -
     if isinstance(index, bool) or not isinstance(index, Integral):
         raise TypeError("observable index must be an integer")
     readable = tuple(
-        observable for observable in code.logical_observables if not observable.x_wires
+        observable for observable in code.logical_observables if not observable.x_qubits
     )
     if index < 0 or index >= len(readable):
         raise ValueError(
             f"the code declares no Z-type observable at index {index}, and only a "
             "Z-type observable has an X-type partner to derive"
         )
-    positions = {wire: position for position, wire in enumerate(code.data_wires)}
+    positions = {wire: position for position, wire in enumerate(code.data_qubits)}
     # Every check's Z factor is a constraint, a mixed check's included: an X-type
     # candidate anticommutes with a check exactly when it overlaps that check's Z
     # support oddly. A check carrying no Z factor therefore contributes a row of
@@ -209,10 +209,10 @@ def derive_anticommuting_logical_product(code: StabilizerCode, index: int = 0) -
         )
     wires = tuple(
         wire
-        for position, wire in enumerate(code.data_wires)
+        for position, wire in enumerate(code.data_qubits)
         if solution >> position & 1
     )
-    return certify_logical_product(code, Pauli(x_wires=wires))
+    return certify_logical_product(code, Pauli(x_qubits=wires))
 
 
 __all__ = ("certify_logical_product", "derive_anticommuting_logical_product")

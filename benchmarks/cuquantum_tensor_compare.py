@@ -499,7 +499,7 @@ def _cu_loss_for_row(
     contract: Any,
     dtype: Any,
 ) -> Any:
-    state = _cu_state_for_params(row, n_wires=n_wires, cp=cp, contract=contract, dtype=dtype)
+    state = _cu_state_for_params(row, n_qubits=n_wires, cp=cp, contract=contract, dtype=dtype)
     if observable == "z_sum":
         total = cp.asarray(0.0, dtype=cp.float32)
         for wire in range(int(n_wires)):
@@ -533,12 +533,12 @@ def _cu_forward_loss(
 ) -> Any:
     values = _torch_params_to_cupy(cp, params, dtype)
     if values.ndim == 3:
-        return _cu_loss_for_row(values, n_wires=n_wires, observable=observable, cp=cp, contract=contract, dtype=dtype)
+        return _cu_loss_for_row(values, n_qubits=n_wires, observable=observable, cp=cp, contract=contract, dtype=dtype)
     total = cp.asarray(0.0, dtype=cp.float32)
     for batch in range(int(values.shape[0])):
         total = total + _cu_loss_for_row(
             values[batch],
-            n_wires=n_wires,
+            n_qubits=n_wires,
             observable=observable,
             cp=cp,
             contract=contract,
@@ -559,12 +559,12 @@ def _time_cu_forward(
     iters: int,
 ) -> dict[str, Any]:
     for _ in range(int(warmup)):
-        value = _cu_forward_loss(params, n_wires=n_wires, observable=observable, cp=cp, contract=contract, dtype=dtype)
+        value = _cu_forward_loss(params, n_qubits=n_wires, observable=observable, cp=cp, contract=contract, dtype=dtype)
         cp.cuda.Stream.null.synchronize()
     start = time.perf_counter()
     value = None
     for _ in range(int(iters)):
-        value = _cu_forward_loss(params, n_wires=n_wires, observable=observable, cp=cp, contract=contract, dtype=dtype)
+        value = _cu_forward_loss(params, n_qubits=n_wires, observable=observable, cp=cp, contract=contract, dtype=dtype)
         cp.cuda.Stream.null.synchronize()
     elapsed = time.perf_counter() - start
     assert value is not None
@@ -591,7 +591,7 @@ def _cu_finite_difference_grad(
         minus[index] = flat[index] - eps
         plus_loss = _cu_forward_loss(
             plus.reshape_as(params).to(params.device),
-            n_wires=n_wires,
+            n_qubits=n_wires,
             observable=observable,
             cp=cp,
             contract=contract,
@@ -599,7 +599,7 @@ def _cu_finite_difference_grad(
         )
         minus_loss = _cu_forward_loss(
             minus.reshape_as(params).to(params.device),
-            n_wires=n_wires,
+            n_qubits=n_wires,
             observable=observable,
             cp=cp,
             contract=contract,
@@ -608,7 +608,7 @@ def _cu_finite_difference_grad(
         grad_flat[index] = float(cp.asnumpy((plus_loss - minus_loss) / (2.0 * eps)))
         plus[index] = flat[index]
         minus[index] = flat[index]
-    loss = _cu_forward_loss(params, n_wires=n_wires, observable=observable, cp=cp, contract=contract, dtype=dtype)
+    loss = _cu_forward_loss(params, n_qubits=n_wires, observable=observable, cp=cp, contract=contract, dtype=dtype)
     return torch.tensor(float(cp.asnumpy(loss))), grad
 
 
@@ -626,7 +626,7 @@ def _time_cu_finite_difference(
     for _ in range(int(warmup)):
         _cu_finite_difference_grad(
             params,
-            n_wires=n_wires,
+            n_qubits=n_wires,
             observable=observable,
             cp=cp,
             contract=contract,
@@ -639,7 +639,7 @@ def _time_cu_finite_difference(
     for _ in range(int(iters)):
         loss, grad = _cu_finite_difference_grad(
             params,
-            n_wires=n_wires,
+            n_qubits=n_wires,
             observable=observable,
             cp=cp,
             contract=contract,
@@ -780,7 +780,7 @@ def main() -> None:
         backend="jax",
         interface="torch",
         mode=fq_mode,
-        n_wires=args.n_wires,
+        n_qubits=args.n_wires,
         observable="z_sum" if args.observable == "z_sum" else "hamiltonian",
         hamiltonian=hamiltonian,
         jit=not args.no_jax_jit,
@@ -804,7 +804,7 @@ def main() -> None:
     try:
         cu_forward = _time_cu_forward(
             params_seed,
-            n_wires=args.n_wires,
+            n_qubits=args.n_wires,
             observable=args.observable,
             cp=cp,
             contract=contract,
@@ -891,7 +891,7 @@ def main() -> None:
     if args.include_cuquantum_gradient:
         cu_grad = _time_cu_finite_difference(
             params_seed,
-            n_wires=args.n_wires,
+            n_qubits=args.n_wires,
             observable=args.observable,
             cp=cp,
             contract=contract,

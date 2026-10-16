@@ -608,7 +608,7 @@ def test_a_plan_seals_an_orderless_scheme_across_serialization() -> None:
         torch.eye(2, dtype=torch.complex128),
         torch.eye(2, dtype=torch.complex128) / 2,
         times,
-        collapse_operators=[amplitude_damping(rate=0.5, wire=0)],
+        collapse_operators=[amplitude_damping(rate=0.5, qubit=0)],
         method="krylov-exponential",
         solve_tolerance=1e-9,
     )
@@ -764,7 +764,7 @@ def test_a_pauli_sum_hamiltonian_drives_the_same_generator() -> None:
         hamiltonian,
         torch.eye(4, dtype=torch.complex128) / 4,
         times,
-        collapse_operators=[amplitude_damping(rate=0.5, wire=0)],
+        collapse_operators=[amplitude_damping(rate=0.5, qubit=0)],
         method="krylov-exponential",
         return_density_matrices=True,
     )
@@ -775,7 +775,7 @@ def test_a_pauli_sum_hamiltonian_drives_the_same_generator() -> None:
         torch.eye(4, dtype=torch.complex128) / 4,
         2,
         times,
-        [amplitude_damping(rate=0.5, wire=0)],
+        [amplitude_damping(rate=0.5, qubit=0)],
         method="krylov-exponential",
         return_density_matrices=True,
         solve_tolerance=1e-12,
@@ -861,7 +861,7 @@ def test_the_matrix_free_and_dense_hamiltonians_adjoint_identically() -> None:
 def test_the_exponential_scheme_has_no_step_size_error_on_the_grid() -> None:
     hamiltonian = _hamiltonian()
     _, state, _ = _generator_and_state()
-    operators = [amplitude_damping(rate=0.3, wire=0)]
+    operators = [amplitude_damping(rate=0.3, qubit=0)]
     exact_generator = Liouvillian(
         hamiltonian,
         [
@@ -924,7 +924,7 @@ def test_the_exponential_scheme_advances_a_stiff_decay_without_a_step_limit() ->
             initial,
             1,
             times,
-            [amplitude_damping(rate=rate, wire=0)],
+            [amplitude_damping(rate=rate, qubit=0)],
             method=method,
             return_density_matrices=True,
             solve_tolerance=1e-12,

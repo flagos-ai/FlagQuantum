@@ -47,7 +47,7 @@ execution-plan dispatch through `runtime/noise_registry.py`.
 
 `stabilizer/engine.py` owns Clifford stabilizer work: it translates validated
 Circuit IR into the engine's circuit form and samples measurement outcomes for a
-requested wire list, refusing every non-Clifford opcode, every noise channel, and
+requested qubit list, refusing every non-Clifford opcode, every noise channel, and
 every already-lowered measurement node rather than approximating any of them. It
 also owns the exact Pauli readout, which conjugates a Pauli string through the
 circuit and reads it against the zero state without sampling and without an
@@ -65,7 +65,7 @@ trajectory IDs and random-stream construction, readout-error handling,
 convergence, retry, checkpointing, collectives, and result assembly.
 
 `statevector/dynamic_noise.py` owns the bounded numerical kernels used by local
-dynamic trajectories: independent one-wire bit-flip sampling and independent
+dynamic trajectories: independent one-qubit bit-flip sampling and independent
 true-to-observed readout sampling. Runtime decides placement, owns random-stream
 lifecycle and classical feedback, and fails closed for channels outside this
 profile.

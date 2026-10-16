@@ -26,7 +26,7 @@ class JAXShardedMPSParameterGradientResult:
     shard_plans: tuple[Any, ...]
     jax_plan: JAXDistributedQuantumPlan
     backend_policy: DistributedBackendPolicy
-    n_wires: int
+    n_qubits: int
     bsz: int
     complex_bytes: int
     parameter_shape: tuple[int, ...]
@@ -434,7 +434,7 @@ class JAXShardedMPSParameterGradientResult:
             "world_size": len(self.rank_shards),
             "local_world_size": self.jax_plan.local_world_size,
             "node_count": self.jax_plan.node_count,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "batch_size": self.bsz,
             "max_bond": self.max_bond,
             "cutoff": self.cutoff,

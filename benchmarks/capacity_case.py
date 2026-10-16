@@ -406,7 +406,7 @@ def main() -> None:
                 backend="jax",
                 interface="torch",
                 mode=mode,
-                n_wires=args.n_wires,
+                n_qubits=args.n_wires,
                 observable="z_sum",
                 jit=not args.no_jax_jit,
                 max_bond=args.max_bond,

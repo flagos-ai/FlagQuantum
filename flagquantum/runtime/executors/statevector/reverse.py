@@ -20,8 +20,9 @@ from ....simulation.native_cpu import (
 )
 from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
-from .forward import communication_aware_wire_layout
+from .forward import communication_aware_qubit_layout
 from .forward_executor import execute_torch_distributed_statevector
+from .gradient_reduction import OWNER_SHARDED_REDUCE_SCATTER, REPLICATED_ALL_REDUCE
 from .layout import (
     schedule_statevector_dependency_dag,
 )
@@ -60,10 +61,10 @@ def _longest_cx_run(ir: CircuitIR) -> int:
     return longest
 
 
-def _communication_aware_wire_layout(
+def _communication_aware_qubit_layout(
     ir: CircuitIR,
     *,
-    observable_wires: tuple[int, ...],
+    observable_qubits: tuple[int, ...],
     world_size: int,
     local_world_size: int,
 ) -> tuple[CircuitIR, tuple[int, ...], tuple[int, ...]]:
@@ -71,15 +72,19 @@ def _communication_aware_wire_layout(
 
     if not _communication_aware_layout_enabled():
         identity = tuple(range(ir.n_wires))
-        return ir, observable_wires, identity
-    remapped, permutation = communication_aware_wire_layout(
+        return ir, observable_qubits, identity
+    remapped, permutation = communication_aware_qubit_layout(
         ir,
         world_size=world_size,
         local_world_size=local_world_size,
-        preferred_local_wires=observable_wires,
+        preferred_local_qubits=observable_qubits,
         optimization_target="training_step",
     )
-    return remapped, tuple(permutation[wire] for wire in observable_wires), permutation
+    return (
+        remapped,
+        tuple(permutation[qubit] for qubit in observable_qubits),
+        permutation,
+    )
 
 
 def _parameter_layout(
@@ -119,25 +124,25 @@ def _parameter_layout(
 
 
 def _normalize_z_observable_terms(
-    terms: Sequence[tuple[float, Sequence[int]]], *, n_wires: int
+    terms: Sequence[tuple[float, Sequence[int]]], *, n_qubits: int
 ) -> tuple[tuple[float, tuple[int, ...]], ...]:
     """Validate the exact weighted Z/ZZ observable supported by adjoint mode."""
 
     normalized: list[tuple[float, tuple[int, ...]]] = []
-    for coefficient, raw_wires in terms:
+    for coefficient, raw_qubits in terms:
         value = float(coefficient)
-        wires = tuple(raw_wires)
+        qubits = tuple(raw_qubits)
         if not math.isfinite(value):
             raise ValueError("observable coefficients must be finite")
-        if any(type(wire) is not int for wire in wires):
-            raise TypeError("observable wires must be integers")
-        if len(wires) not in {1, 2}:
+        if any(type(qubit) is not int for qubit in qubits):
+            raise TypeError("observable qubits must be integers")
+        if len(qubits) not in {1, 2}:
             raise ValueError("statevector adjoint supports only Z and ZZ terms")
-        if len(set(wires)) != len(wires):
-            raise ValueError("an observable term cannot repeat a wire")
-        if any(wire < 0 or wire >= n_wires for wire in wires):
-            raise ValueError("observable term wire is outside the circuit")
-        normalized.append((value, tuple(sorted(wires))))
+        if len(set(qubits)) != len(qubits):
+            raise ValueError("an observable term cannot repeat a qubit")
+        if any(qubit < 0 or qubit >= n_qubits for qubit in qubits):
+            raise ValueError("observable term qubit is outside the circuit")
+        normalized.append((value, tuple(sorted(qubits))))
     if not normalized:
         raise ValueError("observable_terms must contain at least one Z or ZZ term")
     return tuple(normalized)
@@ -156,8 +161,8 @@ class TorchDistributedStatevectorGradientResult:
     rank: int
     local_amplitudes: int
     total_amplitudes: int
-    logical_to_physical_wires: tuple[int, ...]
-    observable_wires: tuple[int, ...]
+    logical_to_physical_qubits: tuple[int, ...]
+    observable_qubits: tuple[int, ...]
     observable_terms: tuple[tuple[float, tuple[int, ...]], ...]
     layout_optimization_target: str
     backward_evidence: BackwardExecutionEvidence
@@ -172,10 +177,27 @@ class TorchDistributedStatevectorGradientResult:
             if ready and self.world_size > 1
             else "single_device_fast_path" if ready else self.backward_evidence.status
         )
+        # The gradient scheme is read from what the reduction actually did, so a
+        # replicated all-reduce and an owner-sharded reduce-scatter cannot be
+        # reported as one another by a literal beside them.
+        scheme = self.backward_evidence.gradient_reduction_scheme
+        replicated = scheme == REPLICATED_ALL_REDUCE
+        if not ready:
+            gradient_distribution = "pending"
+            gradient_reduction = "pending"
+        elif self.world_size == 1:
+            gradient_distribution = "local"
+            gradient_reduction = "local"
+        elif replicated:
+            gradient_distribution = "replicated_after_all_reduce"
+            gradient_reduction = "all_reduce_sum"
+        else:
+            gradient_distribution = "owner_sharded_reduce_scatter"
+            gradient_reduction = "reduce_scatter_sum"
         ownership = tuple(
             {
                 "parameter": item.parameter,
-                "owner_rank": None,
+                "owner_rank": item.owner_rank,
                 "occurrence_count": item.occurrence_count,
                 "reduction": item.reduction if ready else "pending",
                 "reduction_count": (
@@ -184,11 +206,7 @@ class TorchDistributedStatevectorGradientResult:
                 "participating_ranks": (
                     self.backward_evidence.participating_ranks if ready else ()
                 ),
-                "distribution": (
-                    "replicated_after_all_reduce"
-                    if ready and self.world_size > 1
-                    else "local" if ready else "pending"
-                ),
+                "distribution": item.distribution if ready else "pending",
             }
             for index, item in enumerate(self.ownership)
         )
@@ -198,18 +216,18 @@ class TorchDistributedStatevectorGradientResult:
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
             "backend": self.backend,
-            "logical_to_physical_wires": self.logical_to_physical_wires,
+            "logical_to_physical_wires": self.logical_to_physical_qubits,
             "layout_optimization_target": self.layout_optimization_target,
             "gradient_method": "statevector_adjoint",
             "observable_profile": (
                 "sum_of_single_wire_pauli_z_terms"
                 if all(
-                    coefficient == 1.0 and len(wires) == 1
-                    for coefficient, wires in self.observable_terms
+                    coefficient == 1.0 and len(qubits) == 1
+                    for coefficient, qubits in self.observable_terms
                 )
                 else "weighted_z_zz_hamiltonian"
             ),
-            "observable_wires": self.observable_wires,
+            "observable_wires": self.observable_qubits,
             "observable_terms": self.observable_terms,
             "distribution_semantics": (
                 "sharded_across_ranks"
@@ -231,16 +249,18 @@ class TorchDistributedStatevectorGradientResult:
             "backward_status": self.backward_evidence.status,
             "backward_error": self.backward_evidence.error,
             "parameter_gradient_ready": ready,
-            "gradient_distribution": (
-                "replicated_after_all_reduce"
-                if ready and self.world_size > 1
-                else "local" if ready else "pending"
+            "gradient_ownership_semantics": (
+                "sharded_across_ranks"
+                if ready and not replicated and self.world_size > 1
+                else (
+                    "reduced_across_ranks"
+                    if ready and self.world_size > 1
+                    else "local" if ready else "pending"
+                )
             ),
-            "gradient_reduction": (
-                "all_reduce_sum"
-                if ready and self.world_size > 1
-                else "local" if ready else "pending"
-            ),
+            "gradient_reduction_scheme": scheme,
+            "gradient_distribution": gradient_distribution,
+            "gradient_reduction": gradient_reduction,
             "parameter_ownership": ownership,
             "checkpoint_policy": self.checkpoint_policy.__dict__,
             "local_state_bytes": self.local_amplitudes * self.value.element_size() * 2,
@@ -335,6 +355,7 @@ class _ShardedAutogradContext(Protocol):
     forward_shard_state: StatevectorShardState | None
     forward_observable_weights: torch.Tensor | None
     forward_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...]
+    owners: Sequence[int] | None
 
     @property
     def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
@@ -355,6 +376,7 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         device: torch.device,
         process_group: Any | None,
         evidence: BackwardExecutionEvidence,
+        owners: Sequence[int] | None,
         *parameters: torch.Tensor,
     ) -> torch.Tensor:
         from .reverse_adjoint import _local_expectation_z_hamiltonian_and_weights
@@ -365,6 +387,7 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         ctx.device = device
         ctx.process_group = process_group
         ctx.evidence = evidence
+        ctx.owners = None if owners is None else tuple(int(item) for item in owners)
         ctx.save_for_backward(*parameters)
         bound = _bind_parameters(ir, slots, parameters)
         # Retain the parameter-free template; backward binds only saved tensors into
@@ -380,7 +403,7 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
             device=device,
             dtype=dtype,
             process_group=process_group,
-            persistent_wire_layout=(
+            persistent_qubit_layout=(
                 _persistent_wire_layout_enabled()
                 and policy.strategy == "reversible_adjoint"
             ),
@@ -396,9 +419,9 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
         physical_terms = tuple(
             (
                 coefficient,
-                tuple(result.logical_to_physical_wires[wire] for wire in wires),
+                tuple(result.logical_to_physical_qubits[qubit] for qubit in qubits),
             )
-            for coefficient, wires in observable_terms
+            for coefficient, qubits in observable_terms
         )
         value, observable_weights = _local_expectation_z_hamiltonian_and_weights(
             result.shard_state,
@@ -475,6 +498,7 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
                     saved_inter_node_ket_checkpoints=(
                         ctx.forward_inter_node_ket_checkpoints
                     ),
+                    owners=ctx.owners,
                 )
             ctx.forward_shard_state = None
             ctx.forward_observable_weights = None
@@ -497,12 +521,26 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
             else:
                 evidence.participating_ranks = (0,)
             scaled = tuple(item * grad_output.to(item.device) for item in gradients)
+            # One place labels every gradient from the scheme the reduction
+            # recorded, so the per-parameter distribution cannot disagree with
+            # the collective that produced it.
             for item in evidence.ownership:
-                item.reduction = "all_reduce_sum" if world_size > 1 else "local"
                 item.participating_ranks = evidence.participating_ranks
-                item.distribution = (
-                    "replicated_after_all_reduce" if world_size > 1 else "local"
-                )
+                if world_size == 1:
+                    item.reduction = "local"
+                    item.distribution = "local"
+                elif evidence.gradient_reduction_scheme == (
+                    OWNER_SHARDED_REDUCE_SCATTER
+                ):
+                    item.reduction = "reduce_scatter_sum"
+                    item.distribution = (
+                        "owner_sharded_across_ranks"
+                        if item.owner_rank == rank
+                        else "reduced_away_to_owner_rank"
+                    )
+                else:
+                    item.reduction = "all_reduce_sum"
+                    item.distribution = "replicated_after_all_reduce"
             evidence.status = "completed"
         except Exception as error:
             evidence.status = "failed"
@@ -511,38 +549,56 @@ class _ShardedStatevectorExpectation(torch.autograd.Function):
                 item.reduction = "failed"
                 item.distribution = "failed"
             raise
-        return (None, None, None, None, None, None, None, *scaled)
+        # One gradient slot per forward argument: the seven non-tensor
+        # arguments passed before the parameters, then the parameters.
+        return (None, None, None, None, None, None, None, None, *scaled)
 
 
 def execute_torch_distributed_statevector_reverse(
     circuit_or_ir: Any,
     *,
-    observable_wire: int = 0,
-    observable_wires: Sequence[int] | None = None,
+    observable_qubit: int = 0,
+    observable_qubits: Sequence[int] | None = None,
     observable_terms: Sequence[tuple[float, Sequence[int]]] | None = None,
     checkpoint_policy: StatevectorCheckpointPolicy | None = None,
     device: torch.device | str | None = None,
     process_group: Any | None = None,
+    owners: Sequence[int] | None = None,
 ) -> TorchDistributedStatevectorGradientResult:
-    """Return a differentiable weighted Z/ZZ expectation."""
+    """Return a differentiable weighted Z/ZZ expectation.
+
+    Args:
+        owners: One owner rank per parameter, or ``None`` for the default
+            replicated reduction. With owners declared, gradients are reduced
+            onto the rank that owns them and every other rank's local buffer is
+            zeroed, so the backward reports owner-sharded gradient ownership
+            because that is the collective that ran.
+
+    Raises:
+        ValueError: ``owners`` does not name exactly one rank per parameter.
+    """
 
     ir = ensure_circuit_ir(circuit_or_ir)
     if observable_terms is None:
-        selected_observable_wires = (
-            (observable_wire,) if observable_wires is None else tuple(observable_wires)
+        selected_observable_qubits = (
+            (observable_qubit,)
+            if observable_qubits is None
+            else tuple(observable_qubits)
         )
         selected_observable_terms = _normalize_z_observable_terms(
-            tuple((1.0, (wire,)) for wire in selected_observable_wires),
-            n_wires=ir.n_wires,
+            tuple((1.0, (qubit,)) for qubit in selected_observable_qubits),
+            n_qubits=ir.n_wires,
         )
     else:
-        if observable_wires is not None:
-            raise ValueError("provide observable_wires or observable_terms, not both")
+        if observable_qubits is not None:
+            raise ValueError("provide observable_qubits or observable_terms, not both")
         selected_observable_terms = _normalize_z_observable_terms(
-            observable_terms, n_wires=ir.n_wires
+            observable_terms, n_qubits=ir.n_wires
         )
-        selected_observable_wires = tuple(
-            sorted({wire for _, wires in selected_observable_terms for wire in wires})
+        selected_observable_qubits = tuple(
+            sorted(
+                {qubit for _, qubits in selected_observable_terms for qubit in qubits}
+            )
         )
     backend = (
         dist.get_backend(process_group) if dist.is_initialized() else "single_process"
@@ -557,9 +613,9 @@ def execute_torch_distributed_statevector_reverse(
         execution_ir,
         _,
         execution_mapping,
-    ) = _communication_aware_wire_layout(
+    ) = _communication_aware_qubit_layout(
         ir,
-        observable_wires=selected_observable_wires,
+        observable_qubits=selected_observable_qubits,
         world_size=world_size,
         local_world_size=local_world_size,
     )
@@ -593,7 +649,7 @@ def execute_torch_distributed_statevector_reverse(
         resolved_device.type == "cpu"
         and use_compact_cpu_cx_adjoint_cycles(
             longest_local_cx_run,
-            plan.n_wires,
+            plan.n_qubits,
         )
     )
     policy = resolve_checkpoint_policy(
@@ -608,15 +664,20 @@ def execute_torch_distributed_statevector_reverse(
             and native_cpu_cx_adjoint_inplace_available()
         ),
         compact_cpu_cx_auxiliary_bytes=(
-            compact_cpu_cx_adjoint_auxiliary_bytes(plan.n_wires)
+            compact_cpu_cx_adjoint_auxiliary_bytes(plan.n_qubits)
             if compact_cpu_cx_cycles_available
             else 0
         ),
     )
+    if owners is not None and len(owners) != len(parameters):
+        raise ValueError(
+            "owner-sharded backward needs one owner per parameter, "
+            f"received {len(owners)} owners for {len(parameters)} parameters"
+        )
     ownership = tuple(
         ParameterGradientOwnership(
             parameter=f"parameter:{index}",
-            owner_rank=None,
+            owner_rank=None if owners is None else int(owners[index]),
             occurrence_count=occurrences[index],
             reduction="pending",
             participating_ranks=(),
@@ -635,13 +696,14 @@ def execute_torch_distributed_statevector_reverse(
         tuple(
             (
                 coefficient,
-                tuple(execution_mapping[wire] for wire in wires),
+                tuple(execution_mapping[qubit] for qubit in qubits),
             )
-            for coefficient, wires in selected_observable_terms
+            for coefficient, qubits in selected_observable_terms
         ),
         resolved_device,
         process_group,
         evidence,
+        owners,
         *parameters,
     )
     if not isinstance(value, torch.Tensor):
@@ -658,8 +720,8 @@ def execute_torch_distributed_statevector_reverse(
         rank=rank,
         local_amplitudes=plan.shards[rank].local_amplitudes,
         total_amplitudes=plan.total_amplitudes,
-        logical_to_physical_wires=execution_mapping,
-        observable_wires=selected_observable_wires,
+        logical_to_physical_qubits=execution_mapping,
+        observable_qubits=selected_observable_qubits,
         observable_terms=selected_observable_terms,
         layout_optimization_target="training_step",
         backward_evidence=evidence,

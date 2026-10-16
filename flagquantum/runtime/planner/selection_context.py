@@ -81,24 +81,24 @@ def build_runtime_selection_context(
         objective_parts.append("distributed_scale_out")
 
     dense_bytes = estimate_state_bytes(
-        analysis.n_wires,
+        analysis.n_qubits,
         bsz=bsz,
         complex_bytes=complex_bytes,
     )
     density_bytes = estimate_density_bytes(
-        analysis.n_wires,
+        analysis.n_qubits,
         bsz=bsz,
         complex_bytes=complex_bytes,
     )
     mps_bytes = estimate_mps_bytes(
-        analysis.n_wires,
+        analysis.n_qubits,
         bsz=bsz,
         max_bond=max_bond,
         complex_bytes=complex_bytes,
     )
     tensor_network_peak_bytes = estimate_execution_state_bytes(
         "tensor_network",
-        n_wires=analysis.n_wires,
+        n_qubits=analysis.n_qubits,
         bsz=bsz,
         complex_bytes=complex_bytes,
         max_bond=max_bond,

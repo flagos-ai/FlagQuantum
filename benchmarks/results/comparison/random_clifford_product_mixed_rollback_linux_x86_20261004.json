@@ -1,0 +1,140 @@
+{
+  "all_measurements_stable": true,
+  "artifact_class": "measured_comparison_run",
+  "benchmark": "cross_framework_simulator_workload_corpus",
+  "benchmark_evidence_class": "comparison_non_release",
+  "cases": [
+    {
+      "comparison": {
+        "engine_over_flagquantum_median": {},
+        "ratio_semantics": "values above one mean FlagQuantum is faster for this case"
+      },
+      "correctness": {
+        "absolute_tolerance": 1e-10,
+        "engines": {
+          "flagquantum_native": {
+            "max_abs_error": 0.0,
+            "passed": true
+          }
+        },
+        "passed": true,
+        "reference_engine": "flagquantum_native"
+      },
+      "engines": {
+        "flagquantum_native": {
+          "end_to_end": {
+            "max_seconds": 0.16544413194060326,
+            "mean_seconds": 0.16300966164895467,
+            "median_seconds": 0.1627679578959942,
+            "min_seconds": 0.1605802532285452,
+            "relative_median_absolute_deviation": 0.006249088663364772,
+            "sample_count": 7,
+            "samples_seconds": [
+              0.16510398872196674,
+              0.1617508064955473,
+              0.1627679578959942,
+              0.16365874372422695,
+              0.16544413194060326,
+              0.16176174953579903,
+              0.1605802532285452
+            ]
+          },
+          "versions": {
+            "flagquantum": "0.2.0"
+          }
+        }
+      },
+      "features": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "feature_fingerprint": "d90f4b1e27943d9c6adfc3666b2fdaea463dceb61072fa4bcff7001d626bf496",
+        "gate_count": 132,
+        "gate_density_per_wire": 6.0,
+        "logical_depth": 8,
+        "multi_qubit_gate_count": 0,
+        "n_wires": 22,
+        "nearest_neighbor_two_qubit_fraction": 0.06818181818181818,
+        "opcode_histogram": {
+          "cx": 21,
+          "cz": 23,
+          "h": 29,
+          "s": 27,
+          "x": 32
+        },
+        "parameterized_gate_count": 0,
+        "schema": "flagquantum.simulator_workload_features.v1",
+        "single_qubit_gate_count": 88,
+        "two_qubit_gate_count": 44,
+        "two_qubit_max_wire_span": 21,
+        "two_qubit_mean_wire_span": 8.5
+      },
+      "stability": {
+        "engines": {
+          "flagquantum_native": true
+        },
+        "maximum_relative_median_absolute_deviation": 0.2,
+        "passed": true
+      },
+      "workload": {
+        "batch_size": 1,
+        "dtype": "complex128",
+        "gate_count": 132,
+        "ir_content_hash": "3883e84b8cb7eff8c2309c2f5251b1a30f823989e7b4eedc6c3824ac6d9a8e43",
+        "n_wires": 22,
+        "name": "random_clifford_statevector",
+        "seed": 7319
+      }
+    }
+  ],
+  "claim_evidence_type": "unknown",
+  "correctness_passed": true,
+  "distribution_semantics": "single_process_single_device",
+  "engines": [
+    "flagquantum_native"
+  ],
+  "environment": {
+    "device": "cpu",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "32",
+      "OMP_NUM_THREADS": "32",
+      "OPENBLAS_NUM_THREADS": "32"
+    },
+    "torch": "2.13.0+cu130",
+    "torch_threads": 32
+  },
+  "hostname": "redacted",
+  "methodology": {
+    "calls_per_sample": 1,
+    "compilation_or_device_preparation_included": true,
+    "conversion_included": true,
+    "engine_order": "rotated_per_iteration_within_one_process",
+    "exact_statevector": true,
+    "feature_schema": "flagquantum.simulator_workload_features.v1",
+    "hidden_fallback_allowed": false,
+    "iterations": 7,
+    "measurement_scope": "end_to_end_user_facing_run_call",
+    "qiskit_max_parallel_threads": 32,
+    "result_retrieval_included": true,
+    "warmup": 2
+  },
+  "n_wires": [
+    22
+  ],
+  "non_release_evidence": true,
+  "passed": true,
+  "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+  "python": "3.12.13",
+  "release_gate_allowed": false,
+  "runner": "simulator_workload_corpus",
+  "scalability_blockers": [
+    "comparison_result_not_release_scalability_evidence"
+  ],
+  "scalability_claim_allowed": false,
+  "schema": "flagquantum.simulator_workload_corpus.v1",
+  "workloads": [
+    "random_clifford_statevector"
+  ],
+  "world_size": 1
+}

@@ -43,7 +43,7 @@ def run_qiskit_aer_dynamic(
         aer_simulator_type,
     ) = _aer_types()
     width = _classical_width(circuit)
-    qiskit_circuit = quantum_circuit_type(circuit.n_wires, width + circuit.n_wires)
+    qiskit_circuit = quantum_circuit_type(circuit.n_qubits, width + circuit.n_qubits)
 
     def apply(instruction: Any) -> None:
         method = getattr(qiskit_circuit, instruction.name, None)
@@ -73,7 +73,7 @@ def run_qiskit_aer_dynamic(
                 apply(instruction)
         else:
             apply(instruction)
-    for wire in range(circuit.n_wires):
+    for wire in range(circuit.n_qubits):
         qiskit_circuit.measure(wire, width + wire)
 
     memory = (
@@ -93,7 +93,7 @@ def run_qiskit_aer_dynamic(
         dtype=torch.int64,
     )
     samples = torch.tensor(
-        [row[width : width + circuit.n_wires] for row in rows],
+        [row[width : width + circuit.n_qubits] for row in rows],
         dtype=torch.int64,
     )
     return DynamicExecutionResult(
@@ -124,9 +124,9 @@ def run_qiskit_aer_qasm3_round_trip(
     source = export_dynamic_qasm3(circuit)
     qiskit_circuit = qasm3.loads(source)
     width = _classical_width(circuit)
-    final = classical_register_type(circuit.n_wires, "final")
+    final = classical_register_type(circuit.n_qubits, "final")
     qiskit_circuit.add_register(final)
-    for wire in range(circuit.n_wires):
+    for wire in range(circuit.n_qubits):
         qiskit_circuit.measure(wire, final[wire])
     memory = (
         aer_simulator_type()
@@ -142,7 +142,7 @@ def run_qiskit_aer_qasm3_round_trip(
     rows = [[int(char) for char in item.replace(" ", "")[::-1]] for item in memory]
     classical = torch.tensor([row[:width] for row in rows], dtype=torch.int64)
     samples = torch.tensor(
-        [row[width : width + circuit.n_wires] for row in rows],
+        [row[width : width + circuit.n_qubits] for row in rows],
         dtype=torch.int64,
     )
     return DynamicExecutionResult(

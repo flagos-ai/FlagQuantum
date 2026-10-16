@@ -21,8 +21,9 @@ from .coupling import CouplingMap as CouplingMap
 from .directed_topology import DirectedCouplingMap
 from .operand_semantics import (
     _operand_symmetry,
-    _require_multi_wire_device_local,
+    _require_multi_qubit_device_local,
 )
+from .ordering_barrier import is_ordering_barrier
 from .sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
 
 # The routing strategies a caller may request. This is the authoritative
@@ -134,26 +135,27 @@ class RoutingStrategySelection:
 
 
 def _is_routable_two_wire_gate(instruction: Instruction) -> bool:
-    """Report whether a routing strategy moves this instruction's wires.
+    """Report whether a routing strategy inserts SWAPs for this instruction's qubits.
 
-    No strategy moves a channel, and an instruction with fewer than two wires has
-    no coupling to satisfy, so both stay where they are written and neither is
-    part of a strategy's cost. The two readings that place a gate -- the SWAP
-    estimate and a planner's placements -- have to answer this question the same
-    way, or the price and the plan disagree about which gates the strategy moved.
+    The SWAP estimate and a planner's placements have to answer this the same way,
+    or the price and the plan disagree about which gates the strategy moved. A
+    channel moves with its qubits and an ordering barrier moves nothing at all, so
+    neither is a gate a strategy prices.
     """
 
+    if is_ordering_barrier(instruction):
+        return False
     return len(instruction.wires) == 2 and not instruction.metadata.get("is_channel")
 
 
 class _TopologyCostModel:
     """The device facts a routing cost model reads, ordered or unordered.
 
-    A cost model asks its device four things: how many physical wires it has,
-    which couplings it declares, whether a two-wire instruction can execute where
+    A cost model asks its device four things: how many physical qubits it has,
+    which couplings it declares, whether a two-qubit instruction can execute where
     it stands, and -- when it cannot -- which physical path to move it along. On an
     undirected ``CouplingMap`` the third question is the second one, because
-    either direction of a link satisfies every two-wire instruction. On a
+    either direction of a link satisfies every two-qubit instruction. On a
     ``DirectedCouplingMap`` they differ: an operand-symmetric opcode such as
     ``swap`` may use either direction of a link, while a control/target opcode
     such as ``cx`` may use only the direction its operands are written in. That
@@ -170,8 +172,8 @@ class _TopologyCostModel:
 
     Two questions are deliberately not asked of the ordered edges. Paths and the
     SABRE planners search the weak projection, because inserting a SWAP across a
-    link is legal in either direction; and multi-wire locality is checked on weak
-    edges, because a three-wire instruction has no operand order to satisfy on the
+    link is legal in either direction; and multi-qubit locality is checked on weak
+    edges, because a three-qubit instruction has no operand order to satisfy on the
     couplings it spans. Direction decides whether a placed gate is executable, not
     whether the router may cross the link.
     """
@@ -183,12 +185,12 @@ class _TopologyCostModel:
         self._weak = (
             device
             if isinstance(device, CouplingMap)
-            else CouplingMap(device.n_wires, device.edges)
+            else CouplingMap(device.n_qubits, device.edges)
         )
 
     @property
-    def n_wires(self) -> int:
-        return self._device.n_wires
+    def n_qubits(self) -> int:
+        return self._device.n_qubits
 
     @property
     def edges(self) -> tuple[tuple[int, int], ...]:
@@ -217,15 +219,15 @@ class _TopologyCostModel:
         return self._weak.has_edge(left, right)
 
     def path(self, wires: tuple[int, ...]) -> tuple[int, ...]:
-        """Return the wire sequence a SWAP series must follow to join two wires."""
+        """Return the qubit sequence a SWAP series must follow to join two qubits."""
 
         return self._weak.shortest_path(*wires)
 
     def executes(self, instruction: Instruction, wires: tuple[int, ...]) -> bool:
-        """Report whether the device runs this instruction on these wires.
+        """Report whether the device runs this instruction on these qubits.
 
         Raises:
-            ValueError: A directed device is asked about a two-wire opcode with no
+            ValueError: A directed device is asked about a two-qubit opcode with no
                 recorded operand semantics, so no direction rule applies and any
                 answer would be a guess. Routing such a device is not a fallback
                 decision: the opcode has to be classified before either the device
@@ -303,22 +305,21 @@ def _source_routing_counts(
     """Return the source program's topology, routed, and skipped-channel counts.
 
     These three describe a program against one device, and every strategy reports
-    them the same way: a two-wire operation is a topology gate, one the device
-    cannot execute as written is also a routed gate, and a two-wire channel is
-    neither because routing may not move a channel. On an ordered device "as
-    written" is a claim about the operands, so a CX whose operands run against
-    the direction its link is declared in counts as routed work here rather than
-    as a gate the device already carries, while the same CX the other way round
-    is executed where it stands and is not counted. Counting them in one place is
-    what keeps a strategy's routing metadata and its cost estimate from
-    disagreeing about the same program.
+    them the same way: a two-qubit operation is a topology gate, one the device
+    cannot execute as written is also a routed gate, and a two-qubit channel is
+    neither because routing may not move a channel -- and an ordering barrier is
+    excluded at every width because it is not a gate. On an ordered device "as
+    written" is a claim about the operands, so a CX written against its link's
+    declared direction counts as routed work rather than as a gate the device
+    already carries. Counting them in one place keeps a strategy's routing
+    metadata and its cost estimate from disagreeing about the same program.
     """
 
     topology_gate_count = 0
     routed_gate_count = 0
     skipped_channel_count = 0
     for instruction in ir:
-        if len(instruction.wires) != 2:
+        if is_ordering_barrier(instruction) or len(instruction.wires) != 2:
             continue
         if instruction.metadata.get("is_channel"):
             skipped_channel_count += 1
@@ -337,7 +338,7 @@ def _estimate_swap_plan(
 ) -> tuple[int, tuple[int, ...], int]:
     """Estimate the SWAPs one estimating strategy inserts, and its mid-plan layout.
 
-    The estimate replays the strategy's layout bookkeeping over the program's wire
+    The estimate replays the strategy's layout bookkeeping over the program's qubit
     pairs instead of emitting instructions, which is what keeps it cheap.
     ``restore_after_each_gate`` returns to the identity layout after every gate, so
     it pays each hop twice and ends where it started; ``persistent_layout`` keeps
@@ -346,7 +347,7 @@ def _estimate_swap_plan(
     The third result is the direction cost: the number of extra hops that exist
     only because the device orders its links, counted on the same placement the
     router emits -- the last hop of the path for ``restore_after_each_gate``, the
-    post-move wires for ``persistent_layout``. Those hops are already included in
+    post-move qubits for ``persistent_layout``. Those hops are already included in
     the first result, because an orientation SWAP is a SWAP like any other; the
     count is returned separately so the record states why the price is higher than
     the same program on the undirected projection of the same device.
@@ -381,7 +382,7 @@ def _estimate_swap_plan(
             path = topology.path(mapped_wires)
             if any(wire >= ir.n_wires for wire in path):
                 raise ValueError(
-                    "Routing through physical ancilla wires outside the circuit IR "
+                    "Routing through physical ancilla qubits outside the circuit IR "
                     "is not supported; provide an explicit layout/lowering step."
                 )
             gate_swap_count = max(0, len(path) - 2)
@@ -440,7 +441,7 @@ def estimate_routing_cost(
 
     Every name in ``ROUTING_STRATEGIES`` is priceable. The two estimating
     strategies are priced by replaying their layout bookkeeping over the program's
-    wire pairs; the two SABRE strategies are priced by planning their SWAPs, which
+    qubit pairs; the two SABRE strategies are priced by planning their SWAPs, which
     is the work ``route_to_topology`` would do anyway, so a planned price is the
     count the chosen strategy will insert rather than a bound on it. Pricing all
     four is what lets ``select_routing_strategy`` compare a planner against an
@@ -470,8 +471,8 @@ def estimate_routing_cost(
     Raises:
         TypeError: If ``coupling_map`` is none of the three accepted forms.
         ValueError: If ``strategy`` is not in ``ROUTING_STRATEGIES``, the coupling
-            map has fewer wires than the circuit, a costed path leaves the
-            device, a planner cannot route the program, or a placed two-wire
+            map has fewer qubits than the circuit, a costed path leaves the
+            device, a planner cannot route the program, or a placed two-qubit
             opcode has no recorded operand semantics.
     """
 
@@ -482,8 +483,8 @@ def estimate_routing_cost(
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     topology = _topology_cost_model(coupling_map, ir.n_wires, "estimate_routing_cost")
-    if topology.n_wires < ir.n_wires:
-        raise ValueError("Coupling map has fewer wires than the circuit.")
+    if topology.n_qubits < ir.n_wires:
+        raise ValueError("Coupling map has fewer qubits than the circuit.")
 
     identity_layout = tuple(range(ir.n_wires))
     cache_before = topology.path_cache_info()
@@ -564,7 +565,7 @@ def select_routing_strategy(
     Raises:
         TypeError: If ``coupling_map`` is not a ``CouplingMap``, a
             ``DirectedCouplingMap``, or an edge sequence.
-        ValueError: If a placed two-wire opcode has no recorded operand semantics,
+        ValueError: If a placed two-qubit opcode has no recorded operand semantics,
             so an ordered device cannot price it.
     """
 
@@ -625,7 +626,7 @@ def _routing_metadata(
     return {
         "schema": "flagquantum_routing_plan_v1",
         "strategy": strategy,
-        "coupling_n_wires": topology.n_wires,
+        "coupling_n_wires": topology.n_qubits,
         "coupling_edges": topology.edges,
         "initial_logical_to_physical": initial_layout,
         "pre_restore_logical_to_physical": pre_restore_layout,
@@ -653,19 +654,19 @@ def _routing_metadata(
 
 def _remap_instruction(
     instruction: Instruction,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     *,
     strategy: str,
     source_instruction_index: int,
 ) -> Instruction:
     return Instruction(
         name=instruction.name,
-        wires=wires,
+        wires=qubits,
         params=instruction.params,
         matrix=instruction.matrix,
         metadata=dict(instruction.metadata)
         | {
-            "layout_mapped": wires != instruction.wires,
+            "layout_mapped": qubits != instruction.wires,
             "logical_wires": instruction.wires,
             "routing_strategy": strategy,
             "source_instruction_index": source_instruction_index,
@@ -685,7 +686,7 @@ def _route_persistent_layout(
     routed: list[Instruction] = []
     routing_swaps: list[tuple[int, int, Instruction, int]] = []
     direction_swap_count = 0
-    # Counted against the source wires, like every other strategy and like the
+    # Counted against the source qubits, like every other strategy and like the
     # cost estimate: a gate this layout happened to make local is still a gate
     # the device did not carry, and reporting it as unrouted would make the same
     # field mean something different per strategy.
@@ -722,8 +723,18 @@ def _route_persistent_layout(
 
     for source_index, instruction in enumerate(ir):
         mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
+        if is_ordering_barrier(instruction):
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    mapped_wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
+            continue
         if len(instruction.wires) != 2:
-            _require_multi_wire_device_local(
+            _require_multi_qubit_device_local(
                 instruction, mapped_wires, topology.weak_edge
             )
             routed.append(
@@ -751,7 +762,7 @@ def _route_persistent_layout(
             path = topology.path(mapped_wires)
             if any(wire >= ir.n_wires for wire in path):
                 raise ValueError(
-                    "Routing through physical ancilla wires outside the circuit IR "
+                    "Routing through physical ancilla qubits outside the circuit IR "
                     "is not supported; provide an explicit layout/lowering step."
                 )
             for path_index in range(len(path) - 2):
@@ -840,21 +851,21 @@ def _route_sabre(
     """Materialize one SABRE persistent layout, then restore the output layout.
 
     Instructions are emitted in the order the planner placed them, not in source
-    order. The planner introduces a SWAP when a two-wire operation becomes
-    reachable, and every operation keeps its planned physical wires, so a source
+    order. The planner introduces a SWAP when a two-qubit operation becomes
+    reachable, and every operation keeps its planned physical qubits, so a source
     order that disagrees with the plan would replay a different layout than the
     one the plan was costed against.
 
     The ``sabre`` strategy starts from the identity layout, so replaying its
     forward SWAPs in reverse restores the output layout. ``sabre_layout`` first
     searches for a shorter initial layout; replaying its forward SWAPs in reverse
-    would only return that initial layout, so it routes every logical wire home
+    would only return that initial layout, so it routes every logical qubit home
     with an explicit restore instead.
 
     On an ordered device a placed gate whose operands run against its link is
     wrapped in a SWAP sandwich. The sandwich is layout-neutral, which is what the
     planner's own placements require: they were costed against one layout, so a
-    repair that moved a wire would invalidate every placement after it. The
+    repair that moved a qubit would invalidate every placement after it. The
     planner itself is handed the weak projection, because a SWAP may cross a link
     in either direction.
     """
@@ -867,7 +878,7 @@ def _route_sabre(
     )
     plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
     routed: list[Instruction] = []
-    # Counted against the source wires rather than the placed ones, exactly as the
+    # Counted against the source qubits rather than the placed ones, exactly as the
     # shortest-path strategies and the cost estimate count them, so the number
     # describes the work the topology forces rather than the work this layout
     # happened to arrange for free.
@@ -898,8 +909,20 @@ def _route_sabre(
         placed_so_far += 1
         instruction = ir.instructions[source_index]
         placed_wires = plan.placements[source_index]
+        if is_ordering_barrier(instruction):
+            # The planner never blocks the front layer on the directive, so no
+            # planned SWAP exists to place it and none was inserted for it.
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    placed_wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
+            continue
         if len(instruction.wires) != 2 or instruction.metadata.get("is_channel"):
-            _require_multi_wire_device_local(
+            _require_multi_qubit_device_local(
                 instruction, placed_wires, topology.weak_edge
             )
             routed.append(
@@ -926,10 +949,10 @@ def _route_sabre(
             )
             # The SWAP exchanges the operands' states, so the gate executes
             # between the two halves of the sandwich with its operands swapped;
-            # the closing SWAP puts both wires back before the next planned
+            # the closing SWAP puts both qubits back before the next planned
             # instruction, which is what keeps the planner's remaining placements
             # valid. Emitting both halves together would apply the gate on the
-            # restored wires and silently undo the repair.
+            # restored qubits and silently undo the repair.
             gate_wires = (placed_wires[1], placed_wires[0])
             direction_swap_count += 1
         routed.append(
@@ -992,7 +1015,7 @@ def route_to_topology(
     """Insert SWAP gates so two-qubit operations respect hardware topology.
 
     An undirected device is routed as before: a gate is executable wherever its
-    two wires are linked, so a hop is inserted only to bring the wires together.
+    two qubits are linked, so a hop is inserted only to bring the qubits together.
 
     An ordered device is routed against the direction of its links as well. A gate
     whose operands run against the direction its link is declared in is not
@@ -1015,8 +1038,8 @@ def route_to_topology(
     Raises:
         TypeError: If ``coupling_map`` is none of the three accepted forms.
         ValueError: If ``strategy`` is not in ``ROUTING_STRATEGIES``, the coupling
-            map has fewer wires than the circuit, a needed path leaves the device,
-            or a placed two-wire opcode has no recorded operand semantics on an
+            map has fewer qubits than the circuit, a needed path leaves the device,
+            or a placed two-qubit opcode has no recorded operand semantics on an
             ordered device.
     """
 
@@ -1027,8 +1050,8 @@ def route_to_topology(
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     topology = _topology_cost_model(coupling_map, ir.n_wires, "route_to_topology")
-    if topology.n_wires < ir.n_wires:
-        raise ValueError("Coupling map has fewer wires than the circuit.")
+    if topology.n_qubits < ir.n_wires:
+        raise ValueError("Coupling map has fewer qubits than the circuit.")
     path_cache_before = topology.path_cache_info()
     if strategy == "persistent_layout":
         return _route_persistent_layout(
@@ -1051,8 +1074,21 @@ def route_to_topology(
     inserted_swap_count = 0
     direction_swap_count = 0
     for source_index, instruction in enumerate(ir):
+        if is_ordering_barrier(instruction):
+            # Nothing executes the directive, so no coupling has to carry it and
+            # no SWAP can make it more executable. It still has to come out the
+            # other side, on the physical qubits this strategy leaves it on.
+            routed.append(
+                _remap_instruction(
+                    instruction,
+                    instruction.wires,
+                    strategy=strategy,
+                    source_instruction_index=source_index,
+                )
+            )
+            continue
         if len(instruction.wires) != 2:
-            _require_multi_wire_device_local(
+            _require_multi_qubit_device_local(
                 instruction, instruction.wires, topology.weak_edge
             )
             routed.append(
@@ -1089,7 +1125,7 @@ def route_to_topology(
         path = topology.path(instruction.wires)
         if any(wire >= ir.n_wires for wire in path):
             raise ValueError(
-                "Routing through physical ancilla wires outside the circuit IR "
+                "Routing through physical ancilla qubits outside the circuit IR "
                 "is not supported; provide an explicit layout/lowering step."
             )
         forward_swaps = [

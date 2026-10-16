@@ -12,14 +12,14 @@ Every rule is an exact closed form. `cx` is `cz` conjugated by one `h`, `rzz` is
 `cx` around a `rz`, and the rest follow from those. Seventeen of the eighteen
 entries reproduce their source exactly; `cphase` is the exception, because
 turning a controlled rotation into a controlled phase needs a third `rz` on the
-control wire and that rotation leaves a global phase behind. FlagQuantum IR has
+control qubit and that rotation leaves a global phase behind. FlagQuantum IR has
 no field for a global phase, so a `cphase` translation is equal to its source
 only up to that one phase -- the same contract the one-qubit and two-qubit
 syntheses publish, and the reason `cphase` is the one entry a test pins as
 inexact rather than allowing either answer.
 
 The table spans both arities the IR declares more than one opcode at. Its two
-three-wire entries cover `ccx` and `cswap`, the only arity-3 unitary opcodes
+three-qubit entries cover `ccx` and `cswap`, the only arity-3 unitary opcodes
 there are. That is the whole of the multi-controlled family here: Qiskit splits
 it into a Gray-code, a recursive and a V-chain construction, but the first of
 those returns `CCXGate` itself at two controls and the other two exist to trade
@@ -115,7 +115,7 @@ def _gate(
 
 
 def _cx_to_cz(instruction: Instruction) -> tuple[Instruction, ...]:
-    """`CX = (I x H) CZ (I x H)`, conjugating the target wire."""
+    """`CX = (I x H) CZ (I x H)`, conjugating the target qubit."""
 
     left, right = instruction.wires
     metadata = instruction.metadata
@@ -127,7 +127,7 @@ def _cx_to_cz(instruction: Instruction) -> tuple[Instruction, ...]:
 
 
 def _cz_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
-    """`CZ = (I x H) CX (I x H)`, conjugating the target wire."""
+    """`CZ = (I x H) CX (I x H)`, conjugating the target qubit."""
 
     left, right = instruction.wires
     metadata = instruction.metadata
@@ -151,7 +151,7 @@ def _cy_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
 
 
 def _swap_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
-    """The middle `cx` is reversed, so the three compose to a wire swap."""
+    """The middle `cx` is reversed, so the three compose to a qubit swap."""
 
     left, right = instruction.wires
     metadata = instruction.metadata
@@ -163,7 +163,7 @@ def _swap_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
 
 
 def _rzz_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
-    """`RZZ(theta) = CX RZ(theta) CX`, rotating the target wire."""
+    """`RZZ(theta) = CX RZ(theta) CX`, rotating the target qubit."""
 
     left, right = instruction.wires
     metadata = instruction.metadata
@@ -175,7 +175,7 @@ def _rzz_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
 
 
 def _crz_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
-    """`CRZ(theta) = RZ(theta/2) CX RZ(-theta/2) CX` on the target wire."""
+    """`CRZ(theta) = RZ(theta/2) CX RZ(-theta/2) CX` on the target qubit."""
 
     left, right = instruction.wires
     metadata = instruction.metadata
@@ -427,7 +427,7 @@ def validate_equivalence_rule(rule: EquivalenceRule) -> None:
     A rule is a claim about one opcode, and every clause here is something the
     search depends on: the key has to be the canonical spelling, because that is
     what the lookup uses; the opcode has to be a declared unitary of at least one
-    wire, because a channel has no matrix in this layer; and the build has to
+    qubit, because a channel has no matrix in this layer; and the build has to
     return a non-empty sequence of instructions that does not consist of the
     source opcode alone, because such a rule would either do nothing or send the
     search straight back into itself.

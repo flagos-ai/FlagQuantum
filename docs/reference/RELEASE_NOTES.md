@@ -24,6 +24,69 @@ recorded in `docs/public_api_v1.json` and
 [Public API Protection](../development/PUBLIC_API_PROTECTION.md); the entries
 are otherwise unchanged.
 
+- Added `Circuit.power(k)` to the construction-time composition family. It returns
+  the circuit that applies the receiver's program `k` times, for an integer `k`,
+  and it is exact for every instruction: the whole program is appended in order,
+  so a gate with no angle, a custom `Circuit.unitary(...)` operation, and a noise
+  channel all work. `power(1)` copies the program rather than multiplying its
+  angles by one, so a symbolic parameter or a trainable angle stays the same
+  object, and `power(0)` is the empty program of the same shape. A negative
+  exponent is `adjoint().power(-k)`, which keeps the inverse rule in one place, so
+  a channel under a negative exponent raises the same `CapabilityError` that
+  `adjoint` raises. One rewrite shortens the common case: a receiver that is
+  exactly one instruction declaring exactly one parameter has that parameter
+  multiplied by the exponent instead of the gate being repeated, and the rule is
+  declared per opcode in `flagquantum/core/operator_schema.py` and measured
+  through the dense operator by the composition contract gate, so 12 of the 35
+  registered opcodes take the closed form and the other 23 repeat. A fractional
+  exponent is refused with `TypeError` rather than approximated, because the IR
+  has no instruction form for a matrix root. See
+  [the power API change](../api-changes/FQ-CIRCUIT-POWER-20261021.md).
+
+- Added the stable `fq.density_matrix(qubits=None, *, name=None)` output request and
+  the `ExecutionResult.density_matrix` property, so an execution can be asked for the
+  state on a named subset of qubits instead of only for outcome statistics.
+  `qubits=None` means every qubit, a subset answers as a `(batch, 2 ** k, 2 ** k)`
+  tensor whose index order is the order the caller named, and `Tr(O rho)` read off
+  the matrix agrees with `fq.expectation(O)` on the same qubits. Every execution mode
+  answers the same matrix; a statevector route refuses above ten qubits and names
+  `options=fq.ExecutionOptions(mode='density_matrix')` as the cheaper route, and a
+  noise model carrying a readout rule is refused by name because readout confusion is
+  applied to outcomes after the state. `Circuit.noisy_density_matrix` now reads the
+  circuit's dtype the way `Circuit.density_matrix` already did, so the two no longer
+  disagree by the `complex64` rounding floor on a `complex128` circuit. See
+  [the density-matrix output change](../api-changes/FQ-DENSITY-MATRIX-OUTPUT-20261006.md).
+- Added the stable `fq.vn_entropy(qubits, *, log_base=None, name=None)` output
+  request and the `ExecutionResult.vn_entropy` property, so an execution can be asked
+  for the von Neumann entropy of a named subsystem instead of the caller having to
+  diagonalise a reduced state by hand. At least one qubit is required and the
+  selection may be any subset rather than a contiguous run; `log_base=None` answers in
+  nats and `log_base=2` in bits, under the same `log_base` keyword PennyLane's
+  `qml.vn_entropy` accepts.
+  Every execution mode that holds a state answers the same number: dense modes reduce
+  and diagonalise, while `mps` and `tensor_network` modes contract the named sites out
+  of the state they already hold, and the `mps` route reads the canonical form's
+  Schmidt values directly when the selection is a leading run, so `fq.vn_entropy([0])`
+  answers where `fq.density_matrix([0])` is refused by the amplitude ceiling. Entropy
+  is not a sampled quantity, so `shots=` is refused and `mode='stabilizer'` is refused
+  by name; a noise model carrying a readout rule is refused because readout confusion
+  acts on outcomes after the state. A base with no logarithm is refused rather than
+  answered by accident: `0`, a negative base, `1`, and a non-finite base each raise a
+  sentence naming the reason, where PennyLane 0.45.1 returns the natural logarithm,
+  `nan`, `inf`, and `nan` respectively. See
+  [the von Neumann entropy output change](../api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md).
+- Added `optimization_level` to `flagquantum.compiler.optimize` and
+  `flagquantum.compiler.compile`. It is keyword-only and defaults to `2`, which is
+  the pass composition those entry points already ran, so a caller that does not
+  name it receives the program it received before. Level `0` returns the submitted
+  program unchanged, level `1` cancels and merges what is adjacent, and level `2`
+  also removes diagonal gates before a measurement and merges rotations across a
+  proven commuting gap. Level `3` is declared and reserved and raises
+  `CompilationError`, because the unitary-synthesis stage it would add needs a
+  target basis and `optimize` is target-independent; a value that is not an integer
+  is refused the same way. The level that ran is recorded in `metadata["optimization"]`. See
+  [the optimization-level API change](../api-changes/FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md).
+
 - Added the stable `fq.gradient(program, parameters, loss=None, *, method="auto",
   step=None, directions=1, generator=None)` entry point, which returns the
   detached derivative together with the method that produced it, whether that
@@ -36,6 +99,22 @@ are otherwise unchanged.
   result reports whether backward replayed it. See
   [the gradient API change](../api-changes/FQ-GRADIENT-API-20261002.md) and the
   [gradient methods example](../../examples/gradient_methods/README.md).
+- Added the stable `fq.jacobian(program, parameters)`,
+  `fq.jvp(program, parameters, tangents)`, and
+  `fq.vjp(program, parameters, cotangents)` entry points for a program that
+  returns several values, so that no single scalar gradient is defined.
+  `fq.jacobian` returns every partial derivative shaped
+  `(*program_output.shape, *parameters.shape)`, `fq.jvp` applies it forward as
+  `J @ tangents`, and `fq.vjp` applies it in reverse as `cotangents @ J`. None
+  of the three takes a `method`: there is no shift rule for a vector output and
+  no displacement to report, so all three are autograd-only and a program whose
+  output carries no PyTorch graph is refused rather than answered with a zero
+  derivative. A tangent must be shaped exactly like `parameters` and a cotangent
+  exactly like the program output, because a broadcast direction would
+  differentiate along a different parameterization. All three serve
+  `statevector`, `mps`, and `tensor_network` mode and return the parameter dtype
+  and device. See
+  [the vector-derivative API change](../api-changes/FQ-VECTOR-DERIVATIVES-20261026.md).
 - Added the stable `fq.from_openqasm(source)` entry point, which reads back the
   OpenQASM 2 and OpenQASM 3 text
   `flagquantum.compiler.openqasm.emit_openqasm` writes. It reports the imported
@@ -107,7 +186,7 @@ are otherwise unchanged.
 - Added `fq.twin.compose_region_twin()` and immutable `TwinRegionModel` for
   offline measurement-distribution prediction across a connected union of
   compatible local Twin cells. Composition remaps local calibration and noise
-  semantics into one regional wire order and fails closed on overlap conflicts;
+  semantics into one regional qubit order and fails closed on overlap conflicts;
   it does not infer cross-cell correlated noise or turn local evidence into
   regional accuracy. See [QPU digital twins](../guides/QPU_DIGITAL_TWIN.md).
 
@@ -242,8 +321,8 @@ are otherwise unchanged.
   without changing the `ExecutionResult` return type or silently selecting a
   compiler, provider, or fallback.
 - Added `fq.compile(circuit, compiler="qsteed", target="quafu:<backend>")` as
-  the direct compiler-selection journey. QSteed results retain logical wire
-  numbers and carry an ordered physical `target_qubits` mapping through
+  the direct compiler-selection journey. QSteed results retain logical qubit
+numbers and carry an ordered physical `target_qubits` mapping through
   deployment; Quafu submission now uses `compiler=None` and no deprecated
   top-level compile flag.
 - Added explicit discovery for independently installed circuit-compiler plugins
@@ -307,8 +386,9 @@ are otherwise unchanged.
 - `fq.Circuit(n_qubits=...)` is now the preferred public spelling for circuit
   size, with `n_qubits` and Qiskit-compatible `num_qubits` properties.
   Positional construction and the `n_wires`/`nqubits` keyword aliases remain
-  compatible, while conflicting counts now fail during construction. Internal
-  IR, compiler, and runtime mappings continue to use wire terminology.
+  compatible, while conflicting counts now fail during construction. Serialized
+  IR and compiler payload keys are unchanged: renaming a key that a saved plan is
+  read back through is a schema version bump, not a vocabulary change.
 - Generated gate methods now accept optional semantic qubit keywords without
   removing concise positional calls: single-qubit gates use `qubit=`,
   controlled gates use `control=`/`target=`, and symmetric two-qubit gates use
@@ -338,7 +418,7 @@ are otherwise unchanged.
   rematerialization, explicit gate adjoints, and cross-rank VJP reduction.
 - An experimental PyTorch-native distributed statevector forward executor now
   runs validated unitary IR with rank-local amplitude ownership across local and
-  multi-sharded-wire gates on Gloo or NCCL. Full-state materialization is
+  multi-sharded-qubit gates on Gloo or NCCL. Full-state materialization is
   forbidden and forward-only training/release blockers remain explicit.
 - Correctness infrastructure now generates deterministic circuit properties,
   covers every registered operator/lowering pair, versions numerical

@@ -16,22 +16,22 @@ in for and **no end-to-end advantage follows at this scale**. Nothing here reads
 block-encodes a matrix, or amplitude-encodes a vector. What the unit demonstrates is the
 circuit and the query count, not a speedup.
 
-**Wire layout.** The evaluation register is wires ``0 .. n_wires - 1``, wire 0 most
-significant, and the circuit carries exactly ``n_wires`` wires: the register and nothing
-else. The initial uniform superposition is one Hadamard per wire, and each round is the
+**Qubit layout.** The evaluation register is qubits ``0 .. n_qubits - 1``, qubit 0 most
+significant, and the circuit carries exactly ``n_qubits`` qubits: the register and nothing
+else. The initial uniform superposition is one Hadamard per qubit, and each round is the
 phase oracle on the register followed by the diffusion operator.
 
-**The three-wire bound belongs to the register.** The diffusion operator's multi-controlled
-Z is a multi-controlled X with ``n_wires - 1`` controls, and a multi-controlled X above two
-controls is built as an ancilla ladder needing ``len(controls) - 2`` wires in ``|0>``. A
-circuit pinned at exactly ``n_wires`` wires has no free wire for those, so
-:func:`grover_circuit` refuses ``n_wires > 3`` instead of allocating one: a wire added to
+**The three-qubit bound belongs to the register.** The diffusion operator's multi-controlled
+Z is a multi-controlled X with ``n_qubits - 1`` controls, and a multi-controlled X above two
+controls is built as an ancilla ladder needing ``len(controls) - 2`` qubits in ``|0>``. A
+circuit pinned at exactly ``n_qubits`` qubits has no free qubit for those, so
+:func:`grover_circuit` refuses ``n_qubits > 3`` instead of allocating one: a qubit added to
 this circuit would be part of the register the samples are read over, so the "ancilla"
 would be sampled along with the answer. The append form,
 :func:`~flagquantum.algorithms.primitives.oracle.append_phase_oracle`, takes a register and
 the ancillas the caller lays out, which is how a wider search is built.
 
-Sample keys are big-endian bit strings, one character per wire with wire 0 the most
+Sample keys are big-endian bit strings, one character per qubit with qubit 0 the most
 significant, as :meth:`flagquantum.circuit.Circuit.counts` returns them.
 
 This unit is demonstration scale. It makes no performance, capacity, or hardware claim, and
@@ -57,45 +57,45 @@ from .primitives.types import Predicate
 __all__ = ["GroverResult", "grover_circuit", "optimal_iterations", "run_grover"]
 
 # The register is the whole circuit here, so the diffusion operator's multi-controlled Z
-# has no free wire to fold its ladder onto once it passes three wires.
-_GROVER_WIRE_LIMIT = 3
+# has no free qubit to fold its ladder onto once it passes three qubits.
+_GROVER_QUBIT_LIMIT = 3
 
 
-def optimal_iterations(n_wires: int, n_marked: int) -> int:
-    """Return the number of amplification rounds for an ``n_wires`` search.
+def optimal_iterations(n_qubits: int, n_marked: int) -> int:
+    """Return the number of amplification rounds for an ``n_qubits`` search.
 
-    Each round rotates the state by the angle ``theta = asin(sqrt(n_marked / 2**n_wires))``
+    Each round rotates the state by the angle ``theta = asin(sqrt(n_marked / 2**n_qubits))``
     toward the marked subspace, so the round count that leaves the marked states with the
     largest total amplitude is the number of quarter-turns of ``theta`` that fit in a half
     turn: ``floor(pi / (4 * theta))``. At ``n_marked == 0`` there is nothing to amplify and
     the count is zero.
 
     Args:
-        n_wires: The width of the evaluation register, at least one.
-        n_marked: How many of the register's ``2**n_wires`` states the predicate marks.
+        n_qubits: The width of the evaluation register, at least one.
+        n_marked: How many of the register's ``2**n_qubits`` states the predicate marks.
 
     Returns:
         The number of Grover rounds to apply.
 
     Raises:
-        ValueError: If ``n_wires`` is less than one, if ``n_marked`` is negative, or if
-            ``n_marked`` exceeds ``2**n_wires``; a register cannot mark more states than it
+        ValueError: If ``n_qubits`` is less than one, if ``n_marked`` is negative, or if
+            ``n_marked`` exceeds ``2**n_qubits``; a register cannot mark more states than it
             has.
     """
-    _validate_register_width(n_wires)
+    _validate_register_width(n_qubits)
     if n_marked < 0:
         raise ValueError(
             f"a marked-state count cannot be negative, got n_marked={n_marked}; the "
             "predicate's truth table is a set of states"
         )
-    if n_marked > 2**n_wires:
+    if n_marked > 2**n_qubits:
         raise ValueError(
-            f"a register of {n_wires} wires holds 2**{n_wires} = {2**n_wires} states, so "
+            f"a register of {n_qubits} qubits holds 2**{n_qubits} = {2**n_qubits} states, so "
             f"n_marked={n_marked} of them cannot all be marked"
         )
     if n_marked == 0:
         return 0
-    theta = math.asin(math.sqrt(n_marked / 2**n_wires))
+    theta = math.asin(math.sqrt(n_marked / 2**n_qubits))
     # The knife edge: at exactly half the register marked the quotient is 0.9999999999999999
     # in floating point, so a bare floor returns 0 where the mathematics gives 1. The
     # success probability is 1/2 either way at that resonance, but the count would then
@@ -111,7 +111,7 @@ class GroverResult:
         candidates: The marked states the sample actually landed on, most frequent first,
             with ties broken by ascending state value.
         counts: The full sample, keyed by the big-endian bit string of each observed state,
-            one character per wire with wire 0 the most significant.
+            one character per qubit with qubit 0 the most significant.
         iterations: The number of amplification rounds the sampled circuit was built with.
     """
 
@@ -139,36 +139,36 @@ class GroverResult:
 
 
 def grover_circuit(
-    predicate: Predicate, n_wires: int, *, iterations: int | None = None
+    predicate: Predicate, n_qubits: int, *, iterations: int | None = None
 ) -> Circuit:
-    """Build the Grover search circuit for ``predicate`` over ``n_wires`` wires.
+    """Build the Grover search circuit for ``predicate`` over ``n_qubits`` qubits.
 
-    The circuit is the evaluation register alone: a Hadamard on every wire, then
+    The circuit is the evaluation register alone: a Hadamard on every qubit, then
     ``iterations`` rounds of the phase oracle and the diffusion operator. Measuring it in
     the computational basis gives the marked states with amplified probability.
 
     The oracle is the truth-table form from
     :func:`~flagquantum.algorithms.primitives.oracle.append_phase_oracle`, which enumerates
-    the predicate's ``2**n_wires`` inputs classically, so building the circuit is
+    the predicate's ``2**n_qubits`` inputs classically, so building the circuit is
     exponential in the register width. The register is the whole circuit, which is why
-    ``n_wires`` is capped at three: see the module docstring.
+    ``n_qubits`` is capped at three: see the module docstring.
 
     Args:
         predicate: The property the search marks.
-        n_wires: The width of the evaluation register, at most three.
+        n_qubits: The width of the evaluation register, at most three.
         iterations: The number of amplification rounds; ``None`` applies the count from
             :func:`optimal_iterations` for the predicate's own marked count, and ``0``
             leaves the register in the uniform superposition.
 
     Returns:
-        The search circuit, its wires numbered ``0`` to ``n_wires - 1``.
+        The search circuit, its qubits numbered ``0`` to ``n_qubits - 1``.
 
     Raises:
-        ValueError: If ``n_wires`` is less than one, if it is more than three and the
-            register therefore has no wire for the diffusion operator's ladder ancillas, or
+        ValueError: If ``n_qubits`` is less than one, if it is more than three and the
+            register therefore has no qubit for the diffusion operator's ladder ancillas, or
             if ``iterations`` is negative.
     """
-    _validate_search_width(n_wires)
+    _validate_search_width(n_qubits)
     if iterations is not None and iterations < 0:
         raise ValueError(
             f"the round count of a Grover search cannot be negative, got "
@@ -176,21 +176,21 @@ def grover_circuit(
             "uniform superposition"
         )
     if iterations is None:
-        rounds = optimal_iterations(n_wires, len(marked_states(predicate, n_wires)))
+        rounds = optimal_iterations(n_qubits, len(marked_states(predicate, n_qubits)))
     else:
         rounds = iterations
-    wires = list(range(n_wires))
-    circuit = Circuit(n_wires)
-    for wire in wires:
-        circuit.gate("h", wire)
+    qubits = list(range(n_qubits))
+    circuit = Circuit(n_qubits)
+    for qubit in qubits:
+        circuit.gate("h", qubit)
     for _ in range(rounds):
-        append_phase_oracle(circuit, predicate, wires)
-        _append_diffusion(circuit, wires)
+        append_phase_oracle(circuit, predicate, qubits)
+        _append_diffusion(circuit, qubits)
     return circuit
 
 
 def run_grover(
-    predicate: Predicate, n_wires: int, *, shots: int = 1024, seed: int | None = None
+    predicate: Predicate, n_qubits: int, *, shots: int = 1024, seed: int | None = None
 ) -> GroverResult:
     """Run the search for ``predicate`` and report the marked states the sample found.
 
@@ -201,7 +201,7 @@ def run_grover(
 
     Args:
         predicate: The property the search marks.
-        n_wires: The width of the evaluation register, at most three.
+        n_qubits: The width of the evaluation register, at most three.
         shots: The number of samples to draw, at least one.
         seed: The sampler's seed, or ``None`` to draw from the ambient generator.
 
@@ -209,25 +209,25 @@ def run_grover(
         The ranked candidates, the full counts, and the round count the circuit used.
 
     Raises:
-        ValueError: If ``n_wires`` is less than one or more than three, or if ``shots`` is
+        ValueError: If ``n_qubits`` is less than one or more than three, or if ``shots`` is
             less than one.
     """
-    _validate_search_width(n_wires)
+    _validate_search_width(n_qubits)
     if shots < 1:
         raise ValueError(
             f"a Grover run needs at least one shot, got shots={shots}; with no samples "
             "there is nothing to rank"
         )
-    marked = marked_states(predicate, n_wires)
-    rounds = optimal_iterations(n_wires, len(marked))
-    circuit = grover_circuit(predicate, n_wires, iterations=rounds)
+    marked = marked_states(predicate, n_qubits)
+    rounds = optimal_iterations(n_qubits, len(marked))
+    circuit = grover_circuit(predicate, n_qubits, iterations=rounds)
     generator = torch.Generator().manual_seed(seed) if seed is not None else None
     observed = circuit.counts(shots, generator=generator)[0]
     # ``counts`` is typed ``dict[str | int, int]`` because its ``format`` can be "int";
     # this call takes the default "bin", so every key is already the bit string that this
     # mapping is typed as, and the coercion below is a no-op at run time.
     counts = {str(key): count for key, count in observed.items()}
-    keys = {state: format(state, f"0{n_wires}b") for state in marked}
+    keys = {state: format(state, f"0{n_qubits}b") for state in marked}
     candidates = tuple(
         sorted(
             (state for state in marked if keys[state] in counts),
@@ -237,99 +237,99 @@ def run_grover(
     return GroverResult(candidates=candidates, counts=counts, iterations=rounds)
 
 
-def _append_diffusion(circuit: Circuit, wires: list[int]) -> None:
+def _append_diffusion(circuit: Circuit, qubits: list[int]) -> None:
     """Append one diffusion round -- the reflection about the uniform superposition.
 
     The reflection about ``|s>`` is ``H X Z_all X H``: the two runs of Hadamards map the
     uniform superposition onto the all-zeros pattern and back, and the multi-controlled Z in
     between flips the sign of that pattern alone, so the composition inverts the amplitude
-    about the mean. The gates are emitted in that order on the register wires, the only
-    wires the circuit has.
+    about the mean. The gates are emitted in that order on the register qubits, the only
+    qubits the circuit has.
 
     Args:
         circuit: The circuit to extend.
-        wires: The evaluation register's wires.
+        qubits: The evaluation register's qubits.
     """
-    for wire in wires:
-        circuit.gate("h", wire)
-    for wire in wires:
-        circuit.gate("x", wire)
-    _append_multi_controlled_z(circuit, wires)
-    for wire in wires:
-        circuit.gate("x", wire)
-    for wire in wires:
-        circuit.gate("h", wire)
+    for qubit in qubits:
+        circuit.gate("h", qubit)
+    for qubit in qubits:
+        circuit.gate("x", qubit)
+    _append_multi_controlled_z(circuit, qubits)
+    for qubit in qubits:
+        circuit.gate("x", qubit)
+    for qubit in qubits:
+        circuit.gate("h", qubit)
 
 
 # Mirrors ``primitives/oracle.py``'s ``_append_multi_controlled_z`` without its ladder
-# ancillas: Grover's register is the whole circuit, so this form stops at three wires and
+# ancillas: Grover's register is the whole circuit, so this form stops at three qubits and
 # never needs one. Keep the two in step; promote it to a shared primitive if a second
 # algorithm module ever needs a multi-controlled Z, since one consumer does not earn a
 # public name.
-def _append_multi_controlled_z(circuit: Circuit, wires: list[int]) -> None:
-    """Append a Z on the all-ones pattern of ``wires``.
+def _append_multi_controlled_z(circuit: Circuit, qubits: list[int]) -> None:
+    """Append a Z on the all-ones pattern of ``qubits``.
 
-    One wire is a plain ``z``. Above that the gate is a Hadamard on the last wire, a
+    One qubit is a plain ``z``. Above that the gate is a Hadamard on the last qubit, a
     multi-controlled X across the rest, and the Hadamard again: the Hadamard pair turns the
-    last wire's ``|1>`` into a sign, so the composed gate multiplies exactly the all-ones
-    pattern by ``-1``. Three wires is the widest this circuit can carry, because the
+    last qubit's ``|1>`` into a sign, so the composed gate multiplies exactly the all-ones
+    pattern by ``-1``. Three qubits is the widest this circuit can carry, because the
     multi-controlled X over two controls is the last one the circuit layer supports
     natively.
 
     Args:
         circuit: The circuit to extend.
-        wires: The wires the pattern is read over, at least one.
+        qubits: The qubits the pattern is read over, at least one.
     """
-    if len(wires) == 1:
-        circuit.gate("z", wires[0])
+    if len(qubits) == 1:
+        circuit.gate("z", qubits[0])
         return
-    target = wires[-1]
+    target = qubits[-1]
     circuit.gate("h", target)
-    append_multi_controlled_x(circuit, wires[:-1], target)
+    append_multi_controlled_x(circuit, qubits[:-1], target)
     circuit.gate("h", target)
 
 
 # Mirrors ``primitives/oracle.py``'s ``_validate_register_width``, which holds the same
-# one-wire minimum for a truth table's register; only the message's wording differs. Keep
+# one-qubit minimum for a truth table's register; only the message's wording differs. Keep
 # the two in step, and share it the same way as the multi-controlled Z above: when a second
 # algorithm module needs it, not before.
-def _validate_register_width(n_wires: int) -> None:
+def _validate_register_width(n_qubits: int) -> None:
     """Check the width of a search's evaluation register.
 
     Args:
-        n_wires: The register width as given.
+        n_qubits: The register width as given.
 
     Raises:
-        ValueError: If ``n_wires`` is less than one.
+        ValueError: If ``n_qubits`` is less than one.
     """
-    if n_wires < 1:
+    if n_qubits < 1:
         raise ValueError(
-            f"a Grover search needs at least one evaluation wire, got n_wires={n_wires}; "
-            "a register with no wires has no input to enumerate and nothing to mark"
+            f"a Grover search needs at least one evaluation qubit, got n_qubits={n_qubits}; "
+            "a register with no qubits has no input to enumerate and nothing to mark"
         )
 
 
-def _validate_search_width(n_wires: int) -> None:
+def _validate_search_width(n_qubits: int) -> None:
     """Check that a register width can carry a whole Grover circuit.
 
     Args:
-        n_wires: The register width as given.
+        n_qubits: The register width as given.
 
     Raises:
-        ValueError: If ``n_wires`` is less than one, or more than
-            ``_GROVER_WIRE_LIMIT``.
+        ValueError: If ``n_qubits`` is less than one, or more than
+            ``_GROVER_QUBIT_LIMIT``.
     """
-    _validate_register_width(n_wires)
-    if n_wires > _GROVER_WIRE_LIMIT:
-        # One ladder wire per control above two, and above this bound there is always at
-        # least one of them, so only a single-wire ladder takes the singular noun.
-        needed = n_wires - 3
+    _validate_register_width(n_qubits)
+    if n_qubits > _GROVER_QUBIT_LIMIT:
+        # One ladder qubit per control above two, and above this bound there is always at
+        # least one of them, so only a single-qubit ladder takes the singular noun.
+        needed = n_qubits - 3
         ladder = "ancilla" if needed == 1 else "ancillas"
         raise ValueError(
-            f"a Grover search is bounded at {_GROVER_WIRE_LIMIT} evaluation wires, got "
-            f"n_wires={n_wires}: the diffusion operator's multi-controlled Z is a "
-            f"multi-controlled X with {n_wires - 1} controls, which needs "
+            f"a Grover search is bounded at {_GROVER_QUBIT_LIMIT} evaluation qubits, got "
+            f"n_qubits={n_qubits}: the diffusion operator's multi-controlled Z is a "
+            f"multi-controlled X with {n_qubits - 1} controls, which needs "
             f"len(controls) - 2 = {needed} {ladder} in |0>, and this circuit is the "
-            f"register, so it has no free wire for them. Use append_phase_oracle to append "
+            f"register, so it has no free qubit for them. Use append_phase_oracle to append "
             "the oracle to a circuit whose register and ancillas the caller lays out."
         )

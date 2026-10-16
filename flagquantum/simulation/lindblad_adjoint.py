@@ -46,14 +46,19 @@ import torch
 
 from .lindblad import (
     EvolutionValidationError,
-    _normalize_collapse_operators,
-    _normalize_hamiltonian,
-    _solve_max_iterations,
-    _solve_tolerance,
     evolve_density_matrix,
 )
 from .lindblad_generator import Liouvillian
 from .lindblad_integrators import DEFAULT_INTEGRATOR, advance_interval
+
+# The request normalizers are read from the module that owns them, so this file
+# never relies on `lindblad` re-exporting a name it does not define.
+from .lindblad_request import (
+    _normalize_collapse_operators,
+    _normalize_hamiltonian,
+    _solve_max_iterations,
+    _solve_tolerance,
+)
 
 __all__ = ("adjoint_gradient",)
 
@@ -107,7 +112,7 @@ def adjoint_gradient(
         ...     1,
         ...     times,
         ...     lambda trajectory: torch.real(trajectory[-1, 1, 1]),
-        ...     [amplitude_damping(rate=2.0, wire=0)],
+        ...     [amplitude_damping(rate=2.0, qubit=0)],
         ...     dtype=torch.complex128,
         ... )
         >>> gradient.shape

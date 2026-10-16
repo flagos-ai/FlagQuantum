@@ -113,7 +113,7 @@ def execution_plan_contract(plan: ExecutionPlan) -> RuntimePlanContract:
         world_size=plan.world_size,
     )
     identity = (
-        f"{plan.analysis.n_wires}:{plan.analysis.n_instructions}:"
+        f"{plan.analysis.n_qubits}:{plan.analysis.n_instructions}:"
         f"{plan.state_mode}:{plan.world_size}:{plan.state_bytes}"
     )
     return RuntimePlanContract(

@@ -112,7 +112,7 @@ def test_the_channel_is_rebuilt_from_the_declaration_the_lowering_wrote() -> Non
     # precision the operators were stored at: 7.0e-08 in the probability, which is
     # the same figure the decomposition's sum-to-one identity carries.
     assert rebuilt.name == declared.name
-    assert rebuilt.n_wires == declared.n_wires
+    assert rebuilt.n_qubits == declared.n_qubits
     assert dict(rebuilt.parameters)["probability"] == pytest.approx(
         dict(declared.parameters)["probability"], abs=1e-7
     )
@@ -388,7 +388,7 @@ def test_the_decomposition_record_refuses_a_non_finite_off_diagonal_margin() -> 
         with pytest.raises(ValueError, match="largest_offdiagonal must be finite"):
             PauliTwirlDecomposition(
                 channel_name=good.channel_name,
-                n_wires=good.n_wires,
+                n_qubits=good.n_qubits,
                 pauli_words=good.pauli_words,
                 coefficients=good.coefficients,
                 transfer_spectrum=good.transfer_spectrum,
@@ -405,7 +405,7 @@ def test_the_dominant_word_is_read_from_the_weights_rather_than_the_spectrum() -
     # key from the spectrum would return X while the weight belongs to I.
     weighted = PauliTwirlDecomposition(
         channel_name=good.channel_name,
-        n_wires=good.n_wires,
+        n_qubits=good.n_qubits,
         pauli_words=good.pauli_words,
         coefficients=(1.5, 0.0, -0.5, 0.0),
         transfer_spectrum=(1.0, 5.0, 1.0, 1.0),
@@ -422,7 +422,7 @@ def test_the_decomposition_record_refuses_a_basis_it_cannot_be_read_against() ->
     with pytest.raises(ValueError, match="identity\\s+first"):
         PauliTwirlDecomposition(
             channel_name=good.channel_name,
-            n_wires=good.n_wires,
+            n_qubits=good.n_qubits,
             pauli_words=("X", "I", "Y", "Z"),
             coefficients=good.coefficients,
             transfer_spectrum=good.transfer_spectrum,
@@ -431,7 +431,7 @@ def test_the_decomposition_record_refuses_a_basis_it_cannot_be_read_against() ->
     with pytest.raises(ValueError, match="one coefficient and one transfer"):
         PauliTwirlDecomposition(
             channel_name=good.channel_name,
-            n_wires=good.n_wires,
+            n_qubits=good.n_qubits,
             pauli_words=good.pauli_words,
             coefficients=good.coefficients[:2],
             transfer_spectrum=good.transfer_spectrum,
@@ -440,7 +440,7 @@ def test_the_decomposition_record_refuses_a_basis_it_cannot_be_read_against() ->
     with pytest.raises(ValueError, match="must be finite"):
         PauliTwirlDecomposition(
             channel_name=good.channel_name,
-            n_wires=good.n_wires,
+            n_qubits=good.n_qubits,
             pauli_words=good.pauli_words,
             coefficients=(1.0, math.nan, 0.0, 0.0),
             transfer_spectrum=good.transfer_spectrum,
@@ -449,7 +449,7 @@ def test_the_decomposition_record_refuses_a_basis_it_cannot_be_read_against() ->
     with pytest.raises(ValueError, match="must sum to one"):
         PauliTwirlDecomposition(
             channel_name=good.channel_name,
-            n_wires=good.n_wires,
+            n_qubits=good.n_qubits,
             pauli_words=good.pauli_words,
             coefficients=(1.5, -0.125, 0.0, 0.0),
             transfer_spectrum=good.transfer_spectrum,
@@ -458,16 +458,16 @@ def test_the_decomposition_record_refuses_a_basis_it_cannot_be_read_against() ->
     with pytest.raises(ValueError, match="must name the channel"):
         PauliTwirlDecomposition(
             channel_name="",
-            n_wires=good.n_wires,
+            n_qubits=good.n_qubits,
             pauli_words=good.pauli_words,
             coefficients=good.coefficients,
             transfer_spectrum=good.transfer_spectrum,
             largest_offdiagonal=good.largest_offdiagonal,
         )
-    with pytest.raises(ValueError, match="at least one wire"):
+    with pytest.raises(ValueError, match="at least one qubit"):
         PauliTwirlDecomposition(
             channel_name=good.channel_name,
-            n_wires=0,
+            n_qubits=0,
             pauli_words=(),
             coefficients=(),
             transfer_spectrum=(),
@@ -505,7 +505,7 @@ def test_the_mitigated_value_is_the_noiseless_one_for_one_qubit_location() -> No
     assert result.executions == 5
     assert len(result.locations) == 1
     assert result.locations[0].channel_name == "bit_flip"
-    assert result.locations[0].wires == (0,)
+    assert result.locations[0].qubits == (0,)
     assert result.applied_correction == pytest.approx(
         result.estimate - result.unmitigated, abs=1e-15
     )
@@ -607,7 +607,7 @@ def test_two_locations_compose_and_each_one_carries_its_own_cost() -> None:
     circuit = Circuit(2, dtype=torch.complex128).x(0).x(1)
     model = NoiseModel().add("x", bit_flip_channel(0.1))
     result = run_pec(circuit, _zz(), noise_model=model, dtype=torch.complex128)
-    assert [location.wires for location in result.locations] == [(0,), (1,)]
+    assert [location.qubits for location in result.locations] == [(0,), (1,)]
     assert [location.program_index for location in result.locations] == [1, 3]
     assert result.term_count == 16
     assert result.executions == 17
@@ -625,7 +625,7 @@ def test_a_model_naming_one_wire_costs_what_it_declares_and_no_more() -> None:
     one = run_pec(
         circuit,
         observable,
-        noise_model=NoiseModel().add("x", bit_flip_channel(0.1), wires=(0,)),
+        noise_model=NoiseModel().add("x", bit_flip_channel(0.1), qubits=(0,)),
         dtype=torch.complex128,
     )
     both = run_pec(
@@ -641,7 +641,7 @@ def test_a_model_naming_one_wire_costs_what_it_declares_and_no_more() -> None:
     # better than the two-location one because wire 1 is not noisy under it. A read
     # that recovers the ideal is therefore evidence about the declared model before
     # it is evidence about anything else.
-    assert one.locations[0].wires == (0,)
+    assert one.locations[0].qubits == (0,)
     assert one.locations[0].program_index == 1
     assert one.term_count == 4
     assert one.unmitigated == pytest.approx(0.799999932699200, abs=1e-12)
@@ -658,9 +658,9 @@ def test_the_correction_also_removes_a_drift_on_an_untouched_observable() -> Non
 
     circuit = Circuit(2, dtype=torch.complex128).x(0).x(1)
     observable = _z(0)
-    model = NoiseModel().add("x", bit_flip_channel(0.1), wires=(1,))
+    model = NoiseModel().add("x", bit_flip_channel(0.1), qubits=(1,))
     result = run_pec(circuit, observable, noise_model=model, dtype=torch.complex128)
-    assert result.locations[0].wires == (1,)
+    assert result.locations[0].qubits == (1,)
     # The channel's operators are stored in single precision, so applying it is
     # not exactly trace-preserving at double precision: z(0) drifts 7.0e-8 while
     # the observable's own value never changes. Inverting the channel puts it back
@@ -675,8 +675,8 @@ def test_a_two_wire_channel_is_inverted_at_the_location_its_gate_occupies() -> N
     circuit = Circuit(2, dtype=torch.complex128).h(0).cx(0, 1)
     model = NoiseModel().add("cx", two_qubit_depolarizing_channel(0.05))
     result = run_pec(circuit, _zz(), noise_model=model, dtype=torch.complex128)
-    assert result.locations[0].wires == (0, 1)
-    assert result.locations[0].decomposition.n_wires == 2
+    assert result.locations[0].qubits == (0, 1)
+    assert result.locations[0].decomposition.n_qubits == 2
     assert result.term_count == 16
     assert result.unmitigated == pytest.approx(0.946666619956318, abs=1e-12)
     assert abs(result.estimate - 1.0) <= _EXACT_TOLERANCE

@@ -142,7 +142,7 @@ def test_declaration_is_validated_and_normalised() -> None:
     # so two providers listing the same gates produce the same snapshot.
     assert description.native_gates == ("cx", "h", "rz")
     assert description.coupling_edges == ((0, 1), (1, 2), (2, 3))
-    assert description.n_wires == description.n_qubits == 4
+    assert description.n_qubits == 4
     # The provider identity is the host's, taken from the admitted manifest.
     assert (description.provider, description.provider_version) == ("acme", "1.0.0")
     assert TARGET_DESCRIPTION_MEMBER == "devices"

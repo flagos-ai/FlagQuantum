@@ -21,12 +21,12 @@ def _validate_gate_noise_rules(
             raise ValueError(
                 "dynamic measurement noise must use independent readout rules"
             )
-        if rule.channel.name != "bit_flip" or rule.channel.n_wires != 1:
+        if rule.channel.name != "bit_flip" or rule.channel.n_qubits != 1:
             raise ValueError(
                 "dynamic execution currently supports one-wire bit-flip channels only"
             )
         if rule.wires is not None and any(
-            wire < 0 or wire >= circuit.n_wires for wire in rule.wires
+            wire < 0 or wire >= circuit.n_qubits for wire in rule.wires
         ):
             raise ValueError("dynamic noise rule wire is outside the circuit")
 
@@ -37,7 +37,7 @@ def _validate_readout_noise_rules(
     for rule in noise_model.readout_rules:
         if isinstance(rule.error, CorrelatedReadoutError):
             raise ValueError("correlated readout is outside the dynamic noise profile")
-        if any(wire < 0 or wire >= circuit.n_wires for wire in rule.wires):
+        if any(wire < 0 or wire >= circuit.n_qubits for wire in rule.wires):
             raise ValueError("dynamic readout wire is outside the circuit")
 
 

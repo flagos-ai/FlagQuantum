@@ -160,7 +160,7 @@ def _mps_environment_channels_kernel_match(
 def _require_mps_environment_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired implementation or fail closed on catalog drift."""
+    """Return the connected implementation or fail closed on catalog drift."""
 
     return _require_cataloged_kernel(
         _mps_environment_kernel_match(device_type=device_type, dtype=dtype),
@@ -172,7 +172,7 @@ def _require_mps_environment_kernel(
 def _require_mps_environment_channels_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired MPS-005 implementation or fail closed."""
+    """Return the connected MPS-005 implementation or fail closed."""
 
     return _require_cataloged_kernel(
         _mps_environment_channels_kernel_match(

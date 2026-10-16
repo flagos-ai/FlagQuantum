@@ -170,9 +170,9 @@ def _flagquantum_jax_loss_fn(
         backend="jax",
         interface="torch",
         mode="tensor_network" if mode == "tn" else mode,
-        n_wires=int(n_wires),
+        n_qubits=int(n_wires),
         observable="z_sum" if observable == "z_sum" else "z",
-        observable_wires=(0,) if observable in {"z0", "edge_zz"} else None,
+        observable_qubits=(0,) if observable in {"z0", "edge_zz"} else None,
         jit=jit,
         max_bond=max_bond,
         compute_dtype=compute_dtype,
@@ -374,7 +374,7 @@ def _pennylane_worker(config: dict[str, Any], queue: Any) -> None:
             if device.startswith("cuda"):
                 params_seed = params_seed.cpu()
             pl_value_and_grad = _build_pennylane_jax_value_and_grad(
-                n_wires=int(config["n_wires"]),
+                n_qubits=int(config["n_wires"]),
                 observable=str(config["observable"]),
                 device_name=str(config["pennylane_device"]),
                 method=str(config["method"]),
@@ -391,7 +391,7 @@ def _pennylane_worker(config: dict[str, Any], queue: Any) -> None:
                 )
         else:
             pl_loss = _build_pennylane_loss(
-                n_wires=int(config["n_wires"]),
+                n_qubits=int(config["n_wires"]),
                 observable=str(config["observable"]),
                 device_name=str(config["pennylane_device"]),
                 method=str(config["method"]),
@@ -489,7 +489,7 @@ def main() -> None:
             mode=args.method,
             max_bond=args.max_bond,
             observable=args.observable,
-            n_wires=args.n_wires,
+            n_qubits=args.n_wires,
             device=device,
             jit=not args.no_flagquantum_jit,
             compute_dtype=args.flagquantum_jax_compute_dtype,
@@ -550,7 +550,7 @@ def main() -> None:
             else:
                 if args.pennylane_interface == "jax":
                     pl_value_and_grad = _build_pennylane_jax_value_and_grad(
-                        n_wires=args.n_wires,
+                        n_qubits=args.n_wires,
                         observable=args.observable,
                         device_name=args.pennylane_device,
                         method=args.method,
@@ -569,7 +569,7 @@ def main() -> None:
                         )
                 else:
                     pl_loss = _build_pennylane_loss(
-                        n_wires=args.n_wires,
+                        n_qubits=args.n_wires,
                         observable=args.observable,
                         device_name=args.pennylane_device,
                         method=args.method,

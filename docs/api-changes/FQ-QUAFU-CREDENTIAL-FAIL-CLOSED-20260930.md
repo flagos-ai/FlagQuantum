@@ -2,10 +2,43 @@
 
 ## Decision and authorization
 
-Status: **proposed, not approved.** This document records the problem, the
-evidence, and the intended behavior so that the API owner and the remote domain
-owner can approve or reject it. No code change is included, and no approval is
-claimed. Implementation must not land before that approval.
+Status: approved and implemented on 2026-10-07.
+
+## Decision
+
+The two approvals this document requires were given by the user, who is the
+authority this repository's process looks to for both the API owner and the remote
+domain owner roles. The approval was given in response to the two questions posed
+in the pull request that implements this document
+([#589](https://github.com/flagos-ai/FlagQuantum/pull/589)):
+
+1. The behavior in "Old and proposed behavior" is accepted, **including** the
+   `RuntimeError` -> `ValidationError` change for simulator and routing targets.
+2. The guard is accepted as extending to `submit_qasm()`, which alternative 3
+   below does not mention. See "Accepted scope extension" for why the extension is
+   part of the fix rather than a second change.
+
+Before the approval this document read `proposed, not approved.` and said that no
+code change was included and no approval was claimed. That was true for as long as
+it was written: the implementation existed only as a patch in the maintainer's
+workspace for many rounds, precisely so that it could not land ahead of this
+decision. The status line above is the record of the decision, not a revision of
+the problem statement, evidence, or alternatives below, none of which changed.
+
+### Accepted scope extension
+
+Alternative 3 scoped the guard to `QuafuProvider.submit()`, and the word
+`submit_qasm` did not appear anywhere in this document. That scope was incomplete:
+`submit_qasm()` posts to the same legacy endpoint, builds the same `_headers()`,
+and was reachable with the same empty credential and the same absent header, through
+`TwinExperiment.submit` (`flagquantum/twin/experiment.py:197-200`). Guarding only
+`submit()` would have left half the defect live while making this document look
+satisfied. The implementer measured the second entry point, reported the gap, and
+the approver accepted the extension.
+
+The two entry points now share one guard (`_require_legacy_credential`), so a
+future third caller of that endpoint inherits the rule instead of having to
+remember it.
 
 The change is proposed under `docs/development/PUBLIC_API_PROTECTION.md`,
 because it alters two protected behaviors: the capability failure stage
@@ -185,11 +218,18 @@ import flagquantum as fq
 # after having already attempted an unauthenticated submission.
 #
 # After: the same call raises a ValidationError before any request is sent.
-# The exact wording is the owner's to settle; the intended content is the
-# missing prerequisite and both accepted sources, for example:
+# The wording as shipped, with no Quafu credential configured, is:
 #   flagquantum.errors.ValidationError:
-#   A Quafu credential is required; pass api_key=... or set QUAFU_API_KEY,
-#   or pass token=... or set QUAFU_API_TOKEN for the legacy SQC platform.
+#   A Quafu credential is required to submit to the legacy SQC platform:
+#   pass token=... or set QUAFU_API_TOKEN. Neither QUAFU_API_KEY nor
+#   QUAFU_API_TOKEN is configured, so a request for target 'ScQ-P18' would
+#   carry no authentication header. No request was sent.
+#
+# With QUAFU_API_KEY set and the task API not answering, the same prefix is
+# followed by which credential this route is missing:
+#   ... QUAFU_API_KEY is set, but the task API is not answering for target
+#   'ScQ-P18', and that key does not authorize the legacy endpoint.
+#   No request was sent.
 result = fq.run(fq.Circuit(2).x(0), target="quafu:Baihua", shots=1024)
 ```
 
@@ -216,25 +256,39 @@ except (FlagQuantumError, ValueError) as exc:
 
 ## Documentation and tooling impact
 
+What this section projected, and what landed:
+
 * `docs/guides/QUAFU_BACKEND.md` gains an explicit statement that a submission
   without any Quafu credential is rejected before any request, next to the
   existing credential table. The existing sentence that the legacy token is
   "required for an authenticated fallback" becomes enforced rather than
-  aspirational.
+  aspirational. **Landed in this change.**
 * A regression test is added under `tests/team/remote/` (the remote domain's test
-  location) that asserts, for `quafu:Baihua`, `quafu:sim` and `quafu:all-race`
-  with all Quafu environment variables cleared: `ValidationError` is raised, its
-  message names the credential, and the injected transport records **zero**
-  calls. A companion test asserts that setting `QUAFU_API_TOKEN` restores the
-  legacy fallback, so the fix cannot be satisfied by disabling the fallback.
+  location) that asserts, with all Quafu environment variables cleared:
+  `ValidationError` is raised for a hardware target and for a task-API-only
+  target, the message names the credential, and the injected transport records
+  **zero** calls; a further case covers `submit_qasm()`. A companion test asserts
+  that setting `QUAFU_API_TOKEN` restores the legacy fallback **and still sends its
+  token header**, so the fix cannot be satisfied by disabling the fallback.
+  **Landed as `tests/team/remote/test_quafu_credential_fail_closed.py`.** The
+  proposal named `quafu:Baihua`, `quafu:sim` and `quafu:all-race`; the test uses
+  the same three *classes* of target rather than those exact strings, because the
+  class is what the routing decision reads.
 * No API contract snapshot, capability matrix entry or benchmark artifact is
-  regenerated. `fq.run` keeps its signature.
+  regenerated. `fq.run` keeps its signature. **Confirmed: this change touches one
+  source file, one guide, this document and three test files.**
+* Four pre-existing tests in `tests/test_cloud_providers.py` and
+  `tests/api_contract/test_quafu_service_compile.py` needed a token configured;
+  each is annotated in place with the reason. They were testing the behavior they
+  name, and the new guard sits ahead of it, so without a credential they no longer
+  reached their own subject. Their subject is covered by the new regression test
+  instead, so this moves no claim out of the test suite.
 * Out of scope, and deliberately not proposed here: wrapping
   `urllib.error.HTTPError` and `urllib.error.URLError` inside
   `UrllibTransport` (`flagquantum/remote/qpu/http.py:70`, `:80`, `:100`) so that
   transport failures surface as a FlagQuantum category for every provider. That
   touches Azure, Braket, Quafu and the generic provider at once and deserves its
-  own proposal and its own approval.
+  own proposal and its own approval. **Still out of scope, still unproposed.**
 
 ## Owner and approvals
 
@@ -242,10 +296,18 @@ except (FlagQuantumError, ValueError) as exc:
   `python tools/check_team_scope.py --team remote --files
   docs/api-changes/FQ-QUAFU-CREDENTIAL-FAIL-CLOSED-20260930.md` passes.
 * Required approvals before implementation: **API owner** and **remote domain
-  owner**.
+  owner**. Both were given by the user on 2026-10-07, as recorded under
+  "Decision".
 * Implementation note for the owner: the guard belongs at the top of
   `submit()`, using the same two accepted sources already resolved in
   `__init__` (`QUAFU_API_TOKEN` for `credentials.token`, `QUAFU_API_KEY` for
   `api_key`). The routing message at `quafu.py:443` should be corrected in the
   same change, because it currently reports the routing cause when the
   credential cause is the true one.
+  **As implemented, the guard is a shared helper rather than a line at the top of
+  `submit()`**, so that `submit_qasm()` -- the second caller of the same endpoint
+  -- is covered by the same rule instead of by a copy of it. The routing message
+  was corrected as noted, and the option-combination refusal above it keeps
+  raising `ValueError`, because it is not a credential failure and this document
+  does not enumerate it. The line references in this document are the ones that
+  were true when the problem was measured; the implementation moved them.

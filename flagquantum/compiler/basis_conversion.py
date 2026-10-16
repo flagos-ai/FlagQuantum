@@ -20,7 +20,7 @@ basis answer them by the same ordered tables instead of by two copies.
 
 A named basis is a set of gate names, and it is validated as one before any
 instruction is touched: every name has to be a declared opcode of the operator
-schema, it has to be unitary, and it has to be at least one wire wide.  A name
+schema, it has to be unitary, and it has to be at least one qubit wide.  A name
 outside the schema is what a caller gets from a typo or from a gate another
 toolchain spells differently, and the refusal names every offending entry at
 once rather than the first, so one call is enough to fix the list.  Channels are
@@ -97,7 +97,7 @@ def require_basis(gates: Iterable[str]) -> tuple[str, ...]:
     A bare string is refused rather than iterated: `require_basis("hcx")` would
     otherwise silently become a three-gate basis built from the letters, which
     is a typo the caller cannot see. Every entry has to name a declared unitary
-    opcode of at least one wire, and every offending entry is named in one
+    opcode of at least one qubit, and every offending entry is named in one
     message, sorted and deduplicated, because a caller fixing a basis wants the
     whole list rather than the first mistake in it.
     """
@@ -185,7 +185,7 @@ def matrix_replacement(
 ) -> tuple[Instruction, ...] | None:
     """Rewrite a matrix-carrying instruction, which no schema table describes.
 
-    One wire goes through Euler synthesis, two through KAK synthesis, and
+    One qubit goes through Euler synthesis, two through KAK synthesis, and
     anything wider is refused because the entangler basis reaches exactly two.
     """
 
@@ -194,7 +194,7 @@ def matrix_replacement(
     if len(instruction.wires) == 1:
         return synthesize_one_qubit_matrix(
             instruction.matrix,
-            wire=instruction.wires[0],
+            qubit=instruction.wires[0],
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,
             metadata=instruction.metadata,
@@ -202,7 +202,7 @@ def matrix_replacement(
     if len(instruction.wires) == 2 and entangler is not None:
         return synthesize_two_qubit(
             instruction.matrix,
-            wires=instruction.wires,
+            qubits=instruction.wires,
             entangler=entangler,
             z_rotation=z_rotation,
             pulse_opcode=pulse_opcode,

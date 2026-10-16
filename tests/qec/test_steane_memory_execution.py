@@ -147,7 +147,7 @@ def _flips(memory: MemoryCircuit, source: str, *, shots: int = 1) -> list[_Flips
     samples: list[list[int]] = execution.samples.tolist()
     checks = len(memory.code.checks)
     positions = {
-        check.ancilla_wire: position
+        check.ancilla_qubit: position
         for position, check in enumerate(memory.code.checks)
     }
 
@@ -155,9 +155,9 @@ def _flips(memory: MemoryCircuit, source: str, *, shots: int = 1) -> list[_Flips
         classical_row: list[int], sample_row: list[int], reference: MeasurementRef
     ) -> int:
         if reference.round_index is None:
-            return int(sample_row[reference.wire])
+            return int(sample_row[reference.qubit])
         return int(
-            classical_row[reference.round_index * checks + positions[reference.wire]]
+            classical_row[reference.round_index * checks + positions[reference.qubit]]
         )
 
     def parity(classical_row: list[int], sample_row: list[int], references) -> int:
@@ -204,7 +204,7 @@ def _injected_source(memory: MemoryCircuit, fired: Sequence[_Mechanism]) -> str:
             )
         elif record.kind == "measurement":
             source = _inject_measurement_flip(
-                current, round_index=record.round_index, ancilla_wire=record.wire
+                current, round_index=record.round_index, ancilla_qubit=record.wire
             )
         else:
             raise ValueError(f"unknown mechanism kind {record.kind!r}")
@@ -252,14 +252,14 @@ def test_a_single_data_error_is_detected_and_its_syndrome_identifies_the_wire() 
     memory = build_memory_circuit(code, rounds=1)
     syndromes: dict[int, tuple[int, ...]] = {}
     logicals: set[int] = set()
-    for wire in code.data_wires:
+    for wire in code.data_qubits:
         read = _flips(memory, _inject_data_flip(memory, round_index=0, wire=wire))[0]
         syndromes[wire] = read.detectors
         if read.observables:
             logicals.add(wire)
 
     assert all(syndrome for syndrome in syndromes.values())
-    assert len(set(syndromes.values())) == len(code.data_wires)
+    assert len(set(syndromes.values())) == len(code.data_qubits)
     assert Counter(len(syndrome) for syndrome in syndromes.values()) == {
         1: 3,
         2: 3,
@@ -268,7 +268,7 @@ def test_a_single_data_error_is_detected_and_its_syndrome_identifies_the_wire() 
     # A single X error becomes a logical error exactly when it anticommutes with
     # the declared logical Z operator, which is exactly when it lies in that
     # operator's support.
-    (observable,) = tuple(item for item in code.logical_observables if not item.x_wires)
+    (observable,) = tuple(item for item in code.logical_observables if not item.x_qubits)
     assert logicals == set(observable.support)
     assert len(logicals) == code.distance
 
@@ -287,16 +287,16 @@ def test_a_single_measurement_error_flips_the_pair_its_round_compares() -> None:
     code = SteaneCode()
     memory = build_memory_circuit(code, rounds=1)
     z_ancillas = {
-        check.ancilla_wire for check in code.checks if check.stabilizer.z_wires
+        check.ancilla_qubit for check in code.checks if check.stabilizer.z_qubits
     }
     x_ancillas = {
-        check.ancilla_wire for check in code.checks if check.stabilizer.x_wires
+        check.ancilla_qubit for check in code.checks if check.stabilizer.x_qubits
     }
 
     for ancilla in sorted(z_ancillas):
         read = _flips(
             memory,
-            _inject_measurement_flip(memory, round_index=0, ancilla_wire=ancilla),
+            _inject_measurement_flip(memory, round_index=0, ancilla_qubit=ancilla),
         )[0]
         assert len(read.detectors) == 2
         assert not read.observables
@@ -304,7 +304,7 @@ def test_a_single_measurement_error_flips_the_pair_its_round_compares() -> None:
     for ancilla in sorted(x_ancillas):
         read = _flips(
             memory,
-            _inject_measurement_flip(memory, round_index=0, ancilla_wire=ancilla),
+            _inject_measurement_flip(memory, round_index=0, ancilla_qubit=ancilla),
         )[0]
         assert read.detectors == ()
         assert not read.observables

@@ -45,6 +45,19 @@ _FORBIDDEN_FALLBACKS: dict[str, str] = {
     "statevector_fallback": "mps_statevector_fallback_not_claimable",
 }
 
+#: The declarations that assert a run stayed on the native MPS path.
+#:
+#: The first three say only that no other route was taken. The fourth is the
+#: declaration the frozen MPS release contract requires of a payload, and it
+#: makes the same assertion by naming the path that ran instead of denying an
+#: unnamed one. Reading them alike is what keeps the release audit and the
+#: release gate from demanding two different words for one statement; any other
+#: value is vocabulary nothing has evaluated, so it stays rejected rather than
+#: being accepted as an assertion about the run.
+NO_FALLBACK_DECLARATIONS = frozenset(
+    {"none", "no_fallback", "not_used", "native_matrix_product_state_path_only"}
+)
+
 _MPS_BACKWARD_BLOCKER_CODES: dict[str, str] = {
     "shared_evidence_contract_v1": "mps_shared_evidence_contract_v1_required",
     "mps_path": "phase5_mps_state_mode_required",

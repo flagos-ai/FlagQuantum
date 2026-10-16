@@ -30,6 +30,7 @@ from .program import (
 _MAX_NATIVE_FIXED_LAYER_WIRES = 11
 _MAX_NATIVE_PARAMETERIZED_LAYER_WIRES = 11
 _MAX_NATIVE_FUSED_ROTATION_LAYER_WIRES = 6
+_MIN_NATIVE_SCALAR_ROTATION_AMPLITUDES = 1 << 16
 _NATIVE_FIXED_GATES = frozenset({"h", "s", "sdg", "x", "y", "z"})
 _NATIVE_PARAMETERIZED_GATES = frozenset({"rx", "ry", "rz"})
 _NATIVE_CLIFFORD_CODES = {"h": 1, "s": 2, "sdg": 3, "x": 4, "y": 5, "z": 6}
@@ -57,6 +58,7 @@ def _native_layer_compile_safe(
     state: torch.Tensor,
     *,
     batch_size: int,
+    allow_scalar_rotation: bool = False,
 ) -> bool:
     """Whether an inference-only native layer can preserve tensor ownership."""
 
@@ -79,9 +81,16 @@ def _native_layer_compile_safe(
             for value in _matrix_tensors(instruction.matrix)
         )
     )
+    scalar_rotation = bool(
+        allow_scalar_rotation
+        and batch_size == 1
+        and state.shape[1] >= _MIN_NATIVE_SCALAR_ROTATION_AMPLITUDES
+        and os.getenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+    )
     return bool(
         state.device.type == "cpu"
-        and batch_size >= 2
+        and (batch_size >= 2 or scalar_rotation)
         and native_cpu_one_qubit_layer_available()
         and not requires_grad
     )
@@ -116,7 +125,11 @@ def native_parameterized_layer_compile_enabled(
 
     return bool(
         _native_layer_compile_safe(
-            instructions, parameter_bindings, state, batch_size=batch_size
+            instructions,
+            parameter_bindings,
+            state,
+            batch_size=batch_size,
+            allow_scalar_rotation=True,
         )
         and os.getenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "1")
         .strip()
@@ -126,7 +139,7 @@ def native_parameterized_layer_compile_enabled(
 
 
 def native_fused_rotation_layer_compile_enabled() -> bool:
-    """Whether fused same-wire rotations may join native disjoint layers."""
+    """Whether fused same-qubit rotations may join native disjoint layers."""
 
     return os.getenv("FQ_CPU_NATIVE_FUSED_ROTATION_LAYER", "1").strip().lower() not in {
         "0",
@@ -298,11 +311,11 @@ def fuse_native_fixed_one_qubit_layers(
             opcode = canonical_opcode(instruction.name)
             if opcode == "h" and hadamards == _MAX_NATIVE_FIXED_LAYER_WIRES:
                 break
-            wire = int(instruction.wires[0])
-            if wire in occupied:
+            qubit = int(instruction.wires[0])
+            if qubit in occupied:
                 break
             group.append(candidate)
-            occupied.add(wire)
+            occupied.add(qubit)
             hadamards += opcode == "h"
             cursor += 1
         if len(group) >= 2:
@@ -322,6 +335,7 @@ def fuse_native_parameterized_one_qubit_layers(
     program: Sequence[_StatevectorPreCXStep],
     *,
     include_terminal_fused_regions: bool = False,
+    include_nonterminal_fused_regions: bool = False,
 ) -> list[_StatevectorPreCXStep]:
     """Compile disjoint named rotations for batch-specific native matrices."""
 
@@ -354,22 +368,23 @@ def fuse_native_parameterized_one_qubit_layers(
         group: list[_StatevectorGateStep | _StatevectorFusedGateStep] = []
         occupied: set[int] = set()
         cursor = index
-        max_wires = (
+        max_qubits = (
             _MAX_NATIVE_FUSED_ROTATION_LAYER_WIRES
-            if include_terminal_fused_regions
-            and index >= terminal_fused_start
-            and isinstance(program[index], _StatevectorFusedGateStep)
+            if isinstance(program[index], _StatevectorFusedGateStep)
+            and (
+                include_nonterminal_fused_regions
+                or (include_terminal_fused_regions and index >= terminal_fused_start)
+            )
             else _MAX_NATIVE_PARAMETERIZED_LAYER_WIRES
         )
-        while cursor < len(program) and len(group) < max_wires:
+        while cursor < len(program) and len(group) < max_qubits:
             candidate = program[cursor]
             instructions: tuple[Instruction, ...]
             if isinstance(candidate, _StatevectorGateStep):
                 instructions = (candidate.instruction,)
-            elif (
-                isinstance(candidate, _StatevectorFusedGateStep)
-                and include_terminal_fused_regions
-                and cursor >= terminal_fused_start
+            elif isinstance(candidate, _StatevectorFusedGateStep) and (
+                include_nonterminal_fused_regions
+                or (include_terminal_fused_regions and cursor >= terminal_fused_start)
             ):
                 instructions = fused_rotation_instructions(candidate)
             else:
@@ -382,13 +397,13 @@ def fuse_native_parameterized_one_qubit_layers(
                 for instruction in instructions
             ):
                 break
-            wire = int(instructions[0].wires[0])
-            if any(int(instruction.wires[0]) != wire for instruction in instructions):
+            qubit = int(instructions[0].wires[0])
+            if any(int(instruction.wires[0]) != qubit for instruction in instructions):
                 break
-            if wire in occupied:
+            if qubit in occupied:
                 break
             group.append(candidate)
-            occupied.add(wire)
+            occupied.add(qubit)
             cursor += 1
         if len(group) >= 2:
             optimized.append(
@@ -405,7 +420,7 @@ def apply_native_fixed_one_qubit_layer(
     step: _StatevectorDisjointDenseStep,
     state: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     owns_state: bool,
     parameter_bindings: tuple[torch.Tensor, ...] | None,
     matrix_builder: (
@@ -440,7 +455,7 @@ def apply_native_fixed_one_qubit_layer(
         for region in regions
     ):
         return None
-    wires = tuple(
+    qubits = tuple(
         int(
             region.instruction.wires[0]
             if isinstance(region, _StatevectorGateStep)
@@ -460,8 +475,8 @@ def apply_native_fixed_one_qubit_layer(
         if fused_static_clifford_layer_(
             output,
             torch.tensor(gate_codes, dtype=torch.int8, device=state.device),
-            torch.tensor(wires, dtype=torch.int64, device=state.device),
-            n_wires=n_wires,
+            torch.tensor(qubits, dtype=torch.int64, device=state.device),
+            n_qubits=n_qubits,
         ):
             return output
     if all(isinstance(region, _StatevectorGateStep) for region in regions):
@@ -481,8 +496,8 @@ def apply_native_fixed_one_qubit_layer(
     else:
         return None
     if (
-        len(matrices) != len(wires)
-        or len(wires) < 2
+        len(matrices) != len(qubits)
+        or len(qubits) < 2
         or any(matrix.ndim not in {2, 3} or matrix.requires_grad for matrix in matrices)
     ):
         return None
@@ -503,16 +518,16 @@ def apply_native_fixed_one_qubit_layer(
     else:
         matrix_tensor = torch.stack(matrices).contiguous()
     start = 0
-    while start < len(wires):
-        width = min(_MAX_NATIVE_FIXED_LAYER_WIRES, len(wires) - start)
-        if len(wires) - start - width == 1:
+    while start < len(qubits):
+        width = min(_MAX_NATIVE_FIXED_LAYER_WIRES, len(qubits) - start)
+        if len(qubits) - start - width == 1:
             width -= 1
         stop = start + width
         if not fused_rotation_block_forward_(
             output,
             matrix_tensor.narrow(-3, start, width),
-            torch.tensor(wires[start:stop], dtype=torch.int64, device=state.device),
-            n_wires=n_wires,
+            torch.tensor(qubits[start:stop], dtype=torch.int64, device=state.device),
+            n_qubits=n_qubits,
             cx_controls=(
                 torch.tensor(
                     step.fused_cx_controls,

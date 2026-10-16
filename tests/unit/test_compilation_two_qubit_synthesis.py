@@ -194,7 +194,7 @@ def test_every_declared_two_qubit_unitary_reaches_the_entangler_basis(
         source = _source(name)
         emitted = synthesize_two_qubit(
             source.tolist(),
-            wires=(0, 1),
+            qubits=(0, 1),
             entangler=entangler,
             z_rotation=z_rotation,
         )
@@ -214,7 +214,7 @@ def test_the_entangler_count_distribution_is_pinned() -> None:
     distribution = {}
     for name in _TWO_QUBIT_UNITARIES:
         emitted = synthesize_two_qubit(
-            _source(name).tolist(), wires=(0, 1), entangler="cx", z_rotation="rz"
+            _source(name).tolist(), qubits=(0, 1), entangler="cx", z_rotation="rz"
         )
         assert emitted is not None
         distribution[name] = _entanglers(emitted, "cx")
@@ -241,7 +241,7 @@ def test_a_random_special_unitary_reconstructs_up_to_one_global_phase(
     source = torch.tensor(matrix, dtype=torch.complex128)
     for entangler in SUPERCONTROLLED_ENTANGLERS:
         emitted = synthesize_two_qubit(
-            matrix, wires=(0, 1), entangler=entangler, z_rotation="rz"
+            matrix, qubits=(0, 1), entangler=entangler, z_rotation="rz"
         )
         assert emitted is not None
         assert _gap(emitted, source) < 1e-8
@@ -258,7 +258,7 @@ def test_the_global_phase_is_dropped_rather_than_recorded() -> None:
 
     source = torch.tensor(_random_su4(3), dtype=torch.complex128)
     emitted = synthesize_two_qubit(
-        source.tolist(), wires=(0, 1), entangler="cx", z_rotation="rz"
+        source.tolist(), qubits=(0, 1), entangler="cx", z_rotation="rz"
     )
     assert emitted is not None
     overlap = _overlap(emitted, source)
@@ -275,7 +275,7 @@ def test_a_product_unitary_needs_no_entangler() -> None:
         torch.tensor([[1, 0], [0, -1]], dtype=torch.complex128),
     )
     emitted = synthesize_two_qubit(
-        source.tolist(), wires=(0, 1), entangler="cx", z_rotation="rz"
+        source.tolist(), qubits=(0, 1), entangler="cx", z_rotation="rz"
     )
     assert emitted is not None
     assert _entanglers(emitted, "cx") == 0
@@ -291,11 +291,11 @@ def test_reversing_the_wires_mirrors_the_entangler() -> None:
 
     source = _source("crx")
     forward = synthesize_two_qubit(
-        source.tolist(), wires=(0, 1), entangler="cx", z_rotation="rz"
+        source.tolist(), qubits=(0, 1), entangler="cx", z_rotation="rz"
     )
     mirrored_source = _SWAP_PERMUTATION @ source @ _SWAP_PERMUTATION
     mirrored = synthesize_two_qubit(
-        mirrored_source.tolist(), wires=(1, 0), entangler="cx", z_rotation="rz"
+        mirrored_source.tolist(), qubits=(1, 0), entangler="cx", z_rotation="rz"
     )
     assert forward is not None
     assert mirrored is not None
@@ -319,7 +319,7 @@ def test_an_unsupported_entangler_is_refused() -> None:
     for entangler in ("cphase", "crx", "cry", "crz", "ecr", "swap", "rz", ""):
         assert (
             synthesize_two_qubit(
-                source, wires=(0, 1), entangler=entangler, z_rotation="rz"
+                source, qubits=(0, 1), entangler=entangler, z_rotation="rz"
             )
             is None
         )
@@ -331,7 +331,7 @@ def test_a_non_unitary_matrix_is_refused() -> None:
         [[2.0 if i == j else 0.0 for j in range(4)] for i in range(4)],
     ):
         with pytest.raises(ValueError):
-            synthesize_two_qubit(matrix, wires=(0, 1), entangler="cx", z_rotation="rz")
+            synthesize_two_qubit(matrix, qubits=(0, 1), entangler="cx", z_rotation="rz")
 
 
 def test_a_matrix_of_the_wrong_shape_is_refused() -> None:
@@ -342,28 +342,30 @@ def test_a_matrix_of_the_wrong_shape_is_refused() -> None:
         [],
     ):
         with pytest.raises(ValueError):
-            synthesize_two_qubit(matrix, wires=(0, 1), entangler="cx", z_rotation="rz")
+            synthesize_two_qubit(matrix, qubits=(0, 1), entangler="cx", z_rotation="rz")
 
 
 def test_wires_must_be_two_distinct_non_negative_integers() -> None:
     source = _source("swap").tolist()
     for wires in ((0,), (0, 1, 2), (1, 1), (-1, 0)):
         with pytest.raises((TypeError, ValueError)):
-            synthesize_two_qubit(source, wires=wires, entangler="cx", z_rotation="rz")
+            synthesize_two_qubit(source, qubits=wires, entangler="cx", z_rotation="rz")
 
 
 def test_a_basis_without_a_z_rotation_cannot_synthesize() -> None:
     source = _source("swap").tolist()
     assert (
-        synthesize_two_qubit(source, wires=(0, 1), entangler="cx", z_rotation="h")
+        synthesize_two_qubit(source, qubits=(0, 1), entangler="cx", z_rotation="h")
         is None
     )
 
 
 def test_the_synthesis_is_deterministic() -> None:
     matrix = _random_su4(11)
-    first = synthesize_two_qubit(matrix, wires=(0, 1), entangler="cz", z_rotation="rz")
-    second = synthesize_two_qubit(matrix, wires=(0, 1), entangler="cz", z_rotation="rz")
+    first = synthesize_two_qubit(matrix, qubits=(0, 1), entangler="cz", z_rotation="rz")
+    second = synthesize_two_qubit(
+        matrix, qubits=(0, 1), entangler="cz", z_rotation="rz"
+    )
     assert first is not None
     assert second is not None
     assert [(item.name, item.wires, item.params) for item in first] == [
@@ -397,10 +399,10 @@ def test_a_target_in_the_entangler_class_costs_one_entangler() -> None:
     """The two ends of the trace choice, so neither can silently drift."""
 
     cheap = synthesize_two_qubit(
-        _source("cx").tolist(), wires=(0, 1), entangler="cx", z_rotation="rz"
+        _source("cx").tolist(), qubits=(0, 1), entangler="cx", z_rotation="rz"
     )
     dear = synthesize_two_qubit(
-        _source("swap").tolist(), wires=(0, 1), entangler="cx", z_rotation="rz"
+        _source("swap").tolist(), qubits=(0, 1), entangler="cx", z_rotation="rz"
     )
     assert cheap is not None
     assert dear is not None

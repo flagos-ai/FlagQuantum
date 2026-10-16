@@ -15,9 +15,10 @@ scalability evidence, the baseline is read from its own declared directory.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -220,9 +221,40 @@ def baseline_results(manifest: Mapping[str, Any]) -> Path:
     return path
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--candidate",
+        type=Path,
+        action="append",
+        default=None,
+        help=(
+            "directory of signed artifacts to evaluate instead of the promoted "
+            "release directory. Sealing happens into a candidate directory "
+            "because the strict promotion audit refuses to seal while the "
+            "release directory already holds promoted JSON, so the campaign is "
+            "checked here first and promoted only once it passes."
+        ),
+    )
+    parser.add_argument(
+        "--baseline-directory",
+        type=Path,
+        default=None,
+        help=(
+            "directory holding the single-device capacity baseline, overriding "
+            "the manifest's declared path. A candidate set that carries its own "
+            "baseline names it here so the gate reads the baseline the set was "
+            "measured against rather than whichever one is checked in."
+        ),
+    )
+    args = parser.parse_args(argv)
     manifest = load_manifest()
-    directories = (RESULTS, baseline_results(manifest))
+    baseline = (
+        args.baseline_directory
+        if args.baseline_directory is not None
+        else baseline_results(manifest)
+    )
+    directories = (baseline, *args.candidate) if args.candidate else (RESULTS, baseline)
     artifacts = [
         json.loads(path.read_text(encoding="utf-8"))
         for directory in directories
@@ -232,7 +264,17 @@ def main() -> None:
     passed, blockers = evaluate_issue044_release(
         artifacts, manifest, signing_key=signing_key
     )
-    print(json.dumps({"issue": "ISSUE-044", "passed": passed, "blockers": blockers}))
+    print(
+        json.dumps(
+            {
+                "issue": "ISSUE-044",
+                "artifact_count": len(artifacts),
+                "evaluated": [str(item) for item in directories],
+                "passed": passed,
+                "blockers": blockers,
+            }
+        )
+    )
     if not passed:
         raise SystemExit(2)
 

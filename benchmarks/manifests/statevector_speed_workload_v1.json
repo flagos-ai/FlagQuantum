@@ -1,0 +1,34 @@
+{
+  "name": "issue044_matched_statevector_training_speed_v1",
+  "role": "matched_statevector_training_speed",
+  "frozen_before_release_run": true,
+  "optimizer": "adam",
+  "dtype": "complex64",
+  "warmup_steps": 5,
+  "measured_steps": 30,
+  "acceptance_configuration": "matched_speed_28q_d32_x0.50",
+  "note": "The same three configurations are timed once on one device and once on the sharded world the release payload records, so the ratio divides one workload by itself. The acceptance configuration is the largest frozen configuration and is declared here before any release-eligible measurement. Each configuration sets its own optimizer steps; the timed unit is one optimizer step train_distributed_statevector call.",
+  "configurations": [
+    {
+      "name": "matched_speed_24q_d8_x0.10",
+      "n_wires": 24,
+      "depth": 8,
+      "cross_shard_gate_fraction": 0.1,
+      "steps": 4
+    },
+    {
+      "name": "matched_speed_26q_d16_x0.25",
+      "n_wires": 26,
+      "depth": 16,
+      "cross_shard_gate_fraction": 0.25,
+      "steps": 4
+    },
+    {
+      "name": "matched_speed_28q_d32_x0.50",
+      "n_wires": 28,
+      "depth": 32,
+      "cross_shard_gate_fraction": 0.5,
+      "steps": 4
+    }
+  ]
+}

@@ -29,12 +29,12 @@ SCHEMA = "flagquantum.statevector.local_performance.v1"
 
 
 def build_workload(
-    *, n_wires: int, batch_size: int, layers: int, device: str
+    *, n_qubits: int, batch_size: int, layers: int, device: str
 ) -> fq.Circuit:
     generator = torch.Generator(device=device).manual_seed(4417)
     initial = torch.randn(
         batch_size,
-        2**n_wires,
+        2**n_qubits,
         dtype=torch.complex64,
         device=device,
         generator=generator,
@@ -43,23 +43,23 @@ def build_workload(
     values = torch.linspace(
         -0.37,
         0.41,
-        steps=layers * n_wires * 3,
+        steps=layers * n_qubits * 3,
         dtype=torch.float32,
         device=device,
-    ).reshape(layers, n_wires, 3)
-    circuit = fq.Circuit(n_wires, bsz=batch_size, device=device, inputs=initial)
+    ).reshape(layers, n_qubits, 3)
+    circuit = fq.Circuit(n_qubits, bsz=batch_size, device=device, inputs=initial)
     for layer in range(layers):
-        for wire in range(n_wires):
-            circuit.rx(wire, values[layer, wire, 0])
-            circuit.ry(wire, values[layer, wire, 1])
-            circuit.rz(wire, values[layer, wire, 2])
-        circuit.x(layer % n_wires)
-        circuit.y((layer + 1) % n_wires)
-        for wire in range(n_wires - 1):
-            circuit.cx(wire, wire + 1)
-        if n_wires > 1:
-            circuit.swap(0, n_wires - 1)
-            circuit.rzz(0, n_wires - 1, values[layer, 0, 0] * 0.25)
+        for qubit in range(n_qubits):
+            circuit.rx(qubit, values[layer, qubit, 0])
+            circuit.ry(qubit, values[layer, qubit, 1])
+            circuit.rz(qubit, values[layer, qubit, 2])
+        circuit.x(layer % n_qubits)
+        circuit.y((layer + 1) % n_qubits)
+        for qubit in range(n_qubits - 1):
+            circuit.cx(qubit, qubit + 1)
+        if n_qubits > 1:
+            circuit.swap(0, n_qubits - 1)
+            circuit.rzz(0, n_qubits - 1, values[layer, 0, 0] * 0.25)
     return circuit
 
 
@@ -72,7 +72,7 @@ def sequential_reference(circuit: fq.Circuit) -> torch.Tensor:
             device=state.device,
             dtype=state.dtype,
         )
-        state = _apply_matrix(state, matrix, instruction.wires, circuit.n_wires)
+        state = _apply_matrix(state, matrix, instruction.wires, circuit.n_qubits)
     return state
 
 
@@ -114,7 +114,7 @@ def _timing(samples: tuple[float, ...]) -> dict[str, Any]:
 
 def run_benchmark(
     *,
-    n_wires: int,
+    n_qubits: int,
     batch_size: int,
     layers: int,
     device: str,
@@ -134,12 +134,12 @@ def run_benchmark(
         ValueError: if the shape parameters could not describe a circuit, or
             there are too few iterations to report a timing.
     """
-    if n_wires < 2 or batch_size < 1 or layers < 1:
-        raise ValueError("n_wires >= 2, batch_size >= 1 and layers >= 1 required")
+    if n_qubits < 2 or batch_size < 1 or layers < 1:
+        raise ValueError("n_qubits >= 2, batch_size >= 1 and layers >= 1 required")
     if warmup < 0 or iterations < 2:
         raise ValueError("warmup must be non-negative and iterations must be >= 2")
     circuit = build_workload(
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         batch_size=batch_size,
         layers=layers,
         device=device,
@@ -196,7 +196,7 @@ def run_benchmark(
             "seed": 4417,
         },
         "workload": {
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "batch_size": batch_size,
             "layers": layers,
             "gate_count": len(circuit),
@@ -256,7 +256,7 @@ def main() -> int:
     parser.add_argument("--json-output", type=Path)
     args = parser.parse_args()
     payload = run_benchmark(
-        n_wires=args.n_wires,
+        n_qubits=args.n_wires,
         batch_size=args.batch_size,
         layers=args.layers,
         device=args.device,

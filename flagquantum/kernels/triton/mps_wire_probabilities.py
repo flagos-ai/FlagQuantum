@@ -1,4 +1,4 @@
-"""Fused MPS single-wire probability reduction for CUDA tensors."""
+"""Fused MPS single-qubit probability reduction for CUDA tensors."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ _BLOCK_SIZE = 256
 
 
 @jit
-def _mps_wire_probabilities_kernel(
+def _mps_qubit_probabilities_kernel(
     tensor_parts: tl.tensor,
     output: tl.tensor,
     site_elements: tl.constexpr,
@@ -77,9 +77,9 @@ def _validate(tensor: torch.Tensor) -> None:
         raise ValueError("MPS tensor must have shape [batch,left,2,right]")
     batch, left_dim, _, right_dim = tensor.shape
     if min(batch, left_dim, right_dim) <= 0:
-        raise ValueError("MPS wire-probability dimensions must be positive")
+        raise ValueError("MPS qubit-probability dimensions must be positive")
     if tensor.dtype not in (torch.complex64, torch.complex128):
-        raise ValueError("MPS wire probabilities require a complex dtype")
+        raise ValueError("MPS qubit probabilities require a complex dtype")
 
 
 def _reference(tensor: torch.Tensor) -> torch.Tensor:
@@ -103,7 +103,7 @@ def _supported_shape(tensor: torch.Tensor) -> bool:
 def _launch(tensor: torch.Tensor) -> torch.Tensor:
     batch, left_dim, _, right_dim = tensor.shape
     output = torch.empty(batch, 2, dtype=torch.float32, device=tensor.device)
-    _mps_wire_probabilities_kernel[(batch,)](
+    _mps_qubit_probabilities_kernel[(batch,)](
         torch.view_as_real(tensor),
         output,
         site_elements=left_dim * right_dim,
@@ -114,7 +114,7 @@ def _launch(tensor: torch.Tensor) -> torch.Tensor:
     return output
 
 
-def fused_mps_wire_probabilities(tensor: torch.Tensor) -> torch.Tensor:
+def fused_mps_qubit_probabilities(tensor: torch.Tensor) -> torch.Tensor:
     """Return normalized probabilities for the physical index of one MPS site.
 
     The Triton path fuses complex magnitude, both bond reductions, and
@@ -131,4 +131,4 @@ def fused_mps_wire_probabilities(tensor: torch.Tensor) -> torch.Tensor:
     return _launch(tensor)
 
 
-__all__ = ["fused_mps_wire_probabilities"]
+__all__ = ["fused_mps_qubit_probabilities"]

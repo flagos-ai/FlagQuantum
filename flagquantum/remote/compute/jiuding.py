@@ -64,7 +64,7 @@ def _measurement_program(
     from ...observables import lower_outputs
 
     ir = ensure_circuit_ir(program)
-    measurements = lower_outputs(outputs, n_wires=ir.n_wires, shots=shots)
+    measurements = lower_outputs(outputs, n_qubits=ir.n_wires, shots=shots)
     assert measurements is not None
     if any(item.kind not in _SUPPORTED_RESIDENT_MEASUREMENTS for item in measurements):
         raise ValueError(

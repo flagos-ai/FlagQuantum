@@ -83,9 +83,9 @@ class _RepetitionFeedbackController:
             raise TypeError("streaming decoder must return a Correction")
         if correction.round_index != len(syndrome_history) - 1:
             raise ValueError("streaming correction must belong to the current round")
-        if correction.wire is None:
+        if correction.qubit is None:
             return DynamicFeedbackAction()
-        return DynamicFeedbackAction(mode=self.action_mode, wire=correction.wire)
+        return DynamicFeedbackAction(mode=self.action_mode, wire=correction.qubit)
 
 
 def _feedback_plan(
@@ -120,7 +120,7 @@ def _memory_source(schedule: ErrorSchedule, *, compiled_feedback: bool) -> str:
         lines.extend(
             (
                 f"        if round_index == {event.round_index}:",
-                f"            qp.X(wires={event.wire})",
+                f"            qp.X(wires={event.qubit})",
             )
         )
     lines.extend(
@@ -173,7 +173,7 @@ def _syndrome_rounds(
 
 def _lookup_correction(record: SyndromeRound) -> Correction:
     wire = _repetition_wire(record.bits)
-    return Correction(round_index=record.round_index, wire=wire)
+    return Correction(round_index=record.round_index, qubit=wire)
 
 
 def run_repetition_memory_experiment(
@@ -273,13 +273,13 @@ def run_repetition_memory_experiment(
             executed_feedback = tuple(
                 Correction(
                     round_index=decision.observation.decision_index,
-                    wire=decision.action.wire,
+                    qubit=decision.action.wire,
                 )
                 for decision in trace.decisions
             )
         else:
             executed_feedback = tuple(
-                Correction(round_index=record.round_index, wire=None)
+                Correction(round_index=record.round_index, qubit=None)
                 for record in syndrome_rounds
             )
         decode_result = selected_decoder.decode(syndrome_rounds)

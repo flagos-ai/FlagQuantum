@@ -11,7 +11,7 @@ determines rather than one an eigendecomposition has to measure.
 
 **The construction.** With ``H = sum_j c_j P_j`` over ``m`` terms, write
 ``alpha = sum_j |c_j|``. The encoding uses an *index* register of
-``k = max(1, ceil(log2 m))`` wires to name a term, and with ``Q = sum_j |j><j| (x) P_j``
+``k = max(1, ceil(log2 m))`` qubits to name a term, and with ``Q = sum_j |j><j| (x) P_j``
 the selection operator and ``Sigma`` the diagonal that carries the sign of each
 coefficient, the unitary is
 
@@ -27,8 +27,8 @@ in ``[-1, 1]``, which is the condition the definition needs.
 
 That factor is deliberately **not** the Frobenius norm
 :func:`~flagquantum.algorithms.primitives.block_encoding.subnormalisation` would pick, and
-the two are not even ordered: the Frobenius norm of a Pauli product on ``n`` wires is
-``2 ** (n / 2)``, so a one-wire sum can have a Frobenius norm above the sum of its
+the two are not even ordered: the Frobenius norm of a Pauli product on ``n`` qubits is
+``2 ** (n / 2)``, so a one-qubit sum can have a Frobenius norm above the sum of its
 coefficient magnitudes. The spectral norm is the one the definition needs and it is the one
 this factor dominates, and no matrix is formed to measure either.
 
@@ -43,15 +43,17 @@ So the preparation is over magnitudes only -- one ``arbitrary_state`` on the ind
 exactly the index states whose coefficient is negative.
 
 **Two registers, and the reflection is on the first of them.** The flag register is
-``num_ancilla = k + max(k - 2, 0)`` consecutive wires: the ``k`` index wires, followed by
+``num_ancilla = k + max(k - 2, 0)`` consecutive qubits: the ``k`` index qubits, followed
+by
 the ``max(k - 2, 0)`` ladder ancillas that
 :func:`~flagquantum.algorithms.primitives.oracle.append_multi_controlled_x` needs to build
 a multi-controlled X with ``k`` controls. Every one of those ladder gates is uncomputed
-before the gate returns, so the ladder wires enter and leave ``|0>`` and carry no
+before the gate returns, so the ladder qubits enter and leave ``|0>`` and carry no
 amplitude: the flag is the index register alone, and the walk step's reflection is
-``2|0><0| - I`` on those ``k`` wires. The same layout is what a consumer written against
+``2|0><0| - I`` on those ``k`` qubits. The same layout is what a consumer written
+against
 the protocol already builds, because ``ancilla`` names the *first* of the flag register's
-wires and the register runs upward from it, which is the reading
+qubits and the register runs upward from it, which is the reading
 :class:`~flagquantum.algorithms.primitives.block_encoding.BlockEncoding` documents.
 
 **The walk step.** The phase flip composed with the encoding, ``W = R U`` for ``R`` the
@@ -69,7 +71,7 @@ An equality of whole spectra would be false for every ``m`` that is not a power 
 adjoint, so no gate has to be daggered anywhere. ``Sigma`` is a product of multi-controlled
 phase flips on the index register, which commute, so it is its own adjoint as a product and
 not only term by term. ``Q`` is not: each term's own factor is a Pauli product on the
-operator's wires controlled by one index state and is therefore Hermitian, but the terms
+operator's qubits controlled by one index state and is therefore Hermitian, but the terms
 share the ladder ancillas the controlled gates are built from, so the product of them is not
 its own reverse. Measured at ``k = 3`` the two orders differ by ``2.0`` in their largest
 entry, and they agree only to ``4.7e-17`` on the ladder-zero subspace, which is where the
@@ -93,11 +95,11 @@ Hamiltonian, which scales the encoded block by the same factor. And nothing here
 exported through the Stable Core, so no public API change follows from this module.
 
 **The register parameter is spelled ``qubits``, and the flag register names its first
-wire.** This package is migrating every public ``wire``-named parameter to its qubit-named
-spelling, and ``tools/check_qubit_vocabulary.py`` fails closed when a new public parameter
-grows the ledger. Nothing in this module adds to it: the register is ``qubits``, the flag
-register is named by its first wire, and ``contracts/qubit-vocabulary-contract.toml``
-owns the ledger.
+qubit.** This package is migrating every public parameter named after the retired
+vocabulary to its qubit-named spelling, and ``tools/check_qubit_vocabulary.py`` fails
+closed when a new public parameter grows the ledger. Nothing in this module adds to it:
+the register is ``qubits``, the flag register is named by its first qubit, and
+``contracts/qubit-vocabulary-contract.toml`` owns the ledger.
 
 This unit carries no performance, capacity, or hardware claim of its own, and it does not
 select a runtime.
@@ -139,17 +141,18 @@ def _zero_positions(index: int, width: int) -> tuple[int, ...]:
     """Return the bit positions of ``index`` that hold a zero, most significant first.
 
     The index register holds the term number in binary with the most significant bit on
-    the lowest-addressed wire, which is the convention :class:`~flagquantum.circuit.Circuit`
-    uses for a basis state. A bit position is returned when the corresponding wire is
-    ``|0>``, so that flipping exactly those wires moves ``|index>`` onto the all-ones
+    the lowest-addressed qubit, which is the convention
+    :class:`~flagquantum.circuit.Circuit` uses for a basis state. A bit position is
+    returned when the corresponding qubit is ``|0>``, so that flipping exactly those
+    qubits moves ``|index>`` onto the all-ones
     state a multi-controlled gate fires on.
 
     Args:
         index: The term number, below ``2 ** width``.
-        width: The number of index wires.
+        width: The number of index qubits.
 
     Returns:
-        The positions, in ascending wire order.
+        The positions, in ascending qubit order.
     """
 
     return tuple(
@@ -159,22 +162,22 @@ def _zero_positions(index: int, width: int) -> tuple[int, ...]:
     )
 
 
-def _append_flips(circuit: Circuit, wires: Sequence[int]) -> None:
-    """Append an ``x`` to each wire, in place.
+def _append_flips(circuit: Circuit, qubits: Sequence[int]) -> None:
+    """Append an ``x`` to each qubit, in place.
 
     Every use of this helper is its own inverse, so the same call both moves a register
     onto the state a controlled gate fires on and moves it back, and there is one spelling
     of the pair rather than two that could drift apart.
     """
 
-    for wire in wires:
-        circuit.gate("x", wire)
+    for qubit in qubits:
+        circuit.gate("x", qubit)
 
 
 def _append_multi_controlled_z(
     circuit: Circuit, controls: Sequence[int], target: int, ancillas: Sequence[int]
 ) -> None:
-    """Append a ``z`` on ``target`` exactly when every wire in ``controls`` is set.
+    """Append a ``z`` on ``target`` exactly when every qubit in ``controls`` is set.
 
     ``H X H = Z``, so a phase flip on the target is the multi-controlled X it already
     carries, conjugated by ``h`` on the target alone. With no controls the conjugation is
@@ -260,8 +263,8 @@ def _require_terms(
 
     The encoding is built from ``H = sum_j c_j P_j``, so this is where every property the
     construction depends on is established once: there is at least one term, every
-    coefficient is a finite real number, and every term names Pauli axes on wires that the
-    encoding knows how to apply. The table is the reading the value object caches; the
+    coefficient is a finite real number, and every term names Pauli axes on qubits that
+    the encoding knows how to apply. The table is the reading the value object caches; the
     Hamiltonian stays the one place the sum is written down.
     """
 
@@ -281,22 +284,22 @@ def _require_terms(
                 "coefficient and the Pauli product it weights"
             )
         operators = []
-        for wire, axis in ops:
+        for qubit, axis in ops:
             if axis == "i":
                 continue
             if axis not in ("x", "y", "z"):
                 raise ValueError(
-                    f"term {index} names Pauli axis {axis!r} on wire {wire}; this "
+                    f"term {index} names Pauli axis {axis!r} on wire {qubit}; this "
                     "encoding applies X, Y and Z, and an axis outside them names an "
                     "operator the circuit layer does not carry"
                 )
-            if isinstance(wire, bool) or not isinstance(wire, int) or wire < 0:
+            if isinstance(qubit, bool) or not isinstance(qubit, int) or qubit < 0:
                 raise ValueError(
-                    f"term {index} names wire {wire!r}, which is not a wire index; the "
+                    f"term {index} names wire {qubit!r}, which is not a wire index; the "
                     "encoding places each Pauli product on the register the caller gives "
                     "it"
                 )
-            operators.append((wire, axis))
+            operators.append((qubit, axis))
         table.append((_real_weight(term.coefficient, index=index), tuple(operators)))
     if not table:
         raise ValueError(
@@ -338,12 +341,13 @@ class LinearCombinationEncoding:
     # ``sum_j |c_j|``, the subnormalisation. It is at least the spectral norm of ``H``, so
     # every eigenvalue of the encoded matrix lies in ``[-1, 1]``.
     alpha: float = field(init=False)
-    # The number of wires the index register needs to name one of ``m`` terms.
+    # The number of qubits the index register needs to name one of ``m`` terms.
     index_width: int = field(init=False)
-    # The number of wires the encoded operator acts on, read off the Pauli words rather
+    # The number of qubits the encoded operator acts on, read off the Pauli words rather
     # than from a declared width, so the two cannot disagree.
     num_system: int = field(init=False)
-    # The preparation and its inverse, built once on wires ``0..k-1`` and composed onto the
+    # The preparation and its inverse, built once on qubits ``0..k-1`` and composed onto
+    # the
     # caller's index register at append time. Building them once is what keeps the value
     # object independent of where in a circuit the encoding is placed.
     _prepare: Circuit = field(init=False, repr=False, compare=False)
@@ -361,13 +365,13 @@ class LinearCombinationEncoding:
             )
         index_width = max(1, (len(table) - 1).bit_length())
         num_system = (
-            max(max((wire for wire, _ in ops), default=-1) for _, ops in table) + 1
+            max(max((qubit for qubit, _ in ops), default=-1) for _, ops in table) + 1
         )
         amplitudes = [math.sqrt(magnitude / alpha) for magnitude in magnitudes]
         amplitudes += [0.0] * ((1 << index_width) - len(table))
         prepare = arbitrary_state(
             torch.tensor(amplitudes, dtype=torch.complex128),
-            wires=list(range(index_width)),
+            qubits=list(range(index_width)),
         )
         object.__setattr__(self, "_terms", table)
         object.__setattr__(self, "alpha", alpha)
@@ -378,9 +382,10 @@ class LinearCombinationEncoding:
 
     @property
     def num_ancilla(self) -> int:
-        """The number of wires in the flag register: the index wires and the ladder's.
+        """The number of qubits in the flag register: the index qubits and the ladder's.
 
-        The flag register is ``num_ancilla`` consecutive wires starting at the ``ancilla``
+        The flag register is ``num_ancilla`` consecutive qubits starting at the
+        ``ancilla``
         a caller names, and the encoded block is the one on which every one of them is
         ``|0>``. The last ``max(index_width - 2, 0)`` of them are the ladder ancillas the
         multi-controlled X is built from; they are uncomputed before every gate returns
@@ -393,7 +398,7 @@ class LinearCombinationEncoding:
     def terms(self) -> tuple[tuple[float, tuple[tuple[int, str], ...]], ...]:
         """The encoded sum's ``(coefficient, ops)`` pairs, in the order they were given.
 
-        Each pair is a finite real coefficient and a tuple of ``(wire, axis)`` operators
+        Each pair is a finite real coefficient and a tuple of ``(qubit, axis)`` operators
         with the identity dropped, which is the reading
         :class:`~flagquantum.algorithms.core.HamiltonianTerm` normalises to. It is the
         table the circuit is emitted from.
@@ -409,14 +414,14 @@ class LinearCombinationEncoding:
         Args:
             circuit: The circuit to append to, which must be wide enough to hold the flag
                 register and the encoded operator's own register.
-            ancilla: The first wire of the flag register, which runs upward for
-                :attr:`num_ancilla` wires.
-            qubits: The :attr:`num_system` wires the encoded operator acts on, disjoint
+            ancilla: The first qubit of the flag register, which runs upward for
+                :attr:`num_ancilla` qubits.
+            qubits: The :attr:`num_system` qubits the encoded operator acts on, disjoint
                 from the flag register.
 
         Raises:
-            ValueError: If ``ancilla`` is not a wire index; if the register is not
-                :attr:`num_system` wires; if a wire appears twice; if the flag register
+            ValueError: If ``ancilla`` is not a qubit index; if the register is not
+                :attr:`num_system` qubits; if a qubit appears twice; if the flag register
                 overlaps the register; or if the circuit is too narrow to hold both.
         """
 
@@ -436,8 +441,8 @@ class LinearCombinationEncoding:
 
         Args:
             circuit: The circuit to append to.
-            ancilla: The first wire of the flag register.
-            qubits: The wires the encoded operator acts on.
+            ancilla: The first qubit of the flag register.
+            qubits: The qubits the encoded operator acts on.
 
         Raises:
             ValueError: As :meth:`append_apply`.
@@ -455,13 +460,14 @@ class LinearCombinationEncoding:
         ``prepare`` is the only piece of ``U`` that is not self-adjoint, so the inverse of
         ``R U`` is the reflection followed by the same pieces with the select's terms in
         reverse rather than a second sequence of daggered gates. Appending this after
-        :meth:`append_walk_step` on the same wires returns the circuit to where it was, which
+        :meth:`append_walk_step` on the same qubits returns the circuit to where it was,
+        which
         the unit tests assert entrywise against the dense unitary as well.
 
         Args:
             circuit: The circuit to append to.
-            ancilla: The first wire of the flag register.
-            qubits: The wires the encoded operator acts on.
+            ancilla: The first qubit of the flag register.
+            qubits: The qubits the encoded operator acts on.
 
         Raises:
             ValueError: As :meth:`append_apply`.
@@ -479,10 +485,10 @@ def _require_registers(
     *,
     circuit: Circuit,
 ) -> tuple[list[int], list[int]]:
-    """Check the two registers, and return the index and ladder wires, or refuse.
+    """Check the two registers, and return the index and ladder qubits, or refuse.
 
-    Every condition is checked before a single gate is emitted, so a caller whose wires are
-    wrong keeps an empty circuit rather than half an encoding. The flag register is
+    Every condition is checked before a single gate is emitted, so a caller whose qubits
+    are wrong keeps an empty circuit rather than half an encoding. The flag register is
     derived here once, which is why the append methods share this instead of each
     computing ``range`` and hoping the three agree.
     """
@@ -493,29 +499,31 @@ def _require_registers(
             f"register is {encoding.num_ancilla} consecutive wires and this argument "
             "names where it starts"
         )
-    wires = tuple(qubits)
-    width = len(wires)
+    register = tuple(qubits)
+    width = len(register)
     if width != encoding.num_system:
         raise ValueError(
             f"the register must be {encoding.num_system} wire(s) for this encoding, "
             f"got {width}"
         )
-    if len(set(wires)) != width:
+    if len(set(register)) != width:
         raise ValueError(
-            f"the register must be distinct, got {list(wires)}; an operator acts on each "
+            f"the register must be distinct, got {list(register)}; an operator acts on "
+            "each "
             "wire once"
         )
     flag = list(range(ancilla, ancilla + encoding.num_ancilla))
-    overlap = sorted(set(flag) & set(wires))
+    overlap = sorted(set(flag) & set(register))
     if overlap:
         raise ValueError(
-            f"the flag register {flag} overlaps the operator's own wires {list(wires)} at "
+            f"the flag register {flag} overlaps the operator's own wires "
+            f"{list(register)} at "
             f"{overlap}; the flag is not part of the register the encoded operator acts on"
         )
-    highest = max(flag[-1], *wires)
-    if highest >= circuit.n_wires:
+    highest = max(flag[-1], *register)
+    if highest >= circuit.n_qubits:
         raise ValueError(
-            f"the circuit has {circuit.n_wires} wire(s) and this encoding reaches wire "
+            f"the circuit has {circuit.n_qubits} wire(s) and this encoding reaches wire "
             f"{highest}; build the circuit on at least {highest + 1} wires"
         )
     return flag[: encoding.index_width], flag[encoding.index_width :]
@@ -606,8 +614,8 @@ def _append_select(
         ops = encoding.terms[position][1]
         flips = [index[bit] for bit in _zero_positions(position, encoding.index_width)]
         _append_flips(circuit, flips)
-        for wire, axis in ops:
-            target = qubits[wire]
+        for qubit, axis in ops:
+            target = qubits[qubit]
             change = _BASIS_CHANGE.get(axis)
             if change is not None:
                 circuit.gate(change[0], target)
@@ -627,9 +635,9 @@ def _append_reflection(
     ``X C_kZ X`` is ``I - 2|0><0|`` -- the negative of the reflection the walk is defined
     with -- and the two differ by a global phase of ``-1``, which is exactly what a walk
     step's cosine spectrum is sensitive to, so the phase is emitted rather than dropped.
-    Four gates on one index wire compose to ``-I``, since ``X Z X Z = -(Z Z) = -I``. One
-    index wire needs none of that: the reflection on a single wire is ``Z`` itself, which
-    is the gate the spectral encoding's single flag wire carries.
+    Four gates on one index qubit compose to ``-I``, since ``X Z X Z = -(Z Z) = -I``. One
+    index qubit needs none of that: the reflection on a single qubit is ``Z`` itself,
+    which is the gate the spectral encoding's single flag qubit carries.
     """
 
     if len(index) == 1:

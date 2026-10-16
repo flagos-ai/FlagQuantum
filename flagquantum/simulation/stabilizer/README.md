@@ -1,20 +1,20 @@
 # Stabilizer sampling and Pauli readout
 
-This package owns Clifford stabilizer work: circuits whose gates all normalize
-the Pauli group have a tableau representation whose storage grows quadratically
-with the wire count, so the wire counts this package reaches are the ones no
-amplitude store can hold.
+This package owns Clifford stabilizer sampling: circuits whose gates all
+normalize the Pauli group have a tableau representation whose storage grows
+quadratically with the qubit count, so the qubit counts this package reaches are
+the ones no amplitude store can hold.
 
 - Start in `engine.py`. It owns the five things this package does: translating
   validated Circuit IR into the engine's circuit form, sampling measurement
-  outcomes for a requested wire list, expanding a Pauli string through the
+  outcomes for a requested qubit list, expanding a Pauli string through the
   circuit and reading it against the zero state, sampling measurement outcomes
   from a circuit that already carries noise channels at explicit positions, and
   reporting what that second sampling route would make of a program without
   executing it.
-- Call `sample_stabilizer(program, shots=..., wires=..., seed=...)`. It accepts
+- Call `sample_stabilizer(program, shots=..., qubits=..., seed=...)`. It accepts
   a `Circuit` or a validated `CircuitIR` and returns an `int64` tensor of shape
-  `(shots, len(wires))`.
+  `(shots, len(qubits))`.
 - Call `pauli_readout(program, x=..., y=..., z=...)` to read a measured Pauli
   instead of drawing outcomes. It conjugates the string through the whole circuit
   and reads the result against the all-zero state, which is exact and is one of
@@ -27,11 +27,11 @@ amplitude store can hold.
   outcomes) and the expectation kinds (exact values). Runtime reads both sets
   from here rather than keeping its own list, so a request the representation
   cannot answer is refused by the same answer the executor reads.
-- Call `sample_noisy_measurements(program, shots=..., terminal_wires=..., seed=...)`
+- Call `sample_noisy_measurements(program, shots=..., terminal_qubits=..., seed=...)`
   when the caller has placed noise itself. It executes a channel at the position
   it finds it, which means the *caller* owns the Pauli-frame attribution and this
   entry point owns only the execution; the recorded measurement columns come back
-  in program order and the terminal wires are appended in the order the caller
+  in program order and the terminal qubits are appended in the order the caller
   names them. The routed `mode='stabilizer'` reaches this entry point for a
   program that carries a channel and `sample_stabilizer` for one that does not,
   and it asks `survey_stabilizer_program` which of the two applies rather than
@@ -56,9 +56,9 @@ amplitude store can hold.
   is the one exception and it is a class rather than a list: `sample_stabilizer`
   still refuses every channel, while `sample_noisy_measurements` accepts a
   channel whose Kraus operators are a mixture of Pauli operators up to a global
-  phase, on as many wires as the channel acts on, and refuses every other channel,
+  phase, on as many qubits as the channel acts on, and refuses every other channel,
   every lowered measurement node, and every non-Clifford opcode by name.
-- The engine names no channel instruction past two wires, so a frame wider than
+- The engine names no channel instruction past two qubits, so a frame wider than
   that is spelled as a chain of correlated-error instructions instead - one term
   per non-identity frame, with the identity being the chain falling through. A
   chain term is conditional on no earlier term having fired, which is exactly the
@@ -81,7 +81,7 @@ amplitude store can hold.
 Device selection, backend dispatch, shot policy, seed streams, job lifecycle,
 result assembly, and public execution evidence. Runtime owns those; this package
 is a numerical primitive. It also must not import Runtime, and it does not read
-lowered `MeasurementNode`s, because reconciling a caller's requested wires with
+lowered `MeasurementNode`s, because reconciling a caller's requested qubits with
 an already-lowered output request is a Runtime decision.
 
 ## Why the engine is an external distribution

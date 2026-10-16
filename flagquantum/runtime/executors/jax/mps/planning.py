@@ -8,7 +8,7 @@ from .....core.ir import CircuitIR
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..common import communication_tier as _communication_tier
 from ..common import node_count as _node_count
-from ..common import rank_for_wire as _rank_for_wire
+from ..common import rank_for_qubit as _rank_for_qubit
 from ..common import split_contiguous as _split_contiguous
 from ..planning_core import JAXDistributedQuantumPlan, _as_ir
 from ..runtime_environment import (
@@ -148,7 +148,7 @@ def plan_jax_sharded_mps_parameter_flow(
                 JAXShardedMPSParameterGateAssignment(
                     instruction_index=index,
                     name=str(instruction.name),
-                    wires=wires,
+                    qubits=wires,
                     parameter_names=parameter_names,
                     owner_rank=owner,
                     touched_ranks=touched_ranks,
@@ -171,8 +171,8 @@ def plan_jax_sharded_mps_parameter_flow(
                 "instruction_index": index,
                 "name": str(instruction.name),
                 "parameter_names": parameter_names,
-                "left_wire": int(boundary.left_wire),
-                "right_wire": int(boundary.right_wire),
+                "left_wire": int(boundary.left_qubit),
+                "right_wire": int(boundary.right_qubit),
                 "left_rank": int(boundary.left_rank),
                 "right_rank": int(boundary.right_rank),
                 "owner_rank": owner,
@@ -184,7 +184,7 @@ def plan_jax_sharded_mps_parameter_flow(
                 JAXShardedMPSParameterGateAssignment(
                     instruction_index=index,
                     name=str(instruction.name),
-                    wires=wires,
+                    qubits=wires,
                     parameter_names=parameter_names,
                     owner_rank=owner,
                     touched_ranks=touched_ranks,
@@ -209,7 +209,7 @@ def plan_jax_sharded_mps_parameter_flow(
             JAXShardedMPSParameterGateAssignment(
                 instruction_index=index,
                 name=str(instruction.name),
-                wires=wires,
+                qubits=wires,
                 parameter_names=parameter_names,
                 owner_rank=None,
                 touched_ranks=touched_ranks,
@@ -225,11 +225,11 @@ def plan_jax_sharded_mps_parameter_flow(
         world_size=int(resolved_world_size),
         local_world_size=int(resolved_local_world_size),
         node_count=_node_count(resolved_world_size, resolved_local_world_size),
-        n_wires=int(ir.n_wires),
+        n_qubits=int(ir.n_wires),
         site_shard_ownership=tuple(
             {
                 "rank": int(shard.rank),
-                "wires": tuple(int(wire) for wire in shard.wires),
+                "wires": tuple(int(wire) for wire in shard.qubits),
                 "ownership_semantics": "mps_site_range",
             }
             for shard in shard_plans
@@ -388,7 +388,7 @@ def plan_jax_sharded_mps_training(
         world_size=int(resolved_world_size),
         local_world_size=int(resolved_local_world_size),
         node_count=_node_count(resolved_world_size, resolved_local_world_size),
-        n_wires=int(ir.n_wires),
+        n_qubits=int(ir.n_wires),
         batch_size=int(bsz),
         max_bond=max_bond,
         cutoff=float(cutoff),
@@ -435,8 +435,8 @@ def _mps_plan(
     inter_bytes = 0
     tensor_bytes = int(bsz) * 2 * bond * bond * int(complex_bytes)
     for left_wire in range(max(0, ir.n_wires - 1)):
-        left_rank = _rank_for_wire(left_wire, wire_shards)
-        right_rank = _rank_for_wire(left_wire + 1, wire_shards)
+        left_rank = _rank_for_qubit(left_wire, wire_shards)
+        right_rank = _rank_for_qubit(left_wire + 1, wire_shards)
         if left_rank == right_rank:
             continue
         transfer = tensor_bytes * 4
@@ -468,7 +468,7 @@ def _mps_plan(
     )
     return JAXDistributedQuantumPlan(
         mode="mps",
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         world_size=world_size,
         local_world_size=local_world_size,
         node_count=_node_count(world_size, local_world_size),

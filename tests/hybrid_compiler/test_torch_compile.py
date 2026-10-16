@@ -89,7 +89,7 @@ def test_functional_op_matches_existing_adjoint_and_preserves_source_views() -> 
         ),
     )
     expected = execute_torch_distributed_statevector_reverse(
-        expected_circuit, observable_wires=(0, 3), device="cpu"
+        expected_circuit, observable_qubits=(0, 3), device="cpu"
     ).value
     expected_gradients = torch.autograd.grad(expected, expected_parameters)
 

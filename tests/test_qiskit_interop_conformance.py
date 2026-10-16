@@ -60,8 +60,8 @@ def test_every_contract_operation_converts_in_both_directions() -> None:
     values = (0.173, -0.291, 0.419)
     for operation in _contract()["operations"]:
         schema = fqo.gate_info(operation["flagquantum"])
-        n_wires = max(3, schema.n_wires)
-        wires = tuple(range(schema.n_wires))
+        n_wires = max(3, schema.n_qubits)
+        wires = tuple(range(schema.n_qubits))
         parameters = values[: schema.n_parameters]
 
         qiskit_circuit = QuantumCircuit(n_wires)

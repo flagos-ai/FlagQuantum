@@ -156,7 +156,7 @@ Record in `docs/development/IR_PHASE_0_BASELINE.md`:
 
 - Stable root exports and protected candidate contracts.
 - `IR_VERSION` and CircuitIR serialization/deserialization behavior.
-- Content hashes and failure behavior for unknown fields/opcodes and invalid wires.
+- Content hashes and failure behavior for unknown fields/opcodes and invalid qubits.
 - Current `fq.plan`, `fq.run`, `compile_for_backend` signatures and key semantics.
 - Protected contract files and baseline hashes.
 
@@ -185,7 +185,7 @@ Fixed deterministic static circuits cover at least:
 - Every currently supported canonical opcode.
 - Parameterized one-/two-qubit gates and ParameterExpression.
 - Custom matrices.
-- Observables, terminal measurements, shots, wire order.
+- Observables, terminal measurements, shots, qubit order.
 - Batch shapes and complex64/complex128.
 - Empty metadata, valid provenance metadata, rejection cases.
 - Topology-sensitive circuits.
@@ -206,7 +206,7 @@ Define a common comparison protocol:
 | Expectation | Existing backend/dtype tolerances |
 | Samples/counts | Fixed-seed determinism contract or preapproved statistical test |
 | Gradient | Both forward values and parameter gradients; forward-only parity is insufficient |
-| Wire/result order | Exact equality |
+| Qubit/result order | Exact equality |
 | Fallback/backend | Exact requested/selected/actual values and blockers |
 
 Do not invent one global tolerance for every backend.
@@ -290,7 +290,7 @@ Initially reject:
 - Use before definition.
 - Repeated consumption of linear qubit values.
 - Use of old values after gates.
-- Out-of-range wires, arity/parameter mismatch.
+- Out-of-range qubits, arity/parameter mismatch.
 - Invalid measurement/result types.
 - Invalid block terminators.
 - Use after release.
@@ -304,9 +304,9 @@ Failures produce structured code, message, location, and notes, not printed text
 The importer must:
 
 - Accept CircuitIR without requiring user-built internal objects.
-- Preserve opcodes, wire order, parameter identity, dtype, batch shape.
+- Preserve opcodes, qubit order, parameter identity, dtype, batch shape.
 - Separate semantics from requests under IR-001.
-- Build one linear value chain per logical wire.
+- Build one linear value chain per logical qubit.
 - Explicitly check custom matrices, metadata, and dynamic markers.
 - Return diagnostics and source mappings.
 - Leave inputs unchanged.
@@ -358,7 +358,7 @@ Require:
 
 - Full Phase 0 corpus import/verification.
 - Exact round trips.
-- State, expectation, measurement, wire-order differentials.
+- State, expectation, measurement, qubit-order differentials.
 - Parameter/ParameterExpression identity.
 - Complex64/complex128 coverage.
 - PyTorch forward/gradient parity.

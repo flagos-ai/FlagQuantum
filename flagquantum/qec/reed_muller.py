@@ -26,7 +26,7 @@ is the same code with the two families labelled the other way round.
 
 **The search bound is the family's cost, and it bounds this route to two
 instances.** A record's distance is computed rather than declared, so the least
-weight of each family is found by trying wire subsets in increasing order, and
+weight of each family is found by trying qubit subsets in increasing order, and
 proving that the lighter family's least operator has weight seven means exhausting
 every subset of weight up to six. That is affordable at the two smallest sizes and
 not above them, and the module refuses above them by name rather than by waiting:

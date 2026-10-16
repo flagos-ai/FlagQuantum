@@ -1,7 +1,7 @@
 """A channel written into a circuit declares the parameter its factory needs.
 
 `fq.Circuit(1).depolarizing(0, 0.1)` used to raise
-``TypeError: depolarizing accepts 1 wire(s) and 0 parameter(s)``: the channel
+``TypeError: depolarizing accepts 1 qubit(s) and 0 parameter(s)``: the channel
 schemas declared no parameters, so the public gate method had nowhere to put the
 probability, even though `flagquantum.noise` already had the factory, the
 `KrausChannel` already carried the value under its own name, and the serialized

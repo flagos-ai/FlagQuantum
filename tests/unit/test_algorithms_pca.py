@@ -51,24 +51,24 @@ def _exact_eigenvalues(data: torch.Tensor) -> torch.Tensor:
     return torch.linalg.eigvalsh(gram / torch.trace(gram))
 
 
-def _half_step(n_counting_wires: int) -> float:
+def _half_step(n_counting_qubits: int) -> float:
     """Return half a counter step, in eigenvalue units.
 
     One counter value is ``2**-n`` of a turn and ``lambda = 1 - phi`` carries a phase
     step to an eigenvalue step of the same size, so this is the accuracy the readout
     claims. It is a property of the register width, not of any particular run.
     """
-    return 0.5 / 2**n_counting_wires
+    return 0.5 / 2**n_counting_qubits
 
 
-def _counter_of(eigenvalue: float, n_counting_wires: int) -> str:
+def _counter_of(eigenvalue: float, n_counting_qubits: int) -> str:
     """Return the counter value whose readout is ``eigenvalue``, as a bit string."""
-    value = round((1.0 - eigenvalue) * 2**n_counting_wires)
-    return format(value, f"0{n_counting_wires}b")
+    value = round((1.0 - eigenvalue) * 2**n_counting_qubits)
+    return format(value, f"0{n_counting_qubits}b")
 
 
 def test_the_mode_resolves_the_largest_eigenvalue_on_one_wire_per_register() -> None:
-    """One data wire and one purification wire: the mode is the largest eigenvalue.
+    """One data qubit and one purification qubit: the mode is the largest eigenvalue.
 
     The largest eigenvalue is 0.9962, whose phase ``1 - 0.9962`` is a small fraction
     of a turn, so it lands on the counter value 0 and reads back as ``1 - 0 = 1``.
@@ -81,17 +81,17 @@ def test_the_mode_resolves_the_largest_eigenvalue_on_one_wire_per_register() -> 
     assert float(exact[-1]) == pytest.approx(0.9962, abs=1e-4)
 
     result = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        data, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
 
-    assert result.n_counting_wires == _COUNTING_WIRES
+    assert result.n_counting_qubits == _COUNTING_WIRES
     assert abs(result.dominant_eigenvalue - float(exact[-1])) <= _half_step(
         _COUNTING_WIRES
     )
 
 
 def test_the_mode_resolves_the_largest_eigenvalue_on_two_data_wires() -> None:
-    """Two data wires and one purification wire, so the density matrix is rank deficient.
+    """Two data qubits and one purification qubit, so the density matrix is rank deficient.
 
     The two zero eigenvalues have phase ``1 - 0 = 0`` as well and would share the
     counter value 0, but they carry no weight, so the dominant eigenvalue 0.7374 is
@@ -103,7 +103,7 @@ def test_the_mode_resolves_the_largest_eigenvalue_on_two_data_wires() -> None:
     assert [round(float(value), 4) for value in exact] == [0.0, 0.0, 0.2626, 0.7374]
 
     result = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        data, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
 
     assert abs(result.dominant_eigenvalue - float(exact[-1])) <= _half_step(
@@ -118,7 +118,7 @@ def test_the_mode_can_resolve_a_smaller_eigenvalue_when_the_peak_splits() -> Non
     once made, that the readout is always within half a step of the largest
     eigenvalue. It is not, and this spectrum is one where it is not.
 
-    At six counting wires the counter grid is 1/64 of a turn. The largest eigenvalue
+    At six counting qubits the counter grid is 1/64 of a turn. The largest eigenvalue
     here is 0.5078125, whose phase ``1 - 0.5078125 = 0.4921875`` is exactly the
     midpoint between the counter values 31/64 = 0.484375 and 32/64 = 0.5. The second
     largest is 0.375, whose phase 0.625 is exactly counter value 40/64. Measured at
@@ -154,7 +154,7 @@ def test_the_mode_can_resolve_a_smaller_eigenvalue_when_the_peak_splits() -> Non
 
     for seed in range(4):
         result = principal_components(
-            data, n_counting_wires=_COUNTING_WIRES, shots=8000, seed=seed
+            data, n_counting_qubits=_COUNTING_WIRES, shots=8000, seed=seed
         )
         reader = _counter_of(0.375, _COUNTING_WIRES)
 
@@ -201,10 +201,10 @@ def test_the_readout_is_invariant_in_the_scale_of_the_data_matrix() -> None:
     largest = float(_exact_eigenvalues(scaled)[-1])
 
     reference = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        data, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
     result = principal_components(
-        scaled, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        scaled, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
 
     assert dict(result.distribution) == dict(reference.distribution)
@@ -233,7 +233,7 @@ def test_the_sample_size_is_visible_in_the_distribution() -> None:
 
     for shots in (100, 250, 20000):
         result = principal_components(
-            data, n_counting_wires=_COUNTING_WIRES, shots=shots, seed=_SEED
+            data, n_counting_qubits=_COUNTING_WIRES, shots=shots, seed=_SEED
         )
         samples = [share * shots for share in result.distribution.values()]
         assert all(abs(sample - round(sample)) < 1e-9 for sample in samples), shots
@@ -253,7 +253,7 @@ def test_the_adapter_satisfies_the_controlled_unitary_protocol() -> None:
 
     ``rho = diag(0.75, 0.25)``, so ``U = exp(-2 pi i rho)`` multiplies an eigenvector
     with eigenvalue 0.75 by ``exp(-2 pi i * 0.75) = exp(-1.5 pi i) = i``. The circuit
-    starts every wire in ``|0>``, so the data register holds the eigenvector of
+    starts every qubit in ``|0>``, so the data register holds the eigenvector of
     0.75 and ``U`` turns its amplitude into that phase. The controlled case pins the
     block order: ``diag(I, U)`` means the control being ``|0>`` leaves the register
     alone, and the control being ``|1>`` is the branch that carries the phase. The
@@ -264,7 +264,7 @@ def test_the_adapter_satisfies_the_controlled_unitary_protocol() -> None:
     adapter = _PhaseFromDensityMatrix(rho)
 
     assert isinstance(adapter, ControlledUnitary)
-    assert adapter.n_wires == 1
+    assert adapter.n_qubits == 1
 
     # ``complex(...)`` on both sides: ``pytest.approx`` only understands a tensor
     # when numpy is importable, and this repository does not declare numpy.
@@ -328,7 +328,7 @@ def test_a_split_peak_wins_the_mode_when_its_half_beats_the_competitors() -> Non
 
     for seed in range(4):
         result = principal_components(
-            data, n_counting_wires=_COUNTING_WIRES, shots=8000, seed=seed
+            data, n_counting_qubits=_COUNTING_WIRES, shots=8000, seed=seed
         )
         near = result.distribution[_counter_of(0.515625, _COUNTING_WIRES)]
         far = result.distribution[_counter_of(0.5, _COUNTING_WIRES)]
@@ -357,7 +357,7 @@ def test_the_dominant_counter_value_carries_the_largest_share() -> None:
     data = _data_matrix([0.9962, 0.0038], 2)
 
     result = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        data, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
 
     mode = max(result.distribution, key=result.distribution.__getitem__)
@@ -370,16 +370,16 @@ def test_the_dominant_counter_value_carries_the_largest_share() -> None:
 
 
 def test_the_distribution_is_the_counter_registers_marginal() -> None:
-    """The readout is over the counter register alone, so its keys carry only its wires.
+    """The readout is over the counter register alone, so its keys carry only its qubits.
 
-    Sample keys span every wire, so a distribution that kept the full keys would not
+    Sample keys span every qubit, so a distribution that kept the full keys would not
     even be indexable by a counter value; the one below is keyed by the leading
-    ``n_counting_wires`` characters and its shares sum to one.
+    ``n_counting_qubits`` characters and its shares sum to one.
     """
     data = _data_matrix([0.7374, 0.2626], 4)
 
     result = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        data, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
 
     assert result.distribution
@@ -401,7 +401,7 @@ def test_the_phase_to_eigenvalue_round_trip_is_exact_on_the_counter_grid() -> No
     data = _data_matrix([0.75, 0.25], 2)
 
     result = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        data, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
 
     assert result.dominant_eigenvalue == pytest.approx(
@@ -432,7 +432,7 @@ def test_the_counter_value_nearest_the_small_eigenvalue_carries_its_tail() -> No
     small = float(_exact_eigenvalues(data)[0])
 
     result = principal_components(
-        data, n_counting_wires=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
+        data, n_counting_qubits=_COUNTING_WIRES, shots=_SHOTS, seed=_SEED
     )
 
     nearest = min(
@@ -455,11 +455,11 @@ def test_the_resolution_is_the_counter_step_in_eigenvalue_units() -> None:
     """
     data = _data_matrix([0.9962, 0.0038], 2)
 
-    for n_counting_wires in (3, 4, 5):
+    for n_counting_qubits in (3, 4, 5):
         result = principal_components(
-            data, n_counting_wires=n_counting_wires, shots=512, seed=0
+            data, n_counting_qubits=n_counting_qubits, shots=512, seed=0
         )
-        assert result.resolution == pytest.approx(1 / 2**n_counting_wires)
+        assert result.resolution == pytest.approx(1 / 2**n_counting_qubits)
         assert result.within(result.dominant_eigenvalue - result.resolution / 2)
         assert not result.within(result.dominant_eigenvalue - result.resolution)
 
@@ -467,14 +467,14 @@ def test_the_resolution_is_the_counter_step_in_eigenvalue_units() -> None:
 def test_a_zero_data_matrix_is_refused() -> None:
     """The zero matrix is refused rather than normalised into NaN eigenvalues."""
     with pytest.raises(ValueError, match="trace"):
-        principal_components(torch.zeros(2, 2), n_counting_wires=4)
+        principal_components(torch.zeros(2, 2), n_counting_qubits=4)
 
 
 def test_a_non_finite_data_matrix_is_refused() -> None:
     """One non-finite entry makes every eigenvalue undefined, so it is refused."""
     data = torch.tensor([[1.0, 0.0], [0.0, float("nan")]])
     with pytest.raises(ValueError, match="finite"):
-        principal_components(data, n_counting_wires=4)
+        principal_components(data, n_counting_qubits=4)
 
 
 def test_the_data_matrix_is_validated() -> None:
@@ -487,45 +487,45 @@ def test_the_data_matrix_is_validated() -> None:
     would not notice.
     """
     with pytest.raises(ValueError, match="torch.Tensor"):
-        principal_components([1.0, 0.0, 0.0, 1.0], n_counting_wires=4)  # type: ignore[arg-type]
+        principal_components([1.0, 0.0, 0.0, 1.0], n_counting_qubits=4)  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="two-dimensional"):
-        principal_components(torch.ones(4), n_counting_wires=4)
+        principal_components(torch.ones(4), n_counting_qubits=4)
     with pytest.raises(ValueError, match="floating-point"):
-        principal_components(torch.eye(2, dtype=torch.int64), n_counting_wires=4)
+        principal_components(torch.eye(2, dtype=torch.int64), n_counting_qubits=4)
     with pytest.raises(ValueError, match=r"A's rows must be a power of two"):
-        principal_components(torch.eye(3), n_counting_wires=4)
+        principal_components(torch.eye(3), n_counting_qubits=4)
     with pytest.raises(ValueError, match=r"A's columns must be a power of two"):
-        principal_components(torch.zeros(4, 3), n_counting_wires=4)
+        principal_components(torch.zeros(4, 3), n_counting_qubits=4)
     # A power of two with one row or one column is still not a register: a single
-    # wire carries two amplitudes, and a one-amplitude register has no density
+    # qubit carries two amplitudes, and a one-amplitude register has no density
     # matrix with a meaningful spectrum. Without this case the ``size < 2`` half of
     # the check can be deleted and the matrix is accepted instead, returning a
     # degenerate readout rather than refusing.
     with pytest.raises(
         ValueError, match=r"A's rows must be a power of two of at least two"
     ):
-        principal_components(torch.ones(1, 2), n_counting_wires=4)
+        principal_components(torch.ones(1, 2), n_counting_qubits=4)
     with pytest.raises(
         ValueError, match=r"A's columns must be a power of two of at least two"
     ):
-        principal_components(torch.ones(2, 1), n_counting_wires=4)
+        principal_components(torch.ones(2, 1), n_counting_qubits=4)
 
 
 def test_the_run_validates_its_counting_width_and_shot_count() -> None:
-    """A register with no wires and a sample with no shots are both refused."""
+    """A register with no qubits and a sample with no shots are both refused."""
     data = _data_matrix([0.9962, 0.0038], 2)
 
-    with pytest.raises(ValueError, match="counting wire"):
-        principal_components(data, n_counting_wires=0)
+    with pytest.raises(ValueError, match="counting qubit"):
+        principal_components(data, n_counting_qubits=0)
     with pytest.raises(ValueError, match="at least one shot"):
-        principal_components(data, n_counting_wires=3, shots=0)
+        principal_components(data, n_counting_qubits=3, shots=0)
 
 
 def test_the_result_validates_its_own_fields() -> None:
     """A readout that could not come from a density matrix is refused at construction."""
     fields = {
         "distribution": {"0000": 1.0},
-        "n_counting_wires": 4,
+        "n_counting_qubits": 4,
         "resolution": 0.0625,
     }
 
@@ -538,15 +538,15 @@ def test_the_result_validates_its_own_fields() -> None:
             dominant_eigenvalue=0.5,
             dominant_probability=1.0,
             distribution={},
-            n_counting_wires=4,
+            n_counting_qubits=4,
             resolution=0.0625,
         )
-    with pytest.raises(ValueError, match="at least one wire"):
+    with pytest.raises(ValueError, match="at least one qubit"):
         PcaResult(
             dominant_eigenvalue=0.5,
             dominant_probability=1.0,
             distribution={"0": 1.0},
-            n_counting_wires=0,
+            n_counting_qubits=0,
             resolution=0.0625,
         )
     with pytest.raises(ValueError, match="step must be positive"):
@@ -554,7 +554,7 @@ def test_the_result_validates_its_own_fields() -> None:
             dominant_eigenvalue=0.5,
             dominant_probability=1.0,
             distribution={"0": 1.0},
-            n_counting_wires=1,
+            n_counting_qubits=1,
             resolution=0.0,
         )
 
@@ -563,8 +563,8 @@ def test_the_same_seed_replays_the_same_result_field_for_field() -> None:
     """The seed decides the sample, so the same seed rebuilds the same result."""
     data = _data_matrix([0.7374, 0.2626], 4)
 
-    first = principal_components(data, n_counting_wires=5, shots=2048, seed=3)
-    second = principal_components(data, n_counting_wires=5, shots=2048, seed=3)
+    first = principal_components(data, n_counting_qubits=5, shots=2048, seed=3)
+    second = principal_components(data, n_counting_qubits=5, shots=2048, seed=3)
 
     assert first == second
     assert first.distribution == second.distribution

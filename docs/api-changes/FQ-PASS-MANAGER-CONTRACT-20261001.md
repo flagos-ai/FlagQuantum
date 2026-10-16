@@ -55,6 +55,15 @@ routing (`pipeline.py:278-279`).
 
 That is a real gap. The question is which artifact closes it.
 
+The measurements in this section describe the tree at the time of writing. The
+level surface that Alternative 2 recommends has since landed, in
+[FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md](FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md):
+`optimize` and `compile` now take `optimization_level`, the fixed sequence is a
+declaration in `flagquantum/compiler/optimization_levels.py` rather than a
+hard-coded body, and the level that ran is recorded under
+`metadata["optimization"]`. The rest of this document -- in particular the
+argument against publishing a pass manager now -- is unchanged.
+
 ## Evidence
 
 ### The pass shape a Qiskit-shaped manager assumes does not match this compiler

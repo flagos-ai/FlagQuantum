@@ -104,3 +104,44 @@ def test_cx_wrapper_reverses_noncommuting_gate_sequence(
     expected_grad = torch.autograd.grad((expected.real * weights).sum(), state)[0]
     torch.testing.assert_close(actual, expected)
     torch.testing.assert_close(actual_grad, expected_grad)
+
+
+def _oversized_state(amplitudes: int) -> torch.Tensor:
+    """A zero-storage view whose ``numel`` is ``amplitudes``."""
+
+    return torch.zeros(1, dtype=torch.complex64).expand(1, amplitudes)
+
+
+def test_the_flat_local_address_contract_is_inclusive(gate_module: ModuleType) -> None:
+    limit = gate_module.FLAT_LOCAL_MAX_AMPLITUDES
+
+    gate_module._require_flat_local_address(_oversized_state(limit))
+
+
+def test_the_flat_local_address_contract_names_the_rejected_size(
+    gate_module: ModuleType,
+) -> None:
+    limit = gate_module.FLAT_LOCAL_MAX_AMPLITUDES
+    state = _oversized_state(limit + 1)
+
+    with pytest.raises(
+        ValueError, match=f"at most {limit} amplitudes, got {limit + 1}"
+    ):
+        gate_module._require_flat_local_address(state)
+
+
+def test_a_launcher_refuses_an_unaddressable_state_before_any_device_check(
+    gate_module: ModuleType,
+) -> None:
+    """The defect is an addressing overflow, so it must be refused, not attempted."""
+
+    limit = gate_module.FLAT_LOCAL_MAX_AMPLITUDES
+    state = _oversized_state(limit + 1)
+    matrix = torch.eye(2, dtype=torch.complex64)
+
+    with pytest.raises(ValueError, match="amplitudes"):
+        gate_module.apply_complex64_local_1q(state, matrix, bit_position=0)
+    with pytest.raises(ValueError, match="amplitudes"):
+        gate_module.apply_complex64_local_cx_inplace(
+            state, control_bit_position=1, target_bit_position=0
+        )

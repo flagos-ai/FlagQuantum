@@ -51,7 +51,7 @@ def _shard_by_rank(shards: Sequence[StatevectorShard]) -> dict[int, StatevectorS
 def _rank_global_indices(
     plan: DistributedStatevectorPlan, rank: int, *, device: torch.device
 ) -> torch.Tensor:
-    if plan.distribution == "qubit_address_sharded" and plan.sharded_wires:
+    if plan.distribution == "qubit_address_sharded" and plan.sharded_qubits:
         shard = _shard_by_rank(plan.shards)[int(rank)]
         local_indices = torch.arange(
             shard.local_amplitudes, dtype=torch.long, device=device
@@ -59,14 +59,14 @@ def _rank_global_indices(
         global_indices = torch.zeros_like(local_indices)
         coordinates = plan.topology.rank_coordinates[int(rank)]
         sharded_coordinates = {
-            int(wire): int(coord)
-            for coord, wire in zip(coordinates, plan.sharded_wires, strict=True)
+            int(qubit): int(coord)
+            for coord, qubit in zip(coordinates, plan.sharded_qubits, strict=True)
         }
         local_bit = 0
-        for wire in range(plan.n_wires - 1, -1, -1):
-            destination_mask = _wire_mask(plan.n_wires, wire)
-            if wire in sharded_coordinates:
-                if sharded_coordinates[wire]:
+        for qubit in range(plan.n_qubits - 1, -1, -1):
+            destination_mask = _wire_mask(plan.n_qubits, qubit)
+            if qubit in sharded_coordinates:
+                if sharded_coordinates[qubit]:
                     global_indices |= destination_mask
                 continue
             global_indices |= ((local_indices >> local_bit) & 1) * destination_mask
@@ -127,7 +127,7 @@ def initialize_statevector_shard(
 def apply_gate_to_statevector_shard(
     shard_state: StatevectorShardState,
     matrix: torch.Tensor,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
     plan: DistributedStatevectorPlan,
 ) -> StatevectorShardState:
@@ -138,12 +138,12 @@ def apply_gate_to_statevector_shard(
     by communication kernels and intentionally raise here.
     """
 
-    wires = tuple(int(wire) for wire in wires)
-    width = len(wires)
+    qubits = tuple(int(qubit) for qubit in qubits)
+    width = len(qubits)
     gate_dim = 2**width
     if matrix.shape[-2:] != (gate_dim, gate_dim):
         raise ValueError(
-            f"Gate on {width} wires requires matrix shape {(gate_dim, gate_dim)}."
+            f"Gate on {width} qubits requires matrix shape {(gate_dim, gate_dim)}."
         )
     matrix = matrix.to(
         device=shard_state.amplitudes.device, dtype=shard_state.amplitudes.dtype
@@ -158,8 +158,8 @@ def apply_gate_to_statevector_shard(
             shard_state.amplitudes,
             diagonal,
             shard_state.global_indices,
-            wires,
-            n_wires=plan.n_wires,
+            qubits,
+            n_wires=plan.n_qubits,
         )
         return StatevectorShardState(
             rank=shard_state.rank,
@@ -168,9 +168,9 @@ def apply_gate_to_statevector_shard(
             global_indices=shard_state.global_indices,
         )
     out = shard_state.amplitudes.clone()
-    masks = tuple(_wire_mask(plan.n_wires, wire) for wire in wires)
+    masks = tuple(_wire_mask(plan.n_qubits, qubit) for qubit in qubits)
     local_by_basis = tuple(
-        _basis_offset(plan.n_wires, wires, basis) for basis in range(gate_dim)
+        _basis_offset(plan.n_qubits, qubits, basis) for basis in range(gate_dim)
     )
     position_by_global = {
         int(global_index): local_index
@@ -215,7 +215,7 @@ def _reconstruct_from_shards(
 def apply_gate_to_statevector_shards(
     shards: Sequence[StatevectorShardState],
     matrix: torch.Tensor,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
     plan: DistributedStatevectorPlan,
 ) -> tuple[StatevectorShardState, ...]:
@@ -232,25 +232,25 @@ def apply_gate_to_statevector_shards(
     shards = tuple(shards)
     if not shards:
         return ()
-    wires = tuple(int(wire) for wire in wires)
-    width = len(wires)
+    qubits = tuple(int(qubit) for qubit in qubits)
+    width = len(qubits)
     gate_dim = 2**width
     if matrix.shape[-2:] != (gate_dim, gate_dim):
         raise ValueError(
-            f"Gate on {width} wires requires matrix shape {(gate_dim, gate_dim)}."
+            f"Gate on {width} qubits requires matrix shape {(gate_dim, gate_dim)}."
         )
 
     reference = shards[0].amplitudes
     matrix = matrix.to(device=reference.device, dtype=reference.dtype)
     if torch.count_nonzero(matrix - torch.diag(torch.diagonal(matrix))) == 0:
         return tuple(
-            apply_gate_to_statevector_shard(shard, matrix, wires, plan=plan)
+            apply_gate_to_statevector_shard(shard, matrix, qubits, plan=plan)
             for shard in shards
         )
 
-    masks = tuple(_wire_mask(plan.n_wires, wire) for wire in wires)
+    masks = tuple(_wire_mask(plan.n_qubits, qubit) for qubit in qubits)
     offsets = tuple(
-        _basis_offset(plan.n_wires, wires, basis) for basis in range(gate_dim)
+        _basis_offset(plan.n_qubits, qubits, basis) for basis in range(gate_dim)
     )
     positions_by_global: dict[int, tuple[int, int]] = {}
     global_indices_by_shard = []
@@ -453,8 +453,8 @@ def build_statevector_correctness_run_spec(
         args=(
             "--world-size",
             str(plan.world_size),
-            "--n-wires",
-            str(plan.n_wires),
+            "--n-qubits",
+            str(plan.n_qubits),
             "--distribution",
             plan.distribution,
             "--topology",

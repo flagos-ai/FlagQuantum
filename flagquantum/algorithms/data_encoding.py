@@ -23,7 +23,7 @@ of it is the classical-data front end: padding a non-power-of-two feature vector
 to the next power of two, normalising it, and the refusals a data encoder owes
 its caller.
 
-**Wire order.** Wire ``0`` is the most significant bit, so
+**Qubit order.** Qubit ``0`` is the most significant bit, so
 ``circuit.state().reshape(-1)[k]`` is the amplitude of the basis state whose
 bits read qubit ``0`` to qubit ``n-1`` from left to right. This is the ordering
 :mod:`~flagquantum.algorithms.primitives.state_preparation` already documents,
@@ -104,7 +104,7 @@ def amplitude_encode(
     # register per amplitude.
     n_qubits = int(data.numel()).bit_length() - 1
     ordered = _resolve_qubits(qubits, n_qubits, noun="amplitudes")
-    return arbitrary_state(data, wires=ordered)
+    return arbitrary_state(data, qubits=ordered)
 
 
 def angular_encode(

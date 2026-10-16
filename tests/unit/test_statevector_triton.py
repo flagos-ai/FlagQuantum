@@ -174,3 +174,70 @@ def test_fused_sharded_vjp_and_adjoint_matches_global_pair(rank_basis):
         next_adjoint, expected_adjoint[:, rank_basis], atol=3e-5, rtol=3e-5
     )
     torch.testing.assert_close(gradient, expected_gradient, atol=3e-3, rtol=3e-5)
+
+
+_FLAT_LOCAL_LIMIT_RESERVE_BYTES = 4 << 30
+
+
+def _require_flat_local_limit_fit(amplitudes: int) -> None:
+    """Skip unless one device can hold ``amplitudes`` complex64 amplitudes."""
+
+    free, _ = torch.cuda.mem_get_info()
+    if free < amplitudes * 8 + _FLAT_LOCAL_LIMIT_RESERVE_BYTES:
+        pytest.skip("the flat-local address limit does not fit on this device")
+
+
+@pytest.mark.slow
+def test_local_cx_reaches_the_flat_local_address_limit():
+    """The published limit is the largest state the kernel permutes correctly.
+
+    ``apply_complex64_local_cx_inplace`` turns an amplitude index into one
+    linear element offset. The limit is measured on hardware rather than
+    derived: this test fills a state at the limit, checks a sampled
+    permutation, and confirms the launch wrapper refuses the next size up
+    instead of faulting the CUDA context.
+    """
+
+    from flagquantum.kernels.triton import FLAT_LOCAL_MAX_AMPLITUDES
+    from flagquantum.kernels.triton.statevector_gates import (
+        apply_complex64_local_cx_inplace,
+    )
+
+    amplitudes = FLAT_LOCAL_MAX_AMPLITUDES
+    _require_flat_local_limit_fit(amplitudes)
+
+    state = torch.empty(1, amplitudes, dtype=torch.complex64, device="cuda")
+    chunk = 1 << 24
+    flat = state.view(-1)
+    for start in range(0, amplitudes, chunk):
+        stop = min(start + chunk, amplitudes)
+        values = torch.arange(start, stop, dtype=torch.float32, device="cuda")
+        flat[start:stop].real.copy_(values)
+        flat[start:stop].imag.copy_(values / 1e6)
+
+    control_bit = amplitudes.bit_length() - 2
+    torch.cuda.synchronize()
+
+    sampled = torch.tensor(
+        [amplitudes - 1, amplitudes - 3, (amplitudes >> 1) | 1, amplitudes >> 1],
+        dtype=torch.long,
+        device="cuda",
+    )
+    controlled = ((sampled >> control_bit) & 1) == 1
+    sources = torch.where(controlled, sampled ^ 1, sampled)
+    before = state[0, sources].clone()
+
+    apply_complex64_local_cx_inplace(
+        state, control_bit_position=control_bit, target_bit_position=0
+    )
+    torch.cuda.synchronize()
+
+    torch.testing.assert_close(state[0, sampled], before)
+    del state, before
+    torch.cuda.empty_cache()
+
+    oversized = torch.zeros(1, dtype=torch.complex64).expand(1, amplitudes * 2)
+    with pytest.raises(ValueError, match="at most"):
+        apply_complex64_local_cx_inplace(
+            oversized, control_bit_position=control_bit, target_bit_position=0
+        )

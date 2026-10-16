@@ -140,9 +140,9 @@ fields; a caller who needs to name the type imports it from `flagquantum.gradien
 
 The diff of `flagquantum/gradients.py` against the base is 332 added lines and
 one changed line: the pre-existing `parameter_shift_gradient` and
-`batched_parameter_shift_gradient` kernels are **not modified**. Every existing
-route keeps working exactly as before, and `fq.gradient` reuses them rather than
-reimplementing them:
+`batched_parameter_shift_gradient` kernels are **not modified** by this change.
+Every existing route keeps working exactly as before, and `fq.gradient` reuses
+them rather than reimplementing them:
 
 | Route | Kernel `fq.gradient` dispatches to | Kernel status |
 | --- | --- | --- |
@@ -174,6 +174,21 @@ second implementation appearing behind the public name fails the test.
 The 332 added lines are the dispatcher, the validation, the three new kernels,
 and the docstring. No new contract type, registry, manager, or factory is
 introduced: `GradientResult` is a plain frozen dataclass with four fields.
+
+### Later relocation of the two difference helpers
+
+Nothing in this record's decisions changes, but the two difference helpers it
+names no longer live where it says. A later convergence change
+(`flagquantum/core/finite_differences.py`) found that `_central_difference_gradient`
+here and `_finite_difference_gradient` in
+`flagquantum/runtime/executors/statevector/split_real_imag_autograd_conformance.py`
+were the same quotient with the same denominator behind different signatures — one
+source of truth divided by two, which engineering decision principle 6 forbids.
+Both now call `flagquantum.core.finite_differences.central_difference_gradient`,
+and the default displacement is `default_difference_step` there. Neither name
+here is public, no signature in `contracts/gradient-api-v1-candidate.json`
+mentions either, and `fq.gradient`'s behaviour is unchanged: the convergence was
+verified bitwise identical on both routes before it was proposed.
 
 ### Scope of the support claim
 
@@ -293,3 +308,15 @@ value; that remains an owned gap until a standalone adjoint entry point exists
 that reports whether the sweep was replayed. It does not change
 `parameter_shift_gradient`, `batched_parameter_shift_gradient`, or the
 `OperatorSchema.parameter_frequencies` declarations that the shift rule reads.
+
+**Delivered:** two later changes revised the kernels this section describes, each
+under its own proposal. [_Gradient parameter
+frequencies_](FQ-GRADIENT-PARAMETER-FREQUENCIES-20261002.md) made
+`parameter_shift_gradient` read `OperatorSchema.shift_rule` and refuse what it
+cannot answer. [_The batch parameter-shift profile reads the opcode
+declaration_](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md) did the same for
+`batched_parameter_shift_gradient`, which no longer states a gate list and admits
+`U1`, `U2`, `U3`, `PHASE`, `CPHASE`, `RXX`, `RYY`, and `RZZ`. The
+`parameter_frequencies` declarations are unchanged and are now the single source
+both kernels read; `fq.gradient`'s four routes and its `GradientResult` are
+unaffected.

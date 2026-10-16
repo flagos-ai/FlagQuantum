@@ -132,8 +132,8 @@ def main() -> None:
     report("report t_count", logical.t_count)
     report("compiler t_depth", direct.t_depth)
     report("report t_depth", logical.t_depth)
-    report("compiler per_wire_depth", direct.per_wire_depth)
-    report("report per_wire_depth", logical.estimate.per_wire_depth)
+    report("compiler per_qubit_depth", direct.per_qubit_depth)
+    report("report per_qubit_depth", logical.estimate.per_qubit_depth)
     report("the two records are equal", logical.estimate == direct)
     explain(
         "the report nests the compiler's ResourceEstimate rather than copying",
@@ -162,7 +162,7 @@ def main() -> None:
     report("code_distance", logical.code_distance)
     report("physical qubits per logical", logical.physical_qubits_per_logical)
     report("report n_qubits", logical.n_qubits)
-    report("used_wires", logical.estimate.used_wires)
+    report("used_qubits", logical.estimate.used_qubits)
     report("n_measurements", logical.n_measurements)
     report("logical_depth", logical.logical_depth)
     report("surface_code_cycles", logical.surface_code_cycles)

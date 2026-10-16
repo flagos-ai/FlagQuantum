@@ -91,7 +91,7 @@ def test_every_variable_carries_its_own_term() -> None:
     constant = next(term for term in hamiltonian.terms if term.pauli == "I")
     assert float(constant.coefficient) == pytest.approx(1.0)
     weights = {
-        term.wires[0]: float(term.coefficient)
+        term.qubits[0]: float(term.coefficient)
         for term in hamiltonian.terms
         if term.pauli == "Z"
     }
@@ -125,7 +125,7 @@ def test_ising_to_qubo_rejects_a_non_z_term() -> None:
 
 
 def test_a_bare_pair_hamiltonian_recovers_both_induced_linear_terms() -> None:
-    """A pair contributes a single-wire Z to each endpoint, even with no Z term emitted."""
+    """A pair contributes a single-qubit Z to each endpoint, even with no Z term emitted."""
     from flagquantum.algorithms.core import Hamiltonian, pauli_term
 
     recovered = ising_to_qubo(Hamiltonian([pauli_term(2.0, "ZZ", (0, 1))]))
@@ -135,7 +135,7 @@ def test_a_bare_pair_hamiltonian_recovers_both_induced_linear_terms() -> None:
 
 
 def test_a_pair_survives_when_its_endpoint_weight_cancels() -> None:
-    """x1's linear coefficient is nonzero while its single-wire weight is exactly zero."""
+    """x1's linear coefficient is nonzero while its single-qubit weight is exactly zero."""
     problem = QuboProblem(
         n_variables=2, linear={0: 1.0, 1: -1.0}, quadratic={(0, 1): 2.0}
     )

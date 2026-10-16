@@ -50,8 +50,8 @@ def _gf2_rank(rows: list[list[int]]) -> int:
 
 
 def _symplectic(pauli: Pauli, wires: int) -> list[int]:
-    return [1 if wire in pauli.x_wires else 0 for wire in range(wires)] + [
-        1 if wire in pauli.z_wires else 0 for wire in range(wires)
+    return [1 if wire in pauli.x_qubits else 0 for wire in range(wires)] + [
+        1 if wire in pauli.z_qubits else 0 for wire in range(wires)
     ]
 
 
@@ -61,7 +61,7 @@ def _check_supports(*, x_type: bool) -> tuple[tuple[int, ...], ...]:
     return tuple(
         check.stabilizer.support
         for check in SteaneCode().checks
-        if bool(check.stabilizer.x_wires) is x_type
+        if bool(check.stabilizer.x_qubits) is x_type
     )
 
 
@@ -110,16 +110,16 @@ def test_wire_layout_is_seven_data_wires_and_six_ancillas() -> None:
     assert code.distance == 3
     assert code.num_data_qubits == 7
     assert code.num_ancilla_qubits == 6
-    assert code.data_wires == (0, 1, 2, 3, 4, 5, 6)
-    assert code.ancilla_wires == (7, 8, 9, 10, 11, 12)
+    assert code.data_qubits == (0, 1, 2, 3, 4, 5, 6)
+    assert code.ancilla_qubits == (7, 8, 9, 10, 11, 12)
 
 
 def test_checks_are_three_z_type_then_three_x_type_all_of_weight_four() -> None:
     checks = SteaneCode().checks
 
     assert [check.index for check in checks] == [0, 1, 2, 3, 4, 5]
-    assert [check.ancilla_wire for check in checks] == [7, 8, 9, 10, 11, 12]
-    assert [bool(check.stabilizer.x_wires) for check in checks] == [
+    assert [check.ancilla_qubit for check in checks] == [7, 8, 9, 10, 11, 12]
+    assert [bool(check.stabilizer.x_qubits) for check in checks] == [
         False,
         False,
         False,
@@ -177,17 +177,17 @@ def test_every_check_class_has_distance_three(x_type: bool) -> None:
 
 def test_the_declared_logical_observable_is_the_lightest_z_representative() -> None:
     code = SteaneCode()
-    z_type = tuple(item for item in code.logical_observables if not item.x_wires)
+    z_type = tuple(item for item in code.logical_observables if not item.x_qubits)
     (observable,) = z_type
 
-    assert observable.z_wires
-    assert not observable.x_wires
+    assert observable.z_qubits
+    assert not observable.x_qubits
     assert observable.weight == 3
     # Seven weight-three representatives are equivalent up to a stabilizer. The
     # record declares the lexicographically first of them, which is what the
     # kernel enumeration below returns first.
-    assert observable.z_wires == _kernel_vectors(x_type=False)[0]
-    assert observable.z_wires == (0, 1, 2)
+    assert observable.z_qubits == _kernel_vectors(x_type=False)[0]
+    assert observable.z_qubits == (0, 1, 2)
     assert all(observable.commutes_with(check.stabilizer) for check in code.checks)
     assert observable.support not in set(_group_elements(x_type=False))
 
@@ -199,10 +199,10 @@ def test_the_declared_logical_observable_is_the_lightest_z_representative() -> N
     # real logical operator of the code; it is simply not one a Z-basis readout
     # can measure, so a memory circuit built from this record carries the Z-type
     # operator alone.
-    x_type = tuple(item for item in code.logical_observables if item.x_wires)
+    x_type = tuple(item for item in code.logical_observables if item.x_qubits)
     (partner,) = x_type
-    assert partner.x_wires == _kernel_vectors(x_type=True)[0]
-    assert partner.x_wires == observable.z_wires
+    assert partner.x_qubits == _kernel_vectors(x_type=True)[0]
+    assert partner.x_qubits == observable.z_qubits
     assert not observable.commutes_with(partner)
 
 
@@ -210,13 +210,13 @@ def test_an_x_type_check_couples_the_ancilla_into_the_data() -> None:
     """The X gadget's CNOT direction is the mirror of the Z gadget's."""
 
     for check in SteaneCode().checks:
-        controls = tuple(control for control, _ in check.cnot_wires)
-        targets = tuple(target for _, target in check.cnot_wires)
-        if check.stabilizer.x_wires:
-            assert controls == (check.ancilla_wire,) * len(check.cnot_wires)
+        controls = tuple(control for control, _ in check.cnot_qubits)
+        targets = tuple(target for _, target in check.cnot_qubits)
+        if check.stabilizer.x_qubits:
+            assert controls == (check.ancilla_qubit,) * len(check.cnot_qubits)
             assert targets == check.stabilizer.support
         else:
-            assert targets == (check.ancilla_wire,) * len(check.cnot_wires)
+            assert targets == (check.ancilla_qubit,) * len(check.cnot_qubits)
             assert controls == check.stabilizer.support
 
 
@@ -282,10 +282,10 @@ def test_the_registered_checks_and_stabilizers_agree() -> None:
 
     assert code.stabilizers == tuple(check.stabilizer for check in code.checks)
     assert code.stabilizers == (
-        Pauli(z_wires=(3, 4, 5, 6)),
-        Pauli(z_wires=(1, 2, 5, 6)),
-        Pauli(z_wires=(0, 2, 4, 6)),
-        Pauli(x_wires=(3, 4, 5, 6)),
-        Pauli(x_wires=(1, 2, 5, 6)),
-        Pauli(x_wires=(0, 2, 4, 6)),
+        Pauli(z_qubits=(3, 4, 5, 6)),
+        Pauli(z_qubits=(1, 2, 5, 6)),
+        Pauli(z_qubits=(0, 2, 4, 6)),
+        Pauli(x_qubits=(3, 4, 5, 6)),
+        Pauli(x_qubits=(1, 2, 5, 6)),
+        Pauli(x_qubits=(0, 2, 4, 6)),
     )

@@ -7,7 +7,7 @@ what makes it possible is that a detector error model is already a circuit's wor
 of arithmetic stated in another vocabulary. A mechanism is a set of detectors and
 observables it flips together with a probability, and mechanisms are independent
 unless an error id says otherwise, so a model is exactly a register of detector
-wires and observable wires carrying one Pauli frame per fault. Reading a model back
+qubits and observable qubits carrying one Pauli frame per fault. Reading a model back
 is therefore not an inverse problem with a fitted answer: the frame a mechanism
 names *is* the operator a realization applies, and the probability *is* the weight
 of the branch that applies it.
@@ -30,11 +30,11 @@ Two different memory experiments of the same distance and the same noise record
 can produce the same model, and a reader that returned a circuit for one of them
 would be asserting a fact the model never carried. What this module returns
 instead is the canonical detector-level circuit every model *does* determine: one
-wire per detector and one per observable, one frame per fault, and one measurement
-per wire at the end.
+qubit per detector and one per observable, one frame per fault, and one measurement
+per qubit at the end.
 
 The detector and observable split is not recoverable from the circuit either, for
-the same reason: a wire index says nothing about which side of the split it falls
+the same reason: a qubit index says nothing about which side of the split it falls
 on, so :func:`detector_error_model_from_circuit` takes the detector count from its
 caller. A caller who states the wrong count gets a model whose mechanisms are
 right and whose split is not, rather than an error, which is why the two functions
@@ -61,7 +61,7 @@ refusal and names the mechanism.
 
 The two halves are read back from different parts of the instruction, and the
 division is deliberate. A frame is read from the operators, because the operators
-are what the engine executes: the instruction's wire list fixes the register, each
+are what the engine executes: the instruction's qubit list fixes the register, each
 branch's matrix fixes one frame on that register, and the identity branch is what
 distinguishes a channel that always fires from one that fires with a probability.
 A probability is read from the instruction's declared parameter, because a
@@ -98,9 +98,9 @@ __all__ = (
 )
 
 # The opcode of one fault's frame. It carries its operators rather than declaring
-# them, because the operator schema's four channels each name a single-wire family
+# them, because the operator schema's four channels each name a one-qubit family
 # with one rate, and a fault is a frame on however many detectors and observables
-# it flips: `bit_flip` on two wires would state two independent faults where the
+# it flips: `bit_flip` on two qubits would state two independent faults where the
 # model states one fault with a two-detector signature.
 _FRAME_OPCODE = "dem_frame"
 _MEASURE_OPCODE = "measure"
@@ -122,8 +122,8 @@ _BIT_FLIP = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex128)
 def circuit_from_detector_error_model(model: DetectorErrorModel) -> CircuitIR:
     """Return an executable circuit whose measurements are the model's targets.
 
-    The circuit has one wire per detector followed by one wire per observable, one
-    Pauli-frame channel per fault, and one measurement per wire. Wires are ordered
+    The circuit has one qubit per detector followed by one qubit per observable, one
+    Pauli-frame channel per fault, and one measurement per qubit. Qubits are ordered
     so that a sample's columns are the detectors in index order and then the
     observables in index order, which is the layout
     :meth:`DetectorErrorModel.dem_sampling` returns its two tensors in.
@@ -142,7 +142,7 @@ def circuit_from_detector_error_model(model: DetectorErrorModel) -> CircuitIR:
 
     Returns:
         A :class:`~flagquantum.core.ir.CircuitIR` over ``num_detectors +
-        num_observables`` wires.
+        num_observables`` qubits.
 
     Raises:
         ValueError: A mechanism states probability zero, and so has no branch.
@@ -203,8 +203,8 @@ def detector_error_model_from_circuit(
 
     The circuit must be one :func:`circuit_from_detector_error_model` built, or a
     program written the same way: every instruction is a fault frame or a
-    measurement, the measurements are one per wire in wire order and come after
-    every frame, and every wire a frame names is flipped by one of its branches.
+    measurement, the measurements are one per qubit in qubit order and come after
+    every frame, and every qubit a frame names is flipped by one of its branches.
     Anything else is refused, because this reader states what a realization is
     rather than guessing at what an arbitrary annotated circuit might mean.
 
@@ -217,7 +217,7 @@ def detector_error_model_from_circuit(
 
     Args:
         circuit: A realization, or any program that normalizes to an executable IR.
-        num_detectors: How many of the circuit's wires are detectors. Everything
+        num_detectors: How many of the circuit's qubits are detectors. Everything
             above them is read as an observable.
 
     Returns:
@@ -464,10 +464,10 @@ def _support(member: DemError, detectors: int) -> frozenset[int]:
 
 
 def _frame(layout: tuple[int, ...], support: Iterable[int]) -> torch.Tensor:
-    """Return the product of bit flips on ``support`` over the wires ``layout``.
+    """Return the product of bit flips on ``support`` over the qubits ``layout``.
 
     The operator is built rather than looked up. The stabilizer engine's own
-    enumeration of Pauli frames is private to it and covers every frame on a wire
+    enumeration of Pauli frames is private to it and covers every frame on a qubit
     list, which is not what is needed here: a fault's branch is one specific
     product of bit flips, and it is the same operator the engine identifies again
     when it executes the instruction.
@@ -493,12 +493,12 @@ def _scale(operator: torch.Tensor, width: int) -> float:
 
 
 def _frame_support(operator: torch.Tensor, width: int) -> tuple[int, ...] | None:
-    """Return the wires a unitary flips, or ``None`` if it is not such a frame.
+    """Return the qubits a unitary flips, or ``None`` if it is not such a frame.
 
     A product of bit flips sends the all-zero basis state to the basis state its
     support names, so the operator's first row holds exactly one non-zero entry and
     the column of that entry is the support written as a binary number, most
-    significant wire first. The candidate is then rebuilt from that reading and
+    significant qubit first. The candidate is then rebuilt from that reading and
     compared with the operator, which is what rejects a Pauli word carrying a phase
     flip or a ``Y`` factor: those conjugate a basis state to another one but are
     not products of bit flips.

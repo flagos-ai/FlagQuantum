@@ -54,9 +54,9 @@ def _round_detector(built: MemoryCircuit, *, round_index: int, check: CodeCheck)
     rule, so a test that uses it is asking what the layout declares.
     """
 
-    wanted = {MeasurementRef(round_index, check.ancilla_wire)}
+    wanted = {MeasurementRef(round_index, check.ancilla_qubit)}
     if round_index > 0:
-        wanted.add(MeasurementRef(round_index - 1, check.ancilla_wire))
+        wanted.add(MeasurementRef(round_index - 1, check.ancilla_qubit))
     for detector in built.detectors.detectors:
         if set(detector.parity) == wanted:
             return detector.index
@@ -70,7 +70,7 @@ def _z_checks_containing(built: MemoryCircuit, wire: int) -> list[CodeCheck]:
     return [
         check
         for check in built.code.checks
-        if not check.stabilizer.x_wires and wire in check.stabilizer.support
+        if not check.stabilizer.x_qubits and wire in check.stabilizer.support
     ]
 
 
@@ -122,9 +122,9 @@ def test_a_surface_code_measurement_flip_on_an_x_type_check_has_no_terminal() ->
     """
 
     built = _surface()
-    x_check = next(check for check in built.code.checks if check.stabilizer.x_wires)
+    x_check = next(check for check in built.code.checks if check.stabilizer.x_qubits)
     source = _inject_measurement_flip(
-        built, round_index=1, ancilla_wire=x_check.ancilla_wire
+        built, round_index=1, ancilla_qubit=x_check.ancilla_qubit
     )
     detectors, observables = _forced_signature(built, source)
 
@@ -167,7 +167,7 @@ def test_measurement_flip_flips_its_round_and_the_next_round() -> None:
     """A flipped syndrome bit is compared against both of its neighbours."""
 
     built = _built(3)
-    source = _inject_measurement_flip(built, round_index=0, ancilla_wire=3)
+    source = _inject_measurement_flip(built, round_index=0, ancilla_qubit=3)
     detectors, observables = _forced_signature(built, source)
     assert detectors == (0, 2)
     assert observables == ()
@@ -175,7 +175,7 @@ def test_measurement_flip_flips_its_round_and_the_next_round() -> None:
 
 def test_measurement_flip_in_the_last_round_reaches_the_terminal_boundary() -> None:
     built = _built(3)
-    source = _inject_measurement_flip(built, round_index=2, ancilla_wire=3)
+    source = _inject_measurement_flip(built, round_index=2, ancilla_qubit=3)
     detectors, observables = _forced_signature(built, source)
     assert detectors == (4, 6)
     assert observables == ()
@@ -183,7 +183,7 @@ def test_measurement_flip_in_the_last_round_reaches_the_terminal_boundary() -> N
 
 def test_measurement_flip_on_the_last_check() -> None:
     built = _built(3)
-    source = _inject_measurement_flip(built, round_index=0, ancilla_wire=4)
+    source = _inject_measurement_flip(built, round_index=0, ancilla_qubit=4)
     detectors, _ = _forced_signature(built, source)
     assert detectors == (1, 3)
 
@@ -209,7 +209,7 @@ def test_a_nondeterministic_source_is_refused() -> None:
 
     built = _built(5)
     source = built.source
-    for ancilla in built.code.ancilla_wires:
+    for ancilla in built.code.ancilla_qubits:
         anchor = f"        last = qp.measure(wires={ancilla})\n"
         source = source.replace(anchor, f"        qp.H(wires={ancilla})\n{anchor}")
     with pytest.raises(ValueError, match="not deterministic"):
@@ -244,7 +244,7 @@ def test_measurement_injection_anchor_must_be_unique() -> None:
         built, source=built.source.replace("        last = qp.measure(wires=3)\n", "")
     )
     with pytest.raises(ValueError, match="measurement"):
-        _inject_measurement_flip(mangled, round_index=0, ancilla_wire=3)
+        _inject_measurement_flip(mangled, round_index=0, ancilla_qubit=3)
 
 
 def test_measurement_injection_refuses_a_repeated_measurement_anchor() -> None:
@@ -256,7 +256,7 @@ def test_measurement_injection_refuses_a_repeated_measurement_anchor() -> None:
         built, source=built.source.replace(anchor, anchor * 2)
     )
     with pytest.raises(ValueError, match="found 2"):
-        _inject_measurement_flip(mangled, round_index=0, ancilla_wire=3)
+        _inject_measurement_flip(mangled, round_index=0, ancilla_qubit=3)
 
 
 def test_injection_rejects_a_round_outside_the_configured_range() -> None:

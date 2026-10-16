@@ -28,10 +28,13 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.__version__` | Stable | executable contract |
 | `fq.compile` | Stable | executable contract |
 | `fq.counts` | Stable | executable contract |
+| `fq.density_matrix` | Stable | executable contract |
 | `fq.expectation` | Stable | executable contract |
 | `fq.experimental` | Stable | executable contract |
 | `fq.from_openqasm` | Stable | executable contract |
 | `fq.gradient` | Stable | executable contract |
+| `fq.jacobian` | Stable | executable contract |
+| `fq.jvp` | Stable | executable contract |
 | `fq.plan` | Stable | executable contract |
 | `fq.probabilities` | Stable | executable contract |
 | `fq.restore_job` | Stable | executable contract |
@@ -40,3 +43,5 @@ Do not edit. Source: `docs/public_api_v1.json`.
 | `fq.submit` | Stable | executable contract |
 | `fq.train` | Stable | executable contract |
 | `fq.twin` | Stable | executable contract |
+| `fq.vjp` | Stable | executable contract |
+| `fq.vn_entropy` | Stable | executable contract |

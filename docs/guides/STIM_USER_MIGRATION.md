@@ -41,38 +41,34 @@ detector_error_model = circuit.detector_error_model()
 raw_text = str(detector_error_model)
 print(len(raw_text.splitlines()), sum(1 for line in raw_text.splitlines() if line.strip().startswith("repeat")))
 # 35 1  -- Stim's writer uses `repeat` as soon as a block is worth repeating
-try:
-    DetectorErrorModel.from_stim_text(raw_text)
-except ValueError as error:
-    print(error)
-    # repeat blocks are not supported: expand the block into the instructions it repeats  -- the reader's refusal
-```
-
-`from_stim_text` refuses what its own record cannot hold rather than dropping
-it, and a `repeat` block is the first thing a multi-round circuit hits. Stim
-already owns the expansion, so the caller spends one call on it:
-
-```python
-flattened = DetectorErrorModel.from_stim_text(
-    str(detector_error_model.flattened())
-)
+parsed = DetectorErrorModel.from_stim_text(raw_text)
 print(
-    flattened.num_detectors,
-    flattened.num_observables,
-    len(flattened.errors),
-    flattened.mechanisms_are_unique(),
+    parsed.num_detectors,
+    parsed.num_observables,
+    len(parsed.errors),
+    parsed.mechanisms_are_unique(),
 )
-# 42 1 141 False  -- flattened, read, and 141 mechanisms of which two share a signature
+# 42 1 141 False  -- read as written, and 141 mechanisms of which two share a signature
 ```
 
-The four refusals a migrating script meets are worth knowing by name, because
-each one is a repair rather than a lost feature:
+`from_stim_text` reads the block rather than refusing it: a `repeat <count> { ... }`
+block is interpreted by running the block's instructions the number of times its
+count states, so the detectors, the mechanisms and the accumulated
+`shift_detectors` offsets are the ones the instructions produce in sequence.
+Blocks nest, `repeat 0` contributes nothing, and `stim`'s `flattened()` form is
+one route to the same model rather than a prerequisite. A `#` comment is cut at
+the `#` wherever it sits, so a commented line states no instruction.
+
+What the reader still refuses is the text its own record cannot hold. Every
+refusal names what it could not read rather than dropping the instruction, so a
+text carrying information this model cannot state fails closed instead of being
+read as a shorter model:
 
 | Text | Refusal | Repair |
 | --- | --- | --- |
-| `repeat 3 { ... }` | `repeat blocks are not supported: ...` | `stim.DetectorErrorModel.flattened()` |
-| `error(0.01) D0  # note` | `error targets must be D or L indices, not '#'` | strip comments before reading |
 | `detector D1` with no `detector D0` | `detector declarations must be consecutive from D0` | declare every index, or use `shift_detectors` |
+| `error(0.01) D0 D0` | `an error mechanism must flip at least one detector or observable` | name the mechanism's targets, at least one of which survives |
+| `repeat 3 { ...` with no closing brace | `a repeat block must close with a brace on a line of its own` | close the block, or drop the `repeat` and write the instructions out |
 | `X_ERROR(0.01) 0` | `unsupported stim instruction 'X_ERROR(0.01) 0'` | keep circuit instructions in Stim; this reader takes a detector error model |
 
 ## One fault stated twice
@@ -86,11 +82,11 @@ for one signature, so it refuses the model and names the merge:
 from flagquantum.qec import get_decoder
 
 try:
-    get_decoder("minimum_weight_matching", flattened)
+    get_decoder("minimum_weight_matching", parsed)
 except ValueError as error:
     print(error)
     # mechanisms 7 and 8 both flip D2 D4; merge_duplicate_mechanisms() states one prior for a shared signature and is what a decoder needs  -- the matcher's refusal
-model = flattened.merge_duplicate_mechanisms()
+model = parsed.merge_duplicate_mechanisms()
 print(len(model.errors), model.mechanisms_are_unique())
 # 103 True  -- every shared signature now carries one prior
 ```
@@ -308,23 +304,29 @@ These are stated as boundaries rather than left for a caller to discover.
   reader returns the canonical detector-level circuit rather than either
   experiment. The detector count is the caller's to state, because a wire index
   does not say which side of the split it falls on.
-- **No block expansion.** A `repeat` block is refused, not expanded; the repair
-  is `flattened()` on the Stim side.
-- **No comment handling.** Comments are not part of the format this reader
-  accepts, though Stim's own writer does not emit them into a detector error
-  model.
+- **No block expansion.** A `repeat <count> { ... }` block is interpreted rather
+  than kept, so the reader pays one expansion Stim's own reader does not: the
+  detectors, the mechanisms and the accumulated `shift_detectors` offsets are
+  the ones the block's instructions produce in sequence. The model either
+  reader produces is the same, and `flattened()` on the Stim side remains an
+  equivalent route rather than a prerequisite.
+- **Comments are cut, not refused.** A `#` is cut wherever it sits and runs to
+  the end of its line, so a commented line states no instruction. Stim's own
+  writer does not emit comments into a detector error model, so this only
+  matters to a text a caller edited.
 - **The registry's promise is a decoded syndrome, and the pair graph is a
-  narrower one.** `decoder_names()` names the in-tree matcher, the windowed
-  reading of it, the PyMatching cross-check and, since
-  `DetectorErrorModelDecoder` was narrowed to `decode`, the hyperedge decoder
-  `belief_propagation_osd`. What no name promises is `graph`:
-  `GraphlikeDetectorErrorModelDecoder` states that on its own, the three matcher
-  names satisfy it, and asking the hyperedge name for a `DecodingGraph` is
-  refused with a reason rather than failing inside a constructor, because a
-  model with a three-detector mechanism has no pair graph. So `get_decoder`
-  takes the four names and three carriers -- a model, Stim's text for one, a
-  decoding graph -- and a parity-check matrix is not among them, since lifting
-  one would mean choosing the noise model and round count as well.
+  narrower one.** `decoder_names()` names five decoders: the in-tree matcher,
+  the windowed reading of it, the PyMatching cross-check, and two
+  belief-propagation readers, the sum-product `belief_propagation` and the
+  ordered-statistics `belief_propagation_osd` that answer the model as written.
+  What no name promises is `graph`: `GraphlikeDetectorErrorModelDecoder` states
+  that on its own, the three matcher names satisfy it, and asking either
+  belief-propagation name for a `DecodingGraph` is refused with a reason rather
+  than failing inside a constructor, because a model with a three-detector
+  mechanism has no pair graph. So `get_decoder` takes the five names and three
+  carriers -- a model, Stim's text for one, a decoding graph -- and a
+  parity-check matrix is not among them, since lifting one would mean choosing
+  the noise model and round count as well.
 - **The registry's third name is the matcher, banded.** `get_decoder` reaches
   `MinimumWeightMatchingDecoder` by name, and it reaches the same matcher over a
   window by name too: `sliding_window_matching` cuts a history into bands of

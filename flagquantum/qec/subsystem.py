@@ -76,7 +76,7 @@ class SubsystemCode:
     ``hz`` and ``hx`` hold the Z-type and X-type checks, ``gz`` and ``gx`` the
     Z-type and X-type gauge generators, and ``lz`` and ``lx`` the protected logical
     operators, one row per operator and one column per data qubit in every block.
-    Data qubits are the columns and occupy wires ``0..n-1`` in column order.
+    Data qubits are the columns and occupy indices ``0..n-1`` in column order.
 
     **The blocks have to describe a subsystem code, and the record checks the
     three conditions that make them one.** Every gauge generator must commute with
@@ -207,10 +207,10 @@ class SubsystemCode:
         x_check_masks = tuple(_mask(row) for row in x_checks)
         z_gauge_masks = tuple(_mask(row) for row in z_gauges)
         x_gauge_masks = tuple(_mask(row) for row in x_gauges)
-        z_checks_as_pauli = tuple(Pauli(z_wires=s) for s in _supports(z_checks))
-        x_checks_as_pauli = tuple(Pauli(x_wires=s) for s in _supports(x_checks))
-        z_gauges_as_pauli = tuple(Pauli(z_wires=s) for s in _supports(z_gauges))
-        x_gauges_as_pauli = tuple(Pauli(x_wires=s) for s in _supports(x_gauges))
+        z_checks_as_pauli = tuple(Pauli(z_qubits=s) for s in _supports(z_checks))
+        x_checks_as_pauli = tuple(Pauli(x_qubits=s) for s in _supports(x_checks))
+        z_gauges_as_pauli = tuple(Pauli(z_qubits=s) for s in _supports(z_gauges))
+        x_gauges_as_pauli = tuple(Pauli(x_qubits=s) for s in _supports(x_gauges))
 
         for z_index, z_check in enumerate(z_checks_as_pauli):
             for x_index, x_check in enumerate(x_checks_as_pauli):
@@ -297,8 +297,8 @@ class SubsystemCode:
                     "protected qubit and a shorter or longer list is not one"
                 )
 
-        z_logicals_as_pauli = tuple(Pauli(z_wires=s) for s in _supports(z_logicals))
-        x_logicals_as_pauli = tuple(Pauli(x_wires=s) for s in _supports(x_logicals))
+        z_logicals_as_pauli = tuple(Pauli(z_qubits=s) for s in _supports(z_logicals))
+        x_logicals_as_pauli = tuple(Pauli(x_qubits=s) for s in _supports(x_logicals))
         # A logical operator of a subsystem code is read up to the gauge group, so
         # what it must lie outside of is its own family's checks *and* gauge.
         _refuse_non_logicals(
@@ -403,7 +403,7 @@ class SubsystemCode:
         return self._width
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def data_qubits(self) -> tuple[int, ...]:
         return tuple(range(self._width))
 
     @property
@@ -428,24 +428,24 @@ class SubsystemCode:
     def stabilizer_generators(self) -> tuple[Pauli, ...]:
         """The checks, Z-type first, in the order the matrices declare them."""
 
-        return tuple(Pauli(z_wires=s) for s in _supports(self._z_checks)) + tuple(
-            Pauli(x_wires=s) for s in _supports(self._x_checks)
+        return tuple(Pauli(z_qubits=s) for s in _supports(self._z_checks)) + tuple(
+            Pauli(x_qubits=s) for s in _supports(self._x_checks)
         )
 
     @property
     def gauge_generators(self) -> tuple[Pauli, ...]:
         """The gauge generators, Z-type first, in the order the matrices declare them."""
 
-        return tuple(Pauli(z_wires=s) for s in _supports(self._z_gauges)) + tuple(
-            Pauli(x_wires=s) for s in _supports(self._x_gauges)
+        return tuple(Pauli(z_qubits=s) for s in _supports(self._z_gauges)) + tuple(
+            Pauli(x_qubits=s) for s in _supports(self._x_gauges)
         )
 
     @property
     def logical_operators(self) -> tuple[Pauli, ...]:
         """The protected logical operators, Z-type first."""
 
-        return tuple(Pauli(z_wires=s) for s in _supports(self._z_logicals)) + tuple(
-            Pauli(x_wires=s) for s in _supports(self._x_logicals)
+        return tuple(Pauli(z_qubits=s) for s in _supports(self._z_logicals)) + tuple(
+            Pauli(x_qubits=s) for s in _supports(self._x_logicals)
         )
 
 
@@ -473,7 +473,7 @@ def tesseract_code() -> SubsystemCode:
 
     **The logical order is the one the free-CNOT gadget is stated in.** The four
     protected operators are listed as ``(L1, L0, L2, L5)`` of the parent's six, and
-    ``tests/qec/test_subsystem_code.py`` exhibits the data-wire permutation of
+    ``tests/qec/test_subsystem_code.py`` exhibits the data-qubit permutation of
     arXiv:2412.14256 acting as ``CNOT(0 -> 1) * CNOT(2 -> 3)`` on exactly those
     four, which is the gadget that makes the family useful rather than the
     parameter table.
@@ -530,18 +530,18 @@ def tesseract_code() -> SubsystemCode:
 
 
 def tesseract_column_swap() -> tuple[int, ...]:
-    """Return the data-wire permutation of the tesseract's free-CNOT gadget.
+    """Return the data-qubit permutation of the tesseract's free-CNOT gadget.
 
-    Wire ``position`` is moved to wire ``swap[position]``. The permutation
-    exchanges the first and third column of each four-wire row of the hypercube
+    Qubit ``position`` is moved to qubit ``swap[position]``. The permutation
+    exchanges the first and third column of each four-qubit row of the hypercube
     layout, so it is read off the layout the checks are written in rather than
-    transcribed from the paper: a wire whose lowest coordinate is clear moves to
-    wire ``wire ^ 2``, and one whose lowest coordinate is set stays where it is.
+    transcribed from the paper: a qubit whose lowest coordinate is clear moves to
+    qubit ``position ^ 2``, and one whose lowest coordinate is set stays where it is.
     The result is an involution -- swapping twice is the identity -- because
     ``^ 2`` is one.
 
     **This is the permutation, not the gadget's logical action.** It acts on data
-    wires; what it does to protected information is
+    qubits; what it does to protected information is
     :func:`tesseract_free_cnot_pairs`, which is a separate declaration so that the
     statement "this permutation implements that action" is a check between two
     independent facts rather than a restatement of one.

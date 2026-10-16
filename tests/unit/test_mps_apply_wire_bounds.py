@@ -28,11 +28,11 @@ Apply = Callable[[int], None]
 
 
 def _apply_one(wire: int) -> None:
-    MPSState.zero(3).apply_one(X, wire=wire)
+    MPSState.zero(3).apply_one(X, qubit=wire)
 
 
 def _apply_parametric_one(wire: int) -> None:
-    MPSState.zero(3).apply_parametric_one("rx", 0.5, wire=wire)
+    MPSState.zero(3).apply_parametric_one("rx", 0.5, qubit=wire)
 
 
 def _apply_two(wire: int) -> None:
@@ -40,7 +40,7 @@ def _apply_two(wire: int) -> None:
 
 
 def _apply_swap(wire: int) -> None:
-    MPSState.zero(3).apply_swap(left_wire=wire)
+    MPSState.zero(3).apply_swap(left_qubit=wire)
 
 
 def _apply_two_remote(wire: int) -> None:
@@ -63,7 +63,7 @@ OPERATIONS: tuple[tuple[str, Apply], ...] = (
 def test_apply_rejects_a_wire_outside_the_state(
     operation: str, apply: Apply, wire: int
 ) -> None:
-    with pytest.raises(ValueError, match="wire index out of range"):
+    with pytest.raises(ValueError, match="qubit index out of range"):
         apply(wire)
 
 
@@ -74,8 +74,8 @@ def test_a_negative_wire_no_longer_reaches_a_different_site() -> None:
     invisible in the result. Asserting the refusal is what makes it visible.
     """
     state = MPSState.zero(3)
-    with pytest.raises(ValueError, match="wire index out of range"):
-        state.apply_one(X, wire=-1)
+    with pytest.raises(ValueError, match="qubit index out of range"):
+        state.apply_one(X, qubit=-1)
 
     # The state must be untouched by the refused call.
     assert state.expectation_z().tolist() == [[1.0, 1.0, 1.0]]
@@ -85,7 +85,7 @@ def test_the_last_wire_has_no_right_neighbour() -> None:
     """A two-site gate on the final wire is out of range, not an IndexError."""
 
     state = MPSState.zero(3)
-    with pytest.raises(ValueError, match="wire index out of range"):
+    with pytest.raises(ValueError, match="qubit index out of range"):
         state.apply_two(CX, 2)
 
 
@@ -93,12 +93,12 @@ def test_in_range_wires_still_apply() -> None:
     """The guard must not reject a wire the state does have."""
 
     single = MPSState.zero(3)
-    single.apply_one(X, wire=2)
+    single.apply_one(X, qubit=2)
     assert single.expectation_z().tolist() == [[1.0, 1.0, -1.0]]
 
     parametric = MPSState.zero(3)
-    parametric.apply_parametric_one("rx", 0.5, wire=0)
-    assert parametric.n_wires == 3
+    parametric.apply_parametric_one("rx", 0.5, qubit=0)
+    assert parametric.n_qubits == 3
 
     for n_wires in (2, 3, 4):
         for left_wire in range(n_wires - 1):
@@ -108,4 +108,4 @@ def test_in_range_wires_still_apply() -> None:
 
         remote = MPSState.zero(n_wires)
         remote.apply_two_remote(CX, [0, n_wires - 1])
-        assert remote.n_wires == n_wires
+        assert remote.n_qubits == n_wires

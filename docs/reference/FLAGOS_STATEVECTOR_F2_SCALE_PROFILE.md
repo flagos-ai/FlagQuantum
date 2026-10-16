@@ -25,12 +25,12 @@ with `device="flagos"` and `backend="flagos"`.
 Each of 2, 4, and 8 ranks executes both `complex64` and `complex128` for three
 cases:
 
-- `cross_shard_reference`: gates exercise every rank-address wire and the local
+- `cross_shard_reference`: gates exercise every rank-address qubit and the local
   shard is compared with the matching slice of a bounded CPU complex128
   reference;
 - `persistent_layout_reference`: the same bounded correctness check runs with
-  persistent wire layout and maps physical shard indices back to logical wire
-  order before comparison. Its communication may be reported as layout
+  persistent wire layout and maps physical shard indices back to logical qubit
+order before comparison. Its communication may be reported as layout
   exchanges with zero remaining distributed gates;
 - `capacity_invariant`: a larger state is never materialized on CPU or gathered
   across ranks; it is checked through global norm, repeat determinism, strict

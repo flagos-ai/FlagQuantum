@@ -46,7 +46,7 @@ def test_valid_deployment_routing_plan_round_trips() -> None:
     assert (
         validate_deployment_routing_plan(
             plan,
-            n_wires=5,
+            n_qubits=5,
             coupling_map=coupling,
         )
         == plan
@@ -84,7 +84,7 @@ def test_deployment_routing_plan_rejects_tampering(mutation, message: str) -> No
     with pytest.raises(DeploymentRoutingEvidenceError, match=message):
         validate_deployment_routing_plan(
             tampered,
-            n_wires=5,
+            n_qubits=5,
             coupling_map=coupling,
         )
 
@@ -186,11 +186,11 @@ def test_an_ordered_device_produces_a_deployable_routing_plan() -> None:
     plan, device = _ordered_device_plan()
 
     assert (
-        validate_deployment_routing_plan(plan, n_wires=2, coupling_map=device) == plan
+        validate_deployment_routing_plan(plan, n_qubits=2, coupling_map=device) == plan
     )
     # Without a device to check against, the plan's own statement is still a
     # statement about one of the two known semantics.
-    assert validate_deployment_routing_plan(plan, n_wires=2, coupling_map=None) == plan
+    assert validate_deployment_routing_plan(plan, n_qubits=2, coupling_map=None) == plan
 
 
 def test_a_plan_and_a_device_that_disagree_about_direction_are_refused() -> None:
@@ -207,19 +207,19 @@ def test_a_plan_and_a_device_that_disagree_about_direction_are_refused() -> None
     with pytest.raises(
         DeploymentRoutingEvidenceError, match="disagree with the deployment backend"
     ):
-        validate_deployment_routing_plan(plan, n_wires=2, coupling_map=undirected)
+        validate_deployment_routing_plan(plan, n_qubits=2, coupling_map=undirected)
     with pytest.raises(
         DeploymentRoutingEvidenceError, match="disagree with the deployment backend"
     ):
         validate_deployment_routing_plan(
-            undirected_plan, n_wires=2, coupling_map=device
+            undirected_plan, n_qubits=2, coupling_map=device
         )
     # Each plan is accepted by the device whose rule it obeyed, so the refusals
     # above are about the disagreement and not about either plan being malformed.
     assert validate_deployment_routing_plan(
-        undirected_plan, n_wires=2, coupling_map=undirected
+        undirected_plan, n_qubits=2, coupling_map=undirected
     )
-    assert validate_deployment_routing_plan(plan, n_wires=2, coupling_map=device)
+    assert validate_deployment_routing_plan(plan, n_qubits=2, coupling_map=device)
 
 
 def test_a_direction_repair_that_cannot_fit_the_total_is_refused() -> None:
@@ -239,18 +239,18 @@ def test_a_direction_repair_that_cannot_fit_the_total_is_refused() -> None:
     with pytest.raises(
         DeploymentRoutingEvidenceError, match="direction swap count exceeds"
     ):
-        validate_deployment_routing_plan(tampered, n_wires=2, coupling_map=device)
+        validate_deployment_routing_plan(tampered, n_qubits=2, coupling_map=device)
 
     # A missing count is refused rather than read as zero: silence about the
     # ordering is what the schema exists to forbid.
     del tampered["direction_swap_count"]
     with pytest.raises(DeploymentRoutingEvidenceError, match="direction_swap_count"):
-        validate_deployment_routing_plan(tampered, n_wires=2, coupling_map=device)
+        validate_deployment_routing_plan(tampered, n_qubits=2, coupling_map=device)
 
     tampered = deepcopy(plan)
     tampered["direction_swap_count"] = -1
     with pytest.raises(DeploymentRoutingEvidenceError, match="non-negative integer"):
-        validate_deployment_routing_plan(tampered, n_wires=2, coupling_map=device)
+        validate_deployment_routing_plan(tampered, n_qubits=2, coupling_map=device)
 
 
 def test_an_undirected_device_cannot_claim_a_direction_repair() -> None:
@@ -276,11 +276,11 @@ def test_an_undirected_device_cannot_claim_a_direction_repair() -> None:
         DeploymentRoutingEvidenceError,
         match="undirected deployment backend cannot have required direction swaps",
     ):
-        validate_deployment_routing_plan(plan, n_wires=3, coupling_map=undirected)
+        validate_deployment_routing_plan(plan, n_qubits=3, coupling_map=undirected)
     # With no device to compare against, the same plan is accepted: the semantics
     # are one of the two known ones and the count fits the total. The bound a
     # device adds is the part that needs the device.
-    assert validate_deployment_routing_plan(plan, n_wires=3, coupling_map=None)
+    assert validate_deployment_routing_plan(plan, n_qubits=3, coupling_map=None)
 
 
 def test_an_ordered_backend_carries_the_ordering_through_a_whole_package() -> None:
@@ -315,7 +315,7 @@ def test_an_ordered_backend_carries_the_ordering_through_a_whole_package() -> No
     assert plan["direction_swap_count"] == 1
     assert plan["coupling_edges"] == ((1, 0),)
     assert (
-        validate_deployment_routing_plan(plan, n_wires=2, coupling_map=device) == plan
+        validate_deployment_routing_plan(plan, n_qubits=2, coupling_map=device) == plan
     )
     # The program the provider receives is the routed one, so the orientation
     # SWAPs the plan counts are the instructions it will run, and the sealed

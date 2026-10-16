@@ -14,11 +14,11 @@ pytestmark = pytest.mark.unit
 def test_text_drawer_copies_wire_order() -> None:
     program = CircuitIR(n_wires=2, instructions=(Instruction("h", (0,)),))
     wire_order = [1, 0]
-    drawer = TextDrawer(program, wire_order=wire_order, show_all_wires=True)
+    drawer = TextDrawer(program, qubit_order=wire_order, show_all_qubits=True)
 
     wire_order.reverse()
 
-    assert drawer.wire_order == [1, 0]
+    assert drawer.qubit_order == [1, 0]
     assert "H" in drawer.draw()
 
 
@@ -47,7 +47,7 @@ def test_mpl_options_can_be_reused_without_mutation() -> None:
 
     fig, ax = draw_mpl(
         program,
-        wire_order=wire_order,
+        qubit_order=wire_order,
         label_options=labels,
         show_initial_state=True,
     )

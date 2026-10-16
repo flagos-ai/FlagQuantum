@@ -262,7 +262,7 @@ class LogicalResourceReport:
     the report carries the statements its arithmetic rests on rather than leaving
     them to be inferred.  ``estimate`` is the compiler's own
     :class:`~flagquantum.compiler.resource_estimation.ResourceEstimate` for the
-    same program, nested rather than copied, so a reader who wants per-wire
+    same program, nested rather than copied, so a reader who wants per-qubit
     depths or the raw operation counts reads them from the record that owns them.
 
     ``n_qubits`` is how many logical qubits the footprint was charged for, which

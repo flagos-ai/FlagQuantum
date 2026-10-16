@@ -204,8 +204,8 @@ copying. Circuit's imperative user experience remains unchanged.
 #### 5.3.2 Ancillas
 
 Ancilla is a resource role, not another physical qubit type. Users can reserve
-ordinary Circuit wires manually and use DynamicCircuit measurement/reset for some
-reuse. v1 has fixed n_wires and integer references, without ancilla identity,
+ordinary Circuit qubits manually and use DynamicCircuit measurement/reset for some
+reuse. v1 has fixed n_qubits and integer references, without ancilla identity,
 ownership, allocation, clean/dirty requirements, or lifetime semantics. Routing
 cannot use unmapped physical qubits outside CircuitIR; it must reject and request
 explicit layout/lowering. Qiskit named/multiple/aliased registers flatten to stable
@@ -343,7 +343,7 @@ Bind cached read-only analyses to IR revision, target snapshot, and options.
 | QubitLifetimeAnalysis | Ownership/allocation | Alloc/release/control |
 | MeasurementDependencyAnalysis | Adaptive legality/batching | Measures/conditions |
 | ParameterDependencyAnalysis | Specialization/cache/gradients | Expressions/control |
-| InteractionGraphAnalysis | Placement/routing/MPS/TN | Gates/wires |
+| InteractionGraphAnalysis | Placement/routing/MPS/TN | Gates/qubits |
 | CircuitCostAnalysis | Optimization/selection | Gates/layout/duration |
 | TargetLegalityAnalysis | Target conversion | Operations/types/snapshot |
 | LivenessAndMemoryAnalysis | Plans/buffer reuse | Lifetimes/shapes |

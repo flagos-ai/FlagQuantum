@@ -4,7 +4,7 @@ The numerical work lives in `flagquantum/simulation/stabilizer`; this module own
 the Runtime side of the same route -- binding a plan's measurement requests to the
 engine, adapting the representation to the Runtime measurement contract, and
 keeping the tableau's cost visible against a declared memory limit. Nothing here
-builds a state, selects a seed stream, or decides a wire order.
+builds a state, selects a seed stream, or decides a qubit order.
 """
 
 from __future__ import annotations
@@ -27,10 +27,10 @@ class StabilizerTarget:
     The contract draws from any target exposing ``sample(shots, *, generator,
     format)`` and reads a Pauli expectation from any target exposing
     ``expectation_ps`` and ``expectation_z``, which is what keeps postselection,
-    wire selection, counts, shot statistics, the analytic readout, the observable
+    qubit selection, counts, shot statistics, the analytic readout, the observable
     flip, and the coefficient weighting one implementation instead of one per
-    state representation. This target answers for every wire of the program in
-    wire order, so the contract's own wire selection produces the requested
+    state representation. This target answers for every qubit of the program in
+    qubit order, so the contract's own qubit selection produces the requested
     columns, and it reads the seed the contract built from the request metadata
     rather than inventing a second seeding convention.
 
@@ -38,8 +38,8 @@ class StabilizerTarget:
     drawings a request needs, and this target performs exactly one per call. A
     readout is not sampled at all, because a Clifford circuit expanded through a
     Pauli string is one Pauli and one exact value. The program it holds carries no
-    lowered measurement nodes, because the wires and shots are the request's, not
-    the IR's. The returned tensors carry the leading batch axis the contract
+    lowered measurement nodes, because the qubit list and shots are the request's,
+    not the IR's. The returned tensors carry the leading batch axis the contract
     expects; a real batch would mean re-running one circuit rather than running a
     different one.
 
@@ -79,13 +79,13 @@ class StabilizerTarget:
         # The engine's own census decides which of its two sampling entry points
         # applies, because a channel reaches the IR both as a schema-declared
         # opcode and as a lowered instruction and only the engine reads both. All
-        # wires are terminal here: the contract selects the columns it asked for,
-        # so this target answers for the whole register in wire order either way.
+        # qubits are terminal here: the contract selects the columns it asked for,
+        # so this target answers for the whole register in qubit order either way.
         if survey_stabilizer_program(self._program).noise_instructions:
             samples = sample_noisy_measurements(
                 self._program,
                 shots=int(shots),
-                terminal_wires=tuple(range(self._program.n_wires)),
+                terminal_qubits=tuple(range(self._program.n_wires)),
                 seed=self._seed,
             )
         else:
@@ -113,12 +113,11 @@ class StabilizerTarget:
     ) -> torch.Tensor:
         """Return one exact `Z` expectation per requested qubit, in that order."""
 
-        # The name is a wire-qualified parameter on a public method, so it takes
-        # the spelling the qubit-vocabulary migration is retiring `wires` toward;
-        # the measurement contract calls this positionally, and a caller reaching
-        # it by keyword is asking the target directly rather than through
-        # Runtime. A `bool` lands in the single-qubit branch the way `int` does,
-        # and the engine's own letter lookup is what refuses it by name.
+        # The parameter name is the one the qubit-vocabulary migration settles on
+        # for this public method; the measurement contract calls this positionally,
+        # and a caller reaching it by keyword is asking the target directly rather
+        # than through Runtime. A `bool` lands in the single-qubit branch the way
+        # `int` does, and the engine's own letter lookup is what refuses it by name.
         if qubits is None:
             selected: tuple[int, ...] = tuple(range(self._program.n_wires))
         elif isinstance(qubits, int):

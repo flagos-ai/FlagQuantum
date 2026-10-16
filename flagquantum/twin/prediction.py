@@ -12,9 +12,9 @@ from .validation import TwinValidationReport, _total_variation
 _PREDICTION_SCHEMA = "flagquantum.twin_prediction.v1"
 
 
-def _validate_probabilities(values: tuple[float, ...], n_wires: int) -> None:
-    if len(values) != 2**n_wires:
-        raise ValueError("probability vector does not match n_wires")
+def _validate_probabilities(values: tuple[float, ...], n_qubits: int) -> None:
+    if len(values) != 2**n_qubits:
+        raise ValueError("probability vector does not match n_qubits")
     if any(not math.isfinite(value) or value < -1e-12 for value in values):
         raise ValueError("probabilities must be finite and non-negative")
     if not math.isclose(sum(values), 1.0, abs_tol=1e-6):
@@ -39,6 +39,8 @@ class TwinPrediction:
         if len(self.snapshot_identity) != 64 or len(self.circuit_identity) != 64:
             raise ValueError("prediction identities must be SHA-256 digests")
         if self.n_wires < 1:
+            # The field this refuses is an excluded payload key, so the message
+            # has to name the spelling the caller actually passed.
             raise ValueError("n_wires must be positive")
         _validate_probabilities(self.ideal_probabilities, self.n_wires)
         _validate_probabilities(self.twin_probabilities, self.n_wires)

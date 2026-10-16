@@ -55,10 +55,10 @@ def test_jax_tensor_network_loss_state_norm_matches_reference():
 
     got = jax_tensor_network_loss_from_output(
         jnp.asarray(state),
-        n_wires=n_wires,
+        n_qubits=n_wires,
         bsz=bsz,
         observable="state_norm",
-        observable_wires=None,
+        observable_qubits=None,
     )
     expected = np.sum(np.conj(state) * state)
     assert np.isclose(float(np.asarray(got)), float(expected.real), atol=1e-3)

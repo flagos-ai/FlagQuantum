@@ -113,15 +113,21 @@ def execute_torch_distributed_mps_forward(
                 "not one-site or adjacent two-site; route it before MPS execution"
             )
     ownership = initial_mps_ownership(ir.n_wires, world_size)
+    # |0> is written as a device-side comparison rather than by assigning the
+    # integer 1 into a slice: assigning a host scalar lifts one fresh device
+    # scalar per owned site, which a profiler records as a host-to-device copy
+    # per site in the measured region, while a comparison produces the same
+    # amplitude on the device without staging anything through the host.
+    zero_state = (torch.arange(2, device=resolved_device) == 0).to(resolved_dtype)
     local_tensors = {}
     for wire in ownership[rank]:
         tensor = torch.zeros(
             (bsz, 1, 2, 1), dtype=resolved_dtype, device=resolved_device
         )
-        tensor[:, :, 0, :] = 1
+        tensor[:, :, 0, :] = zero_state[0]
         local_tensors[wire] = tensor
     state = RankOwnedMPSState(
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         bsz=bsz,
         rank=rank,
         world_size=world_size,
@@ -331,13 +337,18 @@ def execute_torch_distributed_mps_forward(
         raise RuntimeError(
             "exact truncation-gradient policy cannot describe a truncated forward"
         )
-    local_bytes = torch.tensor(
-        [sum(tensor_nbytes(tensor) for tensor in state.local_tensors.values())],
-        dtype=torch.int64,
-        device=resolved_device,
-    )
+    # The footprint is a host-known integer, so it is scaled onto the device
+    # rather than written into a device vector element by element: writing it
+    # would lift one fresh device scalar inside the region the caller may be
+    # timing, and the exchange below is the only interchange this accounting
+    # needs. The gathered vector is read back once, not once per rank.
+    footprint = sum(tensor_nbytes(tensor) for tensor in state.local_tensors.values())
+    local_bytes = torch.ones((), dtype=torch.int64, device=resolved_device) * footprint
     gathered_bytes = [torch.zeros_like(local_bytes) for _ in range(world_size)]
     dist.all_gather(gathered_bytes, local_bytes)
+    rank_tensor_bytes = tuple(
+        int(value) for value in torch.stack(gathered_bytes).tolist()
+    )
     return TorchDistributedMPSForwardResult(
         shard_state=state,
         local_gate_count=local_count,
@@ -349,7 +360,7 @@ def execute_torch_distributed_mps_forward(
         rebalance_count=rebalances,
         partition_history=tuple(history),
         bond_dimensions=bond_dimensions,
-        rank_tensor_bytes=tuple(int(value.item()) for value in gathered_bytes),
+        rank_tensor_bytes=rank_tensor_bytes,
         canonicalization=canonicalization,
         truncation_records=truncation_records,
         global_error_budget=global_error_budget,
@@ -415,13 +426,13 @@ def gather_mps_for_validation(
             count = int(math.prod(shape))
             tensors[wire] = buffer[offset : offset + count].reshape(shape)
             offset += count
-    if sorted(tensors) != list(range(state.n_wires)):
+    if sorted(tensors) != list(range(state.n_qubits)):
         raise RuntimeError(
             "the gathered MPS is missing sites: "
-            f"present={sorted(tensors)} expected={list(range(state.n_wires))}"
+            f"present={sorted(tensors)} expected={list(range(state.n_qubits))}"
         )
     return MPSState(
-        [tensors[wire] for wire in range(state.n_wires)],
+        [tensors[wire] for wire in range(state.n_qubits)],
         config=state.config,
     )
 

@@ -590,10 +590,10 @@ def plan_readout_mitigation(
                 f"{type(rule).__name__}"
             )
         if isinstance(rule.error, CorrelatedReadoutError):
-            if len(rule.wires) != rule.error.n_wires:
+            if len(rule.wires) != rule.error.n_qubits:
                 raise ValueError(
                     f"a correlated readout rule on {len(rule.wires)} qubits "
-                    f"declares a {rule.error.n_wires}-qubit matrix"
+                    f"declares a {rule.error.n_qubits}-qubit matrix"
                 )
             if len(rule.wires) > MAX_CORRELATED_BLOCK_QUBITS:
                 raise CapabilityError(
@@ -615,7 +615,7 @@ def plan_readout_mitigation(
                     tuple(rule.wires),
                     _square_matrix(
                         rule,
-                        2**rule.error.n_wires,
+                        2**rule.error.n_qubits,
                         f"a rule on {len(rule.wires)} qubits",
                     ),
                     singular_value_floor,

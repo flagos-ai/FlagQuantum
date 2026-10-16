@@ -1,7 +1,7 @@
 """Basis-index expansion shared by every statevector execution path.
 
 A gate addresses a small group of basis vectors, and a rank-local shard addresses
-them through an offset table derived from the wire positions. The expansions here
+them through an offset table derived from the qubit positions. The expansions here
 are the single source of truth for that arithmetic, so a kernel, a shard, and the
 sweep that drives them all index the same amplitudes.
 """
@@ -22,7 +22,7 @@ def _zero_basis_local_indices(
     rank_bits: int,
     device: torch.device,
 ) -> torch.Tensor:
-    """Expand compressed indices with zero bits at the selected local wires."""
+    """Expand compressed indices with zero bits at the selected local qubits."""
 
     positions = sorted(n_wires - int(wire) - 1 - rank_bits for wire in wires)
     indices = torch.arange(
@@ -38,7 +38,7 @@ def _zero_basis_local_indices(
 def _basis_indices_for_wires(
     global_indices: torch.Tensor, *, n_wires: int, wires: Sequence[int]
 ) -> torch.Tensor:
-    """Extract the selected wire bits as compact basis indices."""
+    """Extract the selected qubit bits as compact basis indices."""
 
     wires = tuple(int(wire) for wire in wires)
     basis = torch.zeros_like(global_indices, dtype=torch.long)
@@ -49,7 +49,7 @@ def _basis_indices_for_wires(
 
 
 def _wire_mask(n_wires: int, wire: int) -> int:
-    """Return the global statevector bit mask for one logical wire."""
+    """Return the global statevector bit mask for one logical qubit."""
 
     return 1 << (int(n_wires) - int(wire) - 1)
 

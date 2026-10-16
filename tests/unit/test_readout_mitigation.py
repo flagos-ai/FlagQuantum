@@ -74,7 +74,7 @@ def _whole_space_map(model: NoiseModel, n_qubits: int) -> torch.Tensor:
         basis = torch.zeros(size, dtype=torch.float64)
         basis[true_index] = 1.0
         matrix[:, true_index] = model.apply_readout_probabilities(
-            basis, n_wires=n_qubits
+            basis, n_qubits=n_qubits
         )
     return matrix
 
@@ -210,7 +210,7 @@ def test_the_correction_recovers_the_exact_distribution_of_a_circuit() -> None:
     plan = plan_readout_mitigation(model, n_qubits=2)
     circuit = fq.Circuit(2).x(1)
     exact = _exact_distribution(circuit)
-    measured = model.apply_readout_probabilities(exact, n_wires=2)
+    measured = model.apply_readout_probabilities(exact, n_qubits=2)
     corrected = run_readout_mitigation(measured, plan)
     assert float((corrected.probabilities - exact).abs().max()) < 1e-15
     # The forward step genuinely moved the distribution, so the recovery above
@@ -230,7 +230,7 @@ def test_an_uncovered_qubit_reads_perfectly_and_is_named_as_uncovered() -> None:
     assert plan.uncovered_qubits == (1, 2)
     exact = torch.zeros(8, dtype=torch.float64)
     exact[0b101] = 1.0  # qubits 0 and 2 set
-    measured = model.apply_readout_probabilities(exact, n_wires=3)
+    measured = model.apply_readout_probabilities(exact, n_qubits=3)
     corrected = run_readout_mitigation(measured, plan).probabilities
     assert float((corrected - exact).abs().max()) < 1e-15
 

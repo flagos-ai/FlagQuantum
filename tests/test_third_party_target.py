@@ -179,9 +179,9 @@ def test_the_declaration_supplies_the_connectivity_the_compiler_needs(
     _, description, snapshot = declared_target
 
     # The provider states edges; Compiler's own type consumes them unchanged.
-    coupling_map = CouplingMap(description.n_wires, description.coupling_edges)
+    coupling_map = CouplingMap(description.n_qubits, description.coupling_edges)
 
-    assert coupling_map.n_wires == 4
+    assert coupling_map.n_qubits == 4
     assert description.native_gates == ("cx", "h", "rz", "s", "sdg", "sx", "x")
     # `ry` is deliberately absent, so the existing native-gate pass must act.
     assert "ry" not in description.native_gates
@@ -191,7 +191,7 @@ def test_the_declaration_supplies_the_connectivity_the_compiler_needs(
 
 def test_a_user_circuit_is_legalized_onto_the_declared_device(declared_target):
     _, description, snapshot = declared_target
-    coupling_map = CouplingMap(description.n_wires, description.coupling_edges)
+    coupling_map = CouplingMap(description.n_qubits, description.coupling_edges)
     program = fq.Circuit(4).h(0).ry(3, _ROTATION).cx(0, 3)
 
     legalized = legalize_circuit_for_target(
@@ -220,7 +220,7 @@ def test_a_user_circuit_is_legalized_onto_the_declared_device(declared_target):
 
 def test_routing_does_not_change_the_noiseless_result(declared_target):
     _, description, snapshot = declared_target
-    coupling_map = CouplingMap(description.n_wires, description.coupling_edges)
+    coupling_map = CouplingMap(description.n_qubits, description.coupling_edges)
     program = fq.Circuit(4).h(0).ry(3, _ROTATION).cx(0, 3)
     options = ExecutionOptions(mode="density_matrix")
 
@@ -243,7 +243,7 @@ def test_the_legalized_program_executes_through_an_admitted_provider_route(
     declared_target,
 ):
     _, description, snapshot = declared_target
-    coupling_map = CouplingMap(description.n_wires, description.coupling_edges)
+    coupling_map = CouplingMap(description.n_qubits, description.coupling_edges)
     # This circuit stays inside the reference route's declared gate set, so the
     # same target snapshot drives compilation and execution end to end.
     program = fq.Circuit(4).h(0).rz(3, _ROTATION).cx(0, 1).cx(1, 2).cx(2, 3)
@@ -284,7 +284,7 @@ def test_declared_gate_errors_damp_the_measured_correlator_as_reported(
     declared_target,
 ):
     _, description, snapshot = declared_target
-    coupling_map = CouplingMap(description.n_wires, description.coupling_edges)
+    coupling_map = CouplingMap(description.n_qubits, description.coupling_edges)
     program = fq.Circuit(4).h(0).ry(3, _ROTATION).cx(0, 3)
     options = ExecutionOptions(mode="density_matrix")
     model = NoiseModel().add("cx", depolarizing_channel(_GATE_ERROR))
@@ -329,10 +329,10 @@ def test_the_declared_topology_is_the_one_the_router_honours(declared_target):
     program = fq.Circuit(4).h(0).ry(3, _ROTATION).cx(0, 3)
 
     # The declared device is a linear chain, so the far pair must be swapped over.
-    declared = CouplingMap(description.n_wires, tuple(description.coupling_edges))
+    declared = CouplingMap(description.n_qubits, tuple(description.coupling_edges))
     # A device that already couples the pair directly needs no swaps for this
     # circuit: the connectivity is a constraint on the router, not decoration.
-    direct = CouplingMap(description.n_wires, ((0, 3),))
+    direct = CouplingMap(description.n_qubits, ((0, 3),))
 
     on_declared = legalize_circuit_for_target(
         program, backend="provider", snapshot=snapshot, coupling_map=declared
@@ -346,7 +346,7 @@ def test_the_declared_topology_is_the_one_the_router_honours(declared_target):
 
     # A device that cannot carry the pair at all is refused rather than routed
     # through a connection the provider never declared.
-    unreachable = CouplingMap(description.n_wires, ((0, 1), (1, 2)))
+    unreachable = CouplingMap(description.n_qubits, ((0, 1), (1, 2)))
     with pytest.raises(TargetLegalizationError, match="[Nn]o coupling path"):
         legalize_circuit_for_target(
             program, backend="provider", snapshot=snapshot, coupling_map=unreachable
@@ -367,7 +367,7 @@ def test_a_circuit_beyond_the_declared_capacity_is_refused(declared_target):
             too_wide,
             backend="provider",
             snapshot=snapshot,
-            coupling_map=CouplingMap(description.n_wires + 1, couplings),
+            coupling_map=CouplingMap(description.n_qubits + 1, couplings),
         )
 
 

@@ -26,6 +26,7 @@ from benchmarks.compiler_stochastic_swap import (
     run_benchmark,
 )
 from flagquantum.compiler import CouplingMap
+from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.benchmark_contract
@@ -73,6 +74,10 @@ def test_measurement_is_classified_as_a_local_microbenchmark(payload: dict) -> N
     )
     # The pass this ports was removed in Qiskit 2.0, which the repository certifies.
     assert payload["reference_revision"].startswith("qiskit 1.3.0")
+    # The retained counts are read after post-routing optimization, so the
+    # level that ran is part of the reading rather than a default that
+    # happened to be in force when the number was taken.
+    assert payload["optimization_level"] == DEFAULT_OPTIMIZATION_LEVEL
 
 
 def test_measurement_covers_the_declared_basis(payload: dict) -> None:

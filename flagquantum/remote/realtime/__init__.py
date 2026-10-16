@@ -10,7 +10,7 @@ Three layers, in the order a call moves through them:
 
 - :mod:`.protocol` frames one request or response into a fixed ring slot: a
   24-byte header, an opaque payload, zero padding.
-- :mod:`.payload` types that payload. The wire is typeless, so a
+- :mod:`.payload` types that payload. The frame is typeless, so a
   :class:`~flagquantum.remote.realtime.payload.HandlerSchema` is the whole
   contract between a caller and a handler.
 - :mod:`.service` is the handler side, :mod:`.channels` moves slots, and

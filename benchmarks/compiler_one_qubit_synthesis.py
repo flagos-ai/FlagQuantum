@@ -375,6 +375,7 @@ def _qiskit_anchor() -> dict[str, Any]:
     """
 
     try:
+        import qiskit  # type: ignore[import-not-found]
         from qiskit.circuit.library import (  # type: ignore[import-not-found]
             HGate,
             IGate,
@@ -450,6 +451,12 @@ def _qiskit_anchor() -> dict[str, Any]:
         )
     return {
         "available": True,
+        # The library reading, not the pinned `reference_revision` above, so that
+        # every anchor in this directory answers "which lane?" the same way. The
+        # counts below are the ones this module measured as stable across the
+        # certified lanes, which is a reason to read them as stable rather than a
+        # reason to leave the lane unnamed.
+        "qiskit_version": qiskit.__version__,
         "decomposer": "OneQubitEulerDecomposer('ZSX')",
         "identical_gate_count": sum(1 for row in rows if row["identical"]),
         "same_length_count": sum(1 for row in rows if row["same_length"]),

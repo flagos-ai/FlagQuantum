@@ -34,7 +34,7 @@ def _cx_sequence_kernel_match(*, device_type: str, dtype: str) -> KernelMatchRes
 def _require_cx_sequence_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired implementation or fail closed on catalog drift."""
+    """Return the connected implementation or fail closed on catalog drift."""
 
     return _require_cataloged_kernel(
         _cx_sequence_kernel_match(device_type=device_type, dtype=dtype),
@@ -66,7 +66,7 @@ def _apply_cataloged_cx_sequence(
         target_masks=target_masks,
         reverse_control_masks=reverse_control_masks,
         reverse_target_masks=reverse_target_masks,
-        n_wires=n_wires,
+        n_qubits=n_wires,
     )
 
 

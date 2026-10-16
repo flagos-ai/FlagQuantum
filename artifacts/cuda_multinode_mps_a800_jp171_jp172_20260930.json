@@ -1,17 +1,15 @@
 {
   "evidence": {
-    "captured_at": "2026-10-01T23:05:01.757316+00:00",
+    "captured_at": "2026-10-05T14:14:39.082659+00:00",
     "claim_blockers": [
       "host_staging_in_measured_region",
-      "toy_circuit_parameters_only",
-      "two_node_pair_only_no_wider_topology",
-      "validation_only_tiny_full_mps_gather"
+      "two_node_pair_only_no_wider_topology"
     ],
     "environment": {
       "cuda_runtime": "13.0",
       "nccl": "2.29.7",
       "python": "3.12.13",
-      "source_revision": "591401fac230213aa73a3b253a89aa2ef919e510",
+      "source_revision": "be04365f7a78c5361635b712184f8abe53b47f51",
       "torch": "2.13.0+cu130"
     },
     "observations": {
@@ -139,20 +137,100 @@
           4
         ]
       },
+      "export": {
+        "gather": {
+          "maximum_seconds": 0.0009673889726400375,
+          "measured": true,
+          "measured_iterations": 5,
+          "measurement": "distributed_mps_full_state_export",
+          "median_seconds": 0.0009444672614336014,
+          "minimum_seconds": 0.000937923789024353,
+          "seconds": [
+            0.0009476803243160248,
+            0.0009439084678888321,
+            0.0009673889726400375,
+            0.000937923789024353,
+            0.0009444672614336014
+          ],
+          "synchronized": true,
+          "warmup_iterations": 2
+        },
+        "gather_cost_semantics": "every_rank_receives_every_other_ranks_sites_and_keeps_the_whole_state",
+        "max_abs_error": 2.222884165575998e-16,
+        "measurement": "distributed_mps_full_state_export",
+        "operation": "all_gather",
+        "operation_semantics": "explicit_full_mps_gather",
+        "product": "full_mps_state",
+        "product_bytes": 2688,
+        "product_is_the_full_state": true,
+        "result": {
+          "blockers": [
+            "full_mps_gather_is_not_a_scaling_result"
+          ],
+          "bsz": 1,
+          "claim_evidence_type": "production_runtime",
+          "distribution_semantics": "replicated_per_rank",
+          "executor": "distributed_mps_full_state_export_v1",
+          "full_state_bytes": 2688,
+          "full_state_materialization": true,
+          "gather_bytes_per_rank": 1344,
+          "gather_cost_semantics": "every_rank_receives_every_other_ranks_sites_and_keeps_the_whole_state",
+          "local_site_bytes": 1344,
+          "local_site_count": 3,
+          "local_world_size": 1,
+          "max_bond": 8,
+          "n_wires": 6,
+          "node_count": 2,
+          "operation": "all_gather",
+          "operation_semantics": "explicit_full_mps_gather",
+          "padded_block_bytes": 1344,
+          "peak_resident_bytes_per_rank": 4032,
+          "release_gate_allowed": false,
+          "scalability_claim_allowed": false,
+          "site_order": "canonical_logical",
+          "site_ownership": [
+            [
+              0,
+              1,
+              2
+            ],
+            [
+              3,
+              4,
+              5
+            ]
+          ],
+          "site_parameter_count": 168,
+          "state_partition": "contiguous_site_block_per_rank",
+          "total_gather_bytes": 2688,
+          "world_size": 2
+        },
+        "site_tensors_sha256": "88df49c296cc3c95b92739d26e406171fe44583e75d884b6c14ed3d910339705"
+      },
+      "frozen_circuit": {
+        "bound_parameter_count": 31,
+        "configuration": "matched_speed_8192sites_chi64",
+        "declared_parameter_count": 31,
+        "manifest": "benchmarks/manifests/mps_release_v1.json",
+        "manifest_sha256": "e95921bb6c86ff91ea7aa5a83e2be3d93b07ae9a789cf0b09c5aeff872b8349f",
+        "n_sites": 8192,
+        "n_wires": 6,
+        "trained_max_bond": 64
+      },
       "host_staging": {
         "host_transfer_events": [
           {
-            "count": 12,
+            "count": 26,
             "direction": "device_to_host",
             "name": "Memcpy DtoH (Device -> Pageable)"
           },
           {
-            "count": 10,
+            "count": 2,
             "direction": "device_to_host",
             "name": "Memcpy DtoH (Device -> Pinned)"
           },
           {
-            "count": 22,
+            "count": 8,
             "direction": "host_to_device",
             "name": "Memcpy HtoD (Pageable -> Device)"
           }
@@ -163,8 +241,9 @@
           "ProfilerActivity.CPU",
           "ProfilerActivity.CUDA"
         ],
+        "profiled_warmup_executions": 2,
         "profiled_workload": "sharded_mps_forward",
-        "profiler_event_count": 141
+        "profiler_event_count": 156
       },
       "network": {
         "backend": "nccl",
@@ -172,7 +251,7 @@
         "configured_interface_observed": true,
         "configured_transport": "infiniband",
         "debug_log_scope": "rank",
-        "debug_log_sha256": "71d6d8669b8041d1b2ae2e8d1808aa623d122d34da07e7bd99961f903d218100",
+        "debug_log_sha256": "0c73b0d36964e1c607c96ff8248210ec255c09119be78c704af26190c461f21b",
         "evidence_level": "observed_debug_log",
         "gpu_direct_observed": true,
         "infiniband_transport_observed": true,
@@ -183,37 +262,37 @@
       "numerical_metrics": {
         "expectation_value_error": 3.3306690738754696e-16,
         "first_leg_initial_expectation_error": 3.3306690738754696e-16,
-        "forward_boundary_bytes": 192.0,
-        "forward_boundary_messages": 4.0,
+        "forward_boundary_bytes": 10752.0,
+        "forward_boundary_messages": 12.0,
         "gradient_max_abs_error": 1.1102230246251565e-16,
         "resume_prefix_max_abs_error": 0.0,
         "resume_trajectory_max_abs_error": 0.0,
         "statevector_infidelity": 0.0,
-        "statevector_max_abs_error": 1.1188630228279524e-16,
-        "statevector_norm_error": 2.220446049250313e-16,
+        "statevector_max_abs_error": 2.2228841655759984e-16,
+        "statevector_norm_error": 0.0,
         "training_final_loss": 0.8796563867030699,
         "training_loss_decrease": 0.028119418858087553
       },
       "performance": {
         "max_bond": 64,
-        "maximum_seconds": 0.022444969043135643,
+        "maximum_seconds": 0.04858272708952427,
         "measured": true,
         "measured_iterations": 5,
         "measurement": "sharded_mps_forward",
-        "median_seconds": 0.021534040570259094,
-        "minimum_seconds": 0.020412376150488853,
+        "median_seconds": 0.04769292660057545,
+        "minimum_seconds": 0.047420911490917206,
         "n_wires": 6,
         "seconds": [
-          0.022444969043135643,
-          0.020412376150488853,
-          0.021921128034591675,
-          0.021534040570259094,
-          0.02116485871374607
+          0.04769151099026203,
+          0.04777742736041546,
+          0.047420911490917206,
+          0.04769292660057545,
+          0.04858272708952427
         ],
         "synchronized": true,
         "warmup_iterations": 2
       },
-      "production_full_mps_materialization": false,
+      "production_full_mps_materialization": true,
       "rank_records": [
         {
           "backend": "nccl",
@@ -254,7 +333,7 @@
             "layer_halo_intra_node_bytes": 0,
             "layer_halo_message_count": 1,
             "layer_halo_payload_bytes": 32,
-            "layer_halo_wait_seconds": 0.00037728622555732727,
+            "layer_halo_wait_seconds": 0.0003382191061973572,
             "local_world_size": 1,
             "mps_backward_execution": "completed",
             "node_count": 2,
@@ -319,25 +398,25 @@
           ],
           "bond_dimensions": [
             2,
-            2,
-            2,
-            2,
+            4,
+            8,
+            4,
             2
           ],
-          "boundary_bytes": 96,
-          "boundary_gate_count": 1,
-          "boundary_messages": 2,
+          "boundary_bytes": 5376,
+          "boundary_gate_count": 3,
+          "boundary_messages": 6,
           "canonicalization_bytes_by_rank": [
-            104,
-            104
+            1064,
+            1064
           ],
           "canonicalization_messages_by_rank": [
             4,
             4
           ],
           "canonicalization_temporary_bytes_by_rank": [
-            320,
-            320
+            2048,
+            2048
           ],
           "claim_evidence_type": "accelerator_semantics",
           "communication": {
@@ -346,13 +425,13 @@
             "backward_layer_halo_inter_node_bytes": 32,
             "backward_layer_halo_intra_node_bytes": 0,
             "backward_shared_parameter_reduction": "bounded_dtype_all_reduce_sum",
-            "forward_boundary_bytes": 96,
-            "forward_boundary_messages": 2,
-            "forward_communication_bytes": 360,
-            "forward_communication_messages": 8,
+            "forward_boundary_bytes": 5376,
+            "forward_boundary_messages": 6,
+            "forward_communication_bytes": 7048,
+            "forward_communication_messages": 14,
             "forward_local_tensor_bytes_by_rank": [
-              320,
-              320
+              1344,
+              1344
             ],
             "training_communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
             "training_last_step_boundary_bytes": 192,
@@ -363,8 +442,8 @@
             "training_site_kernel_execution": "eager",
             "training_site_kernel_selection_reason": "auto_checkpoint_compatibility_uses_eager"
           },
-          "communication_bytes": 360,
-          "communication_messages": 8,
+          "communication_bytes": 7048,
+          "communication_messages": 14,
           "communication_primitive": "torch.distributed_point_to_point",
           "device_name": "NVIDIA A800-SXM4-80GB",
           "device_uuid": "1ffa16a6-3917-0c8d-2460-b360464eae49",
@@ -390,13 +469,13 @@
           "hostname_sha256": "10b8f2acc11df1cc02ef274f438c6a57facb23d9ce95aaac7c6a57967a010139",
           "jax_imported": false,
           "jax_required": false,
-          "local_gate_count": 3,
+          "local_gate_count": 20,
           "local_tensor_bytes_by_rank": [
-            320,
-            320
+            1344,
+            1344
           ],
           "local_world_size": 1,
-          "mixed_canonical_residual": 4.440892098500626e-16,
+          "mixed_canonical_residual": 6.661736338035357e-16,
           "node_count": 2,
           "orthogonality_center": 5,
           "owned_sites": [
@@ -440,11 +519,35 @@
                 4,
                 5
               ]
+            ],
+            [
+              [
+                0,
+                1
+              ],
+              [
+                2,
+                3,
+                4,
+                5
+              ]
+            ],
+            [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
             ]
           ],
           "rank": 0,
           "rank_ownership": {
-            "local_tensor_bytes": 320,
+            "local_tensor_bytes": 1344,
             "local_tensor_count": 3,
             "local_tensor_wires": [
               0,
@@ -471,16 +574,16 @@
             "node_rank": 0,
             "rank": 0
           },
-          "rebalance_bytes": 160,
-          "rebalance_count": 2,
-          "rebalance_messages": 2,
+          "rebalance_bytes": 608,
+          "rebalance_count": 4,
+          "rebalance_messages": 4,
           "scalability_claim_allowed": false,
           "state_mode": "distributed_mps",
           "state_norms": [
-            1.0000000000000004
+            0.9999999999999998
           ],
           "training_step": {
-            "allocated_memory_bytes": 17061888,
+            "allocated_memory_bytes": 17080320,
             "bond_updates": [
               {
                 "bond": 2,
@@ -533,12 +636,12 @@
             "boundary_forward_exchanges": 1,
             "boundary_reverse_exchanges": 1,
             "communication_buffer_bytes": 192,
-            "diagnostics_seconds": 0.0004760194569826126,
+            "diagnostics_seconds": 0.00045031122863292694,
             "discarded_weight": 0.0,
             "dynamic_metadata_broadcasts": 0,
-            "end_to_end_seconds": 0.03679715842008591,
-            "forward_peak_memory_bytes": 17077760,
-            "forward_seconds": 0.021425969898700714,
+            "end_to_end_seconds": 0.04303838685154915,
+            "forward_peak_memory_bytes": 17096192,
+            "forward_seconds": 0.02079540304839611,
             "fused_reverse_segments": 0,
             "gradient_bucket_cache_hit": true,
             "gradient_bucket_count": 2,
@@ -562,20 +665,20 @@
             "optimizer_collective_bytes": 16,
             "optimizer_collective_count": 1,
             "optimizer_memory_bytes": 0,
-            "optimizer_seconds": 0.00045933760702610016,
+            "optimizer_seconds": 0.0013204701244831085,
             "optimizer_stage": "sgd",
             "owned_bond_work": 1,
             "owned_site_work": 2,
             "parameter_gradients": [],
             "parameter_values": [],
-            "peak_memory_bytes": 17077760,
+            "peak_memory_bytes": 17096192,
             "qr_activity": 0,
             "qr_factorization_count": 3,
             "reserved_memory_bytes": 37748736,
             "reverse_autograd_grad_invocations": 3,
-            "reverse_peak_memory_bytes": 17072640,
+            "reverse_peak_memory_bytes": 17091072,
             "reverse_python_dispatches": 6,
-            "reverse_seconds": 0.01442573219537735,
+            "reverse_seconds": 0.02046121656894684,
             "reverse_segment_cache_hit": true,
             "reverse_tape_segments": 6,
             "static_qr_metadata_records": 1,
@@ -583,7 +686,7 @@
             "svd_activity": 1,
             "svd_factorization_count": 0,
             "tape_memory_bytes": 384,
-            "training_compute_seconds": 0.03631992265582085,
+            "training_compute_seconds": 0.04258645325899124,
             "truncated_splits": 0,
             "two_site_splits": 1,
             "useful_work_completed": true
@@ -607,8 +710,56 @@
               "bond": 1,
               "discarded_weight": 0.0,
               "method": "qr",
+              "original_rank": 4,
+              "rank": 4,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 0,
+              "discarded_weight": 0.0,
+              "method": "qr",
               "original_rank": 2,
               "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 2,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 8,
+              "rank": 8,
+              "source": "rank_boundary_gate"
+            },
+            {
+              "bond": 1,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 4,
+              "rank": 4,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 0,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 2,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 8,
+              "rank": 8,
+              "source": "rank_boundary_gate"
+            },
+            {
+              "bond": 2,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 8,
+              "rank": 8,
               "source": "rank_boundary_gate"
             },
             {
@@ -620,11 +771,35 @@
               "source": "rank_local_gate"
             },
             {
-              "bond": 3,
+              "bond": 4,
               "discarded_weight": 0.0,
               "method": "qr",
               "original_rank": 2,
               "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 3,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 4,
+              "rank": 4,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 4,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 3,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 4,
+              "rank": 4,
               "source": "rank_local_gate"
             },
             {
@@ -678,7 +853,7 @@
             "layer_halo_intra_node_bytes": 0,
             "layer_halo_message_count": 1,
             "layer_halo_payload_bytes": 32,
-            "layer_halo_wait_seconds": 0.00024271942675113678,
+            "layer_halo_wait_seconds": 0.0002484377473592758,
             "local_world_size": 1,
             "mps_backward_execution": "completed",
             "node_count": 2,
@@ -743,25 +918,25 @@
           ],
           "bond_dimensions": [
             2,
-            2,
-            2,
-            2,
+            4,
+            8,
+            4,
             2
           ],
-          "boundary_bytes": 96,
-          "boundary_gate_count": 1,
-          "boundary_messages": 2,
+          "boundary_bytes": 5376,
+          "boundary_gate_count": 3,
+          "boundary_messages": 6,
           "canonicalization_bytes_by_rank": [
-            104,
-            104
+            1064,
+            1064
           ],
           "canonicalization_messages_by_rank": [
             4,
             4
           ],
           "canonicalization_temporary_bytes_by_rank": [
-            320,
-            320
+            2048,
+            2048
           ],
           "claim_evidence_type": "accelerator_semantics",
           "communication": {
@@ -770,13 +945,13 @@
             "backward_layer_halo_inter_node_bytes": 32,
             "backward_layer_halo_intra_node_bytes": 0,
             "backward_shared_parameter_reduction": "bounded_dtype_all_reduce_sum",
-            "forward_boundary_bytes": 96,
-            "forward_boundary_messages": 2,
-            "forward_communication_bytes": 360,
-            "forward_communication_messages": 8,
+            "forward_boundary_bytes": 5376,
+            "forward_boundary_messages": 6,
+            "forward_communication_bytes": 7048,
+            "forward_communication_messages": 14,
             "forward_local_tensor_bytes_by_rank": [
-              320,
-              320
+              1344,
+              1344
             ],
             "training_communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
             "training_last_step_boundary_bytes": 192,
@@ -787,8 +962,8 @@
             "training_site_kernel_execution": "eager",
             "training_site_kernel_selection_reason": "auto_checkpoint_compatibility_uses_eager"
           },
-          "communication_bytes": 360,
-          "communication_messages": 8,
+          "communication_bytes": 7048,
+          "communication_messages": 14,
           "communication_primitive": "torch.distributed_point_to_point",
           "device_name": "NVIDIA A800-SXM4-80GB",
           "device_uuid": "dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
@@ -814,13 +989,13 @@
           "hostname_sha256": "6034a1531a0d1f5b43ce1219de2d815f206083226b31f23d709a8ffaf5df3e40",
           "jax_imported": false,
           "jax_required": false,
-          "local_gate_count": 6,
+          "local_gate_count": 21,
           "local_tensor_bytes_by_rank": [
-            320,
-            320
+            1344,
+            1344
           ],
           "local_world_size": 1,
-          "mixed_canonical_residual": 4.440892098500626e-16,
+          "mixed_canonical_residual": 6.661736338035357e-16,
           "node_count": 2,
           "orthogonality_center": 5,
           "owned_sites": [
@@ -864,11 +1039,35 @@
                 4,
                 5
               ]
+            ],
+            [
+              [
+                0,
+                1
+              ],
+              [
+                2,
+                3,
+                4,
+                5
+              ]
+            ],
+            [
+              [
+                0,
+                1,
+                2
+              ],
+              [
+                3,
+                4,
+                5
+              ]
             ]
           ],
           "rank": 1,
           "rank_ownership": {
-            "local_tensor_bytes": 320,
+            "local_tensor_bytes": 1344,
             "local_tensor_count": 3,
             "local_tensor_wires": [
               3,
@@ -895,16 +1094,16 @@
             "node_rank": 1,
             "rank": 1
           },
-          "rebalance_bytes": 160,
-          "rebalance_count": 2,
-          "rebalance_messages": 2,
+          "rebalance_bytes": 608,
+          "rebalance_count": 4,
+          "rebalance_messages": 4,
           "scalability_claim_allowed": false,
           "state_mode": "distributed_mps",
           "state_norms": [
-            1.0000000000000004
+            0.9999999999999998
           ],
           "training_step": {
-            "allocated_memory_bytes": 17061376,
+            "allocated_memory_bytes": 17077760,
             "bond_updates": [
               {
                 "bond": 2,
@@ -957,12 +1156,12 @@
             "boundary_forward_exchanges": 1,
             "boundary_reverse_exchanges": 1,
             "communication_buffer_bytes": 192,
-            "diagnostics_seconds": 0.00032327137887477875,
+            "diagnostics_seconds": 0.0007459409534931183,
             "discarded_weight": 0.0,
             "dynamic_metadata_broadcasts": 0,
-            "end_to_end_seconds": 0.03681614622473717,
-            "forward_peak_memory_bytes": 17077248,
-            "forward_seconds": 0.018207328394055367,
+            "end_to_end_seconds": 0.04355880245566368,
+            "forward_peak_memory_bytes": 17093632,
+            "forward_seconds": 0.022219737991690636,
             "fused_reverse_segments": 0,
             "gradient_bucket_cache_hit": true,
             "gradient_bucket_count": 2,
@@ -986,20 +1185,20 @@
             "optimizer_collective_bytes": 16,
             "optimizer_collective_count": 1,
             "optimizer_memory_bytes": 0,
-            "optimizer_seconds": 0.0002747233957052231,
+            "optimizer_seconds": 0.0006138663738965988,
             "optimizer_stage": "sgd",
             "owned_bond_work": 2,
             "owned_site_work": 1,
             "parameter_gradients": [],
             "parameter_values": [],
-            "peak_memory_bytes": 17077248,
+            "peak_memory_bytes": 17093632,
             "qr_activity": 2,
             "qr_factorization_count": 3,
             "reserved_memory_bytes": 37748736,
             "reverse_autograd_grad_invocations": 3,
-            "reverse_peak_memory_bytes": 17067520,
+            "reverse_peak_memory_bytes": 17083904,
             "reverse_python_dispatches": 6,
-            "reverse_seconds": 0.018004396930336952,
+            "reverse_seconds": 0.0199676975607872,
             "reverse_segment_cache_hit": true,
             "reverse_tape_segments": 6,
             "static_qr_metadata_records": 1,
@@ -1007,7 +1206,7 @@
             "svd_activity": 0,
             "svd_factorization_count": 0,
             "tape_memory_bytes": 192,
-            "training_compute_seconds": 0.036492133513092995,
+            "training_compute_seconds": 0.04281075485050678,
             "truncated_splits": 0,
             "two_site_splits": 0,
             "useful_work_completed": true
@@ -1031,8 +1230,56 @@
               "bond": 1,
               "discarded_weight": 0.0,
               "method": "qr",
+              "original_rank": 4,
+              "rank": 4,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 0,
+              "discarded_weight": 0.0,
+              "method": "qr",
               "original_rank": 2,
               "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 2,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 8,
+              "rank": 8,
+              "source": "rank_boundary_gate"
+            },
+            {
+              "bond": 1,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 4,
+              "rank": 4,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 0,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 2,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 8,
+              "rank": 8,
+              "source": "rank_boundary_gate"
+            },
+            {
+              "bond": 2,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 8,
+              "rank": 8,
               "source": "rank_boundary_gate"
             },
             {
@@ -1044,11 +1291,35 @@
               "source": "rank_local_gate"
             },
             {
-              "bond": 3,
+              "bond": 4,
               "discarded_weight": 0.0,
               "method": "qr",
               "original_rank": 2,
               "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 3,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 4,
+              "rank": 4,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 4,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 2,
+              "rank": 2,
+              "source": "rank_local_gate"
+            },
+            {
+              "bond": 3,
+              "discarded_weight": 0.0,
+              "method": "qr",
+              "original_rank": 4,
+              "rank": 4,
               "source": "rank_local_gate"
             },
             {
@@ -1066,8 +1337,8 @@
       ],
       "training": {
         "checkpoint_files": [
-          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-3.pt",
-          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-4.pt"
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/rank-0-step-3.pt",
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/rank-0-step-4.pt"
         ],
         "checkpoint_integrity": "sha256_atomic_file_and_metadata",
         "checkpoint_steps": 2,
@@ -1077,8 +1348,8 @@
           0.8991430340529726
         ],
         "interrupted_leg_checkpoint_files": [
-          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-1.pt",
-          "/nfs/fq-multinode-tier-checkpoints/rank-0-step-2.pt"
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/rank-0-step-1.pt",
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/rank-0-step-2.pt"
         ],
         "learning_rate": 0.05,
         "optimizer": "sgd",
@@ -1090,8 +1361,8 @@
         "resumed_start_step": 2,
         "resumed_steps": 4,
         "uninterrupted_leg_checkpoint_files": [
-          "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0-step-3.pt",
-          "/nfs/fq-multinode-tier-checkpoints/uninterrupted/rank-0-step-4.pt"
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/uninterrupted/rank-0-step-3.pt",
+          "/nfs/fq-scratch/mps_lane/fq-multinode-mps-checkpoints/uninterrupted/rank-0-step-4.pt"
         ],
         "uninterrupted_leg_losses": [
           0.9077758055611574,
@@ -1109,7 +1380,8 @@
     "scope": {
       "distribution_semantics": "sharded_across_ranks",
       "dtype": "complex128",
-      "execution": "forward_backward_optimizer_and_checkpoint_resume",
+      "execution": "forward_backward_optimizer_checkpoint_resume_and_full_state_export",
+      "exported_product": "full_mps_state",
       "local_world_size": 1,
       "max_bond": 64,
       "n_wires": 6,
@@ -1118,6 +1390,8 @@
         2,
         5
       ],
+      "parameter_count": 31,
+      "release_configuration": "matched_speed_8192sites_chi64",
       "site_ownership": [
         [
           0,
@@ -1134,6 +1408,6 @@
     },
     "status": "passed"
   },
-  "evidence_sha256": "3b97ea6e765fd7f3c2c635f9e1125fecfa774883d4178e53f4f563015a270dbb",
+  "evidence_sha256": "38df0bffbcf7af3b76b854a3d07301362c8ee5319cb32076ef57607b4a4cdc3b",
   "schema": "flagquantum.cuda_multinode_mps_artifact.v1"
 }

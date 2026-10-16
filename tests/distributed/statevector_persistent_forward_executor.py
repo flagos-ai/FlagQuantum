@@ -33,7 +33,7 @@ def _canonical_state(result) -> torch.Tensor:
     )
     for rank, shard in enumerate(gathered):
         internal[rank :: result.plan.world_size] = shard
-    mapping = result.logical_to_physical_wires
+    mapping = result.logical_to_physical_qubits
     canonical = torch.empty_like(internal)
     for logical_basis in range(internal.numel()):
         physical_basis = 0
@@ -92,7 +92,7 @@ def main() -> None:
             circuit,
             device=device,
             dtype=torch.complex64,
-            persistent_wire_layout=True,
+            persistent_qubit_layout=True,
         )
         # Comparing states is not enough to prove the swaps were replayed: a run
         # that skips every swap and also skips the wire remap executes the
@@ -101,12 +101,12 @@ def main() -> None:
         # produces, so it is checked against the plan's own swap sequence.
         expected_mapping = list(range(scheduled.n_wires))
         for swap in plan.swaps:
-            local, sharded = swap.local_logical_wire, swap.sharded_logical_wire
+            local, sharded = swap.local_logical_qubit, swap.sharded_logical_qubit
             expected_mapping[local], expected_mapping[sharded] = (
                 expected_mapping[sharded],
                 expected_mapping[local],
             )
-        assert persistent.logical_to_physical_wires == tuple(
+        assert persistent.logical_to_physical_qubits == tuple(
             expected_mapping
         ), "the replayed swaps do not reproduce the plan's wire permutation"
         torch.testing.assert_close(
@@ -115,7 +115,7 @@ def main() -> None:
             atol=2e-6,
             rtol=2e-6,
         )
-        assert persistent.wire_layout == "persistent"
+        assert persistent.qubit_layout == "persistent"
 
         repeated = fq.Circuit(5).rx(4, 0.1).ry(4, 0.2).rx(4, -0.3)
         repeated_canonical = execute_torch_distributed_statevector(
@@ -125,7 +125,7 @@ def main() -> None:
             repeated,
             device=device,
             dtype=torch.complex64,
-            persistent_wire_layout=True,
+            persistent_qubit_layout=True,
         )
         torch.testing.assert_close(
             _canonical_state(repeated_persistent),
@@ -146,7 +146,7 @@ def main() -> None:
             cx_chain,
             device=device,
             dtype=torch.complex64,
-            persistent_wire_layout=True,
+            persistent_qubit_layout=True,
         )
         torch.testing.assert_close(
             _canonical_state(cx_chain_compiled),
@@ -200,10 +200,10 @@ def main() -> None:
             json.dumps(
                 {
                     "persistent_layout_enabled": True,
-                    "wire_layout": persistent.wire_layout,
+                    "wire_layout": persistent.qubit_layout,
                     "persistent_swap_count": len(plan.swaps),
                     "logical_to_physical_wires": list(
-                        persistent.logical_to_physical_wires
+                        persistent.logical_to_physical_qubits
                     ),
                     "canonical_communication_bytes": canonical.communication_bytes,
                     "persistent_communication_bytes": persistent.communication_bytes,

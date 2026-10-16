@@ -6,7 +6,7 @@ parameter ordering, drawing, and backend capability checks consume that schema.
 
 `operator_manifest.json` is generated executable documentation. It records each
 canonical opcode, aliases, arity, ordered parameters, dtype policy, semantic
-kind, adjoint/decomposition metadata, differentiability, wire convention, and
+kind, adjoint/decomposition metadata, differentiability, qubit convention, and
 the supported lowering set for every backend.
 
 Regenerate and verify it with:

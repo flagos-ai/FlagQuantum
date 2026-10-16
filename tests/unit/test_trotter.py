@@ -657,8 +657,8 @@ def test_the_result_is_an_ordinary_circuit_the_compiler_already_owns() -> None:
     hamiltonian = Hamiltonian([pauli_term(1.0, "ZZ", (0, 1)), pauli_term(0.5, "X", 0)])
     circuit = trotter_circuit(hamiltonian, 0.4, order=2, dtype=torch.complex128)
     estimate = estimate_resources(circuit)
-    assert estimate.n_wires == 2
-    assert estimate.used_wires == 2
+    assert estimate.n_qubits == 2
+    assert estimate.used_qubits == 2
     assert estimate.n_operations == len(circuit)
     assert estimate.operation_counts["rz"] == 4
     assert estimate.t_count == 0

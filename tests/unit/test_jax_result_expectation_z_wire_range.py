@@ -43,7 +43,7 @@ def _statevector_result(
             "StatevectorPlan",
             (),
             {
-                "n_wires": 3,
+                "n_qubits": 3,
                 "bsz": 1,
                 "total_amplitudes": 8,
                 "complex_bytes": complex_bytes,
@@ -71,7 +71,7 @@ def _tensor_network_result(
     monkeypatch.setattr(
         tn_records,
         "_jax_reduced_tn_output_to_torch_state",
-        lambda reduced_output, *, n_wires, bsz, complex_bytes: state,
+        lambda reduced_output, *, n_qubits, bsz, complex_bytes: state,
         raising=True,
     )
     return tn_records.JAXShardedTensorNetworkResult(
@@ -80,7 +80,7 @@ def _tensor_network_result(
         slicing=None,
         jax_plan=cast(Any, None),
         backend_policy=cast(Any, None),
-        n_wires=3,
+        n_qubits=3,
         bsz=1,
         complex_bytes=complex_bytes,
         local_world_size=1,
@@ -128,7 +128,7 @@ def test_negative_wire_is_refused_instead_of_reporting_plus_one(
     result = _result(monkeypatch, kind, complex_bytes=16)
 
     for wire in (-1, -2, -3, -4):
-        with pytest.raises(ValueError, match="observable wire index out of range"):
+        with pytest.raises(ValueError, match="observable qubit index out of range"):
             result.expectation_z(wire)
 
 
@@ -139,7 +139,7 @@ def test_wire_at_or_beyond_the_state_is_refused(
     result = _result(monkeypatch, kind, complex_bytes=16)
 
     for wire in (3, 4, 9):
-        with pytest.raises(ValueError, match="observable wire index out of range"):
+        with pytest.raises(ValueError, match="observable qubit index out of range"):
             result.expectation_z(wire)
 
 
@@ -151,7 +151,7 @@ def test_refused_wire_does_not_build_the_state_facade(
 
     result = _result(monkeypatch, kind, complex_bytes=16)
 
-    with pytest.raises(ValueError, match="observable wire index out of range"):
+    with pytest.raises(ValueError, match="observable qubit index out of range"):
         result.expectation_z(-1)
 
     facade_count = (

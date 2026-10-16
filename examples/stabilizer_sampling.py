@@ -34,7 +34,7 @@ print(
 # A subset keeps the requested order in the output columns. Wire 1 is in the
 # first column here because it was requested first, not because it is the lower
 # wire number.
-subset = sample_stabilizer(bell, shots=4, wires=[1, 0], seed=1)
+subset = sample_stabilizer(bell, shots=4, qubits=[1, 0], seed=1)
 print("requested wires [1, 0] ->", subset.tolist())
 
 # Determinism: one seed reproduces a run on one engine version and one machine.

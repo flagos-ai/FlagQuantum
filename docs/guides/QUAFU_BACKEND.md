@@ -10,6 +10,22 @@ Keep credentials outside source control. `QUAFU_API_KEY` authenticates the
 current task API. `QUAFU_API_TOKEN` is optional, but is required for an
 authenticated fallback to the legacy SQC platform.
 
+A submission with **no** Quafu credential is rejected before any request is sent.
+`QUAFU_API_TOKEN` is the credential the legacy SQC endpoint authenticates with, so
+when it is unset the provider raises `flagquantum.errors.ValidationError` naming
+the missing source rather than posting a request that carries no authentication
+header:
+
+```text
+ValidationError: A Quafu credential is required to submit to the legacy SQC
+platform: pass token=... or set QUAFU_API_TOKEN. Neither QUAFU_API_KEY nor
+QUAFU_API_TOKEN is configured, so a request for target 'Baihua' would carry no
+authentication header. No request was sent.
+```
+
+`QUAFU_API_KEY` does not authorize that endpoint, so setting only the key is still
+refused, with a message that says which of the two credentials this route needs.
+
 ```bash
 export QUAFU_API_KEY=qf_replace_with_your_api_key
 export QUAFU_TASK_SERVER_URL=https://quafu.com.cn/api/v1
@@ -149,7 +165,7 @@ def execute_device_simulator(
 ```
 
 The workflow rejects an unknown target, a calibration belonging to a different
-device, a profile that does not cover every logical wire, or a noise model with
+device, a profile that does not cover every logical qubit, or a noise model with
 no timestamped device profile. Its receipt records the calibration source and
 capture time, noise-model identity, selected representation, and whether that
 representation is approximate. The service can therefore persist the receipt
@@ -246,7 +262,7 @@ print(deployment["quafu_protocol"])
 
 This direct path sends logical OpenQASM 2.0 and does not require local QSteed or
 QuarkCircuit installation. The platform performs compilation and physical
-routing. Counts are returned in logical-wire order (wire 0 on the left), while
+routing. Counts are returned in logical-qubit order (qubit 0 on the left), while
 raw provider metadata retains the original response. Hardware shots must be a
 multiple of 1024 from 1024 through 8192.
 
@@ -380,7 +396,7 @@ before submission.
 
 Precompiled submission uses one explicit contract: the OpenQASM program keeps
 logical indices `q[0]` through `q[N-1]`; `options.target_qubits[i]` names the
-physical qubit for logical wire `i`; and `options.compiler` is `None`. The
+physical qubit for logical qubit `i`; and `options.compiler` is `None`. The
 obsolete top-level `compile` flag is neither sent nor accepted by the adapter.
 
 For explicit backend selection:
@@ -457,9 +473,9 @@ noise_model = fqd.quafu_noise_model_from_chip_info(
 ```
 
 The converter maps per-qubit T1/T2 and gate duration exactly. Because the
-current `NoiseRule` contract does not distinguish gate-match wires from
-channel-target wires, selected one-qubit fidelities are averaged into one
-depolarizing rate that follows the acted-on logical wire. Two-qubit fidelity
+current `NoiseRule` contract does not distinguish gate-match qubits from
+channel-target qubits, selected one-qubit fidelities are averaged into one
+depolarizing rate that follows the acted-on logical qubit. Two-qubit fidelity
 conversion is deliberately unsupported and fails closed rather than applying
 an incorrect one-qubit approximation. Current Baihua payloads may report zero
 readout fidelities; in that case supply independently measured assignment

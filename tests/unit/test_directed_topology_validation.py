@@ -9,7 +9,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.parametrize("count", [True, 2.5, "3"])
 def test_directed_topology_rejects_noninteger_wire_count(count: object) -> None:
-    with pytest.raises(ValueError, match="wire count must be an integer"):
+    with pytest.raises(ValueError, match="qubit count must be an integer"):
         DirectedCouplingMap(count, ())
 
 

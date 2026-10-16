@@ -10,8 +10,8 @@ role of ``sigma_plus`` and ``sigma_minus``, or in the normal-ordering rewrite sh
 disagreement between two matrices rather than as a disagreement the module can absorb.
 """
 
-import numpy as np
 import pytest
+import torch
 
 import flagquantum as fq
 from flagquantum.errors import CapabilityError
@@ -28,12 +28,35 @@ from flagquantum.observables.fermion import FermionOperator, FermionTerm
 
 pytestmark = pytest.mark.unit
 
+_COMPLEX = torch.complex128
+
 _PAULI = {
-    "i": np.eye(2, dtype=complex),
-    "x": np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex),
-    "y": np.array([[0.0, -1.0j], [1.0j, 0.0]], dtype=complex),
-    "z": np.diag([1.0, -1.0]).astype(complex),
+    "i": torch.eye(2, dtype=_COMPLEX),
+    "x": torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=_COMPLEX),
+    "y": torch.tensor([[0.0, -1.0j], [1.0j, 0.0]], dtype=_COMPLEX),
+    "z": torch.diag(torch.tensor([1.0, -1.0], dtype=_COMPLEX)),
 }
+
+
+class _Draw:
+    """A seeded source of the integers and reals the random operators are built from.
+
+    ``torch`` owns the generator because it is this project's core numeric dependency; the
+    draws are read back as Python values so the operators themselves stay plain algebra.
+    """
+
+    def __init__(self, seed: int) -> None:
+        self._generator = torch.Generator().manual_seed(seed)
+
+    def integer(self, low: int, high: int) -> int:
+        draw = torch.randint(low, high, (1,), generator=self._generator)
+        return int(draw.item())
+
+    def unit(self) -> float:
+        return float(torch.rand((), generator=self._generator).item())
+
+    def normal(self) -> float:
+        return float(torch.randn((), generator=self._generator).item())
 
 
 def _factors(term: FermionTerm) -> tuple[tuple[int, bool], ...]:
@@ -44,11 +67,11 @@ def _factors(term: FermionTerm) -> tuple[tuple[int, bool], ...]:
     return creations + annihilations
 
 
-def _fock_matrix(operator: FermionOperator, n_modes: int) -> np.ndarray:
+def _fock_matrix(operator: FermionOperator, n_modes: int) -> torch.Tensor:
     """Act with a fermionic operator on every occupation basis state, from the CAR."""
 
     dimension = 1 << n_modes
-    matrix = np.zeros((dimension, dimension), dtype=complex)
+    matrix = torch.zeros((dimension, dimension), dtype=_COMPLEX)
     for column in range(dimension):
         occupations = tuple(
             (column >> (n_modes - 1 - mode)) & 1 for mode in range(n_modes)
@@ -70,34 +93,32 @@ def _fock_matrix(operator: FermionOperator, n_modes: int) -> np.ndarray:
     return matrix
 
 
-def _observable_matrix(observable: Observable, n_modes: int) -> np.ndarray:
+def _observable_matrix(observable: Observable, n_modes: int) -> torch.Tensor:
     """Build the dense matrix of a Pauli observable, wire 0 leftmost."""
 
-    matrix = np.zeros((1 << n_modes, 1 << n_modes), dtype=complex)
+    matrix = torch.zeros((1 << n_modes, 1 << n_modes), dtype=_COMPLEX)
     for term in observable.terms:
         by_wire = dict(term.factors)
         factors = [_PAULI[by_wire.get(wire, "i")] for wire in range(n_modes)]
         product = factors[0]
         for factor in factors[1:]:
-            product = np.kron(product, factor)
+            product = torch.kron(product, factor)
         matrix += term.coefficient * product
     return matrix
 
 
-def _random_hermitian_operator(
-    n_modes: int, rng: np.random.Generator
-) -> FermionOperator:
+def _random_hermitian_operator(n_modes: int, draw: _Draw) -> FermionOperator:
     """Build a random Hermitian operator from products of two or three factors."""
 
     operator = FermionOperator()
     for _ in range(3):
         product = FermionOperator((FermionTerm(1.0, (), ()),))
-        for _ in range(int(rng.integers(2, 4))):
-            degree = int(rng.integers(0, n_modes))
-            factor = create(degree) if rng.random() < 0.5 else annihilate(degree)
+        for _ in range(draw.integer(2, 4)):
+            degree = draw.integer(0, n_modes)
+            factor = create(degree) if draw.unit() < 0.5 else annihilate(degree)
             product = product * factor
         operator = operator + product + product.dagger()
-    return operator * float(rng.normal())
+    return operator * draw.normal()
 
 
 def test_create_annihilate_and_number_state_their_monomial() -> None:
@@ -140,22 +161,22 @@ def test_a_composition_carries_both_operands_coefficients() -> None:
 
 
 def test_the_dense_form_of_a_composition_is_the_product_of_the_dense_forms() -> None:
-    rng = np.random.default_rng(20261208)
+    draw = _Draw(20261208)
     factors = (create(0), annihilate(0), create(1), annihilate(1), create(2))
     identity = FermionOperator((FermionTerm(1.0, (), ()),))
 
     def random_operator() -> FermionOperator:
         operator = identity
-        for _ in range(int(rng.integers(1, 4))):
-            operator = operator * factors[int(rng.integers(0, len(factors)))]
-        return operator * complex(rng.normal(), rng.normal())
+        for _ in range(draw.integer(1, 4)):
+            operator = operator * factors[draw.integer(0, len(factors))]
+        return operator * complex(draw.normal(), draw.normal())
 
     checked = 0
     for _ in range(60):
         left = random_operator()
         right = random_operator()
         product = left * right
-        assert np.allclose(
+        assert torch.allclose(
             _fock_matrix(product, 3),
             _fock_matrix(left, 3) @ _fock_matrix(right, 3),
             atol=1e-12,
@@ -267,7 +288,7 @@ def test_the_jordan_wigner_image_equals_the_fock_matrix_on_the_known_operators()
     for operator in cases:
         for n_modes in (3,):
             image = jordan_wigner(operator, n_modes=n_modes)
-            assert np.allclose(
+            assert torch.allclose(
                 _observable_matrix(image, n_modes),
                 _fock_matrix(operator, n_modes),
                 atol=1e-12,
@@ -277,15 +298,15 @@ def test_the_jordan_wigner_image_equals_the_fock_matrix_on_the_known_operators()
 def test_the_jordan_wigner_image_equals_the_fock_matrix_on_random_hermitian_operators() -> (
     None
 ):
-    rng = np.random.default_rng(20260902)
+    draw = _Draw(20260902)
     checked = 0
     for n_modes in (2, 3, 4):
         for _ in range(40):
-            operator = _random_hermitian_operator(n_modes, rng)
+            operator = _random_hermitian_operator(n_modes, draw)
             if not operator.terms:
                 continue
             image = jordan_wigner(operator, n_modes=n_modes)
-            assert np.allclose(
+            assert torch.allclose(
                 _observable_matrix(image, n_modes),
                 _fock_matrix(operator, n_modes),
                 atol=1e-12,
@@ -310,7 +331,7 @@ def test_the_jordan_wigner_image_equals_the_fock_matrix_on_every_short_monomial(
                 product = first * second * third
                 operator = product + product.dagger()
                 image = jordan_wigner(operator, n_modes=2)
-                assert np.allclose(
+                assert torch.allclose(
                     _observable_matrix(image, 2),
                     _fock_matrix(operator, 2),
                     atol=1e-12,
@@ -357,13 +378,13 @@ def test_the_jordan_wigner_image_measures_the_dense_fock_expectation() -> None:
         for occupied in ((1,), (), (0, 1)):
             circuit = _prepared(2, *occupied).ry(0, theta)
             result = fq.run(circuit, outputs=[fq.expectation(observable)])
-            measured = float(np.asarray(result.expectation()).reshape(-1)[0].real)
-            state = np.asarray(result.to_statevector(), dtype=complex).reshape(-1)
-            expected = float(np.real(state.conj() @ (dense @ state)))
+            measured = float(torch.as_tensor(result.expectation()).reshape(-1)[0].real)
+            state = torch.as_tensor(result.to_statevector(), dtype=_COMPLEX).reshape(-1)
+            expected = float((state.conj() @ (dense @ state)).real)
             assert abs(measured - expected) < 1e-6
 
 
-def _parity_permutation(n_modes: int) -> np.ndarray:
+def _parity_permutation(n_modes: int) -> torch.Tensor:
     """Build the change of basis from occupation to parity, wire 0 most significant.
 
     Column ``j`` is the basis state whose mode occupations are the bits of ``j``; row ``i``
@@ -373,7 +394,7 @@ def _parity_permutation(n_modes: int) -> np.ndarray:
     """
 
     dimension = 1 << n_modes
-    permutation = np.zeros((dimension, dimension), dtype=complex)
+    permutation = torch.zeros((dimension, dimension), dtype=_COMPLEX)
     for column in range(dimension):
         occupations = [(column >> (n_modes - 1 - mode)) & 1 for mode in range(n_modes)]
         parities: list[int] = []
@@ -417,7 +438,7 @@ def test_the_parity_image_is_the_jordan_wigner_image_in_the_parity_basis() -> No
     after the conjugation, and they are different matrices before it.
     """
 
-    rng = np.random.default_rng(20261123)
+    draw = _Draw(20261123)
     cases = [number(0), number(0) * number(1), number(0) * number(1) * number(2)]
     factors = [create(0), annihilate(0), create(1), annihilate(1)]
     for first in factors:
@@ -426,7 +447,7 @@ def test_the_parity_image_is_the_jordan_wigner_image_in_the_parity_basis() -> No
                 product = first * second * third
                 cases.append(product + product.dagger())
     for n_modes in (2, 3, 4):
-        cases.extend(_random_hermitian_operator(n_modes, rng) for _ in range(20))
+        cases.extend(_random_hermitian_operator(n_modes, draw) for _ in range(20))
 
     checked = 0
     for n_modes in (2, 3, 4):
@@ -444,10 +465,10 @@ def test_the_parity_image_is_the_jordan_wigner_image_in_the_parity_basis() -> No
             parity = _observable_matrix(
                 parity_encoding(operator, n_modes=n_modes), n_modes
             )
-            assert np.allclose(
+            assert torch.allclose(
                 parity, permutation @ jordan @ permutation.T, atol=1e-12
             ), operator.terms
-            assert np.allclose(
+            assert torch.allclose(
                 parity,
                 permutation @ _fock_matrix(operator, n_modes) @ permutation.T,
                 atol=1e-12,
@@ -472,7 +493,7 @@ def test_every_short_monomial_agrees_under_both_encodings() -> None:
                 product = first * second * third
                 operator = product + product.dagger()
                 parity = _observable_matrix(parity_encoding(operator, n_modes=2), 2)
-                assert np.allclose(
+                assert torch.allclose(
                     _parity_permutation(2) @ parity @ _parity_permutation(2).T,
                     _fock_matrix(operator, 2),
                     atol=1e-12,
@@ -513,28 +534,28 @@ def test_the_parity_image_measures_the_physical_value_in_the_parity_basis() -> N
 
     for theta in (0.0, 0.3, 0.6, 1.1, 2.4):
         for occupied in ((1,), (), (0, 1)):
-            prepared = np.asarray(
+            prepared = torch.as_tensor(
                 fq.run(_prepared(2, *occupied).ry(0, theta)).to_statevector(),
-                dtype=complex,
+                dtype=_COMPLEX,
             ).reshape(-1)
-            expected = float(np.real(prepared.conj() @ (dense @ prepared)))
+            expected = float((prepared.conj() @ (dense @ prepared)).real)
 
             relabelled_circuit = _prepared(2, *occupied).ry(0, theta)
             relabelled_circuit.compose(_parity_basis_circuit(2))
-            relabelled = np.asarray(
-                fq.run(relabelled_circuit).to_statevector(), dtype=complex
+            relabelled = torch.as_tensor(
+                fq.run(relabelled_circuit).to_statevector(), dtype=_COMPLEX
             ).reshape(-1)
-            assert np.allclose(relabelled, permutation @ prepared, atol=1e-6)
+            assert torch.allclose(relabelled, permutation @ prepared, atol=1e-6)
 
             measured_circuit = _prepared(2, *occupied).ry(0, theta)
             measured_circuit.compose(_parity_basis_circuit(2))
             measured = float(
-                np.asarray(
+                torch.as_tensor(
                     fq.run(
                         measured_circuit,
                         outputs=[fq.expectation(parity_observable)],
                     ).expectation(),
-                    dtype=complex,
+                    dtype=_COMPLEX,
                 )
                 .reshape(-1)[0]
                 .real

@@ -185,7 +185,7 @@ def _execute_local_mps_boundary_adjoint_exchange(
     import numpy as np
 
     ownership = {
-        int(shard.rank): tuple(int(wire) for wire in shard.wires)
+        int(shard.rank): tuple(int(wire) for wire in shard.qubits)
         for shard in shard_plans
     }
     records: list[dict[str, Any]] = []

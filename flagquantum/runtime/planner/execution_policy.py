@@ -56,7 +56,7 @@ def normalize_execution_state_mode(
 def estimate_execution_state_bytes(
     state_mode: str,
     *,
-    n_wires: int,
+    n_qubits: int,
     bsz: int,
     complex_bytes: int,
     max_bond: int | None,
@@ -81,27 +81,27 @@ def estimate_execution_state_bytes(
     ``TensorNetworkContractionProfile.peak_size`` is the measured value.
 
     For ``stabilizer`` the footprint is the Clifford tableau itself, which is
-    polynomial in ``n_wires``; ``bsz`` and ``complex_bytes`` do not enter it
+    polynomial in ``n_qubits``; ``bsz`` and ``complex_bytes`` do not enter it
     because a tableau carries bits rather than amplitudes and the executor refuses
     a batch size above one for this mode.
     """
 
     if state_mode == "density_matrix":
         return estimate_density_bytes(
-            n_wires,
+            n_qubits,
             bsz=bsz,
             complex_bytes=complex_bytes,
         )
     if state_mode == "mps":
         return estimate_mps_bytes(
-            n_wires,
+            n_qubits,
             bsz=bsz,
             max_bond=max_bond,
             complex_bytes=complex_bytes,
         )
     if state_mode == "tensor_network":
         working_set = estimate_tensor_network_working_set_bytes(
-            n_wires,
+            n_qubits,
             contraction_width=contraction_width,
             complex_bytes=complex_bytes,
             target_count=target_count,
@@ -109,16 +109,16 @@ def estimate_execution_state_bytes(
         )
         return max(
             estimate_tensor_network_bytes(
-                n_wires,
+                n_qubits,
                 bsz=bsz,
                 complex_bytes=complex_bytes,
             ),
             working_set,
         )
     if state_mode == "stabilizer":
-        return estimate_stabilizer_bytes(n_wires)
+        return estimate_stabilizer_bytes(n_qubits)
     return estimate_state_bytes(
-        n_wires,
+        n_qubits,
         bsz=bsz,
         complex_bytes=complex_bytes,
     )

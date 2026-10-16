@@ -100,6 +100,44 @@ def test_disjoint_layer_metadata_uses_one_fixed_tensor_collective(monkeypatch):
     assert decoded == payloads
 
 
+def test_layer_metadata_costs_one_host_transfer_per_collective(monkeypatch):
+    """A layer's metadata must not synchronise the device once per record.
+
+    The schema matrix already carries every record of the layer in one
+    collective; decoding it row by row would move each row to the host
+    separately, so a fifteen-record layer costs fifteen device-to-host
+    synchronisations per step instead of one.
+    """
+
+    transfers = 0
+    original_cpu = torch.Tensor.cpu
+
+    def counted_cpu(self, *args, **kwargs):
+        nonlocal transfers
+        transfers += 1
+        return original_cpu(self, *args, **kwargs)
+
+    monkeypatch.setattr(torch.Tensor, "cpu", counted_cpu)
+    monkeypatch.setattr(torch.distributed, "get_rank", lambda: 0)
+    monkeypatch.setattr(torch.distributed, "all_reduce", lambda value, op: None)
+    reference = torch.zeros((), dtype=torch.complex64)
+    entries = tuple((index, 0) for index in range(15))
+    payloads = {
+        index: {
+            "input_shapes": ((1, 2, 2, 4), (1, 4, 2, 2)),
+            "output_shapes": ((1, 2, 2, 3), (1, 3, 2, 2)),
+            "split_info": {"rank": 3, "original_rank": 4, "discarded_weight": 0.0},
+        }
+        for index, _ in entries
+    }
+
+    decoded = all_reduce_reverse_layer_records(payloads, entries, reference)
+
+    assert transfers == 1
+    assert set(decoded) == set(payloads)
+    assert decoded == payloads
+
+
 def test_none_canonicalization_policy_skips_final_sweep():
     assert plan_mps_canonicalization_bonds(8, (1, 3, 5), "none") == ()
 

@@ -7,7 +7,7 @@ pytest.importorskip("triton")
 
 import flagquantum.kernels.triton.mps_wire_probabilities as mps_wire_probabilities
 from flagquantum.kernels.triton.mps_wire_probabilities import (
-    fused_mps_wire_probabilities,
+    fused_mps_qubit_probabilities,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
@@ -26,7 +26,7 @@ def test_fused_mps_wire_probabilities_cpu_fallback_matches_reference() -> None:
     torch.manual_seed(103)
     tensor = torch.randn(3, 5, 2, 7, dtype=torch.complex128)
 
-    actual = fused_mps_wire_probabilities(tensor)
+    actual = fused_mps_qubit_probabilities(tensor)
 
     torch.testing.assert_close(actual, _reference(tensor))
 
@@ -51,7 +51,7 @@ def test_fused_mps_wire_probabilities_cuda_matches_reference(
         dtype=torch.complex64,
     )
 
-    actual = fused_mps_wire_probabilities(tensor)
+    actual = fused_mps_qubit_probabilities(tensor)
 
     torch.testing.assert_close(actual, _reference(tensor), rtol=2e-5, atol=2e-6)
     torch.testing.assert_close(
@@ -82,7 +82,7 @@ def test_fused_mps_wire_probabilities_unsupported_input_uses_fallback(
         raise AssertionError("unsupported input must not launch the Triton kernel")
 
     monkeypatch.setattr(mps_wire_probabilities, "_launch", unexpected_launch)
-    actual = fused_mps_wire_probabilities(tensor)
+    actual = fused_mps_qubit_probabilities(tensor)
 
     torch.testing.assert_close(actual, _reference(tensor))
     if case == "requires_grad":
@@ -107,4 +107,4 @@ def test_fused_mps_wire_probabilities_validates_input(
     tensor = torch.zeros(shape, dtype=dtype)
 
     with pytest.raises(ValueError, match=message):
-        fused_mps_wire_probabilities(tensor)
+        fused_mps_qubit_probabilities(tensor)

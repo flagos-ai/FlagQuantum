@@ -17,7 +17,7 @@ _JAX_EINSUM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 def jax_tensor_network_nodes_from_circuit(
     circuit: Any,
-    n_wires: int,
+    n_qubits: int,
     *,
     start_label: int = 0,
     conjugate: bool = False,
@@ -28,7 +28,7 @@ def jax_tensor_network_nodes_from_circuit(
     current_labels = []
     nodes: list[tuple[Any, tuple[int, ...]]] = []
     zero = jnp.asarray([1.0 + 0.0j, 0.0 + 0.0j], dtype=_jax_complex_dtype())
-    for _wire in range(int(n_wires)):
+    for _qubit in range(int(n_qubits)):
         label = next_label
         next_label += 1
         current_labels.append(label)
@@ -38,22 +38,22 @@ def jax_tensor_network_nodes_from_circuit(
             raise NotImplementedError(
                 "JAX tensor_network mode currently supports unitary circuit instructions."
             )
-        wires = tuple(int(wire) for wire in instruction.wires)
-        matrix = _jax_instruction_matrix(instruction).reshape((2,) * (2 * len(wires)))
+        qubits = tuple(int(qubit) for qubit in instruction.wires)
+        matrix = _jax_instruction_matrix(instruction).reshape((2,) * (2 * len(qubits)))
         if conjugate:
             matrix = jnp.conj(matrix)
-        input_labels = tuple(current_labels[wire] for wire in wires)
-        output_labels = tuple(range(next_label, next_label + len(wires)))
-        next_label += len(wires)
-        for wire, label in zip(wires, output_labels, strict=True):
-            current_labels[wire] = label
+        input_labels = tuple(current_labels[qubit] for qubit in qubits)
+        output_labels = tuple(range(next_label, next_label + len(qubits)))
+        next_label += len(qubits)
+        for qubit, label in zip(qubits, output_labels, strict=True):
+            current_labels[qubit] = label
         nodes.append((matrix, output_labels + input_labels))
     return nodes, current_labels, next_label
 
 
 def jax_tensor_network_expectation_product_ops(
     circuit: Any,
-    n_wires: int,
+    n_qubits: int,
     ops: dict[int, Any],
     matmul_precision: str | None,
 ) -> Any:
@@ -61,41 +61,41 @@ def jax_tensor_network_expectation_product_ops(
 
     ket_nodes, ket_labels, next_label = jax_tensor_network_nodes_from_circuit(
         circuit,
-        n_wires,
+        n_qubits,
         start_label=0,
         conjugate=False,
     )
     bra_nodes, bra_labels, _next_label = jax_tensor_network_nodes_from_circuit(
         circuit,
-        n_wires,
+        n_qubits,
         start_label=next_label,
         conjugate=True,
     )
     identity = _jax_pauli_matrix("i")
     nodes = bra_nodes + ket_nodes
-    for wire in range(int(n_wires)):
-        op = ops.get(int(wire), identity)
-        nodes.append((op, (int(bra_labels[wire]), int(ket_labels[wire]))))
+    for qubit in range(int(n_qubits)):
+        op = ops.get(int(qubit), identity)
+        nodes.append((op, (int(bra_labels[qubit]), int(ket_labels[qubit]))))
     value = jax_contract_nodes_greedy(nodes, (), matmul_precision)
     return jnp.real(value.reshape(()))
 
 
 def jax_tensor_network_z_values(
     circuit: Any,
-    n_wires: int,
-    wires: Iterable[int],
+    n_qubits: int,
+    qubits: Iterable[int],
     matmul_precision: str | None,
 ) -> Any:
     import jax.numpy as jnp
 
     z_op = _jax_pauli_matrix("z")
     values = []
-    for wire in wires:
+    for qubit in qubits:
         values.append(
             jax_tensor_network_expectation_product_ops(
                 circuit,
-                n_wires,
-                {int(wire): z_op},
+                n_qubits,
+                {int(qubit): z_op},
                 matmul_precision,
             )
         )
@@ -104,35 +104,35 @@ def jax_tensor_network_z_values(
 
 def jax_tensor_network_z_sum(
     circuit: Any,
-    n_wires: int,
-    wires: Iterable[int],
+    n_qubits: int,
+    qubits: Iterable[int],
     matmul_precision: str | None,
 ) -> Any:
     import jax.numpy as jnp
 
-    values = jax_tensor_network_z_values(circuit, n_wires, wires, matmul_precision)
+    values = jax_tensor_network_z_values(circuit, n_qubits, qubits, matmul_precision)
     return jnp.sum(values)
 
 
 def jax_tensor_network_pauli_string_expectation(
     circuit: Any,
-    n_wires: int,
+    n_qubits: int,
     ops: tuple[tuple[int, str], ...],
     matmul_precision: str | None,
 ) -> Any:
     op_map = {}
-    for wire, name in ops:
+    for qubit, name in ops:
         normalized = str(name).lower()
         if normalized != "i":
-            op_map[int(wire)] = _jax_pauli_matrix(normalized)
+            op_map[int(qubit)] = _jax_pauli_matrix(normalized)
     return jax_tensor_network_expectation_product_ops(
-        circuit, n_wires, op_map, matmul_precision
+        circuit, n_qubits, op_map, matmul_precision
     )
 
 
 def jax_tensor_network_hamiltonian_expectation(
     circuit: Any,
-    n_wires: int,
+    n_qubits: int,
     terms: tuple[tuple[float, tuple[tuple[int, str], ...]], ...],
     matmul_precision: str | None,
 ) -> Any:
@@ -144,7 +144,7 @@ def jax_tensor_network_hamiltonian_expectation(
             coefficient, dtype=_jax_real_dtype()
         ) * jax_tensor_network_pauli_string_expectation(
             circuit,
-            n_wires,
+            n_qubits,
             ops,
             matmul_precision,
         )
@@ -154,16 +154,16 @@ def jax_tensor_network_hamiltonian_expectation(
 def jax_tensor_network_loss_from_output(
     output: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     bsz: int,
     observable: str,
-    observable_wires: Iterable[int] | None,
+    observable_qubits: Iterable[int] | None,
 ) -> Any:
     """Evaluate a supported loss from a contracted statevector-shaped output."""
 
     import jax.numpy as jnp
 
-    state = output.reshape(int(bsz), 2 ** int(n_wires))
+    state = output.reshape(int(bsz), 2 ** int(n_qubits))
     if str(observable) == "state_norm":
         return jnp.real(jnp.sum(jnp.conj(state) * state))
     if str(observable) != "z_sum":
@@ -171,16 +171,16 @@ def jax_tensor_network_loss_from_output(
             "JAX sliced TN reverse mode currently supports "
             "observable='z_sum' or 'state_norm'."
         )
-    wires = (
-        tuple(range(int(n_wires)))
-        if observable_wires is None
-        else tuple(int(wire) for wire in observable_wires)
+    qubits = (
+        tuple(range(int(n_qubits)))
+        if observable_qubits is None
+        else tuple(int(qubit) for qubit in observable_qubits)
     )
     probabilities = jnp.abs(state) ** 2
-    indices = jnp.arange(2 ** int(n_wires))
+    indices = jnp.arange(2 ** int(n_qubits))
     total = jnp.zeros((), dtype=probabilities.real.dtype)
-    for wire in wires:
-        bits = (indices >> (int(n_wires) - 1 - int(wire))) & 1
+    for qubit in qubits:
+        bits = (indices >> (int(n_qubits) - 1 - int(qubit))) & 1
         weights = 1.0 - 2.0 * bits.astype(probabilities.real.dtype)
         total = total + jnp.sum(probabilities * weights.reshape(1, -1))
     return total

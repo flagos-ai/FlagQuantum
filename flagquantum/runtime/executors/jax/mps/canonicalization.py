@@ -314,8 +314,8 @@ def _execute_minimal_mps_sharded_optimizer_step(
 
 def _jax_mps_boundary_protocol(
     *,
-    left_wire: int,
-    right_wire: int,
+    left_qubit: int,
+    right_qubit: int,
     left_rank: int,
     right_rank: int,
     local_world_size: int,
@@ -323,8 +323,11 @@ def _jax_mps_boundary_protocol(
 ) -> dict[str, Any]:
     tier = _communication_tier(left_rank, right_rank, local_world_size=local_world_size)
     return {
-        "left_wire": int(left_wire),
-        "right_wire": int(right_wire),
+        # The payload keys stay on the pre-qubit spelling: `boundary_exchange`,
+        # `evidence` and `training_records` subscript them by name and this slice
+        # does not own them, so renaming them here would silently drop every route.
+        "left_wire": int(left_qubit),
+        "right_wire": int(right_qubit),
         "left_rank": int(left_rank),
         "right_rank": int(right_rank),
         "owner_rank": int(left_rank),

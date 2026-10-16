@@ -38,8 +38,14 @@ def transport(monkeypatch):
     transport = Transport()
     monkeypatch.setattr(
         "flagquantum.remote.qpu.execution.QuafuProvider",
+        # The legacy SQC route authenticates with this token. Configuring one
+        # keeps this fixture about the compilation path it names: the direct
+        # submission under test must still reach the endpoint.
         lambda **options: QuafuProvider(
-            base_url="https://quafu.test", transport=transport, **options
+            base_url="https://quafu.test",
+            transport=transport,
+            token="legacy-secret",
+            **options,
         ),
     )
     monkeypatch.setattr(

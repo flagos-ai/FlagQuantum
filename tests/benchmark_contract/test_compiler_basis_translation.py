@@ -11,7 +11,10 @@ library, disagree with that reach?
 These tests hold that evidence in place. They fail if a rule stops reproducing
 its source, if a basis stops reaching the opcodes the table reaches today, if a
 second entry becomes inexact, if the multi-controlled comparison goes vacuous, or
-if the one recorded disagreement is reported as agreement or silently dropped.
+if the table's own entangler sink stops being reported as a disagreement. The
+anchor's remaining disagreements belong to the installed Qiskit library, so they
+are attributed to a named missing gate rather than counted; the split is stated
+where the anchor records it.
 """
 
 import pytest
@@ -52,9 +55,12 @@ _ARITY_REACH = {
     "clifford-t": {"1": 3, "2": 4, "3": 0},
 }
 
-#: The one basis whose named reach is below Qiskit's, and why: the table routes
-#: every entangling rule down to `cx` or `cz`, and this basis publishes neither,
-#: only a parametrized `rzz`.
+#: The basis at this table's two-name entangler sink, and why it is *the* pinned
+#: disagreement: the table routes every entangling rule down to `cx` or `cz`, and
+#: this basis publishes neither, only a parametrized `rzz`. Both sides of that
+#: comparison are this repository's, so it holds on every Qiskit lane. A basis
+#: Qiskit's library can reach and this table cannot is a different fact, and is
+#: attributed in the anchor rather than listed here.
 _RECORDED_GAP = "ion-trap-rz-rx-rzz"
 
 
@@ -278,15 +284,29 @@ def test_a_basis_without_cx_or_cz_reaches_only_what_needs_no_entangler_sink(
 def test_the_qiskit_anchor_reports_agreement_and_the_one_disagreement(
     payload: dict,
 ) -> None:
+    """The sink is pinned; the installed library's own share is attributed.
+
+    This table's sink does not move with Qiskit, so it is pinned: exactly the
+    basis publishing neither ``cx`` nor ``cz`` disagrees. What the *installed*
+    library reaches past that point does move -- 1.2.4 and 2.0.x report nothing
+    there, 2.5.x reports ``clifford-t`` -- so it is checked rather than counted.
+    Pinning a count would pin this test to whichever Qiskit happened to be
+    installed, which is the defect the anchor carried until now.
+    """
+
     anchor = payload["reference_anchor"]
     if not anchor["available"]:
         pytest.skip("Qiskit is not installed; the anchor is a cross-check only")
 
     assert anchor["compared_opcode_count"] == len(TABLE_OPCODES)
     assert anchor["basis_count"] == len(DEFAULT_BASES)
-    assert anchor["disagreements"] == [_RECORDED_GAP]
-    # The four agreeing bases agree opcode for opcode, not merely in count.
-    assert anchor["opcode_agreement_count"] == len(DEFAULT_BASES) - 1
+    # The anchor has to name the lane it was read on. The sink below is this
+    # table's and holds on every lane, but what the library reaches past it does
+    # not, so a reading that does not name its lane cannot be told apart from one
+    # taken on a lane that no longer exists.
+    assert anchor["qiskit_version"], anchor
+    assert anchor["sink_gap_bases"] == [_RECORDED_GAP]
+    assert set(anchor["sink_gap_bases"]) <= set(anchor["disagreements"])
     rows = {row["label"]: row for row in anchor["rows"]}
     assert rows[_RECORDED_GAP]["count_agrees"] is False
     assert rows[_RECORDED_GAP]["reached_count"] == len(TABLE_OPCODES)
@@ -297,6 +317,19 @@ def test_the_qiskit_anchor_reports_agreement_and_the_one_disagreement(
     flat = sorted({value for values in gap.values() for value in values})
     assert any(abs(value - 1.5707963267948966) < 1e-9 for value in flat), flat
     assert rows[_RECORDED_GAP]["introduced_angle_opcode_count"] >= 8
+    # Beyond the sink, the disagreement has to be this table refusing a name the
+    # basis cannot express. That is what makes it a comparison rather than two
+    # ports measuring different quantities, and it holds on every lane.
+    port_multi_controlled = {
+        row["label"]: row for row in payload["multi_controlled_name_reach"]
+    }
+    beyond = sorted(set(anchor["disagreements"]) - set(anchor["sink_gap_bases"]))
+    for label in beyond:
+        assert rows[label]["count_agrees"] is False, label
+        refusals = port_multi_controlled[label]["refused"]
+        assert refusals, (label, refusals)
+        for error in refusals.values():
+            assert "requires unsupported native gate" in error, (label, error)
 
 
 def test_the_qiskit_anchor_agrees_on_the_multi_controlled_entangler_counts(
@@ -325,6 +358,7 @@ def test_the_qiskit_anchor_agrees_on_the_multi_controlled_entangler_counts(
         assert sorted(qiskit) == sorted(_MULTI_CONTROLLED), (label, qiskit)
         assert qiskit["ccx"] == 6 and qiskit["cswap"] == 8, qiskit
     # The two bases outside the comparison are outside it because this port
-    # refuses the opcodes there, not because Qiskit does.
+    # refuses the opcodes there. Whether the installed library reaches them is
+    # a separate matter and is not asserted here: it moves between lanes.
     for label in set(_NAME_REACH) - set(compared):
         assert anchor["port_multi_controlled_entangler_counts"][label] == {}, label

@@ -60,7 +60,7 @@ def _pack(row: Sequence[int]) -> int:
 def _support(observable: Pauli, code: CssCode) -> int:
     """Pack one observable's support over the code's data wires into a mask."""
 
-    positions = {wire: index for index, wire in enumerate(code.data_wires)}
+    positions = {wire: index for index, wire in enumerate(code.data_qubits)}
     return sum(1 << positions[wire] for wire in observable.support)
 
 
@@ -68,8 +68,8 @@ def _families(code: CssCode) -> tuple[list[Pauli], list[Pauli]]:
     """Return one record's Z-type and X-type logical operators, in its own order."""
 
     return (
-        [observable for observable in code.logical_observables if observable.z_wires],
-        [observable for observable in code.logical_observables if observable.x_wires],
+        [observable for observable in code.logical_observables if observable.z_qubits],
+        [observable for observable in code.logical_observables if observable.x_qubits],
     )
 
 
@@ -149,7 +149,7 @@ def test_the_derived_operators_are_the_declared_ones_modulo_the_checks(
     """
 
     declared, route = _ORACLES[family]()
-    assert route.data_wires == declared.data_wires
+    assert route.data_qubits == declared.data_qubits
     declared_blocks = css_code_matrices(declared)
     z_checks = [_pack(row) for row in declared_blocks.hz.tolist()]
     x_checks = [_pack(row) for row in declared_blocks.hx.tolist()]
@@ -281,8 +281,8 @@ def test_one_check_family_still_states_both_logical_families() -> None:
     assert route.num_data_qubits == 3
     assert route.num_ancilla_qubits == 2
     assert len(z_logicals) == len(x_logicals) == 1
-    assert z_logicals[0].z_wires == (0,)
-    assert x_logicals[0].x_wires == (0, 1, 2)
+    assert z_logicals[0].z_qubits == (0,)
+    assert x_logicals[0].x_qubits == (0, 1, 2)
 
     memory = build_memory_circuit(route, rounds=2)
     assert len(memory.observables) == 1

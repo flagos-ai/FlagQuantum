@@ -2,6 +2,9 @@
   "schema_version": "1.0",
   "status": "frozen",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_010_DYNAMIC_CIRCUIT.md",
+  "amendments": [
+    "docs/development/API_CHANGE_PROPOSAL_065_QUBIT_VOCABULARY.md"
+  ],
   "target": "first-public-alpha",
   "implementation_authorized": true,
   "root_manifest_change": false,
@@ -12,21 +15,28 @@
   },
   "stable_extension": {
     "namespace": "flagquantum.dynamic",
-    "additions": ["DynamicCircuit"],
-    "new_namespace_only": ["DynamicCircuit"]
+    "additions": [
+      "DynamicCircuit"
+    ],
+    "new_namespace_only": [
+      "DynamicCircuit"
+    ]
   },
   "public_signatures": {
     "DynamicCircuit": "(n_qubits: 'int | None' = None, *, n_wires: 'int | None' = None, nqubits: 'int | None' = None, bsz: 'int' = 1, device: 'torch.device | str | None' = None, dtype: 'torch.dtype | None' = None, inputs: 'torch.Tensor | None' = None, config: 'RuntimeConfig | None' = None) -> 'None'",
-    "DynamicCircuit.measure": "(self, wire: 'int', *, classical_bit: 'int | None' = None) -> 'DynamicCircuit'",
-    "DynamicCircuit.reset": "(self, wire: 'int') -> 'DynamicCircuit'",
-    "DynamicCircuit.conditional": "(self, name: 'str', wires: 'Iterable[int] | int', *, classical_bit: 'int | None' = None, equals: 'int' = 1, conditions: 'Mapping[int, int] | None' = None, params: 'Mapping[str, Any] | None' = None, matrix: 'Any | None' = None) -> 'DynamicCircuit'",
+    "DynamicCircuit.measure": "(self, qubit: 'int', *, classical_bit: 'int | None' = None) -> 'DynamicCircuit'",
+    "DynamicCircuit.reset": "(self, qubit: 'int') -> 'DynamicCircuit'",
+    "DynamicCircuit.conditional": "(self, name: 'str', qubits: 'Iterable[int] | int', *, classical_bit: 'int | None' = None, equals: 'int' = 1, conditions: 'Mapping[int, int] | None' = None, params: 'Mapping[str, Any] | None' = None, matrix: 'Any | None' = None) -> 'DynamicCircuit'",
     "DynamicCircuit.state": "(self, *, refresh: 'bool' = False) -> 'torch.Tensor'"
   },
   "construction_semantics": {
     "ir_boundary": "CircuitIR v1",
     "measure_default_classical_bit": "same index as measured wire",
     "classical_bits": "non-negative integers",
-    "condition_values": [0, 1],
+    "condition_values": [
+      0,
+      1
+    ],
     "multiple_conditions": "logical conjunction in ascending classical-bit order",
     "reset_semantics": "measure and prepare computational zero",
     "builder_methods_are_chainable": true,

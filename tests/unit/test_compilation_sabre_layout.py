@@ -226,7 +226,7 @@ def test_sabre_layout_is_deterministic_and_places_every_instruction_once() -> No
 def test_sabre_layout_fails_closed_on_an_undersized_coupling_map() -> None:
     program = _random_two_wire_program(seed=2, n_wires=5, gate_count=4)
 
-    with pytest.raises(ValueError, match="fewer wires"):
+    with pytest.raises(ValueError, match="fewer qubits"):
         route_to_topology(program, CouplingMap.line(4), strategy="sabre_layout")
 
 

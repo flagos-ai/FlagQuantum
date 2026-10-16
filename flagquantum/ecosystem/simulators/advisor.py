@@ -833,7 +833,7 @@ def _recommend_from_calibration(
 def recommend(
     program: Any | None = None,
     *,
-    n_wires: int | None = None,
+    n_qubits: int | None = None,
     workload: str | None = None,
     layers: int | None = None,
     dtype: str | None = None,
@@ -865,7 +865,7 @@ def recommend(
     Args:
         program: Optional FlagQuantum circuit or canonical CircuitIR. Do not
             combine this with profile selector arguments.
-        n_wires: Measured width for a profile-only evidence query.
+        n_qubits: Measured width for a profile-only evidence query.
         workload: Optional benchmark workload identity for a profile query.
         layers: Optional benchmark layer count for a profile query.
         dtype: Optional statevector dtype for a profile query.
@@ -894,7 +894,7 @@ def recommend(
 
     Examples:
         >>> from flagquantum.ecosystem.simulators import recommend
-        >>> decision = recommend(n_wires=22)
+        >>> decision = recommend(n_qubits=22)
         >>> decision.status in {"recommended", "insufficient_evidence"}
         True
         >>> decision.circuit_matches is None
@@ -922,12 +922,12 @@ def recommend(
         )
     )
     if program is None:
-        if n_wires is None:
-            raise TypeError("recommend requires program or n_wires")
+        if n_qubits is None:
+            raise TypeError("recommend requires program or n_qubits")
         if calibration_budget is not None:
-            raise ValueError("live calibration requires a program, not n_wires")
+            raise ValueError("live calibration requires a program, not n_qubits")
         decision = _recommend_profile(
-            n_wires=n_wires,
+            n_wires=n_qubits,
             workload=(
                 "hardware_efficient_statevector" if workload is None else workload
             ),
@@ -942,9 +942,9 @@ def recommend(
             evidence=evidence,
         )
         return replace(decision, evidence_level="profile")
-    if n_wires is not None or any(value is not None for value in selectors.values()):
+    if n_qubits is not None or any(value is not None for value in selectors.values()):
         raise ValueError(
-            "program cannot be combined with n_wires or workload profile selectors"
+            "program cannot be combined with n_qubits or workload profile selectors"
         )
 
     circuit_ir = ensure_circuit_ir(program)

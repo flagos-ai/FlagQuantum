@@ -170,7 +170,7 @@ PEC_LIMITATIONS: tuple[str, ...] = (
 
 
 def _word_operators(word: str, n_qubits: int) -> tuple[tuple[int, str], ...]:
-    """One word's non-identity factors, as the channel-local wire/name pairs."""
+    """One word's non-identity factors, as the channel-local qubit/name pairs."""
 
     if len(word) != n_qubits:
         raise ValueError(
@@ -178,8 +178,8 @@ def _word_operators(word: str, n_qubits: int) -> tuple[tuple[int, str], ...]:
             f"{word!r} has {len(word)}"
         )
     return tuple(
-        (wire, character.lower())
-        for wire, character in enumerate(word)
+        (qubit, character.lower())
+        for qubit, character in enumerate(word)
         if character != "I"
     )
 
@@ -233,7 +233,7 @@ class PauliTwirlDecomposition:
 
     Attributes:
         channel_name: The channel this inverts, by the name it declares.
-        n_wires: How many wires the channel acts on.
+        n_qubits: How many qubits the channel acts on.
         pauli_words: The basis the weights are indexed by, identity first, in the
             fixed order :func:`flagquantum.simulation.pauli.pauli_words`
             produces, which puts the identity at index zero.
@@ -247,7 +247,7 @@ class PauliTwirlDecomposition:
     """
 
     channel_name: str
-    n_wires: int
+    n_qubits: int
     pauli_words: tuple[str, ...]
     coefficients: tuple[float, ...]
     transfer_spectrum: tuple[float, ...]
@@ -256,17 +256,17 @@ class PauliTwirlDecomposition:
     def __post_init__(self) -> None:
         if not self.channel_name:
             raise ValueError("a decomposition must name the channel it inverts")
-        if self.n_wires < 1:
+        if self.n_qubits < 1:
             raise ValueError(
-                f"a channel acts on at least one wire, and {self.n_wires} was given"
+                f"a channel acts on at least one qubit, and {self.n_qubits} was given"
             )
         # The field above carries the caller's list; this is the enumeration
         # every such list must equal. The bare name is the module-level
         # function, since a dataclass field is only reachable through `self`.
-        expected = pauli_words(self.n_wires)
+        expected = pauli_words(self.n_qubits)
         if self.pauli_words != expected:
             raise ValueError(
-                "the Pauli words must be every word on this many wires, identity "
+                "the Pauli words must be every word on this many qubits, identity "
                 "first, in the unit's own order, so that a weight and the word it "
                 "belongs to cannot be read against different bases"
             )
@@ -345,14 +345,14 @@ def pauli_twirl_decomposition(channel: KrausChannel) -> PauliTwirlDecomposition:
             "a Pauli twirl decomposition needs a Kraus channel, and "
             f"{type(channel).__name__} was given"
         )
-    words = pauli_words(channel.n_wires)
+    words = pauli_words(channel.n_qubits)
     channel_map = SuperOperator.from_kraus(
         tuple(
             op.detach().to(device="cpu", dtype=torch.complex128) for op in channel.kraus
         )
     )
     transfer = channel_map.matrix_in_basis(
-        normalized_pauli_basis(channel.n_wires, dtype=torch.complex128, device="cpu")
+        normalized_pauli_basis(channel.n_qubits, dtype=torch.complex128, device="cpu")
     )
     diagonal = torch.diag(transfer.diagonal())
     off_diagonal = transfer - diagonal
@@ -393,7 +393,7 @@ def pauli_twirl_decomposition(channel: KrausChannel) -> PauliTwirlDecomposition:
         )
     return PauliTwirlDecomposition(
         channel_name=channel.name,
-        n_wires=channel.n_wires,
+        n_qubits=channel.n_qubits,
         pauli_words=words,
         coefficients=_quasi_probabilities(words, spectrum),
         transfer_spectrum=tuple(float(value) for value in spectrum.tolist()),
@@ -407,15 +407,15 @@ class PecLocation:
 
     Attributes:
         program_index: Where the channel sits in the lowered program, which is what
-            distinguishes two occurrences of the same channel on the same wires.
+            distinguishes two occurrences of the same channel on the same qubits.
         channel_name: The channel's own name.
-        wires: The wires the channel acts on, in the order its words are indexed by.
+        qubits: The qubits the channel acts on, in the order its words are indexed by.
         decomposition: The inverse the combination applies here.
     """
 
     program_index: int
     channel_name: str
-    wires: tuple[int, ...]
+    qubits: tuple[int, ...]
     decomposition: PauliTwirlDecomposition
 
     def __post_init__(self) -> None:
@@ -432,11 +432,11 @@ class PecLocation:
                 f"they name {self.channel_name!r} and "
                 f"{self.decomposition.channel_name!r}"
             )
-        if len(self.wires) != self.decomposition.n_wires:
+        if len(self.qubits) != self.decomposition.n_qubits:
             raise ValueError(
                 f"channel {self.channel_name!r} acts on "
-                f"{self.decomposition.n_wires} wire(s) and the location names "
-                f"{len(self.wires)}"
+                f"{self.decomposition.n_qubits} qubit(s) and the location names "
+                f"{len(self.qubits)}"
             )
 
     @property
@@ -691,7 +691,7 @@ def run_pec(
         PecLocation(
             program_index=index,
             channel_name=instruction.name,
-            wires=tuple(instruction.wires),
+            qubits=tuple(instruction.wires),
             decomposition=pauli_twirl_decomposition(_declared_channel(instruction)),
         )
         for index, instruction in enumerate(lowered)

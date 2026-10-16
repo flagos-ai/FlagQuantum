@@ -18,11 +18,11 @@ from ..core.runtime_config import get_runtime_config
 if TYPE_CHECKING:
     from ..circuit import Circuit
 
-MAX_UNITARY_WIRES = 12
-# Largest wire count a dense unitary is materialized for.
+MAX_UNITARY_QUBITS = 12
+# Largest qubit count a dense unitary is materialized for.
 #
-# The input basis and the matrix it produces are each ``4**n_wires`` complex entries,
-# so 12 wires is already 268 MB of complex64 held at once. The ceiling matches the one
+# The input basis and the matrix it produces are each ``4**n_qubits`` complex entries,
+# so 12 qubits is already 268 MB of complex64 held at once. The ceiling matches the one
 # the dense Hamiltonian diagnostic uses, and it exists so that an oversized request
 # fails before anything is allocated instead of during it.
 
@@ -33,10 +33,10 @@ def _unitary_program(program: Any) -> CircuitIR:
     """Return the IR of *program* after refusing everything non-unitary."""
 
     ir = ensure_circuit_ir(program)
-    if ir.n_wires > MAX_UNITARY_WIRES:
+    if ir.n_wires > MAX_UNITARY_QUBITS:
         raise ValueError(
-            f"a dense {ir.n_wires}-wire unitary is not materialized; the limit is "
-            f"{MAX_UNITARY_WIRES} wires"
+            f"a dense {ir.n_wires}-qubit unitary is not materialized; the limit is "
+            f"{MAX_UNITARY_QUBITS} qubits"
         )
     if ir.observables:
         raise ValueError(
@@ -78,9 +78,9 @@ def get_unitary(
     second, independently written matrix-composition path.
 
     The result follows ``U[i, j] = <i| U |j>``: column ``j`` is the image of
-    computational basis state ``j``. Wire 0 is the most significant index bit,
-    as everywhere else in FlagQuantum, so on two wires basis index ``i`` carries
-    wire 0 in bit 1 and wire 1 in bit 0.
+    computational basis state ``j``. Qubit 0 is the most significant index bit,
+    as everywhere else in FlagQuantum, so on two qubits basis index ``i`` carries
+    qubit 0 in bit 1 and qubit 1 in bit 0.
 
     Args:
         program: A ``Circuit`` or canonical ``CircuitIR`` holding only unitary
@@ -95,10 +95,10 @@ def get_unitary(
             complex128.
 
     Returns:
-        A ``(2**n_wires, 2**n_wires)`` complex ``torch.Tensor``.
+        A ``(2**n_qubits, 2**n_qubits)`` complex ``torch.Tensor``.
 
     Raises:
-        ValueError: If the program is wider than :data:`MAX_UNITARY_WIRES`, if
+        ValueError: If the program is wider than :data:`MAX_UNITARY_QUBITS`, if
             it declares measurements or observables, if any instruction is not
             unitary, or if a gate parameter is unbound or not a finite real
             number.
@@ -144,4 +144,4 @@ def _basis_circuit(
     )
 
 
-__all__ = ("MAX_UNITARY_WIRES", "get_unitary")
+__all__ = ("MAX_UNITARY_QUBITS", "get_unitary")

@@ -8,7 +8,7 @@ from typing import Any
 
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..common import communication_tier as _communication_tier
-from ..common import validate_observable_wires as _validate_observable_wires
+from ..common import validate_observable_qubits as _validate_observable_qubits
 from ..planning_core import JAXDistributedQuantumPlan
 from ..release_policy import (
     attach_evidence_contract as _attach_distributed_evidence_contract,
@@ -43,7 +43,7 @@ class JAXTNSliceRankState:
 def _jax_reduced_tn_output_to_torch_state(
     output: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
     bsz: int,
     complex_bytes: int,
 ) -> Any:
@@ -54,7 +54,7 @@ def _jax_reduced_tn_output_to_torch_state(
     state = torch.as_tensor(
         np.asarray(output).copy(), dtype=dtype, device=torch.device("cpu")
     )
-    return state.reshape(int(bsz), 2 ** int(n_wires))
+    return state.reshape(int(bsz), 2 ** int(n_qubits))
 
 
 @dataclass
@@ -66,7 +66,7 @@ class JAXShardedTensorNetworkResult:
     slicing: Any
     jax_plan: JAXDistributedQuantumPlan
     backend_policy: DistributedBackendPolicy
-    n_wires: int
+    n_qubits: int
     bsz: int
     complex_bytes: int
     local_world_size: int
@@ -85,7 +85,7 @@ class JAXShardedTensorNetworkResult:
             return self._torch_state_cache
         self._torch_state_cache = _jax_reduced_tn_output_to_torch_state(
             self.reduced_output,
-            n_wires=self.n_wires,
+            n_qubits=self.n_qubits,
             bsz=self.bsz,
             complex_bytes=self.complex_bytes,
         )
@@ -101,22 +101,22 @@ class JAXShardedTensorNetworkResult:
 
     probability = probabilities
 
-    def expectation_z(self, wire: int | None = None) -> Any:
+    def expectation_z(self, qubit: int | None = None) -> Any:
         torch = _require_torch()
-        wires = tuple(range(self.n_wires)) if wire is None else (int(wire),)
-        # A negative wire makes the shift below negative, which silently selects
+        qubits = tuple(range(self.n_qubits)) if qubit is None else (int(qubit),)
+        # A negative qubit makes the shift below negative, which silently selects
         # the wrong basis bit instead of failing, so the range is checked first.
-        _validate_observable_wires(
-            wires,
-            self.n_wires,
-            message="observable wire index out of range",
+        _validate_observable_qubits(
+            qubits,
+            self.n_qubits,
+            message="observable qubit index out of range",
         )
         state = self.state()
         probabilities = torch.abs(state) ** 2
         values = []
-        indices = torch.arange(2**self.n_wires, device=state.device)
-        for target in wires:
-            mask = 1 << (self.n_wires - int(target) - 1)
+        indices = torch.arange(2**self.n_qubits, device=state.device)
+        for target in qubits:
+            mask = 1 << (self.n_qubits - int(target) - 1)
             signs = torch.where((indices & mask) == 0, 1.0, -1.0).to(
                 device=state.device, dtype=probabilities.real.dtype
             )
@@ -202,7 +202,7 @@ class JAXShardedTensorNetworkResult:
             "world_size": len(self.rank_partials),
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "batch_size": self.bsz,
             "sliced_labels": tuple(int(label) for label in self.slicing.sliced_labels),
             "slice_shape": tuple(int(dim) for dim in self.slicing.slice_shape),
@@ -242,7 +242,7 @@ class JAXSlicedTensorNetworkGradientResult:
     slicing: Any
     jax_plan: JAXDistributedQuantumPlan
     backend_policy: DistributedBackendPolicy
-    n_wires: int
+    n_qubits: int
     bsz: int
     complex_bytes: int
     local_world_size: int
@@ -288,7 +288,7 @@ class JAXSlicedTensorNetworkGradientResult:
         active = tuple(rank for rank, count in enumerate(tasks_by_rank) if count > 0)
         is_sharded = len(active) > 1 and int(self.slicing.n_slices) > 1
         output_bytes = (
-            int(self.bsz) * (2 ** int(self.n_wires)) * int(self.complex_bytes)
+            int(self.bsz) * (2 ** int(self.n_qubits)) * int(self.complex_bytes)
         )
         local_memory = tuple(int(count * output_bytes) for count in tasks_by_rank)
         root = active[0] if active else 0
@@ -334,7 +334,7 @@ class JAXSlicedTensorNetworkGradientResult:
             "world_size": self.jax_plan.world_size,
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "batch_size": self.bsz,
             "sliced_labels": tuple(int(label) for label in self.slicing.sliced_labels),
             "slice_shape": tuple(int(dim) for dim in self.slicing.slice_shape),
@@ -374,7 +374,7 @@ class JAXSlicedTensorNetworkParameterGradientResult:
     slicing: Any
     jax_plan: JAXDistributedQuantumPlan
     backend_policy: DistributedBackendPolicy
-    n_wires: int
+    n_qubits: int
     bsz: int
     complex_bytes: int
     parameter_shape: tuple[int, ...]
@@ -435,7 +435,7 @@ class JAXSlicedTensorNetworkParameterGradientResult:
         active = tuple(rank for rank, count in enumerate(tasks_by_rank) if count > 0)
         is_sharded = len(active) > 1 and int(self.slicing.n_slices) > 1
         output_bytes = (
-            int(self.bsz) * (2 ** int(self.n_wires)) * int(self.complex_bytes)
+            int(self.bsz) * (2 ** int(self.n_qubits)) * int(self.complex_bytes)
         )
         local_memory = tuple(int(count * output_bytes) for count in tasks_by_rank)
         root = active[0] if active else 0
@@ -482,7 +482,7 @@ class JAXSlicedTensorNetworkParameterGradientResult:
             "world_size": self.jax_plan.world_size,
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "batch_size": self.bsz,
             "parameter_shape": self.parameter_shape,
             "sliced_labels": tuple(int(label) for label in self.slicing.sliced_labels),

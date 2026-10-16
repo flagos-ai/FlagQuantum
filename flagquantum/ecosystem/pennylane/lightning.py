@@ -365,7 +365,7 @@ def run(
         samples = samples.reshape(shot_count, len(selected)).unsqueeze(0)
         result = MeasurementResult(
             kind="samples",
-            wires=selected,
+            qubits=selected,
             value=samples,
             shots=shot_count,
             metadata=measurement_metadata,
@@ -381,7 +381,7 @@ def run(
     counts = {str(key): int(value) for key, value in native.items()}
     result = MeasurementResult(
         kind="counts",
-        wires=selected,
+        qubits=selected,
         value=[counts],
         shots=shot_count,
         metadata=measurement_metadata,

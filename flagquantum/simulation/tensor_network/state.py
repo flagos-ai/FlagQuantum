@@ -32,7 +32,7 @@ class TensorNetworkState:
         contraction_strategy: str = "greedy",
         max_intermediate_size: int | None = None,
         sliced_labels: Sequence[int] | None = None,
-        dense_observable_wires: int = 0,
+        dense_observable_qubits: int = 0,
         max_intermediate_bytes: int | None = None,
     ) -> None:
         self.plan = plan
@@ -40,7 +40,7 @@ class TensorNetworkState:
         self.max_intermediate_size = max_intermediate_size
         self.max_intermediate_bytes = max_intermediate_bytes
         self.sliced_labels = tuple(sliced_labels) if sliced_labels is not None else None
-        self.dense_observable_wires = int(dense_observable_wires)
+        self.dense_observable_qubits = int(dense_observable_qubits)
         self._state_cache: torch.Tensor | None = None
         self._observable_programs: dict[
             tuple[int, ...], CompiledTNObservableProgram
@@ -50,8 +50,8 @@ class TensorNetworkState:
         self._last_observable_peak_size: int | None = None
 
     @property
-    def n_wires(self) -> int:
-        return self.plan.n_wires
+    def n_qubits(self) -> int:
+        return self.plan.n_qubits
 
     @property
     def bsz(self) -> int:
@@ -97,7 +97,7 @@ class TensorNetworkState:
         their own right and are built per observable and per marginal, so a
         declared limit governs them too. ``quality_sliced`` is the order that runs
         under a budget because it is the one whose plan is both inside the budget
-        and affordable to find: on a bonded eight-wire circuit the unsliced orders
+        and affordable to find: on a bonded eight-qubit circuit the unsliced orders
         peak at 524288 bytes (``greedy``), 8388608 (``memory_greedy``) and 2048
         (``quality_multistart``), and the ``greedy`` slicing search costs minutes
         on the 75-node network before it produces a plan. The slice count is then
@@ -168,23 +168,23 @@ class TensorNetworkState:
     def probabilities(self) -> torch.Tensor:
         return torch.abs(self.state()) ** 2
 
-    def _validate_observable_wires(self, wires: Iterable[int]) -> None:
-        """Refuse an observable wire that the state does not have.
+    def _validate_observable_qubits(self, qubits: Iterable[int]) -> None:
+        """Refuse an observable qubit that the state does not have.
 
-        A wire outside ``range(n_wires)`` addresses no open leg of the network,
+        A qubit outside ``range(n_qubits)`` addresses no open leg of the network,
         and the contraction of an operator on a nonexistent leg still returns a
         finite number instead of failing. The dense sign-weight path is worse
         still: a negative shift makes ``>>`` select the wrong bit or none at
         all, so the reported expectation belongs to a different operator than
         the caller named.
         """
-        if any(wire < 0 or wire >= self.n_wires for wire in wires):
-            raise ValueError("observable wire index out of range")
+        if any(qubit < 0 or qubit >= self.n_qubits for qubit in qubits):
+            raise ValueError("observable qubit index out of range")
 
-    def expectation_z(self, wires: int | Sequence[int] | None = None) -> torch.Tensor:
-        """Return the Z expectation on the named wires, one per wire.
+    def expectation_z(self, qubits: int | Sequence[int] | None = None) -> torch.Tensor:
+        """Return the Z expectation on the named qubits, one per qubit.
 
-        Two paths: below `dense_observable_wires` the dense state is materialized
+        Two paths: below `dense_observable_qubits` the dense state is materialized
         and the expectations are a single matmul against cached sign weights; above
         it a bra-ket contraction is built instead, and the strategy recorded on the
         state decides how that contraction is ordered.
@@ -193,31 +193,31 @@ class TensorNetworkState:
         the contraction are recorded on the state, so a caller can tell which route
         answered without inferring it from the timing.
         """
-        if wires is None:
-            wire_tuple = tuple(range(self.n_wires))
-        elif isinstance(wires, int):
-            wire_tuple = (wires,)
+        if qubits is None:
+            qubit_tuple = tuple(range(self.n_qubits))
+        elif isinstance(qubits, int):
+            qubit_tuple = (qubits,)
         else:
-            wire_tuple = tuple(int(wire) for wire in wires)
-        self._validate_observable_wires(wire_tuple)
-        if self.n_wires <= self.dense_observable_wires:
+            qubit_tuple = tuple(int(qubit) for qubit in qubits)
+        self._validate_observable_qubits(qubit_tuple)
+        if self.n_qubits <= self.dense_observable_qubits:
             self._last_observable_execution = "dense_state"
             self._last_observable_program_cache_hit = False
             self._last_observable_peak_size = None
             state = self.state()
             probabilities = torch.abs(state) ** 2
             key = (
-                self.n_wires,
-                wire_tuple,
+                self.n_qubits,
+                qubit_tuple,
                 str(state.device),
                 probabilities.dtype,
             )
             weights = _DENSE_Z_OBSERVABLE_CACHE.get(key)
             if weights is None:
-                indices = torch.arange(2**self.n_wires, device=state.device)
+                indices = torch.arange(2**self.n_qubits, device=state.device)
                 columns = []
-                for wire in wire_tuple:
-                    shift = self.n_wires - int(wire) - 1
+                for qubit in qubit_tuple:
+                    shift = self.n_qubits - int(qubit) - 1
                     columns.append(1 - 2 * ((indices >> shift) & 1))
                 weights = torch.stack(columns, dim=-1).to(probabilities.dtype)
                 _DENSE_Z_OBSERVABLE_CACHE[key] = weights
@@ -228,16 +228,16 @@ class TensorNetworkState:
         cache = self.plan.program_cache
         cache_key = (
             "tn_observable",
-            self.n_wires,
+            self.n_qubits,
             self.bsz,
-            wire_tuple,
+            qubit_tuple,
             observable_strategy,
             observable_budget,
         )
         cached = None if cache is None else cache.get(cache_key)
         self._last_observable_program_cache_hit = cached is not None
         if cached is None:
-            program = CompiledTNObservableProgram(self.n_wires, wire_tuple)
+            program = CompiledTNObservableProgram(self.n_qubits, qubit_tuple)
             observable_plan = program.bind(self.plan)
             profile = observable_plan.contraction_profile(observable_strategy)
             peak_size = profile.peak_size
@@ -247,7 +247,7 @@ class TensorNetworkState:
         else:
             program, peak_size, use_direct_batch = cached
             observable_plan = program.bind(self.plan)
-        self._observable_programs[wire_tuple] = program
+        self._observable_programs[qubit_tuple] = program
         self._last_observable_peak_size = peak_size
         if use_direct_batch:
             self._last_observable_execution = "memory_first_direct_batch"
@@ -266,11 +266,11 @@ class TensorNetworkState:
         values = [
             tensor_network_expectation_ps(
                 self.plan,
-                z=(wire,),
+                z=(qubit,),
                 strategy=observable_strategy,
                 max_peak_bytes=observable_budget,
             )
-            for wire in wire_tuple
+            for qubit in qubit_tuple
         ]
         return torch.stack(values, dim=-1)
 
@@ -285,8 +285,8 @@ class TensorNetworkState:
         y_set = set(y or ())
         z_set = set(z or ())
         if (x_set & y_set) or (x_set & z_set) or (y_set & z_set):
-            raise ValueError("A wire can appear in only one of x, y, or z.")
-        self._validate_observable_wires(x_set | y_set | z_set)
+            raise ValueError("A qubit can appear in only one of x, y, or z.")
+        self._validate_observable_qubits(x_set | y_set | z_set)
 
         strategy, budget = self._observable_contraction()
         return tensor_network_expectation_ps(
@@ -317,7 +317,7 @@ class TensorNetworkState:
         )
         if format == "index":
             return samples
-        return _bits_from_indices(samples, self.n_wires)
+        return _bits_from_indices(samples, self.n_qubits)
 
     def counts(
         self,
@@ -339,7 +339,7 @@ class TensorNetworkState:
             for key, count in zip(unique.tolist(), counts.tolist(), strict=True):
                 index = int(key)
                 out_key: str | int = (
-                    index if format == "int" else f"{index:0{self.n_wires}b}"
+                    index if format == "int" else f"{index:0{self.n_qubits}b}"
                 )
                 batch_counts[out_key] = int(count)
             outputs.append(batch_counts)

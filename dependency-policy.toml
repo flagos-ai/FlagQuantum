@@ -59,7 +59,20 @@ optional_extra_allowed = false
 
 [import_policy]
 core_allowed_distributions = ["torch"]
-core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "pennylane", "pymatching", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
+core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "numpy", "pennylane", "pymatching", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
+
+# A root named here may be referenced in a collected module only behind a guard,
+# and each entry records which other root's guard also covers it. That fact
+# belongs to the other distribution's metadata, not to any file in this
+# repository, so it is declared once instead of exempted per file. Every entry
+# below is that distribution's own `requires_dist`: stim 1.16.0 requires numpy,
+# jax 0.11.2 requires numpy>=2.1, matplotlib 3.11.2 requires numpy>=1.25,
+# pymatching 2.4.0 requires numpy, and the pinned qiskit requires numpy<3,>=1.17.
+# numpy itself is forbidden because torch 2.13 declares no numpy requirement at
+# all: the core lane has no numpy, and every `cpu-core` leg reports `Failed to
+# initialize NumPy` while the suite still passes.
+[import_policy.guard_implications]
+numpy = ["jax", "matplotlib", "pymatching", "qiskit", "stim"]
 
 [tested]
 torch = ["2.5", "2.13"]

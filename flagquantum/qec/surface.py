@@ -16,7 +16,7 @@ them into a mixed-check patch, so the shared machinery has one home rather than
 being reached across a catalogue that is about what a code *is*.
 
 **A check's coupling is a consequence of its factors, not a choice.** The
-conjugation that produces the ZXXZ frame swaps which factor a wire carries, and
+conjugation that produces the ZXXZ frame swaps which factor a qubit carries, and
 because a factor decides which way a CNOT points, a mixed check ends up driving
 one ancilla in both directions -- reading its Z factor in and its X factor out.
 That is a property this module's records inherit from the lattice and the
@@ -24,7 +24,7 @@ conjugation; :class:`~flagquantum.qec.codes.CodeCheck` is where the rule is
 enforced, and :mod:`flagquantum.qec.circuit` is the only place that has to emit
 it.
 
-This module describes checks, wires and observables. It does not choose a decoding
+This module describes checks, qubits and observables. It does not choose a decoding
 strategy, a noise model, or a threshold.
 """
 
@@ -33,7 +33,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from numbers import Integral
 
-from .codes import CodeCheck
+from .codes import CodeCheck, ancilla_band_counts
 from .pauli import Pauli
 
 
@@ -65,9 +65,9 @@ def _surface_ancilla_sites(distance: int) -> tuple[tuple[int, int, bool], ...]:
 class RotatedSurfaceCode:
     """The rotated surface code of odd ``distance`` read out as Z memory.
 
-    Data qubits occupy wires ``0..distance**2 - 1``, indexed so that lattice
-    site ``(i, j)`` is wire ``j * distance + i``. Ancillas follow the data wires
-    in lattice order. ``(i, j)`` is a data qubit for ``0 <= i, j <= distance - 1``
+    Data qubits occupy indices ``0..distance**2 - 1``, indexed so that lattice
+    site ``(i, j)`` is the qubit ``j * distance + i``. Ancillas follow the data
+    qubits in lattice order. ``(i, j)`` is a data qubit for ``0 <= i, j <= distance - 1``
     and ``(a, b)`` is an ancilla for ``0 <= a, b <= distance``; an X-type ancilla
     sits on an interior column with odd lattice parity, a Z-type ancilla on an
     interior row with even lattice parity, and its support is the up to four data
@@ -102,11 +102,27 @@ class RotatedSurfaceCode:
         return len(_surface_ancilla_sites(self.distance))
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return ancilla_band_counts(self.checks)[0]
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return ancilla_band_counts(self.checks)[1]
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
         return tuple(range(self.num_data_qubits))
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         first = self.num_data_qubits
         return tuple(first + index for index in range(self.num_ancilla_qubits))
 
@@ -125,17 +141,17 @@ class RotatedSurfaceCode:
                 )
             )
             if is_x:
-                stabilizer = Pauli(x_wires=support)
-                cnot_wires = tuple((ancilla, wire) for wire in support)
+                stabilizer = Pauli(x_qubits=support)
+                cnot_qubits = tuple((ancilla, wire) for wire in support)
             else:
-                stabilizer = Pauli(z_wires=support)
-                cnot_wires = tuple((wire, ancilla) for wire in support)
+                stabilizer = Pauli(z_qubits=support)
+                cnot_qubits = tuple((wire, ancilla) for wire in support)
             checks.append(
                 CodeCheck(
                     index=index,
                     stabilizer=stabilizer,
-                    ancilla_wire=ancilla,
-                    cnot_wires=cnot_wires,
+                    ancilla_qubit=ancilla,
+                    cnot_qubits=cnot_qubits,
                 )
             )
         return tuple(checks)
@@ -146,16 +162,16 @@ class RotatedSurfaceCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=tuple(range(self.distance))),)
+        return (Pauli(z_qubits=tuple(range(self.distance))),)
 
 
 def _zxxz_checkerboard(distance: int) -> frozenset[int]:
-    """Return the wires a ZXXZ patch Hadamards, in the rotated patch's labelling.
+    """Return the qubits a ZXXZ patch Hadamards, in the rotated patch's labelling.
 
     The patch is the rotated surface patch with a Hadamard on one sublattice of
     its data qubits: the checkerboard, whose site ``(i, j)`` is flipped when
     ``i + j`` is odd. Every check is therefore the rotated check with each of its
-    wires conjugated, which swaps that wire's factors rather than the operator's
+    qubits conjugated, which swaps that qubit's factors rather than the operator's
     identity, and every check of the patch comes out mixed.
 
     The parity is load-bearing and not a convention. Hadamarding the other
@@ -173,19 +189,19 @@ def _zxxz_checkerboard(distance: int) -> frozenset[int]:
 
 
 def _conjugate_by_checkerboard(pauli: Pauli, board: frozenset[int]) -> Pauli:
-    """Return ``pauli`` with a Hadamard applied to every wire on ``board``.
+    """Return ``pauli`` with a Hadamard applied to every qubit on ``board``.
 
-    A Hadamard maps ``X`` to ``Z`` on the wire it acts on, so a wire carrying a
-    factor it is flipped on changes which list it appears in and a wire it is not
-    flipped on does not. Wires off the board keep their factor and wires on the
+    A Hadamard maps ``X`` to ``Z`` on the qubit it acts on, so a qubit carrying a
+    factor it is flipped on changes which list it appears in and a qubit it is not
+    flipped on does not. Qubits off the board keep their factor and qubits on the
     board exchange theirs, which is the whole of the conjugation.
     """
 
-    x_wires = frozenset(pauli.x_wires)
-    z_wires = frozenset(pauli.z_wires)
+    x_qubits = frozenset(pauli.x_qubits)
+    z_qubits = frozenset(pauli.z_qubits)
     return Pauli(
-        x_wires=tuple(sorted((x_wires - board) | (z_wires & board))),
-        z_wires=tuple(sorted((z_wires - board) | (x_wires & board))),
+        x_qubits=tuple(sorted((x_qubits - board) | (z_qubits & board))),
+        z_qubits=tuple(sorted((z_qubits - board) | (x_qubits & board))),
     )
 
 
@@ -194,20 +210,20 @@ class ZxxzSurfaceCode:
     """The rotated surface patch read out in the ZXXZ frame, of odd ``distance``.
 
     This is the rotated surface patch of the same distance with a Hadamard on the
-    data checkerboard, so it occupies the same wires, declares the same number of
+    data checkerboard, so it occupies the same qubits, declares the same number of
     ancillas in the same lattice order, and has the same stabilizer group up to a
     local Clifford conjugation. What changes is which factor each check carries on
-    each of its wires: conjugating a rotated check's wires by the Hadamard swaps
-    the factors on the wires that sit on the board, so a check whose support had
-    one wire on the board has that wire's factor exchanged and a check whose
+    each of its qubits: conjugating a rotated check's qubits by the Hadamard swaps
+    the factors on the qubits that sit on the board, so a check whose support had
+    one qubit on the board has that qubit's factor exchanged and a check whose
     support was entirely on or entirely off the board keeps its type. On the
-    rotated patch's own assignment **every check has at least one wire on the
+    rotated patch's own assignment **every check has at least one qubit on the
     board and at least one off it**, so every check comes out mixed -- an X-and-Z
     product on one ancilla -- and none is pure.
 
-    **Why the parameters are the rotated patch's.** A Hadamard on a data wire is a
+    **Why the parameters are the rotated patch's.** A Hadamard on a data qubit is a
     Clifford conjugation, so it maps the stabilizer group to an isomorphic group
-    on the same wires, preserves every operator's weight, and preserves which
+    on the same qubits, preserves every operator's weight, and preserves which
     operators commute. The code therefore has the same ``n``, the same ``k``, the
     same check weights, and the same distance as the rotated patch of the same
     distance, and this record's ``distance`` is that number rather than a
@@ -217,7 +233,7 @@ class ZxxzSurfaceCode:
 
     **The declared logical pair is the two diagonals.** ``Z`` on the anti-diagonal
     and ``X`` on the main diagonal both commute with every check, neither lies in
-    the stabilizer span, and they overlap at the patch centre -- exactly one wire,
+    the stabilizer span, and they overlap at the patch centre -- exactly one qubit,
     which is what makes them a logical pair. The overlap is odd only when the
     distance is odd, which is why even distances are refused: the record declares
     *that* pair, and at an even distance the two diagonals can miss each other.
@@ -251,11 +267,27 @@ class ZxxzSurfaceCode:
         return len(_surface_ancilla_sites(self.distance))
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return ancilla_band_counts(self.checks)[0]
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return ancilla_band_counts(self.checks)[1]
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
         return tuple(range(self.num_data_qubits))
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         first = self.num_data_qubits
         return tuple(first + index for index in range(self.num_ancilla_qubits))
 
@@ -274,22 +306,22 @@ class ZxxzSurfaceCode:
                     if i in (a - 1, a) and j in (b - 1, b)
                 )
             )
-            rotated = Pauli(x_wires=support) if is_x else Pauli(z_wires=support)
+            rotated = Pauli(x_qubits=support) if is_x else Pauli(z_qubits=support)
             stabilizer = _conjugate_by_checkerboard(rotated, board)
             # ``CodeCheck`` reads the coupling as its stabilizer orders the
-            # factors: the Z-factor pairs first, each reading a data wire into the
+            # factors: the Z-factor pairs first, each reading a data qubit into the
             # ancilla, then the X-factor pairs, each reading the ancilla out into
-            # a data wire. A mixed check therefore uses both directions and one
+            # a data qubit. A mixed check therefore uses both directions and one
             # ancilla, which is the shape the record describes.
-            cnot_wires = tuple((wire, ancilla) for wire in stabilizer.z_wires) + tuple(
-                (ancilla, wire) for wire in stabilizer.x_wires
-            )
+            cnot_qubits = tuple(
+                (wire, ancilla) for wire in stabilizer.z_qubits
+            ) + tuple((ancilla, wire) for wire in stabilizer.x_qubits)
             checks.append(
                 CodeCheck(
                     index=index,
                     stabilizer=stabilizer,
-                    ancilla_wire=ancilla,
-                    cnot_wires=cnot_wires,
+                    ancilla_qubit=ancilla,
+                    cnot_qubits=cnot_qubits,
                 )
             )
         return tuple(checks)
@@ -305,7 +337,7 @@ class ZxxzSurfaceCode:
         downward = tuple(
             row * (distance - 1) + (distance - 1) for row in range(distance)
         )
-        return (Pauli(z_wires=downward), Pauli(x_wires=upward))
+        return (Pauli(z_qubits=downward), Pauli(x_qubits=upward))
 
 
 __all__ = (

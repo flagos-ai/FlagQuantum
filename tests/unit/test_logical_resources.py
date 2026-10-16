@@ -39,7 +39,11 @@ import dataclasses
 from pathlib import Path
 
 import pytest
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - the 3.10 interpreter
+    import tomli as tomllib
 
 import flagquantum as fq
 import flagquantum.algorithms as algorithms
@@ -445,7 +449,7 @@ def test_the_default_logical_count_is_the_declared_register() -> None:
     program = fq.Circuit(4).h(0).t(0)
     report = estimate_logical_resources(program, distance=3)
     assert report.n_qubits == report.estimate.n_qubits == 4
-    assert report.estimate.used_wires == 1
+    assert report.estimate.used_qubits == 1
     assert report.physical_qubits == 17 * 4
 
 
@@ -691,7 +695,9 @@ def test_the_report_nests_the_compiler_record_rather_than_copying_it() -> None:
 
     report = estimate_logical_resources(_mixed(), distance=5)
     assert isinstance(report.estimate, type(estimate_resources(_mixed())))
-    assert report.estimate.per_wire_depth == estimate_resources(_mixed()).per_wire_depth
+    assert (
+        report.estimate.per_qubit_depth == estimate_resources(_mixed()).per_qubit_depth
+    )
     assert report.estimate.max_operation_width == 2
     assert report.estimate.channel_count == 0
 

@@ -537,9 +537,22 @@ def _qiskit_anchor(
     instruction never wrote. That is the measurement behind the one recorded
     disagreement: Qiskit's equivalence library may introduce a constant or a
     halved angle, and the table here may not.
+
+    The disagreements are split by what they are evidence about. This table's
+    own sink is a property of the rules below and holds on every lane: every
+    entangling rule composes down to ``cx`` or ``cz``, so a target publishing
+    neither reaches fewer names here than in Qiskit's library. Anything beyond
+    that sink is the *installed* lane's library reaching where this table
+    refuses by name, so it is reported -- as ``qiskit_version`` and as the
+    measured rows -- rather than asserted as a count. Asserting it would pin
+    the reading to the instrument, and this anchor was read on more than one
+    lane: 1.2.4 and 2.0.x report no disagreement beyond the sink, 2.5.x reports
+    ``clifford-t`` because that library gained a multi-controlled
+    decomposition needing no ``tdg``.
     """
 
     try:
+        import qiskit  # type: ignore[import-not-found]
         from qiskit.circuit import QuantumCircuit  # type: ignore[import-not-found]
         from qiskit.circuit.equivalence_library import (  # type: ignore[import-not-found]
             StandardEquivalenceLibrary,
@@ -614,12 +627,33 @@ def _qiskit_anchor(
                 == port_multi_controlled[basis.label]["entangler_counts"],
             }
         )
-    # Non-vacuity, and the recorded mechanism: the bases that disagree are
-    # exactly the bases publishing neither `cx` nor `cz`, so the gap is the
-    # table's two-name sink and nothing else.
-    assert sorted(row["label"] for row in rows if not row["count_agrees"]) == sorted(
-        row["label"] for row in rows if not {"cx", "cz"} & set(row["target_basis"])
-    ), [row["label"] for row in rows if not row["count_agrees"]]
+    # Non-vacuity, then mechanism, in the two parts the docstring separates.
+    # The sink is this table's own: a target publishing neither `cx` nor `cz`
+    # cannot receive an entangling rule by name, so it must disagree here, and
+    # it must do so on every lane because neither side of that comparison is
+    # versioned. Everything past the sink belongs to the installed library and
+    # is therefore attributed rather than counted -- each such base is one this
+    # table refuses for a named gate. An unexplained disagreement is an error.
+    by_label = {row["label"]: row for row in rows}
+    sink_gap = sorted(
+        label
+        for label, row in by_label.items()
+        if not {"cx", "cz"} & set(row["target_basis"])
+    )
+    disagreeing = sorted(
+        label for label, row in by_label.items() if not row["count_agrees"]
+    )
+    assert sink_gap, sorted(by_label)
+    assert set(sink_gap) <= set(disagreeing), (sink_gap, disagreeing)
+    for label in sink_gap:
+        row = by_label[label]
+        assert row["reached_count"] > row["port_reached_count"], row
+    for label in sorted(set(disagreeing) - set(sink_gap)):
+        refusals = ours[label]["refused"]
+        assert refusals, (label, refusals)
+        assert all(
+            "requires unsupported native gate" in reason for reason in refusals.values()
+        ), (label, refusals)
     # The multi-controlled entangler comparison is only the same quantity where
     # both ports reach both opcodes. Asserting that set rather than trusting the
     # equality keeps an all-refused run from reporting agreement with itself.
@@ -638,9 +672,16 @@ def _qiskit_anchor(
     return {
         "available": True,
         "translator": "BasisTranslator(StandardEquivalenceLibrary, target)",
+        # Provenance of the reading, not an assertion about it: the recorded
+        # baseline above is what this table was measured against, and this is
+        # the lane the anchor was actually read on. Which bases disagree beyond
+        # the sink moves with this value, so a consumer that wants a fixed
+        # disagreement set has to say which lane it wants.
+        "qiskit_version": qiskit.__version__,
         "reference_revision": "qiskit 1.2.4",
         "compared_opcode_count": len(TABLE_OPCODES),
         "basis_count": len(rows),
+        "sink_gap_bases": sink_gap,
         "count_agreement_count": sum(1 for row in rows if row["count_agrees"]),
         "opcode_agreement_count": sum(1 for row in rows if row["opcode_agrees"]),
         "disagreements": [row["label"] for row in rows if not row["count_agrees"]],
@@ -746,10 +787,16 @@ def main() -> None:
     if anchor["available"]:
         print()
         print(
-            f"Qiskit anchor: {anchor['opcode_agreement_count']}/"
+            f"Qiskit anchor ({anchor['qiskit_version']}): "
+            f"{anchor['opcode_agreement_count']}/"
             f"{anchor['basis_count']} bases agree opcode for opcode; "
             f"{anchor['count_agreement_count']}/{anchor['basis_count']} agree on "
             "the count"
+        )
+        print(
+            f" sink gap (this table, every lane): {anchor['sink_gap_bases']}; "
+            f"beyond it (this lane's library): "
+            f"{sorted(set(anchor['disagreements']) - set(anchor['sink_gap_bases']))}"
         )
         for row in anchor["rows"]:
             mark = " " if row["opcode_agrees"] else "*"

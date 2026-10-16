@@ -56,6 +56,7 @@ import pytest
 from flagquantum.errors import CapabilityError
 from flagquantum.qec import (
     AUTHORITY_NAME,
+    BELIEF_PROPAGATION_NAME,
     BELIEF_PROPAGATION_OSD_NAME,
     CROSS_CHECK_NAME,
     SLIDING_WINDOW_NAME,
@@ -272,6 +273,9 @@ def test_a_registration_can_be_replaced_when_the_caller_says_so() -> None:
         def from_detector_error_model(cls, model: object) -> Replacement:
             return cls()
 
+    Replacement.from_decoding_graph = classmethod(  # type: ignore[attr-defined]
+        lambda cls, graph: cls()
+    )
     try:
         register_decoder(AUTHORITY_NAME, replace=True)(Replacement)  # type: ignore[arg-type]
         assert get_decoder(AUTHORITY_NAME, _model()).__class__ is Replacement
@@ -286,9 +290,10 @@ def test_the_registry_keeps_the_input_family_and_not_the_repetition_decoders() -
     registered = set(decoder_names())
     assert {
         AUTHORITY_NAME,
+        BELIEF_PROPAGATION_NAME,
+        BELIEF_PROPAGATION_OSD_NAME,
         CROSS_CHECK_NAME,
         SLIDING_WINDOW_NAME,
-        BELIEF_PROPAGATION_OSD_NAME,
     } == registered
     assert RepetitionLookupDecoder is not None
     assert not hasattr(RepetitionLookupDecoder, "from_detector_error_model")

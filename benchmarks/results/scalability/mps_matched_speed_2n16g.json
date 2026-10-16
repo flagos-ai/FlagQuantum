@@ -1,0 +1,1978 @@
+{
+  "artifact_class": "measured_production_run",
+  "evidence": {
+    "acceptance_case": "matched_speed",
+    "acceptance_configuration": "matched_speed_8192sites_chi64",
+    "backward_execution": "executed_sharded_reverse_pass",
+    "backward_execution_measured": true,
+    "batch_size": 1,
+    "blockers": [],
+    "bond_shard_ownership": {
+      "bond:0-511": "rank:0",
+      "bond:1023": "rank:1+rank:2",
+      "bond:1024-1535": "rank:2",
+      "bond:1535": "rank:2+rank:3",
+      "bond:1536-2047": "rank:3",
+      "bond:2047": "rank:3+rank:4",
+      "bond:2048-2559": "rank:4",
+      "bond:2559": "rank:4+rank:5",
+      "bond:2560-3071": "rank:5",
+      "bond:3071": "rank:5+rank:6",
+      "bond:3072-3583": "rank:6",
+      "bond:3583": "rank:6+rank:7",
+      "bond:3584-4095": "rank:7",
+      "bond:4095": "rank:7+rank:8",
+      "bond:4096-4607": "rank:8",
+      "bond:4607": "rank:8+rank:9",
+      "bond:4608-5119": "rank:9",
+      "bond:511": "rank:0+rank:1",
+      "bond:5119": "rank:9+rank:10",
+      "bond:512-1023": "rank:1",
+      "bond:5120-5631": "rank:10",
+      "bond:5631": "rank:10+rank:11",
+      "bond:5632-6143": "rank:11",
+      "bond:6143": "rank:11+rank:12",
+      "bond:6144-6655": "rank:12",
+      "bond:6655": "rank:12+rank:13",
+      "bond:6656-7167": "rank:13",
+      "bond:7167": "rank:13+rank:14",
+      "bond:7168-7679": "rank:14",
+      "bond:7679": "rank:14+rank:15",
+      "bond:7680-8191": "rank:15"
+    },
+    "bond_shard_ownership_source": "derived from the measured site ownership map and the measured boundary bonds, which name the two ranks that share each cut bond",
+    "boundary_adjoint_exchange": {
+      "boundary_bytes": 7864320,
+      "boundary_count": 15,
+      "execution_status": "executed",
+      "forward_exchanges": 30,
+      "measured_step": 1,
+      "reverse_exchanges": 30,
+      "status": "executed",
+      "transport": "batched_isend_irecv_packed_multi_tensor_envelope"
+    },
+    "boundary_communication_bytes": {
+      "boundary:1023": 262144,
+      "boundary:1535": 262144,
+      "boundary:2047": 262144,
+      "boundary:2559": 262144,
+      "boundary:3071": 262144,
+      "boundary:3583": 262144,
+      "boundary:4095": 262144,
+      "boundary:4607": 262144,
+      "boundary:511": 262144,
+      "boundary:5119": 262144,
+      "boundary:5631": 262144,
+      "boundary:6143": 262144,
+      "boundary:6655": 262144,
+      "boundary:7167": 262144,
+      "boundary:7679": 262144
+    },
+    "boundary_gradient_ownership": {
+      "boundary:1023": [
+        "rank:1",
+        "rank:2"
+      ],
+      "boundary:1535": [
+        "rank:2",
+        "rank:3"
+      ],
+      "boundary:2047": [
+        "rank:3",
+        "rank:4"
+      ],
+      "boundary:2559": [
+        "rank:4",
+        "rank:5"
+      ],
+      "boundary:3071": [
+        "rank:5",
+        "rank:6"
+      ],
+      "boundary:3583": [
+        "rank:6",
+        "rank:7"
+      ],
+      "boundary:4095": [
+        "rank:7",
+        "rank:8"
+      ],
+      "boundary:4607": [
+        "rank:8",
+        "rank:9"
+      ],
+      "boundary:511": [
+        "rank:0",
+        "rank:1"
+      ],
+      "boundary:5119": [
+        "rank:9",
+        "rank:10"
+      ],
+      "boundary:5631": [
+        "rank:10",
+        "rank:11"
+      ],
+      "boundary:6143": [
+        "rank:11",
+        "rank:12"
+      ],
+      "boundary:6655": [
+        "rank:12",
+        "rank:13"
+      ],
+      "boundary:7167": [
+        "rank:13",
+        "rank:14"
+      ],
+      "boundary:7679": [
+        "rank:14",
+        "rank:15"
+      ]
+    },
+    "boundary_gradient_routes": {
+      "boundary:1023": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "aa5d5a7d86cbc5aa",
+        "owner_ranks": [
+          1,
+          2
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:1535": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "82d077c8704e13ac",
+        "owner_ranks": [
+          2,
+          3
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:2047": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "3595a49e592e050f",
+        "owner_ranks": [
+          3,
+          4
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:2559": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "5e7a236fe38c195b",
+        "owner_ranks": [
+          4,
+          5
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:3071": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "bc227d3c0a185adb",
+        "owner_ranks": [
+          5,
+          6
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:3583": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "e300bfc8011c1a51",
+        "owner_ranks": [
+          6,
+          7
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:4095": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "6d8550109bbf388d",
+        "owner_ranks": [
+          7,
+          8
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:4607": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "be8628425f1ecaa3",
+        "owner_ranks": [
+          8,
+          9
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:511": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "f1efa522f868a3b8",
+        "owner_ranks": [
+          0,
+          1
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:5119": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "db59d6bb5698f9dc",
+        "owner_ranks": [
+          9,
+          10
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:5631": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "a9c1f9a3e20b4ba6",
+        "owner_ranks": [
+          10,
+          11
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:6143": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "556d9febcd3d3d61",
+        "owner_ranks": [
+          11,
+          12
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:6655": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "aa9d284adb00cbd2",
+        "owner_ranks": [
+          12,
+          13
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:7167": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "f4f4b659820074db",
+        "owner_ranks": [
+          13,
+          14
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      },
+      "boundary:7679": {
+        "gradient_route": "bounded_dtype_owner_reduce",
+        "operation_id": "093e7c7b12eefa7b",
+        "owner_ranks": [
+          14,
+          15
+        ],
+        "update_route": "owner_step_then_bounded_dtype_all_gather"
+      }
+    },
+    "capacity_baseline_artifact": "benchmarks/results/local/mps_capacity_131072q_chi768_16xa800_complete_20261009.json",
+    "capacity_baseline_device": "cuda device rank 0, device_total_memory_bytes=85093777408 (device name not recorded by the measured run)",
+    "capacity_baseline_device_source": "the single-device failure record named by the premise",
+    "capacity_baseline_device_total_memory_bytes": 85093777408,
+    "capacity_baseline_peak_memory_bytes": 75657923584,
+    "capacity_baseline_sha256": "1098b02286f44f6e2d3fd0a6a80d681cda4f333b721e766a68dd67b50870f638",
+    "capacity_baseline_topology_fingerprint": "c74a91e3a224a4dd414cfbfbcb31da7570880d42e6aa4eaccecf4b85427940a5",
+    "capacity_failure_reason": "CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 6.88 MiB is free. Including non-PyTorch memory, this process has 79.23 GiB memory in use. Of the allocated memory 70.46 GiB is allocated by PyTorch, and 7.83 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+    "capacity_premise_workload_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
+    "claim_evidence_type": "production_training_benchmark",
+    "collective_backend": "nccl",
+    "communication_bytes": 7864320,
+    "communication_counting": "each boundary payload is counted at both of the ranks that own it, which is the convention the ISSUE-092 capacity artifact uses",
+    "communication_fraction": 0.9994956971580095,
+    "communication_fraction_definition": "measured boundary transport bytes over the sum of measured boundary, gradient collective, optimizer collective and halo bytes",
+    "configurations": [
+      {
+        "baseline_median_seconds": 0.453572,
+        "linear_scaling_efficiency": 0.054411176188890416,
+        "n_sites": 512,
+        "name": "matched_speed_512sites_chi64",
+        "parameter_count": 31,
+        "scaling_efficiency": 0.7193041029504018,
+        "sharded_median_seconds": 0.5210005,
+        "speedup": 0.8705788190222467,
+        "speedup_confidence_interval": [
+          0.8365617961470035,
+          0.8973569980718841
+        ],
+        "steps": 1,
+        "trained_max_bond": 64
+      },
+      {
+        "baseline_median_seconds": 0.6485289999999999,
+        "linear_scaling_efficiency": 0.05687210565935017,
+        "n_sites": 1024,
+        "name": "matched_speed_1024sites_chi64",
+        "parameter_count": 31,
+        "scaling_efficiency": 0.7518370638080774,
+        "sharded_median_seconds": 0.7127055,
+        "speedup": 0.9099536905496027,
+        "speedup_confidence_interval": [
+          0.8894810902502025,
+          0.9295058185977849
+        ],
+        "steps": 1,
+        "trained_max_bond": 64
+      },
+      {
+        "baseline_median_seconds": 1.0258505,
+        "linear_scaling_efficiency": 0.06332476163950342,
+        "n_sites": 2048,
+        "name": "matched_speed_2048sites_chi64",
+        "parameter_count": 31,
+        "scaling_efficiency": 0.8371397947275269,
+        "sharded_median_seconds": 1.0124895,
+        "speedup": 1.0131961862320547,
+        "speedup_confidence_interval": [
+          0.9979731100568076,
+          1.0260167956528898
+        ],
+        "steps": 1,
+        "trained_max_bond": 64
+      },
+      {
+        "baseline_median_seconds": 1.7568890000000001,
+        "linear_scaling_efficiency": 0.06635771553682969,
+        "n_sites": 4096,
+        "name": "matched_speed_4096sites_chi64",
+        "parameter_count": 31,
+        "scaling_efficiency": 0.8772347960712331,
+        "sharded_median_seconds": 1.654752,
+        "speedup": 1.061723448589275,
+        "speedup_confidence_interval": [
+          1.0457780050102374,
+          1.0739279415623646
+        ],
+        "steps": 1,
+        "trained_max_bond": 64
+      },
+      {
+        "baseline_median_seconds": 3.2445655,
+        "linear_scaling_efficiency": 0.07019587162711807,
+        "n_sites": 8192,
+        "name": "matched_speed_8192sites_chi64",
+        "parameter_count": 31,
+        "scaling_efficiency": 0.9279743980589623,
+        "sharded_median_seconds": 2.8888499999999997,
+        "speedup": 1.1231339460338892,
+        "speedup_confidence_interval": [
+          1.099641001349927,
+          1.15942039054475
+        ],
+        "steps": 1,
+        "trained_max_bond": 64
+      }
+    ],
+    "distribution_semantics": "sharded_across_ranks",
+    "dtype": "complex64",
+    "executor": "pytorch_native_sharded_mps_training_v1",
+    "fallback_events": [],
+    "fallback_semantics": "native_matrix_product_state_path_only",
+    "full_mps_materialization": false,
+    "gpu_activity": 1.0,
+    "gradient_ownership": {
+      "rank:0": [
+        "parameter:0",
+        "parameter:16"
+      ],
+      "rank:1": [
+        "parameter:1",
+        "parameter:17"
+      ],
+      "rank:10": [
+        "parameter:10",
+        "parameter:26"
+      ],
+      "rank:11": [
+        "parameter:11",
+        "parameter:27"
+      ],
+      "rank:12": [
+        "parameter:12",
+        "parameter:28"
+      ],
+      "rank:13": [
+        "parameter:13",
+        "parameter:29"
+      ],
+      "rank:14": [
+        "parameter:14",
+        "parameter:30"
+      ],
+      "rank:15": [
+        "parameter:15"
+      ],
+      "rank:2": [
+        "parameter:2",
+        "parameter:18"
+      ],
+      "rank:3": [
+        "parameter:3",
+        "parameter:19"
+      ],
+      "rank:4": [
+        "parameter:4",
+        "parameter:20"
+      ],
+      "rank:5": [
+        "parameter:5",
+        "parameter:21"
+      ],
+      "rank:6": [
+        "parameter:6",
+        "parameter:22"
+      ],
+      "rank:7": [
+        "parameter:7",
+        "parameter:23"
+      ],
+      "rank:8": [
+        "parameter:8",
+        "parameter:24"
+      ],
+      "rank:9": [
+        "parameter:9",
+        "parameter:25"
+      ]
+    },
+    "gradient_ownership_semantics": "sharded_across_ranks",
+    "gradient_policy": "approximate",
+    "gradient_route": "bounded_dtype_owner_reduce",
+    "hardware_inventory": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "initial_max_bond": 64,
+    "inter_node_boundary_ranks": [
+      [
+        7,
+        8
+      ]
+    ],
+    "inter_node_communication_bytes": 262144,
+    "intra_node_communication_bytes": 7602176,
+    "ladder_definition_path": "benchmarks/internal/evidence/general_mps_speed_ladder_v1.py",
+    "ladder_fingerprint": "58f88d24d1c08846a2e3ecc7c7989570dc2a3ae06372b21d21b689ff3c855b47",
+    "linear_scaling_efficiency": 0.07019587162711807,
+    "local_world_size": 8,
+    "logical_mps_bytes": 536171840,
+    "max_bond_dimension": 64,
+    "measured_peak_memory_bytes": 55862784,
+    "measured_peak_memory_bytes_by_rank": [
+      55493120,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      51227648
+    ],
+    "measured_serial_fraction": 0.8146523972125517,
+    "measured_steps": 10,
+    "mps_backward_communication_plan": {
+      "boundary_adjoint_exchange": {
+        "boundary_bytes": 7864320,
+        "boundary_count": 15,
+        "execution_status": "executed",
+        "forward_exchanges": 30,
+        "measured_step": 1,
+        "reverse_exchanges": 30,
+        "status": "executed",
+        "transport": "batched_isend_irecv_packed_multi_tensor_envelope"
+      },
+      "boundary_edge_count": 15,
+      "boundary_edges": [
+        {
+          "bond": 511,
+          "boundary_edge_id": "boundary:511",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 0,
+          "operation_id": "f1efa522f868a3b8",
+          "owner_ranks": [
+            0,
+            1
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 1,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 1023,
+          "boundary_edge_id": "boundary:1023",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 1,
+          "operation_id": "aa5d5a7d86cbc5aa",
+          "owner_ranks": [
+            1,
+            2
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 2,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 1535,
+          "boundary_edge_id": "boundary:1535",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 2,
+          "operation_id": "82d077c8704e13ac",
+          "owner_ranks": [
+            2,
+            3
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 3,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 2047,
+          "boundary_edge_id": "boundary:2047",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 3,
+          "operation_id": "3595a49e592e050f",
+          "owner_ranks": [
+            3,
+            4
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 4,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 2559,
+          "boundary_edge_id": "boundary:2559",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 4,
+          "operation_id": "5e7a236fe38c195b",
+          "owner_ranks": [
+            4,
+            5
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 5,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 3071,
+          "boundary_edge_id": "boundary:3071",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 5,
+          "operation_id": "bc227d3c0a185adb",
+          "owner_ranks": [
+            5,
+            6
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 6,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 3583,
+          "boundary_edge_id": "boundary:3583",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 6,
+          "operation_id": "e300bfc8011c1a51",
+          "owner_ranks": [
+            6,
+            7
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 7,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 4095,
+          "boundary_edge_id": "boundary:4095",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 7,
+          "operation_id": "6d8550109bbf388d",
+          "owner_ranks": [
+            7,
+            8
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 8,
+          "topology_route": "nccl_multi_node_fabric",
+          "topology_tier": "inter_node"
+        },
+        {
+          "bond": 4607,
+          "boundary_edge_id": "boundary:4607",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 8,
+          "operation_id": "be8628425f1ecaa3",
+          "owner_ranks": [
+            8,
+            9
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 9,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 5119,
+          "boundary_edge_id": "boundary:5119",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 9,
+          "operation_id": "db59d6bb5698f9dc",
+          "owner_ranks": [
+            9,
+            10
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 10,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 5631,
+          "boundary_edge_id": "boundary:5631",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 10,
+          "operation_id": "a9c1f9a3e20b4ba6",
+          "owner_ranks": [
+            10,
+            11
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 11,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 6143,
+          "boundary_edge_id": "boundary:6143",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 11,
+          "operation_id": "556d9febcd3d3d61",
+          "owner_ranks": [
+            11,
+            12
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 12,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 6655,
+          "boundary_edge_id": "boundary:6655",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 12,
+          "operation_id": "aa9d284adb00cbd2",
+          "owner_ranks": [
+            12,
+            13
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 13,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 7167,
+          "boundary_edge_id": "boundary:7167",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 13,
+          "operation_id": "f4f4b659820074db",
+          "owner_ranks": [
+            13,
+            14
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 14,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        },
+        {
+          "bond": 7679,
+          "boundary_edge_id": "boundary:7679",
+          "communication_bytes": 262144,
+          "communication_primitive": "batched_isend_irecv",
+          "execution_status": "executed",
+          "forward_transport": "batched_isend_irecv",
+          "left_rank": 14,
+          "operation_id": "093e7c7b12eefa7b",
+          "owner_ranks": [
+            14,
+            15
+          ],
+          "payload_bytes": 262144,
+          "reverse_transport": "batched_isend_irecv",
+          "right_rank": 15,
+          "topology_route": "nccl_intra_node_devices",
+          "topology_tier": "intra_node"
+        }
+      ],
+      "boundary_gradient_routes": {
+        "boundary:1023": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "aa5d5a7d86cbc5aa",
+          "owner_ranks": [
+            1,
+            2
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:1535": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "82d077c8704e13ac",
+          "owner_ranks": [
+            2,
+            3
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:2047": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "3595a49e592e050f",
+          "owner_ranks": [
+            3,
+            4
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:2559": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "5e7a236fe38c195b",
+          "owner_ranks": [
+            4,
+            5
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:3071": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "bc227d3c0a185adb",
+          "owner_ranks": [
+            5,
+            6
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:3583": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "e300bfc8011c1a51",
+          "owner_ranks": [
+            6,
+            7
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:4095": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "6d8550109bbf388d",
+          "owner_ranks": [
+            7,
+            8
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:4607": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "be8628425f1ecaa3",
+          "owner_ranks": [
+            8,
+            9
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:511": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "f1efa522f868a3b8",
+          "owner_ranks": [
+            0,
+            1
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:5119": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "db59d6bb5698f9dc",
+          "owner_ranks": [
+            9,
+            10
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:5631": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "a9c1f9a3e20b4ba6",
+          "owner_ranks": [
+            10,
+            11
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:6143": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "556d9febcd3d3d61",
+          "owner_ranks": [
+            11,
+            12
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:6655": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "aa9d284adb00cbd2",
+          "owner_ranks": [
+            12,
+            13
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:7167": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "f4f4b659820074db",
+          "owner_ranks": [
+            13,
+            14
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        },
+        "boundary:7679": {
+          "gradient_route": "bounded_dtype_owner_reduce",
+          "operation_id": "093e7c7b12eefa7b",
+          "owner_ranks": [
+            14,
+            15
+          ],
+          "update_route": "owner_step_then_bounded_dtype_all_gather"
+        }
+      },
+      "collective_backend": "nccl",
+      "communication_bytes": 7864320,
+      "communication_protocol": "batched_isend_irecv_packed_multi_tensor_envelope",
+      "inter_node_communication_bytes": 262144,
+      "intra_node_communication_bytes": 7602176,
+      "status": "production_executed",
+      "topology_scope": "multi_node_production_transport"
+    },
+    "mps_backward_distribution_semantics": "sharded_across_ranks",
+    "mps_backward_memory_plan": {
+      "backend": "nccl",
+      "backward_adjoint_bytes_by_rank": [
+        327680,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        393216,
+        196608
+      ],
+      "blockers": [],
+      "boundary_gradient_buffer_bytes_by_rank": [
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        131072,
+        0
+      ],
+      "canonicalization_required": false,
+      "canonicalization_temporary_bytes_by_rank": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "communication_buffer_bytes": 131072,
+      "execution_scope": "multi_node_production_transport",
+      "forward_tensor_bytes_by_rank": [
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        196608,
+        65536
+      ],
+      "local_memory_bytes_by_rank": [
+        55493120,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        50964992
+      ],
+      "measured_backward_peak_memory_bytes": 55862784,
+      "measured_backward_peak_memory_bytes_by_rank": [
+        55493120,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        50964992
+      ],
+      "measured_forward_peak_memory_bytes_by_rank": [
+        55362560,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        55666688,
+        51227648
+      ],
+      "per_rank_peak_bytes": [
+        55493120,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        55862784,
+        50964992
+      ],
+      "rank_memory": [
+        {
+          "backward_adjoint_bytes": 327680,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55493120,
+          "forward_tensor_bytes": 196608,
+          "rank": 0,
+          "site_range": {
+            "first_site": 0,
+            "last_site": 511,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 1,
+          "site_range": {
+            "first_site": 512,
+            "last_site": 1023,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 2,
+          "site_range": {
+            "first_site": 1024,
+            "last_site": 1535,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 3,
+          "site_range": {
+            "first_site": 1536,
+            "last_site": 2047,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 4,
+          "site_range": {
+            "first_site": 2048,
+            "last_site": 2559,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 5,
+          "site_range": {
+            "first_site": 2560,
+            "last_site": 3071,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 6,
+          "site_range": {
+            "first_site": 3072,
+            "last_site": 3583,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 7,
+          "site_range": {
+            "first_site": 3584,
+            "last_site": 4095,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 8,
+          "site_range": {
+            "first_site": 4096,
+            "last_site": 4607,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 9,
+          "site_range": {
+            "first_site": 4608,
+            "last_site": 5119,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 10,
+          "site_range": {
+            "first_site": 5120,
+            "last_site": 5631,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 11,
+          "site_range": {
+            "first_site": 5632,
+            "last_site": 6143,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 12,
+          "site_range": {
+            "first_site": 6144,
+            "last_site": 6655,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 13,
+          "site_range": {
+            "first_site": 6656,
+            "last_site": 7167,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 393216,
+          "boundary_gradient_buffer_bytes": 131072,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 55862784,
+          "forward_tensor_bytes": 196608,
+          "rank": 14,
+          "site_range": {
+            "first_site": 7168,
+            "last_site": 7679,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 131584
+        },
+        {
+          "backward_adjoint_bytes": 196608,
+          "boundary_gradient_buffer_bytes": 0,
+          "canonicalization_not_required": true,
+          "canonicalization_temporary_bytes": 0,
+          "estimated_peak_backward_bytes": 50964992,
+          "forward_tensor_bytes": 65536,
+          "rank": 15,
+          "site_range": {
+            "first_site": 7680,
+            "last_site": 8191,
+            "site_count": 512
+          },
+          "truncation_temporary_bytes": 0
+        }
+      ],
+      "source": "per-rank tape byte counters recorded by the executor while each rank built the reverse tape this payload measured, and the reverse-pass peak memory the same rank recorded for the same step",
+      "status": "production_measured",
+      "truncation_temporary_bytes_by_rank": [
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        131584,
+        0
+      ]
+    },
+    "mps_forward_distribution_semantics": "sharded_across_ranks",
+    "n_sites": 8192,
+    "node_count": 2,
+    "optimizer": "adam",
+    "optimizer_step_evidence": {
+      "gradient_ownership": {
+        "rank:0": [
+          "parameter:0",
+          "parameter:16"
+        ],
+        "rank:1": [
+          "parameter:1",
+          "parameter:17"
+        ],
+        "rank:10": [
+          "parameter:10",
+          "parameter:26"
+        ],
+        "rank:11": [
+          "parameter:11",
+          "parameter:27"
+        ],
+        "rank:12": [
+          "parameter:12",
+          "parameter:28"
+        ],
+        "rank:13": [
+          "parameter:13",
+          "parameter:29"
+        ],
+        "rank:14": [
+          "parameter:14",
+          "parameter:30"
+        ],
+        "rank:15": [
+          "parameter:15"
+        ],
+        "rank:2": [
+          "parameter:2",
+          "parameter:18"
+        ],
+        "rank:3": [
+          "parameter:3",
+          "parameter:19"
+        ],
+        "rank:4": [
+          "parameter:4",
+          "parameter:20"
+        ],
+        "rank:5": [
+          "parameter:5",
+          "parameter:21"
+        ],
+        "rank:6": [
+          "parameter:6",
+          "parameter:22"
+        ],
+        "rank:7": [
+          "parameter:7",
+          "parameter:23"
+        ],
+        "rank:8": [
+          "parameter:8",
+          "parameter:24"
+        ],
+        "rank:9": [
+          "parameter:9",
+          "parameter:25"
+        ]
+      },
+      "gradient_ownership_semantics": "sharded_across_ranks",
+      "optimizer_name": "explicit_sharded_optimizer_step",
+      "optimizer_update_ownership": {
+        "rank:0": [
+          "parameter:0",
+          "parameter:16"
+        ],
+        "rank:1": [
+          "parameter:1",
+          "parameter:17"
+        ],
+        "rank:10": [
+          "parameter:10",
+          "parameter:26"
+        ],
+        "rank:11": [
+          "parameter:11",
+          "parameter:27"
+        ],
+        "rank:12": [
+          "parameter:12",
+          "parameter:28"
+        ],
+        "rank:13": [
+          "parameter:13",
+          "parameter:29"
+        ],
+        "rank:14": [
+          "parameter:14",
+          "parameter:30"
+        ],
+        "rank:15": [
+          "parameter:15"
+        ],
+        "rank:2": [
+          "parameter:2",
+          "parameter:18"
+        ],
+        "rank:3": [
+          "parameter:3",
+          "parameter:19"
+        ],
+        "rank:4": [
+          "parameter:4",
+          "parameter:20"
+        ],
+        "rank:5": [
+          "parameter:5",
+          "parameter:21"
+        ],
+        "rank:6": [
+          "parameter:6",
+          "parameter:22"
+        ],
+        "rank:7": [
+          "parameter:7",
+          "parameter:23"
+        ],
+        "rank:8": [
+          "parameter:8",
+          "parameter:24"
+        ],
+        "rank:9": [
+          "parameter:9",
+          "parameter:25"
+        ]
+      },
+      "optimizer_update_ownership_semantics": "sharded_across_ranks",
+      "optimizer_update_semantics": "sharded_across_ranks",
+      "parameter_ownership": {
+        "rank:0": [
+          "parameter:0",
+          "parameter:16"
+        ],
+        "rank:1": [
+          "parameter:1",
+          "parameter:17"
+        ],
+        "rank:10": [
+          "parameter:10",
+          "parameter:26"
+        ],
+        "rank:11": [
+          "parameter:11",
+          "parameter:27"
+        ],
+        "rank:12": [
+          "parameter:12",
+          "parameter:28"
+        ],
+        "rank:13": [
+          "parameter:13",
+          "parameter:29"
+        ],
+        "rank:14": [
+          "parameter:14",
+          "parameter:30"
+        ],
+        "rank:15": [
+          "parameter:15"
+        ],
+        "rank:2": [
+          "parameter:2",
+          "parameter:18"
+        ],
+        "rank:3": [
+          "parameter:3",
+          "parameter:19"
+        ],
+        "rank:4": [
+          "parameter:4",
+          "parameter:20"
+        ],
+        "rank:5": [
+          "parameter:5",
+          "parameter:21"
+        ],
+        "rank:6": [
+          "parameter:6",
+          "parameter:22"
+        ],
+        "rank:7": [
+          "parameter:7",
+          "parameter:23"
+        ],
+        "rank:8": [
+          "parameter:8",
+          "parameter:24"
+        ],
+        "rank:9": [
+          "parameter:9",
+          "parameter:25"
+        ]
+      },
+      "parameter_ownership_semantics": "sharded_across_ranks",
+      "training_step_count": 1
+    },
+    "optimizer_update_ownership": {
+      "rank:0": [
+        "parameter:0",
+        "parameter:16"
+      ],
+      "rank:1": [
+        "parameter:1",
+        "parameter:17"
+      ],
+      "rank:10": [
+        "parameter:10",
+        "parameter:26"
+      ],
+      "rank:11": [
+        "parameter:11",
+        "parameter:27"
+      ],
+      "rank:12": [
+        "parameter:12",
+        "parameter:28"
+      ],
+      "rank:13": [
+        "parameter:13",
+        "parameter:29"
+      ],
+      "rank:14": [
+        "parameter:14",
+        "parameter:30"
+      ],
+      "rank:15": [
+        "parameter:15"
+      ],
+      "rank:2": [
+        "parameter:2",
+        "parameter:18"
+      ],
+      "rank:3": [
+        "parameter:3",
+        "parameter:19"
+      ],
+      "rank:4": [
+        "parameter:4",
+        "parameter:20"
+      ],
+      "rank:5": [
+        "parameter:5",
+        "parameter:21"
+      ],
+      "rank:6": [
+        "parameter:6",
+        "parameter:22"
+      ],
+      "rank:7": [
+        "parameter:7",
+        "parameter:23"
+      ],
+      "rank:8": [
+        "parameter:8",
+        "parameter:24"
+      ],
+      "rank:9": [
+        "parameter:9",
+        "parameter:25"
+      ]
+    },
+    "optimizer_update_ownership_semantics": "sharded_across_ranks",
+    "optimizer_update_semantics": "sharded_across_ranks",
+    "parameter_count": 31,
+    "parameter_gradient_ownership": {
+      "parameter:0": "rank:rank:0",
+      "parameter:1": "rank:rank:1",
+      "parameter:10": "rank:rank:10",
+      "parameter:11": "rank:rank:11",
+      "parameter:12": "rank:rank:12",
+      "parameter:13": "rank:rank:13",
+      "parameter:14": "rank:rank:14",
+      "parameter:15": "rank:rank:15",
+      "parameter:16": "rank:rank:0",
+      "parameter:17": "rank:rank:1",
+      "parameter:18": "rank:rank:2",
+      "parameter:19": "rank:rank:3",
+      "parameter:2": "rank:rank:2",
+      "parameter:20": "rank:rank:4",
+      "parameter:21": "rank:rank:5",
+      "parameter:22": "rank:rank:6",
+      "parameter:23": "rank:rank:7",
+      "parameter:24": "rank:rank:8",
+      "parameter:25": "rank:rank:9",
+      "parameter:26": "rank:rank:10",
+      "parameter:27": "rank:rank:11",
+      "parameter:28": "rank:rank:12",
+      "parameter:29": "rank:rank:13",
+      "parameter:3": "rank:rank:3",
+      "parameter:30": "rank:rank:14",
+      "parameter:4": "rank:rank:4",
+      "parameter:5": "rank:rank:5",
+      "parameter:6": "rank:rank:6",
+      "parameter:7": "rank:rank:7",
+      "parameter:8": "rank:rank:8",
+      "parameter:9": "rank:rank:9"
+    },
+    "parameter_gradient_ownership_source": "derived from the measured optimizer ownership map and the measured gradient route bounded_dtype_owner_reduce",
+    "parameter_ownership": {
+      "rank:0": [
+        "parameter:0",
+        "parameter:16"
+      ],
+      "rank:1": [
+        "parameter:1",
+        "parameter:17"
+      ],
+      "rank:10": [
+        "parameter:10",
+        "parameter:26"
+      ],
+      "rank:11": [
+        "parameter:11",
+        "parameter:27"
+      ],
+      "rank:12": [
+        "parameter:12",
+        "parameter:28"
+      ],
+      "rank:13": [
+        "parameter:13",
+        "parameter:29"
+      ],
+      "rank:14": [
+        "parameter:14",
+        "parameter:30"
+      ],
+      "rank:15": [
+        "parameter:15"
+      ],
+      "rank:2": [
+        "parameter:2",
+        "parameter:18"
+      ],
+      "rank:3": [
+        "parameter:3",
+        "parameter:19"
+      ],
+      "rank:4": [
+        "parameter:4",
+        "parameter:20"
+      ],
+      "rank:5": [
+        "parameter:5",
+        "parameter:21"
+      ],
+      "rank:6": [
+        "parameter:6",
+        "parameter:22"
+      ],
+      "rank:7": [
+        "parameter:7",
+        "parameter:23"
+      ],
+      "rank:8": [
+        "parameter:8",
+        "parameter:24"
+      ],
+      "rank:9": [
+        "parameter:9",
+        "parameter:25"
+      ]
+    },
+    "parameter_ownership_semantics": "sharded_across_ranks",
+    "premise_source_integrity": {
+      "finalized": true,
+      "unverifiable_paths": []
+    },
+    "rank_gradients": [
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124,
+      124
+    ],
+    "rank_outputs": [
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021,
+      -0.01577877625823021
+    ],
+    "rank_peak_memory_bytes": [
+      55493120,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      55862784,
+      51227648
+    ],
+    "rank_placement": "rank // local_world_size",
+    "rank_timings": [
+      2.911984819918871,
+      2.9118711557239294,
+      2.9116549752652645,
+      2.9118178077042103,
+      2.9118876475840807,
+      2.9117873031646013,
+      2.9107449371367693,
+      2.9105787090957165,
+      2.911910681053996,
+      2.9117333628237247,
+      2.9107994604855776,
+      2.9108434468507767,
+      2.9117218125611544,
+      2.9116478729993105,
+      2.911457747220993,
+      2.9118979554623365
+    ],
+    "release_gate_allowed": true,
+    "release_payload": true,
+    "scalability_claim_allowed": true,
+    "scaling_efficiency": 0.9279743980589623,
+    "scaling_efficiency_definition": "measured_speedup_over_shardable_ceiling_speedup",
+    "shardable_ceiling_speedup": 1.2103070390553239,
+    "single_gpu_expected_oom": true,
+    "site_ownership_policy": "balanced",
+    "site_shard_ownership": {
+      "rank:0": {
+        "first_site": 0,
+        "last_site": 511,
+        "site_count": 512
+      },
+      "rank:1": {
+        "first_site": 512,
+        "last_site": 1023,
+        "site_count": 512
+      },
+      "rank:10": {
+        "first_site": 5120,
+        "last_site": 5631,
+        "site_count": 512
+      },
+      "rank:11": {
+        "first_site": 5632,
+        "last_site": 6143,
+        "site_count": 512
+      },
+      "rank:12": {
+        "first_site": 6144,
+        "last_site": 6655,
+        "site_count": 512
+      },
+      "rank:13": {
+        "first_site": 6656,
+        "last_site": 7167,
+        "site_count": 512
+      },
+      "rank:14": {
+        "first_site": 7168,
+        "last_site": 7679,
+        "site_count": 512
+      },
+      "rank:15": {
+        "first_site": 7680,
+        "last_site": 8191,
+        "site_count": 512
+      },
+      "rank:2": {
+        "first_site": 1024,
+        "last_site": 1535,
+        "site_count": 512
+      },
+      "rank:3": {
+        "first_site": 1536,
+        "last_site": 2047,
+        "site_count": 512
+      },
+      "rank:4": {
+        "first_site": 2048,
+        "last_site": 2559,
+        "site_count": 512
+      },
+      "rank:5": {
+        "first_site": 2560,
+        "last_site": 3071,
+        "site_count": 512
+      },
+      "rank:6": {
+        "first_site": 3072,
+        "last_site": 3583,
+        "site_count": 512
+      },
+      "rank:7": {
+        "first_site": 3584,
+        "last_site": 4095,
+        "site_count": 512
+      },
+      "rank:8": {
+        "first_site": 4096,
+        "last_site": 4607,
+        "site_count": 512
+      },
+      "rank:9": {
+        "first_site": 4608,
+        "last_site": 5119,
+        "site_count": 512
+      }
+    },
+    "speedup": 1.1231339460338892,
+    "speedup_confidence_interval": [
+      1.099641001349927,
+      1.15942039054475
+    ],
+    "state_mode": "mps",
+    "state_mode_evidence": {
+      "executor": "pytorch_native_sharded_mps_training_v1",
+      "full_mps_materialization": false,
+      "state_mode": "mps"
+    },
+    "timing_unit": "one full forward-and-reverse sharded MPS training step, measured end to end on the ranks it is sharded across",
+    "topology_scope": "multi_node_production_transport",
+    "training_step_count": 1,
+    "truncation_error_budget": 0.1,
+    "update_route": "owner_step_then_bounded_dtype_all_gather",
+    "warmup_steps": 2,
+    "workload_body_sha256": "05ec5746166182a93d9b6f46d50931b91158b46bb839d0870f30b179df07c662",
+    "workload_definition_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
+    "workload_sha256": "0ebbbdc7666bb4ea025fe92bd4d5c12b1db6ffa7c7828099400607569b847e69",
+    "world_size": 16
+  },
+  "evidence_scope": "multi_node_16_gpu_scale",
+  "integrity": {
+    "algorithm": "hmac-sha256",
+    "content_sha256": "d526c6a2eb128a7b237a6c1027fc02e68620ad9acb536b66bac929754fee7df3",
+    "signature": "a3a0a13074958fa5b4cf0acb22469aa516cc91da6f9cf70138cc45983e895bc8"
+  },
+  "provenance": {
+    "collective_backend": "nccl",
+    "command": [
+      "/nfs/wlx/envs/vllm-028-pr3-clean/bin/python -m benchmarks.mps_release_evidence --role matched-speed --measurements /nfs/fq-scratch/mpsspeed16c/matched_speed_w16.json --warmup 2 --iterations 10 --local-world-size 8 --node-count 2"
+    ],
+    "commit": "eea46ed81f8d7b1d4299c0b8fac68e7000c1adf4",
+    "devices": [
+      "GPU-1ffa16a6-3917-0c8d-2460-b360464eae49",
+      "GPU-948facc4-5ae3-21d5-4f91-987e5ee9841f",
+      "GPU-443ad877-b56d-e051-955a-3696fdde6996",
+      "GPU-04773e19-49e0-8bb4-9db9-08a1578bab32",
+      "GPU-0aa1d13e-2001-cbbb-63bd-ef7aa9fb204b",
+      "GPU-b469d6b6-d352-2492-853a-a67ff1d76dcf",
+      "GPU-da4f000a-b842-20eb-b53b-78d47a488c9c",
+      "GPU-302577c3-ae00-57fe-558e-e67cd1d95297",
+      "GPU-dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+      "GPU-d86297e1-24d6-9833-1caf-22d6b0badb63",
+      "GPU-8fbd86fe-b873-557d-bd88-369d63ffe37d",
+      "GPU-5f46d96f-f2b0-e24b-6f52-47c2c9ffbef8",
+      "GPU-e7b3c219-e1af-e348-d950-4ebce6989e99",
+      "GPU-a5d9767c-6fe6-624c-468f-fb650d0a7072",
+      "GPU-bc6dff03-0a8c-8d5f-4d96-73749d06c6e0",
+      "GPU-8d4625ed-afbf-f128-b129-41d820bbaa03"
+    ],
+    "fallback_events": [],
+    "iterations": 10,
+    "rank_mapping": [
+      "rank=0:node=0:device_uuid=GPU-1ffa16a6-3917-0c8d-2460-b360464eae49",
+      "rank=1:node=0:device_uuid=GPU-948facc4-5ae3-21d5-4f91-987e5ee9841f",
+      "rank=2:node=0:device_uuid=GPU-443ad877-b56d-e051-955a-3696fdde6996",
+      "rank=3:node=0:device_uuid=GPU-04773e19-49e0-8bb4-9db9-08a1578bab32",
+      "rank=4:node=0:device_uuid=GPU-0aa1d13e-2001-cbbb-63bd-ef7aa9fb204b",
+      "rank=5:node=0:device_uuid=GPU-b469d6b6-d352-2492-853a-a67ff1d76dcf",
+      "rank=6:node=0:device_uuid=GPU-da4f000a-b842-20eb-b53b-78d47a488c9c",
+      "rank=7:node=0:device_uuid=GPU-302577c3-ae00-57fe-558e-e67cd1d95297",
+      "rank=8:node=1:device_uuid=GPU-dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+      "rank=9:node=1:device_uuid=GPU-d86297e1-24d6-9833-1caf-22d6b0badb63",
+      "rank=10:node=1:device_uuid=GPU-8fbd86fe-b873-557d-bd88-369d63ffe37d",
+      "rank=11:node=1:device_uuid=GPU-5f46d96f-f2b0-e24b-6f52-47c2c9ffbef8",
+      "rank=12:node=1:device_uuid=GPU-e7b3c219-e1af-e348-d950-4ebce6989e99",
+      "rank=13:node=1:device_uuid=GPU-a5d9767c-6fe6-624c-468f-fb650d0a7072",
+      "rank=14:node=1:device_uuid=GPU-bc6dff03-0a8c-8d5f-4d96-73749d06c6e0",
+      "rank=15:node=1:device_uuid=GPU-8d4625ed-afbf-f128-b129-41d820bbaa03"
+    ],
+    "raw_log_sha256": "90adc93f6a8b9c1d13a4e3f9a2bafe018582600ea6a0d45630e8b5ddb1974516",
+    "seeds": [
+      0
+    ],
+    "topology": "\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tNIC7\tNIC8\tNIC9\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU1\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU2\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU3\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU4\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU5\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU6\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nGPU7\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nNIC0\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\t\t\t\t\nNIC1\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC3\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC4\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tNODE\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tNODE\t\t\t\t\nNIC7\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPXB\tNODE\t\t\t\t\nNIC8\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\t X \tNODE\t\t\t\t\nNIC9\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_101\n  NIC2: mlx5_102\n  NIC3: mlx5_103\n  NIC4: mlx5_104\n  NIC5: mlx5_105\n  NIC6: mlx5_106\n  NIC7: mlx5_107\n  NIC8: mlx5_108\n  NIC9: mlx5_201",
+    "warmup": 2,
+    "workload_sha256": "0ebbbdc7666bb4ea025fe92bd4d5c12b1db6ffa7c7828099400607569b847e69"
+  },
+  "schema": "flagquantum_runtime_evidence_v1"
+}

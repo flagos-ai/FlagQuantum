@@ -23,7 +23,7 @@ class JAXDistributedQuantumPlan:
     """Machine-readable JAX distributed integration plan."""
 
     mode: str
-    n_wires: int
+    n_qubits: int
     world_size: int
     local_world_size: int
     node_count: int
@@ -50,7 +50,7 @@ class JAXDistributedQuantumPlan:
             "torch_backend": self.backend_policy.torch_backend,
             "distributed_backend_policy": self.backend_policy.summary(),
             "mode": self.mode,
-            "n_wires": self.n_wires,
+            "n_wires": self.n_qubits,
             "world_size": self.world_size,
             "local_world_size": self.local_world_size,
             "node_count": self.node_count,
@@ -78,8 +78,8 @@ def _jax_global_indices_by_rank_for_plan(plan: Any) -> Any:
     import numpy as np
 
     indices_by_rank: list[list[int]] = []
-    sharded_wires = tuple(int(wire) for wire in plan.sharded_wires)
-    if str(plan.distribution) == "qubit_address_sharded" and sharded_wires:
+    sharded_qubits = tuple(int(qubit) for qubit in plan.sharded_qubits)
+    if str(plan.distribution) == "qubit_address_sharded" and sharded_qubits:
         for rank in range(int(plan.world_size)):
             coords = tuple(
                 int(coord) for coord in plan.topology.rank_coordinates[int(rank)]
@@ -87,8 +87,8 @@ def _jax_global_indices_by_rank_for_plan(plan: Any) -> Any:
             indices = []
             for basis in range(int(plan.total_amplitudes)):
                 owned = True
-                for coord, wire in zip(coords, sharded_wires, strict=True):
-                    bit = (basis >> (int(plan.n_wires) - int(wire) - 1)) & 1
+                for coord, qubit in zip(coords, sharded_qubits, strict=True):
+                    bit = (basis >> (int(plan.n_qubits) - int(qubit) - 1)) & 1
                     if int(bit) != int(coord):
                         owned = False
                         break

@@ -399,8 +399,8 @@ def _single_excitation_sequence(
 ) -> tuple[tuple[str, int, float], ...]:
     """Return the single-excitation gate sequence as readable data.
 
-    Each entry is ``(opcode, wire, argument)``: ``"h"`` ignores the argument,
-    ``"rx"`` rotates by it, ``"cx"`` reads it as the target wire, and ``"rz"``
+    Each entry is ``(opcode, qubit, argument)``: ``"h"`` ignores the argument,
+    ``"rx"`` rotates by it, ``"cx"`` reads it as the target qubit, and ``"rz"``
     multiplies it by the caller's half-angle. The sequence is the CUDA-Q
     decomposition, whose two halves use opposite signs because one is ``Y X``
     and the other is ``-X Y``.

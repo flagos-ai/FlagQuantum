@@ -2,22 +2,27 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, replace
 
 import pytest
 
+from flagquantum.errors import CapabilityError
 from flagquantum.qec import dem_construction as dem_module
 from flagquantum.qec.circuit import (
     Detector,
     DetectorLayout,
     MeasurementRef,
+    MemoryCircuit,
     build_memory_circuit,
 )
 from flagquantum.qec.codes import (
     CodeCheck,
     RepetitionCode,
+    RotatedSurfaceCode,
     StabilizerCode,
     SteaneCode,
+    ancilla_bands,
 )
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.dem_construction import (
@@ -28,9 +33,9 @@ from flagquantum.qec.dem_construction import (
     _mechanisms,
 )
 from flagquantum.qec.logical import derive_anticommuting_logical_product
+from flagquantum.qec.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.pauli import Pauli
-from flagquantum.qec.surface import RotatedSurfaceCode
 
 pytestmark = pytest.mark.integration
 
@@ -141,11 +146,27 @@ class _IndexSwappedCode:
         return 2
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3, 4)
 
     @property
@@ -153,15 +174,15 @@ class _IndexSwappedCode:
         return (
             CodeCheck(
                 index=1,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3)),
             ),
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(1, 2)),
-                ancilla_wire=4,
-                cnot_wires=((1, 4), (2, 4)),
+                stabilizer=Pauli(z_qubits=(1, 2)),
+                ancilla_qubit=4,
+                cnot_qubits=((1, 4), (2, 4)),
             ),
         )
 
@@ -171,7 +192,7 @@ class _IndexSwappedCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=(0, 1, 2)),)
+        return (Pauli(z_qubits=(0, 1, 2)),)
 
 
 def test_signatures_key_on_check_position_not_on_declared_index() -> None:
@@ -205,7 +226,7 @@ def test_signatures_key_on_check_position_not_on_declared_index() -> None:
         (record.round_index, record.wire): _forced_signature(
             built,
             _inject_measurement_flip(
-                built, round_index=record.round_index, ancilla_wire=record.wire
+                built, round_index=record.round_index, ancilla_qubit=record.wire
             ),
         )
         for record in _mechanisms(built, noise)
@@ -369,8 +390,8 @@ def test_a_z_fault_in_the_x_basis_flips_the_rotated_observable() -> None:
         for record in _mechanisms(built, noise)
     }
 
-    assert built.x_readout_wires == (2, 4, 5)
-    assert product == Pauli(x_wires=(2, 4, 5))
+    assert built.observables.observables[0].pauli == product
+    assert product == Pauli(x_qubits=(2, 4, 5))
     assert measured[(0, 0)] == ((), ())
     assert measured[(0, 2)] == ((), (0,))
     assert measured[(1, 2)] == ((4, 5), (0,))
@@ -464,11 +485,27 @@ class _ThreeCheckCode:
         return 3
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3, 4, 5)
 
     @property
@@ -476,21 +513,21 @@ class _ThreeCheckCode:
         return (
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3)),
             ),
             CodeCheck(
                 index=1,
-                stabilizer=Pauli(z_wires=(1, 2)),
-                ancilla_wire=4,
-                cnot_wires=((1, 4), (2, 4)),
+                stabilizer=Pauli(z_qubits=(1, 2)),
+                ancilla_qubit=4,
+                cnot_qubits=((1, 4), (2, 4)),
             ),
             CodeCheck(
                 index=2,
-                stabilizer=Pauli(z_wires=(0, 2)),
-                ancilla_wire=5,
-                cnot_wires=((0, 5), (2, 5)),
+                stabilizer=Pauli(z_qubits=(0, 2)),
+                ancilla_qubit=5,
+                cnot_qubits=((0, 5), (2, 5)),
             ),
         )
 
@@ -500,7 +537,7 @@ class _ThreeCheckCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=(0, 1, 2)),)
+        return (Pauli(z_qubits=(0, 1, 2)),)
 
 
 @dataclass(frozen=True)
@@ -523,11 +560,27 @@ class _TwoObservableCode:
         return 2
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2)
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3, 4)
 
     @property
@@ -535,15 +588,15 @@ class _TwoObservableCode:
         return (
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3)),
             ),
             CodeCheck(
                 index=1,
-                stabilizer=Pauli(z_wires=(1, 2)),
-                ancilla_wire=4,
-                cnot_wires=((1, 4), (2, 4)),
+                stabilizer=Pauli(z_qubits=(1, 2)),
+                ancilla_qubit=4,
+                cnot_qubits=((1, 4), (2, 4)),
             ),
         )
 
@@ -553,7 +606,7 @@ class _TwoObservableCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        return (Pauli(z_wires=(0, 1, 2)), Pauli(z_wires=(0,)))
+        return (Pauli(z_qubits=(0, 1, 2)), Pauli(z_qubits=(0,)))
 
 
 def test_check_count_drives_the_mechanism_count_not_distance() -> None:
@@ -604,6 +657,71 @@ def test_measurement_flips_never_move_a_declared_observable() -> None:
     assert all(error.observables == () for error in model.errors)
 
 
+@pytest.mark.parametrize(
+    ("basis", "read_family", "invisible_family"),
+    (("z", "data_flip", "phase_flip"), ("x", "phase_flip", "data_flip")),
+)
+def test_the_readout_basis_decides_which_data_fault_moves_the_observable(
+    basis: str, read_family: str, invisible_family: str
+) -> None:
+    """A fault is logical when it anticommutes with the observable that is read.
+
+    The Steane code declares a logical observable in each basis, so the same
+    record describes two experiments and the readout basis is the whole
+    difference between them. The Z-basis experiment reads the Z-type operator, so
+    an X fault on its support moves the observable and a Z fault cannot; the
+    X-basis experiment reads the X-type operator and the two families swap roles.
+    Both halves are asserted, because either one alone is also what a model that
+    ignored the basis would produce whenever it happened to read the right
+    operator.
+    """
+
+    code = SteaneCode()
+    read = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(code, rounds=2, readout_basis=basis),
+        noise=PhenomenologicalNoise(**{read_family: 0.01}),
+    )
+    invisible = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(code, rounds=2, readout_basis=basis),
+        noise=PhenomenologicalNoise(**{invisible_family: 0.01}),
+    )
+
+    assert read.num_errors > 0
+    assert invisible.num_errors > 0
+    assert any(error.observables == (0,) for error in read.errors)
+    assert all(error.observables == () for error in invisible.errors)
+
+
+def test_two_readout_bases_of_one_code_are_two_models() -> None:
+    """The basis is not a relabelling: it changes which mechanisms the model has.
+
+    The two experiments have the same shape, because the Steane code has the same
+    number of checks of each type, so the counts cannot tell them apart. The
+    observable rate can: each basis' terminal detectors read the checks in which
+    that basis' invisible faults are the ones that moved the logical operator,
+    and the two rates therefore differ.
+    """
+
+    code = SteaneCode()
+    noise = PhenomenologicalNoise(
+        data_flip=0.01, phase_flip=0.02, both_flip=0.005, measurement_flip=0.03
+    )
+    z_model = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(code, rounds=3, readout_basis="z"), noise=noise
+    )
+    x_model = DetectorErrorModel.from_memory_circuit(
+        build_memory_circuit(code, rounds=3, readout_basis="x"), noise=noise
+    )
+
+    assert z_model.num_detectors == x_model.num_detectors
+    assert z_model.num_observables == x_model.num_observables == 1
+    assert z_model.num_errors == x_model.num_errors
+    assert z_model.observable_rates()[0] != x_model.observable_rates()[0], (
+        "the two bases produced the same observable rate, so the basis never "
+        "reached the model"
+    )
+
+
 @dataclass(frozen=True)
 class _SpareAncillaCode(_TwoObservableCode):
     """A code that declares an ancilla wire no check owns.
@@ -619,7 +737,23 @@ class _SpareAncillaCode(_TwoObservableCode):
         return 3
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3, 4, 5)
 
 
@@ -683,15 +817,17 @@ def test_a_terminal_detector_is_read_off_the_layout_not_the_check_support() -> N
 
 @dataclass(frozen=True)
 class _OrphanAncillaCode:
-    """A code that declares one ancilla wire no check reads.
+    """A code that declares one ancilla qubit no check reads.
 
-    The declared ancilla count and the declared wires are what the memory
+    The declared ancilla count and the declared qubits are what the memory
     circuit's layout validation reads, so this is the smallest code that carries
-    a detector reference nothing records a bit for.
+    a detector reference nothing records a bit for. The orphan is in neither
+    band, which is why the two band counts are the inner code's rather than the
+    declared total.
     """
 
     inner: _TwoObservableCode
-    orphan_wire: int = 5
+    orphan_qubit: int = 5
 
     @property
     def distance(self) -> int:
@@ -706,12 +842,28 @@ class _OrphanAncillaCode:
         return self.inner.num_ancilla_qubits + 1
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
-        return self.inner.data_wires
+    def num_ancilla_x_qubits(self) -> int:
+        return self.inner.num_ancilla_x_qubits
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
-        return self.inner.ancilla_wires + (self.orphan_wire,)
+    def num_ancilla_z_qubits(self) -> int:
+        return self.inner.num_ancilla_z_qubits
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.inner.num_x_stabilizers
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.inner.num_z_stabilizers
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
+        return self.inner.data_qubits
+
+    @property
+    def ancilla_qubits(self) -> tuple[int, ...]:
+        return self.inner.ancilla_qubits + (self.orphan_qubit,)
 
     @property
     def checks(self) -> tuple[CodeCheck, ...]:
@@ -740,14 +892,14 @@ def test_a_syndrome_reference_no_check_owns_is_refused() -> None:
 
     code = _OrphanAncillaCode(_TwoObservableCode())
     base = build_memory_circuit(code, rounds=2)
-    assert code.orphan_wire in code.ancilla_wires
-    assert all(check.ancilla_wire != code.orphan_wire for check in code.checks)
+    assert code.orphan_qubit in code.ancilla_qubits
+    assert all(check.ancilla_qubit != code.orphan_qubit for check in code.checks)
     detectors = list(base.detectors.detectors)
     first = detectors[0]
     assert first.parity
     detectors[0] = Detector(
         index=first.index,
-        parity=(MeasurementRef(first.parity[0].round_index, code.orphan_wire),)
+        parity=(MeasurementRef(first.parity[0].round_index, code.orphan_qubit),)
         + first.parity[1:],
     )
     circuit = replace(base, detectors=DetectorLayout(tuple(detectors)))
@@ -842,11 +994,11 @@ class _RepeatedDataWireCode(_TwoObservableCode):
     """
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
+    def data_qubits(self) -> tuple[int, ...]:
         return (0, 1, 2, 1)
 
 
-def test_duplicate_data_wires_are_refused() -> None:
+def test_duplicate_data_qubits_are_refused() -> None:
     """A repeated data wire would state one location's rate as two flips.
 
     Both copies of the location carry the same signature, so the merge would
@@ -855,7 +1007,7 @@ def test_duplicate_data_wires_are_refused() -> None:
     """
 
     built = build_memory_circuit(_RepeatedDataWireCode(), rounds=2)
-    with pytest.raises(ValueError, match="repeated data wire"):
+    with pytest.raises(ValueError, match="repeated data qubit"):
         DetectorErrorModel.from_memory_circuit(
             built, noise=PhenomenologicalNoise(data_flip=0.05)
         )
@@ -877,7 +1029,23 @@ class _RepeatedAncillaCode(_TwoObservableCode):
         return 1
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def ancilla_qubits(self) -> tuple[int, ...]:
         return (3,)
 
     @property
@@ -885,20 +1053,20 @@ class _RepeatedAncillaCode(_TwoObservableCode):
         return (
             CodeCheck(
                 index=0,
-                stabilizer=Pauli(z_wires=(0, 1)),
-                ancilla_wire=3,
-                cnot_wires=((0, 3), (1, 3)),
+                stabilizer=Pauli(z_qubits=(0, 1)),
+                ancilla_qubit=3,
+                cnot_qubits=((0, 3), (1, 3)),
             ),
             CodeCheck(
                 index=1,
-                stabilizer=Pauli(z_wires=(1, 2)),
-                ancilla_wire=3,
-                cnot_wires=((1, 3), (2, 3)),
+                stabilizer=Pauli(z_qubits=(1, 2)),
+                ancilla_qubit=3,
+                cnot_qubits=((1, 3), (2, 3)),
             ),
         )
 
 
-def test_repeated_check_ancilla_wires_are_refused() -> None:
+def test_repeated_check_ancilla_qubits_are_refused() -> None:
     """Two checks on one ancilla fail closed before a mechanism is enumerated.
 
     The shape is representable and its program builds, and a data flip never
@@ -909,7 +1077,7 @@ def test_repeated_check_ancilla_wires_are_refused() -> None:
     """
 
     built = build_memory_circuit(_RepeatedAncillaCode(), rounds=2)
-    with pytest.raises(ValueError, match="repeated check ancilla wire"):
+    with pytest.raises(ValueError, match="repeated check ancilla qubit"):
         DetectorErrorModel.from_memory_circuit(
             built, noise=PhenomenologicalNoise(data_flip=0.05)
         )
@@ -977,16 +1145,16 @@ def test_the_derived_signatures_match_forcing_every_location(
     }
     forced = set()
     for record in _mechanisms(built, noise):
-        if record.kind == "data":
+        if record.kind != "measurement":
             source = _inject_data_flip(
                 built,
                 round_index=record.round_index,
                 wire=record.wire,
-                fault=record.fault,
+                kind=record.kind,
             )
         else:
             source = _inject_measurement_flip(
-                built, round_index=record.round_index, ancilla_wire=record.wire
+                built, round_index=record.round_index, ancilla_qubit=record.wire
             )
         signature = _forced_signature(built, source)
         if signature != ((), ()):
@@ -1007,10 +1175,232 @@ def test_the_derivation_reaches_a_width_no_execution_can() -> None:
 
     code = RotatedSurfaceCode(distance=7)
     built = build_memory_circuit(code, rounds=7)
-    assert len(code.data_wires) + len(code.ancilla_wires) == 97
+    assert len(code.data_qubits) + len(code.ancilla_qubits) == 97
     model = DetectorErrorModel.from_memory_circuit(
         built, noise=PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01)
     )
     assert model.num_detectors == 336
     assert model.num_errors == 637
     assert all(error.detectors or error.observables for error in model.errors)
+
+
+# Composite faults: the Y family read as one fault or as the X and Z faults it is
+# the XOR of. The decoder-facing question is which of the two readings states a
+# model a minimum-weight matcher can weight, and the answer is measured on a
+# rotated surface code rather than asserted, because the repetition code's
+# composite faults are already graphlike under either reading and would pass
+# either way.
+
+_COMPOSITE_READINGS = "decompose_composite_faults"
+
+
+def _signatures(
+    model: DetectorErrorModel,
+) -> dict[tuple[tuple[int, ...], tuple[int, ...]], float]:
+    """Return each signature's probability, which a model states once."""
+
+    return {
+        (error.detectors, error.observables): error.probability
+        for error in model.errors
+    }
+
+
+def _every_noise() -> PhenomenologicalNoise:
+    """Return a record with all four families at one rate."""
+
+    return PhenomenologicalNoise(
+        data_flip=0.01, phase_flip=0.01, both_flip=0.01, measurement_flip=0.01
+    )
+
+
+def _surface(rounds: int) -> MemoryCircuit:
+    """Return a distance-three rotated surface code's memory experiment."""
+
+    return build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=rounds)
+
+
+def test_the_option_defaults_to_the_combined_reading() -> None:
+    """A caller that states nothing gets the model every earlier caller got.
+
+    This is the whole compatibility claim of the option: the combined reading is
+    what the route has always produced, so naming it explicitly and omitting it
+    have to reach the same model rather than two that agree on the marginals.
+    """
+
+    built = _surface(2)
+    omitted = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+    stated = DetectorErrorModel.from_memory_circuit(
+        built, noise=_every_noise(), decompose_composite_faults=False
+    )
+    assert _signatures(omitted) == _signatures(stated)
+
+
+def test_the_option_refuses_a_flag_that_is_not_a_boolean() -> None:
+    """``1`` is an integer and not a decision, so it fails closed by type."""
+
+    built = _surface(2)
+    with pytest.raises(TypeError, match="decompose_composite_faults must be a bool"):
+        DetectorErrorModel.from_memory_circuit(
+            built, noise=_every_noise(), decompose_composite_faults=1
+        )
+
+
+def test_a_composite_fault_is_the_x_and_z_faults_at_its_own_rate() -> None:
+    """The decomposed model is the two single-Pauli families at the same rate.
+
+    The reference is the route's own answer for an X fault and for a Z fault: a
+    record whose composite family is the only noisy one, read apart, has to reach
+    the model two records with the composite rate placed in the X field and in
+    the Z field reach. Nothing here re-derives a signature; both sides are read
+    off the program by the construction route's own injector.
+    """
+
+    built = _surface(2)
+    composite = DetectorErrorModel.from_memory_circuit(
+        built,
+        noise=PhenomenologicalNoise(both_flip=0.01),
+        decompose_composite_faults=True,
+    )
+    parts: dict[tuple[tuple[int, ...], tuple[int, ...]], float] = {}
+    for field in ("data_flip", "phase_flip"):
+        model = DetectorErrorModel.from_memory_circuit(
+            built, noise=PhenomenologicalNoise(**{field: 0.01})
+        )
+        for signature, probability in _signatures(model).items():
+            # The two halves touch disjoint detector and observable index ranges,
+            # so a signature is stated by at most one of them and a sum cannot
+            # hide an overlap that the decomposed model would have merged.
+            assert signature not in parts
+            parts[signature] = probability
+    assert set(_signatures(composite)) == set(parts)
+    for signature, probability in parts.items():
+        assert _signatures(composite)[signature] == pytest.approx(probability)
+
+
+def test_decomposing_widens_the_matcher_to_a_model_it_refused() -> None:
+    """The authority matcher refuses the combined model and answers the split one.
+
+    The refusal is the gap the option exists to close, so it is asserted by the
+    name it is reported under: the combined model states five mechanisms the
+    matcher calls hyperedges, four of three detectors and one of four, and the
+    decomposed model states none above two and the same matcher builds on it.
+    """
+
+    built = _surface(2)
+    combined = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+    decomposed = DetectorErrorModel.from_memory_circuit(
+        built, noise=_every_noise(), decompose_composite_faults=True
+    )
+    hyperedges = [error for error in combined.errors if len(error.detectors) > 2]
+    assert sorted(len(error.detectors) for error in hyperedges) == [3, 3, 3, 3, 4]
+    assert max(len(error.detectors) for error in decomposed.errors) == 2
+    with pytest.raises(CapabilityError, match="hyperedge"):
+        MinimumWeightMatchingDecoder.from_detector_error_model(combined)
+    matcher = MinimumWeightMatchingDecoder.from_detector_error_model(decomposed)
+    assert matcher.decode(()).observables == ()
+    assert matcher.decode((0,)).weight > 0.0
+    assert (
+        matcher.decode(tuple(error.detectors[0] for error in hyperedges)).weight > 0.0
+    )
+
+
+def test_decomposing_preserves_the_detector_and_observable_rates() -> None:
+    """Each detector's and each observable's own flip rate survives the reading.
+
+    A rate is the marginal of one target, and the parts of a composite fault
+    touch disjoint targets -- the X part reaches Z-type detectors and the Z part
+    X-type ones -- so replacing one fault by two changes the joint law and not a
+    single marginal. The tolerance is floating-point rounding and nothing wider:
+    the two models fold the same probabilities in a different order and no step
+    of either arithmetic is approximate.
+    """
+
+    built = _surface(2)
+    combined = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+    decomposed = DetectorErrorModel.from_memory_circuit(
+        built, noise=_every_noise(), decompose_composite_faults=True
+    )
+    assert combined.num_detectors == decomposed.num_detectors
+    assert combined.num_observables == decomposed.num_observables
+    for name in ("detector_rates", "observable_rates"):
+        left = getattr(combined, name)()
+        right = getattr(decomposed, name)()
+        assert bool((left - right).abs().max().item() < 1e-15)
+
+
+def test_a_noiseless_record_still_builds_an_empty_model() -> None:
+    """The reading does not invent a part where the program states no fault.
+
+    A location whose own probability is zero is not enumerated at all, and the
+    enumeration is the one place that rule is stated, so it holds under either
+    reading: a record that states no rate has no composite fault to read apart
+    and the decomposed model is the empty one with the circuit's shape, rather
+    than two parts of nothing at a rate nothing states.
+    """
+
+    built = _surface(2)
+    decomposed = DetectorErrorModel.from_memory_circuit(
+        built,
+        noise=PhenomenologicalNoise(),
+        decompose_composite_faults=True,
+    )
+    assert decomposed.num_errors == 0
+    assert decomposed.num_detectors == 16
+
+
+def test_a_code_whose_composite_faults_are_already_parts_changes_nothing() -> None:
+    """Where the program already separates the parts the two readings agree.
+
+    A repetition code's checks are Z-type alone, so a Z fault on a data qubit
+    reaches no detector in any round and the composite fault's X part carries its
+    whole signature; the two readings then state the same mechanisms at the same
+    rates rather than two models that happen to share their marginals.
+    """
+
+    for distance in (3, 5):
+        built = build_memory_circuit(RepetitionCode(distance=distance), rounds=3)
+        combined = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+        decomposed = DetectorErrorModel.from_memory_circuit(
+            built, noise=_every_noise(), decompose_composite_faults=True
+        )
+        assert combined.num_errors > 0
+        assert _signatures(combined) == _signatures(decomposed)
+
+
+def test_a_one_round_experiment_changes_nothing() -> None:
+    """One round places the composite fault where its parts are not separable yet.
+
+    At one round the composite fault of a rotated surface code flips at most two
+    detectors whole, so the combined model is already graphlike and the reading
+    costs nothing; the option is not a rewrite that changes a model it has no
+    room to change.
+    """
+
+    built = _surface(1)
+    combined = DetectorErrorModel.from_memory_circuit(built, noise=_every_noise())
+    decomposed = DetectorErrorModel.from_memory_circuit(
+        built, noise=_every_noise(), decompose_composite_faults=True
+    )
+    assert max(len(error.detectors) for error in combined.errors) == 2
+    assert _signatures(combined) == _signatures(decomposed)
+
+
+def test_the_matrix_route_states_no_decomposition_option() -> None:
+    """The code-capacity route makes no graphlike promise, so it has no keyword.
+
+    The matrix route reads a fault's signature as the support of a column against
+    two detector bands instead of off an executed program, so a part there reaches
+    four detectors at two rounds and decomposing it would not hand the matcher the
+    shape the option names. An option named for the reading on that route would
+    promise a model it cannot deliver, so its absence is pinned and adding the
+    keyword later is a decision rather than a slip.
+    """
+
+    matrix_route = inspect.signature(DetectorErrorModel.from_code_matrices)
+    assert _COMPOSITE_READINGS not in matrix_route.parameters
+    with pytest.raises(TypeError):
+        DetectorErrorModel.from_code_matrices(  # type: ignore[call-arg]
+            dem_module.css_code_matrices(RotatedSurfaceCode(distance=3)),
+            noise=_every_noise(),
+            decompose_composite_faults=True,
+        )

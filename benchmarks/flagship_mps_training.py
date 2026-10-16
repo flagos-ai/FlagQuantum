@@ -159,7 +159,7 @@ def _run_hardware_case(n_wires: int, args: argparse.Namespace, *, device: str) -
     hamiltonian = fq.zz_chain_hamiltonian(int(n_wires), coupling=-1.0, field=0.1)
 
     def build(values: torch.Tensor) -> fq.Circuit:
-        return _build_hardware_ansatz(values, n_wires=int(n_wires), layers=args.layers, device=device)
+        return _build_hardware_ansatz(values, n_qubits=int(n_wires), layers=args.layers, device=device)
 
     kernel_start = time.perf_counter()
     kernel = fq.compile_quantum_kernel(
@@ -168,7 +168,7 @@ def _run_hardware_case(n_wires: int, args: argparse.Namespace, *, device: str) -
         backend="jax",
         interface="torch",
         mode="mps",
-        n_wires=int(n_wires),
+        n_qubits=int(n_wires),
         hamiltonian=hamiltonian,
         max_bond=args.max_bond,
         jit=not args.no_jit,

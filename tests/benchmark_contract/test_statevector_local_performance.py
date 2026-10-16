@@ -7,7 +7,7 @@ pytestmark = pytest.mark.benchmark_contract
 
 def test_local_statevector_performance_payload_is_correct_and_fail_closed():
     payload = run_benchmark(
-        n_wires=4,
+        n_qubits=4,
         batch_size=2,
         layers=1,
         device="cpu",
@@ -36,7 +36,7 @@ def test_local_statevector_performance_payload_is_correct_and_fail_closed():
 def test_local_statevector_performance_rejects_non_repeated_measurement():
     try:
         run_benchmark(
-            n_wires=4,
+            n_qubits=4,
             batch_size=1,
             layers=1,
             device="cpu",

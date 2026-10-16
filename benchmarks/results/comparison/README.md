@@ -25,6 +25,26 @@ measured complex128 dense-fusion width policy.
 records the exact-statevector Random Clifford comparison, product-state
 Clifford-layer rollback A/B, public example, and reproduction command.
 
+[`NATIVE_CPU_PRODUCT_MIXED_CLIFFORD_LINUX_X86_20261004.md`](NATIVE_CPU_PRODUCT_MIXED_CLIFFORD_LINUX_X86_20261004.md)
+records the 22-qubit Linux x86 follow-up that routes wide product-state mixed
+`CX`/`CZ` matchings through the native CPU kernel. It includes exact rollback,
+Qiskit Aer and PennyLane Lightning comparisons, absolute times, route evidence,
+public usage, boundaries, stop conditions, and reproduction commands.
+
+[`NATIVE_CPU_DENSE_FUSIONS_LINUX_X86_20261006.md`](NATIVE_CPU_DENSE_FUSIONS_LINUX_X86_20261006.md)
+records the native Hadamard/controlled-phase and CX/RZZ/SWAP passes on a pinned
+22-qubit Linux x86 comparison. It includes all six statevector workloads,
+FlagQuantum/Aer/Lightning absolute times and speedups, focused rollback runs,
+correctness, public usage, boundaries, and reproduction commands.
+
+[`LINUX_X86_CPU_REGRESSION_GATE_20261004.md`](LINUX_X86_CPU_REGRESSION_GATE_20261004.md)
+
+[`LINUX_X86_CPU_ROADMAP_CLOSEOUT_20261005.md`](LINUX_X86_CPU_ROADMAP_CLOSEOUT_20261005.md)
+establishes the fixed-host 22-qubit Random Clifford regression gate. It records
+the CPU model and affinity, absolute FlagQuantum/Aer/Lightning times, internal
+slowdown and external-framework floors, workflow behavior, public usage,
+boundaries, stop conditions, and reproduction commands.
+
 [`SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md`](SIMULATOR_TRUNCATED_QFT_CPU_ARM64_20260924.md)
 records the exact Truncated QFT comparison and the deferred product-state SWAP
 materialization rollback A/B.
@@ -139,6 +159,42 @@ records the program-class adaptive CPU batch-memory budget against its fixed
 64 MiB rollback and PennyLane Lightning native broadcast. It includes absolute
 times and RSS growth, speedups, correctness, the public usage path, exact
 selection and rollback boundaries, and the reproduction command.
+
+[`BATCHED_STATEVECTOR_QFT_ADAPTIVE_MEMORY_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_QFT_ADAPTIVE_MEMORY_CPU_ARM64_20261003_SCORECARD.md)
+extends that measured policy to controlled-phase-graph programs and closes the
+remaining Truncated QFT batch-memory target. It reports absolute time, RSS,
+fixed-64 rollback and PennyLane Lightning comparisons, user code, limits, and
+the exact reproduction command.
+
+[`CPU_ROADMAP_CLOSEOUT_CPU_ARM64_20261003.md`](CPU_ROADMAP_CLOSEOUT_CPU_ARM64_20261003.md)
+closes the defined local CPU simulator roadmap across single-state forward,
+adjoint gradients, threading, memory tiers, parameter batching, and regression
+governance. It links every authoritative raw artifact, summarizes absolute
+times and cross-framework ratios, provides public example code and reproduction
+commands, and states the conditions required to restart CPU optimization.
+
+[`LINUX_X86_GCC11_NATIVE_CPU_ADJOINT_20261003.md`](LINUX_X86_GCC11_NATIVE_CPU_ADJOINT_20261003.md)
+records the Ubuntu 22.04/GCC 11 native-adjoint build fix, two-node build and
+correctness validation, and pinned single-thread Xeon comparison with
+PennyLane Lightning.
+
+[`NATIVE_CPU_ADJOINT_MANY_CORE_GRAIN_LINUX_X86_20261003.md`](NATIVE_CPU_ADJOINT_MANY_CORE_GRAIN_LINUX_X86_20261003.md)
+records the two-node 32-thread rotation-tile scheduling A/B, the absolute
+PennyLane Lightning comparison, and the single-socket versus dual-socket NUMA
+boundary on 64 physical Xeon cores.
+
+[`NUMA_MEMORY_TRAFFIC_LINUX_X86_20261004.md`](NUMA_MEMORY_TRAFFIC_LINUX_X86_20261004.md)
+measures complete 22-qubit value-and-gradient latency and Intel IMC DRAM
+traffic for default first-touch, forced bind, and forced interleave on both
+sockets. It includes a same-semantics PennyLane Lightning comparison and the
+evidence for retaining first-touch instead of adding an automatic NUMA policy.
+
+[`LINUX_X86_CPU_SCORECARD_20261003.md`](LINUX_X86_CPU_SCORECARD_20261003.md)
+establishes the formal Linux x86-64 forward and adjoint baseline. It records
+complete 18/22-qubit absolute times for FlagQuantum, Qiskit Aer, and PennyLane
+Lightning at one and 32 threads, socket-local speedups, correctness and
+stability, the unavailable standard-wheel Kokkos boundary, public example,
+reproduction commands, and the measured next optimization targets.
 
 [`NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md`](NATIVE_CPU_SHARED_RZZ_CPU_ARM64_20260929.md)
 records the 22-qubit QAOA rollback A/B for exact-view parameter deduplication,

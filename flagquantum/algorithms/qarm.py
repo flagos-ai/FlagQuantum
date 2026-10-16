@@ -24,8 +24,8 @@ precisely the part of the paper's assumption that its speed-up is measured again
 is this unit's headline limitation.
 
 **The construction.** The evaluation register carries a uniform superposition over the
-items -- one half-turn ``ry`` per item wire, which is the state a Hadamard on every item
-wire prepares and which has a native controlled form -- and a support register, which the
+items -- one half-turn ``ry`` per item qubit, which is the state a Hadamard on every item
+qubit prepares and which has a native controlled form -- and a support register, which the
 circuit fills by adding one to it once per transaction whose itemset holds the
 superposition's item. The marking operator flips the phase of the support values at or
 above the threshold, so the marked subspace is exactly the frequent items, and its
@@ -34,7 +34,7 @@ and :func:`run_frequent_itemset` hands it to
 :func:`~flagquantum.algorithms.amplitude_estimation.run_amplitude_estimation`, whose
 estimate is that fraction.
 
-**The item register is one wire per item-index bit**, so the item count is a power of two.
+**The item register is one qubit per item-index bit**, so the item count is a power of two.
 A uniform state over a count that is not one has no controlled preparation in this package,
 and the item register's preparation has to be controllable for the Grover operator.
 
@@ -43,7 +43,7 @@ wrapped.** The increment is a permutation of the register's own values, so a sup
 register cannot hold comes back as another value, the mark then sees a support that can be
 on the wrong side of the threshold, and the readout can come back wrong with nothing
 raised. :func:`frequent_itemset_operator` therefore refuses a register that cannot hold the
-largest support any database of that transaction count could produce; the fewest wires that
+largest support any database of that transaction count could produce; the fewest qubits that
 can hold it is the default.
 
 **The threshold is inclusive.** An item whose support equals the threshold is frequent, and
@@ -78,11 +78,11 @@ _DEFAULT_SHOTS = 4096
 # classical transaction loop emits one increment per transaction-item pair. Both grow with
 # the database, and this unit is written at demonstration scale: at most eight items and at
 # most seven transactions.
-_MAX_ITEM_WIRES = 3
-_MAX_SUPPORT_WIRES = 3
+_MAX_ITEM_QUBITS = 3
+_MAX_SUPPORT_QUBITS = 3
 
 # The item register's preparation: ``ry`` at half a turn takes ``|0>`` to the state a
-# Hadamard on that wire takes it to, and ``ry`` has a controlled form where a Hadamard here
+# Hadamard on that qubit takes it to, and ``ry`` has a controlled form where a Hadamard here
 # does not.
 _HALF_TURN = math.pi / 2.0
 
@@ -105,10 +105,10 @@ class FrequentItemsetOperator:
     transaction whose itemset holds the item -- which is what makes the transaction loop
     classical rather than coherent. See the module docstring for what that costs.
 
-    **The register layout, in wire order.** The item register comes first, one wire per
-    item-index bit with the first wire the most significant; the support register follows
-    it, first wire most significant as well; then the ancillas the multi-controlled X
-    ladders borrow and restore; and last the flag wire the marking operator flips. The
+    **The register layout, in qubit order.** The item register comes first, one qubit per
+    item-index bit with the first qubit the most significant; the support register follows
+    it, first qubit most significant as well; then the ancillas the multi-controlled X
+    ladders borrow and restore; and last the flag qubit the marking operator flips. The
     ancillas are ``|0>`` at the start of every ladder that borrows them, and each ladder
     restores what it borrows; the flag is ``|0>`` on entry to and on exit from each
     protocol method.
@@ -120,9 +120,9 @@ class FrequentItemsetOperator:
     either: each is checked against its own bound and the two bounds overlap, so a pair
     written the wrong way round can satisfy both and be accepted. Measured on a database of
     two two-item transactions, the pair the caller who means a threshold of 2 and a single
-    support wire would write -- ``threshold=2`` with ``n_support_wires=1`` -- is refused as
+    support qubit would write -- ``threshold=2`` with ``n_support_qubits=1`` -- is refused as
     a register too narrow to hold every support, and the same pair written the other way
-    round, a threshold of 1 with two support wires, constructs, with a threshold every item
+    round, a threshold of 1 with two support qubits, constructs, with a threshold every item
     of that database meets.
 
     Attributes:
@@ -132,13 +132,13 @@ class FrequentItemsetOperator:
             least two.
         threshold: The least support a frequent item has, an integer in
             ``range(1, n_transactions + 1)``. The comparison is inclusive.
-        n_support_wires: The width of the support register, at least the number of bits the
-            transaction count needs and at most :data:`_MAX_SUPPORT_WIRES`.
+        n_support_qubits: The width of the support register, at least the number of bits the
+            transaction count needs and at most :data:`_MAX_SUPPORT_QUBITS`.
     """
 
     incidence: tuple[tuple[int, ...], ...]
     threshold: int
-    n_support_wires: int
+    n_support_qubits: int
 
     def __post_init__(self) -> None:
         """Reject an operator whose fields do not describe one database and threshold.
@@ -148,14 +148,14 @@ class FrequentItemsetOperator:
                 a row whose width differs from the first's or is empty, or holds an entry
                 that is neither ``0`` nor ``1``; if its item count is not a power of two of
                 at least two, or exceeds the unit's bound; if ``threshold`` is not an
-                integer in ``range(1, n_transactions + 1)``; or if ``n_support_wires`` is
+                integer in ``range(1, n_transactions + 1)``; or if ``n_support_qubits`` is
                 not an integer, cannot hold the largest support any database of that
                 transaction count could produce, or exceeds the unit's bound.
         """
         rows = _validated_incidence(self.incidence)
         _validated_item_count(len(rows[0]))
         _validated_threshold(self.threshold, len(rows))
-        _validated_support_width(self.n_support_wires, len(rows))
+        _validated_support_width(self.n_support_qubits, len(rows))
 
     @property
     def n_items(self) -> int:
@@ -168,8 +168,8 @@ class FrequentItemsetOperator:
         return len(self.incidence)
 
     @property
-    def n_item_wires(self) -> int:
-        """The width of the item register, one wire per bit of the item index."""
+    def n_item_qubits(self) -> int:
+        """The width of the item register, one qubit per bit of the item index."""
         return self.n_items.bit_length() - 1
 
     @property
@@ -186,52 +186,52 @@ class FrequentItemsetOperator:
         )
 
     @property
-    def n_wires(self) -> int:
-        """The number of wires the operator's evaluation register carries."""
+    def n_qubits(self) -> int:
+        """The number of qubits the operator's evaluation register carries."""
         return (
-            self.n_item_wires
-            + self.n_support_wires
-            + _ladder_ancillas(self.n_item_wires, self.n_support_wires)
+            self.n_item_qubits
+            + self.n_support_qubits
+            + _ladder_ancillas(self.n_item_qubits, self.n_support_qubits)
             + 1
         )
 
-    def apply_plain(self, circuit: Circuit, wires: Sequence[int]) -> None:
-        """Append the preparation ``A`` to ``circuit`` on ``wires``.
+    def apply_plain(self, circuit: Circuit, qubits: Sequence[int]) -> None:
+        """Append the preparation ``A`` to ``circuit`` on ``qubits``.
 
         ``A`` is the uniform superposition over the items followed by the transaction loop,
         so ``A|0...0>`` is the superposition of ``|item>|support>`` over every item.
 
         Args:
             circuit: The circuit to extend.
-            wires: The evaluation register, this operator's ``n_wires`` wires.
+            qubits: The evaluation register, this operator's ``n_qubits`` qubits.
 
         Raises:
-            ValueError: If ``wires`` is not the evaluation register this operator describes.
+            ValueError: If ``qubits`` is not the evaluation register this operator describes.
         """
-        item, support, pool, _ = self._layout(wires)
-        for wire in item:
-            circuit.gate("ry", wire, theta=_HALF_TURN)
+        item, support, pool, _ = self._layout(qubits)
+        for qubit in item:
+            circuit.gate("ry", qubit, theta=_HALF_TURN)
         self._append_increments(circuit, None, item, support, pool, forward=True)
 
-    def apply_a(self, circuit: Circuit, control: int, wires: Sequence[int]) -> None:
+    def apply_a(self, circuit: Circuit, control: int, qubits: Sequence[int]) -> None:
         """Append ``A`` controlled on ``control``.
 
         Args:
             circuit: The circuit to extend.
-            control: The control wire, outside the evaluation register.
-            wires: The evaluation register, this operator's ``n_wires`` wires.
+            control: The control qubit, outside the evaluation register.
+            qubits: The evaluation register, this operator's ``n_qubits`` qubits.
 
         Raises:
-            ValueError: If ``wires`` is not the evaluation register this operator
-                describes, or if ``control`` is one of its wires.
+            ValueError: If ``qubits`` is not the evaluation register this operator
+                describes, or if ``control`` is one of its qubits.
         """
-        item, support, pool, _ = self._layout(wires, control)
-        for wire in item:
-            circuit.gate("cry", (control, wire), theta=_HALF_TURN)
+        item, support, pool, _ = self._layout(qubits, control)
+        for qubit in item:
+            circuit.gate("cry", (control, qubit), theta=_HALF_TURN)
         self._append_increments(circuit, control, item, support, pool, forward=True)
 
     def apply_a_dagger(
-        self, circuit: Circuit, control: int, wires: Sequence[int]
+        self, circuit: Circuit, control: int, qubits: Sequence[int]
     ) -> None:
         """Append the adjoint of ``A``, controlled on ``control``.
 
@@ -241,42 +241,42 @@ class FrequentItemsetOperator:
 
         Args:
             circuit: The circuit to extend.
-            control: The control wire, outside the evaluation register.
-            wires: The evaluation register, this operator's ``n_wires`` wires.
+            control: The control qubit, outside the evaluation register.
+            qubits: The evaluation register, this operator's ``n_qubits`` qubits.
 
         Raises:
-            ValueError: If ``wires`` is not the evaluation register this operator
-                describes, or if ``control`` is one of its wires.
+            ValueError: If ``qubits`` is not the evaluation register this operator
+                describes, or if ``control`` is one of its qubits.
         """
-        item, support, pool, _ = self._layout(wires, control)
+        item, support, pool, _ = self._layout(qubits, control)
         self._append_increments(circuit, control, item, support, pool, forward=False)
-        for wire in item:
-            circuit.gate("cry", (control, wire), theta=-_HALF_TURN)
+        for qubit in item:
+            circuit.gate("cry", (control, qubit), theta=-_HALF_TURN)
 
-    def apply_mark(self, circuit: Circuit, control: int, wires: Sequence[int]) -> None:
+    def apply_mark(self, circuit: Circuit, control: int, qubits: Sequence[int]) -> None:
         """Append the marking operator, controlled on ``control``.
 
         The marking operator flips the phase of the subspace whose support register holds a
         value at or above the threshold, and leaves every other subspace alone. It is built
-        as the XOR of ``support >= threshold`` onto the flag wire, a phase flip on the
+        as the XOR of ``support >= threshold`` onto the flag qubit, a phase flip on the
         control and the flag, and the same XOR again to take the flag back to ``|0>``.
 
         Args:
             circuit: The circuit to extend.
-            control: The control wire, outside the evaluation register.
-            wires: The evaluation register, this operator's ``n_wires`` wires.
+            control: The control qubit, outside the evaluation register.
+            qubits: The evaluation register, this operator's ``n_qubits`` qubits.
 
         Raises:
-            ValueError: If ``wires`` is not the evaluation register this operator
-                describes, or if ``control`` is one of its wires.
+            ValueError: If ``qubits`` is not the evaluation register this operator
+                describes, or if ``control`` is one of its qubits.
         """
-        _, support, pool, flag = self._layout(wires, control)
+        _, support, pool, flag = self._layout(qubits, control)
         _append_support_match(circuit, support, pool, flag, self.threshold)
         circuit.gate("cz", (control, flag))
         _append_support_match(circuit, support, pool, flag, self.threshold)
 
     def apply_zero_reflection(
-        self, circuit: Circuit, control: int, wires: Sequence[int]
+        self, circuit: Circuit, control: int, qubits: Sequence[int]
     ) -> None:
         """Append the reflection about the register's zero state, controlled on ``control``.
 
@@ -286,17 +286,17 @@ class FrequentItemsetOperator:
 
         Args:
             circuit: The circuit to extend.
-            control: The control wire, outside the evaluation register.
-            wires: The evaluation register, this operator's ``n_wires`` wires.
+            control: The control qubit, outside the evaluation register.
+            qubits: The evaluation register, this operator's ``n_qubits`` qubits.
 
         Raises:
-            ValueError: If ``wires`` is not the evaluation register this operator
-                describes, or if ``control`` is one of its wires.
+            ValueError: If ``qubits`` is not the evaluation register this operator
+                describes, or if ``control`` is one of its qubits.
         """
-        item, support, pool, _ = self._layout(wires, control)
+        item, support, pool, _ = self._layout(qubits, control)
         logical = item + support
-        for wire in logical:
-            circuit.gate("x", wire)
+        for qubit in logical:
+            circuit.gate("x", qubit)
         circuit.gate("h", logical[-1])
         controls = [control, *logical[:-1]]
         append_multi_controlled_x(
@@ -306,44 +306,44 @@ class FrequentItemsetOperator:
             ancillas=pool[: max(len(controls) - 2, 0)],
         )
         circuit.gate("h", logical[-1])
-        for wire in logical:
-            circuit.gate("x", wire)
+        for qubit in logical:
+            circuit.gate("x", qubit)
 
     def _layout(
-        self, wires: Sequence[int], control: int | None = None
+        self, qubits: Sequence[int], control: int | None = None
     ) -> tuple[list[int], list[int], list[int], int]:
-        """Return the item register, the support register, the ancillas and the flag wire.
+        """Return the item register, the support register, the ancillas and the flag qubit.
 
         Args:
-            wires: The evaluation register as given.
-            control: The control wire of the controlled form being appended, or ``None``.
+            qubits: The evaluation register as given.
+            control: The control qubit of the controlled form being appended, or ``None``.
 
         Returns:
             The four parts of the register, in the order the class docstring names them.
 
         Raises:
-            ValueError: If ``wires`` is not the evaluation register this operator
-                describes, or if ``control`` is one of its wires.
+            ValueError: If ``qubits`` is not the evaluation register this operator
+                describes, or if ``control`` is one of its qubits.
         """
-        if len(wires) != self.n_wires:
+        if len(qubits) != self.n_qubits:
             raise ValueError(
-                f"this operator's evaluation register is {self.n_wires} wires wide, got "
-                f"{len(wires)}; it carries the item register, the support register, the "
+                f"this operator's evaluation register is {self.n_qubits} qubits wide, got "
+                f"{len(qubits)}; it carries the item register, the support register, the "
                 "multi-controlled X ladder ancillas and the marking flag, in that order"
             )
-        if control is not None and control in wires:
+        if control is not None and control in qubits:
             raise ValueError(
-                f"the control wire {control} is one of the evaluation register's; a "
-                "controlled form is controlled on a wire outside the register it acts on"
+                f"the control qubit {control} is one of the evaluation register's; a "
+                "controlled form is controlled on a qubit outside the register it acts on"
             )
-        n = self.n_item_wires
-        b = self.n_support_wires
+        n = self.n_item_qubits
+        b = self.n_support_qubits
         ancillas = _ladder_ancillas(n, b)
         return (
-            list(wires[:n]),
-            list(wires[n : n + b]),
-            list(wires[n + b : n + b + ancillas]),
-            int(wires[n + b + ancillas]),
+            list(qubits[:n]),
+            list(qubits[n : n + b]),
+            list(qubits[n + b : n + b + ancillas]),
+            int(qubits[n + b + ancillas]),
         )
 
     def _append_increments(
@@ -364,10 +364,10 @@ class FrequentItemsetOperator:
 
         Args:
             circuit: The circuit to extend.
-            control: The control wire, or ``None`` for the uncontrolled loop.
-            item: The item register's wires.
-            support: The support register's wires.
-            pool: The ancilla wires the multi-controlled X ladders may borrow.
+            control: The control qubit, or ``None`` for the uncontrolled loop.
+            item: The item register's qubits.
+            support: The support register's qubits.
+            pool: The ancilla qubits the multi-controlled X ladders may borrow.
             forward: Which direction the database is counted in.
         """
         rows = self.incidence if forward else tuple(reversed(self.incidence))
@@ -385,7 +385,7 @@ def frequent_itemset_operator(
     incidence: torch.Tensor,
     *,
     threshold: int,
-    n_support_wires: int | None = None,
+    n_support_qubits: int | None = None,
 ) -> FrequentItemsetOperator:
     """Build the amplitude operator of one database's frequent fraction.
 
@@ -396,7 +396,7 @@ def frequent_itemset_operator(
 
     The support register's width is derived from the transaction count when none is given:
     the largest support a database of ``n`` transactions can produce is ``n``, so the fewest
-    wires that can hold every support are the bits ``n`` needs. A width passed explicitly is
+    qubits that can hold every support are the bits ``n`` needs. A width passed explicitly is
     accepted when it is at least that, and **refused when it is not**, rather than left to
     wrap the register's values into a readout that can come back wrong.
 
@@ -408,7 +408,7 @@ def frequent_itemset_operator(
         threshold: The least support a frequent item has, an integer in
             ``range(1, n_transactions + 1)``. The comparison is inclusive, so an item whose
             support is exactly the threshold is frequent.
-        n_support_wires: The width of the support register, or ``None`` for the fewest wires
+        n_support_qubits: The width of the support register, or ``None`` for the fewest qubits
             that can hold the largest support any database of that transaction count could
             produce.
 
@@ -420,18 +420,18 @@ def frequent_itemset_operator(
             transaction, holds no item, or holds an entry that is neither ``0`` nor ``1``;
             if its item count is not a power of two of at least two, or exceeds the unit's
             bound; if ``threshold`` is not an integer in ``range(1, n_transactions + 1)``;
-            or if ``n_support_wires`` cannot hold the largest support any database of that
+            or if ``n_support_qubits`` cannot hold the largest support any database of that
             transaction count could produce or exceeds the unit's bound.
     """
     rows = _validated_matrix(incidence)
     n_transactions = len(rows)
     width = (
         _validated_support_width(n_transactions.bit_length(), n_transactions)
-        if n_support_wires is None
-        else n_support_wires
+        if n_support_qubits is None
+        else n_support_qubits
     )
     return FrequentItemsetOperator(
-        incidence=rows, threshold=threshold, n_support_wires=width
+        incidence=rows, threshold=threshold, n_support_qubits=width
     )
 
 
@@ -439,10 +439,10 @@ def run_frequent_itemset(
     incidence: torch.Tensor,
     *,
     threshold: int,
-    n_counting_wires: int,
+    n_counting_qubits: int,
     shots: int = _DEFAULT_SHOTS,
     seed: int | None = None,
-    n_support_wires: int | None = None,
+    n_support_qubits: int | None = None,
 ) -> AmplitudeEstimationResult:
     """Estimate the fraction of the items whose support meets ``threshold``.
 
@@ -457,10 +457,10 @@ def run_frequent_itemset(
         incidence: The database, validated as in :func:`frequent_itemset_operator`.
         threshold: The least support a frequent item has, validated as in
             :func:`frequent_itemset_operator`.
-        n_counting_wires: The width of the counting register, at least one.
+        n_counting_qubits: The width of the counting register, at least one.
         shots: The number of samples to draw, at least one.
         seed: The sampler's seed, or ``None`` to draw from the ambient generator.
-        n_support_wires: The width of the support register, or ``None`` for the fewest wires
+        n_support_qubits: The width of the support register, or ``None`` for the fewest qubits
             that can hold the largest support any database of that transaction count could
             produce.
 
@@ -475,10 +475,10 @@ def run_frequent_itemset(
             applies to it.
     """
     operator = frequent_itemset_operator(
-        incidence, threshold=threshold, n_support_wires=n_support_wires
+        incidence, threshold=threshold, n_support_qubits=n_support_qubits
     )
     return run_amplitude_estimation(
-        operator, n_counting_wires=n_counting_wires, shots=shots, seed=seed
+        operator, n_counting_qubits=n_counting_qubits, shots=shots, seed=seed
     )
 
 
@@ -587,19 +587,19 @@ def _validated_item_count(n_items: int) -> None:
 
     Raises:
         ValueError: If it is not a power of two of at least two, or if it needs more item
-            wires than this unit is written for.
+            qubits than this unit is written for.
     """
     if n_items < 2 or n_items & (n_items - 1):
         raise ValueError(
             f"the item count must be a power of two of at least two, got {n_items}; the "
-            "item register is addressed by one wire per item-index bit and its preparation "
+            "item register is addressed by one qubit per item-index bit and its preparation "
             "is emitted under control, which a uniform state over another count has no "
             "form for in this package"
         )
-    if n_items.bit_length() - 1 > _MAX_ITEM_WIRES:
+    if n_items.bit_length() - 1 > _MAX_ITEM_QUBITS:
         raise ValueError(
-            f"this unit is bounded at {_MAX_ITEM_WIRES} item wires, so at most "
-            f"{2**_MAX_ITEM_WIRES} items, got {n_items}: the marking operator enumerates "
+            f"this unit is bounded at {_MAX_ITEM_QUBITS} item qubits, so at most "
+            f"{2**_MAX_ITEM_QUBITS} items, got {n_items}: the marking operator enumerates "
             "the support values at or above the threshold and the transaction loop emits "
             "one increment per transaction-item pair, so this is the demonstration scale "
             "the unit is written at"
@@ -634,11 +634,11 @@ def _validated_threshold(threshold: object, n_transactions: int) -> int:
     return threshold
 
 
-def _validated_support_width(n_support_wires: object, n_transactions: int) -> int:
+def _validated_support_width(n_support_qubits: object, n_transactions: int) -> int:
     """Validate the width of the support register.
 
     Args:
-        n_support_wires: The candidate width.
+        n_support_qubits: The candidate width.
         n_transactions: The number of transactions the register counts over.
 
     Returns:
@@ -649,66 +649,68 @@ def _validated_support_width(n_support_wires: object, n_transactions: int) -> in
             database of that transaction count could produce, or if it exceeds this unit's
             bound.
     """
-    if isinstance(n_support_wires, bool) or not isinstance(n_support_wires, int):
+    if isinstance(n_support_qubits, bool) or not isinstance(n_support_qubits, int):
         raise ValueError(
             f"the support register's width must be an integer, got "
-            f"{n_support_wires!r}; a width is a count of wires"
+            f"{n_support_qubits!r}; a width is a count of qubits"
         )
     largest = n_transactions
     fewest = n_transactions.bit_length()
-    if n_support_wires < fewest:
+    if n_support_qubits < fewest:
         raise ValueError(
-            f"the support register needs at least {fewest} wires to hold the largest "
+            f"the support register needs at least {fewest} qubits to hold the largest "
             f"support {largest} that {n_transactions} transactions can produce, got "
-            f"{n_support_wires}; the increment is a permutation of the register's values, "
+            f"{n_support_qubits}; the increment is a permutation of the register's values, "
             "so a narrower register wraps a support into another value and the readout can "
             "come back wrong with nothing raised"
         )
-    if n_support_wires > _MAX_SUPPORT_WIRES:
+    if n_support_qubits > _MAX_SUPPORT_QUBITS:
         raise ValueError(
-            f"this unit is bounded at {_MAX_SUPPORT_WIRES} support wires, which is at most "
-            f"{2**_MAX_SUPPORT_WIRES - 1} transactions, got {n_support_wires} support "
-            "wire(s): the evaluation register carries the item register, the support "
+            f"this unit is bounded at {_MAX_SUPPORT_QUBITS} support qubits, which is at most "
+            f"{2**_MAX_SUPPORT_QUBITS - 1} transactions, got {n_support_qubits} support "
+            "qubit(s): the evaluation register carries the item register, the support "
             "register, the multi-controlled X ladder ancillas and the marking flag, and "
             "this is the demonstration scale the unit is written at"
         )
-    return n_support_wires
+    return n_support_qubits
 
 
-def _ladder_ancillas(n_item_wires: int, n_support_wires: int) -> int:
+def _ladder_ancillas(n_item_qubits: int, n_support_qubits: int) -> int:
     """Return the ancillas the widest multi-controlled X of this register layout needs.
 
     The widest is the one the controlled increment and the zero reflection emit, whose
-    control list is the control wire, the item register and all but one wire of the support
+    control list is the control qubit, the item register and all but one qubit of the support
     register. A multi-controlled X above two controls borrows one ancilla per control beyond
     the two a native gate takes, and the same pool serves every ladder because each restores
     what it borrows.
 
     Args:
-        n_item_wires: The width of the item register.
-        n_support_wires: The width of the support register.
+        n_item_qubits: The width of the item register.
+        n_support_qubits: The width of the support register.
 
     Returns:
-        The number of ancilla wires the layout reserves.
+        The number of ancilla qubits the layout reserves.
     """
-    return max(n_item_wires + n_support_wires - 2, 0)
+    return max(n_item_qubits + n_support_qubits - 2, 0)
 
 
-def _append_pattern_bracket(circuit: Circuit, wires: Sequence[int], value: int) -> None:
-    """Flip the wires whose bit of ``value`` is zero, so the ones are the pattern.
+def _append_pattern_bracket(
+    circuit: Circuit, qubits: Sequence[int], value: int
+) -> None:
+    """Flip the qubits whose bit of ``value`` is zero, so the ones are the pattern.
 
     The same call takes the bracket back off, because ``x`` is its own inverse. Both
-    registers it is used on are read most significant bit first, so ``wires[0]`` is the
+    registers it is used on are read most significant bit first, so ``qubits[0]`` is the
     most significant bit of ``value``.
 
     Args:
         circuit: The circuit to extend.
-        wires: The register's wires, most significant first.
+        qubits: The register's qubits, most significant first.
         value: The register value whose zero bits are to be flipped.
     """
-    for index, wire in enumerate(wires):
-        if not (value >> (len(wires) - 1 - index)) & 1:
-            circuit.gate("x", wire)
+    for index, qubit in enumerate(qubits):
+        if not (value >> (len(qubits) - 1 - index)) & 1:
+            circuit.gate("x", qubit)
 
 
 def _append_support_step(
@@ -721,18 +723,18 @@ def _append_support_step(
 ) -> None:
     """Append the ladder that adds one to the support register, or takes one away.
 
-    Besides the item register's wires, which control every gate in it, the ladder is a
-    ripple carry: one multi-controlled X per support wire, each controlled by that wire's
-    less significant neighbours, and emitted from the most significant wire down so that
+    Besides the item register's qubits, which control every gate in it, the ladder is a
+    ripple carry: one multi-controlled X per support qubit, each controlled by that qubit's
+    less significant neighbours, and emitted from the most significant qubit down so that
     every carry reads the value the register held on entry. The reverse order is the same
     ladder run backwards, which is the decrement.
 
     Args:
         circuit: The circuit to extend.
-        control: The control wire, or ``None`` for the uncontrolled ladder.
-        item: The item register's wires, part of every control list.
-        support: The support register's wires, most significant first.
-        pool: The ancilla wires the ladders may borrow.
+        control: The control qubit, or ``None`` for the uncontrolled ladder.
+        item: The item register's qubits, part of every control list.
+        support: The support register's qubits, most significant first.
+        pool: The ancilla qubits the ladders may borrow.
         forward: Whether to add one or to take one away.
     """
     order = range(len(support)) if forward else reversed(range(len(support)))
@@ -765,9 +767,9 @@ def _append_support_match(
 
     Args:
         circuit: The circuit to extend.
-        support: The support register's wires, most significant first.
-        pool: The ancilla wires the ladders may borrow.
-        flag: The wire the comparison is XORed onto, in ``|0>`` on entry.
+        support: The support register's qubits, most significant first.
+        pool: The ancilla qubits the ladders may borrow.
+        flag: The qubit the comparison is XORed onto, in ``|0>`` on entry.
         threshold: The least support the comparison accepts.
     """
     for value in range(threshold, 2 ** len(support)):

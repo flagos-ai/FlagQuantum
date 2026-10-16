@@ -229,7 +229,7 @@ def _flips(memory: MemoryCircuit, source: str, *, shots: int = 1) -> list[tuple]
     samples: list[list[int]] = execution.samples.tolist()
     checks = len(memory.code.checks)
     positions = {
-        check.ancilla_wire: position
+        check.ancilla_qubit: position
         for position, check in enumerate(memory.code.checks)
     }
 
@@ -237,9 +237,9 @@ def _flips(memory: MemoryCircuit, source: str, *, shots: int = 1) -> list[tuple]
         classical_row: list[int], sample_row: list[int], reference: MeasurementRef
     ) -> int:
         if reference.round_index is None:
-            return int(sample_row[reference.wire])
+            return int(sample_row[reference.qubit])
         return int(
-            classical_row[reference.round_index * checks + positions[reference.wire]]
+            classical_row[reference.round_index * checks + positions[reference.qubit]]
         )
 
     def parity(classical_row: list[int], sample_row: list[int], references) -> int:
@@ -328,19 +328,19 @@ def test_the_memory_experiment_declares_one_observable_per_logical_qubit(
 
     code = _torus(linear_size)
     memory = build_memory_circuit(code, rounds=rounds)
-    z_checks = sum(1 for check in code.checks if check.stabilizer.z_wires)
-    x_checks = sum(1 for check in code.checks if check.stabilizer.x_wires)
+    z_checks = sum(1 for check in code.checks if check.stabilizer.z_qubits)
+    x_checks = sum(1 for check in code.checks if check.stabilizer.x_qubits)
 
     assert z_checks == x_checks == len(code.checks) // 2 == linear_size * linear_size
     assert len(memory.detectors) == z_checks * (rounds + 1) + x_checks * (rounds - 1)
 
     declared = [
-        observable for observable in code.logical_observables if observable.z_wires
+        observable for observable in code.logical_observables if observable.z_qubits
     ]
     assert len(memory.observables) == len(declared) == 2
     assert [
         {
-            reference.wire
+            reference.qubit
             for reference in observable.measurement_parity
             if reference.round_index is None
         }
@@ -633,8 +633,9 @@ def test_the_registered_names_agree_on_which_toric_models_they_take() -> None:
     That is why the counts are asserted as bounds and not as literals. The claim
     worth pinning is that the pair graph is a property of a sub-protocol with more
     than one implementation -- fewer than two and the sub-protocol would be a
-    second name for one class -- and that exactly one name sits outside it on this
-    family. A test that named the four strings would pass while a decoder was
+    second name for one class -- and that at least one name sits outside it on
+    this family, since the weight-four model exists to be decoded by something. A
+    test that named the registered strings would pass while a decoder was
     registered on the wrong side of the split.
     """
 
@@ -660,7 +661,7 @@ def test_the_registered_names_agree_on_which_toric_models_they_take() -> None:
             get_decoder(name, declared)
 
     assert len(graphlike) >= 2, graphlike
-    assert len(hyperedge) == 1, hyperedge
+    assert len(hyperedge) >= 1, hyperedge
     assert set(graphlike) | set(hyperedge) == set(decoder_names())
 
 

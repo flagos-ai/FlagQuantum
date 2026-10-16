@@ -1,4 +1,4 @@
-"""Collapse a same-wire run of single-qubit gates into one exact instruction.
+"""Collapse a same-qubit run of single-qubit gates into one exact instruction.
 
 `pipeline` already removes identities, cancels self-inverse pairs, and adds up
 adjacent rotations that share one opcode. None of those touch a run that *mixes*
@@ -34,7 +34,42 @@ opcodes would therefore come back longer than it started if it were re-spelled
 here. `optimize` is target-independent and cannot see the target's basis, so it
 declines the one case where its own vocabulary is the wrong one. The fold
 targets the runs no single z-rotation/pulse basis can keep, which is where the
-reduction is real.
+reduction is real. A run whose product is the identity is not re-spelled but
+deleted, so this decline does not apply to it even when its opcodes spell one
+pair; `_declines_vocabulary` states why and what that reaches.
+
+**A declared target basis cannot be served here, and the reason is arithmetic.**
+`Optimize1qGatesDecomposition` re-synthesizes each run straight into the target's
+basis and folds the leftover phase into `dag.global_phase`. A pass here cannot do
+that, and no amount of synthesis would let it: the determinant of a word over a
+target's arity-1 gates is the product of its factors' determinants, so a word over
+`{rz, sx, x}` — the three arity-1 gates of the `ibm-rz-sx-cx` snapshot — carries a
+determinant whose argument lies in `{0, pi/2, pi, 3*pi/2}` degrees, while a run
+containing `t`, `tdg`, `phase`, `u1`, or `u3` carries one outside that set. Such a
+run has *no* exact word over that basis at any length. Measured over 4000 seeded
+mixed runs drawn from all 18 declared arity-1 opcodes, a word that agrees only up
+to a global phase exists for every run and is three gates shorter on mean, while
+one that agrees entry for entry exists for 84 to 425 of them depending on the
+pair. The gap between those two columns is exactly the phase the IR has nowhere to
+put, which `benchmarks/compiler_one_qubit_decomposition.py` measures per basis and
+pins in `tests/benchmark_contract/test_compiler_one_qubit_decomposition.py`.
+
+That obstruction is already realized downstream, where `native_gate_legalization`
+reaches a target basis through `one_qubit_synthesis`: its result is documented as
+equal to the source up to one global phase, so it drops a phase the IR cannot
+record. The smallest witness is two instructions — `h` then the basis's entangler
+— and on `ibm-rz-sx-cx` the legalized statevector is the source's multiplied by
+`exp(-i*pi/4)`, an amplitude gap of `0.541` that no fold of many gates could be
+blamed for. Over 80 seeded entangled programs per basis, 77 or 78 of them shift
+by a phase that is neither `1` nor `-1`. A global phase is unobservable, so no
+measurement outcome changes; but this repository's own evidence instruments
+compare statevectors directly, and the exactness policy of this module exists
+precisely because that comparison is the acceptance test. The prerequisite is a
+global-phase field on the program, which `flagquantum/core/ir.py` does not have and
+which is a protected path. `docs/api-changes/FQ-IR-GLOBAL-PHASE-20261006.md`
+records the proposal for it; until it lands, this pass's vocabulary is `u3`,
+`phase`, and `rz`, and a caller's basis is reached by `native_gate_legalization`
+after the fold rather than by the fold itself.
 
 **No trainable angle is folded.** Composition reads numeric amplitudes, and a
 trainable angle has no numeric value to read; the same reason
@@ -296,7 +331,7 @@ def _is_foldable(instruction: Instruction) -> bool:
 
     False for anything else — a wider gate, a measurement, a barrier, or an
     opcode no Euler table covers — and such an instruction *ends* the run on each
-    wire it touches rather than joining it.
+    qubit it touches rather than joining it.
     """
 
     if len(instruction.wires) != 1:
@@ -315,6 +350,10 @@ def _single_basis_pair(instructions: list[Instruction]) -> tuple[str, str] | Non
     spelled in `rz` and `sx`, folding them took the intermediate program from 758
     to 371 gates while the target-legal output grew from 758 to 902 — the fold
     was undone by the lowering, at a 19% cost.
+
+    That reason needs a replacement to re-spell, so this answers only half the
+    question; `_declines_vocabulary` is the rule, and it is what `_fold_run`
+    consults.
     """
 
     opcodes = [canonical_opcode(item.name) for item in instructions]
@@ -331,16 +370,43 @@ def _single_basis_pair(instructions: list[Instruction]) -> tuple[str, str] | Non
     return next(iter(z_rotations), _Z_ROTATION_OPCODE), next(iter(pulses))
 
 
+def _declines_vocabulary(
+    instructions: list[Instruction], replacement: tuple[Instruction, ...]
+) -> bool:
+    """Whether the vocabulary decline applies to this run and this replacement.
+
+    The decline exists because `native_gate_legalization` re-spells a folded `u3`
+    back into the run it came from, so folding a run a target already publishes
+    loses more downstream than it saves here. A replacement with no gates is not a
+    re-spelling of the run but the run's deletion: the run's product *is* the
+    identity, and a lowering has nothing to put back. The decline therefore does
+    not apply, and the run is deleted rather than left standing.
+
+    Deleting is the direction that needs evidence, so it is measured from both
+    sides. Over the declared single-qubit unitary opcodes, sweeping runs of two to
+    four gates, 291 runs have a product that emits nothing and were left standing
+    only because their opcodes spell one z-rotation/pulse pair — `sx sx sx sx`
+    among them, exact to 0.000e+00 — and the worst distance from the identity over
+    those 291 is 7.348e-16, which is the float noise `_emit` already accepts on
+    every run it folds. On the other side, a 60000-run dense sweep over the same
+    opcodes deletes 1376 runs and every one of them is within 7.071e-13 of the
+    identity, while the 331 runs whose product is `-I` are all written back as a
+    rotation instead.
+    """
+
+    if not replacement:
+        return False
+    return _single_basis_pair(instructions) is not None
+
+
 def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None:
-    """The exact replacement of one same-wire run, or None to leave it.
+    """The exact replacement of one same-qubit run, or None to leave it.
 
     None covers refusal as well as no gain: a run a single z-rotation/pulse
     vocabulary already spells, and a run whose replacement would not be shorter.
     Every instruction here is foldable and readable, so there is no third case.
     """
 
-    if _single_basis_pair(instructions) is not None:
-        return None
     product = _run_product(instructions)
     if product is None:
         return None
@@ -349,21 +415,26 @@ def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None
         qubit=instructions[0].wires[0],
         metadata=instructions[0].metadata,
     )
-    return replacement if len(replacement) < len(instructions) else None
+    if len(replacement) >= len(instructions):
+        return None
+    if _declines_vocabulary(instructions, replacement):
+        return None
+    return replacement
 
 
 def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
-    """Collapse each same-wire run of single-qubit gates into one exact sequence.
+    """Collapse each same-qubit run of single-qubit gates into one exact sequence.
 
-    A run is maximal: it ends at a gate that shares the wire, and it continues
-    across gates on other wires, which commute with it. The replacement is
+    A run is maximal: it ends at a gate that shares the qubit, and it continues
+    across gates on other qubits, which commute with it. The replacement is
     written at the run's own positions, so the emitted gates keep their order on
-    the wire and land in the same place in program order.
+    the qubit and land in the same place in program order.
 
     A run is left untouched when it carries a trainable angle, when a single
-    z-rotation/pulse vocabulary already spells it, or when folding it would not
-    be strictly shorter. A wider gate, a measurement, or a barrier ends the run
-    instead of joining it, so the gates on either side of one still fold.
+    z-rotation/pulse vocabulary already spells it and the replacement has gates
+    in it, or when folding it would not be strictly shorter. A wider gate, a
+    measurement, or a barrier ends the run instead of joining it, so the gates on
+    either side of one still fold.
     """
 
     output: list[Instruction | None] = []

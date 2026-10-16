@@ -159,7 +159,7 @@ def main() -> None:
     report("ground energy", f"{ground:.17g}")
     report("total less twice the cut", f"{len(EDGES) - 2 * largest:.17g}")
     values = {bits: float(cost.expectation(basis_circuit(bits))) for bits in spectrum}
-    report("terms", str([(float(t.coefficient), t.wires) for t in cost.terms]))
+    report("terms", str([(float(t.coefficient), t.qubits) for t in cost.terms]))
     report(
         "argmin equals argmax",
         str({bits for bits, value in values.items() if value == ground} == best),

@@ -11,8 +11,8 @@ pytestmark = pytest.mark.unit
 def test_distance_matches_shortest_path_hop_count() -> None:
     coupling = CouplingMap.grid(3, 4)
 
-    for left in range(coupling.n_wires):
-        for right in range(coupling.n_wires):
+    for left in range(coupling.n_qubits):
+        for right in range(coupling.n_qubits):
             assert (
                 coupling.distance(left, right)
                 == len(coupling.shortest_path(left, right)) - 1
@@ -35,10 +35,10 @@ def test_distance_matrix_is_symmetric_with_zero_diagonal() -> None:
         (3, 2, 3, 2, 1, 2, 1, 0, 1),
         (4, 3, 2, 3, 2, 1, 2, 1, 0),
     )
-    for left in range(coupling.n_wires):
-        for right in range(coupling.n_wires):
+    for left in range(coupling.n_qubits):
+        for right in range(coupling.n_qubits):
             assert matrix[left][right] == matrix[right][left]
-    assert all(matrix[wire][wire] == 0 for wire in range(coupling.n_wires))
+    assert all(matrix[wire][wire] == 0 for wire in range(coupling.n_qubits))
 
 
 def test_ring_geometry_reports_the_shorter_arc() -> None:
@@ -70,7 +70,7 @@ def test_disconnected_pairs_are_marked_and_raise_on_query() -> None:
     )
     assert coupling.distance(0, 1) == 1
     assert coupling.distance(2, 3) == 1
-    with pytest.raises(ValueError, match="No coupling path between wires 0 and 4"):
+    with pytest.raises(ValueError, match="No coupling path between qubits 0 and 4"):
         coupling.distance(0, 4)
 
 
@@ -108,8 +108,8 @@ def test_distance_index_stores_one_row_per_wire_not_one_entry_per_pair() -> None
 def test_repeated_distance_queries_cost_one_search_per_source_wire() -> None:
     coupling = CouplingMap.grid(20, 20)
 
-    for left in range(coupling.n_wires):
-        for right in range(coupling.n_wires):
+    for left in range(coupling.n_qubits):
+        for right in range(coupling.n_qubits):
             coupling.distance(left, right)
 
     info = coupling.distance_cache_info()

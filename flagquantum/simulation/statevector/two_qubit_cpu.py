@@ -1,6 +1,6 @@
 """CPU kernels for a dense two-qubit gate on selected state-bit layouts.
 
-The statevector is contiguous and wire ``w`` carries the bit of weight
+The statevector is contiguous and qubit ``w`` carries the bit of weight
 ``2 ** (n_wires - 1 - w)``, so the four amplitudes that differ in an index-adjacent
 pair ``(w, w + 1)`` are always contiguous: a view of the state as
 ``(batch, 2 ** w, 4, 2 ** (n_wires - w - 2))`` blocks. Their order within a block
@@ -70,7 +70,7 @@ def _prefer_blocked_two_qubit_matrix_cpu(
     ``[batch, outer, 4, stride]`` matmul is slower than the layout path for the
     middle stride classes once the state is large enough for those copies to
     dominate. Small ascending states keep the existing route. Newly supported
-    reversed pairs start at eight wires, where avoiding layout copies repays
+    reversed pairs start at eight qubits, where avoiding layout copies repays
     the small matrix reorder. Complex128 only excludes its reproducible
     stride-32 trough.
     """
@@ -125,7 +125,7 @@ def _apply_reversed_trailing_two_qubit_matrix_cpu(
     state: torch.Tensor,
     matrix: torch.Tensor,
 ) -> torch.Tensor:
-    """Apply a CPU gate whose ordered wires are the two trailing state bits."""
+    """Apply a CPU gate whose ordered qubits are the two trailing state bits."""
 
     return _apply_blocked_two_qubit_matrix_cpu(
         state, matrix, stride=1, matrix_is_bit_reversed=True
@@ -139,7 +139,7 @@ def _apply_adjacent_two_qubit_matrix_cpu(
     first_wire: int,
     n_wires: int,
 ) -> torch.Tensor:
-    """Apply a CPU gate whose ordered wires are ``(w, w + 1)``, ascending."""
+    """Apply a CPU gate whose ordered qubits are ``(w, w + 1)``, ascending."""
 
     first_wire = int(first_wire)
     n_wires = int(n_wires)
@@ -160,7 +160,7 @@ def _apply_reversed_adjacent_two_qubit_matrix_cpu(
     first_wire: int,
     n_wires: int,
 ) -> torch.Tensor:
-    """Apply a CPU gate whose ordered wires are ``(w + 1, w)``."""
+    """Apply a CPU gate whose ordered qubits are ``(w + 1, w)``."""
 
     first_wire = int(first_wire)
     n_wires = int(n_wires)

@@ -6,113 +6,98 @@ Hadamard, controlled-phase, and swap gates.
 
 The transform is a subroutine: it carries no performance claim of its own, and this module
 does not select a runtime.
+
+The transform exists once. :func:`qft` builds it on a fresh register over qubits
+``0..n-1``, and :func:`append_qft` places that same circuit onto the caller's qubits with
+:meth:`Circuit.compose <flagquantum.circuit.Circuit.compose>`, so there is one construction
+of the transform rather than one per way of asking for it. The inverse transform is the
+forward one's :meth:`~flagquantum.circuit.Circuit.adjoint` rather than a second reversed
+emission, which is the relation the unitary satisfies.
 """
 
 from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass
 
 from ...circuit import Circuit
 
 __all__ = ["append_qft", "qft"]
 
 
-@dataclass(frozen=True)
-class _Hadamard:
-    """One Hadamard gate in a transform sequence."""
-
-    wire: int
-
-
-@dataclass(frozen=True)
-class _ControlledPhase:
-    """One controlled phase in a transform sequence."""
-
-    control: int
-    target: int
-    angle: float
-
-
-@dataclass(frozen=True)
-class _Swap:
-    """One wire exchange in a transform sequence."""
-
-    left: int
-    right: int
-
-
-_Step = _Hadamard | _ControlledPhase | _Swap
-
-
 def append_qft(
-    circuit: Circuit, wires: Sequence[int], *, inverse: bool = False
+    circuit: Circuit, qubits: Sequence[int], *, inverse: bool = False
 ) -> None:
-    """Append the quantum Fourier transform on ``wires`` to ``circuit`` in place.
+    """Append the quantum Fourier transform on ``qubits`` to ``circuit`` in place.
 
-    The sequence is the Hadamard and controlled-phase ladder followed by the bit-reversal
-    swaps. With ``inverse`` set, the same gates are emitted in reverse order and every
-    controlled-phase angle is negated.
+    The transform is built on its own register and placed onto ``qubits`` in the order they
+    are given, so it emits exactly the instructions ``circuit.compose(qft(len(qubits),
+    inverse=inverse), qubits=qubits)`` emits, and ``qubits[0]`` carries the most significant
+    output. The placement follows the rules of
+    :meth:`Circuit.compose <flagquantum.circuit.Circuit.compose>` rather than carrying a
+    second set of them: ``qubits`` must lie inside the receiver's range, and a batched
+    receiver is refused rather than having this unbatched transform broadcast into it.
 
     Args:
         circuit: The circuit to extend.
-        wires: The wires carrying the transform, most significant first.
+        qubits: The qubits carrying the transform, most significant first.
         inverse: Append the inverse transform instead of the forward one.
 
     Raises:
-        ValueError: If ``wires`` contains a repeated wire.
+        ValueError: If ``qubits`` repeats a qubit, or if
+            :meth:`Circuit.compose <flagquantum.circuit.Circuit.compose>` refuses the
+            placement.
     """
-    ordered = list(wires)
-    n_wires = len(ordered)
-    if n_wires == 0:
+    ordered = list(qubits)
+    if not ordered:
         return
-    if len(set(ordered)) != n_wires:
-        raise ValueError("qft wires must be distinct")
-
-    sequence: list[_Step] = []
-    for position in range(n_wires):
-        sequence.append(_Hadamard(ordered[position]))
-        for offset in range(position + 1, n_wires):
-            sequence.append(
-                _ControlledPhase(
-                    control=ordered[offset],
-                    target=ordered[position],
-                    angle=math.pi / 2 ** (offset - position),
-                )
-            )
-    for position in range(n_wires // 2):
-        sequence.append(_Swap(ordered[position], ordered[n_wires - 1 - position]))
-
-    if inverse:
-        sequence.reverse()
-
-    for step in sequence:
-        if isinstance(step, _Hadamard):
-            circuit.gate("h", step.wire)
-        elif isinstance(step, _ControlledPhase):
-            angle = -step.angle if inverse else step.angle
-            circuit.gate("cphase", (step.control, step.target), theta=angle)
-        else:
-            circuit.gate("swap", (step.left, step.right))
+    if len(set(ordered)) != len(ordered):
+        raise ValueError("qft qubits must be distinct")
+    circuit.compose(qft(len(ordered), inverse=inverse), qubits=ordered)
 
 
-def qft(n_wires: int, *, inverse: bool = False) -> Circuit:
-    """Build a standalone quantum Fourier transform circuit on ``n_wires`` wires.
+def qft(n_qubits: int, *, inverse: bool = False) -> Circuit:
+    """Build a standalone quantum Fourier transform circuit on ``n_qubits`` qubits.
 
     Args:
-        n_wires: The number of wires; must be at least one.
+        n_qubits: The number of qubits; must be at least one.
         inverse: Build the inverse transform instead of the forward one.
 
     Returns:
         A circuit using ``n`` Hadamards, ``n(n-1)/2`` controlled-phase gates, and ``n//2``
-        swaps.
+        swaps, whose qubits are numbered ``0`` to ``n_qubits - 1``.
 
     Raises:
-        ValueError: If ``n_wires`` is not positive.
+        ValueError: If ``n_qubits`` is not positive.
     """
-    if n_wires < 1:
-        raise ValueError(f"qft needs at least one wire, got {n_wires}")
-    circuit = Circuit(n_wires)
-    append_qft(circuit, list(range(n_wires)), inverse=inverse)
+    if n_qubits < 1:
+        raise ValueError(f"qft needs at least one qubit, got {n_qubits}")
+    forward = _qft_circuit(n_qubits)
+    return forward.adjoint() if inverse else forward
+
+
+def _qft_circuit(n_qubits: int) -> Circuit:
+    """Build the forward transform on a fresh register of ``n_qubits`` qubits.
+
+    The sequence is the Hadamard and controlled-phase ladder followed by the bit-reversal
+    swaps. Qubit ``p`` takes a Hadamard and then the phases controlled by every more
+    significant qubit, with the phase between two qubits one position apart being ``pi/2``.
+
+    Args:
+        n_qubits: The register width; the caller has already checked it is positive.
+
+    Returns:
+        The forward transform, its qubits numbered ``0`` to ``n_qubits - 1``.
+    """
+    circuit = Circuit(n_qubits)
+    for position in range(n_qubits):
+        circuit.gate("h", position)
+        for offset in range(position + 1, n_qubits):
+            circuit.gate(
+                "cphase",
+                (offset, position),
+                theta=math.pi / 2 ** (offset - position),
+            )
+    for position in range(n_qubits // 2):
+        circuit.gate("swap", (position, n_qubits - 1 - position))
     return circuit

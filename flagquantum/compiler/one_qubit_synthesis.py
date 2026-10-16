@@ -153,7 +153,7 @@ def _polar_angle(value: Any) -> float | None:
 def _pulse_leaf(
     opcode: str,
     *,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     metadata: Mapping[str, Any],
     angle: Any,
 ) -> Instruction | None:
@@ -161,11 +161,11 @@ def _pulse_leaf(
     schema = get_operator_schema(opcode)
     parameters = schema.parameters if schema is not None else ()
     if not parameters:
-        return Instruction(opcode, wires, metadata=metadata)
+        return Instruction(opcode, qubits, metadata=metadata)
     if _is_zero(angle):
         return None
     return Instruction(
-        opcode, wires, params=dict.fromkeys(parameters, angle), metadata=metadata
+        opcode, qubits, params=dict.fromkeys(parameters, angle), metadata=metadata
     )
 
 
@@ -311,7 +311,7 @@ def _is_supported_basis(*, z_rotation: str, pulse_opcode: str) -> bool:
 def _emit_leaves(
     leaves: tuple[tuple[str, Any], ...],
     *,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     metadata: Mapping[str, Any],
     z_rotation: str,
     pulse_opcode: str,
@@ -325,14 +325,14 @@ def _emit_leaves(
     for leaf_opcode, angle in leaves:
         if leaf_opcode == pulse_opcode:
             pulse = _pulse_leaf(
-                leaf_opcode, wires=wires, metadata=metadata, angle=_HALF_PI
+                leaf_opcode, qubits=qubits, metadata=metadata, angle=_HALF_PI
             )
             if pulse is not None:
                 replacement.append(pulse)
         elif not _is_zero(angle):
             replacement.append(
                 Instruction(
-                    z_rotation, wires, params={"theta": angle}, metadata=metadata
+                    z_rotation, qubits, params={"theta": angle}, metadata=metadata
                 )
             )
     return tuple(replacement)
@@ -397,6 +397,113 @@ def is_diagonal_one_qubit(instruction: Instruction) -> bool:
     return _polar_angle(angles[0]) == 0.0
 
 
+#: Above this magnitude an angle is not folded at all.
+#:
+#: A fold is only meaningful while a float64 can sit within the tolerance of a
+#: multiple of `4*pi` without *being* that multiple: past `4*pi * 512` the spacing
+#: of float64 exceeds the tolerance, so the only angle whose exact remainder
+#: vanishes is one already equal to `4*pi * k`, and such an angle is an arbitrary
+#: rotation rather than the identity. Folding there would compare rounded integers
+#: rather than angles and could only invent a removal.
+_MODULAR_FOLD_LIMIT = 2048.0 * math.pi
+
+#: The angle at which the `U3` family returns to the identity *exactly*, rather
+#: than to minus the identity.
+#:
+#: `U3(2*pi, 0, 0)` is `-I` and `U3(4*pi, 0, 0)` is `I`, so a rule that folded its
+#: angles modulo `2*pi` would call `rz(2*pi)` the identity and drop a sign the IR
+#: has nowhere to record: `CircuitIR` carries no global-phase field, so the
+#: statevector *is* the program's full output and a `-I` that disappears is a
+#: program that changed. Folding modulo `4*pi` costs the removals that are only
+#: correct up to a sign, which are named in `is_identity_one_qubit`, and in
+#: exchange every removal this rule makes leaves the statevector identical.
+_IDENTITY_PERIOD = 2.0 * _TWO_PI
+
+
+def _is_identity_angle(value: Any, atol: float = 1e-12) -> bool:
+    """Report whether one tabulated angle is an integer multiple of `4*pi`.
+
+    `math.remainder` returns `value - n * 4*pi` exactly, for the `n` nearest
+    `value / (4*pi)`, so the residue carries no rounding of its own and the same
+    `atol` `pipeline._is_zero` applies to a raw angle applies unchanged to the
+    folded one. A trainable value, a non-scalar, and a value outside the fold
+    limit all answer False, which keeps the removal fail-closed.
+    """
+
+    polar = _polar_angle(value)
+    if polar is None or abs(polar) > _MODULAR_FOLD_LIMIT:
+        return False
+    return _is_zero(math.remainder(polar, _IDENTITY_PERIOD), atol=atol)
+
+
+def is_identity_one_qubit(instruction: Instruction) -> bool:
+    """Report whether one instruction is exactly the identity operator.
+
+    `U3(theta, phi, lam)` is `[[cos(t/2), -exp(1j*lam) sin(t/2)],
+    [exp(1j*phi) sin(t/2), exp(1j*(phi+lam)) cos(t/2)]]` for `t = theta`, so its
+    off-diagonal entries vanish exactly where `sin(t/2)` does, and at those points
+    it is `cos(t/2) * diag(1, exp(1j*(phi+lam)))`. The matrix of `U3` alone is
+    therefore the identity exactly when `t` is a multiple of `4*pi` -- so that the
+    first diagonal entry is `+1` and not `-1` -- and `phi + lam` is a multiple of
+    `2*pi`. The declared triples are read through `canonical_euler_angles`, which
+    is the only place this module states those angles, so no opcode table and no
+    second angle table live here, an opcode the schema does not describe is never
+    removed, and a new opcode that tabulates `(0, 0, 0)` is classified rather than
+    declined.
+
+    The fold applied to `phi + lam` is `4*pi` as well, which is deliberately
+    stricter than `U3` alone requires, and the reason is that a triple does not
+    always name its opcode's matrix. `rz(theta)`, `phase(theta)` and `u1(theta)`
+    all tabulate `(0, 0, theta)`, and that triple is the matrix of `phase(theta)`;
+    the matrix of `rz(theta)` is `exp(-1j*theta/2)` times it. So `phase(2*pi)` *is*
+    the identity while `rz(2*pi)` is minus the identity, and no rule that reads
+    only the triple can tell them apart. FlagQuantum IR has no field in which to
+    record a global phase, so `optimize` has to leave the statevector identical --
+    a property `tests/unit/test_compilation_inverse_cancellation.py` asserts over
+    random programs -- and this module resolves the collision by declining all
+    three. Folding `phi + lam` by `2*pi` while folding `t` by `4*pi` would remove
+    `phase(2*pi)`, `u1(2*pi)` and `rz(2*pi)` alike and change the statevector of
+    the last.
+
+    Three reaches follow from the fold, and all three are refusals rather than
+    mistakes. `phase(2*pi)` and `u1(2*pi)` are the identity and are declined, for
+    the collision above. `u3(4*pi, phi, lam)` is declined when `phi + lam` is an
+    even multiple of `pi` that is not a multiple of `4*pi` -- `phi + lam = 2*pi`,
+    where the matrix *is* the identity -- even though `u3`'s triple names its own
+    matrix, because one fold is applied to the sum. And every two-qubit rotation is
+    decided by the multi-qubit branch of `remove_identity_gates`, not here, so this
+    module's whole reach is single-qubit.
+
+    Only exact integer multiples are considered, within `_is_zero`'s own `1e-12`,
+    rather than a fidelity cutoff of the kind a target error rate would supply: a
+    false yes changes the program, and an angle merely near a multiple is a
+    rotation a target may well distinguish. `None` from `_polar_angle` on any of
+    the three angles -- a trainable one most of all -- refuses, so a rotation
+    initialized at zero is never detached from the autograd graph.
+
+    False for an instruction of another arity or one that is not a declared
+    unitary, including `measure`, `reset`, `barrier`, and an operation carrying
+    its own matrix. The matrix is refused rather than read: a caller who attached
+    one has said the opcode's name no longer describes the operator, so the angle
+    triple below is not evidence about it and this module declines rather than
+    guesses. `diagonal_before_measure._is_diagonal` refuses on the same ground.
+    """
+
+    if len(instruction.wires) != 1 or instruction.matrix is not None:
+        return False
+    angles = canonical_euler_angles(instruction)
+    if angles is None:
+        return False
+    theta, phi, lam = angles
+    if not _is_identity_angle(theta):
+        return False
+    phase_angle = _polar_angle(phi)
+    z_angle = _polar_angle(lam)
+    if phase_angle is None or z_angle is None:
+        return False
+    return _is_identity_angle(phase_angle + z_angle)
+
+
 def synthesize_one_qubit(
     instruction: Instruction,
     *,
@@ -407,7 +514,7 @@ def synthesize_one_qubit(
 
     `z_rotation` is the z-rotation opcode the target publishes and `pulse_opcode`
     the opcode it publishes for a pi/2 rotation about x. None is returned when
-    nothing here applies: a multi-wire or non-unitary instruction, an instruction
+    nothing here applies: a multi-qubit or non-unitary instruction, an instruction
     the operator schema does not describe, or an instruction that is already that
     same z-rotation, whose shortest form only the caller's native gate set can
     choose. None is also returned when `z_rotation` or `pulse_opcode` is not a
@@ -422,7 +529,7 @@ def synthesize_one_qubit(
         return None
     return _emit_leaves(
         _leaves(*angles, z_rotation=z_rotation, pulse_opcode=pulse_opcode),
-        wires=instruction.wires,
+        qubits=instruction.wires,
         metadata=instruction.metadata,
         z_rotation=z_rotation,
         pulse_opcode=pulse_opcode,
@@ -432,7 +539,7 @@ def synthesize_one_qubit(
 def synthesize_one_qubit_matrix(
     matrix: Any,
     *,
-    wire: int,
+    qubit: int,
     z_rotation: str,
     pulse_opcode: str = "sx",
     metadata: Mapping[str, Any] | None = None,
@@ -450,19 +557,19 @@ def synthesize_one_qubit_matrix(
 
     Returns None when `z_rotation` or `pulse_opcode` is not a basis this module
     can synthesize over. Raises ValueError when `matrix` is not a 2x2 unitary or
-    `wire` is not a non-negative integer. An empty tuple, for the identity, is a
+    `qubit` is not a non-negative integer. An empty tuple, for the identity, is a
     correct answer.
     """
     if not _is_supported_basis(z_rotation=z_rotation, pulse_opcode=pulse_opcode):
         return None
-    if isinstance(wire, bool) or not isinstance(wire, int) or wire < 0:
-        raise ValueError("wire must be a non-negative integer")
+    if isinstance(qubit, bool) or not isinstance(qubit, int) or qubit < 0:
+        raise ValueError("qubit must be a non-negative integer")
     target = _as_complex_matrix(matrix, 2, what="matrix")
     if not _is_unitary(target):
         raise ValueError("matrix must be a 2x2 unitary")
     return _emit_leaves(
         _leaves(*_zyz_angles(target), z_rotation=z_rotation, pulse_opcode=pulse_opcode),
-        wires=(wire,),
+        qubits=(qubit,),
         metadata={} if metadata is None else metadata,
         z_rotation=z_rotation,
         pulse_opcode=pulse_opcode,

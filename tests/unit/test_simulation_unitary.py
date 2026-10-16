@@ -8,7 +8,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
-from flagquantum.simulation.unitary import MAX_UNITARY_WIRES, get_unitary
+from flagquantum.simulation.unitary import MAX_UNITARY_QUBITS, get_unitary
 
 pytestmark = pytest.mark.unit
 
@@ -225,7 +225,7 @@ def test_the_result_is_on_the_requested_device() -> None:
     assert unitary.shape == (4, 4)
 
 
-@pytest.mark.parametrize("n_wires", (MAX_UNITARY_WIRES + 1, MAX_UNITARY_WIRES + 4))
+@pytest.mark.parametrize("n_wires", (MAX_UNITARY_QUBITS + 1, MAX_UNITARY_QUBITS + 4))
 def test_a_program_over_the_ceiling_is_refused_before_anything_is_allocated(
     n_wires: int,
 ) -> None:
@@ -238,7 +238,7 @@ def test_a_program_over_the_ceiling_is_refused_before_anything_is_allocated(
         get_unitary(circuit)
 
     elapsed = time.perf_counter() - started
-    assert str(MAX_UNITARY_WIRES) in str(excinfo.value)
+    assert str(MAX_UNITARY_QUBITS) in str(excinfo.value)
     assert str(n_wires) in str(excinfo.value)
     assert elapsed < 1.0
 
@@ -246,9 +246,9 @@ def test_a_program_over_the_ceiling_is_refused_before_anything_is_allocated(
 def test_exactly_the_ceiling_is_accepted() -> None:
     """The limit is a ceiling, not an off-by-one: one wire below it must work."""
 
-    assert get_unitary(fq.Circuit(MAX_UNITARY_WIRES).h(0), dtype=torch.complex64).shape[
+    assert get_unitary(fq.Circuit(MAX_UNITARY_QUBITS).h(0), dtype=torch.complex64).shape[
         0
-    ] == (1 << MAX_UNITARY_WIRES)
+    ] == (1 << MAX_UNITARY_QUBITS)
 
 
 @pytest.mark.parametrize("kind", ("channel", "dynamic", "condition"))
@@ -368,6 +368,6 @@ def test_an_empty_program_is_the_identity() -> None:
 def test_the_ceiling_is_exported_so_a_caller_can_check_before_allocating() -> None:
     import flagquantum.simulation as simulation
 
-    assert simulation.MAX_UNITARY_WIRES == MAX_UNITARY_WIRES
-    assert MAX_UNITARY_WIRES == 12
+    assert simulation.MAX_UNITARY_QUBITS == MAX_UNITARY_QUBITS
+    assert MAX_UNITARY_QUBITS == 12
     assert simulation.get_unitary is get_unitary

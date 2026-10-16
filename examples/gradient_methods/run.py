@@ -41,6 +41,15 @@ def relative_error(candidate: torch.Tensor, reference: torch.Tensor) -> float:
     return float((candidate - reference).abs().max()) / scale
 
 
+def two_expectations(parameters: torch.Tensor) -> torch.Tensor:
+    """A program returning several values, so no single scalar gradient exists."""
+    result = fq.run(
+        build_circuit(parameters),
+        outputs=[fq.expectation(fq.Z(0)), fq.expectation(fq.Z(1))],
+    )
+    return torch.stack(list(result.expectations))
+
+
 def main() -> None:
     reference = fq.gradient(build_circuit, PARAMETERS, loss)
     print(f"{reference.method:<18} exact={reference.exact} step={reference.step}")
@@ -89,6 +98,26 @@ def main() -> None:
         f"{fell_back.method:<18} exact={fell_back.exact} "
         f"step={fell_back.step:.3e} "
         f"error={relative_error(fell_back.gradient, reference.gradient):.3e}"
+    )
+
+    # Two outputs at once. There is no single scalar gradient, so ask for the
+    # Jacobian, then apply it along one parameter direction and one output
+    # direction. The two products must be adjoint: <Jv, c> == <v, J^T c>.
+    jacobian = fq.jacobian(two_expectations, PARAMETERS)
+    tangent = torch.tensor([1.0, -2.0, 0.5], dtype=torch.float64)
+    cotangent = torch.tensor([0.25, -1.5], dtype=torch.float64).reshape(2, 1)
+    forward = fq.jvp(two_expectations, PARAMETERS, tangent)
+    reverse = fq.vjp(two_expectations, PARAMETERS, cotangent)
+    print(
+        f"{'jacobian':<18} shape={tuple(jacobian.shape)} "
+        f"matvec_error="
+        f"{relative_error(forward.reshape(-1), jacobian.reshape(-1, 3) @ tangent):.3e}"
+    )
+    # This circuit is complex64 while the parameters are float64, so the
+    # residual of the adjoint identity is the amplitude dtype's epsilon.
+    print(
+        f"{'jvp/vjp':<18} adjoint_error="
+        f"{abs(float((forward * cotangent).sum()) - float((reverse * tangent).sum())):.3e}"
     )
 
 

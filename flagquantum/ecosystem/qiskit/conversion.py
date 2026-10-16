@@ -268,7 +268,7 @@ def _reverse_local_basis_order(matrix: torch.Tensor, width: int) -> torch.Tensor
     """Reverse local input/output bit axes between Qiskit and FlagQuantum.
 
     Qiskit treats the first qarg as the least-significant local bit, whereas
-    FlagQuantum treats the first instruction wire as the most-significant
+    FlagQuantum treats the first instruction qubit as the most-significant
     local bit. Applying the same bit-reversal permutation to rows and columns
     converts between the two conventions. The transform is its own inverse.
     """

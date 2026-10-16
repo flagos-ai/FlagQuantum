@@ -543,6 +543,80 @@ def test_the_ranks_are_told_not_to_write_bytecode_beside_each_other() -> None:
         assert _environment(job["command"])["PYTHONDONTWRITEBYTECODE"] == "1"
 
 
+# --- which device each rank gets --------------------------------------------
+
+
+def test_a_lane_that_pins_no_device_leaves_the_choice_to_the_rank() -> None:
+    payload = _plan()
+
+    # Unset rather than written as an empty value: a `CUDA_VISIBLE_DEVICES=`
+    # token means "no device", which is not the same as not saying.
+    for job in payload["jobs"]:
+        assert plan.DEVICE_ENVIRONMENT_VARIABLE not in _environment(job["command"])
+    assert payload["visible_devices"] is None
+
+
+def test_a_lane_that_pins_devices_gives_both_ranks_the_same_list() -> None:
+    payload = _plan(visible_devices="1")
+    jobs = payload["jobs"]
+    environments = [_environment(job["command"]) for job in jobs]
+
+    # The peer reads its environment from the `env` prefix inside the ssh
+    # command, because ssh forwards nothing, so one rank carrying the pin and
+    # its peer not carrying it is the failure this asserts against.
+    assert [env[plan.DEVICE_ENVIRONMENT_VARIABLE] for env in environments] == ["1", "1"]
+    assert payload["visible_devices"] == "1"
+
+
+def test_a_pin_wider_than_the_node_is_a_pin_per_rank() -> None:
+    payload = _plan(local_world_size=4, visible_devices="1,2,3,4")
+
+    assert payload["world_size"] == 8
+    assert payload["visible_devices"] == "1,2,3,4"
+    for job in payload["jobs"]:
+        assert _environment(job["command"])["CUDA_VISIBLE_DEVICES"] == "1,2,3,4"
+
+
+@pytest.mark.parametrize(
+    ("value", "width"),
+    [
+        # A rank would take the device after the list ends.
+        ("1,2", 1),
+        ("", 1),
+        ("1,,2", 3),
+        # Two ranks on one device measure each other.
+        ("1,1", 2),
+        ("cuda:1", 1),
+        ("-1", 1),
+        # Whitespace around an index is fine; an empty element is not.
+        (" 1 ,, 2 ", 3),
+    ],
+)
+def test_a_pin_that_is_not_one_device_per_rank_is_refused(value, width) -> None:
+    with pytest.raises(SystemExit):
+        _plan(visible_devices=value, local_world_size=width)
+
+
+def test_a_whitespaced_pin_reaches_the_ranks_normalized() -> None:
+    payload = _plan(visible_devices=" 1 , 2 ", local_world_size=2)
+
+    assert payload["visible_devices"] == "1,2"
+    for job in payload["jobs"]:
+        assert _environment(job["command"])["CUDA_VISIBLE_DEVICES"] == "1,2"
+
+
+def test_every_probe_takes_the_device_its_local_rank_names() -> None:
+    # The pin is only a complete answer to "which device does this rank use"
+    # because each probe resolves its device from its local rank and nothing
+    # else. A probe that read a device number from anywhere else would be one
+    # this launcher's pin could not reach.
+    for probe in sorted(plan.PROBES):
+        source = (ROOT / "tools" / f"probe_cuda_multinode_{probe}.py").read_text(
+            encoding="utf-8"
+        )
+        assert 'torch.device("cuda", local_rank)' in source, probe
+
+
 # --- the checks that answer a question a timeout would otherwise answer ------
 
 
@@ -596,6 +670,100 @@ def test_preflight_asks_every_question_it_is_meant_to_ask(tmp_path: Path) -> Non
         "rendezvous_port_is_free",
     }
     assert all(check.ok for check in checks), [c for c in checks if not c.ok]
+
+
+def test_preflight_asks_no_device_pinning_question_when_none_were_pinned(
+    tmp_path: Path,
+) -> None:
+    checks = plan.preflight(
+        peer_host="peer-node",
+        peer_address="127.0.0.1",
+        launch_address="127.0.0.1",
+        interface="ens22f0",
+        master_port=0,
+        python=PYTHON,
+        interface_root=_interface_root(tmp_path),
+        run=_answers(
+            {"hostname": (0, "peer-node\n"), "nvidia-smi": (0, "0, 4, 81920, 0\n")}
+        ),
+    )
+
+    # A check for a decision this tool did not make would report a verdict
+    # about something else, so an unpinned lane is asked nothing about devices.
+    assert not [check for check in checks if "pinned" in check.name]
+
+
+def test_preflight_checks_each_device_a_lane_pinned_on_both_nodes(
+    tmp_path: Path,
+) -> None:
+    checks = plan.preflight(
+        peer_host="peer-node",
+        peer_address="127.0.0.1",
+        launch_address="127.0.0.1",
+        interface="ens22f0",
+        master_port=0,
+        python=PYTHON,
+        visible_devices="1",
+        interface_root=_interface_root(tmp_path),
+        run=_answers(
+            {
+                # Keyed first, because the fragment also appears inside the
+                # ssh-wrapped copy: one answer for both nodes, which is what
+                # makes this an idle pair.
+                "-i 1 --query-compute-apps": (0, ""),
+                "hostname": (0, "peer-node\n"),
+                "nvidia-smi": (0, "0, 4, 81920, 0\n"),
+            }
+        ),
+    )
+    by_name = {check.name: check for check in checks}
+
+    assert {
+        "launch_host_has_every_pinned_device",
+        "peer_has_every_pinned_device",
+    } <= set(by_name)
+    assert all(check.ok for check in checks), [c for c in checks if not c.ok]
+    # The reading is reported, not only the verdict: a lane that records a
+    # pass should record what it saw.
+    assert "1: idle" in by_name["launch_host_has_every_pinned_device"].detail
+
+
+@pytest.mark.parametrize(
+    ("answer", "expected"),
+    [
+        # Occupied: the probe would measure its neighbour's memory as its peak.
+        ((0, "35856\n"), "1: 1 process(es) 35856"),
+        # Absent: nvidia-smi answers a missing index with a non-zero exit.
+        ((6, "No devices were found\n"), "absent"),
+    ],
+)
+def test_preflight_refuses_a_pinned_device_that_is_not_usable(
+    tmp_path: Path, answer: tuple[int, str], expected: str
+) -> None:
+    checks = plan.preflight(
+        peer_host="peer-node",
+        peer_address="127.0.0.1",
+        launch_address="127.0.0.1",
+        interface="ens22f0",
+        master_port=0,
+        python=PYTHON,
+        visible_devices="1",
+        interface_root=_interface_root(tmp_path),
+        run=_answers(
+            {
+                "-i 1 --query-compute-apps": answer,
+                "hostname": (0, "peer-node\n"),
+                "nvidia-smi": (0, "0, 4, 81920, 0\n"),
+            }
+        ),
+    )
+    failed = {check.name: check for check in checks if not check.ok}
+
+    assert set(failed) == {
+        "launch_host_has_every_pinned_device",
+        "peer_has_every_pinned_device",
+    }, failed
+    assert expected in failed["launch_host_has_every_pinned_device"].detail
 
 
 def test_preflight_refuses_when_the_peer_cannot_be_reached(tmp_path: Path) -> None:

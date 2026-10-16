@@ -108,7 +108,7 @@ def test_full_state_target_keeps_the_materialized_state_as_a_floor() -> None:
     assert plan.state_bytes == estimate_tensor_network_bytes(circuit.n_wires)
     assert plan.state_bytes == estimate_execution_state_bytes(
         "tensor_network",
-        n_wires=circuit.n_wires,
+        n_qubits=circuit.n_qubits,
         bsz=1,
         complex_bytes=8,
         max_bond=None,
@@ -181,7 +181,7 @@ def test_selection_context_peak_matches_the_execution_estimate() -> None:
 
     assert context.tensor_network_peak_bytes == estimate_execution_state_bytes(
         "tensor_network",
-        n_wires=circuit.n_wires,
+        n_qubits=circuit.n_qubits,
         bsz=1,
         complex_bytes=8,
         max_bond=None,

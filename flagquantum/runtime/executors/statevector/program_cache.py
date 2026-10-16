@@ -1,6 +1,6 @@
 """Reuse of relabelled statevector programs across executions.
 
-A persistent wire layout relabels the program while a circuit runs, and the same
+A persistent qubit layout relabels the program while a circuit runs, and the same
 relabelling recurs on every execution of the same circuit. Rebuilding through
 ``dataclasses.replace`` re-validates every parameter the instruction carries, and
 validating an accelerator-resident angle decides finiteness by reading the value
@@ -19,7 +19,7 @@ from dataclasses import replace
 
 from ....core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 
-#: Bound on every cache in this module. Layouts are per (wire structure,
+#: Bound on every cache in this module. Layouts are per (qubit structure,
 #: parameter identity) and a program has few of them, so the bound is only a
 #: guard against an unbounded program generator.
 PROGRAM_CACHE_LIMIT = 128
@@ -30,7 +30,7 @@ _REMAPPED_PROGRAM_CACHE: dict[
         tuple[Instruction, ...], tuple[ObservableNode, ...], tuple[MeasurementNode, ...]
     ],
 ] = {}
-#: Keyed by source instruction identity and destination wires. The value keeps
+#: Keyed by source instruction identity and destination qubits. The value keeps
 #: the source instruction alive, so its id cannot be recycled while the entry
 #: exists, and the rebuilt instruction is exactly the one that source produces.
 _REMAPPED_INSTRUCTION_CACHE: dict[
@@ -58,23 +58,23 @@ def _parameter_identity(ir: CircuitIR) -> tuple[tuple[int, ...], ...]:
     )
 
 
-def remap_instruction_wires(
+def remap_instruction_qubits(
     instruction: Instruction, mapping: Sequence[int]
 ) -> Instruction:
-    """Relabel one instruction's wires without re-validating its parameters.
+    """Relabel one instruction's qubits without re-validating its parameters.
 
-    An instruction whose wires do not move is returned unchanged: the sweep
-    relabels every instruction whether or not its wires are affected, and
+    An instruction whose qubits do not move is returned unchanged: the sweep
+    relabels every instruction whether or not its qubits are affected, and
     skipping the rebuild is what keeps the finiteness read from happening at all.
     """
 
-    wires = tuple(int(mapping[int(wire)]) for wire in instruction.wires)
-    if wires == tuple(int(wire) for wire in instruction.wires):
+    qubits = tuple(int(mapping[int(qubit)]) for qubit in instruction.wires)
+    if qubits == tuple(int(qubit) for qubit in instruction.wires):
         return instruction
-    key = (id(instruction), wires)
+    key = (id(instruction), qubits)
     entry = _REMAPPED_INSTRUCTION_CACHE.get(key)
     if entry is None:
-        entry = (instruction, replace(instruction, wires=wires))
+        entry = (instruction, replace(instruction, wires=qubits))
         if len(_REMAPPED_INSTRUCTION_CACHE) >= PROGRAM_CACHE_LIMIT:
             _REMAPPED_INSTRUCTION_CACHE.pop(next(iter(_REMAPPED_INSTRUCTION_CACHE)))
         _REMAPPED_INSTRUCTION_CACHE[key] = entry
@@ -88,9 +88,9 @@ def remapped_program(
 ) -> tuple[
     tuple[Instruction, ...], tuple[ObservableNode, ...], tuple[MeasurementNode, ...]
 ]:
-    """Relabel a whole program's wires, reusing the previous result when possible.
+    """Relabel a whole program's qubits, reusing the previous result when possible.
 
-    The relabelled program depends only on the wire structure and on which
+    The relabelled program depends only on the qubit structure and on which
     parameter objects are carried, so both are part of the key. The returned
     tuples are shared; the caller still builds its own ``CircuitIR`` because
     ``ir.metadata`` is a plain mutable mapping that a caller may edit.
@@ -100,8 +100,8 @@ def remapped_program(
     program = _REMAPPED_PROGRAM_CACHE.get(program_key)
     if program is None:
 
-        def remap(wires: Sequence[int]) -> tuple[int, ...]:
-            return tuple(mapping[int(wire)] for wire in wires)
+        def remap(qubits: Sequence[int]) -> tuple[int, ...]:
+            return tuple(mapping[int(qubit)] for qubit in qubits)
 
         program = (
             tuple(

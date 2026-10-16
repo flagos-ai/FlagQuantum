@@ -223,18 +223,18 @@ def apply_gate_pair(
     imag: torch.Tensor,
     matrix_real: torch.Tensor,
     matrix_imag: torch.Tensor,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Apply one split-complex gate matrix to a flat statevector."""
 
-    wires = tuple(int(wire) for wire in wires)
-    remaining = tuple(wire for wire in range(n_wires) if wire not in wires)
-    permutation = remaining + wires
-    inverse = tuple(permutation.index(wire) for wire in range(n_wires))
-    gate_dimension = 2 ** len(wires)
-    logical_shape = (2,) * n_wires
+    qubits = tuple(int(qubit) for qubit in qubits)
+    remaining = tuple(qubit for qubit in range(n_qubits) if qubit not in qubits)
+    permutation = remaining + qubits
+    inverse = tuple(permutation.index(qubit) for qubit in range(n_qubits))
+    gate_dimension = 2 ** len(qubits)
+    logical_shape = (2,) * n_qubits
     values_real = (
         real.reshape(logical_shape).permute(permutation).reshape(-1, gate_dimension)
     )
@@ -259,21 +259,21 @@ def pauli_term_expectation(
     ops: Sequence[tuple[int, str]],
     coefficient: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> torch.Tensor:
     """Evaluate one real-coefficient Pauli term with split FP32 tensors."""
 
     transformed_real = real
     transformed_imag = imag
-    for wire, name in ops:
+    for qubit, name in ops:
         matrix_real, matrix_imag = fixed_matrix_pair(name, device=real.device)
         transformed_real, transformed_imag = apply_gate_pair(
             transformed_real,
             transformed_imag,
             matrix_real,
             matrix_imag,
-            (wire,),
-            n_wires=n_wires,
+            (qubit,),
+            n_qubits=n_qubits,
         )
     overlap = torch.sum(real * transformed_real + imag * transformed_imag)
     weight = torch.as_tensor(coefficient, device=real.device, dtype=torch.float32)
@@ -286,21 +286,21 @@ def double_single_pauli_term_expectation(
     ops: Sequence[tuple[int, str]],
     coefficient: Any,
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> DoubleSingleTensor:
     """Evaluate one Pauli term with Double-Single overlap reduction."""
 
     transformed_real = real
     transformed_imag = imag
-    for wire, name in ops:
+    for qubit, name in ops:
         matrix_real, matrix_imag = fixed_matrix_pair(name, device=real.device)
         transformed_real, transformed_imag = apply_gate_pair(
             transformed_real,
             transformed_imag,
             matrix_real,
             matrix_imag,
-            (wire,),
-            n_wires=n_wires,
+            (qubit,),
+            n_qubits=n_qubits,
         )
     overlap = double_single_dot(real, transformed_real).add(
         double_single_dot(imag, transformed_imag)
@@ -326,7 +326,7 @@ def run_split_real_imag_statevector(
             matrix_real,
             matrix_imag,
             instruction.wires,
-            n_wires=ir.n_wires,
+            n_qubits=ir.n_wires,
         )
     return real, imag
 

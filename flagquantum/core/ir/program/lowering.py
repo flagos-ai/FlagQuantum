@@ -1,7 +1,7 @@
 """Deriving the program level's value graph from a public circuit, and back.
 
 `circuit_to_program` is a real lowering. It reads each instruction's opcode
-signature, declares one live qubit value per wire, chains every gate's consumed
+signature, declares one live qubit value per qubit, chains every gate's consumed
 value into the successor it defines, and binds every declared parameter to a
 `scalar` value defined by a `constant` operation. The result is a straight-line
 single-entry block whose value flow is the circuit's data flow.
@@ -9,10 +9,10 @@ single-entry block whose value flow is the circuit's data flow.
 `program_to_circuit` is the inverse, and it runs *before* the recorded payload is
 restored: the operation graph is re-derived into an instruction sequence, and that
 sequence must agree with the sequence the recorded payload states. A record whose
-graph was edited -- a dropped operation, a rewired operand, a retyped result --
-therefore refuses instead of being reported as an exact round trip. The payload
-itself is then restored and re-canonicalized, which catches a payload that decodes
-but does not re-encode to the recorded form.
+graph was edited -- a dropped operation, an operand re-bound to another value, a
+retyped result -- therefore refuses instead of being reported as an exact round
+trip. The payload itself is then restored and re-canonicalized, which catches a
+payload that decodes but does not re-encode to the recorded form.
 
 The payload is an attestation, not a source. `MULTI_LEVEL_IR_ARCHITECTURE.md`
 section 5.5 keeps observables, measurements, and metadata with the request rather
@@ -127,8 +127,8 @@ def classify_public_circuit(program: Any) -> LevelConversion:
 def _lower_instructions(circuit: CircuitIR) -> BlockRecord:
     """Build the entry block whose operations realize `circuit`'s instructions.
 
-    The block declares one live qubit value per wire, and each instruction
-    consumes the value its wire currently holds and defines that wire's successor.
+    The block declares one live qubit value per qubit, and each instruction
+    consumes the value its qubit currently holds and defines that qubit's successor.
     A parameter becomes a `constant` operation defining a `scalar` value that the
     gate operation binds by name, so a parameter is a value with a def-use rather
     than a literal embedded in an operation.
@@ -220,8 +220,8 @@ def circuit_to_program(program: Any) -> LevelConversion:
 def _reproduce_instructions(entry: BlockRecord) -> list[tuple[str, tuple[int, ...]]]:
     """Re-derive the instruction sequence one block's value graph states.
 
-    Returns one `(opcode, wire indices)` pair per non-constant operation, in
-    order. A wire index is recovered from the position of the value the operand
+    Returns one `(opcode, qubit indices)` pair per non-constant operation, in
+    order. A qubit index is recovered from the position of the value the operand
     holds, which is the inverse of the numbering `_lower_instructions` performs.
     An operation that consumes a value the block never defined, or that pairs a
     different number of operands and results, ends the derivation: the caller

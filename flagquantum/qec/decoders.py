@@ -54,7 +54,7 @@ class RepetitionLookupDecoder:
     def decode(self, syndrome_history: Sequence[SyndromeRound]) -> DecodeResult:
         history = _validate_repetition_history(syndrome_history)
         wire = _repetition_wire(history[-1].bits)
-        correction = Correction(round_index=history[-1].round_index, wire=wire)
+        correction = Correction(round_index=history[-1].round_index, qubit=wire)
         corrections = (correction,)
         return DecodeResult(
             consumed_rounds=len(history),
@@ -70,7 +70,7 @@ class RepetitionStreamingLookupDecoder:
     def decode_round(self, syndrome_history: Sequence[SyndromeRound]) -> Correction:
         history = _validate_repetition_history(syndrome_history)
         wire = _repetition_wire(history[-1].bits)
-        return Correction(round_index=history[-1].round_index, wire=wire)
+        return Correction(round_index=history[-1].round_index, qubit=wire)
 
 
 @dataclass(frozen=True)
@@ -111,7 +111,7 @@ class RepetitionTemporalDecoder:
             and not latest.detection_events
         ):
             wire = _repetition_wire(latest.bits)
-        return Correction(round_index=latest.round_index, wire=wire)
+        return Correction(round_index=latest.round_index, qubit=wire)
 
 
 __all__ = (

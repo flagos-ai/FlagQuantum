@@ -127,6 +127,9 @@ def comparison_profile(payload: Mapping[str, Any]) -> dict[str, Any]:
                 ),
             }
         )
+    for name in ("cpu_model", "cpu_affinity"):
+        if environment.get(name) is not None:
+            profile[name] = environment[name]
     return profile
 
 
@@ -207,17 +210,23 @@ def evaluate(
     schemas = {baseline.get("schema"), current.get("schema")}
     if len(schemas) != 1 or current.get("schema") not in SUPPORTED_SCHEMAS:
         raise ValueError("baseline and current must use the same supported schema")
-    if comparison_engine is not None and current.get("schema") != (
-        "flagquantum.batched_statevector_memory.v1"
-    ):
-        raise ValueError("comparison_engine is supported only for batched statevectors")
+    if comparison_engine is not None and current.get("schema") not in {
+        "flagquantum.batched_statevector_memory.v1",
+        "flagquantum.simulator_workload_corpus.v1",
+    }:
+        raise ValueError(
+            "comparison_engine is supported only for statevector simulator corpora"
+        )
 
     baseline_profile = comparison_profile(baseline)
     current_profile = comparison_profile(current)
     profile_differences = {
-        name: {"baseline": baseline_profile[name], "current": current_profile[name]}
-        for name in baseline_profile
-        if baseline_profile[name] != current_profile[name]
+        name: {
+            "baseline": baseline_profile.get(name),
+            "current": current_profile.get(name),
+        }
+        for name in sorted(set(baseline_profile) | set(current_profile))
+        if baseline_profile.get(name) != current_profile.get(name)
     }
     if profile_differences:
         return {
@@ -242,6 +251,10 @@ def evaluate(
         correctness_engines = (
             _mapping(correctness.get("engines"), "case.correctness.engines")
             if current["schema"] == "flagquantum.batched_statevector_memory.v1"
+            or (
+                current["schema"] == "flagquantum.simulator_workload_corpus.v1"
+                and comparison_engine is not None
+            )
             else {}
         )
         stability = _mapping(current_case.get("stability"), "case.stability")
@@ -361,67 +374,85 @@ def evaluate(
                 "current_over_baseline": memory_ratio,
                 "passed": memory_passed,
             }
-            if comparison_engine is not None:
-                current_engines = _mapping(current_case.get("engines"), "case.engines")
-                comparison = current_engines.get(comparison_engine)
-                comparison_correctness = correctness_engines.get(comparison_engine)
-                comparison_stable = stability_engines.get(comparison_engine) is True
-                if comparison is None:
+        if comparison_engine is not None:
+            current_engines = _mapping(current_case.get("engines"), "case.engines")
+            baseline_engines = _mapping(
+                baseline_cases[key].get("engines"), "baseline.engines"
+            )
+            comparison = current_engines.get(comparison_engine)
+            baseline_comparison = baseline_engines.get(comparison_engine)
+            comparison_correctness = correctness_engines.get(comparison_engine)
+            comparison_stable = stability_engines.get(comparison_engine) is True
+            if comparison is None:
+                case_failures.append(f"comparison engine missing: {comparison_engine}")
+            elif comparison_correctness is None:
+                case_failures.append(
+                    f"comparison correctness missing: {comparison_engine}"
+                )
+            else:
+                comparison_payload = _mapping(comparison, comparison_engine)
+                baseline_comparison_payload = (
+                    _mapping(baseline_comparison, f"baseline.{comparison_engine}")
+                    if baseline_comparison is not None
+                    else None
+                )
+                metric_name = (
+                    "batch_total"
+                    if current["schema"] == "flagquantum.batched_statevector_memory.v1"
+                    else "end_to_end"
+                )
+                comparison_timing = _mapping(
+                    comparison_payload.get(metric_name),
+                    f"{comparison_engine}.{metric_name}",
+                )
+                comparison_seconds = float(comparison_timing["median_seconds"])
+                comparison_samples = int(comparison_timing["sample_count"])
+                native_seconds = float(current_metrics[metric_name]["median_seconds"])
+                versions_match = baseline_comparison_payload is None or (
+                    comparison_payload.get("versions")
+                    == baseline_comparison_payload.get("versions")
+                )
+                if not math.isfinite(comparison_seconds) or comparison_seconds <= 0:
+                    raise ValueError(
+                        f"{key}: comparison engine median must be positive"
+                    )
+                comparison_ratio = native_seconds / comparison_seconds
+                comparison_passed = (
+                    comparison_samples >= minimum_samples
+                    and comparison_stable
+                    and versions_match
+                    and _mapping(comparison_correctness, "comparison correctness").get(
+                        "passed"
+                    )
+                    is True
+                    and comparison_ratio <= max_native_over_comparison
+                )
+                if comparison_samples < minimum_samples:
                     case_failures.append(
-                        f"comparison engine missing: {comparison_engine}"
+                        f"{comparison_engine} has {comparison_samples} samples; "
+                        f"requires {minimum_samples}"
                     )
-                elif comparison_correctness is None:
+                if not comparison_stable:
                     case_failures.append(
-                        f"comparison correctness missing: {comparison_engine}"
+                        f"comparison measurement stability failed: {comparison_engine}"
                     )
-                else:
-                    comparison_timing = _mapping(
-                        _mapping(comparison, comparison_engine).get("batch_total"),
-                        f"{comparison_engine}.batch_total",
+                if not versions_match:
+                    case_failures.append(
+                        f"comparison engine versions changed: {comparison_engine}"
                     )
-                    comparison_seconds = float(comparison_timing["median_seconds"])
-                    comparison_samples = int(comparison_timing["sample_count"])
-                    native_seconds = float(
-                        _mapping(current_engine.get("batch_total"), "batch_total")[
-                            "median_seconds"
-                        ]
+                if comparison_ratio > max_native_over_comparison:
+                    case_failures.append(
+                        f"native/comparison ratio {comparison_ratio:.3f} exceeds "
+                        f"{max_native_over_comparison:.3f} for {comparison_engine}"
                     )
-                    if not math.isfinite(comparison_seconds) or comparison_seconds <= 0:
-                        raise ValueError(
-                            f"{key}: comparison engine median must be positive"
-                        )
-                    comparison_ratio = native_seconds / comparison_seconds
-                    comparison_passed = (
-                        comparison_samples >= minimum_samples
-                        and comparison_stable
-                        and _mapping(
-                            comparison_correctness, "comparison correctness"
-                        ).get("passed")
-                        is True
-                        and comparison_ratio <= max_native_over_comparison
-                    )
-                    if comparison_samples < minimum_samples:
-                        case_failures.append(
-                            f"{comparison_engine} has {comparison_samples} samples; "
-                            f"requires {minimum_samples}"
-                        )
-                    if not comparison_stable:
-                        case_failures.append(
-                            f"comparison measurement stability failed: {comparison_engine}"
-                        )
-                    if comparison_ratio > max_native_over_comparison:
-                        case_failures.append(
-                            f"native/comparison ratio {comparison_ratio:.3f} exceeds "
-                            f"{max_native_over_comparison:.3f} for {comparison_engine}"
-                        )
-                    metric_rows["comparison"] = {
-                        "engine": comparison_engine,
-                        "native_median_seconds": native_seconds,
-                        "comparison_median_seconds": comparison_seconds,
-                        "comparison_sample_count": comparison_samples,
-                        "native_over_comparison": comparison_ratio,
-                        "passed": comparison_passed,
-                    }
+                metric_rows["comparison"] = {
+                    "engine": comparison_engine,
+                    "native_median_seconds": native_seconds,
+                    "comparison_median_seconds": comparison_seconds,
+                    "comparison_sample_count": comparison_samples,
+                    "native_over_comparison": comparison_ratio,
+                    "passed": comparison_passed,
+                }
         if case_failures:
             failures.extend(f"{key}: {message}" for message in case_failures)
         rows.append(
@@ -450,16 +481,16 @@ def evaluate(
                 {
                     "max_memory_growth": max_memory_growth,
                     "minimum_memory_probes": minimum_memory_probes,
-                    **(
-                        {
-                            "comparison_engine": comparison_engine,
-                            "max_native_over_comparison": max_native_over_comparison,
-                        }
-                        if comparison_engine is not None
-                        else {}
-                    ),
                 }
                 if current["schema"] == "flagquantum.batched_statevector_memory.v1"
+                else {}
+            ),
+            **(
+                {
+                    "comparison_engine": comparison_engine,
+                    "max_native_over_comparison": max_native_over_comparison,
+                }
+                if comparison_engine is not None
                 else {}
             ),
         },

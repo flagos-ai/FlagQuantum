@@ -172,6 +172,27 @@ class MinimumWeightMatchingDecoder:
             max_defects=max_defects,
         )
 
+    @classmethod
+    def from_decoding_graph(
+        cls,
+        graph: DecodingGraph,
+        *,
+        max_defects: int = _DEFAULT_DEFECT_BUDGET,
+    ) -> MinimumWeightMatchingDecoder:
+        """Build the decoder for a decoding graph a caller already holds.
+
+        A graph is already the thing this decoder searches, so there is nothing to
+        derive here: the route exists because the registry builds every registered
+        name from each of the three carriers a caller can hold a model in, and a
+        name that could not be built from a graph would be a name whose carriers
+        depend on which name was asked for.
+
+        Raises:
+            TypeError: The argument is not a decoding graph.
+        """
+
+        return cls(graph=graph, max_defects=max_defects)
+
     def decode(self, detection_events: Iterable[int]) -> MatchingDecodeResult:
         """Return the cheapest explanation of a syndrome and its logical flips.
 

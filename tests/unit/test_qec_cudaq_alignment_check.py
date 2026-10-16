@@ -92,7 +92,7 @@ def set_key(text: str, row_id: str, key: str, value: str | None) -> str:
                 # Rename rather than delete: the checker must notice a missing
                 # key, not a syntactically broken file.
                 indent = lines[i][: len(lines[i]) - len(stripped)]
-                lines[i] = f"{indent}{key}_renamed{stripped[len(key):]}"
+                lines[i] = f"{indent}{key}_renamed{stripped[len(key) :]}"
             else:
                 indent = lines[i][: len(lines[i]) - len(stripped)]
                 lines[i] = f"{indent}{value}\n"
@@ -112,7 +112,11 @@ def set_header_key(text: str, key: str, value: str) -> str:
 
 
 def append_to_list(text: str, row_id: str, key: str, item: str) -> str:
-    """Append one entry to a single-line or multi-line list inside a row."""
+    """Append one unquoted entry to a single-line or multi-line list inside a row.
+
+    ``item`` is the bare name; the quotes are supplied here for either shape, so a
+    caller does not have to know which one the row it targets is written in.
+    """
 
     lines = text.splitlines(keepends=True)
     start, end = block_span(lines, row_id)
@@ -123,7 +127,7 @@ def append_to_list(text: str, row_id: str, key: str, item: str) -> str:
             if stripped.rstrip().endswith("]"):
                 body = stripped.rstrip()[:-1].rstrip()
                 sep = "" if body.endswith("[") else ", "
-                lines[i] = f"{indent}{body}{sep}{item}]\n"
+                lines[i] = f'{indent}{body}{sep}"{item}"]\n'
             else:
                 lines.insert(i + 1, f'{indent}    "{item}",\n')
             return "".join(lines)
@@ -258,13 +262,7 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
     (
         "override the matrix priority without stating why",
         "floor_override_reason",
-        lambda t: sub_in_key(
-            t,
-            "qec_dem_chunking",
-            "floor_override_reason",
-            "floor_override_reason = ",
-            "floor_override_reason_x = ",
-        ),
+        lambda t: set_key(t, "qec_code_record", "floor", 'floor = "later"'),
     ),
     (
         "drop the floor_override_reason where no matrix row backs the floor",
@@ -283,10 +281,19 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         lambda t: set_key(t, "qec_dialect", "fail_closed", 'fail_closed = ""'),
     ),
     (
-        "drop the next_action from a partial row",
+        # `next_action` is required of every row that is not `aligned`, so this
+        # mutation does not need a `partial` row and must not borrow one. It was
+        # planted in `qec_stim_sampling_join` until that row converged on its own
+        # target, at which point the mutation could not be applied at all -- the
+        # row no longer has the key -- rather than failing for its own reason.
+        # `qec_decoder_configuration` is `absent`, is reached by the same single
+        # loop that requires `next_action` of a `partial` row, and is the row
+        # furthest from converging: nothing but a second selectable decoder moves
+        # it.
+        "drop the next_action from a row that must state one",
         "next_action is empty",
         lambda t: set_key(
-            t, "qec_stim_sampling_join", "next_action", 'next_action = ""'
+            t, "qec_decoder_configuration", "next_action", 'next_action = ""'
         ),
     ),
     (
@@ -299,16 +306,65 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         lambda t: set_key(t, "qec_dem_merge", "symbols_present", None),
     ),
     (
+        # Alignment is a claim about a row's own surface, not a licence to stop
+        # pointing at it: the row this is planted in is the one the handle layer
+        # closed, and an aligned row is exactly where a symbol that stopped
+        # resolving would otherwise go unnoticed.
+        "stop a handle symbol resolving in a row that claims alignment",
+        "does not resolve",
+        lambda t: sub_in_key(
+            t,
+            "qec_detector_annotations",
+            "symbols_present",
+            "flagquantum.qec.MeasurementSamples",
+            "flagquantum.qec.MeasurementSamplesGone",
+        ),
+    ),
+    (
+        # An absence is a live claim, so the day the symbol it names exists the
+        # row is stale rather than merely out of date: this is the mutation that
+        # fails if the handle layer is ever deleted while the row keeps saying
+        # the layer is absent.
+        "keep an absence standing after the handle layer closed it",
+        "now resolves -- the gap closed, so this row is stale",
+        lambda t: append_to_list(
+            t,
+            "qec_detector_annotations",
+            "symbols_absent",
+            "flagquantum.qec.MeasurementSamples",
+        ),
+    ),
+    (
+        # `next_action` is required of a partial or absent row and of no other,
+        # so this is the other half of that rule: an aligned row may drop it,
+        # and must still state what it is for.
+        "leave a row that dropped its next_action without a target",
+        "target is empty",
+        lambda t: set_key(t, "qec_detector_annotations", "target", 'target = ""'),
+    ),
+    (
+        # The mutation writes the status it is about instead of borrowing
+        # whichever row happens to be `partial`. It was planted in
+        # `qec_dem_matrices_and_rates`, then `qec_dem_construction`, then
+        # `qec_dem_text_interchange`, and each row in turn converged on its own
+        # target and left the mutation firing the `aligned` message rather than
+        # this one. Writing the status is what makes the mutation test the branch
+        # rather than the checklist's current state.
         "leave a partial row with nothing present",
         "must name the symbols_present entry",
-        lambda t: set_key(t, "qec_dem_matrices_and_rates", "symbols_present", None),
+        lambda t: set_key(
+            set_key(t, "qec_dem_merge", "symbols_present", None),
+            "qec_dem_merge",
+            "status",
+            'status = "partial"',
+        ),
     ),
     (
         "leave a gap row with no proof at all",
         "must prove the gap",
         lambda t: set_key(
-            set_key(t, "qec_dem_chunking", "symbols_absent", None),
-            "qec_dem_chunking",
+            set_key(t, "qec_decoder_configuration", "symbols_absent", None),
+            "qec_decoder_configuration",
             "negative_search",
             None,
         ),
@@ -343,10 +399,21 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         lambda t: set_key(t, "dem_error_ids", "cudaq_symbol", 'cudaq_symbol = ""'),
     ),
     (
+        # The mark is planted rather than borrowed from a row that already
+        # carries it, because the contract ships with none: every upstream
+        # negative in it is now pinned to the revision it was taken at. A
+        # mutation that took the mark off an existing row would have stopped
+        # testing the rule the day the last row was settled, and would have gone
+        # on passing while testing nothing if a row dropped the mark without
+        # saying so.
         "mark a row unverified without saying so in the row",
         "does not say UNVERIFIED",
         lambda t: sub_in_key(
-            t, "dem_to_stim_text", "note", "UNVERIFIED", "unconfirmed"
+            t,
+            "dem_carrier",
+            "verdict",
+            'verdict = "reshaped"',
+            'verdict = "reshaped"\nprovenance_unverified = true',
         ),
     ),
     (
@@ -424,17 +491,21 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         ),
     ),
     (
-        # The row's additions are recorded as named absences and one of them has
-        # landed. Leaving it in symbols_absent is how a closed gap keeps being
-        # reported as open, which is what the staleness check reads the tree to
-        # catch.
+        # The column this looks for has landed, so listing it as absent is how a
+        # closed gap keeps being reported as open -- which is what the staleness
+        # check reads the tree to catch. The name is planted in the row that
+        # consumes the column rather than in the row whose surface it closed,
+        # because the check resolves the name against the checkout and does not
+        # care which row is doing the reporting. The item is bare because this
+        # row's list is written one entry per line, and the mutator supplies the
+        # quotes itself for that shape.
         "keep the error-id column listed as absent now that the model states it",
         "symbols_absent 'error_ids' exists as a definition somewhere",
         lambda t: append_to_list(
             t,
-            "qec_dem_matrices_and_rates",
+            "qec_decoder_family",
             "symbols_absent",
-            '"error_ids"',
+            "error_ids",
         ),
     ),
 ]

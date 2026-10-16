@@ -20,7 +20,7 @@ measured operator although neither factor does. The kernel is what
 kernel together with the operators the round measured.
 
 **A schedule is not yet a code.** Every schedule settles eventually, because there
-are finitely many subgroups of the ``n``-wire Pauli group and the round map is
+are finitely many subgroups of the ``n``-qubit Pauli group and the round map is
 deterministic, so what a schedule can fail to do is settle *soon* -- and a budget
 is stated, with a schedule that has not settled inside it refused rather than
 reported with a count read off a group that is still moving. What it can also fail
@@ -134,7 +134,7 @@ def _centralizer(rows: tuple[int, ...], width: int) -> tuple[int, ...]:
 
     The pairing of an unknown operator with a known one is linear in the unknown's
     ``2 * width`` bits, and the coefficient of an ``X`` bit is the known row's
-    ``Z`` factor on that wire while the coefficient of a ``Z`` bit is its ``X``
+    ``Z`` factor on that qubit while the coefficient of a ``Z`` bit is its ``X``
     factor. A basis of the paired-out rows' null space is therefore a basis of the
     centralizer.
     """
@@ -188,7 +188,7 @@ def _least_logical_weight(*, width: int, group: tuple[int, ...], bound: int) -> 
 
 
 def _support(row: int, width: int) -> int:
-    """Return the number of wires the masked operator acts on non-trivially."""
+    """Return the number of qubits the masked operator acts on non-trivially."""
 
     return sum(
         1 for wire in range(width) if (row >> wire) & 1 or (row >> (width + wire)) & 1
@@ -199,8 +199,8 @@ def _to_pauli(row: int, width: int) -> Pauli:
     """Return the operator a symplectic mask names."""
 
     return Pauli(
-        x_wires=tuple(wire for wire in range(width) if (row >> wire) & 1),
-        z_wires=tuple(wire for wire in range(width) if (row >> (width + wire)) & 1),
+        x_qubits=tuple(wire for wire in range(width) if (row >> wire) & 1),
+        z_qubits=tuple(wire for wire in range(width) if (row >> (width + wire)) & 1),
     )
 
 
@@ -253,7 +253,7 @@ class MeasurementPhase:
         >>> from flagquantum.qec import MeasurementPhase, Pauli
         >>> phase = MeasurementPhase(
         ...     name="even-edges-z",
-        ...     operators=(Pauli(z_wires=(0, 1)), Pauli(z_wires=(2, 3))),
+        ...     operators=(Pauli(z_qubits=(0, 1)), Pauli(z_qubits=(2, 3))),
         ... )
         >>> (phase.name, phase.num_operators, phase.num_independent_operators)
         ('even-edges-z', 2, 2)
@@ -315,7 +315,7 @@ class FloquetCode:
 
     ``phases`` is one period, measured in order and then repeated. ``num_qubits`` is
     the width the operators act on, and it is stated rather than derived from them,
-    because a period that happens not to touch a wire still has to say that the wire
+    because a period that happens not to touch a qubit still has to say that the qubit
     is there. ``max_rounds`` bounds the search for the settled period and
     ``distance_search_weight`` bounds the search for the least logical weight.
 
@@ -340,7 +340,7 @@ class FloquetCode:
     ``steady_stabilizer_groups`` exposes every round so that the reading is visible
     rather than asserted. Over every schedule measured -- the five hundred and
     eighty-five ring schedules below and ninety-three thousand one hundred and fifty
-    schedules of paired measurement rounds over six wires -- the rounds of a period
+    schedules of paired measurement rounds over six qubits -- the rounds of a period
     agreed on both numbers, so the lightest reading equals the first on all of them;
     the search is kept because the definition of a period's distance is a minimum over
     the period and not a reading of whichever round the propagation stopped at.
@@ -349,13 +349,13 @@ class FloquetCode:
         TypeError: If ``num_qubits``, ``max_rounds``, ``distance_search_weight`` or a
             phase is of the wrong type.
         ValueError: If the schedule is unnamed, has no phase, has two phases under one
-            name, measures a wire outside the width, has not settled inside
+            name, measures a qubit outside the width, has not settled inside
             ``max_rounds`` rounds, settles without protecting a qubit, settles with
             different rounds protecting different numbers of qubits, or has no logical
             operator within ``distance_search_weight``.
 
     Examples:
-        A schedule written out by hand on four wires, whose two rounds are stated
+        A schedule written out by hand on four qubits, whose two rounds are stated
         twice. The period is read off the groups the rounds stabilize rather than off
         the number of phases, so four phases settle into a period of two and the round
         the sequence first repeats from is the third; a phase name is what a refusal
@@ -363,8 +363,8 @@ class FloquetCode:
         two names.
 
         >>> from flagquantum.qec import FloquetCode, MeasurementPhase, Pauli
-        >>> z_edges = (Pauli(z_wires=(0, 1)), Pauli(z_wires=(2, 3)))
-        >>> x_edges = (Pauli(x_wires=(1, 2)), Pauli(x_wires=(0, 3)))
+        >>> z_edges = (Pauli(z_qubits=(0, 1)), Pauli(z_qubits=(2, 3)))
+        >>> x_edges = (Pauli(x_qubits=(1, 2)), Pauli(x_qubits=(0, 3)))
         >>> schedule = FloquetCode(
         ...     name="ring of four, stated twice",
         ...     num_qubits=4,
@@ -505,13 +505,13 @@ class FloquetCode:
 
     @property
     def num_data_qubits(self) -> int:
-        """The number of wires the period acts on."""
+        """The number of qubits the period acts on."""
 
         return self.num_qubits
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
-        """The wires the period acts on, in ascending order."""
+    def data_qubits(self) -> tuple[int, ...]:
+        """The qubits the period acts on, in ascending order."""
 
         return tuple(range(self.num_qubits))
 
@@ -594,9 +594,9 @@ class FloquetCode:
 def _ring_edges(num_qubits: int, residue: int) -> tuple[tuple[int, int], ...]:
     """Return the ring's edges whose index is ``residue`` modulo two.
 
-    The wires of an edge are returned in ascending order, because the closing edge
-    of the ring runs from the last wire back to wire zero and an operator names its
-    wires rather than its direction.
+    The qubits of an edge are returned in ascending order, because the closing edge
+    of the ring runs from the last qubit back to qubit zero and an operator names its
+    qubits rather than its direction.
     """
 
     return tuple(
@@ -609,12 +609,12 @@ def _ring_edges(num_qubits: int, residue: int) -> tuple[tuple[int, int], ...]:
 def ring_floquet_code(num_qubits: int) -> FloquetCode:
     """Return the two-phase ring, the smallest schedule this package publishes.
 
-    The ``num_qubits`` wires form one ring and its edges are split by parity: the
+    The ``num_qubits`` qubits form one ring and its edges are split by parity: the
     first phase measures ``Z`` on the even-indexed edges and the second measures
     ``X`` on the odd-indexed ones, so each round's operators are disjoint and the
     two rounds share no operator. The even edges are a perfect matching of the ring
     and so are the odd ones, which is why the width has to be even and at least
-    four: a matching of a ring needs an even number of wires, and a ring of two has
+    four: a matching of a ring needs an even number of qubits, and a ring of two has
     one edge per class and no room for a code.
 
     **Its arithmetic is derived and it is small.** The first round leaves
@@ -660,11 +660,15 @@ def ring_floquet_code(num_qubits: int) -> FloquetCode:
     phases = (
         MeasurementPhase(
             name="even-edges-z",
-            operators=tuple(Pauli(z_wires=edge) for edge in _ring_edges(num_qubits, 0)),
+            operators=tuple(
+                Pauli(z_qubits=edge) for edge in _ring_edges(num_qubits, 0)
+            ),
         ),
         MeasurementPhase(
             name="odd-edges-x",
-            operators=tuple(Pauli(x_wires=edge) for edge in _ring_edges(num_qubits, 1)),
+            operators=tuple(
+                Pauli(x_qubits=edge) for edge in _ring_edges(num_qubits, 1)
+            ),
         ),
     )
     return FloquetCode(name="two-phase ring", num_qubits=num_qubits, phases=phases)

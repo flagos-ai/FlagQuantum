@@ -17,13 +17,13 @@ shows that a Monte Carlo integral is estimated faster than classically: what the
 demonstrates is the circuit and the readout, not a speedup.
 
 **The readout is a phase, never the amplitude directly.** The two eigenphases of the
-Grover operator ``Q`` are conjugate, so a counting outcome ``y`` of ``m`` counting wires
+Grover operator ``Q`` are conjugate, so a counting outcome ``y`` of ``m`` counting qubits
 is a phase, and the amplitude is ``a = sin²(theta)`` with ``theta`` recovered from that
 phase. Reading the register's value as an amplitude is a silently wrong answer rather
 than an error, which is why :func:`maximum_likelihood_estimate` inverts the model below
 instead.
 
-**The likelihood model.** For ``m = n_counting_wires``, ``M = 2**m``, ``t = asin(sqrt(a))``
+**The likelihood model.** For ``m = n_counting_qubits``, ``M = 2**m``, ``t = asin(sqrt(a))``
 and a counting outcome ``y`` out of ``0 .. M - 1``::
 
     P(y | a) = (1 / (2 * M**2)) * [ sin²(M * t - pi * y) / sin²(t - pi * y / M)
@@ -39,7 +39,7 @@ widest gap between adjacent grid amplitudes, and the estimate is accurate to abo
 such step. That is a property of the grid, not a coverage-calibrated error bar: no
 confidence interval is computed or reported anywhere in this module.
 
-Sample keys are big-endian bit strings, one character per wire with wire 0 the most
+Sample keys are big-endian bit strings, one character per qubit with qubit 0 the most
 significant, as :meth:`flagquantum.circuit.Circuit.counts` returns them; the counting
 register's bits lead the string and the evaluation register's follow.
 
@@ -80,13 +80,13 @@ class _GroverOperator:
     The primitive layer consumes a :class:`~flagquantum.algorithms.primitives.types.
     ControlledUnitary` and applies its controlled powers, so ``Q`` is presented as one
     instead of being re-derived there. Each factor is emitted by the operator's own
-    protocol methods, and the leading ``-1`` becomes a ``z`` on the control wire: a
+    protocol methods, and the leading ``-1`` becomes a ``z`` on the control qubit: a
     controlled ``Q`` needs that phase only on the branch where it is applied, which is
     exactly what a ``z`` on the control supplies.
 
     Only the controlled power form is meaningful here. Every gate the amplitude operator
-    exposes is controlled, and ``Q``'s ``-1`` is emitted on a control wire, so there is no
-    wire-free form of ``Q`` to write: ``apply_controlled`` is the controlled form at its
+    exposes is controlled, and ``Q``'s ``-1`` is emitted on a control qubit, so there is no
+    qubit-free form of ``Q`` to write: ``apply_controlled`` is the controlled form at its
     first power, and ``apply`` has no implementation and refuses. Phase estimation, the
     only consumer, takes the power form.
     """
@@ -95,12 +95,12 @@ class _GroverOperator:
         self._operator = operator
 
     @property
-    def n_wires(self) -> int:
-        """The number of wires the operator acts on."""
-        return self._operator.n_wires
+    def n_qubits(self) -> int:
+        """The number of qubits the operator acts on."""
+        return self._operator.n_qubits
 
-    def apply(self, circuit: Circuit, wires: Sequence[int]) -> None:
-        """Refuse to append ``Q`` without a control wire.
+    def apply(self, circuit: Circuit, qubits: Sequence[int]) -> None:
+        """Refuse to append ``Q`` without a control qubit.
 
         Raises:
             NotImplementedError: Always. See the class docstring: ``Q`` is written here in
@@ -108,23 +108,23 @@ class _GroverOperator:
         """
         raise NotImplementedError(
             "the Grover operator is only expressed here in its controlled power form; "
-            "the amplitude operator's gates and the leading -1 both need a control wire"
+            "the amplitude operator's gates and the leading -1 both need a control qubit"
         )
 
     def apply_controlled(
-        self, circuit: Circuit, control: int, wires: Sequence[int]
+        self, circuit: Circuit, control: int, qubits: Sequence[int]
     ) -> None:
         """Append ``Q`` controlled on ``control``, its power form at exponent one.
 
         Args:
             circuit: The circuit to extend.
-            control: The wire ``Q`` is controlled on.
-            wires: The evaluation register's wires.
+            control: The qubit ``Q`` is controlled on.
+            qubits: The evaluation register's qubits.
         """
-        self.apply_power_controlled(circuit, control, wires, 1)
+        self.apply_power_controlled(circuit, control, qubits, 1)
 
     def apply_power_controlled(
-        self, circuit: Circuit, control: int, wires: Sequence[int], power: int
+        self, circuit: Circuit, control: int, qubits: Sequence[int], power: int
     ) -> None:
         """Append ``Q`` raised to ``power``, controlled on ``control``.
 
@@ -134,16 +134,16 @@ class _GroverOperator:
 
         Args:
             circuit: The circuit to extend.
-            control: The wire ``Q`` is controlled on.
-            wires: The evaluation register's wires.
+            control: The qubit ``Q`` is controlled on.
+            qubits: The evaluation register's qubits.
             power: The exponent, at least zero.
         """
         for _ in range(power):
             circuit.gate("z", control)
-            self._operator.apply_mark(circuit, control, wires)
-            self._operator.apply_a_dagger(circuit, control, wires)
-            self._operator.apply_zero_reflection(circuit, control, wires)
-            self._operator.apply_a(circuit, control, wires)
+            self._operator.apply_mark(circuit, control, qubits)
+            self._operator.apply_a_dagger(circuit, control, qubits)
+            self._operator.apply_zero_reflection(circuit, control, qubits)
+            self._operator.apply_a(circuit, control, qubits)
 
 
 @dataclass(frozen=True)
@@ -155,14 +155,14 @@ class AmplitudeEstimationResult:
         resolution: The largest gap between adjacent grid amplitudes at this counting
             width. The estimate is accurate to about one such step; this is a resolution,
             not a coverage-calibrated confidence interval.
-        n_counting_wires: The width of the counting register the estimate came from.
-        n_evaluation_wires: The width of the operator's own register.
+        n_counting_qubits: The width of the counting register the estimate came from.
+        n_evaluation_qubits: The width of the operator's own register.
     """
 
     estimate: float
     resolution: float
-    n_counting_wires: int
-    n_evaluation_wires: int
+    n_counting_qubits: int
+    n_evaluation_qubits: int
 
     def __post_init__(self) -> None:
         """Reject a result that is not an amplitude on a resolvable grid.
@@ -198,7 +198,7 @@ class AmplitudeEstimationResult:
         return abs(self.estimate - amplitude) <= self.resolution
 
 
-def amplitude_resolution(n_counting_wires: int) -> float:
+def amplitude_resolution(n_counting_qubits: int) -> float:
     """Return the largest gap between adjacent grid amplitudes.
 
     The estimate is drawn from the grid ``sin²(pi * j / 2**(m+1))`` for ``j`` in
@@ -207,27 +207,27 @@ def amplitude_resolution(n_counting_wires: int) -> float:
     property of the grid, not a measurement of any particular run.
 
     Args:
-        n_counting_wires: The width of the counting register, at least one.
+        n_counting_qubits: The width of the counting register, at least one.
 
     Returns:
         The widest gap between two adjacent grid amplitudes.
 
     Raises:
-        ValueError: If ``n_counting_wires`` is less than one.
+        ValueError: If ``n_counting_qubits`` is less than one.
     """
-    _validate_counting_width(n_counting_wires)
-    grid = _amplitude_grid(n_counting_wires)
+    _validate_counting_width(n_counting_qubits)
+    grid = _amplitude_grid(n_counting_qubits)
     return max(grid[index + 1] - grid[index] for index in range(len(grid) - 1))
 
 
 def maximum_likelihood_estimate(
-    counts: Mapping[str, int], n_counting_wires: int, n_evaluation_wires: int
+    counts: Mapping[str, int], n_counting_qubits: int, n_evaluation_qubits: int
 ) -> float:
     """Return the grid amplitude that best explains ``counts``.
 
-    Each count key carries every wire, so the evaluation register's bits are marginalised
+    Each count key carries every qubit, so the evaluation register's bits are marginalised
     away before the model is fitted: a key is truncated to its leading
-    ``n_counting_wires`` characters and its count accumulated onto that counting outcome.
+    ``n_counting_qubits`` characters and its count accumulated onto that counting outcome.
     Reading the keys without folding loses the evaluation register's whole share of the
     probability mass and returns a silently wrong estimate rather than an error.
 
@@ -236,51 +236,51 @@ def maximum_likelihood_estimate(
 
     Args:
         counts: The sample counts, keyed by the big-endian bit string of all
-            ``n_counting_wires + n_evaluation_wires`` wires.
-        n_counting_wires: The width of the counting register, at least one.
-        n_evaluation_wires: The width of the operator's own register, at least one.
+            ``n_counting_qubits + n_evaluation_qubits`` qubits.
+        n_counting_qubits: The width of the counting register, at least one.
+        n_evaluation_qubits: The width of the operator's own register, at least one.
 
     Returns:
         The grid amplitude with the largest likelihood, exactly one of
-        ``sin²(pi * j / 2**(n_counting_wires+1))``.
+        ``sin²(pi * j / 2**(n_counting_qubits+1))``.
 
     Raises:
         ValueError: If either register width is less than one, if ``counts`` is empty, or
-            if a count key does not carry one bit per wire.
+            if a count key does not carry one bit per qubit.
     """
-    _validate_counting_width(n_counting_wires)
-    if n_evaluation_wires < 1:
+    _validate_counting_width(n_counting_qubits)
+    if n_evaluation_qubits < 1:
         raise ValueError(
-            "the evaluation register needs at least one wire, got "
-            f"n_evaluation_wires={n_evaluation_wires}; the operator acts on a register "
+            "the evaluation register needs at least one qubit, got "
+            f"n_evaluation_qubits={n_evaluation_qubits}; the operator acts on a register "
             "and its amplitudes are what is being estimated"
         )
     if not counts:
         raise ValueError(
             "counts must not be empty; with no sample there is no likelihood to maximise"
         )
-    expected = n_counting_wires + n_evaluation_wires
+    expected = n_counting_qubits + n_evaluation_qubits
     folded: dict[str, int] = {}
     for key, count in counts.items():
         if len(key) != expected:
             raise ValueError(
                 f"count key {key!r} has {len(key)} bits, expected {expected} for a "
-                f"{n_counting_wires}-wire counting register and a "
-                f"{n_evaluation_wires}-wire evaluation register"
+                f"{n_counting_qubits}-qubit counting register and a "
+                f"{n_evaluation_qubits}-qubit evaluation register"
             )
         if count == 0:
             continue
-        counting_key = key[:n_counting_wires]
+        counting_key = key[:n_counting_qubits]
         folded[counting_key] = folded.get(counting_key, 0) + count
     # A strict improvement keeps the first, smallest amplitude on a tie.
-    grid = _amplitude_grid(n_counting_wires)
+    grid = _amplitude_grid(n_counting_qubits)
     best = grid[0]
     best_log_likelihood = -math.inf
     for amplitude in grid:
         log_likelihood = 0.0
         for counting_key, count in folded.items():
             probability = _counting_probability(
-                int(counting_key, 2), amplitude, n_counting_wires
+                int(counting_key, 2), amplitude, n_counting_qubits
             )
             log_likelihood += count * math.log(max(probability, _LIKELIHOOD_FLOOR))
         if log_likelihood > best_log_likelihood:
@@ -290,13 +290,13 @@ def maximum_likelihood_estimate(
 
 
 def amplitude_estimation_circuit(
-    operator: AmplitudeOperator, *, n_counting_wires: int
+    operator: AmplitudeOperator, *, n_counting_qubits: int
 ) -> Circuit:
     """Build the amplitude estimation circuit for ``operator``.
 
     The circuit prepares the operator's own register, then runs phase estimation over
     ``operator``'s Grover operator on the counting register. The counting register
-    occupies the first ``n_counting_wires`` wires and the evaluation register follows it,
+    occupies the first ``n_counting_qubits`` qubits and the evaluation register follows it,
     which is the leading-block layout
     :func:`~flagquantum.algorithms.primitives.phase_estimation.append_phase_estimation`
     requires; that primitive emits the counting register's Hadamards, the controlled
@@ -305,23 +305,23 @@ def amplitude_estimation_circuit(
     Args:
         operator: The state-preparation unitary, its marking operator and its reflections,
             in the controlled forms amplitude estimation needs.
-        n_counting_wires: The number of wires in the counting register, at least one.
+        n_counting_qubits: The number of qubits in the counting register, at least one.
 
     Returns:
-        A circuit over ``n_counting_wires + operator.n_wires`` wires.
+        A circuit over ``n_counting_qubits + operator.n_qubits`` qubits.
 
     Raises:
-        ValueError: If ``n_counting_wires`` is less than one.
+        ValueError: If ``n_counting_qubits`` is less than one.
     """
-    _validate_counting_width(n_counting_wires)
-    evaluation = list(range(n_counting_wires, n_counting_wires + operator.n_wires))
-    circuit = Circuit(n_counting_wires + operator.n_wires)
+    _validate_counting_width(n_counting_qubits)
+    evaluation = list(range(n_counting_qubits, n_counting_qubits + operator.n_qubits))
+    circuit = Circuit(n_counting_qubits + operator.n_qubits)
     operator.apply_plain(circuit, evaluation)
     append_phase_estimation(
         circuit,
         unitary=_GroverOperator(operator),
-        counting_wires=list(range(n_counting_wires)),
-        evaluation_wires=evaluation,
+        counting_qubits=list(range(n_counting_qubits)),
+        evaluation_qubits=evaluation,
     )
     return circuit
 
@@ -329,7 +329,7 @@ def amplitude_estimation_circuit(
 def run_amplitude_estimation(
     operator: AmplitudeOperator,
     *,
-    n_counting_wires: int,
+    n_counting_qubits: int,
     shots: int = 4096,
     seed: int | None = None,
 ) -> AmplitudeEstimationResult:
@@ -343,7 +343,7 @@ def run_amplitude_estimation(
     Args:
         operator: The state-preparation unitary, its marking operator and its reflections,
             in the controlled forms amplitude estimation needs.
-        n_counting_wires: The number of wires in the counting register, at least one.
+        n_counting_qubits: The number of qubits in the counting register, at least one.
         shots: The number of samples to draw, at least one.
         seed: The sampler's seed, or ``None`` to draw from the ambient generator.
 
@@ -351,16 +351,18 @@ def run_amplitude_estimation(
         The estimate, the grid resolution, and the register widths it came from.
 
     Raises:
-        ValueError: If ``n_counting_wires`` is less than one, or if ``shots`` is less than
+        ValueError: If ``n_counting_qubits`` is less than one, or if ``shots`` is less than
             one.
     """
-    _validate_counting_width(n_counting_wires)
+    _validate_counting_width(n_counting_qubits)
     if shots < 1:
         raise ValueError(
             f"an amplitude estimation run needs at least one shot, got shots={shots}; "
             "with no samples there is nothing to estimate"
         )
-    circuit = amplitude_estimation_circuit(operator, n_counting_wires=n_counting_wires)
+    circuit = amplitude_estimation_circuit(
+        operator, n_counting_qubits=n_counting_qubits
+    )
     generator = torch.Generator().manual_seed(seed) if seed is not None else None
     observed = circuit.counts(shots, generator=generator)[0]
     # ``counts`` is typed ``dict[str | int, int]`` because its ``format`` can be "int";
@@ -369,37 +371,37 @@ def run_amplitude_estimation(
     counts = {str(key): count for key, count in observed.items()}
     return AmplitudeEstimationResult(
         estimate=maximum_likelihood_estimate(
-            counts, n_counting_wires, operator.n_wires
+            counts, n_counting_qubits, operator.n_qubits
         ),
-        resolution=amplitude_resolution(n_counting_wires),
-        n_counting_wires=n_counting_wires,
-        n_evaluation_wires=operator.n_wires,
+        resolution=amplitude_resolution(n_counting_qubits),
+        n_counting_qubits=n_counting_qubits,
+        n_evaluation_qubits=operator.n_qubits,
     )
 
 
-def _amplitude_grid(n_counting_wires: int) -> list[float]:
+def _amplitude_grid(n_counting_qubits: int) -> list[float]:
     """Return the amplitudes ``sin²(pi * j / 2**(m+1))`` for ``j`` in ``0 .. 2**m``.
 
     The grid is the image of the counting register's phase resolution under the readout
     ``a = sin²(theta)``, so an estimate is always one of these values.
 
     Args:
-        n_counting_wires: The width of the counting register, at least one.
+        n_counting_qubits: The width of the counting register, at least one.
 
     Returns:
-        The ``2**n_counting_wires + 1`` grid amplitudes, ascending.
+        The ``2**n_counting_qubits + 1`` grid amplitudes, ascending.
     """
     # The base is a float because the stubs type ``int ** int`` as ``Any``, since a
     # negative exponent yields a float, and an ``Any`` return fails the type gate.
-    half_turns = 2.0 ** (n_counting_wires + 1)
+    half_turns = 2.0 ** (n_counting_qubits + 1)
     return [
         math.sin(math.pi * index / half_turns) ** 2
-        for index in range(2**n_counting_wires + 1)
+        for index in range(2**n_counting_qubits + 1)
     ]
 
 
 def _counting_probability(
-    outcome: int, amplitude: float, n_counting_wires: int
+    outcome: int, amplitude: float, n_counting_qubits: int
 ) -> float:
     """Return ``P(y | a)`` for one counting outcome and one grid amplitude.
 
@@ -410,14 +412,14 @@ def _counting_probability(
     Args:
         outcome: The counting value ``y``, read from the leading register bits.
         amplitude: The grid amplitude ``a`` the model is evaluated at.
-        n_counting_wires: The width of the counting register, at least one.
+        n_counting_qubits: The width of the counting register, at least one.
 
     Returns:
         The probability of reading ``outcome`` at that amplitude.
     """
     # The base is a float because the stubs type ``int ** int`` as ``Any``, since a
     # negative exponent yields a float, and an ``Any`` return fails the type gate.
-    size = 2.0**n_counting_wires
+    size = 2.0**n_counting_qubits
     theta = math.asin(math.sqrt(amplitude))
     shift = math.pi * outcome / size
     return (
@@ -430,7 +432,7 @@ def _resonant_term(angle: float, size: float) -> float:
 
     Args:
         angle: The denominator's angle, ``t - pi * y / M``.
-        size: The counting register's width, ``2**n_counting_wires``.
+        size: The counting register's width, ``2**n_counting_qubits``.
 
     Returns:
         The term, or ``size**2`` at the resonance where the denominator vanishes, which
@@ -442,18 +444,18 @@ def _resonant_term(angle: float, size: float) -> float:
     return math.sin(size * angle) ** 2 / denominator**2
 
 
-def _validate_counting_width(n_counting_wires: int) -> None:
+def _validate_counting_width(n_counting_qubits: int) -> None:
     """Check the width of an amplitude estimation counting register.
 
     Args:
-        n_counting_wires: The register width as given.
+        n_counting_qubits: The register width as given.
 
     Raises:
-        ValueError: If ``n_counting_wires`` is less than one.
+        ValueError: If ``n_counting_qubits`` is less than one.
     """
-    if n_counting_wires < 1:
+    if n_counting_qubits < 1:
         raise ValueError(
-            f"amplitude estimation needs at least one counting wire, got "
-            f"n_counting_wires={n_counting_wires}; a register with no wires resolves no "
+            f"amplitude estimation needs at least one counting qubit, got "
+            f"n_counting_qubits={n_counting_qubits}; a register with no qubits resolves no "
             "phase and carries no amplitude"
         )

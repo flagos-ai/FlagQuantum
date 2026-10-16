@@ -309,13 +309,13 @@ def _call_text(call: _QisCall) -> str:
     return f"call void @__quantum__qis__{call.name}({', '.join(operands)})"
 
 
-def emit_qir(program: Any, *, result_wires: tuple[int, ...] | None = None) -> str:
+def emit_qir(program: Any, *, result_qubits: tuple[int, ...] | None = None) -> str:
     """Return deterministic QIR base-profile LLVM IR text.
 
     Args:
         program: Canonical ``CircuitIR``, or an object exposing ``to_ir()``.
-        result_wires: Physical wires measured into consecutive result values.
-            Defaults to the wires of the single terminal samples measurement, or
+        result_qubits: Physical qubits measured into consecutive result values.
+            Defaults to the qubits of the single terminal samples measurement, or
             to no measurement when the program declares none.
 
     Raises:
@@ -324,7 +324,7 @@ def emit_qir(program: Any, *, result_wires: tuple[int, ...] | None = None) -> st
     """
 
     ir = _validated_ir(program)
-    measured = _resolved_result_wires(ir, result_wires)
+    measured = _resolved_result_wires(ir, result_qubits)
     body: list[_QisCall] = []
     for instruction in ir.instructions:
         body.extend(_calls(instruction))

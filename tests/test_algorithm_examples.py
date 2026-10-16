@@ -409,8 +409,8 @@ def test_qarm_example_estimates_the_frequent_item_fraction() -> None:
 
     assert "frequent-item fractions -- flagquantum.algorithms.qarm" in output
     assert _labelled(output, "supports") == "(2, 1)"
-    assert _labelled(output, "support wires") == "2"
-    assert _labelled(output, "evaluation wires") == "5"
+    assert _labelled(output, "support qubits") == "2"
+    assert _labelled(output, "evaluation qubits") == "5"
     assert _labelled(output, "estimate") == "0.5"
     assert _labelled(output, "resolution") == "0.097545"
     assert _labelled(output, "exact fraction") == "0.5"
@@ -430,8 +430,8 @@ def test_svd_example_reads_singular_values_and_shows_the_one_wire_boundary() -> 
     assert _labelled(output, "alpha") == "7.745967"
     assert _labelled(output, "within(largest)") == "True"
     assert _labelled(output, "mode") == "101001"
-    assert _labelled(output, "one-wire readout") == "7.745967"
-    assert _labelled(output, "one-wire alpha") == "7.745967"
+    assert _labelled(output, "one-qubit readout") == "7.745967"
+    assert _labelled(output, "one-qubit alpha") == "7.745967"
     assert _labelled(output, "readout equals alpha") == "True"
     assert _labelled(output, "refused counter").startswith("'0', carrying 0.2041")
     assert _labelled(output, "raised")
@@ -1282,14 +1282,14 @@ def test_logical_resources_example_costs_one_program_and_refuses_the_rest() -> N
         ("compiler depth", "report estimate depth"),
         ("compiler t_count", "report t_count"),
         ("compiler t_depth", "report t_depth"),
-        ("compiler per_wire_depth", "report per_wire_depth"),
+        ("compiler per_qubit_depth", "report per_qubit_depth"),
     ):
         assert _labelled(output, compiler_label) == _labelled(
             output, report_label
         ), compiler_label
     assert _labelled(output, "compiler n_operations") == "7"
     assert _labelled(output, "compiler depth") == "5"
-    assert _labelled(output, "compiler per_wire_depth") == "(5, 3, 5)"
+    assert _labelled(output, "compiler per_qubit_depth") == "(5, 3, 5)"
     assert _labelled(output, "the two records are equal") == "True"
     # The partition: four Cliffords and three Ts over seven operations, and the T
     # depth is not the T count.
@@ -1441,14 +1441,14 @@ def test_arithmetic_example_sums_and_hands_the_cost_to_the_compiler() -> None:
     assert _labelled(output, "n_bits=10, bound raised to 1024") == "t_count=140"
     # Both entry points refuse the same widths, and for the same two reasons.
     for label in ("zero bits", "a negative width"):
-        for entry in ("adder_circuit", "adder_wires"):
+        for entry in ("adder_circuit", "adder_qubits"):
             assert "ValueError" in _labelled(output, f"{label}, {entry}"), label
     for label in (
         "a float width",
         "a width given as text",
         "a width given as a truth value",
     ):
-        for entry in ("adder_circuit", "adder_wires"):
+        for entry in ("adder_circuit", "adder_qubits"):
             assert "TypeError" in _labelled(output, f"{label}, {entry}"), label
     _assert_premise("arithmetic", output)
     assert "take away" in output

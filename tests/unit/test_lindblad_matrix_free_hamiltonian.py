@@ -160,8 +160,8 @@ def test_repeated_pauli_strings_are_summed_entry_for_entry() -> None:
     """
 
     descriptors = [
-        {"pauli": "Z", "wires": [0], "coefficient": 0.3},
-        {"pauli": "Z", "wires": [0], "coefficient": 0.4},
+        {"pauli": "Z", "qubits": [0], "coefficient": 0.3},
+        {"pauli": "Z", "qubits": [0], "coefficient": 0.4},
     ]
     representation = _normalize(descriptors, n_wires=1)
     assert isinstance(representation, PauliSum)
@@ -258,7 +258,7 @@ def test_a_descriptor_sequence_reaches_the_same_representation() -> None:
                     "pauli": "".join(
                         "xyz"[int(torch.randint(0, 3, (1,)).item())] for _ in wires
                     ),
-                    "wires": wires,
+                    "qubits": wires,
                     "coefficient": float(torch.randn(1).item()),
                 }
             )
@@ -288,17 +288,17 @@ def test_a_descriptor_sequence_reaches_the_same_representation() -> None:
         ),
         (
             [
-                {"pauli": "Z", "wires": [0], "coefficient": 0.7},
-                {"pauli": "XX", "wires": [0, 1], "coefficient": -0.4},
-                {"pauli": "Y", "wires": [1], "coefficient": 1.3},
+                {"pauli": "Z", "qubits": [0], "coefficient": 0.7},
+                {"pauli": "XX", "qubits": [0, 1], "coefficient": -0.4},
+                {"pauli": "Y", "qubits": [1], "coefficient": 1.3},
             ],
             2,
             None,
         ),
         (
             [
-                {"pauli": "I", "wires": [0], "coefficient": 2.5},
-                {"pauli": "Z", "wires": [1], "coefficient": 0.25},
+                {"pauli": "I", "qubits": [0], "coefficient": 2.5},
+                {"pauli": "Z", "qubits": [1], "coefficient": 0.25},
             ],
             2,
             None,
@@ -313,7 +313,7 @@ def test_the_trajectory_matches_the_dense_runge_kutta_reference(
 
     times = [0.0, 0.05, 0.11, 0.2]
     options = (
-        {"collapse_operators": [amplitude_damping(rate=collapse_rate, wire=0)]}
+        {"collapse_operators": [amplitude_damping(rate=collapse_rate, qubit=0)]}
         if collapse_rate is not None
         else {}
     )
@@ -535,7 +535,7 @@ def test_the_commutator_refuses_a_state_it_cannot_apply() -> None:
 def test_an_empty_pauli_sum_is_the_identity_free_zero_operator() -> None:
     representation = PauliSum(
         (),
-        n_wires=1,
+        n_qubits=1,
         dimension=2,
         dtype=torch.complex128,
         device=_DEVICE,
@@ -548,18 +548,18 @@ def test_an_empty_pauli_sum_is_the_identity_free_zero_operator() -> None:
     ("hamiltonian", "expected_code"),
     [
         (_complex_term(1j, ((0, "z"),)), "non_hermitian_hamiltonian"),
-        ([{"pauli": "Z", "wires": [0], "coefficient": 1j}], "invalid_hamiltonian"),
-        ([{"pauli": "XX", "wires": [0, 0], "coefficient": 1.0}], "invalid_operator"),
-        ([{"pauli": "ZZ", "wires": [0, 0], "coefficient": 1.0}], "invalid_operator"),
-        ([{"pauli": "Z", "wires": [5], "coefficient": 1.0}], "invalid_operator"),
-        ([{"pauli": "Z", "wires": [-1], "coefficient": 1.0}], "invalid_operator"),
-        ([{"pauli": "ZZ", "wires": [0], "coefficient": 1.0}], "invalid_operator"),
-        ([{"pauli": "Q", "wires": [0], "coefficient": 1.0}], "unknown_operator"),
+        ([{"pauli": "Z", "qubits": [0], "coefficient": 1j}], "invalid_hamiltonian"),
+        ([{"pauli": "XX", "qubits": [0, 0], "coefficient": 1.0}], "invalid_operator"),
+        ([{"pauli": "ZZ", "qubits": [0, 0], "coefficient": 1.0}], "invalid_operator"),
+        ([{"pauli": "Z", "qubits": [5], "coefficient": 1.0}], "invalid_operator"),
+        ([{"pauli": "Z", "qubits": [-1], "coefficient": 1.0}], "invalid_operator"),
+        ([{"pauli": "ZZ", "qubits": [0], "coefficient": 1.0}], "invalid_operator"),
+        ([{"pauli": "Q", "qubits": [0], "coefficient": 1.0}], "unknown_operator"),
         (
-            [{"pauli": "Z", "wires": [0], "coefficient": float("inf")}],
+            [{"pauli": "Z", "qubits": [0], "coefficient": float("inf")}],
             "invalid_hamiltonian",
         ),
-        ([{"pauli": "Z", "wires": [0]}, 3], "invalid_hamiltonian"),
+        ([{"pauli": "Z", "qubits": [0]}, 3], "invalid_hamiltonian"),
     ],
 )
 def test_the_representation_keeps_the_structured_refusals(
@@ -586,7 +586,7 @@ def test_a_duplicated_wire_is_refused_rather_than_resolved_by_placement() -> Non
     for symbol in ("XX", "ZZ", "YY", "ZX"):
         with pytest.raises(EvolutionValidationError, match="same wire twice"):
             _normalize(
-                [{"pauli": symbol, "wires": [0, 0], "coefficient": 1.0}], n_wires=1
+                [{"pauli": symbol, "qubits": [0, 0], "coefficient": 1.0}], n_wires=1
             )
 
 
@@ -658,7 +658,7 @@ def _non_hermitian_pauli_sum() -> PauliSum:
             PauliSumTerm(complex(-0.25, 0.4), mask=0b1, signs=(1,)),
             PauliSumTerm(complex(0.8, 0.15), mask=0b10, signs=(0, 1)),
         ),
-        n_wires=2,
+        n_qubits=2,
         dimension=4,
         dtype=torch.complex128,
         device=_DEVICE,
@@ -792,7 +792,7 @@ def test_the_evolving_hamiltonian_is_a_pauli_sum_for_every_accepted_input() -> N
 
     for hamiltonian in (
         0.5 * fq.X(0) + 0.25 * fq.Z(0),
-        [{"pauli": "X", "wires": [0], "coefficient": 0.5}],
+        [{"pauli": "X", "qubits": [0], "coefficient": 0.5}],
     ):
         assert isinstance(_normalize(hamiltonian, n_wires=1), PauliSum)
 
@@ -817,15 +817,15 @@ def test_a_pauli_sum_handed_back_is_evolved_without_densifying(
             PauliSumTerm(coefficient=0.5, mask=0b1, signs=()),
             PauliSumTerm(coefficient=0.25, mask=0, signs=(0,)),
         ),
-        n_wires=1,
+        n_qubits=1,
         dimension=2,
         dtype=torch.complex128,
         device=_DEVICE,
     )
     observable = 0.5 * fq.X(0) + 0.25 * fq.Z(0)
     descriptors = [
-        {"pauli": "X", "wires": [0], "coefficient": 0.5},
-        {"pauli": "Z", "wires": [0], "coefficient": 0.25},
+        {"pauli": "X", "qubits": [0], "coefficient": 0.5},
+        {"pauli": "Z", "qubits": [0], "coefficient": 0.25},
     ]
     times = [0.0, 0.05, 0.11, 0.2]
     expected = evolve_density_matrix(

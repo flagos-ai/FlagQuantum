@@ -199,7 +199,7 @@ def _measure(family: str, distance: int, probability: float) -> _Point:
         shots=_SHOTS,
         detectors=model.num_detectors,
         errors=model.num_errors,
-        wires=len(code.data_wires) + len(code.ancilla_wires),
+        wires=len(code.data_qubits) + len(code.ancilla_qubits),
     )
 
 
@@ -301,10 +301,10 @@ def test_the_surface_patch_curve_widens_the_patch_it_models(distance: int) -> No
     code = RotatedSurfaceCode(distance=distance)
     point = _measure("surface", distance, _PARAMETER_SWEEP[0])
     checks = code.checks
-    protected = len([check for check in checks if not check.stabilizer.x_wires])
+    protected = len([check for check in checks if not check.stabilizer.x_qubits])
     expected = protected * (distance + 1) + (len(checks) - protected) * (distance - 1)
     assert point.detectors == expected
-    assert point.wires == len(code.data_wires) + len(code.ancilla_wires)
+    assert point.wires == len(code.data_qubits) + len(code.ancilla_qubits)
     # A check per data qubit's worth of ancillas: distance**2 data wires and
     # distance**2 - 1 ancillas, which is 17 wires at distance 3, 49 at 5 and 97 at
     # 7. The executed route allocated the whole amplitude vector and stopped

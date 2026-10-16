@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
     ("factory", "message"),
     [
         (lambda: Instruction("", (0,)), "opcode cannot be empty"),
-        (lambda: Instruction("cx", (0,)), "requires 2 wire"),
+        (lambda: Instruction("cx", (0,)), "requires 2 qubit"),
         (lambda: Instruction("rx", (0,)), "missing parameter"),
         (lambda: Instruction("unknown", (0,)), "custom operations require"),
         (lambda: CircuitIR(0, ()), "n_wires must be positive"),

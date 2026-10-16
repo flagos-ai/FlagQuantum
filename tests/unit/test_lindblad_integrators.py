@@ -51,7 +51,7 @@ def _decay_error(rate: float, steps: int, method: str) -> float:
         EXCITED,
         1,
         times,
-        [amplitude_damping(rate=rate, wire=0)],
+        [amplitude_damping(rate=rate, qubit=0)],
         return_density_matrices=True,
         method=method,
     )
@@ -265,7 +265,7 @@ def test_crank_nicolson_converges_at_second_order() -> None:
 
 def test_crank_nicolson_stays_bounded_where_runge_kutta_diverges() -> None:
     times = torch.linspace(0.0, 1.0, 21, dtype=torch.float64)
-    operators = [amplitude_damping(rate=1000.0, wire=0)]
+    operators = [amplitude_damping(rate=1000.0, qubit=0)]
 
     explicit = evolve_density_matrix(
         ZERO_HAMILTONIAN,
@@ -321,7 +321,7 @@ def test_crank_nicolson_refines_toward_the_exact_stiff_solution() -> None:
 
 def test_the_default_integrator_remains_the_explicit_scheme() -> None:
     times = torch.linspace(0.0, 4.0, 41, dtype=torch.float64)
-    operators = [amplitude_damping(rate=0.4, wire=0)]
+    operators = [amplitude_damping(rate=0.4, qubit=0)]
 
     default = evolve_density_matrix(
         ZERO_HAMILTONIAN, EXCITED, 1, times, operators, return_density_matrices=True
@@ -345,7 +345,7 @@ def test_the_default_integrator_remains_the_explicit_scheme() -> None:
 
 def test_the_reported_method_is_the_method_that_ran() -> None:
     times = torch.linspace(0.0, 1.0, 9, dtype=torch.float64)
-    operators = [amplitude_damping(rate=0.4, wire=0)]
+    operators = [amplitude_damping(rate=0.4, qubit=0)]
 
     result = evolve_density_matrix(
         ZERO_HAMILTONIAN,
@@ -547,7 +547,7 @@ def test_an_unreachable_solve_tolerance_fails_closed(
             EXCITED,
             1,
             times,
-            [amplitude_damping(rate=0.4, wire=0)],
+            [amplitude_damping(rate=0.4, qubit=0)],
             method="crank-nicolson",
             solve_tolerance=1e-15,
         )
@@ -600,7 +600,7 @@ def test_a_stored_plan_from_an_earlier_version_is_refused_by_version() -> None:
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
-        collapse_operators=[amplitude_damping(rate=1.0, wire=0)],
+        collapse_operators=[amplitude_damping(rate=1.0, qubit=0)],
     )
     payload = planned.to_dict()
     assert payload["version"] == "1.3"
@@ -627,7 +627,7 @@ def test_a_boolean_sealed_tolerance_is_refused() -> None:
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
-        collapse_operators=[amplitude_damping(rate=1.0, wire=0)],
+        collapse_operators=[amplitude_damping(rate=1.0, qubit=0)],
         method="crank-nicolson",
     )
     payload = planned.to_dict()
@@ -652,7 +652,7 @@ def test_the_plan_round_trips_the_integration_method() -> None:
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
-        collapse_operators=[amplitude_damping(rate=1.0, wire=0)],
+        collapse_operators=[amplitude_damping(rate=1.0, qubit=0)],
         method="crank-nicolson",
         solve_tolerance=1e-9,
     )
@@ -695,7 +695,7 @@ def test_running_a_plan_reports_the_planned_integration_method() -> None:
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
-        collapse_operators=[amplitude_damping(rate=1.0, wire=0)],
+        collapse_operators=[amplitude_damping(rate=1.0, qubit=0)],
         method="crank-nicolson",
     )
 
@@ -771,7 +771,7 @@ def test_a_tampered_solve_tolerance_is_refused_on_decode() -> None:
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
-        collapse_operators=[amplitude_damping(rate=1.0, wire=0)],
+        collapse_operators=[amplitude_damping(rate=1.0, qubit=0)],
         method="crank-nicolson",
     )
     payload = planned.to_dict()

@@ -181,11 +181,11 @@ def _conjugate(pauli: Pauli, board: frozenset[int]) -> Pauli:
     question depend on.
     """
 
-    x_wires = frozenset(pauli.x_wires)
-    z_wires = frozenset(pauli.z_wires)
+    x_wires = frozenset(pauli.x_qubits)
+    z_wires = frozenset(pauli.z_qubits)
     return Pauli(
-        x_wires=tuple(sorted((x_wires - board) | (z_wires & board))),
-        z_wires=tuple(sorted((z_wires - board) | (x_wires & board))),
+        x_qubits=tuple(sorted((x_wires - board) | (z_wires & board))),
+        z_qubits=tuple(sorted((z_wires - board) | (x_wires & board))),
     )
 
 
@@ -198,9 +198,9 @@ def _symplectic(pauli: Pauli, positions: dict[int, int], width: int) -> int:
     """
 
     bits = 0
-    for wire in pauli.x_wires:
+    for wire in pauli.x_qubits:
         bits |= 1 << positions[wire]
-    for wire in pauli.z_wires:
+    for wire in pauli.z_qubits:
         bits |= 1 << (width + positions[wire])
     return bits
 
@@ -209,7 +209,7 @@ def _positions(code: ZxxzSurfaceCode) -> tuple[dict[int, int], int]:
     """Return the wire-to-column map and the width of one code's data register."""
 
     return (
-        {wire: index for index, wire in enumerate(code.data_wires)},
+        {wire: index for index, wire in enumerate(code.data_qubits)},
         code.num_data_qubits,
     )
 
@@ -235,8 +235,8 @@ def test_the_patch_occupies_the_rotated_patchs_wires(distance: int) -> None:
     patch = _patch(distance)
     rotated = _rotated(distance)
 
-    assert patch.data_wires == rotated.data_wires == tuple(range(distance * distance))
-    assert patch.ancilla_wires == rotated.ancilla_wires
+    assert patch.data_qubits == rotated.data_qubits == tuple(range(distance * distance))
+    assert patch.ancilla_qubits == rotated.ancilla_qubits
     assert patch.num_data_qubits == distance * distance
     assert patch.num_ancilla_qubits == distance * distance - 1
     assert patch.num_ancilla_qubits == len(patch.checks)
@@ -260,18 +260,18 @@ def test_every_check_is_mixed_and_the_rotated_patch_has_none(distance: int) -> N
     mixed = tuple(
         check
         for check in patch.checks
-        if check.stabilizer.x_wires and check.stabilizer.z_wires
+        if check.stabilizer.x_qubits and check.stabilizer.z_qubits
     )
     rotated_mixed = tuple(
         check
         for check in rotated.checks
-        if check.stabilizer.x_wires and check.stabilizer.z_wires
+        if check.stabilizer.x_qubits and check.stabilizer.z_qubits
     )
 
     assert len(mixed) == len(patch.checks)
     assert not rotated_mixed
-    assert all(check.stabilizer.z_wires for check in patch.checks)
-    assert all(check.stabilizer.x_wires for check in patch.checks)
+    assert all(check.stabilizer.z_qubits for check in patch.checks)
+    assert all(check.stabilizer.x_qubits for check in patch.checks)
 
 
 @pytest.mark.parametrize("distance", _DISTANCES)
@@ -375,13 +375,13 @@ def test_the_declared_diagonals_are_a_logical_pair(distance: int) -> None:
     rows = _check_rows(patch)
 
     assert z_observable == Pauli(
-        z_wires=tuple(row * (distance - 1) + (distance - 1) for row in range(distance))
+        z_qubits=tuple(row * (distance - 1) + (distance - 1) for row in range(distance))
     )
     assert x_observable == Pauli(
-        x_wires=tuple(range(0, distance * distance, distance + 1))
+        x_qubits=tuple(range(0, distance * distance, distance + 1))
     )
-    assert not z_observable.x_wires
-    assert not x_observable.z_wires
+    assert not z_observable.x_qubits
+    assert not x_observable.z_qubits
     assert len(z_observable.support) == len(x_observable.support) == distance
     assert all(z_observable.commutes_with(check.stabilizer) for check in patch.checks)
     assert all(x_observable.commutes_with(check.stabilizer) for check in patch.checks)
@@ -410,7 +410,7 @@ def test_no_pure_logical_is_lighter_than_the_distance(distance: int) -> None:
     patch = _patch(distance)
     positions, width = _positions(patch)
     rows = _check_rows(patch)
-    wires = list(patch.data_wires)
+    wires = list(patch.data_qubits)
 
     def is_logical(candidate: Pauli) -> bool:
         return all(
@@ -421,14 +421,14 @@ def test_no_pure_logical_is_lighter_than_the_distance(distance: int) -> None:
         candidate
         for weight in range(1, distance)
         for candidate in (
-            Pauli(x_wires=combo) for combo in itertools.combinations(wires, weight)
+            Pauli(x_qubits=combo) for combo in itertools.combinations(wires, weight)
         )
         if is_logical(candidate)
     ] + [
         candidate
         for weight in range(1, distance)
         for candidate in (
-            Pauli(z_wires=combo) for combo in itertools.combinations(wires, weight)
+            Pauli(z_qubits=combo) for combo in itertools.combinations(wires, weight)
         )
         if is_logical(candidate)
     ]
@@ -464,7 +464,7 @@ def test_the_other_checkerboard_leaves_no_pure_z_representative(distance: int) -
         target = _symplectic(observable, positions, width)
         for weight in range(1, distance + 1):
             for combo in itertools.combinations(wires, weight):
-                candidate = Pauli(z_wires=combo)
+                candidate = Pauli(z_qubits=combo)
                 if not all(
                     candidate.commutes_with(check.stabilizer) for check in code.checks
                 ):
@@ -503,20 +503,20 @@ def test_a_check_carries_both_cnot_directions_through_one_ancilla(
     patch = _patch(distance)
 
     assert all(
-        check.cnot_wires
-        == tuple((wire, check.ancilla_wire) for wire in check.stabilizer.z_wires)
-        + tuple((check.ancilla_wire, wire) for wire in check.stabilizer.x_wires)
+        check.cnot_qubits
+        == tuple((wire, check.ancilla_qubit) for wire in check.stabilizer.z_qubits)
+        + tuple((check.ancilla_qubit, wire) for wire in check.stabilizer.x_qubits)
         for check in patch.checks
     )
-    assert len({check.ancilla_wire for check in patch.checks}) == len(patch.checks)
+    assert len({check.ancilla_qubit for check in patch.checks}) == len(patch.checks)
     assert all(
-        len(check.cnot_wires)
-        == len(check.stabilizer.z_wires) + len(check.stabilizer.x_wires)
+        len(check.cnot_qubits)
+        == len(check.stabilizer.z_qubits) + len(check.stabilizer.x_qubits)
         <= len(check.stabilizer.support)
         for check in patch.checks
     )
     assert any(
-        len(check.stabilizer.z_wires) > 1 and len(check.stabilizer.x_wires) > 1
+        len(check.stabilizer.z_qubits) > 1 and len(check.stabilizer.x_qubits) > 1
         for check in patch.checks
     )
 
@@ -548,17 +548,17 @@ def test_the_emitted_source_wraps_only_the_x_run_in_hadamards(distance: int) -> 
     cursor = lines.index("    for round_index in range(rounds):") + 1
 
     for check in patch.checks:
-        ancilla = check.ancilla_wire
-        split = len(check.stabilizer.z_wires)
-        assert split and check.stabilizer.x_wires
+        ancilla = check.ancilla_qubit
+        split = len(check.stabilizer.z_qubits)
+        assert split and check.stabilizer.x_qubits
         expected = [
             f"        qp.CNOT(wires=[{control}, {target}])"
-            for control, target in check.cnot_wires[:split]
+            for control, target in check.cnot_qubits[:split]
         ]
         expected.append(f"        qp.H(wires={ancilla})")
         expected.extend(
             f"        qp.CNOT(wires=[{control}, {target}])"
-            for control, target in check.cnot_wires[split:]
+            for control, target in check.cnot_qubits[split:]
         )
         expected.append(f"        qp.H(wires={ancilla})")
         expected.append(f"        last = qp.measure(wires={ancilla})")

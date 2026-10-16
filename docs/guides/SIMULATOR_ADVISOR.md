@@ -11,7 +11,7 @@ single-process ARM64 CPU environment:
 from flagquantum.benchmarking.simulator_compare import build_workload
 from flagquantum.ecosystem.simulators import recommend
 
-measured_circuit = build_workload(n_wires=22, layers=2)
+measured_circuit = build_workload(n_qubits=22, layers=2)
 decision = recommend(measured_circuit)
 
 print(decision.status)
@@ -76,7 +76,7 @@ until then, unknown circuits are measured or rejected rather than guessed.
 ### Live calibration validation probe
 
 The implementation was exercised on an unmanifested 10-qubit circuit containing
-per-wire H, RZ and RX gates followed by a nearest-neighbor CX chain. On the same
+per-qubit H, RZ and RX gates followed by a nearest-neighbor CX chain. On the same
 ARM64 macOS environment as the checked-in comparison, using Python 3.12.14,
 Torch 2.13.0, FlagQuantum 0.2.0 and Qiskit Aer 0.17.2, two warmups and seven
 retained calls produced:
@@ -94,7 +94,7 @@ that exact circuit and environment, not a universal performance claim.
 Profile-only queries remain available for inspecting the table:
 
 ```python
-profile = recommend(n_wires=22)
+profile = recommend(n_qubits=22)
 assert profile.circuit_matches is None
 ```
 

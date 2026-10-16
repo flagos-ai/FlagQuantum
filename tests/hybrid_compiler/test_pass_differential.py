@@ -125,12 +125,12 @@ def test_seeded_optimized_and_unoptimized_execution_and_vjp_agree(seed: int) -> 
 
     optimized_vjp = execute_torch_distributed_statevector_reverse(
         optimized,
-        observable_wires=(0,),
+        observable_qubits=(0,),
         device="cpu",
     )
     baseline_vjp = execute_torch_distributed_statevector_reverse(
         baseline,
-        observable_wires=(0,),
+        observable_qubits=(0,),
         device="cpu",
     )
     optimized_vjp.backward()

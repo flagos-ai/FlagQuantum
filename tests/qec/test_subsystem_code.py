@@ -198,7 +198,7 @@ def _row(wires: tuple[int, ...]) -> tuple[int, ...]:
 def _supports(pauli: Pauli) -> tuple[int, ...]:
     """Return the wires a Pauli acts on with a non-identity factor."""
 
-    return tuple(sorted(set(pauli.x_wires) | set(pauli.z_wires)))
+    return tuple(sorted(set(pauli.x_qubits) | set(pauli.z_qubits)))
 
 
 def _z_logicals(code: SubsystemCode) -> tuple[Pauli, ...]:
@@ -227,7 +227,7 @@ def test_the_declared_parameters_are_the_ones_the_matrices_derive() -> None:
         - tesseract.num_gauge_qubits
     )
     assert tesseract.distance == tesseract.x_distance == tesseract.z_distance == 4
-    assert tesseract.data_wires == tuple(range(16))
+    assert tesseract.data_qubits == tuple(range(16))
     assert len(tesseract.stabilizer_generators) == 10
     assert len(tesseract.gauge_generators) == 4
     assert len(tesseract.logical_operators) == 8
@@ -607,7 +607,7 @@ def test_the_column_swap_is_an_automorphism_of_the_gauge_group() -> None:
     generators = [
         (
             (_mask(_supports(operator)), 0)
-            if operator.z_wires
+            if operator.z_qubits
             else (0, _mask(_supports(operator)))
         )
         for operator in tesseract.stabilizer_generators + tesseract.gauge_generators

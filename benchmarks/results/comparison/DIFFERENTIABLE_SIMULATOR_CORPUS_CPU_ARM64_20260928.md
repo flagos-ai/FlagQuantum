@@ -70,16 +70,16 @@ from flagquantum import algorithms as fqa
 
 theta = torch.full((4, 3), 0.2, dtype=torch.float64, requires_grad=True)
 circuit = fq.Circuit(4, dtype=torch.complex128)
-for wire in range(4):
-    circuit.rx(wire, theta[wire, 0])
-    circuit.ry(wire, theta[wire, 1])
-    circuit.rz(wire, theta[wire, 2])
-for wire in range(3):
-    circuit.cx(wire, wire + 1)
+for qubit in range(4):
+    circuit.rx(qubit, theta[qubit, 0])
+    circuit.ry(qubit, theta[qubit, 1])
+    circuit.rz(qubit, theta[qubit, 2])
+for qubit in range(3):
+    circuit.cx(qubit, qubit + 1)
 
 hamiltonian = fqa.Hamiltonian(
-    fqa.HamiltonianTerm(0.7, {wire: "z", wire + 1: "z"})
-    for wire in range(3)
+    fqa.HamiltonianTerm(0.7, {qubit: "z", qubit + 1: "z"})
+    for qubit in range(3)
 )
 energy = hamiltonian.expectation(circuit.state(refresh=True)).sum()
 energy.backward()

@@ -93,6 +93,25 @@ def _cz_graph_signs_cpu(
     return signs, graph_wires
 
 
+def _cached_cz_graph_signs(
+    cache: dict[tuple[int, str, torch.dtype, int], torch.Tensor],
+    step: _StatevectorCZGraphStep,
+    n_qubits: int,
+    device: torch.device,
+) -> tuple[torch.Tensor, tuple[int, ...]]:
+    """Return cached compact signs for one compiled CZ graph."""
+
+    key = (id(step), str(device), torch.int8, n_qubits)
+    cached = cache.get(key)
+    graph_wires = tuple(sorted({wire for edge in step.edges for wire in edge}))
+    if cached is None:
+        cached, built_wires = _cz_graph_signs_cpu(step.edges, device=device)
+        if built_wires != graph_wires:
+            raise RuntimeError("compiled CZ graph wire order changed unexpectedly")
+        cache[key] = cached
+    return cached, graph_wires
+
+
 def _apply_cz_graph_cpu(
     state: torch.Tensor,
     signs: torch.Tensor,

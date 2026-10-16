@@ -54,7 +54,7 @@ def _amplitude_permutation(layout: Layout) -> torch.Tensor:
     """
 
     inverse = Layout(layout.physical_to_logical)
-    n_wires = inverse.n_wires
+    n_wires = inverse.n_qubits
     index = torch.arange(1 << n_wires)
     moved = torch.zeros_like(index)
     for physical in range(n_wires):
@@ -66,23 +66,23 @@ def _amplitude_permutation(layout: Layout) -> torch.Tensor:
 def test_layout_validates_a_complete_permutation() -> None:
     layout = Layout((2, 0, 1))
 
-    assert layout.n_wires == 3
+    assert layout.n_qubits == 3
     assert layout.logical_to_physical == (2, 0, 1)
     assert layout.physical_to_logical == (1, 2, 0)
     assert layout.physical_of(0) == 2
     # Physical wire 2 holds logical 0, physical 1 holds logical 2.
     assert layout.logical_of(2) == 0
     assert layout.logical_of(1) == 2
-    assert layout.map_wires((0, 2)) == (2, 1)
+    assert layout.map_qubits((0, 2)) == (2, 1)
     assert str(layout) == "Layout((2, 0, 1))"
 
     with pytest.raises(ValueError, match="permutation"):
         Layout((0, 0, 1))
     with pytest.raises(ValueError, match="permutation"):
         Layout((0, 2))
-    with pytest.raises(ValueError, match="at least one logical wire"):
+    with pytest.raises(ValueError, match="at least one logical qubit"):
         Layout(())
-    with pytest.raises(ValueError, match="integer physical wires"):
+    with pytest.raises(ValueError, match="integer physical qubits"):
         Layout((0, 1, 2.0))  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="outside the layout"):
         layout.physical_of(3)
@@ -96,7 +96,7 @@ def test_layout_applies_physical_swaps_to_the_positions_not_the_names() -> None:
     # A SWAP exchanges the wires the two physical positions hold, so logical 0
     # moves from physical 2 to physical 1.
     assert layout.apply_swaps(((2, 1),)) == Layout((1, 0, 2))
-    with pytest.raises(ValueError, match="outside a 3-wire layout"):
+    with pytest.raises(ValueError, match="outside a 3-qubit layout"):
         layout.apply_swaps(((0, 3),))
 
 
@@ -106,7 +106,7 @@ def test_layout_reorders_per_wire_values_into_logical_order() -> None:
     # physical 2 carries logical 0.
     assert layout.to_logical_order("abc") == ("c", "a", "b")
 
-    with pytest.raises(ValueError, match="one value per physical wire"):
+    with pytest.raises(ValueError, match="one value per physical qubit"):
         layout.to_logical_order("ab")
 
 
@@ -165,13 +165,13 @@ def test_apply_layout_fails_closed_on_a_layout_that_does_not_cover_the_circuit()
 def test_layout_carries_idle_physical_slots_of_a_wider_device() -> None:
     layout = Layout((4, 5, 6, 7), 8)
 
-    assert layout.n_wires == 4
+    assert layout.n_qubits == 4
     assert layout.physical_slot_count == 8
     assert layout.has_idle_slots is True
     # Physical wire 4 carries logical 0, and physical wires 0..3 carry nothing.
     assert layout.physical_to_logical == (None, None, None, None, 0, 1, 2, 3)
     assert layout.logical_of(4) == 0
-    assert layout.map_wires((0, 3)) == (4, 7)
+    assert layout.map_qubits((0, 3)) == (4, 7)
     assert layout.to_logical_order("abcdefgh") == ("e", "f", "g", "h")
     assert str(layout) == "Layout((4, 5, 6, 7), 8)"
 
@@ -181,7 +181,7 @@ def test_layout_carries_idle_physical_slots_of_a_wider_device() -> None:
         Layout((4, 5, 6, 7), 3)
     with pytest.raises(ValueError, match="outside its 8 physical slots"):
         Layout((0, 8), 8)
-    with pytest.raises(ValueError, match="its own physical wire"):
+    with pytest.raises(ValueError, match="its own physical qubit"):
         Layout((4, 4), 8)
     with pytest.raises(ValueError, match="must be an integer"):
         Layout((0, 1), 8.0)  # type: ignore[arg-type]
@@ -196,14 +196,14 @@ def test_layout_carries_idle_physical_slots_of_a_wider_device() -> None:
 def test_layout_distinguishes_an_idle_slot_from_a_wire_outside_the_device() -> None:
     layout = Layout((4,), 6)
 
-    with pytest.raises(ValueError, match="physical wire 0 holds no logical wire"):
+    with pytest.raises(ValueError, match="physical qubit 0 holds no logical qubit"):
         layout.logical_of(0)
-    with pytest.raises(ValueError, match="physical wire 6 is outside the layout"):
+    with pytest.raises(ValueError, match="physical qubit 6 is outside the layout"):
         layout.logical_of(6)
     with pytest.raises(ValueError, match="outside the layout"):
         layout.physical_of(1)
     assert layout.to_logical_order("abcdef") == ("e",)
-    with pytest.raises(ValueError, match="for 6 wires"):
+    with pytest.raises(ValueError, match="for 6 qubits"):
         layout.to_logical_order("abc")
 
 
@@ -216,7 +216,7 @@ def test_layout_swaps_a_logical_wire_into_and_out_of_an_idle_slot() -> None:
     assert moved == Layout((0, 5), 6)
     assert moved.physical_to_logical == (0, None, None, None, None, 1)
     assert moved.apply_swaps(((0, 4),)) == layout
-    with pytest.raises(ValueError, match="outside a 6-wire layout"):
+    with pytest.raises(ValueError, match="outside a 6-qubit layout"):
         layout.apply_swaps(((0, 6),))
 
 
@@ -256,7 +256,7 @@ def test_final_layout_reports_the_device_width_of_an_allocating_route() -> None:
     assert layout.has_idle_slots is True
     assert layout.logical_of(4) == 0
     assert layout.to_logical_order(tuple(range(8)))[:4] == (4, 5, 6, 7)
-    assert layout.map_wires((0, 1, 2, 3)) == (4, 5, 6, 7)
+    assert layout.map_qubits((0, 1, 2, 3)) == (4, 5, 6, 7)
 
     # A route that never allocates stays on the three wires the program owns, even
     # on a wider device, so it reports no idle slot for the wires it never used.
@@ -290,7 +290,7 @@ def test_remove_layout_restore_reports_the_device_width_of_an_allocating_route()
     assert dropped.metadata["routing"]["mapping_restored"] is False
     assert layout.physical_slot_count == 8
     assert layout.has_idle_slots is True
-    assert layout.n_wires == 4
+    assert layout.n_qubits == 4
     assert sorted(layout.logical_to_physical) != list(range(4))
     # The restore walked every logical wire home, so the layout the reduced
     # program reports has to be the one its SWAP evidence reached.
@@ -334,7 +334,7 @@ def test_final_layout_fails_closed_when_the_reported_widths_disagree() -> None:
     # than as a layout.
     with pytest.raises(ValueError, match="physical_slot_count as 3"):
         final_layout(tampered(physical_slot_count=3))
-    with pytest.raises(ValueError, match="does not fit a 8-wire program"):
+    with pytest.raises(ValueError, match="does not fit a 8-qubit program"):
         final_layout(tampered(logical_wire_count=9))
     with pytest.raises(ValueError, match="physical_slot_count as 9"):
         final_layout(tampered(physical_slot_count=9))
@@ -435,7 +435,7 @@ def test_final_layout_reads_the_reported_output_layout() -> None:
     routed = route_to_topology(program, CouplingMap.grid(3, 3), strategy="sabre_layout")
     layout = final_layout(routed)
 
-    assert layout.n_wires == 9
+    assert layout.n_qubits == 9
     # Routing always walks every logical wire home, so the output layout is the
     # identity and a measurement keeps naming a logical wire.
     assert layout.logical_to_physical == tuple(range(9))
@@ -452,7 +452,7 @@ def test_final_layout_fails_closed_on_routing_metadata_that_reports_no_layout() 
 
     with pytest.raises(ValueError, match="does not report final_logical_to_physical"):
         final_layout(broken)
-    with pytest.raises(ValueError, match="for 1 wires, but the circuit has 2"):
+    with pytest.raises(ValueError, match="for 1 qubits, but the circuit has 2"):
         final_layout(
             CircuitIR(
                 program.n_wires,
@@ -552,11 +552,11 @@ def test_remove_layout_restore_moves_measurements_and_observables_onto_the_layou
     layout = final_layout(dropped)
 
     assert [node.wires for node in dropped.measurements] == [
-        layout.map_wires((0, 1, 2, 3))
+        layout.map_qubits((0, 1, 2, 3))
     ]
     assert [node.wires for node in dropped.observables] == [
-        layout.map_wires((0,)),
-        layout.map_wires((2,)),
+        layout.map_qubits((0,)),
+        layout.map_qubits((2,)),
     ]
 
 
@@ -609,14 +609,14 @@ def test_remove_layout_restore_reports_output_the_deployment_contract_refuses() 
     # The routed plan is acceptable, so the refusal below is about the removed
     # restore and not about the strategy or the schema.
     validate_deployment_routing_plan(
-        routed.metadata["routing"], n_wires=9, coupling_map=coupling_map
+        routed.metadata["routing"], n_qubits=9, coupling_map=coupling_map
     )
     with pytest.raises(
         DeploymentRoutingEvidenceError,
         match="must restore the final logical permutation",
     ):
         validate_deployment_routing_plan(
-            dropped.metadata["routing"], n_wires=9, coupling_map=coupling_map
+            dropped.metadata["routing"], n_qubits=9, coupling_map=coupling_map
         )
 
 

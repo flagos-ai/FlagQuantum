@@ -262,7 +262,7 @@ def site_sharded_z_zz_objective_pipeline(
     if any(
         state.rank != first.rank
         or state.world_size != first.world_size
-        or state.n_wires != first.n_wires
+        or state.n_qubits != first.n_qubits
         for state in states
     ):
         raise ValueError("pipeline states must share rank ownership and wire count")
@@ -422,10 +422,10 @@ def site_sharded_z_zz_observations(
     """
 
     sites = tuple(dict.fromkeys(int(wire) for wire in observation_sites))
-    if not sites or any(wire < 0 or wire >= state.n_wires for wire in sites):
+    if not sites or any(wire < 0 or wire >= state.n_qubits for wire in sites):
         raise ValueError("observation_sites must contain valid MPS wires")
     parsed = tuple((wire,) for wire in sites) + tuple(
-        (wire, wire + 1) for wire in sites if wire + 1 < state.n_wires
+        (wire, wire + 1) for wire in sites if wire + 1 < state.n_qubits
     )
     reference = next(iter(state.local_tensors.values()))
     zero = torch.zeros(state.bsz, dtype=reference.real.dtype, device=reference.device)

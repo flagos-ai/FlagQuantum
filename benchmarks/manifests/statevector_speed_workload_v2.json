@@ -1,0 +1,35 @@
+{
+  "name": "issue044_matched_statevector_training_speed_v2",
+  "role": "matched_statevector_training_speed",
+  "frozen_before_release_run": true,
+  "freeze_note": "Version 2 supersedes version 1 before any release-eligible run, and version 1 measured nothing this campaign uses. The measurement method is unchanged: the same warmup and measured iteration counts, the same diagonal of three perturbation points, the same timed unit. Only the size of those three points changed. Version 1's largest point is 28 wires at depth 32, which costs about 593 s per timed call on one A800; completing its frozen protocol would have needed roughly 6.6 h for the baseline leg alone and left no room to measure the same workload across the two hosts, so the release structure it froze could not have been executed as frozen. Version 2 keeps a point at every perturbation fraction and grows both the state and the depth across the three points, but scales them so that one campaign fits a single maintenance window. Sizing a protocol that can actually be run is the point of freezing a protocol; the calibration behind the sizes is a separate, unsealed pricing run whose numbers appear in no artifact. The capacity requirement is unaffected and is carried by the frozen 33-wire capacity workload, which genuinely exhausts a single device. One correction: version 1's note described the timed unit as one optimizer step, which the producer never did, so version 2 states the unit the producer does time.",
+  "optimizer": "adam",
+  "dtype": "complex64",
+  "warmup_steps": 5,
+  "measured_steps": 30,
+  "acceptance_configuration": "matched_speed_26q_d16_x0.50",
+  "note": "Each configuration sets its own optimizer steps; the timed unit is one train_distributed_statevector call carrying that configuration's steps, followed by an explicit device synchronize. The workload digest of this file is what a matched-speed payload reports as its workload_sha256.",
+  "configurations": [
+    {
+      "name": "matched_speed_22q_d8_x0.10",
+      "n_wires": 22,
+      "depth": 8,
+      "cross_shard_gate_fraction": 0.1,
+      "steps": 2
+    },
+    {
+      "name": "matched_speed_24q_d12_x0.25",
+      "n_wires": 24,
+      "depth": 12,
+      "cross_shard_gate_fraction": 0.25,
+      "steps": 2
+    },
+    {
+      "name": "matched_speed_26q_d16_x0.50",
+      "n_wires": 26,
+      "depth": 16,
+      "cross_shard_gate_fraction": 0.5,
+      "steps": 2
+    }
+  ]
+}

@@ -88,6 +88,20 @@ CPU complex128 parameter-shift and finite-difference diagnostics. Its maximum
 gradient relative error is `3.508e-8`, which correctly reflects the final FP32
 delivery boundary rather than a Double-Single `.grad` claim.
 
+The finite-difference diagnostic is an **independent check, not a second product
+route**. The conformance run evaluates the P3 shadow at `+epsilon` and `-epsilon`
+on each named parameter in complex128 and reports
+`finite_difference_gradient_relative_error`, which `max_finite_difference_gradient_relative_error`
+in the contract caps at `2e-5`; the displacement is the contract's
+`gradcheck_epsilon` of `1e-3`. Its accuracy is bounded by that displacement — the
+diagnostic estimates the parameter-shift route's error, it does not define it, and
+nothing user-facing is served from it. The quotient itself is
+`flagquantum.core.finite_differences.central_difference_gradient`, the same
+implementation `fq.gradient` reaches through `method="finite_difference"`, so an
+oracle cannot silently disagree with the user route it is meant to check. The
+recorded gate is `finite_difference_diagnostic_required` in
+[`split-real-imag-statevector-p5-autograd-optimizer-contract.toml`](../../contracts/split-real-imag-statevector-p5-autograd-optimizer-contract.toml).
+
 Optimizer conformance compares Double-Single and FP32 master-parameter SGD
 against complex128 trajectories at steps 1, 16, and 64:
 

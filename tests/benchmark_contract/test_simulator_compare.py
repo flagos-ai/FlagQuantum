@@ -63,8 +63,8 @@ def test_simulator_evaluation_contract_matches_runner() -> None:
 
 
 def test_simulator_workload_is_deterministic_and_dense() -> None:
-    first = build_workload(n_wires=5, layers=2)
-    second = build_workload(n_wires=5, layers=2)
+    first = build_workload(n_qubits=5, layers=2)
+    second = build_workload(n_qubits=5, layers=2)
 
     assert first.to_ir().content_hash == second.to_ir().content_hash
     assert len(first) == 42
@@ -74,7 +74,7 @@ def test_simulator_workload_is_deterministic_and_dense() -> None:
 def test_simulator_comparison_rejects_too_few_iterations() -> None:
     with pytest.raises(ValueError, match="iterations at least 3"):
         run_benchmark(
-            n_wires=(4,),
+            n_qubits=(4,),
             layers=1,
             threads=1,
             warmup=0,
@@ -87,7 +87,7 @@ def test_simulator_comparison_rejects_too_few_iterations() -> None:
 def test_simulator_comparison_rejects_an_empty_size_matrix() -> None:
     with pytest.raises(ValueError, match="at least one workload size"):
         run_benchmark(
-            n_wires=(),
+            n_qubits=(),
             layers=1,
             threads=1,
             warmup=0,
@@ -102,7 +102,7 @@ def test_simulator_comparison_smoke_payload() -> None:
     pytest.importorskip("qiskit_aer")
 
     payload = run_benchmark(
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         threads=1,
         warmup=0,

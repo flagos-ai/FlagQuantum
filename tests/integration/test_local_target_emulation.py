@@ -125,7 +125,7 @@ def test_emulation_reports_no_rewrite_when_the_program_is_already_native() -> No
 def test_emulation_accepts_a_program_that_already_asks_for_counts() -> None:
     ir = replace(
         _nonlocal_ghz().to_ir(),
-        measurements=tuple(lower_outputs(counts(), n_wires=3, shots=128, seed=5)),
+        measurements=tuple(lower_outputs(counts(), n_qubits=3, shots=128, seed=5)),
     )
     result = emulate(ir, target=_device(), shots=128, seed=5)
     assert sum(result.noiseless.counts.values()) == 128
@@ -186,7 +186,7 @@ def test_emulation_handles_a_directed_target_and_reports_its_allocation() -> Non
     # three logical ones carry results.
     assert diagnostic.physical_plan_version == "3.0"
     assert diagnostic.physical_slot_count == 6
-    assert diagnostic.logical_wire_count == 3
+    assert diagnostic.logical_qubit_count == 3
     assert diagnostic.logical_result_physical_slots == (0, 1, 2)
     assert diagnostic.allocation_identity
     assert result.media_type == (

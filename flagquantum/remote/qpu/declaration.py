@@ -142,7 +142,7 @@ def declared_gate_names(
 
 
 def edge_pair(value: Any, *, owner: str) -> tuple[int, int]:
-    """Return one declared coupling as an ordered pair of non-negative wires."""
+    """Return one declared coupling as an ordered pair of non-negative qubits."""
     if isinstance(value, str | bytes) or not isinstance(value, Sequence):
         raise ValueError(f"{owner} coupling entry must be a pair of wires")
     if len(value) != 2:
@@ -162,7 +162,7 @@ def connectivity_edges(
 
     A vendor publishes connectivity as a ``{source: [targets]}`` graph or as a
     flat sequence of pairs. Both are accepted, self-loops are dropped because
-    they are not couplings, and a wire outside the declared width is refused
+    they are not couplings, and a qubit outside the declared width is refused
     rather than silently truncated.
     """
 

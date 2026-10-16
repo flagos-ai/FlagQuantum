@@ -149,7 +149,7 @@ def contract_nodes_with_byte_budget(
     reachable: a peak met only by slicing into a number of terms that dwarfs the
     memory it saves. The plan's economics are checked before any slice runs, so an
     impossible budget ends in a bounded preflight error rather than a run that
-    looks like it has hung — on an eight-wire bra-operator-ket network a 128-byte
+    looks like it has hung — on an eight-qubit bra-operator-ket network a 128-byte
     budget needs 131072 whole-network contractions to save 524288 bytes.
 
     ``contraction_strategy`` is the order *inside* each slice, taken either as a

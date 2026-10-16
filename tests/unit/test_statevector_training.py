@@ -212,6 +212,11 @@ def test_progress_proves_useful_work_and_all_required_phases(tmp_path: Path):
     assert summary["node_count"] == 1
     assert summary["peak_memory_bytes"] > 0
     assert summary["communication_bytes"] == 0
+    # A single rank moves no bytes, so the fraction it reports is zero over a
+    # state it does hold: the field has to be present, and it has to be zero
+    # because nothing was communicated rather than because nothing was counted.
+    assert summary["local_state_bytes"] > 0
+    assert summary["communication_fraction"] == 0.0
 
 
 def test_backward_operation_is_actively_bounded(monkeypatch):

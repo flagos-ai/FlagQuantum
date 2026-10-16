@@ -179,7 +179,7 @@ def main() -> None:
     print()
 
     print("inputs")
-    report("operator", str([(float(t.coefficient), t.wires) for t in cost.terms]))
+    report("operator", str([(float(t.coefficient), t.qubits) for t in cost.terms]))
     report("ground energy", f"{ground:.17g}")
     report("reference state", "|00>, so the pool is not screened at a stationary point")
     report("pool", ", ".join(POOL) + f" on wire 0, {len(POOL)} directions")

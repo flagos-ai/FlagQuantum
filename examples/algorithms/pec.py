@@ -101,7 +101,7 @@ def main() -> None:
         circuit,
         observable,
         noise_model=NoiseModel().add(
-            "cx", bit_flip_channel(args.probability, dtype=DTYPE), wires=(0,)
+            "cx", bit_flip_channel(args.probability, dtype=DTYPE), qubits=(0,)
         ),
         dtype=DTYPE,
     )
@@ -127,7 +127,7 @@ def main() -> None:
     report("observable", "1.0 * zz(0, 1)")
     report("noiseless value", f"{noiseless:.17g}")
     report("channel", f"bit_flip at p = {args.probability} on cx")
-    report("locations", [f"{loc.channel_name}{loc.wires}" for loc in result.locations])
+    report("locations", [f"{loc.channel_name}{loc.qubits}" for loc in result.locations])
     report("estimate dtype", DTYPE)
     print()
 

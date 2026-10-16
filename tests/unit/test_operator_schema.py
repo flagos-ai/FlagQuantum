@@ -53,7 +53,7 @@ def test_schema_rejects_a_frequency_set_that_cannot_be_used():
         semantic_kind="unitary",
         adjoint="matrix_adjoint",
         decomposition=(),
-        wire_convention=("target",),
+        qubit_convention=("target",),
     )
     with pytest.raises(ValueError, match="2 frequency set"):
         OperatorSchema(**declared, parameter_frequencies=((1.0,), (2.0,)))
@@ -117,7 +117,7 @@ def test_gate_info_exposes_user_facing_parameter_contract():
 
     assert isinstance(info, fqo.GateInfo)
     assert info.name == "u3"
-    assert info.n_wires == 1
+    assert info.n_qubits == 1
     assert info.parameters == ("theta", "phi", "lbd")
     assert info.n_parameters == 3
     assert dict(info.parameter_shapes) == {"theta": (), "phi": (), "lbd": ()}
@@ -199,7 +199,7 @@ def test_lowering_registry_is_copy_on_write():
         semantic_kind="unitary",
         adjoint="matrix_adjoint",
         decomposition=(),
-        wire_convention=("target",),
+        qubit_convention=("target",),
     )
     base = OperatorLoweringRegistry()
     extended = base.with_operator(custom)

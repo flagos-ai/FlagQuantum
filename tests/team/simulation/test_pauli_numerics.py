@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import math
 
-import numpy as np
 import pytest
 import torch
 
 from flagquantum.simulation.pauli import (
     exponential_pauli_operator,
-    infer_n_wires_from_dense_state,
+    infer_n_qubits_from_dense_state,
     normalized_pauli_basis,
     pauli_product_density_expectation,
     pauli_product_operator,
@@ -20,7 +19,7 @@ pytestmark = pytest.mark.unit
 
 _COMPLEX128 = torch.complex128
 
-# One case is (theta, word, targets, n_wires, the amplitudes a Pauli rotation leaves
+# One case is (theta, word, targets, n_qubits, the amplitudes a Pauli rotation leaves
 # on the all-zero input).  The amplitudes are the analytic closed form
 # cos(theta) on the states the word fixes and -i sin(theta) on the states it flips,
 # and the first five cases are the call forms the reference implementation documents
@@ -68,7 +67,7 @@ def _diagonalization_oracle(
     theta: float,
     word: str,
     targets: tuple[int, ...],
-    n_wires: int,
+    n_qubits: int,
 ) -> torch.Tensor:
     """Exponentiate through an eigendecomposition of the Pauli product.
 
@@ -79,7 +78,7 @@ def _diagonalization_oracle(
 
     product = pauli_product_operator(
         _oracle_operators(word, targets),
-        n_wires,
+        n_qubits,
         dtype=_COMPLEX128,
         device="cpu",
     )
@@ -92,19 +91,19 @@ def _power_series_oracle(
     theta: float,
     word: str,
     targets: tuple[int, ...],
-    n_wires: int,
+    n_qubits: int,
     terms: int = 90,
 ) -> torch.Tensor:
     """Sum the defining power series of the exponential term by term."""
 
     product = pauli_product_operator(
         _oracle_operators(word, targets),
-        n_wires,
+        n_qubits,
         dtype=_COMPLEX128,
         device="cpu",
     )
     generator = (-1j * float(theta)) * product
-    eye = torch.eye(2**n_wires, dtype=_COMPLEX128)
+    eye = torch.eye(2**n_qubits, dtype=_COMPLEX128)
     total, term = eye, eye
     for order in range(1, terms):
         term = term @ generator / order
@@ -116,27 +115,27 @@ def _amplitudes(
     theta: float,
     word: str,
     targets: tuple[int, ...],
-    n_wires: int,
+    n_qubits: int,
 ) -> dict[str, complex]:
     """Rotate the all-zero state and report the amplitudes on the reachable basis states."""
 
-    basis = torch.zeros(2**n_wires, dtype=_COMPLEX128)
+    basis = torch.zeros(2**n_qubits, dtype=_COMPLEX128)
     basis[0] = 1.0
     vector = (
         exponential_pauli_operator(
-            theta, word, targets, n_wires, dtype=_COMPLEX128, device="cpu"
+            theta, word, targets, n_qubits, dtype=_COMPLEX128, device="cpu"
         )
         @ basis
     )
     return {
-        format(index, f"0{n_wires}b"): complex(vector[index])
-        for index in range(2**n_wires)
+        format(index, f"0{n_qubits}b"): complex(vector[index])
+        for index in range(2**n_qubits)
         if float(vector[index].abs()) > 1e-12
     }
 
 
 @pytest.mark.parametrize(
-    ("theta", "word", "targets", "n_wires"),
+    ("theta", "word", "targets", "n_qubits"),
     (
         (0.0, "XX", (0, 1), 2),
         (0.3, "X", (0,), 1),
@@ -148,40 +147,40 @@ def _amplitudes(
     ),
 )
 def test_the_closed_form_agrees_with_diagonalization_and_a_power_series(
-    theta: float, word: str, targets: tuple[int, ...], n_wires: int
+    theta: float, word: str, targets: tuple[int, ...], n_qubits: int
 ) -> None:
     actual = exponential_pauli_operator(
-        theta, word, targets, n_wires, dtype=_COMPLEX128, device="cpu"
+        theta, word, targets, n_qubits, dtype=_COMPLEX128, device="cpu"
     )
 
     torch.testing.assert_close(
         actual,
-        _diagonalization_oracle(theta, word, targets, n_wires),
+        _diagonalization_oracle(theta, word, targets, n_qubits),
         atol=1e-14,
         rtol=0.0,
     )
     torch.testing.assert_close(
         actual,
-        _power_series_oracle(theta, word, targets, n_wires),
+        _power_series_oracle(theta, word, targets, n_qubits),
         atol=1e-14,
         rtol=0.0,
     )
-    identity = torch.eye(2**n_wires, dtype=_COMPLEX128)
+    identity = torch.eye(2**n_qubits, dtype=_COMPLEX128)
     torch.testing.assert_close(actual.conj().T @ actual, identity, atol=1e-14, rtol=0.0)
 
 
 @pytest.mark.parametrize(
-    ("theta", "word", "targets", "n_wires", "expected"),
+    ("theta", "word", "targets", "n_qubits", "expected"),
     _REFERENCE_ROTATIONS,
 )
 def test_the_rotation_reproduces_the_reference_amplitudes(
     theta: float,
     word: str,
     targets: tuple[int, ...],
-    n_wires: int,
+    n_qubits: int,
     expected: dict[str, complex],
 ) -> None:
-    measured = _amplitudes(theta, word, targets, n_wires)
+    measured = _amplitudes(theta, word, targets, n_qubits)
 
     assert set(measured) == set(expected)
     for label, amplitude in expected.items():
@@ -211,24 +210,24 @@ def test_an_all_identity_word_returns_the_global_phase_it_denotes() -> None:
     theta = 0.9
     phase = complex(math.cos(theta), -math.sin(theta))
 
-    for n_wires in (1, 2, 3):
+    for n_qubits in (1, 2, 3):
         actual = exponential_pauli_operator(
             theta,
-            "I" * n_wires,
-            tuple(range(n_wires)),
-            n_wires,
+            "I" * n_qubits,
+            tuple(range(n_qubits)),
+            n_qubits,
             dtype=_COMPLEX128,
             device="cpu",
         )
-        expected = phase * torch.eye(2**n_wires, dtype=_COMPLEX128)
+        expected = phase * torch.eye(2**n_qubits, dtype=_COMPLEX128)
         torch.testing.assert_close(actual, expected, atol=1e-14, rtol=0.0)
         # Reading an all-identity word as the identity would drop the phase, so the
         # reference is separated from the identity by more than half a unit.
         dropped = exponential_pauli_operator(
             0.0,
-            "I" * n_wires,
-            tuple(range(n_wires)),
-            n_wires,
+            "I" * n_qubits,
+            tuple(range(n_qubits)),
+            n_qubits,
             dtype=_COMPLEX128,
             device="cpu",
         )
@@ -248,16 +247,16 @@ def test_an_identity_character_consumes_a_target_without_acting_on_it(
     word: str, targets: tuple[int, ...], bare_targets: tuple[int, ...]
 ) -> None:
     theta = 0.5
-    n_wires = max(targets) + 1
+    n_qubits = max(targets) + 1
 
     padded = exponential_pauli_operator(
-        theta, word, targets, n_wires, dtype=_COMPLEX128, device="cpu"
+        theta, word, targets, n_qubits, dtype=_COMPLEX128, device="cpu"
     )
     bare = exponential_pauli_operator(
         theta,
         "".join(character for character in word if character != "I"),
         bare_targets,
-        n_wires,
+        n_qubits,
         dtype=_COMPLEX128,
         device="cpu",
     )
@@ -266,7 +265,7 @@ def test_an_identity_character_consumes_a_target_without_acting_on_it(
 
 
 def test_the_word_places_its_characters_in_the_given_order() -> None:
-    """``"XZ"`` on ``(0, 1)`` flips wire 0 while ``"ZX"`` flips wire 1."""
+    """``"XZ"`` on ``(0, 1)`` flips qubit 0 while ``"ZX"`` flips qubit 1."""
 
     forward = _amplitudes(math.pi / 2, "XZ", (0, 1), 2)
     reversed_word = _amplitudes(math.pi / 2, "ZX", (0, 1), 2)
@@ -275,7 +274,7 @@ def test_the_word_places_its_characters_in_the_given_order() -> None:
     assert set(reversed_word) == {"01"}
 
 
-def test_the_operator_is_embedded_on_the_wires_the_circuit_declares() -> None:
+def test_the_operator_is_embedded_on_the_qubits_the_circuit_declares() -> None:
     theta = 0.5
     identity = torch.eye(2, dtype=_COMPLEX128)
     embedded = exponential_pauli_operator(
@@ -355,8 +354,8 @@ def test_a_negative_target_is_refused(targets: tuple[int, ...]) -> None:
         )
 
 
-def test_a_target_beyond_the_declared_wires_is_refused() -> None:
-    with pytest.raises(ValueError, match="wire index out of range"):
+def test_a_target_beyond_the_declared_qubits_is_refused() -> None:
+    with pytest.raises(ValueError, match="qubit index out of range"):
         exponential_pauli_operator(
             0.3, "XX", (0, 2), 2, dtype=_COMPLEX128, device="cpu"
         )
@@ -370,13 +369,27 @@ def test_a_target_that_is_not_an_integer_is_refused(target: object) -> None:
         )
 
 
+class _IndexLabel:
+    """An integer label defined outside this project, read through ``__index__``.
+
+    It implements no other integral protocol, so a reader that reached for
+    ``__int__`` or for string parsing instead of ``operator.index`` would refuse it.
+    """
+
+    def __init__(self, value: int) -> None:
+        self._value = value
+
+    def __index__(self) -> int:
+        return self._value
+
+
 def test_integral_target_labels_from_other_libraries_are_accepted() -> None:
     theta = 0.5
 
-    labels = exponential_pauli_operator(
+    indexed = exponential_pauli_operator(
         theta,
         "X",
-        (np.int64(1),),
+        (_IndexLabel(1),),
         2,
         dtype=_COMPLEX128,
         device="cpu",
@@ -390,7 +403,7 @@ def test_integral_target_labels_from_other_libraries_are_accepted() -> None:
         device="cpu",
     )
 
-    assert torch.equal(labels, tensors)
+    assert torch.equal(indexed, tensors)
 
 
 def test_a_word_that_is_not_a_string_is_refused() -> None:
@@ -443,9 +456,9 @@ def test_pauli_product_matches_for_statevector_density_and_dense_operator() -> N
 
 
 def test_dense_state_dimension_must_be_a_power_of_two() -> None:
-    assert infer_n_wires_from_dense_state(torch.zeros(2, 8)) == 3
+    assert infer_n_qubits_from_dense_state(torch.zeros(2, 8)) == 3
     with pytest.raises(ValueError, match="power of two"):
-        infer_n_wires_from_dense_state(torch.zeros(2, 6))
+        infer_n_qubits_from_dense_state(torch.zeros(2, 6))
 
 
 @pytest.mark.parametrize("name", ("rx", "ry", "rz"))

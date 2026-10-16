@@ -84,7 +84,7 @@ def build_target_artifact(
             parameter_schema={"binding": "fully_bound", "parameters": []},
             result_schema={
                 "kind": "samples",
-                "logical_wires": list(range(physical_plan.logical_wire_count)),
+                "logical_wires": list(range(physical_plan.logical_qubit_count)),
                 "physical_result_slots": list(
                     physical_plan.logical_result_physical_slots
                 ),

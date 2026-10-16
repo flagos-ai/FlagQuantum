@@ -123,14 +123,14 @@ def _case(
     group_size: int,
 ) -> dict[str, object]:
     from flagquantum.kernels.triton.mps_wire_probabilities import (
-        fused_mps_wire_probabilities,
+        fused_mps_qubit_probabilities,
     )
     from flagquantum.simulation.mps.site_kernels import reset_site_kernel_stats
 
     tensor = _input(batch, left_dim, right_dim, seed=seed)
     state = _public_state(tensor)
     reference = _reference(tensor)
-    direct = fused_mps_wire_probabilities(tensor)
+    direct = fused_mps_qubit_probabilities(tensor)
     public = _execute_public(state, dispatch=True)
     public_reference = _execute_public(state, dispatch=False)
     torch.testing.assert_close(direct, reference, rtol=2e-5, atol=2e-6)
@@ -138,7 +138,7 @@ def _case(
     torch.testing.assert_close(public_reference, reference, rtol=1e-6, atol=1e-7)
 
     direct_kernel = _measure(
-        lambda: fused_mps_wire_probabilities(tensor),
+        lambda: fused_mps_qubit_probabilities(tensor),
         warmup=warmup,
         repeats=repeats,
         group_size=group_size,

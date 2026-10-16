@@ -5,7 +5,7 @@ the header are only meaningful once a registered schema says what they are. This
 module owns that side: the table, the schema-driven decode of a request and
 encode of a response, and the status semantics of a call that cannot be served.
 
-The protocol has no runtime type check on the wire, so the schema is the whole
+The protocol has no runtime type check on the frame, so the schema is the whole
 contract. A handler whose declared schema disagrees with its caller's is a
 defect in the *declaration*, and this module's job is to make the disagreement
 visible in a status rather than to reinterpret the bytes.
@@ -88,7 +88,7 @@ class FunctionEntry:
 
     `invoke` receives the decoded arguments, one per argument descriptor, and
     returns the decoded results. Decoding and encoding stay here so a handler
-    never touches the wire format.
+    never touches the frame format.
     """
 
     name: str

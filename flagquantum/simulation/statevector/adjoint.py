@@ -43,12 +43,12 @@ def z_expectation_chunk(
     amplitudes: torch.Tensor,
     global_indices: torch.Tensor,
     *,
-    n_wires: int,
-    wire: int,
+    n_qubits: int,
+    qubit: int,
 ) -> torch.Tensor:
     """Return one amplitude chunk's contribution to a Z expectation."""
 
-    bit = (global_indices >> (n_wires - wire - 1)) & 1
+    bit = (global_indices >> (n_qubits - qubit - 1)) & 1
     signs = (1 - 2 * bit).to(dtype=amplitudes.real.dtype)
     return (amplitudes.abs().square() * signs.reshape(1, -1)).sum()
 
@@ -57,12 +57,12 @@ def z_expectation_adjoint_chunk(
     amplitudes: torch.Tensor,
     global_indices: torch.Tensor,
     *,
-    n_wires: int,
-    wire: int,
+    n_qubits: int,
+    qubit: int,
 ) -> torch.Tensor:
     """Return one amplitude chunk's derivative of a Z expectation."""
 
-    bit = (global_indices >> (n_wires - wire - 1)) & 1
+    bit = (global_indices >> (n_qubits - qubit - 1)) & 1
     signs = (1 - 2 * bit).to(dtype=amplitudes.real.dtype)
     return 2 * amplitudes * signs.reshape(1, -1)
 
@@ -71,14 +71,14 @@ def z_hamiltonian_chunk(
     amplitudes: torch.Tensor,
     global_indices: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     terms: Sequence[tuple[float, tuple[int, ...]]],
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Return one chunk's weighted Z/ZZ expectation and adjoint seed."""
 
     weights = z_hamiltonian_weights(
         global_indices,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         terms=terms,
         dtype=amplitudes.real.dtype,
     )
@@ -90,7 +90,7 @@ def z_hamiltonian_chunk(
 def z_hamiltonian_weights(
     global_indices: torch.Tensor,
     *,
-    n_wires: int,
+    n_qubits: int,
     terms: Sequence[tuple[float, tuple[int, ...]]],
     dtype: torch.dtype,
 ) -> torch.Tensor:
@@ -101,17 +101,17 @@ def z_hamiltonian_weights(
         dtype=dtype,
         device=global_indices.device,
     )
-    for coefficient, wires in terms:
-        if len(wires) == 1:
-            parity = global_indices >> (n_wires - wires[0] - 1)
-        elif len(wires) == 2:
-            first = global_indices >> (n_wires - wires[0] - 1)
-            second = global_indices >> (n_wires - wires[1] - 1)
+    for coefficient, qubits in terms:
+        if len(qubits) == 1:
+            parity = global_indices >> (n_qubits - qubits[0] - 1)
+        elif len(qubits) == 2:
+            first = global_indices >> (n_qubits - qubits[0] - 1)
+            second = global_indices >> (n_qubits - qubits[1] - 1)
             parity = first ^ second
         else:
             parity = torch.zeros_like(global_indices)
-            for wire in wires:
-                parity = parity ^ (global_indices >> (n_wires - wire - 1))
+            for qubit in qubits:
+                parity = parity ^ (global_indices >> (n_qubits - qubit - 1))
         signs = (1 - 2 * (parity & 1)).to(dtype=weights.dtype)
         weights = weights + float(coefficient) * signs
     return weights

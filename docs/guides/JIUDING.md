@@ -366,8 +366,14 @@ def evaluate_batch(circuits):
 gradient = batched_parameter_shift_gradient(build, parameters, evaluate_batch)
 ```
 
-The current fail-closed profile supports H, X, RX, RY, RZ, and CX. Each input
-parameter must directly control exactly one RX, RY, or RZ occurrence. See
+The fail-closed profile sends one positively shifted and one negatively shifted
+circuit per input parameter, so it differentiates any gate whose declared
+frequencies give a two-term rule: H, X, and CX may appear around the
+differentiated gate, and the differentiated gate may be any one-frequency
+rotation, including RX, RY, RZ, U1, U2, U3, PHASE, CPHASE, RXX, RYY, and RZZ.
+Each input parameter must directly control exactly one occurrence of such a gate.
+A gate whose rule is wider, such as CRX, CRY, or CRZ, is refused by name rather
+than answered from a truncated rule. See
 `examples/remote/jiuding_parameter_shift.py` for one complete optimization
 update. A live single-A100 run used one two-circuit batch call and decreased the
 test energy after one update; see the

@@ -63,8 +63,8 @@ def _apply_cataloged_single_qubit_matrix(
     return single_qubit_matrix(
         state,
         matrix,
-        wire=wire,
-        n_wires=n_wires,
+        qubit=wire,
+        n_qubits=n_wires,
     )
 
 

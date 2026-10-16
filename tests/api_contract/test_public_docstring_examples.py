@@ -9,7 +9,7 @@ import pytest
 import flagquantum as fq
 from flagquantum.algorithms.arithmetic import (
     adder_circuit,
-    adder_wires,
+    adder_qubits,
 )
 from flagquantum.algorithms.chemistry import (
     coupler_hardware_efficient_ansatz,
@@ -50,7 +50,7 @@ from flagquantum.algorithms.variational import (
     maxcut_hamiltonian,
     run_qaoa,
 )
-from flagquantum.compiler import Layout
+from flagquantum.compiler import Layout, optimize
 from flagquantum.compiler.openqasm_import import (
     import_openqasm,
     import_openqasm_to_ir,
@@ -79,12 +79,15 @@ from flagquantum.qec import (
     MeasurementPhase,
     SubsystemCode,
     bivariate_bicycle_code,
+    build_memory_circuit,
     qldpc_code,
     reed_muller_code,
     ring_floquet_code,
     tesseract_code,
     tesseract_column_swap,
     tesseract_free_cnot_pairs,
+    toric_code,
+    triangular_colour_code,
 )
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
@@ -142,8 +145,11 @@ pytestmark = pytest.mark.unit
 # values a Hartree-Fock solve consumes, and the entry point that builds one. The
 # driver module contributes three more: the Hartree-Fock solution, the returned
 # Hamiltonian with its energies, and the geometry-to-Hamiltonian entry point. The
-# error-correction package contributes thirteen: the code record a caller
-# constructs,
+# error-correction package contributes fifteen: the code record a caller
+# constructs, the triangular colour patch, whose example is the patch's own
+# data, ancilla and distance census rather than a matrix written by hand, and
+# the square-lattice torus, whose example is the first record in the package
+# whose matrices leave k = 2,
 # the matrices that record is read back as, the bivariate-bicycle family, whose
 # example is the smallest member of the family rather than the published one,
 # because the published instance spends its time in the distance search and an
@@ -168,9 +174,15 @@ pytestmark = pytest.mark.unit
 # built from, whose example is a named round and the two numbers a round reports
 # about its own operators, and the published two-phase ring, whose example is the
 # six numbers that separate a schedule which protects qubits from one that does not.
+# Four entries are listed for the support-library surface rather than for an
+# algorithm workflow: the memory-circuit builder, whose example is the three
+# numbers a repetition-code round reports about its own schedule, the compiler
+# entry point, whose example is the identity the pass ladder preserves, and the
+# density matrix and entanglement-entropy reads, whose examples show the two
+# figures a caller takes from one run rather than a second execution.
 ENTRIES = (
     adder_circuit,
-    adder_wires,
+    adder_qubits,
     adjoint_gradient,
     amplitude_encode,
     angular_encode,
@@ -193,6 +205,7 @@ ENTRIES = (
     SubsystemCode,
     boson_position,
     bivariate_bicycle_code,
+    build_memory_circuit,
     coupler_hardware_efficient_ansatz,
     create_molecular_hamiltonian,
     exponential_pauli_operator,
@@ -206,7 +219,9 @@ ENTRIES = (
     fq.Module,
     fq.Observable,
     fq.compile,
+    fq.density_matrix,
     fq.expectation,
+    fq.vn_entropy,
     fq.from_openqasm,
     fq.gradient,
     fq.plan,
@@ -219,6 +234,7 @@ ENTRIES = (
     jordan_wigner,
     maxcut_hamiltonian,
     molecular_integrals,
+    optimize,
     pauli_exponential_circuit,
     pauli_readout,
     parity_encoding,
@@ -238,6 +254,8 @@ ENTRIES = (
     tesseract_column_swap,
     tesseract_free_cnot_pairs,
     target_capability_snapshot,
+    toric_code,
+    triangular_colour_code,
     translate,
     trotter_circuit,
     uccsd_ansatz,

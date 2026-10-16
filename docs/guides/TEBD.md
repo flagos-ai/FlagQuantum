@@ -10,7 +10,7 @@ from flagquantum.algorithms import transverse_field_ising
 hamiltonian = transverse_field_ising(8, coupling=1.0, field=0.7)
 result = fq.experimental.simulation.run_tebd(
     hamiltonian,
-    n_wires=8,
+    n_qubits=8,
     total_time=2.0,
     time_step=0.02,
     max_bond=64,

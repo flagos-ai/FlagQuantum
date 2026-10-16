@@ -197,7 +197,7 @@ def test_nonlocal_channel_fails_topology_postcondition() -> None:
         metadata={"is_channel": True},
     )
     source = CircuitIR(3, (channel,), dtype="complex128")
-    with pytest.raises(TopologyLegalizationError, match="nonlocal two-wire"):
+    with pytest.raises(TopologyLegalizationError, match="nonlocal two-qubit"):
         legalize_circuit_topology(
             source,
             coupling_map=CouplingMap.line(3),

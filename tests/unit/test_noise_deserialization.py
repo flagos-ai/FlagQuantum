@@ -16,7 +16,7 @@ def test_restored_correlated_readout_rejects_inconsistent_wire_count() -> None:
     payload = model.to_dict()
     payload["readout_rules"][0]["wires"] = [0]
 
-    with pytest.raises(ValueError, match="matrix size must match wires"):
+    with pytest.raises(ValueError, match="matrix size must match qubits"):
         NoiseModel.from_dict(payload)
 
 

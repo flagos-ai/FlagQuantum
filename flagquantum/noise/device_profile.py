@@ -22,7 +22,7 @@ class QubitNoiseCalibration:
 
     def __post_init__(self) -> None:
         if self.wire < 0:
-            raise ValueError("calibration wire must be non-negative")
+            raise ValueError("calibration qubit must be non-negative")
         if self.t1 <= 0 or self.t2 <= 0 or self.t2 > 2 * self.t1:
             raise ValueError("calibration requires t1 > 0 and 0 < t2 <= 2*t1")
         if not 0 <= self.excited_population <= 1:
@@ -43,14 +43,14 @@ class GateDuration:
             raise ValueError("gate duration must be non-negative")
         object.__setattr__(self, "gate_name", name)
         if self.wires is not None:
-            wires = tuple(int(wire) for wire in self.wires)
+            qubits = tuple(int(qubit) for qubit in self.wires)
             if (
-                not wires
-                or any(wire < 0 for wire in wires)
-                or len(wires) != len(set(wires))
+                not qubits
+                or any(qubit < 0 for qubit in qubits)
+                or len(qubits) != len(set(qubits))
             ):
-                raise ValueError("scoped gate duration wires must be non-negative")
-            object.__setattr__(self, "wires", wires)
+                raise ValueError("scoped gate duration qubits must be non-negative")
+            object.__setattr__(self, "wires", qubits)
 
 
 @dataclass(frozen=True)
@@ -81,8 +81,8 @@ class DeviceNoiseProfile:
             raise ValueError("time_unit must be one of s, ms, us, or ns")
         if not self.qubits or not self.gate_durations:
             raise ValueError("device profile requires qubit and gate-duration data")
-        wires = tuple(item.wire for item in self.qubits)
-        if len(wires) != len(set(wires)):
+        qubits = tuple(item.wire for item in self.qubits)
+        if len(qubits) != len(set(qubits)):
             raise ValueError("device profile cannot repeat qubit calibrations")
         duration_keys = tuple(
             (item.gate_name, item.wires) for item in self.gate_durations
@@ -90,19 +90,19 @@ class DeviceNoiseProfile:
         if len(duration_keys) != len(set(duration_keys)):
             raise ValueError("device profile cannot repeat gate-duration scopes")
 
-    def calibration_for(self, wire: int) -> QubitNoiseCalibration:
-        match = next((item for item in self.qubits if item.wire == int(wire)), None)
+    def calibration_for(self, qubit: int) -> QubitNoiseCalibration:
+        match = next((item for item in self.qubits if item.wire == int(qubit)), None)
         if match is None:
-            raise ValueError(f"device profile has no calibration for wire {wire}")
+            raise ValueError(f"device profile has no calibration for qubit {qubit}")
         return match
 
-    def duration_for(self, gate_name: str, wires: tuple[int, ...]) -> float:
+    def duration_for(self, gate_name: str, qubits: tuple[int, ...]) -> float:
         name = gate_name.lower()
         scoped = next(
             (
                 item
                 for item in self.gate_durations
-                if item.gate_name == name and item.wires == tuple(wires)
+                if item.gate_name == name and item.wires == tuple(qubits)
             ),
             None,
         )
@@ -117,7 +117,7 @@ class DeviceNoiseProfile:
         selected = scoped or generic
         if selected is None:
             raise ValueError(
-                f"device profile has no duration for gate {name!r} on wires {wires}"
+                f"device profile has no duration for gate {name!r} on qubits {qubits}"
             )
         return selected.duration
 
@@ -174,7 +174,7 @@ class DeviceNoiseProfile:
                 wires=(
                     None
                     if item.get("wires") is None
-                    else tuple(int(wire) for wire in item["wires"])
+                    else tuple(int(qubit) for qubit in item["wires"])
                 ),
             )
             for item in payload.get("gate_durations", ())

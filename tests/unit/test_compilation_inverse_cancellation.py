@@ -31,6 +31,10 @@ from flagquantum.compiler.inverse_cancellation import (
     inverse_pairs,
     merge_inverse_pairs,
 )
+from flagquantum.compiler.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    OPTIMIZATION_LEVEL_STAGES,
+)
 from flagquantum.compiler.pipeline import _SELF_INVERSE
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, inverse_operator
@@ -545,12 +549,32 @@ def test_the_pass_is_idempotent() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    """One binding and one sequence slot, so the loop can use what it frees.
+    """One composition, inside the loop, so the loop can use what it frees.
 
-    The loop itself no longer names the pass; it resolves names through the
-    registry, so the wiring claim is that exactly one registry binding answers for
-    this pass and its name occupies exactly one slot in the optimized order.
+    The loop runs the sequence `optimization_levels` declares rather than a copy of
+    it, so the composition this test pins is the declaration, and the check that the
+    loop reaches it is that the driver names no pass directly. The loop itself no
+    longer names the pass either; it resolves names through the registry, so the
+    second half of the test pins exactly one registry binding answering for this
+    pass and its name occupying exactly one slot in the registered order.
     """
+
+    composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
+    assert composition.count("merge_inverse_pairs") == 1
+
+    tree = ast.parse(Path(pipeline_module.__file__).read_text(encoding="utf-8"))
+    loop = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_optimize_to_fixed_point"
+    )
+    called = {
+        node.func.id
+        for node in ast.walk(loop)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    assert "optimization_level_stages" in called
+    assert "merge_inverse_pairs" not in called
 
     bound = [
         name

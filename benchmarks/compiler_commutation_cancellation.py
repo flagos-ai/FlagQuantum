@@ -44,9 +44,11 @@ import argparse
 import itertools
 import json
 import random
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import torch
 
@@ -55,7 +57,10 @@ from flagquantum.compiler.commutation import (
     analyze_commutation,
     commute,
 )
-from flagquantum.compiler.commutation_cancellation import cancellable_positions
+from flagquantum.compiler.commutation_cancellation import (
+    cancellable_positions,
+    rotation_groups,
+)
 from flagquantum.compiler.pipeline import (
     _optimize_to_fixed_point,
     merge_adjacent_rotations,
@@ -311,6 +316,8 @@ def _measure_population(label: str, circuits: list[CircuitIR]) -> dict[str, Any]
     widest_block = 0
     groups_found = 0
     cancellable_candidates = 0
+    rotation_groups_found = 0
+    rotation_candidates = 0
 
     for ir in circuits:
         source_instructions += len(ir)
@@ -328,6 +335,13 @@ def _measure_population(label: str, circuits: list[CircuitIR]) -> dict[str, Any]
         groups = cancellable_positions(tuple(ir), analysis)
         groups_found += sum(1 for positions in groups.values() if len(positions) > 1)
         cancellable_candidates += sum(len(positions) for positions in groups.values())
+        rotations = rotation_groups(tuple(ir), analysis)
+        rotation_groups_found += sum(
+            1 for positions in rotations.values() if len(positions) > 1
+        )
+        rotation_candidates += sum(
+            len(positions) for positions in rotations.values() if len(positions) > 1
+        )
 
     return {
         "label": label,
@@ -343,7 +357,37 @@ def _measure_population(label: str, circuits: list[CircuitIR]) -> dict[str, Any]
         "widest_commuting_block": widest_block,
         "cancellation_group_count": groups_found,
         "cancellable_position_count": cancellable_candidates,
+        "rotation_group_count": rotation_groups_found,
+        "rotation_position_count": rotation_candidates,
     }
+
+
+def _rotation_chain_circuit(
+    seed: random.Random, length: int, control_share: float
+) -> CircuitIR:
+    """A chain of z-rotations on one wire interleaved with entanglers touching it.
+
+    ``control_share`` is the share of entanglers placed so that the wire is their
+    first position, which is where a diagonal rotation is proven to commute. The
+    rest put the wire on a non-first position, which for most of the table is a
+    refusal. Both directions are in the population on purpose: a chain of controls
+    only would measure the reach and say nothing about the boundary, and the counts
+    are pinned so a change to where the rule stops shows up as a moved number.
+    """
+
+    others = list(range(1, _REGISTER_WIDTH))
+    instructions: list[Instruction] = []
+    for index in range(length):
+        instructions.append(_instruction("rz", (0,), _ANGLE + 0.001 * index))
+        controlled = seed.choice(_CONTROLLED)
+        arity = OPERATOR_SCHEMAS[controlled].arity
+        if seed.random() < control_share:
+            wires = (0, *seed.sample(others, arity - 1))
+        else:
+            wires = (others[0], 0, *seed.sample(others[1:], arity - 2))
+        instructions.append(Instruction(controlled, wires))
+    instructions.append(_instruction("rz", (0,), _ANGLE))
+    return CircuitIR(_REGISTER_WIDTH, tuple(instructions))
 
 
 def pipeline_delta() -> list[dict[str, Any]]:
@@ -364,6 +408,24 @@ def pipeline_delta() -> list[dict[str, Any]]:
         )
     populations.append(
         ("chained_control_gaps", [_chained_gap_circuit(seed, 6) for _ in range(40)])
+    )
+    # The rotation merge has no reach on any population above, which is a fact
+    # worth stating rather than leaving implicit: `_commuting_gap_circuit` carries a
+    # single rotation and `_chained_gap_circuit` puts two identical entanglers next
+    # to each other, so the adjacent passes have emptied the gap before either
+    # rotation rule is asked. Without this population the new rule would have no
+    # aggregate measurement at all.
+    populations.append(
+        (
+            "rotation_chain_on_controls",
+            [_rotation_chain_circuit(seed, 8, 1.0) for _ in range(40)],
+        )
+    )
+    populations.append(
+        (
+            "rotation_chain_mixed_placement",
+            [_rotation_chain_circuit(seed, 8, 0.5) for _ in range(40)],
+        )
     )
     return [_measure_population(label, circuits) for label, circuits in populations]
 
@@ -390,6 +452,64 @@ def _anchor_circuit(opcode: str, index: int) -> CircuitIR:
     )
 
 
+def _anchor_rotation_circuit(opcode: str, wire_index: int) -> CircuitIR:
+    """Two z-rotations around an entangler, on the entangler's own wires.
+
+    The two angles differ, so a pass that merged them has to have added them rather
+    than cancelled them; a pair of equal angles would be reachable by the
+    cancellation rule alone and the row could not tell the two rules apart.
+    """
+
+    wires = tuple(range(OPERATOR_SCHEMAS[opcode].arity))
+    qubit = wires[wire_index]
+    return CircuitIR(
+        _REGISTER_WIDTH,
+        (
+            _instruction("rz", (qubit,), _ANGLE),
+            Instruction(opcode, wires),
+            _instruction("rz", (qubit,), _ANGLE + 0.01),
+        ),
+    )
+
+
+def _to_qiskit(ir: CircuitIR, circuit_type: Any) -> Any:
+    """The same program as a Qiskit circuit, for the optional anchor only."""
+
+    circuit = circuit_type(_REGISTER_WIDTH)
+    for instruction in ir:
+        if instruction.name == "rz":
+            circuit.rz(instruction.params["theta"], instruction.wires[0])
+        else:
+            getattr(circuit, instruction.name)(*instruction.wires)
+    return circuit
+
+
+def _rotation_rows() -> list[dict[str, Any]]:
+    """The one anchor shape both implementations attempt, measured on this side.
+
+    This is deliberately independent of whether Qiskit is importable. The port's own
+    column is a fact about this repository and is the only part of the comparison a
+    reader can reproduce without installing a second framework; leaving it inside the
+    optional branch is what made an earlier pin of it unfalsifiable, because the job
+    that runs the contract has no Qiskit and the job that has Qiskit does not collect
+    the contract.
+    """
+
+    rows = []
+    for opcode in _QISKIT_SCOPE:
+        for wire_index in range(OPERATOR_SCHEMAS[opcode].arity):
+            ir = _anchor_rotation_circuit(opcode, wire_index)
+            rows.append(
+                {
+                    "opcode": opcode,
+                    "wire_index": wire_index,
+                    "source_gate_count": len(ir),
+                    "port_optimized_gate_count": len(_optimize_to_fixed_point(ir)),
+                }
+            )
+    return rows
+
+
 def _qiskit_anchor() -> dict[str, Any]:
     """Qiskit's own cancellation on the same circuits, when Qiskit is importable.
 
@@ -412,6 +532,20 @@ def _qiskit_anchor() -> dict[str, Any]:
       matrices rather than from a hand-maintained list.
     """
 
+    # Measured first and unconditionally, so the port's own column and the totals
+    # over it exist in both branches of the import below.
+    rotation_rows = _rotation_rows()
+    rotation_totals: dict[str, Any] = {
+        "rotation_rows": rotation_rows,
+        "rotation_row_count": len(rotation_rows),
+        "rotation_source_gate_count": sum(
+            row["source_gate_count"] for row in rotation_rows
+        ),
+        "rotation_port_optimized_gate_count": sum(
+            row["port_optimized_gate_count"] for row in rotation_rows
+        ),
+    }
+
     try:
         from qiskit import QuantumCircuit  # type: ignore[import-not-found]
         from qiskit.transpiler import PassManager  # type: ignore[import-not-found]
@@ -420,7 +554,11 @@ def _qiskit_anchor() -> dict[str, Any]:
             CommutativeCancellation,
         )
     except Exception as error:  # pragma: no cover - the anchor is optional
-        return {"available": False, "reason": f"{type(error).__name__}: {error}"}
+        return {
+            "available": False,
+            "reason": f"{type(error).__name__}: {error}",
+            **rotation_totals,
+        }
 
     passes = PassManager([CommutationAnalysis(), CommutativeCancellation()])
     case_count = 20
@@ -433,12 +571,7 @@ def _qiskit_anchor() -> dict[str, Any]:
             ir = _anchor_circuit(opcode, index)
             source_gates += len(ir)
             ours_removed += len(ir) - len(_optimize_to_fixed_point(ir))
-            qiskit_circuit = QuantumCircuit(_REGISTER_WIDTH)
-            for instruction in ir:
-                if instruction.name == "rz":
-                    qiskit_circuit.rz(instruction.params["theta"], instruction.wires[0])
-                else:
-                    getattr(qiskit_circuit, instruction.name)(*instruction.wires)
+            qiskit_circuit = _to_qiskit(ir, QuantumCircuit)
             reduced = passes.run(qiskit_circuit)
             theirs_removed += qiskit_circuit.size() - reduced.size()
         rows.append(
@@ -452,6 +585,17 @@ def _qiskit_anchor() -> dict[str, Any]:
             }
         )
     in_scope = [row for row in rows if row["in_qiskit_scope"]]
+
+    # The second shape: two different z-rotations around an entangler. This is the
+    # rule this round adds, and Qiskit's pass merges z-rotation runs in the same
+    # call, so this is where the two implementations are actually attempting the
+    # same rewrite. It is restricted to `_QISKIT_SCOPE` for the same reason the
+    # table above is split: outside it Qiskit is not attempting the question. The
+    # port's column was measured above; only Qiskit's is added here.
+    for row in rotation_rows:
+        ir = _anchor_rotation_circuit(row["opcode"], row["wire_index"])
+        qiskit_circuit = _to_qiskit(ir, QuantumCircuit)
+        row["qiskit_optimized_gate_count"] = passes.run(qiskit_circuit).size()
     return {
         "available": True,
         "pass_name": "CommutationAnalysis + CommutativeCancellation",
@@ -468,16 +612,183 @@ def _qiskit_anchor() -> dict[str, Any]:
         "out_of_scope_port_removed_count": sum(
             row["port_removed_count"] for row in rows if not row["in_qiskit_scope"]
         ),
+        "rotation_qiskit_optimized_gate_count": sum(
+            row["qiskit_optimized_gate_count"] for row in rotation_rows
+        ),
         "note": (
             "Compared per opcode, because Qiskit's cancellation set does not "
             "include swap, ccx or cswap; counts are reported, never asserted equal."
         ),
+        **rotation_totals,
     }
+
+
+#: The single-qubit rotations a commuting gap can hide. `pipeline._ROTATION_PARAM`
+#: also names seven two-qubit rotations; those are a different claim with their own
+#: wire placement, so they are out of this table rather than silently folded into it.
+_REDUCIBLE_ROTATIONS = ("rx", "ry", "rz", "phase", "u1")
+
+
+def rotation_merge_table() -> dict[str, Any]:
+    """Where two rotations of one opcode become one across a proven commuting gap.
+
+    Each row places one rotation on both sides of a controlled gate, on one of the
+    gate's own wires, and reports three things side by side: what the rule source
+    says about that placement, whether the pipeline actually rewrote the pair, and
+    -- when it did -- how far the compiled statevector moved from the source's.
+
+    Two directions matter and they are counted separately. A row that merged where
+    the rule source declines to prove commutation would be a wrong rewrite, so
+    `merged_without_a_proof_count` has to stay zero; a row the rule source proves
+    but the pipeline leaves standing is reach this pass does not yet take, reported
+    as `proven_but_unmerged_count` rather than smoothed over. The control, the
+    target of a controlled gate and a `swap`'s second wire all appear, because a
+    table that listed only the placements that work could not show the boundary.
+    """
+
+    rows: list[dict[str, Any]] = []
+    for rotation in _REDUCIBLE_ROTATIONS:
+        for controlled in _CONTROLLED:
+            arity = OPERATOR_SCHEMAS[controlled].arity
+            wires = tuple(range(arity))
+            for position in range(arity):
+                qubit = wires[position]
+                first = _instruction(rotation, (qubit,), _ANGLE)
+                source = CircuitIR(
+                    _REGISTER_WIDTH,
+                    (
+                        first,
+                        Instruction(controlled, wires),
+                        _instruction(rotation, (qubit,), _ANGLE),
+                    ),
+                )
+                optimized = _optimize_to_fixed_point(source)
+                merged = len(optimized) < len(source)
+                difference = 0.0
+                if merged:
+                    difference = float((_state(optimized) - _state(source)).abs().max())
+                rows.append(
+                    {
+                        "rotation_opcode": rotation,
+                        "entangler_opcode": controlled,
+                        "rotation_wire_index": position,
+                        "commutes": commute(first, Instruction(controlled, wires)),
+                        "merged": merged,
+                        "source_instruction_count": len(source),
+                        "optimized_instruction_count": len(optimized),
+                        "max_state_difference": difference,
+                    }
+                )
+
+    merged_rows = [row for row in rows if row["merged"]]
+    return {
+        "rotation_opcodes": list(_REDUCIBLE_ROTATIONS),
+        "entangler_opcodes": list(_CONTROLLED),
+        "row_count": len(rows),
+        "merged_count": len(merged_rows),
+        "proven_commuting_count": sum(1 for row in rows if row["commutes"]),
+        "merged_without_a_proof_count": sum(
+            1 for row in rows if row["merged"] and not row["commutes"]
+        ),
+        "proven_but_unmerged_count": sum(
+            1 for row in rows if row["commutes"] and not row["merged"]
+        ),
+        "merged_by_opcode": {
+            rotation: sum(
+                1 for row in merged_rows if row["rotation_opcode"] == rotation
+            )
+            for rotation in _REDUCIBLE_ROTATIONS
+        },
+        "worst_merged_state_difference": max(
+            (row["max_state_difference"] for row in merged_rows), default=0.0
+        ),
+        "rows": rows,
+    }
+
+
+def _identity_program(program: CircuitIR) -> CircuitIR:
+    """The substitution used to attribute the rotation merge's own reach."""
+
+    return program
+
+
+def rotation_merge_reach() -> list[dict[str, Any]]:
+    """What the rotation merge adds on its own, population by population.
+
+    `removed_by_commutation` in `pipeline_delta` is the sum of both commuting rules,
+    so it cannot attribute anything to the newer one. The attribution is measured by
+    substitution instead: the shipped fixed point is compared against one in which
+    only `merge_commuting_rotations` is replaced by the identity. Substituting one
+    rule and re-running the loop is the only way to separate the two rules' reach
+    here, and it is the same shape an earlier round used for the one-qubit fold.
+
+    The substitution is visible because `_optimize_to_fixed_point` imports the rule
+    inside its body, so it reads the module attribute on every call rather than
+    capturing it at import time.
+    """
+
+    from flagquantum.compiler.commutation_cancellation import (
+        merge_commuting_rotations,
+    )
+
+    seed = random.Random(_CIRCUIT_SEED)
+    populations: list[tuple[str, list[CircuitIR]]] = []
+    for wire_index, name in (
+        (0, "gap_on_wire_0"),
+        (1, "gap_on_wire_1"),
+        (3, "gap_on_unrelated_qubit"),
+    ):
+        populations.append(
+            (name, [_commuting_gap_circuit(seed, wire_index) for _ in range(60)])
+        )
+    populations.append(
+        ("chained_control_gaps", [_chained_gap_circuit(seed, 6) for _ in range(40)])
+    )
+    populations.append(
+        (
+            "rotation_chain_on_controls",
+            [_rotation_chain_circuit(seed, 8, 1.0) for _ in range(40)],
+        )
+    )
+    populations.append(
+        (
+            "rotation_chain_mixed_placement",
+            [_rotation_chain_circuit(seed, 8, 0.5) for _ in range(40)],
+        )
+    )
+
+    module = sys.modules[merge_commuting_rotations.__module__]
+    rows: list[dict[str, Any]] = []
+    for label, circuits in populations:
+        shipped_count = 0
+        without_count = 0
+        worst_difference = 0.0
+        for ir in circuits:
+            shipped = _optimize_to_fixed_point(ir)
+            shipped_count += len(shipped)
+            with patch.object(module, "merge_commuting_rotations", _identity_program):
+                without = _optimize_to_fixed_point(ir)
+            without_count += len(without)
+            if len(without) != len(shipped):
+                difference = float((_state(without) - _state(shipped)).abs().max())
+                worst_difference = max(worst_difference, difference)
+        rows.append(
+            {
+                "label": label,
+                "circuit_count": len(circuits),
+                "shipped_instruction_count": shipped_count,
+                "without_rotation_merge_instruction_count": without_count,
+                "removed_by_rotation_merge": without_count - shipped_count,
+                "max_state_difference": worst_difference,
+            }
+        )
+    return rows
 
 
 def run_benchmark() -> dict[str, Any]:
     sweep = rule_source_sweep()
     delta = pipeline_delta()
+    reach = rotation_merge_reach()
     return {
         "schema": SCHEMA,
         "generated_at": _NOW.isoformat(),
@@ -489,7 +800,9 @@ def run_benchmark() -> dict[str, Any]:
         "reference_revision": "qiskit 1.2.4 CommutationAnalysis + CommutativeCancellation",
         "rule_source_sweep": sweep,
         "gap_position_table": gap_position_table(),
+        "rotation_merge_table": rotation_merge_table(),
         "pipeline_delta": delta,
+        "rotation_merge_reach": reach,
         "reference_anchor": _qiskit_anchor(),
     }
 
@@ -519,6 +832,22 @@ def main() -> None:
             "yes" if answer else " no" for answer in row["rotation_commutes_on_wire"]
         )
         print(f"  {row['opcode']:6s} arity {row['arity']}  {marks}")
+    print()
+    merge = payload["rotation_merge_table"]
+    print(
+        f"rotations merged across a proven gap: {merge['merged_count']} of "
+        f"{merge['row_count']} placements "
+        f"({merge['proven_commuting_count']} proven, "
+        f"{merge['merged_without_a_proof_count']} merged without a proof, "
+        f"{merge['proven_but_unmerged_count']} proven but left standing)"
+    )
+    print(
+        "  merged by opcode: "
+        + ", ".join(
+            f"{opcode} {count}" for opcode, count in merge["merged_by_opcode"].items()
+        )
+        + f"; worst movement {merge['worst_merged_state_difference']:.3e}"
+    )
     print()
     print(
         f"{'population':28s} {'circuits':>8s} {'source':>7s} {'legacy':>7s} "
@@ -552,6 +881,20 @@ def main() -> None:
             f"{anchor['in_scope_qiskit_removed_count']} there over "
             f"{anchor['in_scope_source_gate_count']} source gates"
         )
+        print(
+            f"  two z-rotations around an entangler: "
+            f"{anchor['rotation_source_gate_count']} source gates -> "
+            f"{anchor['rotation_port_optimized_gate_count']} here vs "
+            f"{anchor['rotation_qiskit_optimized_gate_count']} there "
+            f"over {anchor['rotation_row_count']} placements"
+        )
+        for row in anchor["rotation_rows"]:
+            print(
+                f"    {row['opcode']:8s} wire {row['wire_index']} "
+                f"{row['source_gate_count']:>3d} -> "
+                f"{row['port_optimized_gate_count']:>3d} here, "
+                f"{row['qiskit_optimized_gate_count']:>3d} there"
+            )
     else:
         print(f"Qiskit anchor unavailable: {anchor['reason']}")
     if args.json_output is not None:

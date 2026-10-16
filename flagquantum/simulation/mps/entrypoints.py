@@ -23,7 +23,7 @@ def run_mps(
     max_bond: int | None = None,
     cutoff: float = 0.0,
     fuse_single_qubit: bool = True,
-    dense_observable_wires: int = 12,
+    dense_observable_qubits: int = 12,
 ) -> MPSState:
     """Execute FlagQuantum IR with the native MPS backend."""
 
@@ -37,7 +37,7 @@ def run_mps(
                 config=MPSConfig(
                     max_bond=max_bond,
                     cutoff=cutoff,
-                    dense_observable_wires=dense_observable_wires,
+                    dense_observable_qubits=dense_observable_qubits,
                 ),
             )
         else:
@@ -49,7 +49,7 @@ def run_mps(
                 config=MPSConfig(
                     max_bond=max_bond,
                     cutoff=cutoff,
-                    dense_observable_wires=dense_observable_wires,
+                    dense_observable_qubits=dense_observable_qubits,
                 ),
             )
     elif isinstance(circuit_or_ir, CircuitIR):
@@ -62,7 +62,7 @@ def run_mps(
             config=MPSConfig(
                 max_bond=max_bond,
                 cutoff=cutoff,
-                dense_observable_wires=dense_observable_wires,
+                dense_observable_qubits=dense_observable_qubits,
             ),
         )
     else:

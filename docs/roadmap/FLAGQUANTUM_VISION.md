@@ -113,7 +113,7 @@ production distributed path. It should provide:
 - a general production gate set;
 - native PyTorch forward and reverse mode;
 - true amplitude sharding;
-- local- and multi-sharded-wire execution;
+- local- and multi-sharded-qubit execution;
 - communication-avoiding scheduling and gate fusion;
 - multi-step sharded optimizer updates;
 - checkpoint, recovery, GPU, and multi-node execution;

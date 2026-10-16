@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from ..compiler import CouplingMap
@@ -16,9 +16,9 @@ DEPLOYMENT_PACKAGE_SCHEMA = "flagquantum_deployment_package_v1"
 
 # The two routing direction semantics a Compiler plan may state, and the device
 # type each one is the only correct answer for. A ``CouplingMap`` link carries no
-# direction, so a plan for one necessarily preserved the logical wire order and
+# direction, so a plan for one necessarily preserved the logical qubit order and
 # cannot have inserted a swap to repair an ordering; a ``DirectedCouplingMap``
-# declares which way its links run, so a plan for one that claims the logical wire
+# declares which way its links run, so a plan for one that claims the logical qubit
 # order was preserved is a plan whose control/target operations may be reversed.
 # The two are kept as a table rather than inline so that a third device type
 # cannot be added to the accepted arguments without stating its semantics here.
@@ -30,6 +30,55 @@ _DIRECTION_SEMANTICS_BY_DEVICE: tuple[tuple[type, str], ...] = (
 
 class DeploymentRoutingEvidenceError(ValueError):
     """Raised when a deployment package has inconsistent routing evidence."""
+
+
+def _undirected_couplings(
+    couplings: Iterable[Iterable[int]],
+) -> frozenset[tuple[int, int]]:
+    """Normalize couplings so that only the connected physical pairs remain.
+
+    This is the one definition of device identity in this module. It also
+    normalizes the couplings a *plan* records, so a malformed ``coupling_edges``
+    field is rejected by name whether or not there is a device to compare it
+    against.
+    """
+
+    normalized = set()
+    for coupling in couplings:
+        try:
+            left, right = coupling
+        except (TypeError, ValueError) as malformed:
+            raise DeploymentRoutingEvidenceError(
+                "routing coupling edges must be pairs of qubits"
+            ) from malformed
+        normalized.add((min(int(left), int(right)), max(int(left), int(right))))
+    return frozenset(normalized)
+
+
+def same_undirected_device(
+    left_couplings: Iterable[Iterable[int]],
+    right_couplings: Iterable[Iterable[int]],
+) -> bool:
+    """Return whether two coupling sequences describe the same device.
+
+    A device is a set of physical couplings, so neither the order of the couplings
+    nor the order of the endpoints inside one coupling is part of the hardware.
+    Comparing the sequences themselves would instead make device identity a
+    property of whoever serialized the list last: ``CouplingMap`` keeps the edge
+    order its caller declared while ``DirectedCouplingMap`` sorts, so the
+    compiler's two device types disagree about the same device by construction.
+
+    Args:
+        left_couplings: Coupling edges from a routing plan, a record, or a device.
+        right_couplings: Coupling edges from the device being compared against.
+
+    Returns:
+        ``True`` when both sequences name the same set of undirected couplings.
+    """
+
+    return _undirected_couplings(left_couplings) == _undirected_couplings(
+        right_couplings
+    )
 
 
 def _non_negative_int(plan: Mapping[str, Any], key: str) -> int:
@@ -53,7 +102,7 @@ def _accepted_direction_semantics(coupling_map: object) -> str | None:
 def validate_deployment_routing_plan(
     routing_plan: Mapping[str, Any],
     *,
-    n_wires: int,
+    n_qubits: int,
     coupling_map: CouplingMap | DirectedCouplingMap | None,
 ) -> dict[str, Any]:
     """Validate and normalize a routing plan for provider serialization."""
@@ -90,7 +139,7 @@ def validate_deployment_routing_plan(
             "routing direction semantics disagree with the deployment backend"
         )
 
-    expected_identity = tuple(range(int(n_wires)))
+    expected_identity = tuple(range(int(n_qubits)))
     initial = tuple(plan.get("initial_logical_to_physical", ()))
     final = tuple(plan.get("final_logical_to_physical", ()))
     pre_restore = tuple(plan.get("pre_restore_logical_to_physical", ()))
@@ -107,16 +156,16 @@ def validate_deployment_routing_plan(
             "routing pre-restore mapping must be a complete permutation"
         )
 
-    plan_edges = tuple(
-        tuple(int(wire) for wire in edge) for edge in plan.get("coupling_edges", ())
-    )
-    if coupling_map is not None and plan_edges != coupling_map.edges:
+    plan_couplings = _undirected_couplings(plan.get("coupling_edges", ()))
+    if coupling_map is not None and plan_couplings != _undirected_couplings(
+        coupling_map.edges
+    ):
         raise DeploymentRoutingEvidenceError(
             "routing coupling edges do not match the deployment backend"
         )
-    if int(plan.get("coupling_n_wires", -1)) < int(n_wires):
+    if int(plan.get("coupling_n_wires", -1)) < int(n_qubits):
         raise DeploymentRoutingEvidenceError(
-            "routing coupling exposes fewer wires than the circuit"
+            "routing coupling exposes fewer qubits than the circuit"
         )
 
     planned = _non_negative_int(plan, "planned_inserted_swap_count")
@@ -183,14 +232,14 @@ def build_deployment_routing_evidence(
     routing_plan: Mapping[str, Any],
     *,
     routing_reused: bool,
-    n_wires: int,
+    n_qubits: int,
     coupling_map: CouplingMap | DirectedCouplingMap | None,
 ) -> dict[str, Any]:
     """Build the stable provider-facing deployment evidence envelope."""
 
     validated = validate_deployment_routing_plan(
         routing_plan,
-        n_wires=n_wires,
+        n_qubits=n_qubits,
         coupling_map=coupling_map,
     )
     return {
@@ -246,6 +295,7 @@ __all__ = [
     "DeploymentRoutingEvidenceError",
     "build_deployment_routing_evidence",
     "deployment_artifact_sha256",
+    "same_undirected_device",
     "stable_payload_sha256",
     "validate_deployment_routing_plan",
 ]

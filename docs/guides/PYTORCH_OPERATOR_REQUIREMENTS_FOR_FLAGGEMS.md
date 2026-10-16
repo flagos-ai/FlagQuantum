@@ -38,7 +38,7 @@ Primary files:
 
 Core shapes:
 
-- Statevector: `[batch, 2**n_wires]`.
+- Statevector: `[batch, 2**n_qubits]`.
 - k-qubit gate matrix: `[2**k, 2**k]` or `[batch, 2**k, 2**k]`.
 - Gate-application working tensor after reshape/permute: `[batch, 2**k, rest]`.
 

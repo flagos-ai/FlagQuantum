@@ -1,6 +1,6 @@
 """The typed payload a realtime slot carries, and the schema that types it.
 
-The wire format in :mod:`.protocol` is deliberately typeless: the bytes after
+The frame format in :mod:`.protocol` is deliberately typeless: the bytes after
 the header are opaque. Meaning comes from a handler schema registered in the
 dispatcher's function table, which names the type and size of each argument and
 each result. This module owns that type system and the encoding it implies, so
@@ -178,7 +178,7 @@ class HandlerSchema:
 
     The dispatcher's function table holds one of these per function id and the
     caller's compiled call site must match it. The protocol has no runtime type
-    check on the wire, so this record is the only place the agreement is
+    check on the frame, so this record is the only place the agreement is
     written down.
     """
 
@@ -224,7 +224,7 @@ class HandlerSchema:
     def encode(self) -> bytes:
         """Return the fixed-layout schema image.
 
-        The protocol does not put the schema on the wire -- out-of-band
+        The protocol does not put the schema in the frame -- out-of-band
         agreement is the point -- but this image is how a Python-declared
         schema reaches an out-of-process dispatcher that reads the same fixed
         struct. Unused slots are zero, and a reader ignores them.

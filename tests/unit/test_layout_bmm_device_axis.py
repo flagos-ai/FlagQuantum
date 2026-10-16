@@ -1,16 +1,26 @@
-"""The catalog, not a device literal, decides the fused complex-BMM route.
+"""Which authority answers the fused complex-BMM route question, at each seam.
 
-``complex_einsum_pair`` used to answer "can the fused layout BMM run here?" with
-``left.is_cuda`` and ``left.dtype != torch.complex64``. Two lines below, the
-same function authorized ``FQKI-TRITON-NUM-002-A`` through the kernel catalog, so
-the device decision and the kernel decision were made by different authorities
-and disagreed by construction: on CPU the catalog was never consulted at all.
+``complex_einsum_pair`` answers "can the fused layout BMM run here?" with the
+gates its build declares: the equation shape table, a gradient requirement, the
+device, and ``complex64``. The kernel catalog is not consulted there. That is a
+decided position rather than an oversight: ``cudaq-parity-reconciliation.md``
+section 7.5 item D3 was ratified as "take MAIN's authorization and fallback, keep
+the catalog declaration surface", and the merged function is exactly those gates
+with ``_pair_contraction`` on every fallback. The earlier alternative — answer the
+device question from the catalog inside this function — was the branch's design
+and was not the one ratified.
 
-These tests pin the replacement. The route is now selected by asking the catalog
-whether an evidenced implementation covers the operands' device and precision.
-The proof is a replacement: declaring a CPU implementation for the semantic makes
-the fused route run on CPU with no edit to ``real_imag_kernels.py``. The control
-differs only in that declaration, so the declaration is what moved the decision.
+The catalog declaration surface is not withdrawn, it is scoped. It is the
+authority for the tensor-network and density-matrix routes, which consult
+``_layout_complex_bmm_declared``, ``_layout_complex_bmm_declared_for``,
+``_operand_kernel_axis``, and ``_catalog_declares_kernel``; the replacement proof
+lives in ``tests/unit/test_tensor_network_catalog_route.py`` and
+``tests/unit/test_density_matrix_catalog_dispatch.py``.
+
+These tests pin both halves: that the declaration answers for the operands it
+covers, and that declaring a CPU implementation does not move the layout-BMM route
+inside ``complex_einsum_pair``. Re-wiring the catalog into that function fails
+here, so it has to arrive as a proposal rather than as a merge detail.
 """
 
 from __future__ import annotations
@@ -126,25 +136,29 @@ def _count_fused_route(monkeypatch) -> list[tuple[str, torch.Tensor, torch.Tenso
 
 
 @pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
-def test_a_declared_device_and_precision_select_the_fused_route(
+def test_a_catalog_declaration_does_not_move_the_layout_bmm_route(
     monkeypatch, dtype: torch.dtype
 ) -> None:
-    """Replacing the catalog content moves the decision without touching code.
+    """The ratified boundary: this route's device gate is not the catalog's.
 
-    Both axes are covered so that neither ``is_cuda`` nor ``complex64`` can be
-    reinstated as a literal without a behavioural failure: the declaration is
-    the only difference between this and the control below.
+    A declaration that covers CPU moves the tensor-network and density-matrix
+    seams, and it must leave this one where it is. The shape gate is opened below
+    so that the device gate is the only thing between the operands and the fused
+    route, which is what makes the comparison sensitive on a CPU host.
     """
 
     left, right = _operands(dtype)
-    calls = _count_fused_route(monkeypatch)
+
+    before = _count_fused_route(monkeypatch)
+    complex_einsum_pair(EQUATION, left, right)
+    without_declaration = len(before)
+
     _declare_cpu_implementations(monkeypatch)
+    after = _count_fused_route(monkeypatch)
+    complex_einsum_pair(EQUATION, left, right)
 
     assert _layout_complex_bmm_declared(left, right)
-    actual = complex_einsum_pair(EQUATION, left, right)
-
-    assert [equation for equation, _, _ in calls] == [EQUATION]
-    torch.testing.assert_close(actual, torch.einsum(EQUATION, left, right))
+    assert len(after) == without_declaration
 
 
 @pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
@@ -215,19 +229,25 @@ def test_non_complex_operands_bypass_the_catalog_entirely() -> None:
     assert complex_einsum_pair(EQUATION, left.real, right.real).dtype == torch.float32
 
 
-def test_the_einsum_route_does_not_read_a_cuda_literal() -> None:
-    """The device decision must come from the catalog, not from a device test.
+def test_the_layout_bmm_route_names_no_catalog_predicate() -> None:
+    """The same boundary read from the function rather than from a call.
 
-    This is the regression guard for the two early returns that used
-    ``left.is_cuda`` and ``left.dtype``; a device literal reintroduced here would
-    silently bypass the catalog again while every behavioural test still passed
-    on a CPU-only host.
+    ``complex_einsum_pair`` decides the device question itself, so it must not
+    name any part of the catalog declaration surface. The behavioural test above
+    is a reading of this host; this one holds wherever it runs, which is what
+    makes a re-wire visible on a host where the device gate would mask it.
     """
 
-    attributes = {
-        node.attr
-        for node in ast.walk(ast.parse(inspect.getsource(complex_einsum_pair)))
-        if isinstance(node, ast.Attribute)
+    tree = ast.parse(inspect.getsource(complex_einsum_pair))
+    names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)} | {
+        node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)
     }
 
-    assert attributes.isdisjoint({"is_cuda", "is_cpu", "device", "dtype"})
+    assert names.isdisjoint(
+        {
+            "_layout_complex_bmm_declared",
+            "_layout_complex_bmm_declared_for",
+            "_catalog_declares_kernel",
+            "_operand_kernel_axis",
+        }
+    )

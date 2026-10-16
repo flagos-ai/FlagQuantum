@@ -26,8 +26,8 @@ speedup.
 
 **The distance table is computed classically, one point at a time.** Phase 1's
 :func:`~flagquantum.algorithms.grover.grover_circuit` builds its own register and refuses
-more than three evaluation wires, and a register is also where a distance would have to
-be carried. So the search here runs over the centroid index alone, at most three wires
+more than three evaluation qubits, and a register is also where a distance would have to
+be carried. So the search here runs over the centroid index alone, at most three qubits
 wide, and the distance from the point being assigned to each centroid is computed in
 double precision outside the circuit: the predicate closes over that table. The point is
 assigned by one such table at a time, and every round builds its register afresh. What
@@ -89,7 +89,7 @@ all 200 runs had no missed round and every one ended on index ``2``. Index ``0``
 centroid farther away than either of the tied ones.
 
 Register values that name no centroid are excluded by the same predicate, so a
-three-centroid search in a two-wire register never returns the slot no centroid occupies.
+three-centroid search in a two-qubit register never returns the slot no centroid occupies.
 
 **The median update is classical, and two of its cases have to be named.** Each
 coordinate of a centroid is set to the median of that coordinate over the points assigned
@@ -114,11 +114,11 @@ seeds at those shot counts and not a guarantee: the tail that a small sample lea
 the sampler's, and no error bound, confidence interval or repetition scheme is computed
 or reported anywhere in this module. The default sample size is 1024 shots per search.
 
-**Wire layout.** The centroid index register is the whole circuit:
+**Qubit layout.** The centroid index register is the whole circuit:
 :func:`~flagquantum.algorithms.grover.grover_circuit` builds it with ``ceil(log2(k))``
-wires for ``k`` centroids, wire 0 the most significant, and one centroid index per
+qubits for ``k`` centroids, qubit 0 the most significant, and one centroid index per
 register value from ``0`` to ``k - 1``. Distances are carried in a Python list and not on
-wires, which is what keeps the register this narrow and is also the whole of what the
+qubits, which is what keeps the register this narrow and is also the whole of what the
 unit gives up: the circuit holds no state about the points or the centroids, so what it
 searches is a table the classical caller built.
 
@@ -141,11 +141,11 @@ __all__ = ["KMediansResult", "kmedians"]
 _DEFAULT_SHOTS = 1024
 
 # ``grover.grover_circuit`` builds its own register and refuses more than three
-# evaluation wires, so the centroid index register this unit searches over is at most
-# three wires wide.
+# evaluation qubits, so the centroid index register this unit searches over is at most
+# three qubits wide.
 _CENTROID_WIRE_LIMIT = 3
 
-# One index per register value, so three wires index at most eight centroids.
+# One index per register value, so three qubits index at most eight centroids.
 _MAX_CENTROIDS = 2**_CENTROID_WIRE_LIMIT
 
 
@@ -324,7 +324,7 @@ def _strictly_better(
     larger, so of two centroids exactly as near as each other the search moves toward the
     lower-indexed one and never from it to the higher. Register values at or above
     ``n_centroids`` are excluded as well, so a register that the centroid set does not
-    fill -- three centroids in a two-wire register, say -- never returns a slot no
+    fill -- three centroids in a two-qubit register, say -- never returns a slot no
     centroid occupies.
 
     Args:
@@ -389,9 +389,9 @@ def _operands(
         )
     if n_centroids > _MAX_CENTROIDS:
         n_wires = _centroid_index_width(n_centroids)
-        # One ladder wire per control above two, and this branch is reached only above the
-        # cap, where the register is at least four wires wide and the ladder is one
-        # ancilla or more; four wires, the first width this branch sees, takes the
+        # One ladder qubit per control above two, and this branch is reached only above the
+        # cap, where the register is at least four qubits wide and the ladder is one
+        # ancilla or more; four qubits, the first width this branch sees, takes the
         # singular noun.
         needed = n_wires - 3
         ancilla_word = "ancilla" if needed == 1 else "ancillas"
@@ -494,7 +494,7 @@ def _centroid_index_width(n_centroids: int) -> int:
         n_centroids: The number of centroids, at least one.
 
     Returns:
-        The register width in wires: ``1`` for two centroids, and ``3`` for the eight
+        The register width in qubits: ``1`` for two centroids, and ``3`` for the eight
         centroids the search is bounded at.
     """
     return (n_centroids - 1).bit_length()

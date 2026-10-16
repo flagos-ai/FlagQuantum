@@ -56,14 +56,14 @@ def _small() -> CssCode:
 def _pack(observable: Pauli, code: CssCode) -> int:
     """Return one observable as a bit mask over the code's own data wires."""
 
-    positions = {wire: index for index, wire in enumerate(code.data_wires)}
+    positions = {wire: index for index, wire in enumerate(code.data_qubits)}
     return sum(1 << positions[wire] for wire in observable.support)
 
 
 def _supports(code: CssCode, *, family: str) -> tuple[tuple[int, ...], ...]:
     """Return one family's check supports, in the record's own order."""
 
-    attribute = "z_wires" if family == "z" else "x_wires"
+    attribute = "z_qubits" if family == "z" else "x_qubits"
     return tuple(
         tuple(getattr(check.stabilizer, attribute))
         for check in code.checks
@@ -175,9 +175,9 @@ def test_the_two_check_families_commute() -> None:
 
     code = _small()
     for z_support in _supports(code, family="z"):
-        z_check = Pauli(z_wires=z_support)
+        z_check = Pauli(z_qubits=z_support)
         for x_support in _supports(code, family="x"):
-            assert z_check.commutes_with(Pauli(x_wires=x_support))
+            assert z_check.commutes_with(Pauli(x_qubits=x_support))
 
 
 def test_the_logical_operators_are_read_out_of_the_matrices() -> None:
@@ -194,14 +194,14 @@ def test_the_logical_operators_are_read_out_of_the_matrices() -> None:
 
     code = _small()
     checks = [
-        Pauli(z_wires=check.stabilizer.z_wires, x_wires=check.stabilizer.x_wires)
+        Pauli(z_qubits=check.stabilizer.z_qubits, x_qubits=check.stabilizer.x_qubits)
         for check in code.checks
     ]
     z_observables = [
-        observable for observable in code.logical_observables if observable.z_wires
+        observable for observable in code.logical_observables if observable.z_qubits
     ]
     x_observables = [
-        observable for observable in code.logical_observables if observable.x_wires
+        observable for observable in code.logical_observables if observable.x_qubits
     ]
 
     assert len(z_observables) == len(x_observables) == 4
@@ -232,10 +232,10 @@ def test_the_two_families_pair_as_the_identity() -> None:
 
     code = _small()
     z_observables = [
-        observable for observable in code.logical_observables if observable.z_wires
+        observable for observable in code.logical_observables if observable.z_qubits
     ]
     x_observables = [
-        observable for observable in code.logical_observables if observable.x_wires
+        observable for observable in code.logical_observables if observable.x_qubits
     ]
     pairing = [
         [0 if z.commutes_with(x) else 1 for x in x_observables] for z in z_observables
@@ -259,7 +259,7 @@ def test_the_derived_observables_drive_both_memory_frames() -> None:
 
     code = _small()
     z_observables = [
-        observable for observable in code.logical_observables if observable.z_wires
+        observable for observable in code.logical_observables if observable.z_qubits
     ]
 
     memory = build_memory_circuit(code, rounds=2)
@@ -272,8 +272,8 @@ def test_the_derived_observables_drive_both_memory_frames() -> None:
     partner = derive_anticommuting_logical_product(code, 0)
     rotated = build_memory_circuit(code, rounds=2, product=partner)
     assert len(rotated.observables) == 1
-    assert rotated.x_readout_wires == partner.x_wires
-    assert partner.x_wires
+    assert rotated.x_readout_qubits == partner.x_qubits
+    assert partner.x_qubits
 
 
 def test_a_monomial_named_twice_states_no_term() -> None:

@@ -104,7 +104,7 @@ def iqm_backend_profile(
     coupling_map = None
     if raw_connectivity is not None:
         coupling_map = CouplingMap(
-            n_wires=n_qubits,
+            n_qubits=n_qubits,
             edges=connectivity_edges(raw_connectivity, owner=owner, n_qubits=n_qubits),
         )
     declared_type = declared_value(declaration, *_DEVICE_TYPE_NAMES, default=None)

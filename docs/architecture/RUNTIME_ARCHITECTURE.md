@@ -3,8 +3,8 @@
 ## PyTorch-Native Sharded Statevector Forward
 
 The experimental distributed statevector executor consumes validated FlagQuantum IR under
-`torchrun` and retains only rank-owned amplitudes. Local-wire gates execute
-without transport; gates touching one or several sharded wires exchange bounded
+`torchrun` and retains only rank-owned amplitudes. Local-qubit gates execute
+without transport; gates touching one or several sharded qubits exchange bounded
 gate-basis groups through `torch.distributed`. Scratch memory depends on batch
 and gate width, not global state size, and requesting a reconstructed full state
 fails explicitly.

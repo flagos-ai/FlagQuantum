@@ -1,0 +1,99 @@
+{
+  "schema": "flagquantum.linux_x86_cpu_roadmap_closeout.v1",
+  "benchmark": "linux_x86_cpu_roadmap_closeout_main_20261005",
+  "benchmark_evidence_class": "comparison_non_release",
+  "claim_evidence_type": "development_smoke",
+  "distribution_semantics": "single_device_fast_path",
+  "non_release_evidence": true,
+  "release_gate_allowed": false,
+  "scalability_claim_allowed": false,
+  "scalability_blockers": [
+    "comparison benchmark is not release-certified scalability evidence"
+  ],
+  "source_revision": "52314f6932d040bf3dbe78383b374fa1a144694a",
+  "workflow_run": "https://github.com/flagos-ai/FlagQuantum/actions/runs/37292570952",
+  "environment": {
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz",
+    "cpu_affinity": "0-31",
+    "machine": "x86_64",
+    "platform": "Linux-5.15.0-119-generic-x86_64-with-glibc2.35",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130",
+    "threads": 32
+  },
+  "workload": {
+    "name": "random_clifford_statevector",
+    "n_wires": 22,
+    "dtype": "complex128",
+    "gate_count": 132,
+    "logical_depth": 8,
+    "ir_content_hash": "3883e84b8cb7eff8c2309c2f5251b1a30f823989e7b4eedc6c3824ac6d9a8e43",
+    "warmup": 2,
+    "retained_samples": 7,
+    "measurement_scope": "end_to_end_user_facing_run_call"
+  },
+  "engines": {
+    "flagquantum_native": {
+      "version": "0.2.0",
+      "median_seconds": 0.04749215394258499,
+      "relative_median_absolute_deviation": 0.06372114599761636,
+      "samples_seconds": [
+        0.04749215394258499,
+        0.05051840841770172,
+        0.049681857228279114,
+        0.0436775628477335,
+        0.0427725650370121,
+        0.04965953901410103,
+        0.041003160178661346
+      ],
+      "max_abs_error": 0.0
+    },
+    "qiskit_aer": {
+      "versions": {
+        "qiskit": "2.5.1",
+        "qiskit-aer": "0.17.2"
+      },
+      "median_seconds": 0.14177806116640568,
+      "relative_median_absolute_deviation": 0.08522594379876841,
+      "samples_seconds": [
+        0.1796186100691557,
+        0.17261662520468235,
+        0.14177806116640568,
+        0.1342739649116993,
+        0.1291912253946066,
+        0.14295831322669983,
+        0.12969489209353924
+      ],
+      "max_abs_error": 8.665482048364518e-18,
+      "engine_over_flagquantum_median": 2.9852943991086693
+    },
+    "pennylane_lightning_qubit": {
+      "versions": {
+        "pennylane": "0.45.1",
+        "pennylane-lightning": "0.45.0"
+      },
+      "median_seconds": 0.44101706705987453,
+      "relative_median_absolute_deviation": 0.007319173033608019,
+      "samples_seconds": [
+        0.44101706705987453,
+        0.43823862448334694,
+        0.4627303183078766,
+        0.437789186835289,
+        0.4534120559692383,
+        0.43881131894886494,
+        0.46562532149255276
+      ],
+      "max_abs_error": 9.10735040023586e-18,
+      "engine_over_flagquantum_median": 9.286103712900372
+    }
+  },
+  "gates": {
+    "internal_baseline_median_seconds": 0.04625696875154972,
+    "current_over_internal_baseline": 1.0267026833874386,
+    "maximum_internal_slowdown": 1.2,
+    "qiskit_aer": "pass",
+    "pennylane_lightning_qubit": "pass",
+    "correctness": "pass",
+    "stability": "pass"
+  }
+}

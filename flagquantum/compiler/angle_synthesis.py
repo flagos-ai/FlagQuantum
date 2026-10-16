@@ -132,7 +132,7 @@ def quarter_turn_words(
     unitary, one of another arity, or an angle that `quarter_turns` refuses.
     Otherwise it holds one instruction tuple per word of
     `QUARTER_TURN_WORDS[residue]`, in table order, each leaf carrying the source
-    instruction's wire and metadata.
+    instruction's qubit and metadata.
 
     Whether a word can actually run is not decided here. A leaf such as `z` is a
     rule source in `basis_translation`, so a target without `z` may still reach

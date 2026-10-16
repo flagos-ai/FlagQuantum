@@ -187,7 +187,7 @@ def test_the_sampled_law_is_independent_of_the_requested_wire_subset() -> None:
     projected = projected.reshape(-1)
 
     samples = sample_stabilizer(
-        circuit, shots=DIFFERENTIAL_SHOTS, seed=808, wires=wires
+        circuit, shots=DIFFERENTIAL_SHOTS, seed=808, qubits=wires
     )
     empirical = _empirical_distribution(samples, len(wires))
 

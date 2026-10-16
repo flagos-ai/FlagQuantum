@@ -78,11 +78,11 @@ class MPSMonteCarloResult:
         return torch.device(self.trajectories[0].device)
 
     @property
-    def n_wires(self) -> int:
+    def n_qubits(self) -> int:
         """Qubit count shared by the retained trajectory states."""
 
         self._require_retained_trajectories()
-        return int(self.trajectories[0].n_wires)
+        return int(self.trajectories[0].n_qubits)
 
     @property
     def bsz(self) -> int:
@@ -120,12 +120,12 @@ class MPSMonteCarloResult:
         self._require_retained_trajectories()
 
         first = self.trajectories[0]
-        n_wires = int(first.n_wires)
+        n_qubits = int(first.n_qubits)
         bsz = int(first.bsz)
         device = torch.device(first.device)
         for state in self.trajectories[1:]:
             if (
-                int(state.n_wires) != n_wires
+                int(state.n_qubits) != n_qubits
                 or int(state.bsz) != bsz
                 or torch.device(state.device) != device
             ):
@@ -140,7 +140,7 @@ class MPSMonteCarloResult:
         samples = torch.empty(
             bsz,
             shots,
-            n_wires,
+            n_qubits,
             dtype=torch.int64,
             device=device,
         )
@@ -163,12 +163,12 @@ class MPSMonteCarloResult:
 
         if format == "bits":
             return samples
-        if n_wires > 63:
+        if n_qubits > 63:
             raise ValueError(
                 "integer-index noisy MPS samples support at most 63 qubits; "
                 "request format='bits' for wider circuits"
             )
-        shifts = torch.arange(n_wires - 1, -1, -1, device=device)
+        shifts = torch.arange(n_qubits - 1, -1, -1, device=device)
         return torch.sum(samples << shifts, dim=-1)
 
     def sampling_summary(self) -> dict[str, Any]:

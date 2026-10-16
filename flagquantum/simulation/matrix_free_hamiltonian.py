@@ -3,7 +3,7 @@
 Continuous-time evolution needs ``[H, rho]`` and a Hermiticity decision, never
 the Hamiltonian matrix itself.  One Pauli string costs a bit mask, a sign mask
 and a complex coefficient here, while the dense form costs ``4**n`` complex
-entries: at thirteen wires that is 1024 MiB of Hamiltonian against a few
+entries: at thirteen qubits that is 1024 MiB of Hamiltonian against a few
 kilobytes of terms, and the dense form also has to be built term by term before
 any of it can be used.
 
@@ -11,7 +11,7 @@ The representation is exact.  A Pauli string acts on an amplitude index ``j``
 as ``P|j> = (-1)**popcount(j & signs) |j ^ mask>``, so both ``P @ state`` and
 ``state @ P`` are a gather on the row or column axis followed by a sign
 multiply, and ``H`` then satisfies the matrix-operator contract a superoperator
-factor needs without ever becoming a matrix.  Wire 0 is the most significant
+factor needs without ever becoming a matrix.  Qubit 0 is the most significant
 amplitude bit, matching ``expand_operator`` in
 :mod:`flagquantum.simulation.density_matrix`.
 """
@@ -95,7 +95,7 @@ class PauliSum:
         "_dimension",
         "_dtype",
         "_keys",
-        "_n_wires",
+        "_n_qubits",
         "_permutations",
         "_scales",
         "_terms",
@@ -105,12 +105,12 @@ class PauliSum:
         self,
         terms: Sequence[PauliSumTerm],
         *,
-        n_wires: int,
+        n_qubits: int,
         dimension: int,
         dtype: torch.dtype,
         device: torch.device,
     ) -> None:
-        self._n_wires = int(n_wires)
+        self._n_qubits = int(n_qubits)
         self._dimension = int(dimension)
         self._dtype = dtype
         self._device = torch.device(device)
@@ -134,8 +134,8 @@ class PauliSum:
         )
 
     @property
-    def n_wires(self) -> int:
-        return self._n_wires
+    def n_qubits(self) -> int:
+        return self._n_qubits
 
     @property
     def dimension(self) -> int:
@@ -365,7 +365,7 @@ class PauliSum:
                 PauliSumTerm(term.coefficient.conjugate(), term.mask, term.signs)
                 for term in self._terms
             ],
-            n_wires=self._n_wires,
+            n_qubits=self._n_qubits,
             dimension=self._dimension,
             dtype=self._dtype,
             device=self._device,
@@ -375,17 +375,17 @@ class PauliSum:
         if not isinstance(other, PauliSum):
             return NotImplemented
         return (
-            self._n_wires == other._n_wires
+            self._n_qubits == other._n_qubits
             and self._dimension == other._dimension
             and self._dtype == other._dtype
             and self._terms == other._terms
         )
 
     def __hash__(self) -> int:
-        return hash((self._n_wires, self._dimension, self._dtype, self._terms))
+        return hash((self._n_qubits, self._dimension, self._dtype, self._terms))
 
     def __repr__(self) -> str:
-        return f"PauliSum(n_wires={self._n_wires}, terms={len(self._terms)})"
+        return f"PauliSum(n_qubits={self._n_qubits}, terms={len(self._terms)})"
 
 
 __all__ = ("DEFAULT_COMMUTATOR_BLOCK_BYTES", "PauliSum", "PauliSumTerm")

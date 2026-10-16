@@ -24,7 +24,7 @@ class MappingTransition:
     routed_instruction_index: int
     source_instruction_index: int
     phase: str
-    physical_wires: tuple[int, int]
+    physical_qubits: tuple[int, int]
     layout_before: tuple[int, ...]
     layout_after: tuple[int, ...]
     physical_to_logical_before: tuple[int | None, ...] = ()
@@ -44,8 +44,8 @@ class PhysicalInstructionRecord:
     direction_rewrite: str
     origin: str
     opcode: str
-    logical_wires: tuple[int, ...]
-    physical_wires: tuple[int, ...]
+    logical_qubits: tuple[int, ...]
+    physical_qubits: tuple[int, ...]
     layer: int
     predecessors: tuple[int, ...]
     dependency_kinds: tuple[str, ...]
@@ -55,7 +55,7 @@ def _topology_identity(coupling: CouplingMap | DirectedCouplingMap) -> str:
     if isinstance(coupling, DirectedCouplingMap):
         return coupling.topology_identity
     payload = {
-        "n_wires": coupling.n_wires,
+        "n_wires": coupling.n_qubits,
         "edges": coupling.edges,
         "direction_semantics": "undirected",
     }
@@ -66,25 +66,25 @@ def _topology_identity(coupling: CouplingMap | DirectedCouplingMap) -> str:
 def _coupling_allows_instruction(
     coupling: CouplingMap | DirectedCouplingMap,
     opcode: str,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
 ) -> bool:
-    if len(wires) != 2:
+    if len(qubits) != 2:
         return True
     if isinstance(coupling, DirectedCouplingMap) and opcode == "swap":
-        return coupling.has_weak_edge(*wires)
-    return coupling.has_edge(*wires)
+        return coupling.has_weak_edge(*qubits)
+    return coupling.has_edge(*qubits)
 
 
 def _allocation_identity(
     *,
-    logical_wire_count: int,
+    logical_qubit_count: int,
     physical_slot_count: int,
     initial_logical_to_physical: tuple[int, ...],
     initial_physical_to_logical: tuple[int | None, ...],
     logical_result_physical_slots: tuple[int, ...],
 ) -> str:
     payload = {
-        "logical_wire_count": logical_wire_count,
+        "logical_wire_count": logical_qubit_count,
         "physical_slot_count": physical_slot_count,
         "initial_logical_to_physical": initial_logical_to_physical,
         "initial_physical_to_logical": initial_physical_to_logical,
@@ -97,7 +97,7 @@ def _allocation_identity(
 
 
 def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
-    allocated = plan.physical_slot_count > plan.logical_wire_count
+    allocated = plan.physical_slot_count > plan.logical_qubit_count
     instructions: list[dict[str, object]] = [
         {
             "instruction_index": item.instruction_index,
@@ -109,8 +109,8 @@ def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
             "direction_rewrite": item.direction_rewrite,
             "origin": item.origin,
             "opcode": item.opcode,
-            "logical_wires": item.logical_wires,
-            "physical_wires": item.physical_wires,
+            "logical_wires": item.logical_qubits,
+            "physical_wires": item.physical_qubits,
             "layer": item.layer,
             "predecessors": item.predecessors,
             "dependency_kinds": item.dependency_kinds,
@@ -123,7 +123,7 @@ def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
             "routed_instruction_index": item.routed_instruction_index,
             "source_instruction_index": item.source_instruction_index,
             "phase": item.phase,
-            "physical_wires": item.physical_wires,
+            "physical_wires": item.physical_qubits,
             "layout_before": item.layout_before,
             "layout_after": item.layout_after,
         }
@@ -139,7 +139,7 @@ def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
         "physical_circuit_hash": plan.program.content_hash,
         "target_snapshot_id": plan.target_snapshot_id,
         "topology_identity": plan.topology_identity,
-        "coupling_n_wires": plan.coupling_n_wires,
+        "coupling_n_wires": plan.coupling_n_qubits,
         "coupling_edges": plan.coupling_edges,
         "coupling_direction_semantics": plan.coupling_direction_semantics,
         "initial_logical_to_physical": plan.initial_logical_to_physical,
@@ -159,7 +159,7 @@ def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
     if allocated:
         payload.update(
             {
-                "logical_wire_count": plan.logical_wire_count,
+                "logical_wire_count": plan.logical_qubit_count,
                 "physical_slot_count": plan.physical_slot_count,
                 "initial_physical_to_logical": plan.initial_physical_to_logical,
                 "pre_restore_physical_to_logical": (
@@ -190,7 +190,7 @@ class PhysicalCircuitPlan:
     source_circuit_hash: str
     target_snapshot_id: str
     topology_identity: str | None
-    coupling_n_wires: int | None
+    coupling_n_qubits: int | None
     coupling_edges: tuple[tuple[int, int], ...]
     coupling_direction_semantics: str
     initial_logical_to_physical: tuple[int, ...]
@@ -206,7 +206,7 @@ class PhysicalCircuitPlan:
     schedule_depth: int
     maximum_parallel_width: int
     critical_path: tuple[int, ...]
-    logical_wire_count: int = 0
+    logical_qubit_count: int = 0
     physical_slot_count: int = 0
     initial_physical_to_logical: tuple[int | None, ...] = ()
     pre_restore_physical_to_logical: tuple[int | None, ...] = ()
@@ -219,7 +219,7 @@ class PhysicalCircuitPlan:
     def version(self) -> str:
         """Return the closed private physical-plan schema version."""
 
-        if self.physical_slot_count > self.logical_wire_count:
+        if self.physical_slot_count > self.logical_qubit_count:
             return "3.0"
         if self.coupling_direction_semantics == "directed_cx":
             return "2.0"
@@ -247,7 +247,7 @@ class PhysicalCircuitPlan:
             if topology is None
             else topology.source_program
         )
-        identity_layout, allocated = self._validate_wire_layout(source)
+        identity_layout, allocated = self._validate_qubit_layout(source)
         self._validate_stage_identities()
         recorded_coupling = self._validate_topology_evidence(
             identity_layout=identity_layout,
@@ -277,7 +277,7 @@ class PhysicalCircuitPlan:
         if topology is None:
             if (
                 self.topology_identity is not None
-                or self.coupling_n_wires is not None
+                or self.coupling_n_qubits is not None
                 or self.coupling_edges
                 or self.coupling_direction_semantics != "none"
                 or self.mapping_transitions
@@ -290,21 +290,21 @@ class PhysicalCircuitPlan:
                 )
             recorded_coupling: CouplingMap | DirectedCouplingMap | None = None
         else:
-            if self.coupling_n_wires is None:
+            if self.coupling_n_qubits is None:
                 raise PhysicalPlanError("physical plan lacks coupling-map size")
-            if allocated and self.coupling_n_wires != self.physical_slot_count:
+            if allocated and self.coupling_n_qubits != self.physical_slot_count:
                 raise PhysicalPlanError(
                     "physical plan coupling size does not match physical slots"
                 )
             try:
                 if self.coupling_direction_semantics == "directed_cx":
                     recorded_coupling = DirectedCouplingMap(
-                        self.coupling_n_wires,
+                        self.coupling_n_qubits,
                         self.coupling_edges,
                     )
                 elif self.coupling_direction_semantics == "undirected":
                     recorded_coupling = CouplingMap(
-                        self.coupling_n_wires,
+                        self.coupling_n_qubits,
                         self.coupling_edges,
                     )
                 else:
@@ -339,15 +339,15 @@ class PhysicalCircuitPlan:
             raise PhysicalPlanError("version-1/2 physical plan has allocation evidence")
         return recorded_coupling
 
-    def _validate_wire_layout(self, source: CircuitIR) -> tuple[tuple[int, ...], bool]:
+    def _validate_qubit_layout(self, source: CircuitIR) -> tuple[tuple[int, ...], bool]:
         identity_layout = tuple(range(source.n_wires))
-        if self.logical_wire_count != source.n_wires:
-            raise PhysicalPlanError("physical plan logical-wire count is inconsistent")
+        if self.logical_qubit_count != source.n_wires:
+            raise PhysicalPlanError("physical plan logical-qubit count is inconsistent")
         if self.physical_slot_count != self.program.n_wires:
             raise PhysicalPlanError("physical plan physical-slot count is inconsistent")
-        if self.physical_slot_count < self.logical_wire_count:
+        if self.physical_slot_count < self.logical_qubit_count:
             raise PhysicalPlanError("physical plan has insufficient physical slots")
-        allocated = self.physical_slot_count > self.logical_wire_count
+        allocated = self.physical_slot_count > self.logical_qubit_count
         if (
             len(self.initial_logical_to_physical) != source.n_wires
             or len(set(self.initial_logical_to_physical)) != source.n_wires
@@ -418,7 +418,7 @@ class PhysicalCircuitPlan:
             or self.logical_result_physical_slots != self.final_logical_to_physical
             or self.logical_result_physical_slots
             != topology.logical_result_physical_slots
-            or self.logical_wire_count != topology.logical_wire_count
+            or self.logical_qubit_count != topology.logical_qubit_count
             or self.physical_slot_count != topology.physical_slot_count
             or self.allocation_identity != topology.allocation_identity
             or self.initial_physical_to_logical != topology.initial_physical_to_logical
@@ -427,7 +427,7 @@ class PhysicalCircuitPlan:
             or self.final_physical_to_logical != topology.final_physical_to_logical
             or self.allocation_identity
             != _allocation_identity(
-                logical_wire_count=self.logical_wire_count,
+                logical_qubit_count=self.logical_qubit_count,
                 physical_slot_count=self.physical_slot_count,
                 initial_logical_to_physical=self.initial_logical_to_physical,
                 initial_physical_to_logical=self.initial_physical_to_logical,
@@ -467,7 +467,7 @@ class PhysicalCircuitPlan:
                 _apply_allocated_physical_swap(
                     layout,
                     occupancy,
-                    transition.physical_wires,
+                    transition.physical_qubits,
                 )
                 if transition.physical_to_logical_after != tuple(occupancy):
                     raise PhysicalPlanError(
@@ -481,7 +481,7 @@ class PhysicalCircuitPlan:
                     raise PhysicalPlanError(
                         "version-1/2 mapping transition has occupancy evidence"
                     )
-                _apply_physical_swap(layout, transition.physical_wires)
+                _apply_physical_swap(layout, transition.physical_qubits)
             if transition.layout_after != tuple(layout):
                 raise PhysicalPlanError(
                     "physical plan mapping transition result is inconsistent"
@@ -519,7 +519,7 @@ class PhysicalCircuitPlan:
         if (
             item.instruction_index != index
             or item.opcode != instruction.name
-            or item.physical_wires != instruction.wires
+            or item.physical_qubits != instruction.wires
             or item.layer != scheduled.layer
             or item.predecessors != scheduled.predecessors
             or item.dependency_kinds != scheduled.dependency_kinds
@@ -532,11 +532,11 @@ class PhysicalCircuitPlan:
                 f"physical instruction record {index} has invalid source index"
             )
         if (
-            item.logical_wires
+            item.logical_qubits
             != source.instructions[item.source_instruction_index].wires
         ):
             raise PhysicalPlanError(
-                f"physical instruction record {index} has invalid logical wires"
+                f"physical instruction record {index} has invalid logical qubits"
             )
         if coupling is not None and not _coupling_allows_instruction(
             coupling, instruction.name, instruction.wires
@@ -575,23 +575,23 @@ class PhysicalCircuitPlan:
             )
 
 
-def _apply_physical_swap(layout: list[int], wires: tuple[int, int]) -> None:
-    left, right = wires
+def _apply_physical_swap(layout: list[int], qubits: tuple[int, int]) -> None:
+    left, right = qubits
     inverse = {physical: logical for logical, physical in enumerate(layout)}
     try:
         left_logical = inverse[left]
         right_logical = inverse[right]
     except KeyError as error:
-        raise PhysicalPlanError("routing SWAP references an unmapped wire") from error
+        raise PhysicalPlanError("routing SWAP references an unmapped qubit") from error
     layout[left_logical], layout[right_logical] = right, left
 
 
 def _apply_allocated_physical_swap(
     layout: list[int],
     occupancy: list[int | None],
-    wires: tuple[int, int],
+    qubits: tuple[int, int],
 ) -> None:
-    left, right = wires
+    left, right = qubits
     if left == right or min(left, right) < 0 or max(left, right) >= len(occupancy):
         raise PhysicalPlanError("routing SWAP references an invalid physical slot")
     left_logical = occupancy[left]
@@ -677,7 +677,7 @@ def _mapping_evidence(
                     routed_instruction_index=index,
                     source_instruction_index=raw_source_index,
                     phase=str(phase),
-                    physical_wires=instruction.wires,
+                    physical_qubits=instruction.wires,
                     layout_before=before,
                     layout_after=tuple(layout),
                     physical_to_logical_before=occupancy_before,
@@ -685,11 +685,11 @@ def _mapping_evidence(
                 )
             )
             continue
-        logical_wires = tuple(
+        logical_qubits = tuple(
             instruction.metadata.get("logical_wires", instruction.wires)
         )
-        mapped_wires = tuple(layout[wire] for wire in logical_wires)
-        if mapped_wires != instruction.wires:
+        mapped_qubits = tuple(layout[qubit] for qubit in logical_qubits)
+        if mapped_qubits != instruction.wires:
             raise PhysicalPlanError(
                 f"routed instruction {index} does not match the active layout"
             )
@@ -804,8 +804,8 @@ def _physical_instruction_records(
                 direction_rewrite=str(raw_direction_rewrite),
                 origin=origin,
                 opcode=instruction.name,
-                logical_wires=source.instructions[raw_source_index].wires,
-                physical_wires=instruction.wires,
+                logical_qubits=source.instructions[raw_source_index].wires,
+                physical_qubits=instruction.wires,
                 layer=scheduled.layer,
                 predecessors=scheduled.predecessors,
                 dependency_kinds=scheduled.dependency_kinds,
@@ -847,7 +847,7 @@ def build_physical_circuit_plan(
         source = native.source_program
         routed = source
         topology_identity = None
-        coupling_n_wires = None
+        coupling_n_qubits = None
         topology_legalization_identity = None
         coupling_edges: tuple[tuple[int, int], ...] = ()
         coupling_direction_semantics = "none"
@@ -872,7 +872,7 @@ def build_physical_circuit_plan(
         source = topology.source_program
         routed = topology.program
         topology_identity = topology.topology_identity
-        coupling_n_wires = coupling_map.n_wires
+        coupling_n_qubits = coupling_map.n_qubits
         topology_legalization_identity = topology.legalization_identity
         coupling_edges = coupling_map.edges
         coupling_direction_semantics = (
@@ -933,7 +933,7 @@ def build_physical_circuit_plan(
         source_circuit_hash=source_circuit_hash,
         target_snapshot_id=legalization.target_snapshot_id,
         topology_identity=topology_identity,
-        coupling_n_wires=coupling_n_wires,
+        coupling_n_qubits=coupling_n_qubits,
         coupling_edges=coupling_edges,
         coupling_direction_semantics=coupling_direction_semantics,
         initial_logical_to_physical=initial_layout,
@@ -951,7 +951,7 @@ def build_physical_circuit_plan(
         schedule_depth=schedule.depth,
         maximum_parallel_width=schedule.maximum_parallel_width,
         critical_path=_critical_path(legalization),
-        logical_wire_count=source.n_wires,
+        logical_qubit_count=source.n_wires,
         physical_slot_count=legalization.program.n_wires,
         initial_physical_to_logical=initial_occupancy,
         pre_restore_physical_to_logical=pre_restore_occupancy,

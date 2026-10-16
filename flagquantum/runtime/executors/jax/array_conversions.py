@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from ....simulation.jax.statevector.kernels import (
-    jax_basis_indices_for_wires as _jax_basis_indices_for_wires,
+    jax_basis_indices_for_qubits as _jax_basis_indices_for_qubits,
 )
 from ....simulation.jax.tensor_network.models import JAXTensorNetworkNode
 from ....simulation.statevector.index_basis import _basis_offset, _wire_mask
@@ -98,7 +98,7 @@ def _torch_parameters_for_static_build(parameters: Any, *, complex_bytes: int) -
 def _apply_gate_to_jax_shards(
     shards: Sequence[JAXStatevectorShardState],
     matrix: Any,
-    wires: Sequence[int],
+    qubits: Sequence[int],
     *,
     plan: Any,
     diagonal: bool,
@@ -107,22 +107,22 @@ def _apply_gate_to_jax_shards(
     shards = tuple(shards)
     if not shards:
         return ()
-    wires = tuple(int(wire) for wire in wires)
-    width = len(wires)
+    qubits = tuple(int(qubit) for qubit in qubits)
+    width = len(qubits)
     gate_dim = 2**width
     if tuple(matrix.shape[-2:]) != (gate_dim, gate_dim):
         raise ValueError(
-            f"Gate on {width} wires requires matrix shape {(gate_dim, gate_dim)}."
+            f"Gate on {width} qubits requires matrix shape {(gate_dim, gate_dim)}."
         )
 
     if diagonal:
         diagonal_values = jnp.diagonal(matrix)
         updated_shards = []
         for shard in shards:
-            basis_indices = _jax_basis_indices_for_wires(
+            basis_indices = _jax_basis_indices_for_qubits(
                 shard.global_indices,
-                n_wires=plan.n_wires,
-                wires=wires,
+                n_qubits=plan.n_qubits,
+                qubits=qubits,
             )
             factors = diagonal_values[basis_indices].reshape(1, -1)
             updated_shards.append(
@@ -136,9 +136,9 @@ def _apply_gate_to_jax_shards(
             )
         return tuple(updated_shards)
 
-    masks = tuple(_wire_mask(plan.n_wires, wire) for wire in wires)
+    masks = tuple(_wire_mask(plan.n_qubits, qubit) for qubit in qubits)
     offsets = tuple(
-        _basis_offset(plan.n_wires, wires, basis) for basis in range(gate_dim)
+        _basis_offset(plan.n_qubits, qubits, basis) for basis in range(gate_dim)
     )
     positions_by_global: dict[int, tuple[int, int]] = {}
     for shard_index, shard in enumerate(shards):

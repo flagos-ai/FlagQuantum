@@ -17,26 +17,54 @@ _CPU_CX_ADJOINT_CYCLE_BYTES_PER_AMPLITUDE = 9
 def compact_cx_permutation_images(
     controls: Sequence[int],
     targets: Sequence[int],
-    n_wires: int,
+    n_qubits: int,
 ) -> torch.Tensor:
-    """Build one compact basis image per wire for an inverse CX mapping."""
+    """Build one compact basis image per qubit for an inverse CX mapping."""
 
     if len(controls) != len(targets):
         raise ValueError("a CX sequence needs one target per control")
-    images = [1 << (n_wires - wire - 1) for wire in range(n_wires)]
+    images = [1 << (n_qubits - qubit - 1) for qubit in range(n_qubits)]
     for control, target in zip(reversed(controls), reversed(targets), strict=True):
-        control_mask = 1 << (n_wires - int(control) - 1)
-        target_mask = 1 << (n_wires - int(target) - 1)
+        control_mask = 1 << (n_qubits - int(control) - 1)
+        target_mask = 1 << (n_qubits - int(target) - 1)
         images = [
             image ^ target_mask if image & control_mask else image for image in images
         ]
     return torch.tensor(images, dtype=torch.int64)
 
 
-def use_compact_cpu_cx_mapping(n_wires: int) -> bool:
+def compact_cx_rzz_swap_images(
+    controls: Sequence[int],
+    targets: Sequence[int],
+    swap_qubits: tuple[int, int],
+    n_qubits: int,
+) -> torch.Tensor:
+    """Build compact inverse images for a CX sequence followed by one SWAP."""
+
+    if len(controls) != len(targets):
+        raise ValueError("a CX sequence needs one target per control")
+    left, right = (int(qubit) for qubit in swap_qubits)
+    left_mask = 1 << (n_qubits - left - 1)
+    right_mask = 1 << (n_qubits - right - 1)
+    images = [1 << (n_qubits - qubit - 1) for qubit in range(n_qubits)]
+    for index, image in enumerate(images):
+        left_set = bool(image & left_mask)
+        right_set = bool(image & right_mask)
+        if left_set != right_set:
+            images[index] = image ^ left_mask ^ right_mask
+    for control, target in zip(reversed(controls), reversed(targets), strict=True):
+        control_mask = 1 << (n_qubits - int(control) - 1)
+        target_mask = 1 << (n_qubits - int(target) - 1)
+        images = [
+            image ^ target_mask if image & control_mask else image for image in images
+        ]
+    return torch.tensor(images, dtype=torch.int64)
+
+
+def use_compact_cpu_cx_mapping(n_qubits: int) -> bool:
     """Use compact metadata once a full int32 CX table reaches 16 MiB."""
 
-    return n_wires >= 22 and native_cpu_compact_cx_index_available()
+    return n_qubits >= 22 and native_cpu_compact_cx_index_available()
 
 
 def native_cpu_cx_adjoint_gather_available() -> bool:
@@ -59,6 +87,16 @@ def native_cpu_cx_gather_available() -> bool:
     )
 
 
+def native_cpu_cx_rzz_swap_available() -> bool:
+    """Return whether fused static CX/RZZ/SWAP execution is available."""
+
+    return (
+        os.getenv("FQ_NATIVE_CPU_CX_RZZ_SWAP", "1").strip().lower()
+        not in {"0", "false", "off", "no"}
+        and _load_extension()
+    )
+
+
 def native_cpu_clifford_matching_available() -> bool:
     """Return whether the fused inference-only Clifford kernel is loadable."""
 
@@ -69,7 +107,7 @@ def fused_clifford_matching_out(
     state: torch.Tensor,
     cx_mapping: torch.Tensor,
     cz_edges: Sequence[tuple[int, int]] | None,
-    n_wires: int,
+    n_qubits: int,
     *,
     output: torch.Tensor | None = None,
 ) -> torch.Tensor | None:
@@ -79,7 +117,7 @@ def fused_clifford_matching_out(
     normalized_cz_edges = tuple(
         (int(left), int(right)) for left, right in (cz_edges or ())
     )
-    occupied = tuple(wire for edge in normalized_cz_edges for wire in edge)
+    occupied = tuple(qubit for edge in normalized_cz_edges for qubit in edge)
     if (
         not native_cpu_clifford_matching_available()
         or state.requires_grad
@@ -88,11 +126,11 @@ def fused_clifford_matching_out(
         or state.dtype not in {torch.complex64, torch.complex128}
         or cx_mapping.dtype not in {torch.int32, torch.int64}
         or state.ndim != 2
-        or state.shape[1] != 1 << n_wires
+        or state.shape[1] != 1 << n_qubits
         or cx_mapping.ndim != 1
-        or cx_mapping.numel() not in {n_wires, state.shape[1]}
+        or cx_mapping.numel() not in {n_qubits, state.shape[1]}
         or len(set(occupied)) != len(occupied)
-        or any(not 0 <= wire < n_wires for wire in occupied)
+        or any(not 0 <= qubit < n_qubits for qubit in occupied)
         or not state.is_contiguous()
         or not cx_mapping.is_contiguous()
         or (
@@ -112,7 +150,7 @@ def fused_clifford_matching_out(
         output = torch.empty_like(state)
     with torch.no_grad():
         torch.ops.flagquantum_native.fused_clifford_matching_out(
-            state, cx_mapping, edge_tensor, output, n_wires, phase_encoded
+            state, cx_mapping, edge_tensor, output, n_qubits, phase_encoded
         )
     return output
 
@@ -137,22 +175,22 @@ def native_cpu_cx_adjoint_cycles_available() -> bool:
     )
 
 
-def use_compact_cpu_cx_adjoint_cycles(cx_count: int, n_wires: int) -> bool:
+def use_compact_cpu_cx_adjoint_cycles(cx_count: int, n_qubits: int) -> bool:
     """Use compact cycles for a sufficiently long representable CX segment."""
 
     return (
         cx_count >= _CPU_CX_ADJOINT_CYCLE_MINIMUM_LENGTH
-        and 1 < n_wires < 31
+        and 1 < n_qubits < 31
         and native_cpu_cx_adjoint_cycles_available()
     )
 
 
-def compact_cpu_cx_adjoint_auxiliary_bytes(n_wires: int) -> int:
+def compact_cpu_cx_adjoint_auxiliary_bytes(n_qubits: int) -> int:
     """Conservative cycle-index allocation bound for one amplitude row."""
 
-    if not 1 < n_wires < 31:
-        raise ValueError("compact CPU CX cycles require 2 to 30 wires")
-    return _CPU_CX_ADJOINT_CYCLE_BYTES_PER_AMPLITUDE * (1 << n_wires)
+    if not 1 < n_qubits < 31:
+        raise ValueError("compact CPU CX cycles require 2 to 30 qubits")
+    return _CPU_CX_ADJOINT_CYCLE_BYTES_PER_AMPLITUDE * (1 << n_qubits)
 
 
 def fused_cx_gather_out(
@@ -211,6 +249,46 @@ def fused_compact_cx_gather_out(
         return False
     with torch.no_grad():
         torch.ops.flagquantum_native.fused_compact_cx_gather_out(state, images, output)
+    return True
+
+
+def fused_compact_cx_rzz_swap_out(
+    state: torch.Tensor,
+    images: torch.Tensor,
+    output: torch.Tensor,
+    *,
+    rzz_qubits: tuple[int, int],
+    rzz_angle: float,
+) -> bool:
+    """Apply one static CX/RZZ/SWAP segment into a reusable output."""
+
+    if (
+        not native_cpu_cx_rzz_swap_available()
+        or state.requires_grad
+        or state.device.type != "cpu"
+        or images.device.type != "cpu"
+        or output.device.type != "cpu"
+        or state.dtype not in {torch.complex64, torch.complex128}
+        or output.dtype != state.dtype
+        or images.dtype != torch.int64
+        or state.ndim != 2
+        or output.shape != state.shape
+        or images.ndim != 1
+        or state.shape[1] != 1 << images.numel()
+        or not all(item.is_contiguous() for item in (state, images, output))
+        or state.data_ptr() == output.data_ptr()
+    ):
+        return False
+    first, second = (int(qubit) for qubit in rzz_qubits)
+    with torch.no_grad():
+        torch.ops.flagquantum_native.fused_compact_cx_rzz_swap_out(
+            state,
+            images,
+            output,
+            first,
+            second,
+            float(rzz_angle),
+        )
     return True
 
 
@@ -279,7 +357,7 @@ def fused_cx_adjoint_inplace_(
     adjoint: torch.Tensor,
     controls: Sequence[int],
     targets: Sequence[int],
-    n_wires: int,
+    n_qubits: int,
 ) -> bool:
     """Apply an inverse CX sequence to ket and adjoint without state scratch."""
 
@@ -293,7 +371,7 @@ def fused_cx_adjoint_inplace_(
         or adjoint.dtype != ket.dtype
         or ket.ndim != 2
         or adjoint.shape != ket.shape
-        or ket.shape[1] != 1 << n_wires
+        or ket.shape[1] != 1 << n_qubits
         or len(controls) != len(targets)
         or not ket.is_contiguous()
         or not adjoint.is_contiguous()
@@ -307,7 +385,7 @@ def fused_cx_adjoint_inplace_(
             adjoint,
             control_tensor,
             target_tensor,
-            n_wires,
+            n_qubits,
         )
     return True
 

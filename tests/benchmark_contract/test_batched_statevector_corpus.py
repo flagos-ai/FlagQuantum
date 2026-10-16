@@ -26,7 +26,7 @@ def test_runner_is_registered_and_lazy() -> None:
 
 def test_independent_parameter_batch_matches_scalar_rows() -> None:
     batched, scalar = build_parameter_batch(
-        "hardware_efficient_statevector", n_wires=4, batch_size=3
+        "hardware_efficient_statevector", n_qubits=4, batch_size=3
     )
 
     expected = torch.cat(tuple(circuit.state() for circuit in scalar), dim=0)
@@ -37,7 +37,7 @@ def test_independent_parameter_batch_matches_scalar_rows() -> None:
 def test_small_native_corpus_records_task_throughput_and_correctness() -> None:
     payload = run_benchmark(
         workloads=("hardware_efficient_statevector",),
-        n_wires=(4,),
+        n_qubits=(4,),
         batch_sizes=(1, 3),
         engines=(
             "flagquantum_native_batch",
@@ -174,7 +174,7 @@ def test_pennylane_native_batch_matches_flagquantum_batch() -> None:
     pytest.importorskip("pennylane")
     payload = run_benchmark(
         workloads=("hardware_efficient_statevector",),
-        n_wires=(4,),
+        n_qubits=(4,),
         batch_sizes=(3,),
         engines=(
             "flagquantum_native_batch",
@@ -204,11 +204,13 @@ def test_pennylane_native_batch_matches_flagquantum_batch() -> None:
 
 def test_invalid_batch_contract_fails_closed() -> None:
     with pytest.raises(ValueError, match="batch_size must be positive"):
-        build_parameter_batch("hardware_efficient_statevector", n_wires=4, batch_size=0)
+        build_parameter_batch(
+            "hardware_efficient_statevector", n_qubits=4, batch_size=0
+        )
     with pytest.raises(ValueError, match="iterations at least 3"):
         run_benchmark(
             workloads=("hardware_efficient_statevector",),
-            n_wires=(4,),
+            n_qubits=(4,),
             batch_sizes=(1,),
             engines=("flagquantum_native_batch",),
             threads=1,
@@ -314,3 +316,40 @@ def test_adaptive_memory_evidence_meets_target_and_control_gates() -> None:
                 adaptive["isolated_memory"]["execution_peak_rss_growth_bytes"]
                 <= 0.80 * rollback["isolated_memory"]["execution_peak_rss_growth_bytes"]
             )
+
+
+def test_qft_adaptive_memory_evidence_closes_the_remaining_target() -> None:
+    comparison = REPOSITORY_ROOT / "benchmarks" / "results" / "comparison"
+    payload = json.loads(
+        (
+            comparison
+            / "batched_statevector_qft_adaptive_memory_cpu_arm64_20261003.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert payload["hostname"] == "redacted"
+    assert payload["schema"] == "flagquantum.batched_statevector_memory.v1"
+    assert payload["correctness_passed"] is True
+    assert payload["all_measurements_stable"] is True
+    assert payload["scalability_claim_allowed"] is False
+    assert len(payload["cases"]) == 1
+    case = payload["cases"][0]
+    assert case["workload"]["name"] == "truncated_qft_statevector"
+    adaptive = case["engines"]["flagquantum_native_batch"]
+    rollback = case["engines"]["flagquantum_native_adaptive_budget_rollback"]
+    lightning = case["engines"]["pennylane_lightning_native_batch"]
+    for result in (adaptive, rollback, lightning):
+        assert result["batch_total"]["sample_count"] == 11
+        assert result["isolated_memory"]["sample_count"] == 3
+    assert (
+        adaptive["isolated_memory"]["execution_peak_rss_growth_bytes"]
+        <= 0.65 * rollback["isolated_memory"]["execution_peak_rss_growth_bytes"]
+    )
+    assert (
+        adaptive["batch_total"]["median_seconds"]
+        <= rollback["batch_total"]["median_seconds"]
+    )
+    assert (
+        lightning["batch_total"]["median_seconds"]
+        >= 2.0 * adaptive["batch_total"]["median_seconds"]
+    )

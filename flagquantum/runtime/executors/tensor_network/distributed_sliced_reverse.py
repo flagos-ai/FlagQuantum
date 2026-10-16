@@ -17,7 +17,11 @@ from ....simulation.tensor_network.models import (
     TensorNetworkSlicingPlan,
 )
 from ...distributed.context import resolve_local_world_size
-from .distributed_optimizer import _packed_owner_layout, plan_tn_parameter_owners
+from .distributed_optimizer import (
+    GRADIENT_REDUCTION_MODES,
+    _packed_owner_layout,
+    plan_tn_parameter_owners,
+)
 from .sliced_reverse import execute_sliced_tn_explicit_reverse
 from .sliced_tasks import DistributedTNSliceTaskPlan
 
@@ -127,8 +131,10 @@ def execute_distributed_sliced_tn_explicit_reverse(
     tasks.validate()
     world_size = int(dist.get_world_size(group=process_group))
     rank = int(dist.get_rank(group=process_group))
-    if gradient_reduction not in {"all_reduce", "owner_reduce"}:
-        raise ValueError("gradient_reduction must be 'all_reduce' or 'owner_reduce'")
+    if gradient_reduction not in GRADIENT_REDUCTION_MODES:
+        raise ValueError(
+            f"gradient_reduction must be one of {sorted(GRADIENT_REDUCTION_MODES)}"
+        )
     if tasks.world_size != world_size:
         raise RuntimeError("TN slice task plan world size does not match process group")
     # The task plan decides which node owns each slice, so a plan built from a

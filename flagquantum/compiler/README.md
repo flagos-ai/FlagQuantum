@@ -15,26 +15,38 @@ From the repository root:
 ```bash
 python -m examples.compiler_optimize
 python -m examples.target_aware_compilation
+python -m examples.compiler_synthesis
 ```
 
-The first example checks optimization against the original circuit. The second
-checks routing legality and numerical equivalence on a concrete topology.
-Use `optimize(program)` for target-independent optimization and
-`compile(program, coupling_map=...)` for target-aware compilation.
+The first example checks optimization against the original circuit, prints the
+gate count at every implemented optimization level, and shows a reserved level
+failing closed. The second checks routing legality and numerical equivalence on a
+concrete topology. The third spells gates a target cannot run in the gates that
+target publishes, and checks each rewrite against the original on the shipped
+statevector engine; run it before changing an Euler form, an entangler cost, or a
+ladder. Use
+`optimize(program)` for target-independent optimization and
+`compile(program, coupling_map=...)` for target-aware compilation. Both take
+`optimization_level=`, which selects how much of the pass library runs and
+defaults to `2`, the level that runs all of it. Use
+`synthesize_one_qubit`, `synthesize_two_qubit`, and
+`synthesize_state_preparation` for basis rewriting; they are not stable
+`fq.compiler` exports, so reach them by module path.
 
 ## Change the owning stage
 
 | Change | Entry point |
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
-| The named pass sequence, its registry, and the fixed point | [pass_manager.py](pass_manager.py) |
+| Declared optimization levels and the pass order each one runs | [optimization_levels.py](optimization_levels.py) |
+| The pass registry, the pass binding, and the fixed point | [pass_manager.py](pass_manager.py) |
 | Cancellation of a declared inverse pair | [inverse_cancellation.py](inverse_cancellation.py) |
 | Resets on a wire still in the zero state | [zero_state_reset.py](zero_state_reset.py) |
 | Commutation rules and the block partition | [commutation.py](commutation.py) |
 | Cancellation across a proven commuting gap | [commutation_cancellation.py](commutation_cancellation.py) |
 | Diagonal gates before a measurement | [diagonal_before_measure.py](diagonal_before_measure.py) |
 | Connectivity and routing | [coupling.py](coupling.py), [directed_topology.py](directed_topology.py), [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
-| Wire layouts and the layout restore | [layout.py](layout.py) |
+| Qubit layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
@@ -42,7 +54,11 @@ Use `optimize(program)` for target-independent optimization and
 | Exact quarter-turn rotations | [angle_synthesis.py](angle_synthesis.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
 | One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
+| Two-qubit block folding | [two_qubit_optimization.py](two_qubit_optimization.py) |
+| Two-qubit block splitting | [two_qubit_optimization.py](two_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](two_qubit_synthesis.py) |
+| State-preparation ladders from amplitudes | [state_preparation_synthesis.py](state_preparation_synthesis.py) |
+| The runnable path through all three synthesis entry points | `python -m examples.compiler_synthesis` |
 | Dependency scheduling | [schedule_legalization.py](schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
@@ -359,6 +375,99 @@ carrying a trainable angle is folded at all -- composition reads numbers, and
 holds the per-length reduction, the statevector exactness, the decline, and the
 count difference from Qiskit's pass.
 
+Re-spelling a run **into a declared target basis** is the one part of that
+counterpart that is not here, and it is blocked by arithmetic rather than by a
+missing routine. The determinant of a word over a target's arity-1 gates is the
+product of its factors' determinants, so a word over `{rz, sx, x}` -- the three
+arity-1 gates of the `ibm-rz-sx-cx` snapshot -- carries a determinant whose
+argument lies in `{0, pi/2, pi, 3*pi/2}` degrees, and a run containing `t`,
+`tdg`, `phase`, `u1`, or `u3` carries one outside that set. No word over that
+basis reproduces such a run at any length. Qiskit's `Optimize1qGatesDecomposition`
+takes that population anyway and pays the difference into `dag.global_phase`,
+which its DAG has and `CircuitIR` does not; measured over 4000 seeded mixed runs,
+a word that agrees only up to a global phase exists for all 4000 and is three
+gates shorter on mean, while one that agrees entry for entry exists for 230 to
+425 of them. The gap is the missing field, not missing synthesis. That second
+column is reported as a reference rather than a constant because it counts a
+floating-point coincidence: which runs the five-gate template happens to hit
+exactly depends on exact-equality branches reading `cmath`, so it moves with the
+platform's C library. The bound the obstruction actually implies is reported
+separately and does not move.
+[benchmarks/compiler_one_qubit_decomposition.py](../../benchmarks/compiler_one_qubit_decomposition.py)
+measures the determinant subgroup per basis, the two columns per declared pair,
+and the phase `native_gate_legalization` already drops on 76 to 78 of 80 seeded
+entangled programs; [FQ-IR-GLOBAL-PHASE-20261006.md](../../docs/api-changes/FQ-IR-GLOBAL-PHASE-20261006.md)
+is the proposal for the field.
+
+Two-qubit block folding is the same idea one arity up, with one difference that
+matters. `collapse_one_qubit_runs` composes a maximal run over one *wire*; the fold
+composes a maximal **block** over one *ordered wire pair*, whose members are the
+two-qubit gates on that pair plus the contiguous single-qubit gates immediately to
+their left that sit on one of the pair's wires. A member's wires are read as a
+Kronecker product on the side the pair gives it, so the block's product is the 4x4
+operator the program computes, and the product is then compared entry for entry
+against each declared two-qubit opcode. That draw-in is what reaches a conjugation
+by a single-qubit gate -- `h(1) cz(0, 1) h(1)` is exactly `cx(0, 1)` -- which
+neither this pass's two-qubit-run predecessor nor `collapse_one_qubit_runs` can see.
+The conjugated wire has to be the one whose role changes, because the operand order
+`(0, 1)` and its reverse `(1, 0)` are different blocks: the same three gates with the `h`s on `0`
+compose to `cx(1, 0)` and are declined rather than relabelled.
+[two_qubit_optimization.py](two_qubit_optimization.py) is the pass, and it is the
+Compiler-layer counterpart of Qiskit's `ConsolidateBlocks` run at the granularity
+this IR can prove. It is exact rather than exact-up-to-phase, and it emits at most
+one gate: a block whose product is no declared opcode is left where it was, and a
+trainable or batched angle is never read.
+A larger product is not a more likely one: drawing a single-qubit gate into a block
+can turn a product that *was* one declared gate into one that is not, so the widening
+is not monotone by construction. The pass therefore keeps the narrower rule it
+replaced as a floor -- a block it cannot re-spell is offered to that rule one
+all-two-qubit sub-run at a time -- and the floor is measured rather than asserted:
+with the sub-run fallback removed, the widened rule is 53 instructions longer than
+the rule it replaced over one benchmark population while rescuing folds on 40 of that
+population's 120 circuits, and 2 instructions shorter with it.
+[benchmarks/compiler_two_qubit_optimization.py](../../benchmarks/compiler_two_qubit_optimization.py)
+holds the membership table, the reach and its decline, the boundary sweep with
+`false_yes` required to be zero, and a Qiskit anchor that reports what
+`OptimizeCliffords` and `CollectCliffords` actually do to a gate-level circuit.
+
+The fold has an inverse, and it is the one form of "take a two-qubit unitary apart"
+this IR can state exactly. `split_two_qubit_blocks` reads one two-wire instruction
+that carries a matrix and whose opcode no operator schema declares, and emits the two
+single-qubit instructions whose Kronecker product it is. It is the counterpart of
+Qiskit's `Split2QUnitaries`, with one difference worth stating: that pass sets
+`new_dag.global_phase` on the branch it acts on because its factors are normalized,
+while the factors here are scaled by the positive real Frobenius norm of the
+product's largest 2x2 block and so need no phase field -- which is the field
+`CircuitIR` does not have. Measured over the benchmark's 96 seeded products: the
+emitted pair reproduces the source statevector to 2.5e-16 and the source matrix to
+2.5e-16 entry for entry, with the phase column at 5.6e-17, and nothing is divided
+out. A declared opcode is never a candidate, because its name is what the schema
+fixes and its declared arity is what two one-wire halves would contradict, and a
+Haar-random SU(4) is declined by the same arithmetic -- 0 of 300 accepted.
+The input class is narrow because the pass is exact rather than because it is
+prudent, and the class is not drawn by a tolerance: a product is recognized by
+multiplication and rejected by multiplication. `clifford-t` in
+[benchmarks/compiler_two_qubit_synthesis.py](../../benchmarks/compiler_two_qubit_synthesis.py)
+publishes neither a z-rotation nor a pulse, so it serves no arm of that measurement
+and reports a zero comparable count rather than an agreement it cannot make.
+The payoff is reach rather than length, and it is measured as such. A two-wire matrix
+instruction is the one shape the single-qubit passes cannot read, so before this pass
+it had exactly one route out of `native_gate_legalization`: `synthesize_two_qubit`,
+which needs an entangler. A target that publishes a z-rotation and a pulse and no
+entangler at all reached none of that population and now reaches all of it. Where an
+entangler does exist both routes serve the input and the split is the shorter one on
+16 cases of 96, equal on 79, and longer on exactly one -- the identity factor, where
+the entangler route's ten leaves are not padded but genuinely paid. The `shipped` and
+`hand_split` arms of that benchmark are deliberately not compared by length: the
+hand-written route names `x` where the shipped one holds an opaque matrix, and a
+basis that publishes `x` keeps the name, so a length comparison would report name
+preservation as a property of the pass.
+`tests/unit/test_compilation_split_two_qubit_blocks.py` holds the exactness on raw
+amplitudes, the refusal directions, and the falsifiability control: the phase-blind
+route over the same input has an overlap magnitude of 1 and a raw difference above
+0.1, so nothing in that file compares overlaps.
+
+
 A gate that is its own inverse is one thing; a gate whose inverse is a *different*
 opcode is another, and `merge_self_inverse` only saw the first kind, so it left
 `s(0) sdg(0)` standing as two instructions although the pair is the identity.
@@ -509,7 +618,7 @@ has no field to record. The table stores the shortest statement of each identity
 rather than its closure, so the search expands each rule's leaves through the
 table again: a `cz` basis plus a z-rotation reaches all eleven declared two-qubit
 opcodes by name, where the four hand-written rules this replaced reached two of
-them. The two three-wire entries cover the whole of this IR's multi-controlled
+them. The two three-qubit entries cover the whole of this IR's multi-controlled
 surface -- `ccx` as its fifteen-gate standard form and `cswap` as a `ccx` around
 two `cx` -- and they reach the three bases that publish a `cx` or a `cz` sink.
 Qiskit splits the same operation into a Gray-code, a recursive and a V-chain
@@ -536,7 +645,7 @@ instead of measurement statistics has to know that; flag records of it belong in
 the capability registry, which `capability-maturity.toml` owns.
 
 Two-qubit KAK synthesis extends that to a matrix-carrying instruction on two
-wires, over any supercontrolled entangler the basis publishes. Six declared
+qubits, over any supercontrolled entangler the basis publishes. Six declared
 arity-2 opcodes reach a supercontrolled Weyl point: `cx`, `cz` and `cy` as they
 stand, and `rzz`, `ryy` and `rxx` at an angle of `pi/2`. `cphase` is excluded on
 purpose -- its only supercontrolled angle is `pi`, where it is `cz`, so it would
@@ -551,6 +660,185 @@ entanglers, up to one global phase.
 [benchmarks/compiler_two_qubit_synthesis.py](../../benchmarks/compiler_two_qubit_synthesis.py)
 holds the reach, cost, and phase measurement, and cross-checks the entangler
 count against Qiskit's `TwoQubitBasisDecomposer` over the whole table.
+
+An operator no target vocabulary names reaches this stage as an instruction
+carrying a matrix, and four implementations answer it: the KAK route above, the
+product-first `_local_replacement`, the `_matrix_replacement` that chooses
+between them, and `split_two_qubit_blocks`, which re-spells such a matrix as its
+two single-qubit factors. They are one boundary with several implementations, so
+[test_two_qubit_decomposition_conformance.py](../../tests/team/compiler/test_two_qubit_decomposition_conformance.py)
+states their shared postconditions once and drives all four through every one of
+them. The routes do not share an observable convention, and the suite asserts two
+rules rather than one: the synthesis routes preserve the source unitary up to one
+global phase -- the instrument is the overlap, which cannot see one, and every
+route's worst deviation over the 41-case family is below `1.8e-14` -- while the
+fold route is exact entrywise, at `1.2e-16`, because `_product_factors` reads the
+Kronecker scale into the emitted factors and records no phase at all. The same
+input also shows why the phase assertion is an arc rather than an equality: the
+phase of the KAK answer genuinely depends on the entangler, spreading over an arc
+of up to `5.71` radians across the six of them, and 40 of the 41 cases move by at
+least a quarter turn. The floor is a quarter turn and not a half turn because every
+such difference is a whole number of quarter turns while which multiple a case
+lands on is not portable: one point of the family spreads by two quarter turns on
+arm64 and by one on x86-64, since the phase it is read from sits on a grid
+boundary and the two `libm`s round it either way. Reach is asserted as a count per
+route per entangler arm rather than as a capability, because a product of two
+single-qubit unitaries is answered by the product route on a target that publishes
+no entangler, while the KAK route refuses every one of them.
+
+The suite also records one diagnosed refusal rather than a passing test. A
+two-qubit unitary whose Weyl coordinates have `b == c` makes `m2` in
+`_weyl_decomposition` exactly degenerate, and `_diagonalize_m2`'s acceptance
+tolerance of `1e-13` sits below that class's intrinsic reconstruction residual of
+about `2.3e-9`, so the diagonalizer fails on all 100 attempts and raises the
+two-qubit Weyl decomposition error rather than a decomposition. Which matrices hit
+it depends on the local frames a degenerate Weyl point is dressed in, not on the
+point alone, and `legalize_native_gates` propagates that bare `ValueError` where
+every other failure it can reach a caller with is wrapped in
+`NativeGateLegalizationError`. The suite therefore pins a family measured to be
+refusal-free under a ten-frame sweep per point, and
+`test_the_near_product_band_is_refused_by_both_routes` documents the escape as a
+limitation rather than endorsing it.
+
+State-preparation synthesis turns an amplitude vector into a circuit, which is the
+one place in this package where the input is a classical vector rather than a
+program. `synthesize_state_preparation(amplitudes, qubits=None, z_rotation="rz",
+pulse_opcode="sx", entangler="cx", metadata=None)` returns the leaves of a
+uniformly controlled ladder -- a magnitude pass over the register, then a phase
+pass over it, both in the Möttönen-Vartiainen-Bergholm-Salomaa construction -- or
+`None` when the named basis cannot carry one, which is the same refusal
+`synthesize_two_qubit` gives. Level `j` acts on wire `j` controlled by wires `0`
+to `j-1`, each level's control flips are spelled by `synthesize_two_qubit` out of
+the caller's entangler, and the result is a plain tuple of `Instruction` with no
+runtime selected, no device named, and no state executed. It normalises the vector
+rather than requiring one, since a global phase and a scale are both unobservable.
+
+Two constraints in that signature are load-bearing and neither is a preference.
+`z_rotation` may only be `rz`: `phase` and `u1` are exactly `exp(1j * theta / 2)`
+times `RZ(theta)`, so over a ladder, where the angle is the branch index, the
+offset becomes branch dependent and the level stops being one controlled rotation.
+And the `ry` groups are emitted in the general Euler form
+`RZ(lam) PULSE RZ(theta - pi) PULSE RZ(phi - pi)` rather than through
+`synthesize_one_qubit_matrix`, whose shorter spellings move the dropped global
+phase by a full `pi` when the polar angle reaches `pi`. A ladder multiplies its
+branches' dropped phases into relative phases, so it needs the one form that holds
+a constant. Both refusals are therefore fail-closed: a basis this construction
+cannot hold is reported as `None` rather than answered with a replacement that was
+never verified.
+
+An amplitude vector also has an existing implementation in this repository:
+`flagquantum.algorithms.primitives.state_preparation`, which `algorithms.svd` and
+`algorithms.pca` call and which the change that added the compiler-side entry point
+did not edit. That makes the pair the replacement ARCH-012 clause 2 asks for, and
+[test_state_preparation_synthesis.py](../../tests/team/compiler/test_state_preparation_synthesis.py)
+is where the two meet, because `tests/**` is the only path both domains share. The
+suite states the boundary's postconditions once and drives both implementations
+through all of them behind the shipped simulation entry point, and it asserts three
+properties as differences so that no check is a claim never seen to fail: the short
+Euler forms' phase really does move by `pi` at `theta = pi` where the general form
+holds one constant; a `phase` ladder really is `O(1)` away from its `rz`
+counterpart, by a different phase on each branch; and a single zero branch of a
+magnitude ladder may drop its `RY(0)` group but not its flips, while a whole zero
+ladder may drop both. On the uniform superposition the leaf count is exactly
+`4 * n + flip_cost * (2**n - 2)` at every width, and the flip cost is the roster's
+own measurement of one `cx` rather than a number this package keeps: one leaf for
+`cx`, `6` for `cy`, `7` for `rzz` and `9` for `cz`, all four of them arithmetic
+because their routes cross only polar angles `one_qubit_synthesis._zyz_angles`
+produces exactly. The two entanglers that are not degenerate are a host quantity
+instead, because their trailing local factor's polar angle is a general
+`2 * atan2(...)` that `_leaves` compares to `pi/2` with `==`: `rxx` costs `10` or
+`13` leaves and `ryy` `11` or `13`, depending on which way the platform's own
+rounding falls. The suite states that one dimension as the set it is.
+Measured, the two implementations agree to `2.6e-08` through `5.7e-08` entrywise,
+which is the frozen reference's `complex64` floor rather than this boundary's
+rounding: the compiler side reaches `3.9e-16` against the exact direction. The
+entry point is not re-exported from [__init__.py](__init__.py); it is reached by
+module path, and no capability label is claimed for it here.
+
+The ten passes are one boundary with ten implementations of the same task --
+delete work that cannot change an observable -- so a new or rewritten pass is
+accepted only when it satisfies the same postconditions as the rest.
+[test_optimization_pass_conformance.py](../../tests/team/compiler/test_optimization_pass_conformance.py)
+states that contract once and drives every pass through all of it: the program
+scaffolding survives, no pass grows a program or emits on a wire the source never
+used, no pass mutates its input or answers differently twice, each wire keeps the
+order it carried, and the observable the pass may move is preserved. Operations on
+*disjoint* wires are allowed to move relative to each other, because they commute
+and a pass that folds one wire's stack at a time does reorder them; the order that
+may not change is the one two surviving operations share a wire in.
+
+The observable is not one assertion. Eight passes act on unitary opcodes, and for
+them the state vector is compared as a vector rather than through the overlap
+`1 - |<in|out>|`, because an overlap is blind to the one defect this repository has
+already paid for: a fold that drops a global phase. The other two reason about
+`reset` or `measure`, which `operator_schema` does not declare, so the statevector
+engine cannot execute those programs at all and their observable is the sampled
+outcome distribution. That split is derived from the operator schema in the suite
+rather than restated there. Each instrument is calibrated by a control that has to
+fail it: a pass that appends an identity, a pass that advances one surviving
+rotation by a full turn -- a phase of pi, which the overlap cannot see and the
+vector difference measures at 0.638 or more -- and the two removals the dynamic
+passes refuse, taken by hand, which each move a share by 1.000 against a legitimate
+removal's worst 0.0197.
+
+The roster the suite checks is the loop's own composition, not a copy of it:
+`optimize` runs its passes to a fixed point and imports them inside the function,
+so the suite records the calls the loop actually makes and compares the recording
+with its enumeration. A pass added to the loop and not to this file fails there.
+Since the composition is named rather than written inline, the enumeration is the
+declaration in [optimization_levels.py](optimization_levels.py) and the recording
+is still what proves the loop runs it.
+
+## How much optimization runs
+
+`optimize` and `compile` take `optimization_level`, an integer naming how much of
+the pass library runs. The levels are Qiskit's, because the two libraries' pass
+sets correspond closely enough that a user moving between them should not have to
+learn a second scale, and `optimization_levels.py` records the correspondence per
+pass rather than only the numbers:
+
+| Level | Stages |
+| --- | --- |
+| `0` | None. The program is returned unchanged. |
+| `1` | Reset and identity removal, self-inverse and inverse-pair cancellation, adjacent-rotation merging, one-qubit run folding. |
+| `2` | Everything `1` runs, plus diagonal-gate removal before measurement and rotation merging across a proven commuting gap. |
+| `3` | Declared and reserved. `CompilationError`, because the unitary-synthesis stage Qiskit's level 3 moves into the optimization loop needs a target basis and `optimize` has none. |
+
+`2` is the default and the level every earlier release effectively ran, so a
+caller that names no level receives the program it used to receive; level `0`
+returns the submitted program instruction for instruction, which is what
+supporting "do not optimize" as a level rather than a flag has to mean. The level
+that ran is recorded on the result under `metadata["optimization"]`, so a level-0
+program that had nothing to optimize is still distinguishable from one that was
+never offered to the optimizer at all.
+
+Level 3 is refused rather than approximated. Qiskit's level 3 differs from its
+level 2 by moving `UnitarySynthesis` into the fixed-point loop, and that pass can
+never be a stage of this ladder: it rewrites each instruction it cannot keep into
+a *target's* native gates, so it needs a target basis, while `optimize` is
+target-independent by contract and is handed no target. The capability is in the
+package and not in this entry point --
+[`native_gate_legalization.legalize_native_gates`](native_gate_legalization.py)
+performs that same rewrite against a `TargetCapabilitySnapshot` -- so "write the
+missing pass" is not the work that would unblock level 3, and the refusal says so
+rather than leaving a reader to look for a pass that already exists. Answering a
+request for level 3 with a level-2 program would be a silent downgrade of exactly
+the kind this repository forbids, and narrowing the ladder later is a breaking
+change while widening it is not, so the refusal is the version that can be
+corrected cheaply.
+A value that is not an integer is refused for the same reason: `True` and `2.0`
+both compare equal to an implemented level, so accepting them would let an
+unvalidated value select a pass set.
+
+The declaration is checked against execution rather than against itself.
+[test_optimization_levels.py](../../tests/team/compiler/test_optimization_levels.py)
+resolves every declared name through the loop's own roster, asserts level 2 is the
+whole library and level 1 a subsequence of it, and asserts the reach of each level
+over a seeded family: level 1 is strictly shorter than level 0 on all forty seeds
+and level 2 strictly shorter than level 1 on twelve, because level 1 already folds
+a single-qubit run into one Euler form and level 2's extra reach is what survives
+that. Each level is also checked for preserving the state and for never growing
+the program, so the levels form a ladder rather than four independent settings.
 
 Routing strategies are one boundary with several implementations, so a new or
 replaced strategy is accepted only when the shared conformance suite in
@@ -572,7 +860,7 @@ holds the measurement and the commands that reproduce it.
 
 The randomized layer-permutation search Qiskit shipped as `StochasticSwap` was
 measured the same way, and rejected on cost as well. Its plan is sound: the
-placements it records are the replay of its own SWAPs, and every two-wire
+placements it records are the replay of its own SWAPs, and every two-qubit
 operation it places sits on a device edge. It still retains 1.617 times the SWAPs
 `sabre_layout` retains and beats that strategy on none of the 140 measured
 programs, and Qiskit's own compiled implementation of the same algorithm retains
@@ -582,21 +870,61 @@ holds the measurement and the commands that reproduce it. The checked-in port is
 also the only runnable form of the algorithm left to this repository, because
 Qiskit 2.0 removed the pass and this repository certifies Qiskit 2.x.
 
-Routing moves two-wire operations onto device edges by inserting SWAPs. No
-strategy here synthesizes an operation that touches three or more wires, so such
+What those strategies cost is a checked-in number rather than an impression.
+[benchmarks/compiler_routing_quality.py](../../benchmarks/compiler_routing_quality.py)
+compiles the same 140 programs through `flagquantum.compiler.compile` -- the entry
+point a caller uses, so the programs are optimized before they are routed, as a
+caller's are -- and reports the SWAPs each of the five entry points retains after
+post-routing optimization. `sabre_layout` retains 2018, `sabre` 2352, the
+automatic selection 4310, `restore_after_each_gate` 4660 and
+`persistent_layout` 4716, with every entry point routing all 140 programs, no
+two-wire operation off the device, and every compiled program equal to its source
+to `2.8e-16`. These are the counts at the default optimization level, `2`: a
+caller who names a lower level runs fewer of the optimization passes that remove
+inserted SWAPs afterwards, so the level is part of what a retained count means.
+Two numbers there are worth carrying forward. The automatic
+selection never resolves to a SABRE strategy, because its cost estimate can rank
+only `restore_after_each_gate` and `persistent_layout`, and that scope costs
+`2.14` times what the best available strategy costs -- so the price of the
+restriction is measured rather than merely stated. And the estimate is good inside
+that scope: it picks the cheaper of its two candidates on 132 of the 140 programs
+and lands within `1.005` of always picking the better one. The eight misses are
+not a bias in the estimate. It minimizes the SWAPs a plan *inserts*, as its
+objective field states: its planned count equals the router's planned count on all
+140 programs for both candidates, and its objective with its declared tie-break
+reproduces the selection on all 140. The misses are the gap between two questions.
+This benchmark scores the SWAPs *retained*, and the post-routing optimization
+removes 5.25% of one candidate's planned SWAPs and 5.49% of the other's, so a
+program where `persistent_layout` plans fewer and retains no fewer is scored as a
+miss. Those counts are a reading of the shipped router, and
+they are only reproducible because that router resolves a physical pair to one
+route: `CouplingMap.shortest_path` expands from the lower-indexed endpoint rather
+than from whichever endpoint the caller passed, so the two operand orders are
+exact reverses of each other and a device that has already answered other queries
+routes exactly as a cold one does. A pair on an even ring has two routes of equal
+length, so the route is a tie-break, and a tie-break that reads the device's
+history would make the count depend on which pass asked first.
+`DirectedCouplingMap.shortest_path` breaks the same tie the same way, because SWAP
+placement travels the same undirected graph whichever device describes it.
+[test_compiler_routing_quality.py](../../tests/benchmark_contract/test_compiler_routing_quality.py)
+holds those readings, including a test that fails if the automatic selection
+becomes an alias of one candidate or quietly widens its scope.
+
+Routing moves two-qubit operations onto device edges by inserting SWAPs. No
+strategy here synthesizes an operation that touches three or more qubits, so such
 an operation is carried through unchanged, and only when the device already
 carries the couplings its operands interact over; it is refused otherwise.
 Decomposing it is a caller or native-gate step.
 [test_multi_wire_routing_locality.py](../../tests/team/compiler/test_multi_wire_routing_locality.py)
 holds that boundary, including the case where a chosen layout would move a
-legal multi-wire operation onto non-adjacent physical wires.
+legal multi-qubit operation onto non-adjacent physical qubits.
 
-A placement is a tuple of physical wires, one per logical wire: the argument
+A placement is a tuple of physical qubits, one per logical qubit: the argument
 `route_to_directed_topology` takes as `initial_layout`. [layout.py](layout.py)
 `Layout` carries the same assignment as a value, and since a routed program on a
 device wider than the program leaves slots idle, `Layout` takes a
 `physical_slot_count` and reports `None` for an idle slot. Routing on a plain
-`CouplingMap` may only use wires the program owns and so refuses `initial_layout`
+`CouplingMap` may only use qubits the program owns and so refuses `initial_layout`
 outright; a non-identity placement therefore requires a `DirectedCouplingMap`,
 where the idle slots are a workspace that the inverse routing SWAPs clean.
 

@@ -78,18 +78,18 @@ def test_static_gate_basis_owner_matches_tensor_index_mapping(world_size):
 
     plan = plan_distributed_statevector(fq.Circuit(6), world_size=world_size)
     wire_sets = (
-        (0, plan.sharded_wires[-1]),
-        (plan.sharded_wires[-1], 1),
-        tuple(reversed(plan.sharded_wires)),
+        (0, plan.sharded_qubits[-1]),
+        (plan.sharded_qubits[-1], 1),
+        tuple(reversed(plan.sharded_qubits)),
     )
-    rank_bits = len(plan.sharded_wires)
+    rank_bits = len(plan.sharded_qubits)
     for rank in range(world_size):
         global_index = torch.tensor([(1 << rank_bits) | rank])
         for wires in wire_sets:
-            clear_mask = ~sum(_wire_mask(plan.n_wires, wire) for wire in wires)
+            clear_mask = ~sum(_wire_mask(plan.n_qubits, wire) for wire in wires)
             for basis in range(2 ** len(wires)):
                 required = (global_index & clear_mask) | _basis_offset(
-                    plan.n_wires, wires, basis
+                    plan.n_qubits, wires, basis
                 )
                 owners, _ = _owner_and_local(required, plan=plan)
                 assert _basis_owner_rank(plan, rank, wires, basis) == int(owners[0])
@@ -111,7 +111,7 @@ def test_diagonal_gate_on_sharded_wire_stays_rank_local():
     expected = circuit.state()
     plan = plan_distributed_statevector(circuit, world_size=4)
 
-    assert plan.sharded_wires == (3, 4)
+    assert plan.sharded_qubits == (3, 4)
     for rank in range(plan.world_size):
         shard = initialize_statevector_shard(
             plan, rank=rank, device="cpu", dtype=torch.complex64
@@ -161,7 +161,7 @@ def test_distributed_statevector_plan_marks_sharded_wires_and_communication():
         is True
     )
     assert plan.rank_address_bits == 2
-    assert plan.sharded_wires == (3, 4)
+    assert plan.sharded_qubits == (3, 4)
     assert plan.total_state_bytes == 2 * (2**5) * 8
     assert plan.per_rank_state_bytes == 2 * (2**3) * 8
     assert [gate.communication for gate in plan.gate_plans] == [
@@ -224,7 +224,7 @@ def test_distributed_statevector_plan_builds_fusion_barriers():
         max_fusion_gate_width=2,
     )
 
-    assert plan.sharded_wires == (3,)
+    assert plan.sharded_qubits == (3,)
     assert [block.communication_barrier for block in plan.fusion_blocks] == [
         False,
         True,
@@ -268,7 +268,7 @@ def test_distributed_statevector_pair_exchange_uses_touched_sharded_wire():
         if segment.communication == "pair_exchange"
     ]
 
-    assert plan.sharded_wires == (3, 4)
+    assert plan.sharded_qubits == (3, 4)
     assert [segment.gate_indices for segment in pair_segments] == [(0, 1), (2,)]
     first_edges = {
         (edge.src_rank, edge.dst_rank)
@@ -558,7 +558,7 @@ def test_distributed_statevector_correctness_run_spec():
         "checks/statevector.py",
         "--world-size",
         "2",
-        "--n-wires",
+        "--n-qubits",
         "3",
         "--distribution",
         "qubit_address_sharded",
@@ -580,7 +580,7 @@ def test_statevector_correctness_script_single_rank_smoke():
             str(script),
             "--world-size",
             "1",
-            "--n-wires",
+            "--n-qubits",
             "3",
             "--distribution",
             "replicated_single_rank",
@@ -605,7 +605,7 @@ def test_distributed_statevector_plan_supports_non_power_of_two_world_size():
 
     assert plan.distribution == "contiguous_amplitude_range"
     assert plan.topology.layout == "range_partition"
-    assert plan.sharded_wires == ()
+    assert plan.sharded_qubits == ()
     assert tuple(shard.local_amplitudes for shard in plan.shards) == (3, 3, 2)
     assert all(gate.communication == "indexed_all_to_all" for gate in plan.gate_plans)
     assert plan.topology.summary()["communications"] == ("indexed_all_to_all",)

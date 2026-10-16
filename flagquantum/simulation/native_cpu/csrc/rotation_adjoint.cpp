@@ -16,6 +16,18 @@
 
 #include "linear_permutation.h"
 
+// GCC 11 rejects OpenMP SIMD directives nested in the ATen dispatch and
+// parallel lambdas below, even though newer GCC and Clang accept them. Keep
+// those loops scalar on GCC 11 and older so the native CPU extension remains
+// buildable on Ubuntu 22.04 without changing their numerical semantics.
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 12
+#define FQ_OPENMP_SIMD_PRAGMA(...)
+#else
+#define FQ_OPENMP_PRAGMA_IMPL(value) _Pragma(#value)
+#define FQ_OPENMP_PRAGMA(value) FQ_OPENMP_PRAGMA_IMPL(value)
+#define FQ_OPENMP_SIMD_PRAGMA(...) FQ_OPENMP_PRAGMA(omp simd __VA_ARGS__)
+#endif
+
 namespace {
 
 using flagquantum_native::LinearLookup;
@@ -112,6 +124,91 @@ inline int64_t popcount(uint64_t value) {
     ++count;
   }
   return count;
+}
+
+at::Tensor fused_hadamard_controlled_phase_graph_cpu(
+    at::Tensor state,
+    const at::Tensor& factors,
+    const at::Tensor& wires,
+    int64_t target,
+    int64_t n_wires) {
+  TORCH_CHECK(
+      state.device().is_cpu() && factors.device().is_cpu() && wires.device().is_cpu(),
+      "Hadamard/phase inputs must be on CPU");
+  TORCH_CHECK(
+      state.is_contiguous() && factors.is_contiguous() && wires.is_contiguous(),
+      "Hadamard/phase inputs must be contiguous");
+  TORCH_CHECK(state.dim() == 2, "state must have shape [batch, amplitudes]");
+  TORCH_CHECK(factors.dim() == 1, "factors must be one-dimensional");
+  TORCH_CHECK(wires.dim() == 1, "wires must be one-dimensional");
+  TORCH_CHECK(wires.scalar_type() == at::kLong, "wires must be int64");
+  TORCH_CHECK(
+      state.scalar_type() == at::kComplexFloat ||
+          state.scalar_type() == at::kComplexDouble,
+      "only complex64 and complex128 are supported");
+  TORCH_CHECK(factors.scalar_type() == state.scalar_type(),
+              "factor dtype must match state");
+  TORCH_CHECK(n_wires > 1 && n_wires < 63, "n_wires must be in [2, 62]");
+  TORCH_CHECK(target >= 0 && target < n_wires, "target is out of range");
+  const int64_t amplitudes = int64_t{1} << n_wires;
+  TORCH_CHECK(state.size(1) == amplitudes, "state width does not match n_wires");
+  const int64_t wire_count = wires.numel();
+  TORCH_CHECK(wire_count > 1 && wire_count < 63,
+              "phase graph must contain between two and 62 wires");
+  TORCH_CHECK(factors.numel() == (int64_t{1} << wire_count),
+              "factor count does not match graph wires");
+
+  const int64_t* wire_data = wires.const_data_ptr<int64_t>();
+  std::array<int64_t, 62> wire_masks{};
+  int64_t occupied = 0;
+  int64_t target_factor_mask = 0;
+  for (int64_t index = 0; index < wire_count; ++index) {
+    const int64_t wire = wire_data[index];
+    TORCH_CHECK(wire >= 0 && wire < n_wires, "phase graph wire is out of range");
+    const int64_t mask = int64_t{1} << (n_wires - wire - 1);
+    TORCH_CHECK((occupied & mask) == 0, "phase graph wires must be unique");
+    occupied |= mask;
+    wire_masks[index] = mask;
+    if (wire == target) {
+      target_factor_mask = int64_t{1} << (wire_count - index - 1);
+    }
+  }
+  TORCH_CHECK(target_factor_mask != 0, "target must belong to the phase graph");
+
+  const int64_t target_mask = int64_t{1} << (n_wires - target - 1);
+  const int64_t pairs_per_row = amplitudes / 2;
+  const int64_t pair_count = state.size(0) * pairs_per_row;
+  AT_DISPATCH_COMPLEX_TYPES(
+      state.scalar_type(), "fused_hadamard_controlled_phase_graph_cpu", [&] {
+        using real_t = typename scalar_t::value_type;
+        scalar_t* state_data = state.data_ptr<scalar_t>();
+        const scalar_t* factor_data = factors.const_data_ptr<scalar_t>();
+        const real_t scale = std::sqrt(real_t{0.5});
+        at::parallel_for(
+            int64_t{0}, pair_count, int64_t{4096}, [&](int64_t begin, int64_t end) {
+              for (int64_t item = begin; item < end; ++item) {
+                const int64_t row = item / pairs_per_row;
+                const int64_t pair = item - row * pairs_per_row;
+                const int64_t low = (pair & (target_mask - 1)) |
+                    ((pair & ~(target_mask - 1)) << 1);
+                const int64_t high = low + target_mask;
+                int64_t factor_index = 0;
+                for (int64_t wire = 0; wire < wire_count; ++wire) {
+                  if ((low & wire_masks[wire]) != 0) {
+                    factor_index |= int64_t{1} << (wire_count - wire - 1);
+                  }
+                }
+                scalar_t* values = state_data + row * amplitudes;
+                const scalar_t low_value = values[low];
+                const scalar_t high_value = values[high];
+                values[low] = (low_value + high_value) * scale *
+                    factor_data[factor_index];
+                values[high] = (low_value - high_value) * scale *
+                    factor_data[factor_index | target_factor_mask];
+              }
+            });
+      });
+  return state;
 }
 
 at::Tensor fused_static_product_state_initialization_cpu(
@@ -1689,11 +1786,11 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
       }
       const int64_t blocks_per_row = amplitudes >> unique_count;
       const int64_t item_count = ket.size(0) * blocks_per_row;
+      // Keep enough chunks to occupy every worker when wide tiles leave only
+      // a few thousand outer items on many-core hosts.
       const int64_t effective_parallel_grain =
           parallel_grain == 0
-          ? (item_count >= 1024
-                 ? 128
-                 : std::max<int64_t>(1, item_count / (4 * thread_count)))
+          ? std::max<int64_t>(1, item_count / (4 * thread_count))
           : parallel_grain;
       at::parallel_for(
           int64_t{0},
@@ -1762,7 +1859,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
                   real_t raw_gradient_x = real_t{0};
                   real_t raw_gradient_y = real_t{0};
                   real_t raw_gradient_z = real_t{0};
-                  _Pragma("omp simd reduction(+:raw_gradient_x,raw_gradient_y,raw_gradient_z)")
+                  FQ_OPENMP_SIMD_PRAGMA(
+                      reduction(+:raw_gradient_x,raw_gradient_y,raw_gradient_z))
                   for (int64_t pair = 0; pair < local_size / 2; ++pair) {
                     const int64_t local = (pair & (local_mask - 1)) |
                         ((pair & ~(local_mask - 1)) << 1);
@@ -1808,7 +1906,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
                           raw_gradient_y -
                       full_sines[gate + 1] * raw_gradient_z;
                 } else {
-                  _Pragma("omp simd reduction(+:gradient_rz,gradient_ry,gradient_rx)")
+                  FQ_OPENMP_SIMD_PRAGMA(
+                      reduction(+:gradient_rz,gradient_ry,gradient_rx))
                   for (int64_t pair = 0; pair < local_size / 2; ++pair) {
                     const int64_t local = (pair & (local_mask - 1)) |
                         ((pair & ~(local_mask - 1)) << 1);
@@ -1853,7 +1952,8 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
               } else {
                 for (int64_t block = 0; block < local_size;
                      block += local_block) {
-                  _Pragma("omp simd reduction(+:gradient_rz,gradient_ry,gradient_rx)")
+                  FQ_OPENMP_SIMD_PRAGMA(
+                      reduction(+:gradient_rz,gradient_ry,gradient_rx))
                   for (int64_t offset = 0; offset < local_mask; ++offset) {
                     const int64_t local = block + offset;
                     const int64_t one = local + local_mask;
@@ -1909,7 +2009,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
               if (enable_pair_fast_path) {
                 const int64_t local_block = local_mask << 1;
                 if (enable_flat_pair_simd) {
-                  _Pragma("omp simd reduction(+:gate_gradient)")
+                  FQ_OPENMP_SIMD_PRAGMA(reduction(+:gate_gradient))
                   for (int64_t pair = 0; pair < local_size / 2; ++pair) {
                     const int64_t local = (pair & (local_mask - 1)) |
                         ((pair & ~(local_mask - 1)) << 1);
@@ -1932,7 +2032,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
                 } else {
                   for (int64_t block = 0; block < local_size;
                        block += local_block) {
-                    _Pragma("omp simd reduction(+:gate_gradient)")
+                    FQ_OPENMP_SIMD_PRAGMA(reduction(+:gate_gradient))
                     for (int64_t offset = 0; offset < local_mask; ++offset) {
                       const int64_t local = block + offset;
                       const int64_t one = local + local_mask;
@@ -2012,7 +2112,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> fused_rotation_segment_adjoint_cp
               const int64_t local_mask = int64_t{1} << wire;
               for (int64_t block = 0; block < local_size;
                    block += 2 * local_mask) {
-                _Pragma("omp simd")
+                FQ_OPENMP_SIMD_PRAGMA()
                 for (int64_t offset = 0; offset < local_mask; ++offset) {
                   const int64_t local = block + offset;
                   const int64_t one = local + local_mask;
@@ -2208,6 +2308,9 @@ TORCH_LIBRARY(flagquantum_native, library) {
       "fused_static_clifford_layer_(Tensor(a!) state, Tensor gate_codes, "
       "Tensor wires, int n_wires) -> Tensor(a!)");
   library.def(
+      "fused_hadamard_controlled_phase_graph_(Tensor(a!) state, Tensor factors, "
+      "Tensor wires, int target, int n_wires) -> Tensor(a!)");
+  library.def(
       "fused_hadamard_block_adjoint_(Tensor(a!) ket, Tensor(b!) adjoint, "
       "Tensor wires, int n_wires) -> Tensor(a!)");
   library.def(
@@ -2248,6 +2351,9 @@ TORCH_LIBRARY_IMPL(flagquantum_native, CPU, library) {
       "fused_static_product_state_initialization_",
       &fused_static_product_state_initialization_cpu);
   library.impl("fused_static_clifford_layer_", &fused_static_clifford_layer_cpu);
+  library.impl(
+      "fused_hadamard_controlled_phase_graph_",
+      &fused_hadamard_controlled_phase_graph_cpu);
   library.impl("fused_hadamard_block_adjoint_", &fused_hadamard_block_adjoint_cpu);
   library.impl("fused_rotation_adjoint_", &fused_rotation_adjoint_cpu);
   library.impl("fused_rzz_segment_forward_", &fused_rzz_segment_forward_cpu);

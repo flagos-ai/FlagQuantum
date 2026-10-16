@@ -55,7 +55,7 @@ def test_estimators_preserve_valid_results(
 @pytest.mark.parametrize("wire", [-1, 1])
 def test_z_estimator_rejects_out_of_range_wires(wire: int) -> None:
     with pytest.raises(ValueError, match="outside"):
-        expectation_z_from_counts({"0": 10}, wires=wire)
+        expectation_z_from_counts({"0": 10}, qubits=wire)
 
 
 def test_hamiltonian_estimator_rejects_out_of_range_wires() -> None:

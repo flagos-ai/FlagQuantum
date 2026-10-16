@@ -272,7 +272,7 @@ def test_emulation_refuses_a_request_the_static_text_profile_cannot_describe() -
     partial = replace(
         _bell().to_ir(),
         measurements=tuple(
-            lower_outputs(fq.counts(qubits=[0]), n_wires=2, shots=8, seed=1)
+            lower_outputs(fq.counts(qubits=[0]), n_qubits=2, shots=8, seed=1)
         ),
     )
     with pytest.raises(TargetEmulationError, match="terminal full-register"):
@@ -280,8 +280,8 @@ def test_emulation_refuses_a_request_the_static_text_profile_cannot_describe() -
 
     doubled = replace(
         _bell().to_ir(),
-        measurements=tuple(lower_outputs(fq.counts(), n_wires=2, shots=8, seed=1))
-        + tuple(lower_outputs(fq.counts(), n_wires=2, shots=8, seed=1)),
+        measurements=tuple(lower_outputs(fq.counts(), n_qubits=2, shots=8, seed=1))
+        + tuple(lower_outputs(fq.counts(), n_qubits=2, shots=8, seed=1)),
     )
     with pytest.raises(TargetEmulationError, match="exactly one terminal"):
         emulate(doubled, target=_Profile.make(), shots=8, seed=1)
@@ -292,7 +292,7 @@ def test_emulation_refuses_a_request_the_static_text_profile_cannot_describe() -
     observed = replace(
         _bell().to_ir(),
         measurements=tuple(
-            lower_outputs(expectation(fq.Z(0)), n_wires=2, shots=None, seed=1)
+            lower_outputs(expectation(fq.Z(0)), n_qubits=2, shots=None, seed=1)
         ),
     )
     with pytest.raises(TargetEmulationError, match="counts, samples requests"):

@@ -256,7 +256,7 @@ def test_sabre_reports_a_moved_layout_and_a_restored_output_layout() -> None:
 def test_sabre_fails_closed_on_an_undersized_coupling_map() -> None:
     program = _random_two_wire_program(seed=1, n_wires=5, gate_count=4)
 
-    with pytest.raises(ValueError, match="fewer wires"):
+    with pytest.raises(ValueError, match="fewer qubits"):
         route_to_topology(program, CouplingMap.line(4), strategy="sabre")
 
 

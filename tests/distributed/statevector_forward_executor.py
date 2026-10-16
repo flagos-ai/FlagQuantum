@@ -60,7 +60,7 @@ def assert_matches_dense(circuit: fq.Circuit, device: torch.device):
             device=device,
             dtype=torch.long,
         )
-        indices = (local << len(result.plan.sharded_wires)) | result.shard_state.rank
+        indices = (local << len(result.plan.sharded_qubits)) | result.shard_state.rank
     expected = dense[:, indices]
     torch.testing.assert_close(
         result.shard_state.amplitudes, expected, atol=1e-5, rtol=1e-5

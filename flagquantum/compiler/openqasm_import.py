@@ -583,7 +583,7 @@ class OpenQASMImport:
         return emit_openqasm(
             self.to_ir(),
             version=self.version,
-            result_wires=(
+            result_qubits=(
                 None if self.whole_register_measurement else self.measurement_qubits
             ),
         )
@@ -638,7 +638,7 @@ def import_openqasm(source: str) -> OpenQASMImport:
         measurements=(MeasurementNode("counts", qubits, shots=None),),
     )
     written = _statements(
-        emit_openqasm(ir, version=version, result_wires=None if whole else qubits)
+        emit_openqasm(ir, version=version, result_qubits=None if whole else qubits)
     )[1]
     if [_canonical_statement(text) for _, text in written] != [
         _canonical_statement(text) for _, text in statements

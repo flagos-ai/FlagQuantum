@@ -19,7 +19,7 @@ def test_external_comparison_rejects_an_empty_size_matrix() -> None:
     with pytest.raises(ValueError, match="at least one workload size"):
         run_benchmark(
             engine="cirq_simulator",
-            n_wires=(),
+            n_qubits=(),
             layers=1,
             threads=1,
             warmup=0,
@@ -33,7 +33,7 @@ def test_external_comparison_rejects_too_few_iterations() -> None:
     with pytest.raises(ValueError, match="iterations at least 3"):
         run_case(
             engine="cirq_simulator",
-            n_wires=4,
+            n_qubits=4,
             layers=1,
             threads=1,
             warmup=0,
@@ -64,7 +64,7 @@ def test_cirq_external_comparison_smoke_payload() -> None:
     pytest.importorskip("cirq")
     payload = run_benchmark(
         engine="cirq_simulator",
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         threads=1,
         warmup=0,
@@ -81,7 +81,7 @@ def test_pennylane_external_comparison_smoke_payload() -> None:
     pytest.importorskip("pennylane")
     payload = run_benchmark(
         engine="pennylane_lightning_qubit",
-        n_wires=(4,),
+        n_qubits=(4,),
         layers=1,
         threads=1,
         warmup=0,

@@ -222,6 +222,11 @@ class TorchDistributedMPSGradientResult:
     layer_halo_intra_node_bytes: int = 0
     layer_halo_inter_node_bytes: int = 0
     layer_halo_wait_seconds: float = 0.0
+    adjoint_tensor_bytes: int = 0
+    forward_tensor_bytes: int = 0
+    boundary_gradient_buffer_bytes: int = 0
+    canonicalization_temporary_bytes: int = 0
+    truncation_temporary_bytes: int = 0
     _backward_status: str = "ready"
     _backward_error: str | None = None
     _last_completed_record: int | None = None
@@ -482,7 +487,7 @@ def build_mps_reverse_tape_record(
     *,
     index: int,
     kind: str,
-    wires: tuple[int, ...],
+    qubits: tuple[int, ...],
     compute_owner: int,
     owner_ranks: tuple[int, ...],
     input_shapes: Sequence[Sequence[int]],
@@ -491,7 +496,7 @@ def build_mps_reverse_tape_record(
     split_info: Mapping[str, Any] | None = None,
 ) -> MPSReverseTapeRecord:
     """Build one deterministic reverse-tape record and operation identity."""
-    content = f"{index}:{kind}:{wires}:{compute_owner}".encode()
+    content = f"{index}:{kind}:{qubits}:{compute_owner}".encode()
     peer = next((rank for rank in owner_ranks if rank != compute_owner), None)
     info = dict(split_info or {})
     return MPSReverseTapeRecord(
@@ -499,7 +504,7 @@ def build_mps_reverse_tape_record(
         forward_sequence=index,
         reverse_sequence=0,
         kind=kind,
-        wires=wires,
+        wires=qubits,
         compute_owner=compute_owner,
         owner_ranks=owner_ranks,
         communication_peer=peer,

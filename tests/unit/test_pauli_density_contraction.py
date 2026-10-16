@@ -12,7 +12,7 @@ pytestmark = pytest.mark.unit
 @pytest.mark.parametrize("wire", [-1, 2])
 def test_density_expectation_rejects_out_of_range_operator(wire: int) -> None:
     density = torch.eye(4, dtype=torch.complex128) / 4
-    with pytest.raises(ValueError, match="wire index out of range"):
+    with pytest.raises(ValueError, match="qubit index out of range"):
         pauli_term(1.0, "Z", (wire,)).expectation(density)
 
 

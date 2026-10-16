@@ -67,7 +67,7 @@ class _ProgramSubmissionMixin(ABC):
             ir = replace(ir, measurements=())
             operation = "statevector"
         else:
-            measurements = lower_outputs(outputs, n_wires=ir.n_wires, shots=shots)
+            measurements = lower_outputs(outputs, n_qubits=ir.n_wires, shots=shots)
             assert measurements is not None
             ir = replace(ir, measurements=measurements)
             operation = "measurements"

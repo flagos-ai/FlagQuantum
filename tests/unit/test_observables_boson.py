@@ -23,8 +23,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
+import torch
 
 import flagquantum as fq
 from flagquantum import observables
@@ -51,6 +51,28 @@ _RawTerm = tuple[complex, tuple[_Ladder, ...]]
 _Raw = list[_RawTerm]
 
 _SQRT = math.sqrt
+
+_COMPLEX = torch.complex128
+
+
+class _IndexLabel:
+    """An integer degree defined outside this project, read through ``__index__``.
+
+    It implements no other integral protocol, so a reader that reached for
+    ``__int__`` or for string parsing instead of ``operator.index`` would refuse it.
+    """
+
+    def __init__(self, value: int) -> None:
+        self._value = value
+
+    def __index__(self) -> int:
+        return self._value
+
+
+def _approx(measured: torch.Tensor, expected: torch.Tensor) -> bool:
+    """The comparison `pytest.approx` makes on two dense matrices, on tensors."""
+
+    return torch.allclose(measured, expected, rtol=1e-6, atol=1e-12)
 
 
 def _ladder(degree: int, *, creation: bool) -> _Raw:
@@ -119,11 +141,11 @@ def _side(dimensions: dict[int, int]) -> int:
     return side
 
 
-def _dense(expansion: _Raw, dimensions: dict[int, int]) -> np.ndarray:
+def _dense(expansion: _Raw, dimensions: dict[int, int]) -> torch.Tensor:
     """Evaluate a raw expansion on a truncated Fock space, factors applied last first."""
 
     side = _side(dimensions)
-    matrix = np.zeros((side, side), dtype=complex)
+    matrix = torch.zeros((side, side), dtype=_COMPLEX)
     for column in range(side):
         occupied = _occupations(column, dimensions)
         for coefficient, sequence in expansion:
@@ -162,12 +184,14 @@ def _agrees_with_raw(
 
     roomy = {degree: dimension + 3 for degree, dimension in dimensions.items()}
     roomy_matrix = _dense(expansion, roomy)
-    into_roomy = [
-        _index(_occupations(index, dimensions), roomy)
-        for index in range(_side(dimensions))
-    ]
-    expected = roomy_matrix[np.ix_(into_roomy, into_roomy)]
-    return np.allclose(operator.to_matrix(dimensions).numpy(), expected)
+    into_roomy = torch.tensor(
+        [
+            _index(_occupations(index, dimensions), roomy)
+            for index in range(_side(dimensions))
+        ]
+    )
+    expected = roomy_matrix.index_select(0, into_roomy).index_select(1, into_roomy)
+    return torch.allclose(operator.to_matrix(dimensions), expected)
 
 
 def _power(operator: BosonOperator, exponent: int) -> BosonOperator:
@@ -311,26 +335,27 @@ def test_position_and_momentum_are_hermitian_and_satisfy_the_canonical_commutato
     # [x, p] = i/2 for x = (a + ad)/2 and p = i(ad - a)/2, which is [a, ad] = 1 halved.
     assert position(0).commutator(momentum(0)) == 0.5j * identity()
     assert position(0).commutator(position(1)) == BosonOperator()
-    assert np.allclose(
-        position(1).to_matrix({1: 3}).numpy(),
+    assert torch.allclose(
+        position(1).to_matrix({1: 3}),
         _dense(_POSITION_1, {1: 3}),
     )
 
 
 def test_the_number_operator_counts_levels() -> None:
-    assert number(0).to_matrix({0: 5}).diagonal().numpy() == pytest.approx(
-        np.arange(5, dtype=complex)
+    assert _approx(
+        number(0).to_matrix({0: 5}).diagonal(),
+        torch.arange(5, dtype=torch.float64).to(_COMPLEX),
     )
-    assert np.allclose(
-        number(0).to_matrix(_SPACE).numpy(), _dense(_times(_AD0, _A0), _SPACE)
+    assert torch.allclose(
+        number(0).to_matrix(_SPACE), _dense(_times(_AD0, _A0), _SPACE)
     )
 
 
 def test_the_zero_operator_and_the_unit_are_values_of_the_algebra() -> None:
-    assert identity().to_matrix().numpy() == pytest.approx(np.eye(1))
-    assert BosonOperator().to_matrix().numpy() == pytest.approx(np.zeros((1, 1)))
+    assert _approx(identity().to_matrix(), torch.eye(1, dtype=_COMPLEX))
+    assert _approx(BosonOperator().to_matrix(), torch.zeros((1, 1), dtype=_COMPLEX))
     assert identity(3) == identity()
-    assert identity().to_matrix({0: 3, 1: 2}).numpy() == pytest.approx(np.eye(6))
+    assert _approx(identity().to_matrix({0: 3, 1: 2}), torch.eye(6, dtype=_COMPLEX))
     assert (create(0) + BosonOperator()).terms == create(0).terms
     assert (create(0) * identity()).terms == create(0).terms
 
@@ -338,34 +363,33 @@ def test_the_zero_operator_and_the_unit_are_values_of_the_algebra() -> None:
 def test_an_undeclared_space_defaults_every_acted_on_degree_to_two_levels() -> None:
     assert create(0).to_matrix().shape == (2, 2)
     assert (create(0) * create(1)).to_matrix().shape == (4, 4)
-    assert number(0).to_matrix().diagonal().numpy() == pytest.approx([0.0, 1.0])
+    assert _approx(
+        number(0).to_matrix().diagonal(),
+        torch.tensor([0.0, 1.0], dtype=_COMPLEX),
+    )
 
 
 def test_the_dense_ladder_matrices_are_the_oscillator_action() -> None:
     """Pin the convention: ``create[n, n - 1] = sqrt(n)`` and its transpose."""
 
     levels = 5
-    expected_create = np.zeros((levels, levels), dtype=complex)
-    expected_annihilate = np.zeros((levels, levels), dtype=complex)
+    expected_create = torch.zeros((levels, levels), dtype=_COMPLEX)
+    expected_annihilate = torch.zeros((levels, levels), dtype=_COMPLEX)
     for level in range(levels - 1):
         expected_create[level + 1, level] = _SQRT(level + 1)
         expected_annihilate[level, level + 1] = _SQRT(level + 1)
-    assert create(0).to_matrix({0: levels}).numpy() == pytest.approx(expected_create)
-    assert annihilate(0).to_matrix({0: levels}).numpy() == pytest.approx(
-        expected_annihilate
-    )
-    assert np.allclose(
-        create(0).to_matrix({0: levels}).numpy(), _dense(_AD0, {0: levels})
-    )
-    assert np.allclose(
-        annihilate(0).to_matrix({0: levels}).numpy(), _dense(_A0, {0: levels})
+    assert _approx(create(0).to_matrix({0: levels}), expected_create)
+    assert _approx(annihilate(0).to_matrix({0: levels}), expected_annihilate)
+    assert torch.allclose(create(0).to_matrix({0: levels}), _dense(_AD0, {0: levels}))
+    assert torch.allclose(
+        annihilate(0).to_matrix({0: levels}), _dense(_A0, {0: levels})
     )
 
 
 def test_the_dense_form_of_a_sum_is_the_sum_of_the_dense_forms() -> None:
     operator = 1.5 * position(0) * momentum(1) - 2.0 * number(0)
-    assert np.allclose(
-        operator.to_matrix(_SPACE).numpy(),
+    assert torch.allclose(
+        operator.to_matrix(_SPACE),
         1.5 * _dense(_times(_POSITION_0, _MOMENTUM_1), _SPACE)
         - 2.0 * _dense(_times(_AD0, _A0), _SPACE),
     )
@@ -395,24 +419,25 @@ def test_the_dense_form_of_a_product_matches_the_unrewritten_product() -> None:
 
 def test_the_lowest_degree_is_the_most_significant_index() -> None:
     dimensions = {0: 2, 1: 3}
-    left = annihilate(0).to_matrix({0: 2}).numpy()
-    right = create(1).to_matrix({1: 3}).numpy()
-    measured = (annihilate(0) * create(1)).to_matrix(dimensions).numpy()
-    assert measured == pytest.approx(np.kron(left, right))
-    assert not np.allclose(measured, np.kron(right, left))
-    assert np.allclose(measured, _dense(_times(_A0, _AD1), dimensions))
+    left = annihilate(0).to_matrix({0: 2})
+    right = create(1).to_matrix({1: 3})
+    measured = (annihilate(0) * create(1)).to_matrix(dimensions)
+    assert _approx(measured, torch.kron(left, right))
+    assert not torch.allclose(measured, torch.kron(right, left))
+    assert torch.allclose(measured, _dense(_times(_A0, _AD1), dimensions))
 
 
 def test_a_declared_degree_the_operator_does_not_act_on_becomes_an_identity_factor() -> (
     None
 ):
     dimensions = {0: 2, 1: 3}
-    measured = annihilate(0).to_matrix(dimensions).numpy()
-    assert measured == pytest.approx(
-        np.kron(annihilate(0).to_matrix({0: 2}).numpy(), np.eye(3))
+    measured = annihilate(0).to_matrix(dimensions)
+    assert _approx(
+        measured,
+        torch.kron(annihilate(0).to_matrix({0: 2}), torch.eye(3, dtype=_COMPLEX)),
     )
     assert measured.shape == (6, 6)
-    assert number(0).to_matrix(dimensions).numpy().shape == (6, 6)
+    assert number(0).to_matrix(dimensions).shape == (6, 6)
 
 
 def test_the_truncation_reconciles_the_canonical_commutator_with_the_ladder_matrices() -> (
@@ -427,19 +452,23 @@ def test_the_truncation_reconciles_the_canonical_commutator_with_the_ladder_matr
     """
 
     levels = 5
-    ladder = annihilate(0).to_matrix({0: levels}).numpy()
-    adjoint = create(0).to_matrix({0: levels}).numpy()
-    assert (ladder @ adjoint - adjoint @ ladder)[:4, :4] == pytest.approx(np.eye(4))
+    ladder = annihilate(0).to_matrix({0: levels})
+    adjoint = create(0).to_matrix({0: levels})
+    assert _approx(
+        (ladder @ adjoint - adjoint @ ladder)[:4, :4], torch.eye(4, dtype=_COMPLEX)
+    )
 
-    bounded = annihilate(0).to_matrix({0: 4}).numpy()
-    bounded_adjoint = create(0).to_matrix({0: 4}).numpy()
+    bounded = annihilate(0).to_matrix({0: 4})
+    bounded_adjoint = create(0).to_matrix({0: 4})
     commutator = bounded @ bounded_adjoint - bounded_adjoint @ bounded
-    assert commutator == pytest.approx(np.diag([1.0, 1.0, 1.0, -3.0]))
-    assert not np.allclose(commutator, np.eye(4))
+    assert _approx(
+        commutator, torch.diag(torch.tensor([1.0, 1.0, 1.0, -3.0], dtype=_COMPLEX))
+    )
+    assert not torch.allclose(commutator, torch.eye(4, dtype=_COMPLEX))
 
     canonical = annihilate(0).commutator(create(0))
     assert canonical == identity()
-    assert canonical.to_matrix({0: 4}).numpy() == pytest.approx(np.eye(4))
+    assert _approx(canonical.to_matrix({0: 4}), torch.eye(4, dtype=_COMPLEX))
 
 
 def test_the_dense_form_refuses_a_space_that_does_not_declare_every_acted_on_degree() -> (
@@ -482,7 +511,7 @@ def test_a_degree_is_read_by_the_package_integer_protocol() -> None:
         number("0")
     with pytest.raises(TypeError, match="must be an integer"):
         identity(1.5)
-    assert create(np.int64(2)) == create(2)
+    assert create(_IndexLabel(2)) == create(2)
 
 
 def test_a_term_refuses_an_unusable_coefficient_or_a_degree_order() -> None:

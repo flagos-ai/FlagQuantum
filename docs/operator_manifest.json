@@ -335,6 +335,7 @@
         "id"
       ],
       "arity": 1,
+      "control": "identity",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -344,15 +345,17 @@
       "opcode": "i",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 1,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -362,15 +365,17 @@
       "opcode": "x",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 1,
+      "control": "y_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -380,15 +385,17 @@
       "opcode": "y",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -398,10 +405,11 @@
       "opcode": "z",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -409,6 +417,7 @@
         "hadamard"
       ],
       "arity": 1,
+      "control": "ry_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -418,15 +427,17 @@
       "opcode": "h",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "sdg",
       "aliases": [],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -436,10 +447,11 @@
       "opcode": "s",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "s",
@@ -447,6 +459,7 @@
         "sd"
       ],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -456,15 +469,17 @@
       "opcode": "sdg",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "tdg",
       "aliases": [],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -474,10 +489,11 @@
       "opcode": "t",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "t",
@@ -485,6 +501,7 @@
         "td"
       ],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -494,15 +511,17 @@
       "opcode": "tdg",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "sxdg",
       "aliases": [],
       "arity": 1,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -512,15 +531,17 @@
       "opcode": "sx",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "sx",
       "aliases": [],
       "arity": 1,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -530,15 +551,17 @@
       "opcode": "sxdg",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
+      "control": "rx_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -554,15 +577,17 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
+      "control": "ry_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -578,15 +603,17 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
+      "control": "rz_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -602,10 +629,11 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
@@ -613,6 +641,7 @@
         "p"
       ],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -628,15 +657,17 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 1,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -652,15 +683,17 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "adjoint_u2_angles",
       "aliases": [],
       "arity": 1,
+      "control": "u_angle_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -680,10 +713,11 @@
         "phi",
         "lbd"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "adjoint_u3_angles",
@@ -691,6 +725,7 @@
         "u"
       ],
       "arity": 1,
+      "control": "u_angle_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -714,10 +749,11 @@
         "phi",
         "lbd"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -725,6 +761,7 @@
         "cnot"
       ],
       "arity": 2,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -734,16 +771,18 @@
       "opcode": "cx",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 2,
+      "control": "y_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -753,16 +792,18 @@
       "opcode": "cy",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 2,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -772,16 +813,18 @@
       "opcode": "cz",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
       "aliases": [],
       "arity": 2,
+      "control": "swap_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -791,16 +834,18 @@
       "opcode": "swap",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "rx_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -817,16 +862,18 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "ry_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -843,16 +890,18 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "rz_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -869,16 +918,18 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "diagonal_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -894,16 +945,18 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "rxx_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -919,16 +972,18 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "ryy_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -944,16 +999,18 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "negate_parameters",
       "aliases": [],
       "arity": 2,
+      "control": "rzz_ladder",
       "decomposition": [],
       "differentiable": true,
       "dtype_policy": [
@@ -969,11 +1026,12 @@
       "parameters": [
         "theta"
       ],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "scale_single_parameter",
+      "qubit_convention": [
         "control_or_left",
         "target_or_right"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -982,6 +1040,7 @@
         "toffoli"
       ],
       "arity": 3,
+      "control": "x_conjugated_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -991,12 +1050,13 @@
       "opcode": "ccx",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "control_0",
         "control_1_or_target_0",
         "target_or_target_1"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "self_inverse",
@@ -1004,6 +1064,7 @@
         "fredkin"
       ],
       "arity": 3,
+      "control": "cswap_ladder",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1013,17 +1074,19 @@
       "opcode": "cswap",
       "parameter_frequencies": [],
       "parameters": [],
-      "semantic_kind": "unitary",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "control_0",
         "control_1_or_target_0",
         "target_or_target_1"
-      ]
+      ],
+      "semantic_kind": "unitary"
     },
     {
       "adjoint": "not_applicable",
       "aliases": [],
       "arity": 1,
+      "control": "not_available",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1035,15 +1098,17 @@
       "parameters": [
         "probability"
       ],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
       "aliases": [],
       "arity": 1,
+      "control": "not_available",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1055,15 +1120,17 @@
       "parameters": [
         "probability"
       ],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
       "aliases": [],
       "arity": 1,
+      "control": "not_available",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1075,15 +1142,17 @@
       "parameters": [
         "probability"
       ],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     },
     {
       "adjoint": "not_applicable",
       "aliases": [],
       "arity": 1,
+      "control": "not_available",
       "decomposition": [],
       "differentiable": false,
       "dtype_policy": [
@@ -1095,10 +1164,11 @@
       "parameters": [
         "gamma"
       ],
-      "semantic_kind": "channel",
-      "wire_convention": [
+      "power": "repeat_instruction",
+      "qubit_convention": [
         "target"
-      ]
+      ],
+      "semantic_kind": "channel"
     }
   ],
   "schema_version": "flagquantum_operator_manifest_v1"

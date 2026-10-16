@@ -345,7 +345,7 @@ def _execute_bound_p3_statevector(
     )
     state, normalization_count = run_double_single_statevector(
         encoded_gates,
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         device=resolved_device,
         renormalize_every=renormalize_every,
     )
@@ -408,7 +408,7 @@ def _term_expectation(
         state.state,
         term.ops,
         _coefficient_pair(term, device=state.device),
-        n_wires=n_wires,
+        n_qubits=n_wires,
         matrix_for_op=lambda wire, name: encode_host_double_single_matrix(
             Instruction(name=name, wires=(wire,)), device=state.device
         ),

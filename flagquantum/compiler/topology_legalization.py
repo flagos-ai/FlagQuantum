@@ -34,7 +34,7 @@ class TopologyLegalizationResult:
     legalization_identity: str
     initial_logical_to_physical: tuple[int, ...] = ()
     direction_semantics: str = "undirected"
-    logical_wire_count: int | None = None
+    logical_qubit_count: int | None = None
     physical_slot_count: int | None = None
     initial_physical_to_logical: tuple[int | None, ...] = ()
     pre_restore_physical_to_logical: tuple[int | None, ...] = ()
@@ -53,7 +53,7 @@ def _topology_identity(coupling: CouplingMap | DirectedCouplingMap) -> str:
     if isinstance(coupling, DirectedCouplingMap):
         return coupling.topology_identity
     payload = {
-        "n_wires": coupling.n_wires,
+        "n_wires": coupling.n_qubits,
         "edges": coupling.edges,
         "direction_semantics": "undirected",
     }
@@ -88,10 +88,10 @@ def legalize_circuit_topology(
     max_added_operations: int = 256,
     initial_layout: tuple[int, ...] | None = None,
 ) -> TopologyLegalizationResult:
-    """Route two-wire instructions and prove the resulting edge legality.
+    """Route two-qubit instructions and prove the resulting edge legality.
 
-    The proof is total over wire count: two-wire instructions are checked onto
-    edges here, and a multi-wire instruction is only carried through the router
+    The proof is total over qubit count: two-qubit instructions are checked onto
+    edges here, and a multi-qubit instruction is only carried through the router
     when the device already carries the couplings its operands interact over.
     """
 
@@ -106,9 +106,9 @@ def legalize_circuit_topology(
         raise TypeError("max_added_operations must be an integer")
     if max_added_operations < 0:
         raise ValueError("max_added_operations must be non-negative")
-    if coupling_map.n_wires < source.n_wires:
+    if coupling_map.n_qubits < source.n_wires:
         raise TopologyLegalizationError(
-            "coupling map has fewer wires than the CircuitIR"
+            "coupling map has fewer qubits than the CircuitIR"
         )
     if isinstance(coupling_map, DirectedCouplingMap):
         if strategy not in {"auto", "persistent_layout"}:
@@ -130,14 +130,14 @@ def legalize_circuit_topology(
             raise TopologyLegalizationError(
                 "initial_layout requires a DirectedCouplingMap"
             )
-        deterministic_coupling = CouplingMap(coupling_map.n_wires, coupling_map.edges)
+        deterministic_coupling = CouplingMap(coupling_map.n_qubits, coupling_map.edges)
         try:
             if strategy == "auto":
                 selected_strategy = select_routing_strategy(
                     source, deterministic_coupling
                 ).selected_strategy
                 deterministic_coupling = CouplingMap(
-                    coupling_map.n_wires, coupling_map.edges
+                    coupling_map.n_qubits, coupling_map.edges
                 )
             elif strategy in {
                 "restore_after_each_gate",
@@ -174,7 +174,7 @@ def legalize_circuit_topology(
     )
     if illegal:
         raise TopologyLegalizationError(
-            f"routed CircuitIR retains nonlocal two-wire instructions: {illegal}"
+            f"routed CircuitIR retains nonlocal two-qubit instructions: {illegal}"
         )
 
     routing = routed.metadata.get("routing")
@@ -200,14 +200,14 @@ def legalize_circuit_topology(
         raise TopologyLegalizationError("router emitted an invalid initial layout")
     if allocated:
         if (
-            any(slot < 0 or slot >= coupling_map.n_wires for slot in initial)
+            any(slot < 0 or slot >= coupling_map.n_qubits for slot in initial)
             or result_slots != initial
             or routing.get("workspace_cleaned") is not True
         ):
             raise TopologyLegalizationError(
                 "router emitted invalid physical allocation evidence"
             )
-        expected_occupancy: list[int | None] = [None] * coupling_map.n_wires
+        expected_occupancy: list[int | None] = [None] * coupling_map.n_qubits
         for logical, physical in enumerate(initial):
             expected_occupancy[physical] = logical
         initial_occupancy = tuple(routing.get("initial_physical_to_logical", ()))
@@ -219,7 +219,7 @@ def legalize_circuit_topology(
         if (
             initial_occupancy != tuple(expected_occupancy)
             or final_occupancy != initial_occupancy
-            or len(pre_restore_occupancy) != coupling_map.n_wires
+            or len(pre_restore_occupancy) != coupling_map.n_qubits
             or type(allocation_identity) is not str
             or len(allocation_identity) != 64
         ):
@@ -268,8 +268,8 @@ def legalize_circuit_topology(
             if isinstance(deterministic_coupling, DirectedCouplingMap)
             else "undirected"
         ),
-        logical_wire_count=source.n_wires,
-        physical_slot_count=coupling_map.n_wires,
+        logical_qubit_count=source.n_wires,
+        physical_slot_count=coupling_map.n_qubits,
         initial_physical_to_logical=initial_occupancy,
         pre_restore_physical_to_logical=pre_restore_occupancy,
         final_physical_to_logical=final_occupancy,

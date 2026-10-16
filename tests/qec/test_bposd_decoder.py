@@ -741,11 +741,18 @@ def test_the_decoder_is_reached_by_name_once_the_graph_moved_to_the_sub_protocol
     here and the name resolves -- while the graph stays out of reach, which is
     the half that did not change. Both halves are measured against a model both
     decoders accept, so the name is not merely present in ``decoder_names()``.
+
+    There are two belief-propagation names and the graph split does not separate
+    them: both read the model as written and neither carries a graph, because a
+    sum-product exchange and a min-sum one are two algorithms over one model
+    rather than a graph route and its absence. What separates them is that the
+    plain name also accepts a ``DecodingGraph`` when a caller already has one.
     """
 
     from flagquantum.qec.decoding_graph import DecodingGraph
     from flagquantum.qec.registry import (
         AUTHORITY_NAME,
+        BELIEF_PROPAGATION_NAME,
         BELIEF_PROPAGATION_OSD_NAME,
         CROSS_CHECK_NAME,
         SLIDING_WINDOW_NAME,
@@ -772,13 +779,24 @@ def test_the_decoder_is_reached_by_name_once_the_graph_moved_to_the_sub_protocol
         [0, 1]
     )
 
-    # Registering the class a second time is still refused, and for the reason
+    # The two belief-propagation names agree on the half that matters here and
+    # differ in what they read. Both answer the family protocol, neither carries
+    # a pair graph, and the plain name is the one that reads a graph when a
+    # caller has one -- while the ordered-statistics name is built from the model
+    # as written. Registering either a second time is refused, and for the reason
     # the registry gives: one name answers to one class.
+    sibling = get_decoder(BELIEF_PROPAGATION_NAME, model)
+    assert isinstance(sibling, DetectorErrorModelDecoder)
+    assert not isinstance(sibling, GraphlikeDetectorErrorModelDecoder)
+    assert not hasattr(sibling, "graph")
+    assert type(sibling) is not BeliefPropagationOsdDecoder
+
     with pytest.raises(ValueError, match="already registered"):
         register_decoder(BELIEF_PROPAGATION_OSD_NAME)(BeliefPropagationOsdDecoder)
 
     assert set(decoder_names()) == {
         AUTHORITY_NAME,
+        BELIEF_PROPAGATION_NAME,
         BELIEF_PROPAGATION_OSD_NAME,
         CROSS_CHECK_NAME,
         SLIDING_WINDOW_NAME,

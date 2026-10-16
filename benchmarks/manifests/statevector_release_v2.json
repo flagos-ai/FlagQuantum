@@ -3,7 +3,7 @@
   "issue": "ISSUE-044",
   "supersedes": "benchmarks/manifests/statevector_release_v1.json",
   "frozen_before_release_run": true,
-  "freeze_note": "The v1 30-qubit capacity candidate completed on one A800 during development calibration. Version 2 freezes the calibrated 31-qubit candidate before any release-eligible rerun; earlier development measurements remain ineligible. Version 2 is amended in one narrow respect: the single-device capacity failure is read as provenance evidence rather than as a release-gate payload, so world size 1 is no longer a required release world. The measured bar is unchanged; see capacity_workload.single_gpu_baseline.rationale.",
+  "freeze_note": "The v1 30-qubit capacity candidate completed on one A800 during development calibration. Version 2 freezes the calibrated 33-qubit candidate before any release-eligible rerun; earlier development measurements remain ineligible. Version 2 carries four amendments. First, the single-device capacity failure is read as provenance evidence rather than as a release-gate payload, so world size 1 is no longer a required release world; the measured bar is unchanged, see capacity_workload.single_gpu_baseline.rationale. Second, the release structure is written down. The matched-speed workload is deliberately smaller than the capacity workload, because a ratio needs a baseline that one device can actually run; every matched-speed release payload therefore states the single_gpu_expected_oom of the capacity premise it rests on and names that premise in capacity_premise_workload_sha256, and such a payload is not a claim that the timed workload itself needs more than one device. Third, the frozen timing protocol is repointed to benchmarks/manifests/statevector_speed_workload_v2.json. The method is unchanged - the same warmup and measured iteration counts, the same diagonal of three perturbation points, the same timed unit - and only the size of those points changed, because the v1 sizes would have needed roughly 6.6 h for the baseline leg alone and so could not have been run as frozen alongside the multi-node legs the same manifest requires. Fourth, the multi-node requirement is answered by two pair legs at world size 8 with four ranks on each host: a matched-speed leg, which is the only way the released speedup is measured across a real host boundary, and the capacity completion leg the capacity workload requires. The single-node worlds and the pair world therefore measure the same protocol, and every pair payload reports node_count 2 with the route it observed.",
   "runtime": {
     "backend": "pytorch_native",
     "collective_backend": "nccl",
@@ -13,7 +13,8 @@
   "topologies": {
     "single_node_world_sizes": [2, 4, 8],
     "multi_node_required": true,
-    "minimum_multi_node_count": 2
+    "minimum_multi_node_count": 2,
+    "note": "single_node_world_sizes names the world sizes the gate requires among the promoted release worlds; each is measured in this campaign as a single-node leg of the matched-speed protocol, so the same world size 8 is also measured across the two hosts. The multi-node requirement is answered by the pair legs, whose payloads report node_count 2 and an observed InfiniBand route."
   },
   "correctness": {
     "seed": 440044,
@@ -25,10 +26,13 @@
     "required_comparisons": ["loss", "outputs", "gradients", "updated_parameters"]
   },
   "speed_workload": {
-    "name": "issue044_matched_statevector_training_speed_v1",
-    "qubits": [24, 26, 28],
-    "depths": [8, 16, 32],
+    "name": "issue044_matched_statevector_training_speed_v2",
+    "qubits": [22, 24, 26],
+    "depths": [8, 12, 16],
     "cross_shard_gate_fractions": [0.1, 0.25, 0.5],
+    "manifest_path": "benchmarks/manifests/statevector_speed_workload_v2.json",
+    "workload_sha256": "eb1693d360aefc0601b6b49449d3aca867655efeee7a9d9d7aee87d6ed9a3a66",
+    "acceptance_configuration": "matched_speed_26q_d16_x0.50",
     "warmup_steps": 5,
     "measured_steps": 30,
     "minimum_speedup": 1.05,
@@ -39,8 +43,8 @@
   "capacity_workload": {
     "name": "issue044_single_node_capacity_v2",
     "manifest_path": "benchmarks/manifests/statevector_capacity_workload_v2.json",
-    "workload_sha256": "1c937d01db177ba6e69ea3b7b07b7282b2aa621a2533e9fa5847c16228ce9bf0",
-    "n_wires": 31,
+    "workload_sha256": "f39cf4e334774e7791ba128d71ddf79918862b0e537eaf24ad3137ae2d6e6aa5",
+    "n_wires": 33,
     "dtype": "complex64",
     "optimizer": "adam",
     "minimum_optimizer_steps": 2,

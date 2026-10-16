@@ -769,6 +769,12 @@ def test_a_replaced_rotation_table_changes_what_remove_identity_gates_removes() 
     # The same demonstration for the other carried fact, and for a pass defined in
     # the module rather than in another one: the table says which opcode's single
     # angle is `theta`, so narrowing it to nothing stops the zero-angle removal.
+    #
+    # The probe is a two-qubit rotation because that is where the table still has
+    # authority. The single-qubit branch now decides from the operator schema --
+    # `one_qubit_synthesis.is_identity_one_qubit` reads the angle triple, so
+    # `rx(0)` is removed with or without a table, and asserting otherwise would
+    # be asserting the weaker rule this pass was changed away from.
     narrowed = pass_manager.AnalysisSpec(
         lambda program: MappingProxyType({}), program_independent=True
     )
@@ -779,7 +785,7 @@ def test_a_replaced_rotation_table_changes_what_remove_identity_gates_removes() 
     )
     program = _ir(
         Instruction(name="i", wires=(0,)),
-        Instruction(name="rx", wires=(0,), params={"theta": 0.0}),
+        Instruction(name="rzz", wires=(0, 1), params={"theta": 0.0}),
     )
 
     default = pass_manager.PassManager(pipeline.default_pass_registry())
@@ -788,7 +794,7 @@ def test_a_replaced_rotation_table_changes_what_remove_identity_gates_removes() 
     # The explicit identity gate is removed either way; only the zero-angle
     # rotation depends on the table.
     assert _names(default.run(program, ("remove_identity_gates",))) == []
-    assert _names(replaced.run(program, ("remove_identity_gates",))) == ["rx"]
+    assert _names(replaced.run(program, ("remove_identity_gates",))) == ["rzz"]
 
 
 def test_a_replaced_self_inverse_set_changes_what_the_cancellation_pass_removes() -> (

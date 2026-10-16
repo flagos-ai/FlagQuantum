@@ -25,7 +25,7 @@ def _triton_transpose_1q_decision(
     device_type: str,
     dtype: str,
 ) -> KernelDecision:
-    """Select the exact evidenced transpose implementation wired at runtime."""
+    """Select the exact evidenced transpose implementation connected at runtime."""
 
     return select_cataloged_triton_kernel(
         "transpose_1q",

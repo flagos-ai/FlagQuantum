@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
 
@@ -25,7 +26,6 @@ from ....simulation.statevector.adjoint import (
 from ....simulation.statevector.adjoint import (
     real_conjugate_inner_sum as _real_conjugate_inner_sum,
 )
-from ....simulation.statevector.adjoint import z_hamiltonian_chunk
 from ....simulation.statevector.operations import (
     _apply_matrix,
     _instruction_matrix,
@@ -33,7 +33,7 @@ from ....simulation.statevector.operations import (
 from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
-from .forward import StatevectorExchangeWorkspace, _storage_global_indices
+from .forward import StatevectorExchangeWorkspace
 from .gradient_dispatch import (
     _triton_adjoint_vjp_tensor_decision,
     _triton_local_reversible_vjp_tensor_decision,
@@ -52,7 +52,7 @@ from .reverse_adjoint_kernels import (
     _MatrixJVP,
 )
 from .reverse_adjoint_rotation_segment import _apply_local_rotation_segment
-from .reverse_observable import prepare_observable_adjoint
+from .reverse_observable import hamiltonian_adjoint_seed, prepare_observable_adjoint
 from .reverse_support import (
     BackwardExecutionEvidence,
     _bind_parameters,
@@ -65,31 +65,6 @@ from .reverse_support import (
     _reverse_chunk_amplitudes,
     _reverse_exchange_workspace_enabled,
 )
-
-
-def _local_expectation_z_hamiltonian_adjoint(
-    shard_state: Any,
-    *,
-    plan: Any,
-    n_wires: int,
-    terms: tuple[tuple[float, tuple[int, ...]], ...],
-) -> torch.Tensor:
-    """Construct one adjoint seed for a weighted Z/ZZ Hamiltonian."""
-
-    adjoint = torch.zeros_like(shard_state.amplitudes)
-    local_count = shard_state.shard.local_amplitudes
-    with torch.no_grad():
-        for start in range(0, local_count, _reverse_chunk_amplitudes()):
-            end = min(local_count, start + _reverse_chunk_amplitudes())
-            indices = _storage_global_indices(shard_state, start, end, plan=plan)
-            _, chunk = z_hamiltonian_chunk(
-                shard_state.amplitudes[:, start:end],
-                indices,
-                n_wires=n_wires,
-                terms=terms,
-            )
-            adjoint[:, start:end].copy_(chunk)
-    return adjoint
 
 
 class _ReversibleAdjointSweep:
@@ -109,6 +84,7 @@ class _ReversibleAdjointSweep:
         saved_final_state: Any | None,
         saved_observable_weights: torch.Tensor | None,
         saved_inter_node_ket_checkpoints: tuple[tuple[int, int, torch.Tensor], ...],
+        owners: Sequence[int] | None = None,
     ) -> None:
         self.ir = ir
         self.slots = slots
@@ -121,6 +97,7 @@ class _ReversibleAdjointSweep:
         self.saved_final_state = saved_final_state
         self.saved_observable_weights = saved_observable_weights
         self.saved_inter_node_ket_checkpoints = saved_inter_node_ket_checkpoints
+        self.owners = None if owners is None else tuple(int(item) for item in owners)
 
     def run(self) -> tuple[torch.Tensor, ...]:
         """Run the reverse sweep and return one gradient per parameter."""
@@ -242,7 +219,7 @@ class _ReversibleAdjointSweep:
             angles,
             first_wires,
             second_wires,
-            n_wires=self.plan.n_wires,
+            n_qubits=self.plan.n_qubits,
             aggregate_shared_parameter=shared_parameter and adjacent_unique,
         )
         if gradients is None:
@@ -422,10 +399,10 @@ class _ReversibleAdjointSweep:
         )
         self.pending_observable_weights: torch.Tensor | None = None
         if self.saved_observable_weights is None:
-            self.adjoint = _local_expectation_z_hamiltonian_adjoint(
+            self.adjoint = hamiltonian_adjoint_seed(
                 final_state,
                 plan=self.plan,
-                n_wires=self.ir.n_wires,
+                n_qubits=self.ir.n_wires,
                 terms=final_observable_terms,
             )
         else:
@@ -494,9 +471,12 @@ class _ReversibleAdjointSweep:
                 self.accumulated,
                 process_group=self.process_group,
                 evidence=self.evidence,
+                owners=self.owners,
                 max_parameters=(None if _gradient_bucketing_enabled() else 1),
                 max_bytes=(None if _gradient_bucketing_enabled() else 1),
-                async_op=_gradient_reduction_overlap_enabled(),
+                async_op=(
+                    _gradient_reduction_overlap_enabled() and self.owners is None
+                ),
             )
             if self.world_size > 1
             else None
@@ -540,7 +520,7 @@ class _ReversibleAdjointSweep:
                 and self.reversible_state is not None
                 and len(active) == 1
                 and len(execution_instruction.wires) == 1
-                and execution_instruction.wires[0] not in self.plan.sharded_wires
+                and execution_instruction.wires[0] not in self.plan.sharded_qubits
             ),
         )
         cpu_supported = bool(
@@ -570,7 +550,7 @@ class _ReversibleAdjointSweep:
                     self.adjoint,
                     cpu_matrix,
                     execution_instruction,
-                    n_wires=self.plan.n_wires,
+                    n_wires=self.plan.n_qubits,
                 )
             if gradient is not None:
                 self.evidence.kernel_dispatch_evidence.record(reversible_vjp_decision)
@@ -600,10 +580,10 @@ class _ReversibleAdjointSweep:
                 )
 
                 bit_position = (
-                    self.plan.n_wires
+                    self.plan.n_qubits
                     - execution_instruction.wires[0]
                     - 1
-                    - len(self.plan.sharded_wires)
+                    - len(self.plan.sharded_qubits)
                 )
                 gradient = fused_complex64_local_1q_reversible_vjp(
                     self.reversible_state.amplitudes,
@@ -626,10 +606,10 @@ class _ReversibleAdjointSweep:
                         _, count, byte_count = distributed_swap_rank_local_bits(
                             self.reversible_state.amplitudes,
                             rank=self.rank,
-                            n_wires=self.ir.n_wires,
+                            n_qubits=self.ir.n_wires,
                             rank_bits=self.plan.rank_address_bits,
-                            local_physical_wire=swap.local_physical_wire,
-                            sharded_physical_wire=swap.sharded_physical_wire,
+                            local_physical_qubit=swap.local_physical_qubit,
+                            sharded_physical_qubit=swap.sharded_physical_qubit,
                             process_group=self.process_group,
                             output=self.reversible_state.amplitudes,
                             send_buffer=self.layout_send_buffer,
@@ -647,10 +627,10 @@ class _ReversibleAdjointSweep:
                     _, adjoint_count, adjoint_bytes = distributed_swap_rank_local_bits(
                         self.adjoint,
                         rank=self.rank,
-                        n_wires=self.ir.n_wires,
+                        n_qubits=self.ir.n_wires,
                         rank_bits=self.plan.rank_address_bits,
-                        local_physical_wire=swap.local_physical_wire,
-                        sharded_physical_wire=swap.sharded_physical_wire,
+                        local_physical_qubit=swap.local_physical_qubit,
+                        sharded_physical_qubit=swap.sharded_physical_qubit,
                         process_group=self.process_group,
                         output=self.adjoint,
                         send_buffer=self.layout_send_buffer,
@@ -666,11 +646,11 @@ class _ReversibleAdjointSweep:
                         byte_count + adjoint_bytes
                     )
                     (
-                        self.persistent_mapping[swap.local_logical_wire],
-                        self.persistent_mapping[swap.sharded_logical_wire],
+                        self.persistent_mapping[swap.local_logical_qubit],
+                        self.persistent_mapping[swap.sharded_logical_qubit],
                     ) = (
-                        self.persistent_mapping[swap.sharded_logical_wire],
-                        self.persistent_mapping[swap.local_logical_wire],
+                        self.persistent_mapping[swap.sharded_logical_qubit],
+                        self.persistent_mapping[swap.local_logical_qubit],
                     )
                 return True
         return False
@@ -719,17 +699,17 @@ class _ReversibleAdjointSweep:
                 )
 
                 if not any(
-                    wire in self.plan.sharded_wires
+                    wire in self.plan.sharded_qubits
                     for wires in segment_wires
                     for wire in wires
                 ):
-                    rank_bits = len(self.plan.sharded_wires)
+                    rank_bits = len(self.plan.sharded_qubits)
                     controls = tuple(
-                        self.plan.n_wires - wires[0] - 1 - rank_bits
+                        self.plan.n_qubits - wires[0] - 1 - rank_bits
                         for wires in reversed(segment_wires)
                     )
                     targets = tuple(
-                        self.plan.n_wires - wires[1] - 1 - rank_bits
+                        self.plan.n_qubits - wires[1] - 1 - rank_bits
                         for wires in reversed(segment_wires)
                     )
                     if self.cx_segment_scratch is None:
@@ -793,9 +773,9 @@ class _ReversibleAdjointSweep:
         wires = {execution_instruction.wires[0]}
         cursor = index - 1
         max_block_wires = (
-            min(11, self.plan.n_wires)
+            min(11, self.plan.n_qubits)
             if native_cpu_hadamard_block_adjoint_available()
-            else (4 if self.plan.n_wires < 16 else 6)
+            else (4 if self.plan.n_qubits < 16 else 6)
         )
         while cursor >= 0 and len(segment) < max_block_wires:
             if self.swaps_before.get(cursor) or self.slots_by_instruction.get(cursor):
@@ -827,7 +807,7 @@ class _ReversibleAdjointSweep:
                     self.reversible_state.amplitudes,
                     self.adjoint,
                     wire_block,
-                    n_wires=self.plan.n_wires,
+                    n_qubits=self.plan.n_qubits,
                 )
             else:
                 applied = fused_rotation_block_adjoint_(
@@ -835,7 +815,7 @@ class _ReversibleAdjointSweep:
                     self.adjoint,
                     matrix_block,
                     wire_block,
-                    n_wires=self.plan.n_wires,
+                    n_qubits=self.plan.n_qubits,
                 )
             if applied:
                 self.evidence.peak_scratch_bytes = max(
@@ -852,13 +832,13 @@ class _ReversibleAdjointSweep:
             self.reversible_state.amplitudes,
             combined,
             block_wires,
-            self.plan.n_wires,
+            self.plan.n_qubits,
         )
         adjoint = _apply_matrix(
             self.adjoint,
             combined,
             block_wires,
-            self.plan.n_wires,
+            self.plan.n_qubits,
         )
         self.reversible_state.amplitudes.copy_(ket)
         self.adjoint.copy_(adjoint)
@@ -1017,7 +997,7 @@ class _ReversibleAdjointSweep:
                     self.adjoint,
                     wire_count=len(instruction.wires),
                     sharded=(
-                        wire in self.plan.sharded_wires and self.plan.world_size > 1
+                        wire in self.plan.sharded_qubits and self.plan.world_size > 1
                     ),
                     runtime_supported=len(active) == 1,
                 )
@@ -1026,7 +1006,7 @@ class _ReversibleAdjointSweep:
                         fused_complex64_local_1q_vjp_adjoint,
                     )
 
-                    if wire in self.plan.sharded_wires and self.plan.world_size > 1:
+                    if wire in self.plan.sharded_qubits and self.plan.world_size > 1:
                         (
                             fused_adjoint,
                             local_derivative,
@@ -1054,9 +1034,8 @@ class _ReversibleAdjointSweep:
                             self.evidence.peak_scratch_bytes, scratch_bytes
                         )
                     else:
-                        bit_position = (
-                            self.plan.n_wires - wire - 1 - len(self.plan.sharded_wires)
-                        )
+                        rank_bit_count = len(self.plan.sharded_qubits)
+                        bit_position = self.plan.n_qubits - wire - 1 - rank_bit_count
                         fused_adjoint, local_derivative = (
                             fused_complex64_local_1q_vjp_adjoint(
                                 before.amplitudes,
@@ -1161,10 +1140,10 @@ class _ReversibleAdjointSweep:
                     distributed_swap_rank_local_bits(
                         previous_reversible,
                         rank=self.rank,
-                        n_wires=self.ir.n_wires,
+                        n_qubits=self.ir.n_wires,
                         rank_bits=self.plan.rank_address_bits,
-                        local_physical_wire=swap.local_physical_wire,
-                        sharded_physical_wire=swap.sharded_physical_wire,
+                        local_physical_qubit=swap.local_physical_qubit,
+                        sharded_physical_qubit=swap.sharded_physical_qubit,
                         process_group=self.process_group,
                         output=(
                             previous_reversible
@@ -1190,10 +1169,10 @@ class _ReversibleAdjointSweep:
                 distributed_swap_rank_local_bits(
                     previous_adjoint,
                     rank=self.rank,
-                    n_wires=self.ir.n_wires,
+                    n_qubits=self.ir.n_wires,
                     rank_bits=self.plan.rank_address_bits,
-                    local_physical_wire=swap.local_physical_wire,
-                    sharded_physical_wire=swap.sharded_physical_wire,
+                    local_physical_qubit=swap.local_physical_qubit,
+                    sharded_physical_qubit=swap.sharded_physical_qubit,
                     process_group=self.process_group,
                     output=(
                         previous_adjoint if self.inplace_local else self.adjoint_scratch
@@ -1211,11 +1190,11 @@ class _ReversibleAdjointSweep:
             self.evidence.persistent_layout_swap_count += 1
             self.evidence.persistent_layout_swap_bytes += byte_count + adjoint_bytes
             (
-                self.persistent_mapping[swap.local_logical_wire],
-                self.persistent_mapping[swap.sharded_logical_wire],
+                self.persistent_mapping[swap.local_logical_qubit],
+                self.persistent_mapping[swap.sharded_logical_qubit],
             ) = (
-                self.persistent_mapping[swap.sharded_logical_wire],
-                self.persistent_mapping[swap.local_logical_wire],
+                self.persistent_mapping[swap.sharded_logical_qubit],
+                self.persistent_mapping[swap.local_logical_qubit],
             )
 
     def _finish(self) -> None:

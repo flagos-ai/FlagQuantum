@@ -1,4 +1,4 @@
-"""Cancel the two members of a declared inverse pair adjacent on their wires.
+"""Cancel the two members of a declared inverse pair adjacent on their qubits.
 
 `pipeline.merge_self_inverse` removes a run of one self-inverse opcode and
 `pipeline.merge_adjacent_rotations` merges a run of one rotation. Neither can see
@@ -33,9 +33,9 @@ of the two angle rules is therefore declined: its product is the identity only a
 one specific angle, and `merge_adjacent_rotations` is the pass that reads the
 angle. Nothing here guesses an angle, so nothing here can be wrong about one.
 
-**The pair must be adjacent on the wire it acts on.** A member is removed only
-when the latest surviving instruction touching its wire is its declared partner.
-Every instruction between the two either does not touch that wire, and so
+**The pair must be adjacent on the qubit it acts on.** A member is removed only
+when the latest surviving instruction touching its qubit is its declared partner.
+Every instruction between the two either does not touch that qubit, and so
 commutes with both by disjointness, or was itself removed by a proven pair
 earlier in the same scan. Either way what lies between the pair is the identity,
 which is what makes the two gates multiply to `I`. An odd or mismatched count
@@ -115,7 +115,7 @@ def _is_cancellable(instruction: Instruction, partner: str) -> bool:
 
 
 def merge_inverse_pairs(ir: CircuitIR) -> CircuitIR:
-    """Remove declared inverse pairs adjacent on the wire they act on.
+    """Remove declared inverse pairs adjacent on the qubit they act on.
 
     Returns ``ir`` itself when no pair is adjacent, so a caller can tell "nothing to
     do" from "something changed" without diffing, and the pass stays cheap on a

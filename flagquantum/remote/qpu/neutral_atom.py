@@ -179,7 +179,7 @@ def neutral_atom_backend_profile(
                 f"{len(sites)} sites"
             )
     edges = interaction_edges(sites, interaction_radius=interaction_radius, owner=owner)
-    coupling_map = CouplingMap(n_wires=len(sites), edges=edges)
+    coupling_map = CouplingMap(n_qubits=len(sites), edges=edges)
     declared_gates = declared_gate_names(
         declared_value(declaration, "gates", "basis_gates", default=None), owner=owner
     )

@@ -13,6 +13,22 @@ import torch.distributed as dist
 from ....compute import get_platform_runtime
 from ...distributed.context import resolve_local_world_size, resolve_node_count
 
+#: How each sliced-reverse gradient reduction leaves the reduced gradient
+#: distributed. `owner_reduce` zeroes every non-owned gradient, so the reduced
+#: contribution for a parameter exists only on the rank that owns it;
+#: `all_reduce` leaves the full reduced vector on every rank. Only the first is
+#: an ownership statement, and it is read from the reduction that ran rather
+#: than asserted beside it.
+_GRADIENT_DISTRIBUTION_BY_REDUCTION: dict[str, str] = {
+    "owner_reduce": "sharded_across_ranks",
+    "all_reduce": "replicated_after_all_reduce",
+}
+
+#: The gradient reductions the sliced reverse executes. One definition, so the
+#: executor that runs the collective and the evidence that describes it cannot
+#: disagree about which reductions exist.
+GRADIENT_REDUCTION_MODES = frozenset(_GRADIENT_DISTRIBUTION_BY_REDUCTION)
+
 
 @dataclass(frozen=True)
 class DistributedTNOptimizerStepResult:
@@ -24,9 +40,34 @@ class DistributedTNOptimizerStepResult:
     learning_rate: float
     owned_parameter_indices: tuple[int, ...]
     ownership: tuple[dict[str, Any], ...]
+    gradient_reduction: str
     collective_count: int
     collective_payload_bytes_per_rank: int
     execution_seconds: float
+
+    @property
+    def gradient_distribution_semantics(self) -> str:
+        """How the reduction left the reduced gradient across the ranks."""
+
+        return _GRADIENT_DISTRIBUTION_BY_REDUCTION[self.gradient_reduction]
+
+    @property
+    def gradient_ownership_semantics(self) -> str:
+        """Whether a reduced gradient is owned by one rank or held by all."""
+
+        return self.gradient_distribution_semantics
+
+    @property
+    def gradient_ownership(self) -> tuple[dict[str, Any], ...]:
+        """The per-rank gradient ownership map, empty when gradients replicate.
+
+        A replicated gradient has no owner to report: publishing the update
+        ownership here instead would describe a different tensor.
+        """
+
+        if self.gradient_ownership_semantics != "sharded_across_ranks":
+            return ()
+        return self.ownership
 
     def summary(self) -> dict[str, Any]:
         node_count = resolve_node_count(self.world_size, self.local_world_size)
@@ -48,7 +89,10 @@ class DistributedTNOptimizerStepResult:
             "training_step_count": 1,
             "owned_parameter_indices": self.owned_parameter_indices,
             "parameter_ownership_semantics": "sharded_across_ranks",
-            "gradient_ownership_semantics": "rank_owned_optimizer_consumption",
+            "gradient_ownership_semantics": self.gradient_ownership_semantics,
+            "gradient_distribution_semantics": self.gradient_distribution_semantics,
+            "gradient_reduction": self.gradient_reduction,
+            "gradient_ownership": self.gradient_ownership,
             "optimizer_update_semantics": "sharded_across_ranks",
             "optimizer_update_ownership_semantics": "sharded_across_ranks",
             "optimizer_update_ownership": self.ownership,
@@ -78,6 +122,35 @@ def plan_tn_parameter_owners(
     return tuple(min(ranks - 1, index * ranks // count) for index in range(count))
 
 
+def plan_tn_parameter_ownership(
+    parameter_count: int,
+    world_size: int,
+) -> tuple[dict[str, Any], ...]:
+    """One ownership record per rank, covering every parameter exactly once.
+
+    Parameter ownership, gradient ownership, and update ownership are the same
+    partition on this path: the rank that owns a parameter is the rank whose
+    gradient survives the reduction and the rank that applies the update. The
+    record is built here once so the three maps a result publishes cannot drift
+    apart, and it carries ``owned_parameter_count`` so a consumer can check the
+    partition covers the parameter list without parsing index tuples.
+    """
+
+    owners = plan_tn_parameter_owners(parameter_count, world_size)
+    return tuple(
+        {
+            "rank": owner,
+            "parameter_indices": tuple(
+                index for index, assigned in enumerate(owners) if assigned == owner
+            ),
+            "owned_parameter_count": sum(1 for assigned in owners if assigned == owner),
+            "ownership": "rank_owned_optimizer_update",
+            "writeback_route": "owner_update_then_packed_all_gather",
+        }
+        for owner in range(int(world_size))
+    )
+
+
 def _packed_owner_layout(
     tensors: Sequence[torch.Tensor], owners: Sequence[int], world_size: int
 ) -> tuple[int, tuple[int, ...]]:
@@ -96,16 +169,28 @@ def execute_rank_owned_tn_sgd_step(
     gradients: Sequence[torch.Tensor],
     *,
     learning_rate: float,
+    gradient_reduction: str,
     process_group: Any | None = None,
 ) -> DistributedTNOptimizerStepResult:
     """Apply each SGD update on one owner rank, then broadcast parameter values.
 
-    Gradient tensors may be replicated outputs of the sliced reverse all-reduce.
-    Only the assigned owner consumes a given gradient and mutates that parameter.
+    ``gradient_reduction`` names the sliced-reverse reduction that produced
+    ``gradients``, and it decides what this step may report about them: an
+    owner-scoped reduction leaves only the owned gradient materialized, while a
+    full all-reduce leaves the whole reduced vector on every rank. Only the
+    assigned owner consumes a given gradient and mutates that parameter.
     Broadcasting the updated values is necessary because every rank needs the
     circuit parameters for its distinct slices in the next forward pass.
     """
 
+    # Argument checks precede the process-group check: a reduction this step
+    # cannot describe is knowable before any resource is required, and the
+    # evidence it would publish is the reason it exists.
+    if gradient_reduction not in GRADIENT_REDUCTION_MODES:
+        raise ValueError(
+            "gradient_reduction must be one of "
+            f"{sorted(GRADIENT_REDUCTION_MODES)}, got {gradient_reduction!r}"
+        )
     if not dist.is_initialized():
         raise RuntimeError("rank-owned TN optimizer requires a process group")
     if len(parameters) != len(gradients):
@@ -120,19 +205,7 @@ def execute_rank_owned_tn_sgd_step(
     rank = int(dist.get_rank(group=process_group))
     owners = plan_tn_parameter_owners(len(parameters), world_size)
     owned = tuple(index for index, owner in enumerate(owners) if owner == rank)
-    ownership = tuple(
-        {
-            "rank": owner,
-            "parameter_indices": tuple(
-                index
-                for index, assigned_owner in enumerate(owners)
-                if assigned_owner == owner
-            ),
-            "ownership": "rank_owned_optimizer_update",
-            "writeback_route": "owner_update_then_packed_all_gather",
-        }
-        for owner in range(world_size)
-    )
+    ownership = plan_tn_parameter_ownership(len(parameters), world_size)
 
     for index, (parameter, gradient) in enumerate(
         zip(parameters, gradients, strict=True)
@@ -200,6 +273,7 @@ def execute_rank_owned_tn_sgd_step(
         learning_rate=step_size,
         owned_parameter_indices=owned,
         ownership=ownership,
+        gradient_reduction=gradient_reduction,
         collective_count=1,
         collective_payload_bytes_per_rank=chunk_size * reference.element_size(),
         execution_seconds=elapsed,

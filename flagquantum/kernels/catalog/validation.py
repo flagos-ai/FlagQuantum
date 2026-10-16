@@ -15,12 +15,12 @@ from .schema import (
 )
 from .semantics import SEMANTICS
 
-_CATALOG_ID = re.compile(r"^FQK-(SV|GR|MPS|NUM)-[0-9]{3}$")
+_CATALOG_ID = re.compile(r"^FQK-(SV|GR|MPS|MEAS|NUM)-[0-9]{3}$")
 _IMPLEMENTATION_ID = re.compile(
-    r"^FQKI-(PYTORCH|TRITON|FLAGTREE)-(SV|GR|MPS|NUM)-[0-9]{3}-[A-Z]$"
+    r"^FQKI-(PYTORCH|TRITON|FLAGTREE)-(SV|GR|MPS|MEAS|NUM)-[0-9]{3}-[A-Z]$"
 )
 _EVIDENCE_ID = re.compile(
-    r"^FQKE-(PYTORCH|TRITON|FLAGTREE)-(SV|GR|MPS|NUM)-[0-9]{3}-[A-Z]$"
+    r"^FQKE-(PYTORCH|TRITON|FLAGTREE)-(SV|GR|MPS|MEAS|NUM)-[0-9]{3}-[A-Z]$"
 )
 _TEST_REFERENCE = re.compile(
     r"^tests/(?:[a-z][a-z0-9_]*/)*test_[a-z0-9_]+\.py::test_[a-z0-9_]+$"
@@ -31,6 +31,7 @@ _DOMAIN_CODES = {
     "statevector": "SV",
     "gradient": "GR",
     "mps": "MPS",
+    "measurement": "MEAS",
     "numerics": "NUM",
 }
 _BANNED_SEMANTIC_COMPONENTS = {

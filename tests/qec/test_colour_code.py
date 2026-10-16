@@ -113,9 +113,9 @@ def _z_supports(code: CssCode) -> tuple[tuple[int, ...], ...]:
     """Return the supports of the Z-type checks, in the record's own order."""
 
     return tuple(
-        tuple(check.stabilizer.z_wires)
+        tuple(check.stabilizer.z_qubits)
         for check in code.checks
-        if check.stabilizer.z_wires
+        if check.stabilizer.z_qubits
     )
 
 
@@ -123,9 +123,9 @@ def _x_supports(code: CssCode) -> tuple[tuple[int, ...], ...]:
     """Return the supports of the X-type checks, in the record's own order."""
 
     return tuple(
-        tuple(check.stabilizer.x_wires)
+        tuple(check.stabilizer.x_qubits)
         for check in code.checks
-        if check.stabilizer.x_wires
+        if check.stabilizer.x_qubits
     )
 
 
@@ -232,7 +232,7 @@ def test_the_face_incidence_graph_admits_one_three_colouring(distance: int) -> N
         for wire in support:
             incidence[wire] += 1
 
-    assert set(incidence) == set(code.data_wires)
+    assert set(incidence) == set(code.data_qubits)
     assert max(incidence.values()) == 3
     # The three corners of the triangle are the only once-checked qubits.
     assert sum(1 for count in incidence.values() if count == 1) == 3
@@ -262,7 +262,7 @@ def test_every_single_fault_has_its_own_syndrome_at_distance_three() -> None:
     faces = _z_supports(code)
     syndromes = {
         wire: tuple(1 if wire in support else 0 for support in faces)
-        for wire in code.data_wires
+        for wire in code.data_qubits
     }
 
     assert all(any(syndrome) for syndrome in syndromes.values())
@@ -297,14 +297,14 @@ def test_a_heavier_logical_representative_does_not_raise_the_distance() -> None:
     declared = triangular_colour_code(5)
     matrices = css_code_matrices(declared)
     bulk = next(
-        tuple(check.stabilizer.z_wires)
+        tuple(check.stabilizer.z_qubits)
         for check in declared.checks
-        if len(check.stabilizer.z_wires) == 6
+        if len(check.stabilizer.z_qubits) == 6
     )
     side = tuple(
-        observable.z_wires
+        observable.z_qubits
         for observable in declared.logical_observables
-        if observable.z_wires
+        if observable.z_qubits
     )[0]
     lifted = tuple(sorted(set(side) ^ set(bulk)))
 
@@ -356,8 +356,8 @@ def test_the_smallest_patch_is_the_steane_code_up_to_a_relabelling() -> None:
 
     patch = _colour(3)
     steane = SteaneCode()
-    target = {frozenset(check.stabilizer.z_wires) for check in steane.checks}
-    source = {frozenset(check.stabilizer.z_wires) for check in patch.checks}
+    target = {frozenset(check.stabilizer.z_qubits) for check in steane.checks}
+    source = {frozenset(check.stabilizer.z_qubits) for check in patch.checks}
 
     assert sorted(len(support) for support in source) == sorted(
         len(support) for support in target

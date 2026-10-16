@@ -23,18 +23,18 @@ def main() -> None:
         swapped, count, byte_count = distributed_swap_rank_local_bits(
             initial,
             rank=rank,
-            n_wires=3,
+            n_qubits=3,
             rank_bits=1,
-            local_physical_wire=0,
-            sharded_physical_wire=2,
+            local_physical_qubit=0,
+            sharded_physical_qubit=2,
         )
         restored, inverse_count, inverse_bytes = distributed_swap_rank_local_bits(
             swapped,
             rank=rank,
-            n_wires=3,
+            n_qubits=3,
             rank_bits=1,
-            local_physical_wire=0,
-            sharded_physical_wire=2,
+            local_physical_qubit=0,
+            sharded_physical_qubit=2,
             tag=1,
         )
         expected = (

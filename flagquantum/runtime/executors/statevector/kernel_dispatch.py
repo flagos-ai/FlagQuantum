@@ -226,7 +226,7 @@ def select_cataloged_triton_kernel(
     compiler_backend: str | None = None,
     capture_compiler_identity: bool = False,
 ) -> KernelDecision:
-    """Select one wired Triton implementation after catalog capability matching.
+    """Select one connected Triton implementation after catalog capability matching.
 
     The catalog establishes whether the named implementation declares and
     evidences the requested capabilities. Runtime policy, availability, and

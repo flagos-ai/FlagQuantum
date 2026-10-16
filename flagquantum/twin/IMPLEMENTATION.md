@@ -76,7 +76,7 @@ for qubit in drift.qubit_drifts:
 ```
 
 Time values are normalized to seconds, and gate scopes are translated from
-logical wires back to physical qubits. The report provides no significance
+logical qubits back to physical qubits. The report provides no significance
 threshold and does not infer accuracy decay or update either model.
 
 Build a pure, chart-ready history from already persisted Twins:

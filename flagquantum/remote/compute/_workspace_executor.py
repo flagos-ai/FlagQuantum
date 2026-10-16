@@ -260,7 +260,7 @@ def execute(request: dict[str, Any], *, target: str, device: str) -> dict[str, A
     from flagquantum.runtime.measurements import execute_measurements
 
     measurement_results = execute_measurements(
-        state, measurements, n_wires=program.n_wires
+        state, measurements, n_qubits=program.n_wires
     )
     platform.synchronize(state.device)
     response["evidence"]["elapsed_seconds"] = time.perf_counter() - started

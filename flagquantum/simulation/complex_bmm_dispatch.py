@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import cache
+
 import torch
 
 from ..kernels.catalog import (
@@ -26,7 +28,7 @@ def _layout_complex_bmm_kernel_match(
     device_type: str,
     dtype: str,
 ) -> KernelMatchResult:
-    """Match the layout-aware BMM semantic against its wired catalog contract."""
+    """Match the layout-aware BMM semantic against its catalog contract."""
 
     return match_kernel_implementations(
         KernelRequest(
@@ -41,10 +43,11 @@ def _layout_complex_bmm_kernel_match(
     )
 
 
+@cache
 def _require_layout_complex_bmm_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired implementation or fail closed on catalog drift."""
+    """Return the connected implementation or fail closed on catalog drift."""
 
     return _require_cataloged_kernel(
         _layout_complex_bmm_kernel_match(device_type=device_type, dtype=dtype),

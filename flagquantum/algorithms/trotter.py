@@ -138,13 +138,13 @@ def _supported_operators(
     """Read a Pauli word into the supported factors a rotation about ``z`` can use."""
 
     operators = [
-        (wire, axis)
-        for wire, axis in pauli_word_operators(word, targets)
+        (qubit, axis)
+        for qubit, axis in pauli_word_operators(word, targets)
         if axis != "I"
     ]
     # A negative target never reaches this line: ``pauli_word_operators`` refuses one
-    # before returning, so the only wire this check can catch is one past the register.
-    outside = sorted({wire for wire, _ in operators if wire >= width})
+    # before returning, so the only qubit this check can catch is one past the register.
+    outside = sorted({qubit for qubit, _ in operators if qubit >= width})
     if outside:
         raise ValueError(
             f"Pauli word {word!r} addresses wire(s) {outside} outside a {width}-wire "
@@ -166,20 +166,20 @@ def _append_exponential(
 ) -> None:
     """Append ``exp(-i * angle * P)`` for an already-read product ``P``."""
 
-    for wire, axis in operators:
+    for qubit, axis in operators:
         for name in _BASIS_CHANGE[axis][0]:
-            circuit.gate(name, (wire,))
+            circuit.gate(name, (qubit,))
     anchor = operators[0][0]
     # Every CX shares ``anchor`` as its target and its controls are distinct, so the
     # ladder's gates commute and the same sequence undoes it.
-    for wire, _ in operators[1:]:
-        circuit.gate("cx", (wire, anchor))
+    for qubit, _ in operators[1:]:
+        circuit.gate("cx", (qubit, anchor))
     circuit.gate("rz", (anchor,), theta=2.0 * angle)
-    for wire, _ in operators[1:]:
-        circuit.gate("cx", (wire, anchor))
-    for wire, axis in operators:
+    for qubit, _ in operators[1:]:
+        circuit.gate("cx", (qubit, anchor))
+    for qubit, axis in operators:
         for name in _BASIS_CHANGE[axis][1]:
-            circuit.gate(name, (wire,))
+            circuit.gate(name, (qubit,))
 
 
 def pauli_exponential_circuit(
@@ -200,7 +200,7 @@ def pauli_exponential_circuit(
     rather than a circuit; that input is refused.
 
     The circuit is a basis change into the axis a ``z`` rotation is diagonal on, a CX
-    ladder onto the first supported wire, one ``rz`` of twice the angle, and the ladder
+    ladder onto the first supported qubit, one ``rz`` of twice the angle, and the ladder
     and the basis change undone.  It is exact for every angle, up to one global phase,
     which this repository's gate set cannot express.
 
@@ -209,13 +209,13 @@ def pauli_exponential_circuit(
             refused before anything is built.
         word: One character per entry of ``targets``, drawn from ``X``, ``Y``, ``Z``,
             and ``I``.
-        targets: The wires the word acts on, in the order the word is written.
+        targets: The qubits the word acts on, in the order the word is written.
         n_qubits: The width of the returned circuit.
         dtype: The circuit's complex dtype. The default is the runtime configuration's,
             which is complex64 unless configured otherwise.
 
     Returns:
-        A :class:`flagquantum.Circuit` on ``n_qubits`` wires.
+        A :class:`flagquantum.Circuit` on ``n_qubits`` qubits.
 
     Raises:
         ValueError: ``word`` and ``targets`` disagree, a character is not a Pauli label,
@@ -265,7 +265,7 @@ def _prepare_terms(
             )
         coefficient = _real_coefficient(term.coefficient, index=index)
         word = "".join(axis.upper() for _, axis in term.ops)
-        targets = tuple(wire for wire, _ in term.ops)
+        targets = tuple(qubit for qubit, _ in term.ops)
         prepared.append((coefficient, _supported_operators(word, targets, width)))
     return prepared
 
@@ -312,7 +312,7 @@ def trotter_circuit(
         steps: How many steps to divide ``time`` into, a positive integer.
         order: The product-formula order, one of :data:`TROTTER_ORDERS`.
         n_qubits: The width of the returned circuit. The default is the narrowest
-            register the Hamiltonian's terms fit in, which is ``hamiltonian.n_wires``.
+            register the Hamiltonian's terms fit in, which is ``hamiltonian.n_qubits``.
         dtype: The circuit's complex dtype. The default is the runtime configuration's,
             which is complex64 unless configured otherwise.
 
@@ -340,7 +340,7 @@ def trotter_circuit(
     time_value = finite_rotation_angle(time)
     step_count = _require_steps(steps)
     step_order = _require_order(order)
-    required = int(hamiltonian.n_wires)
+    required = int(hamiltonian.n_qubits)
     width = required if n_qubits is None else int(n_qubits)
     prepared = _prepare_terms(hamiltonian, width)
 

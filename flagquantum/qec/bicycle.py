@@ -141,7 +141,7 @@ def bivariate_bicycle_code(
     record takes the two families' matrices and works both out from them, so the
     parameters above are the whole of what a caller states and no operator is
     transcribed from anywhere. Both are the reason this route costs what it costs:
-    the search tries every wire subset in increasing weight up to
+    the search tries every qubit subset in increasing weight up to
     ``distance_search_weight``, so a published instance of distance six over 72 data
     qubits takes about eighteen seconds to build while the small instances an
     experiment is demonstrated on are immediate. Measured on this implementation:

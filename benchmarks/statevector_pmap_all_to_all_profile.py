@@ -203,7 +203,7 @@ def _reference_value_and_grad(
         return _build_sharded_transport_circuit(
             fq,
             theta,
-            n_wires=n_wires,
+            n_qubits=n_wires,
             world_size=world_size,
             layers=layers,
             transport_pattern=transport_pattern,
@@ -212,7 +212,7 @@ def _reference_value_and_grad(
     kernel = fq.compile_quantum_kernel(
         build,
         reference_params.detach(),
-        n_wires=int(n_wires),
+        n_qubits=int(n_wires),
         mode="statevector",
         observable="z_sum",
         jit=False,
@@ -316,7 +316,7 @@ def main() -> None:
         return _build_sharded_transport_circuit(
             fq,
             theta,
-            n_wires=int(args.n_wires),
+            n_qubits=int(args.n_wires),
             world_size=int(args.world_size),
             layers=int(args.layers),
             transport_pattern=str(args.transport_pattern),
@@ -327,7 +327,7 @@ def main() -> None:
             fq.jax_sharded_statevector_parameter_value_and_grad(
                 build,
                 params,
-                n_wires=int(args.n_wires),
+                n_qubits=int(args.n_wires),
                 world_size=int(args.world_size),
                 observable="z_sum",
                 backward_backend=str(args.backward_backend),
@@ -351,7 +351,7 @@ def main() -> None:
         ref_value, ref_grad = _reference_value_and_grad(
             fq,
             params,
-            n_wires=int(args.n_wires),
+            n_qubits=int(args.n_wires),
             world_size=int(args.world_size),
             layers=int(args.layers),
             transport_pattern=str(args.transport_pattern),

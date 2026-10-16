@@ -23,6 +23,10 @@ def _cpu_controlled_phase_graph_fusion_enabled() -> bool:
     return _environment_flag("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", default=True)
 
 
+def _cpu_hadamard_controlled_phase_fusion_enabled() -> bool:
+    return _environment_flag("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", default=True)
+
+
 def _cpu_adaptive_dense_fusion_width_enabled() -> bool:
     return _environment_flag("FQ_CPU_ADAPTIVE_DENSE_FUSION_WIDTH", default=True)
 

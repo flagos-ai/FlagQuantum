@@ -5,9 +5,12 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+
+from tools.evidence_provenance import ProvenanceUnavailableError
 
 pytestmark = pytest.mark.unit
 _ROOT = Path(__file__).resolve().parents[3]
@@ -16,6 +19,13 @@ _SPEC = importlib.util.spec_from_file_location("cuda_multinode_mps_probe", _SCRI
 assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
+
+#: The parameterization the released contract declares, read through the probe's
+#: own observation of it rather than restated here. Loading it also runs the
+#: probe's agreement checks against both the manifest and the contract's own
+#: workload builder, so a probe constant that drifted from either fails at
+#: import rather than only in the artifacts it writes.
+_ARTIFACT_FROZEN_CIRCUIT = _MODULE._frozen_circuit_observation()
 
 _A800_ARTIFACT = (
     _ROOT / "artifacts" / "cuda_multinode_mps_a800_jp171_jp172_20260930.json"
@@ -141,7 +151,9 @@ def test_the_measured_objective_is_not_degenerate() -> None:
     assert _MODULE.OBSERVABLE_WIRES[1] >= first_wire_rank_one_owns
 
 
-def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() -> None:
+def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent(
+    manifest_digest_at: Callable[[str, str], str],
+) -> None:
     payload = _artifact()
     evidence = payload["evidence"]
     encoded = json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode(
@@ -153,12 +165,20 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     assert evidence["scope"] == {
         "distribution_semantics": "sharded_across_ranks",
         "dtype": "complex128",
-        "execution": "forward_backward_optimizer_and_checkpoint_resume",
+        "execution": (
+            "forward_backward_optimizer_checkpoint_resume_and_full_state_export"
+        ),
+        # The export's product is named in the scope rather than left to the
+        # observation, so a reader comparing this run with the statevector one
+        # sees which object was materialized without reading the leg.
+        "exported_product": "full_mps_state",
         "local_world_size": 1,
         "max_bond": 64,
         "n_wires": 6,
         "node_count": 2,
         "observable_wires": [2, 5],
+        "parameter_count": _MODULE.PARAMETER_COUNT,
+        "release_configuration": _MODULE.RELEASE_CONFIGURATION,
         # Half the sites each, contiguous, so the boundary gate between wires 2
         # and 3 is the one the exchange exists for.
         "site_ownership": [[0, 1, 2], [3, 4, 5]],
@@ -168,6 +188,47 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     # well as in the blockers.
     assert evidence["scalability_claim_allowed"] is False
     assert evidence["release_gate_allowed"] is False
+
+    # The measured workload carries the release contract's own parameterization:
+    # one independent leaf per gate, thirty-one of them, which is what the
+    # contract freezes for the shape it certifies. The artifact says so by naming
+    # the frozen file and the digest of the bytes it read, and by recording both
+    # the count the contract declares and the count the built circuit bound. The
+    # two have to agree, because the point of the observation is that the
+    # parameterization is a measured fact rather than a declaration beside one.
+    frozen = evidence["observations"]["frozen_circuit"]
+    assert frozen["configuration"] == _MODULE.RELEASE_CONFIGURATION
+    assert frozen["manifest"] == "benchmarks/manifests/mps_release_v1.json"
+    assert frozen["n_sites"] == _MODULE.RELEASE_N_SITES == 8192
+    assert frozen["trained_max_bond"] == _MODULE.RELEASE_MAX_BOND == 64
+    assert frozen["n_wires"] == _MODULE.N_WIRES == 6
+    assert frozen["declared_parameter_count"] == _MODULE.PARAMETER_COUNT == 31
+    assert frozen["bound_parameter_count"] == frozen["declared_parameter_count"]
+    # Every field but the digest, which is scoped to the revision the probe
+    # ran at and is resolved below, still has to be what the probe observes
+    # from the contract checked out here.
+    assert {
+        key: value for key, value in frozen.items() if key != "manifest_sha256"
+    } == {
+        key: value
+        for key, value in _ARTIFACT_FROZEN_CIRCUIT.items()
+        if key != "manifest_sha256"
+    }
+    # The recorded digest is the contract as of the revision the probe ran at,
+    # which is the file it actually read, rather than whatever happens to be
+    # checked out beside it now. The current contract is checked separately:
+    # loading this module runs the probe's own observation of it, which
+    # cross-checks the frozen ladder against the ladder file it names. Answering
+    # it needs that commit, so a lane whose clone never fetched the revision
+    # skips this one assertion instead of reading the clone as a mismatch; the
+    # full-history quality job is where it reaches a verdict.
+    try:
+        recorded_digest = manifest_digest_at(
+            evidence["environment"]["source_revision"], frozen["manifest"]
+        )
+    except ProvenanceUnavailableError as error:
+        pytest.skip(f"the recorded contract digest needs full history: {error}")
+    assert frozen["manifest_sha256"] == recorded_digest
 
     observations = evidence["observations"]
     metrics = observations["numerical_metrics"]
@@ -303,13 +364,14 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
     assert training["optimizer_state_ownership_semantics"] == "sharded_across_ranks"
 
     # The boundary is exactly these blockers. The fabric, the measured workload,
-    # the audited staging path and the cut width are each retired by the
-    # observation that justifies them; the pair and the circuit are declared.
+    # the audited staging path, the cut width and the production full-state
+    # materialization are each retired by the observation that justifies them;
+    # the pair alone is declared. The staging blocker stays because the audit
+    # found transfers rather than because nobody looked, and it is kept apart
+    # from the blocker that says so.
     assert sorted(evidence["claim_blockers"]) == [
         "host_staging_in_measured_region",
-        "toy_circuit_parameters_only",
         "two_node_pair_only_no_wider_topology",
-        "validation_only_tiny_full_mps_gather",
     ]
 
     # The cut width is retired by a sweep rather than by a declaration, so the
@@ -395,6 +457,79 @@ def test_checked_in_a800_multinode_mps_evidence_is_narrow_and_self_consistent() 
         assert resolved not in json.dumps(evidence)
 
 
+def test_the_frozen_rung_is_checked_against_the_ladder_file_it_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The rung is a copy, so it is verified against the file it was copied from.
+
+    A check that cannot fail is decoration, so each way the copy could drift
+    from the ladder is exercised here: a fingerprint that covers every rung
+    shape, an acceptance name, and the shape of the rung this probe reads.
+    """
+
+    ladder = _MODULE._contract_module(
+        "internal/evidence/general_mps_speed_ladder_v1.py",
+        "flagquantum_probe_mps_speed_ladder_for_test",
+    )
+    real = _MODULE._contract_module
+
+    def with_ladder(replacement: object) -> None:
+        def loader(relative_path: str, module_name: str):
+            if relative_path.endswith("general_mps_speed_ladder_v1.py"):
+                return replacement
+            return real(relative_path, module_name)
+
+        monkeypatch.setattr(_MODULE, "_contract_module", loader)
+
+    # Unmodified, it agrees -- otherwise everything below would pass trivially.
+    assert _MODULE._frozen_circuit_observation() == _ARTIFACT_FROZEN_CIRCUIT
+
+    class Drifted:
+        ACCEPTANCE = ladder.ACCEPTANCE
+
+        @staticmethod
+        def ladder_fingerprint() -> str:
+            return "0" * 64
+
+        @staticmethod
+        def rung(name: str) -> dict[str, object]:
+            return ladder.rung(name)
+
+    with_ladder(Drifted())
+    with pytest.raises(RuntimeError, match="frozen ladder disagrees"):
+        _MODULE._frozen_circuit_observation()
+
+    class Renamed:
+        ACCEPTANCE = "matched_speed_16384sites_chi64"
+
+        @staticmethod
+        def ladder_fingerprint() -> str:
+            return ladder.ladder_fingerprint()
+
+        @staticmethod
+        def rung(name: str) -> dict[str, object]:
+            return ladder.rung(name)
+
+    with_ladder(Renamed())
+    with pytest.raises(RuntimeError, match="publishes its speedup at"):
+        _MODULE._frozen_circuit_observation()
+
+    class Moved:
+        ACCEPTANCE = ladder.ACCEPTANCE
+
+        @staticmethod
+        def ladder_fingerprint() -> str:
+            return ladder.ladder_fingerprint()
+
+        @staticmethod
+        def rung(name: str) -> dict[str, object]:
+            return {**ladder.rung(name), "n_sites": 4096}
+
+    with_ladder(Moved())
+    with pytest.raises(RuntimeError, match="declares n_sites=4096"):
+        _MODULE._frozen_circuit_observation()
+
+
 def _artifact_kwargs(**overrides: object) -> dict:
     """The shape `_artifact` needs, with every observation retracted by default."""
 
@@ -427,6 +562,23 @@ def _artifact_kwargs(**overrides: object) -> dict:
             "host_transfer_observed": False,
             "host_transfer_events": [],
         },
+        "export": {
+            "measurement": _MODULE.EXPORT_MEASUREMENT,
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialization": True,
+                "site_order": _MODULE.SITE_ORDER_CANONICAL_LOGICAL,
+                "distribution_semantics": "replicated_per_rank",
+            },
+            "gather": {
+                "measured": True,
+                "synchronized": True,
+                "measurement": _MODULE.EXPORT_MEASUREMENT,
+                "warmup_iterations": _MODULE.EXPORT_WARMUP_ITERATIONS,
+                "measured_iterations": _MODULE.EXPORT_ITERATIONS,
+                "seconds": [0.002, 0.0021, 0.0019, 0.002, 0.0022],
+            },
+        },
         "cut_widths": {
             "widths": [2, 4],
             "exact_schmidt_ranks": [2, 4, 4, 4, 2],
@@ -452,6 +604,7 @@ def _artifact_kwargs(**overrides: object) -> dict:
         },
         "world_size": 2,
         "local_world_size": 1,
+        "frozen_circuit": dict(_ARTIFACT_FROZEN_CIRCUIT),
     }
     kwargs.update(overrides)
     return kwargs
@@ -469,14 +622,71 @@ def test_every_retracted_blocker_needs_its_own_observation(
         return set(payload["evidence"]["claim_blockers"])
 
     complete = blockers()
-    # The pair and the circuit are declared boundaries. The cut width is not:
-    # the sweep moved the site boundary and read back what each placement
-    # carried, so the blocker that says no cut ever moved is gone.
-    assert complete == {
-        "two_node_pair_only_no_wider_topology",
-        "toy_circuit_parameters_only",
-        "validation_only_tiny_full_mps_gather",
+    # The pair of hosts is a declared boundary, so nothing this run does can
+    # retract it. The circuit used to be declared the same way; it is now a
+    # measured fact, because the run records the configuration it bound and the
+    # leaf count the built circuit reported. The cut width is not declared
+    # either: the sweep moved the site boundary and read back what each placement
+    # carried, so the blocker that says no cut ever moved is gone. The full-state
+    # export is not either: the leg produces the whole state rather than checking
+    # an answer, so the blocker that says the only full MPS was a validation
+    # gather is gone too.
+    assert "two_node_pair_only_no_wider_topology" in complete
+    assert complete - {"two_node_pair_only_no_wider_topology"} == set()
+
+    # The toy-circuit blocker turns on the parameterization, so it is retracted
+    # only by a parameterization the release contract itself accepts. An absent
+    # observation is not a big circuit, and neither is one that names no frozen
+    # configuration, names a file without a digest, declares fewer leaves than
+    # the project's own smallest released workload, or declares a count the
+    # built circuit did not bind.
+    for incomplete in (
+        None,
+        {},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "configuration": ""},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "manifest_sha256": "unavailable"},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 8},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "bound_parameter_count": 30},
+        {**_ARTIFACT_FROZEN_CIRCUIT, "declared_parameter_count": 31.5},
+    ):
+        assert "toy_circuit_parameters_only" in blockers(frozen_circuit=incomplete)
+    assert "toy_circuit_parameters_only" not in complete
+
+    # The full-MPS gather blocker turns on whether a materialization the workload
+    # needs was recorded. A validation gather is not one, so an absent export
+    # leaves the blocker; so does an export that did not materialize the whole
+    # state, one published in some other site order, and one whose product was a
+    # shard rather than the state. Each of those is a real way the leg could fail
+    # to be the product the blocker is about.
+    full_state = {
+        "result": {
+            "full_state_materialization": True,
+            "site_order": _MODULE.SITE_ORDER_CANONICAL_LOGICAL,
+        }
     }
+    assert "validation_only_tiny_full_mps_gather" in blockers(export=None)
+    assert "validation_only_tiny_full_mps_gather" in blockers(
+        export={**full_state, "product": "shard_state"}
+    )
+    assert "validation_only_tiny_full_mps_gather" in blockers(
+        export={
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialization": False,
+                "site_order": _MODULE.SITE_ORDER_CANONICAL_LOGICAL,
+            },
+        }
+    )
+    assert "validation_only_tiny_full_mps_gather" in blockers(
+        export={
+            "product": _MODULE.EXPORTED_PRODUCT,
+            "result": {
+                "full_state_materialization": True,
+                "site_order": "internal_site_order_requires_permutation",
+            },
+        }
+    )
+    assert "validation_only_tiny_full_mps_gather" not in complete
 
     # A socket run, and a run with no debug log to read, both leave the fabric
     # untested: the route cannot be asserted from the configuration alone.

@@ -17,7 +17,7 @@ def test_dynamic_bit_flip_channel_changes_state_after_matching_gate(
 ) -> None:
     circuit = DynamicCircuit(1).x(0)
     circuit.measure(0, classical_bit=0)
-    model = fqn.NoiseModel().add("x", fqn.bit_flip_channel(1.0), wires=0)
+    model = fqn.NoiseModel().add("x", fqn.bit_flip_channel(1.0), qubits=0)
 
     result = fq.experimental.dynamic.run_dynamic(
         circuit,
@@ -67,7 +67,7 @@ def test_dynamic_readout_error_changes_observed_control_not_collapsed_state(
 def test_dynamic_noise_is_seed_reproducible(strategy: str) -> None:
     circuit = DynamicCircuit(1).x(0)
     circuit.measure(0, classical_bit=0)
-    model = fqn.NoiseModel().add("x", fqn.bit_flip_channel(0.37), wires=0)
+    model = fqn.NoiseModel().add("x", fqn.bit_flip_channel(0.37), qubits=0)
 
     first = fq.experimental.dynamic.run_dynamic(
         circuit, shots=64, seed=23, strategy=strategy, noise_model=model
@@ -91,7 +91,7 @@ def test_dynamic_gate_noise_applies_only_to_active_conditional_shots(
     circuit = DynamicCircuit(2).h(0)
     circuit.measure(0, classical_bit=0)
     circuit.conditional("x", 1, classical_bit=0)
-    model = fqn.NoiseModel().add("x", fqn.bit_flip_channel(1.0), wires=1)
+    model = fqn.NoiseModel().add("x", fqn.bit_flip_channel(1.0), qubits=1)
 
     result = fq.experimental.dynamic.run_dynamic(
         circuit,

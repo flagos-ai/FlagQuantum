@@ -173,7 +173,7 @@ def _flips(memory: MemoryCircuit, source: str, *, shots: int = 1) -> list[tuple]
     samples: list[list[int]] = execution.samples.tolist()
     checks = len(memory.code.checks)
     positions = {
-        check.ancilla_wire: position
+        check.ancilla_qubit: position
         for position, check in enumerate(memory.code.checks)
     }
 
@@ -181,9 +181,9 @@ def _flips(memory: MemoryCircuit, source: str, *, shots: int = 1) -> list[tuple]
         classical_row: list[int], sample_row: list[int], reference: MeasurementRef
     ) -> int:
         if reference.round_index is None:
-            return int(sample_row[reference.wire])
+            return int(sample_row[reference.qubit])
         return int(
-            classical_row[reference.round_index * checks + positions[reference.wire]]
+            classical_row[reference.round_index * checks + positions[reference.qubit]]
         )
 
     def parity(classical_row: list[int], sample_row: list[int], references) -> int:
@@ -244,8 +244,8 @@ def test_the_memory_experiment_follows_the_two_check_classes(
 
     code = triangular_colour_code(distance)
     memory = build_memory_circuit(code, rounds=rounds)
-    z_checks = sum(1 for check in code.checks if check.stabilizer.z_wires)
-    x_checks = sum(1 for check in code.checks if check.stabilizer.x_wires)
+    z_checks = sum(1 for check in code.checks if check.stabilizer.z_qubits)
+    x_checks = sum(1 for check in code.checks if check.stabilizer.x_qubits)
 
     assert z_checks == x_checks == len(code.checks) // 2
     assert len(memory.detectors) == z_checks * (rounds + 1) + x_checks * (rounds - 1)
@@ -257,7 +257,7 @@ def test_the_memory_experiment_follows_the_two_check_classes(
     assert {
         wire
         for reference in memory.observables.observables[0].measurement_parity
-        for wire in (reference.wire,)
+        for wire in (reference.qubit,)
     } == set(code.logical_observables[0].support)
 
 
@@ -383,7 +383,7 @@ def test_a_single_data_fault_is_detected_and_corrected() -> None:
     decoder = BeliefPropagationOsdDecoder(model)
     corrected: set[int] = set()
 
-    for wire in code.data_wires:
+    for wire in code.data_qubits:
         detection_events, observable_flips = _flips(
             memory, _inject_data_flip(memory, round_index=0, wire=wire)
         )[0]
@@ -396,7 +396,7 @@ def test_a_single_data_fault_is_detected_and_corrected() -> None:
     # A distance-three code corrects every single fault, so no fault may be left
     # uncorrected. Asserting the set rather than its size names the offending wire
     # in the failure.
-    assert corrected == set(code.data_wires)
+    assert corrected == set(code.data_qubits)
 
 
 def test_the_decoder_always_returns_a_correction_that_reproduces_the_syndrome() -> None:

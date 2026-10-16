@@ -232,7 +232,7 @@ def _global_indices(torch: Any, result: Any) -> Any:
         return shard_state.global_indices.detach().cpu().to(torch.long)
     local = torch.arange(shard_state.amplitudes.shape[-1], dtype=torch.long)
     if result.plan.distribution == "qubit_address_sharded":
-        return (local << len(result.plan.sharded_wires)) | shard_state.rank
+        return (local << len(result.plan.sharded_qubits)) | shard_state.rank
     return local + shard_state.shard.amplitude_start
 
 
@@ -262,7 +262,7 @@ def _statevector_check(
         circuit,
         device=device,
         dtype=dtype,
-        persistent_wire_layout=False,
+        persistent_qubit_layout=False,
     )
     _log(rank, "statevector_executor_ready", f"dtype={dtype_name}")
     if result.shard_state.amplitudes.device.type != "flagos":

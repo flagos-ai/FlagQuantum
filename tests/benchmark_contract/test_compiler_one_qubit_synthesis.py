@@ -19,6 +19,7 @@ from benchmarks.compiler_one_qubit_synthesis import (
     reach,
     run_benchmark,
 )
+from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract
 
@@ -162,6 +163,13 @@ def test_the_qiskit_anchor_agrees_on_length_for_every_opcode(payload: dict) -> N
     anchor = payload["reference_anchor"]
     if not anchor["available"]:
         pytest.skip(f"Qiskit not importable: {anchor['reason']}")
+    # Which lane took this reading. These counts were measured as stable across the
+    # certified lanes, so this is the one anchor here whose numbers do not move with
+    # the installed library; the lane is read anyway, because "stable as far as we
+    # measured" is still a reading of a lane rather than a property of the anchor.
+    # The lanes it was measured stable on are the certified ones, so a host outside
+    # them is not a place this stability was ever observed.
+    require_certified_lane(anchor["qiskit_version"], recording="this anchor")
     assert anchor["decomposer"] == "OneQubitEulerDecomposer('ZSX')"
     assert anchor["compared_gate_count"] == len(SINGLE_QUBIT_OPCODES) - 1
     assert anchor["same_length_count"] == anchor["compared_gate_count"]

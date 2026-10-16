@@ -8,15 +8,20 @@ new method, `Circuit.adjoint`, and one new reading of the existing
 schema version, and leaves `IR_VERSION` at `1.0`.
 
 It is written under non-negotiable rule 8 of `AGENTS.md` ("Treat the Stable Core
-public API as protected"). This document **is** the API change proposal for the
-method: the numbered `docs/development/API_CHANGE_PROPOSAL_0NN_*.md` series
-records the older, runtime-route proposals (`063` backend execution admission,
-`064` stabilizer execution mode) and this change adds no runtime route, so there
-is no second document to keep in step with this one. The sibling change
-`Circuit.compose` has its own proposal,
+public API as protected"). This document records the *decision*; the numbered
+`docs/development/API_CHANGE_PROPOSAL_0NN_*.md` half is now
+[`API_CHANGE_PROPOSAL_066_CIRCUIT_COMPOSITION.md`](../development/API_CHANGE_PROPOSAL_066_CIRCUIT_COMPOSITION.md),
+which records `compose`, `adjoint`, `control`, and `power` as one family. The
+earlier numbered proposals in that series are runtime-route decisions (`063`
+backend execution admission, `064` stabilizer execution mode); this change adds no
+runtime route, and `066` adds none either — it is written because the family
+introduces two methods, and because `FQ-CIRCUIT-COMPOSITION-20261002.md` had
+forward-referenced a proposal number that was issued elsewhere in the meantime.
+The sibling change `Circuit.compose` has its own decision record,
 [`FQ-CIRCUIT-COMPOSITION-20261002.md`](FQ-CIRCUIT-COMPOSITION-20261002.md). It owns
-placement, this one owns inversion, and nothing here approves `control` or
-`power`.
+placement, this one owns inversion, and `066` owns the family boundary. Nothing
+here approves `control` or `power`; `066` admits them as proposed and unfunded
+until `N1-4` and `N1-5` land.
 
 The authorization question was whether this needs one at all. `AGENTS.md`
 non-negotiable rule 8 protects *stable exports, signatures, defaults, result
@@ -261,7 +266,12 @@ forbids.
    refusals should carry codes.
 4. Should `Circuit.control` and `Circuit.power` share this declaration, or does
    each need its own? `power` in particular has no single-gate rule for a
-   non-integer exponent.
+   non-integer exponent. **Answered by
+   [`API_CHANGE_PROPOSAL_066_CIRCUIT_COMPOSITION.md`](../development/API_CHANGE_PROPOSAL_066_CIRCUIT_COMPOSITION.md):
+   the four operations are one family, `power` reads this declaration for its
+   negative-exponent case (`k < 0` is `adjoint().power(-k)`), and its non-integer
+   case is a refusal rather than a rule** — the question that remains open is
+   which reading of `power` `N1-5` adopts, and `066` §6.2 records both.
 
 ## Owner and approvals
 

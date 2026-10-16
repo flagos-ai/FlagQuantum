@@ -18,7 +18,7 @@ fractions by amplitude estimation" section.
 Sizes, and why: two transactions over two items, which is the instance the guide
 measures, and it is inside the unit's bounds -- the item count is a power of two
 and the database is at most eight items and seven transactions. The amplitude
-estimation runs at four counting wires and 8000 shots, the guide's own, which
+estimation runs at four counting qubits and 8000 shots, the guide's own, which
 sets the resolution the estimate is read at. The script ends by showing the
 refusal the unit makes for a threshold above this database's transaction count.
 
@@ -51,7 +51,7 @@ def main() -> None:
     result = run_frequent_itemset(
         DATABASE,
         threshold=THRESHOLD,
-        n_counting_wires=N_COUNTING_WIRES,
+        n_counting_qubits=N_COUNTING_WIRES,
         shots=args.shots,
         seed=args.seed,
     )
@@ -76,8 +76,8 @@ def main() -> None:
     print()
     print("circuit")
     print(f"  {'supports':<18}: {supports}")
-    print(f"  {'support wires':<18}: {operator.n_support_wires}")
-    print(f"  {'evaluation wires':<18}: {operator.n_wires}")
+    print(f"  {'support qubits':<18}: {operator.n_support_qubits}")
+    print(f"  {'evaluation qubits':<18}: {operator.n_qubits}")
     print()
     print("result")
     print(f"  {'estimate':<18}: {round(result.estimate, 6)}")

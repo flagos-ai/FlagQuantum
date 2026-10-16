@@ -303,10 +303,10 @@ class JAXShardedStatevectorParameterGradientResult:
             "world_size": self.plan.world_size,
             "local_world_size": self.plan.local_world_size,
             "node_count": self.plan.node_count,
-            "n_wires": self.plan.n_wires,
+            "n_wires": self.plan.n_qubits,
             "batch_size": self.plan.bsz,
             "state_partition": self.plan.distribution,
-            "sharded_wires": tuple(int(wire) for wire in self.plan.sharded_wires),
+            "sharded_wires": tuple(int(wire) for wire in self.plan.sharded_qubits),
             "rank_coordinates": tuple(
                 tuple(int(bit) for bit in coords)
                 for coords in self.plan.topology.rank_coordinates
@@ -349,7 +349,7 @@ class JAXShardedStatevectorParameterGradientResult:
                             "bit": int(bit),
                         }
                         for wire, bit in zip(
-                            self.plan.sharded_wires,
+                            self.plan.sharded_qubits,
                             self.plan.topology.rank_coordinates[int(shard.rank)],
                             strict=True,
                         )
@@ -403,7 +403,7 @@ def _statevector_plan(
     gradient_blockers = ("jax_sharded_statevector_backward_pending",)
     return JAXDistributedQuantumPlan(
         mode="statevector",
-        n_wires=ir.n_wires,
+        n_qubits=ir.n_wires,
         world_size=world_size,
         local_world_size=local_world_size,
         node_count=_node_count(world_size, local_world_size),

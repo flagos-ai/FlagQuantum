@@ -128,9 +128,9 @@ def _z_supports(code: CssCode) -> tuple[tuple[int, ...], ...]:
     """Return the supports of the Z-type checks, in the record's own order."""
 
     return tuple(
-        tuple(check.stabilizer.z_wires)
+        tuple(check.stabilizer.z_qubits)
         for check in code.checks
-        if check.stabilizer.z_wires
+        if check.stabilizer.z_qubits
     )
 
 
@@ -138,9 +138,9 @@ def _x_supports(code: CssCode) -> tuple[tuple[int, ...], ...]:
     """Return the supports of the X-type checks, in the record's own order."""
 
     return tuple(
-        tuple(check.stabilizer.x_wires)
+        tuple(check.stabilizer.x_qubits)
         for check in code.checks
-        if check.stabilizer.x_wires
+        if check.stabilizer.x_qubits
     )
 
 
@@ -215,18 +215,18 @@ def test_no_check_is_cut_down_because_the_lattice_has_no_boundary(
         for support in supports:
             for wire in support:
                 incidence[wire] += 1
-        assert set(incidence) == set(code.data_wires)
+        assert set(incidence) == set(code.data_qubits)
         assert set(incidence.values()) == {2}
 
     patch = RotatedSurfaceCode(linear_size)
     patch_weights = {
-        len(check.stabilizer.z_wires)
+        len(check.stabilizer.z_qubits)
         for check in patch.checks
-        if check.stabilizer.z_wires
+        if check.stabilizer.z_qubits
     } | {
-        len(check.stabilizer.x_wires)
+        len(check.stabilizer.x_qubits)
         for check in patch.checks
-        if check.stabilizer.x_wires
+        if check.stabilizer.x_qubits
     }
     assert patch_weights != {4}
 
@@ -251,9 +251,9 @@ def test_the_two_check_families_are_different_matrices_that_commute(
 
     assert _z_supports(code) != _x_supports(code)
     for z_support in _z_supports(code):
-        z_check = Pauli(z_wires=z_support)
+        z_check = Pauli(z_qubits=z_support)
         for x_support in _x_supports(code):
-            assert z_check.commutes_with(Pauli(x_wires=x_support))
+            assert z_check.commutes_with(Pauli(x_qubits=x_support))
 
 
 @pytest.mark.parametrize("linear_size", _SIZES)
@@ -281,10 +281,10 @@ def test_the_matrices_leave_two_logical_qubits(linear_size: int) -> None:
     assert matrices.num_observables == 4
 
     z_observables = [
-        observable for observable in code.logical_observables if observable.z_wires
+        observable for observable in code.logical_observables if observable.z_qubits
     ]
     x_observables = [
-        observable for observable in code.logical_observables if observable.x_wires
+        observable for observable in code.logical_observables if observable.x_qubits
     ]
     pairing = [
         [1 if not z.commutes_with(x) else 0 for x in x_observables]
@@ -322,10 +322,10 @@ def test_the_declared_logical_operators_wrap_the_torus(linear_size: int) -> None
 
     code = _torus(linear_size)
     z_observables = [
-        observable for observable in code.logical_observables if observable.z_wires
+        observable for observable in code.logical_observables if observable.z_qubits
     ]
     x_observables = [
-        observable for observable in code.logical_observables if observable.x_wires
+        observable for observable in code.logical_observables if observable.x_qubits
     ]
 
     for observables in (z_observables, x_observables):
@@ -334,7 +334,7 @@ def test_the_declared_logical_operators_wrap_the_torus(linear_size: int) -> None
         assert not set(observables[0].support) & set(observables[1].support)
 
     checks = [
-        Pauli(z_wires=check.stabilizer.z_wires, x_wires=check.stabilizer.x_wires)
+        Pauli(z_qubits=check.stabilizer.z_qubits, x_qubits=check.stabilizer.x_qubits)
         for check in code.checks
     ]
     for observable in (*z_observables, *x_observables):
@@ -378,9 +378,9 @@ def test_a_heavier_logical_representative_does_not_raise_the_distance() -> None:
     matrices = css_code_matrices(declared)
     face = _z_supports(declared)[0]
     ring = tuple(
-        observable.z_wires
+        observable.z_qubits
         for observable in declared.logical_observables
-        if observable.z_wires
+        if observable.z_qubits
     )[0]
     lifted = tuple(sorted(set(ring) ^ set(face)))
 
@@ -427,11 +427,11 @@ def test_the_memory_circuit_reads_out_both_logical_qubits(linear_size: int) -> N
     assert {len(observable.pauli.support) for observable in observables} == {
         linear_size
     }
-    assert all(observable.pauli.z_wires for observable in observables)
-    assert all(not observable.pauli.x_wires for observable in observables)
+    assert all(observable.pauli.z_qubits for observable in observables)
+    assert all(not observable.pauli.x_qubits for observable in observables)
 
     declared = [
-        observable for observable in code.logical_observables if observable.z_wires
+        observable for observable in code.logical_observables if observable.z_qubits
     ]
     partners = [
         derive_anticommuting_logical_product(code, index=index) for index in (0, 1)

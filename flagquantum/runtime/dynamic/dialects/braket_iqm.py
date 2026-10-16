@@ -157,7 +157,7 @@ def export_braket_iqm_dynamic_qasm3(
         body.append(_native_gate_qasm(instruction))
     if set(measured_wire) - feed_forward_keys:
         raise ValueError("braket_iqm_mid_circuit_measurement_requires_feed_forward")
-    return _qasm_document(circuit.n_wires, body)
+    return _qasm_document(circuit.n_qubits, body)
 
 
 __all__ = ("export_braket_iqm_dynamic_qasm3",)

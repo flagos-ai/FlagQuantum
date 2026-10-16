@@ -209,7 +209,7 @@ class NativeJiudingJobClient(JiudingClient):
         if outputs is None and shots is not None:
             raise TypeError("shots requires an explicit sampling output")
         measurements = (
-            lower_outputs(outputs, n_wires=ir.n_wires, shots=shots)
+            lower_outputs(outputs, n_qubits=ir.n_wires, shots=shots)
             if outputs is not None
             else ()
         )

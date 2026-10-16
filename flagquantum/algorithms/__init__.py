@@ -27,9 +27,9 @@ from . import svd as svd
 from . import trotter as trotter
 from . import variational as variational
 from .arithmetic import (
-    AdderWires,
+    AdderQubits,
     adder_circuit,
-    adder_wires,
+    adder_qubits,
 )
 from .cdr import (
     CDR_ASSUMPTIONS,
@@ -189,7 +189,7 @@ from .variational import (
 __all__ = [
     "AdaptVQEIteration",
     "AdaptVQEResult",
-    "AdderWires",
+    "AdderQubits",
     "ATOMIC_NUMBERS",
     "AtomicOrbital",
     "BASIS_SETS",
@@ -256,7 +256,7 @@ __all__ = [
     "ZneMeasurement",
     "ZneResult",
     "adder_circuit",
-    "adder_wires",
+    "adder_qubits",
     "amplitude_encode",
     "amplitude_estimation",
     "angular_encode",

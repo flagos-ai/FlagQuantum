@@ -87,7 +87,7 @@ def measurement_result(
     measurements = tuple(
         MeasurementResult(
             kind=item["kind"],
-            wires=tuple(int(wire) for wire in item["wires"]),
+            qubits=tuple(int(qubit) for qubit in item["wires"]),
             value=_decode_value(item["value"]),
             shots=item.get("shots"),
             metadata=dict(item.get("metadata", {})),

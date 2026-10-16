@@ -331,12 +331,6 @@ class TargetDescription:
             )
         _validate_declared_fact_names(self)
 
-    @property
-    def n_wires(self) -> int:
-        """The ``CouplingMap`` wire count this declaration authorises."""
-
-        return self.n_qubits
-
 
 def _validate_declared_fact_names(description: TargetDescription) -> None:
     observed_names = set(description.observed_facts)

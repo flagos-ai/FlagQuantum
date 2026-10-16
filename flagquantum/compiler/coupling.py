@@ -1,7 +1,7 @@
 """Undirected hardware connectivity used by the routing passes.
 
-A coupling map states which physical wire pairs a device couples, without saying
-which way round a two-wire operation may run across them. The ordered case is a
+A coupling map states which physical qubit pairs a device couples, without saying
+which way round a two-qubit operation may run across them. The ordered case is a
 different type in a module beside this one, so a reader asking what a device
 permits reads one of two files rather than searching one file for the branch that
 decides it.
@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from threading import Lock
 
-# Dense distance-matrix entry for a physical wire pair with no coupling path.
+# Dense distance-matrix entry for a physical qubit pair with no coupling path.
 # A coupling map is a graph, so most pairs of a production device are far
 # apart but still reachable; this value is reserved for genuine disconnection.
 UNREACHABLE_DISTANCE = -1
@@ -24,15 +24,15 @@ def _breadth_first_distances(
     adjacency: tuple[tuple[int, ...], ...],
     source: int,
 ) -> tuple[int, ...]:
-    """Return undirected hop counts from one wire to every wire."""
+    """Return undirected hop counts from one qubit to every qubit."""
 
     distances = [UNREACHABLE_DISTANCE] * len(adjacency)
     distances[source] = 0
     queue: deque[int] = deque((source,))
     while queue:
-        wire = queue.popleft()
-        level = distances[wire] + 1
-        for neighbor in adjacency[wire]:
+        qubit = queue.popleft()
+        level = distances[qubit] + 1
+        for neighbor in adjacency[qubit]:
             if distances[neighbor] == UNREACHABLE_DISTANCE:
                 distances[neighbor] = level
                 queue.append(neighbor)
@@ -43,7 +43,7 @@ def _breadth_first_distances(
 class CouplingMap:
     """Undirected hardware connectivity used by native routing passes."""
 
-    n_wires: int
+    n_qubits: int
     edges: tuple[tuple[int, int], ...]
     _adjacency: tuple[tuple[int, ...], ...] = field(
         init=False,
@@ -109,15 +109,15 @@ class CouplingMap:
 
     def __init__(
         self,
-        n_wires: int,
+        n_qubits: int,
         edges: Iterable[tuple[int, int]],
         *,
         path_cache_capacity: int = 4096,
     ) -> None:
-        if type(n_wires) is not int:
-            raise ValueError("Coupling wire count must be an integer.")
-        if n_wires <= 0:
-            raise ValueError("Coupling map requires a positive wire count.")
+        if type(n_qubits) is not int:
+            raise ValueError("Coupling qubit count must be an integer.")
+        if n_qubits <= 0:
+            raise ValueError("Coupling map requires a positive qubit count.")
         if type(path_cache_capacity) is not int:
             raise ValueError("Path cache capacity must be an integer.")
         if path_cache_capacity == 1 or path_cache_capacity < 0:
@@ -127,17 +127,17 @@ class CouplingMap:
         for left, right in edges:
             if type(left) is not int or type(right) is not int:
                 raise ValueError("Coupling edge endpoints must be integers.")
-            if left < 0 or right < 0 or left >= n_wires or right >= n_wires:
-                raise ValueError("Coupling edge contains a wire outside the device.")
+            if left < 0 or right < 0 or left >= n_qubits or right >= n_qubits:
+                raise ValueError("Coupling edge contains a qubit outside the device.")
             if left == right:
                 continue
             edge = (min(left, right), max(left, right))
             if edge not in seen:
                 normalized.append(edge)
                 seen.add(edge)
-        object.__setattr__(self, "n_wires", int(n_wires))
+        object.__setattr__(self, "n_qubits", int(n_qubits))
         object.__setattr__(self, "edges", tuple(normalized))
-        adjacency: list[set[int]] = [set() for _ in range(n_wires)]
+        adjacency: list[set[int]] = [set() for _ in range(n_qubits)]
         for left, right in normalized:
             adjacency[left].add(right)
             adjacency[right].add(left)
@@ -160,32 +160,32 @@ class CouplingMap:
     @classmethod
     def line(
         cls,
-        n_wires: int,
+        n_qubits: int,
         *,
         path_cache_capacity: int = 4096,
     ) -> "CouplingMap":
-        if type(n_wires) is not int:
-            raise ValueError("Coupling wire count must be an integer.")
+        if type(n_qubits) is not int:
+            raise ValueError("Coupling qubit count must be an integer.")
         return cls(
-            n_wires,
-            ((wire, wire + 1) for wire in range(n_wires - 1)),
+            n_qubits,
+            ((qubit, qubit + 1) for qubit in range(n_qubits - 1)),
             path_cache_capacity=path_cache_capacity,
         )
 
     @classmethod
     def ring(
         cls,
-        n_wires: int,
+        n_qubits: int,
         *,
         path_cache_capacity: int = 4096,
     ) -> "CouplingMap":
-        if type(n_wires) is not int:
-            raise ValueError("Coupling wire count must be an integer.")
-        edges = [(wire, wire + 1) for wire in range(n_wires - 1)]
-        if n_wires > 2:
-            edges.append((n_wires - 1, 0))
+        if type(n_qubits) is not int:
+            raise ValueError("Coupling qubit count must be an integer.")
+        edges = [(qubit, qubit + 1) for qubit in range(n_qubits - 1)]
+        if n_qubits > 2:
+            edges.append((n_qubits - 1, 0))
         return cls(
-            n_wires,
+            n_qubits,
             edges,
             path_cache_capacity=path_cache_capacity,
         )
@@ -205,38 +205,38 @@ class CouplingMap:
         edges = []
         for row in range(rows):
             for col in range(cols):
-                wire = row * cols + col
+                qubit = row * cols + col
                 if col + 1 < cols:
-                    edges.append((wire, wire + 1))
+                    edges.append((qubit, qubit + 1))
                 if row + 1 < rows:
-                    edges.append((wire, wire + cols))
+                    edges.append((qubit, qubit + cols))
         return cls(
             rows * cols,
             edges,
             path_cache_capacity=path_cache_capacity,
         )
 
-    def _validate_wire(self, wire: int) -> int:
-        if type(wire) is not int:
-            raise ValueError("Coupling wire index must be an integer.")
-        if wire < 0 or wire >= self.n_wires:
+    def _validate_qubit(self, qubit: int) -> int:
+        if type(qubit) is not int:
+            raise ValueError("Coupling qubit index must be an integer.")
+        if qubit < 0 or qubit >= self.n_qubits:
             raise ValueError(
-                f"Coupling wire {wire} is outside [0, {self.n_wires - 1}]."
+                f"Coupling qubit {qubit} is outside [0, {self.n_qubits - 1}]."
             )
-        return wire
+        return qubit
 
-    def neighbors(self, wire: int) -> tuple[int, ...]:
-        wire = self._validate_wire(wire)
-        return self._adjacency[wire]
+    def neighbors(self, qubit: int) -> tuple[int, ...]:
+        qubit = self._validate_qubit(qubit)
+        return self._adjacency[qubit]
 
     def has_edge(self, left: int, right: int) -> bool:
-        left = self._validate_wire(left)
-        right = self._validate_wire(right)
+        left = self._validate_qubit(left)
+        right = self._validate_qubit(right)
         return right in self._adjacency[left]
 
     def shortest_path(self, start: int, goal: int) -> tuple[int, ...]:
-        start = self._validate_wire(start)
-        goal = self._validate_wire(goal)
+        start = self._validate_qubit(start)
+        goal = self._validate_qubit(goal)
         cache_key = (start, goal)
         with self._path_cache_lock:
             cached = self._path_cache.get(cache_key)
@@ -253,26 +253,29 @@ class CouplingMap:
             identity_path = (start,)
             self._cache_paths((cache_key, identity_path))
             return identity_path
-        parents = {start: -1}
-        queue: deque[int] = deque([start])
+        first, second = (start, goal) if start < goal else (goal, start)
+        parents = {first: -1}
+        queue: deque[int] = deque([first])
         while queue:
-            wire = queue.popleft()
-            for neighbor in self.neighbors(wire):
+            qubit = queue.popleft()
+            for neighbor in self.neighbors(qubit):
                 if neighbor in parents:
                     continue
-                parents[neighbor] = wire
-                if neighbor == goal:
-                    path_nodes = [goal]
-                    while path_nodes[-1] != start:
+                parents[neighbor] = qubit
+                if neighbor == second:
+                    path_nodes = [second]
+                    while path_nodes[-1] != first:
                         path_nodes.append(parents[path_nodes[-1]])
                     resolved = tuple(reversed(path_nodes))
-                    self._cache_paths(
-                        (cache_key, resolved),
-                        ((goal, start), tuple(reversed(resolved))),
+                    forward, backward = (
+                        (resolved, tuple(reversed(resolved)))
+                        if start < goal
+                        else (tuple(reversed(resolved)), resolved)
                     )
-                    return resolved
+                    self._cache_paths((cache_key, forward), ((goal, start), backward))
+                    return forward
                 queue.append(neighbor)
-        raise ValueError(f"No coupling path between wires {start} and {goal}.")
+        raise ValueError(f"No coupling path between qubits {start} and {goal}.")
 
     def _cache_paths(
         self,
@@ -293,31 +296,31 @@ class CouplingMap:
                     )
 
     def distance(self, left: int, right: int) -> int:
-        """Return the undirected hop count between two physical wires.
+        """Return the undirected hop count between two physical qubits.
 
         Raises:
-            ValueError: If either wire is outside the device or the two wires
+            ValueError: If either qubit is outside the device or the two qubits
                 are not connected by any coupling path.
         """
 
-        left = self._validate_wire(left)
-        right = self._validate_wire(right)
+        left = self._validate_qubit(left)
+        right = self._validate_qubit(right)
         distance = self._distance_row(left)[right]
         if distance == UNREACHABLE_DISTANCE:
-            raise ValueError(f"No coupling path between wires {left} and {right}.")
+            raise ValueError(f"No coupling path between qubits {left} and {right}.")
         return distance
 
     def distance_matrix(self) -> tuple[tuple[int, ...], ...]:
-        """Return the dense hop-count matrix over every ordered wire pair.
+        """Return the dense hop-count matrix over every ordered qubit pair.
 
-        Row and column indices are physical wire indices, so entry
+        Row and column indices are physical qubit indices, so entry
         ``matrix[left][right]`` is the undirected distance used by
         :meth:`distance`. Entries equal to :data:`UNREACHABLE_DISTANCE` mean
         the pair has no coupling path. The matrix is symmetric with a zero
-        diagonal, and building it costs one breadth-first search per wire.
+        diagonal, and building it costs one breadth-first search per qubit.
         """
 
-        return tuple(self._distance_row(source) for source in range(self.n_wires))
+        return tuple(self._distance_row(source) for source in range(self.n_qubits))
 
     def distance_cache_info(self) -> dict[str, int]:
         """Return bounded-cache diagnostics for the distance index."""
@@ -332,7 +335,7 @@ class CouplingMap:
             }
 
     def _distance_row(self, source: int) -> tuple[int, ...]:
-        """Return the cached all-wire distance row rooted at one wire."""
+        """Return the cached all-qubit distance row rooted at one qubit."""
 
         with self._path_cache_lock:
             cached = self._distance_rows.get(source)

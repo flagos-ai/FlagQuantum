@@ -190,7 +190,7 @@ def test_region_twin_rejects_conflicting_overlap_noise_channel() -> None:
     first, first_support = _cell((20, 27))
     second, _ = _cell((27, 34))
     changed = NoiseModel.from_dict(second.noise_model.to_dict())
-    changed.add("h", bit_flip_channel(0.1), wires=(0,))
+    changed.add("h", bit_flip_channel(0.1), qubits=(0,))
     changed_twin = fq.twin.from_noise_model(
         changed,
         target="quafu:Shenglian",

@@ -29,6 +29,10 @@ import torch
 import flagquantum.compiler.pipeline as pipeline_module
 import flagquantum.compiler.zero_state_reset as zero_state_reset_module
 from flagquantum.compiler import optimize
+from flagquantum.compiler.optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    OPTIMIZATION_LEVEL_STAGES,
+)
 from flagquantum.compiler.zero_state_reset import remove_zero_state_resets
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.runtime.dynamic import DynamicCircuit, run_dynamic
@@ -325,13 +329,32 @@ def test_the_pass_is_idempotent() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    """One binding, one pipeline slot, and the registry resolves that binding.
+    """The loop reads the declared sequence, and names no pass itself.
 
-    The fixed-point loop no longer names each pass inline; it resolves a named
-    sequence through the pass registry. The wiring to check is therefore which
-    registry binding answers for the pass, and that its name occupies one slot in
-    the sequence, so a second binding or a duplicated slot fails here.
+    The fixed-point loop no longer names each pass inline either; it resolves a
+    named sequence through the pass registry. The wiring to check is therefore the
+    declaration the loop reads, and then which registry binding answers for the
+    pass: its name occupies one slot in the registered sequence, so a second
+    binding or a duplicated slot fails here.
     """
+
+    composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
+    assert composition.count("remove_zero_state_resets") == 1
+
+    tree = ast.parse(Path(pipeline_module.__file__).read_text(encoding="utf-8"))
+    loop = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_optimize_to_fixed_point"
+    )
+    called = {
+        node.func.id
+        for node in ast.walk(loop)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+    assert "optimization_level_stages" in called
+    assert "remove_zero_state_resets" not in called
 
     bound = [
         name

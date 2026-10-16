@@ -48,6 +48,14 @@ class _StatevectorControlledPhaseGraphStep:
 
 
 @dataclass(frozen=True)
+class _StatevectorHadamardControlledPhaseGraphStep:
+    """A Hadamard immediately followed by a static controlled-phase graph."""
+
+    target: int
+    edges: tuple[tuple[int, int, float], ...]
+
+
+@dataclass(frozen=True)
 class _StatevectorCrossWireDiagonalStep:
     regions: tuple[_StatevectorGateStep | _StatevectorFusedGateStep, ...]
 
@@ -87,18 +95,38 @@ class _StatevectorCXSequenceStep:
     targets: tuple[int, ...]
 
 
+@dataclass(frozen=True)
+class _StatevectorCXSequenceRZZSwapStep:
+    controls: tuple[int, ...]
+    targets: tuple[int, ...]
+    rzz_wires: tuple[int, int]
+    rzz_angle: float
+    swap_wires: tuple[int, int]
+
+
+@dataclass(frozen=True)
+class _StatevectorSwapSequenceStep:
+    swaps: tuple[tuple[int, int], ...]
+
+
 _StatevectorPreCXStep: TypeAlias = (
     _StatevectorGateStep
     | _StatevectorRXRZLoopStep
     | _StatevectorFusedGateStep
     | _StatevectorControlledPhaseDecompositionStep
     | _StatevectorControlledPhaseGraphStep
+    | _StatevectorHadamardControlledPhaseGraphStep
     | _StatevectorCrossWireDiagonalStep
     | _StatevectorCZGraphStep
     | _StatevectorCliffordMatchingStep
     | _StatevectorDisjointDenseStep
 )
-_StatevectorProgramStep: TypeAlias = _StatevectorPreCXStep | _StatevectorCXSequenceStep
+_StatevectorProgramStep: TypeAlias = (
+    _StatevectorPreCXStep
+    | _StatevectorCXSequenceStep
+    | _StatevectorCXSequenceRZZSwapStep
+    | _StatevectorSwapSequenceStep
+)
 
 
 def _preallocated_batch_assembly_beneficial(
@@ -141,7 +169,7 @@ def _static_product_state_initialization_enabled() -> bool:
 def _native_zero_state_prefix_length(
     program: Sequence[_StatevectorProgramStep], width: int
 ) -> int:
-    """Return the native prefix that prepares every wire from ``|0>`` once."""
+    """Return the native prefix that prepares every qubit from ``|0>`` once."""
 
     occupied: set[int] = set()
     expected = set(range(width))

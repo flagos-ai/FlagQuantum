@@ -17,7 +17,7 @@ checkpoint, or evidence objects as public API.
   and gate-dispatch orchestration.
 - `forward_executor.py`: the public distributed forward entry point.
 - `forward_sweep.py`: the per-instruction dispatch sweep that entry point runs.
-- `layout.py`: logical-to-physical wire layout and swap scheduling.
+- `layout.py`: logical-to-physical qubit layout and swap scheduling.
 - `checkpointing.py`: checkpoint policy and checkpoint selection.
 - `reverse.py`: the public reverse-mode boundary, validation, and evidence.
 - `reverse_adjoint.py`: adjoint replay, communication, and backward
@@ -87,8 +87,8 @@ optimizer abstraction until a second concrete consumer requires one.
 initialization and global-index construction interpret Runtime-owned plan and
 ownership records; its gate helpers adapt those records to the tensor kernels
 in `simulation.statevector.operations`; its local simulator, dry run, launch spec, and
-transport probe assemble Runtime-owned results and evidence. The shared wire
-mask, gate-basis offset, diagonal application, and basis-vector update math live
+transport probe assemble Runtime-owned results and evidence. The shared
+`_wire_mask` helper, gate-basis offset, diagonal application, and basis-vector update math live
 only in Simulation.
 
 Do not move this file wholesale into Simulation: that would force Simulation to
@@ -131,7 +131,7 @@ Start with the smallest authoritative file:
 | Rank-local indexing or local CPU reference execution | `local_execution.py` |
 | Distributed forward loop | `forward_executor.py`, `forward_sweep.py` |
 | Forward communication primitive or workspace | `forward.py` |
-| Wire placement or swap scheduling | `layout.py` |
+| Qubit placement or swap scheduling | `layout.py` |
 | Checkpoint or reverse-mode policy and result | `checkpointing.py`, `reverse.py` |
 | Adjoint replay or backward communication | `reverse_adjoint.py` |
 | Gradient collectives | `gradient_reduction.py` |

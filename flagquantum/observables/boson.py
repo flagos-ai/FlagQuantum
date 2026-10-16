@@ -25,8 +25,9 @@ dimension lets a caller say which one the numbers describe.
 are ordinary values of the algebra rather than separate constructors in the reference
 arithmetic, because the zero is the empty sum and the unit is the empty monomial.
 
-The dense form places the lowest degree on the most significant index, which is the order
-the package gives a wire inside an amplitude, so a Kronecker product over ascending
+The dense form places the lowest degree on the most significant index, which is the
+order the package gives a qubit inside an amplitude, so a Kronecker product over
+ascending
 degrees is the whole of the construction.
 """
 
@@ -69,7 +70,7 @@ def _complex_scalar(value: object) -> complex | None:
 
 
 def _degree(value: object) -> int:
-    """Read one degree index by the same protocol the package reads a wire label with."""
+    """Read one degree index by the same protocol the package reads a qubit label with."""
 
     return _qubit("bosonic", value, noun="degree")
 
@@ -342,7 +343,7 @@ class BosonOperator:
         each keeping :data:`_DEFAULT_TRUNCATION_DIMENSION` levels.
 
         The lowest degree is placed on the most significant index, which is the order the
-        package gives a wire inside an amplitude.  The commutation relations are applied
+        package gives a qubit inside an amplitude.  The commutation relations are applied
         before this evaluation rather than after it, so the value returned here is the
         truncation of the operator on the untruncated space.  The commutator of the
         truncation is a different matrix and differs at the top level of every degree: on
@@ -463,7 +464,7 @@ def identity(degree: int | None = None) -> BosonOperator:
     """Return the unit of the algebra, which is the empty monomial.
 
     ``degree`` may be supplied for readable notation but does not change the value, the
-    way `flagquantum.observables.I` treats a wire label.
+    way `flagquantum.observables.I` treats a qubit label.
     """
 
     if degree is not None:

@@ -2,7 +2,7 @@
 
 The density-matrix simulator contracts a batched operator with a batched
 density matrix. That product is the ``numerics.matmul.complex_batched``
-semantic, and this module is its first wired consumer: the route question is
+semantic, and this module is its first catalog-authorized consumer: the route question is
 asked once here, from the operands' own declared device and precision, so the
 simulator never spells an execution device itself.
 """
@@ -48,7 +48,7 @@ def _density_matmul_kernel_match(
     device_type: str,
     dtype: str,
 ) -> KernelMatchResult:
-    """Match the batched complex matmul semantic against its wired contract."""
+    """Match the batched complex matmul semantic against its catalog contract."""
 
     return match_kernel_implementations(
         KernelRequest(
@@ -66,7 +66,7 @@ def _density_matmul_kernel_match(
 def _require_density_matmul_kernel(
     *, device_type: str, dtype: str
 ) -> KernelImplementation:
-    """Return the wired implementation or fail closed on catalog drift."""
+    """Return the catalog-authorized implementation or fail closed on catalog drift."""
 
     return _require_cataloged_kernel(
         _density_matmul_kernel_match(device_type=device_type, dtype=dtype),

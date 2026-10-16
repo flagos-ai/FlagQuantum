@@ -119,11 +119,11 @@ def _ring_schedule(width: int, kinds: str) -> tuple[MeasurementPhase, ...]:
                 continue
             wires = tuple(sorted(edges[index]))
             if kind == "X":
-                operators.append(Pauli(x_wires=wires))
+                operators.append(Pauli(x_qubits=wires))
             elif kind == "Z":
-                operators.append(Pauli(z_wires=wires))
+                operators.append(Pauli(z_qubits=wires))
             else:
-                operators.append(Pauli(x_wires=wires, z_wires=wires))
+                operators.append(Pauli(x_qubits=wires, z_qubits=wires))
         phases.append(
             MeasurementPhase(name=f"class-{offset}", operators=tuple(operators))
         )
@@ -148,7 +148,7 @@ def test_the_ring_derives_its_arithmetic_from_the_width() -> None:
         ring = _two_phase_ring(width)
 
         assert ring.num_data_qubits == width
-        assert ring.data_wires == tuple(range(width))
+        assert ring.data_qubits == tuple(range(width))
         assert ring.num_phases == 2
         assert ring.period == 2
         assert ring.num_transient_rounds == 1
@@ -234,8 +234,8 @@ def test_the_advance_solves_for_the_surviving_subgroup() -> None:
 
 def test_the_basis_wise_reading_would_lose_a_product() -> None:
     width = 3
-    generators = (Pauli(z_wires=(0, 1)), Pauli(z_wires=(0, 2)))
-    measured = Pauli(x_wires=(0,))
+    generators = (Pauli(z_qubits=(0, 1)), Pauli(z_qubits=(0, 2)))
+    measured = Pauli(x_qubits=(0,))
     group = reduce_rows(
         [
             _phase_rows(MeasurementPhase("g", (operator,)), width)[0]
@@ -381,8 +381,8 @@ def test_the_search_skips_the_candidates_that_are_already_checks() -> None:
     # Weight one really is exhausted: the only weight-one operator that commutes with
     # the group is ``X0`` itself, which is why the search has to skip what is already
     # in the group rather than report it as the least logical operator.
-    singles = [Pauli(x_wires=(wire,)) for wire in range(width)]
-    singles += [Pauli(z_wires=(wire,)) for wire in range(width)]
+    singles = [Pauli(x_qubits=(wire,)) for wire in range(width)]
+    singles += [Pauli(z_qubits=(wire,)) for wire in range(width)]
     commuting = [
         operator
         for operator in singles
@@ -480,7 +480,7 @@ def test_the_record_refuses_malformed_schedules() -> None:
         FloquetCode(name="true", num_qubits=True, phases=ring.phases)
 
     with pytest.raises(ValueError, match="must be named"):
-        MeasurementPhase(name="", operators=(Pauli(z_wires=(0, 1)),))
+        MeasurementPhase(name="", operators=(Pauli(z_qubits=(0, 1)),))
     with pytest.raises(ValueError, match="measures no operator"):
         MeasurementPhase(name="empty", operators=())
     with pytest.raises(TypeError, match="is not a Pauli"):
@@ -490,7 +490,7 @@ def test_the_record_refuses_malformed_schedules() -> None:
     with pytest.raises(ValueError, match="anticommute"):
         MeasurementPhase(
             name="ordered",
-            operators=(Pauli(z_wires=(0, 1)), Pauli(x_wires=(0,))),
+            operators=(Pauli(z_qubits=(0, 1)), Pauli(x_qubits=(0,))),
         )
 
     with pytest.raises(ValueError, match="needs an even number"):

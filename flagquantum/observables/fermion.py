@@ -26,9 +26,10 @@ from . import Observable, _PauliTerm, _qubit, _qubits
 
 # sigma_minus = (X + iY) / 2 annihilates and sigma_plus = (X - iY) / 2 creates in the
 # occupation basis where |1> is occupied.  A factor on mode k is the Pauli string
-# Z[0] ... Z[k-1] sigma[k]: the Z string runs over the modes strictly below k, so with mode
-# k on wire k and wire 0 the most significant amplitude bit -- the package's own wire order
-# -- the mode index is also the wire index and the string is the modes that precede k.
+# Z[0] ... Z[k-1] sigma[k]: the Z string runs over the modes strictly below k, so with
+# mode k on qubit k and qubit 0 the most significant amplitude bit -- the package's
+# own qubit order -- the mode index is also the qubit index and the string is the
+# modes that precede k.
 # Placing the string over the modes above k instead is the same transformation composed
 # with a reversal of the mode order, so this module fixes one convention and states it
 # rather than leaving the choice to each reader.
@@ -69,7 +70,7 @@ def _complex_scalar(value: object) -> complex | None:
 
 
 def _degree(value: object) -> int:
-    """Read one mode index by the same protocol the package reads a wire label with."""
+    """Read one mode index by the same protocol the package reads a qubit label with."""
 
     return _qubit("fermionic", value, noun="degree")
 
@@ -210,7 +211,8 @@ def _parity_factor(degree: int, is_creation: bool, modes: int) -> _PauliSum:
 
     The two branches are the same ``sigma_minus`` and ``sigma_plus`` expansion the
     Jordan-Wigner image uses; what differs is the string they sit on.  On the X branch a
-    single Z sits on wire ``degree - 1`` and an X runs over every mode above the factor; on
+    single Z sits on qubit ``degree - 1`` and an X runs over every mode above the factor;
+    on
     the Y branch there is no Z at all.  The X string therefore runs over the modes strictly
     above the factor where Jordan-Wigner's Z string runs over the modes strictly below it,
     which is what makes the two encodings mirror images on the mode list.
@@ -500,7 +502,7 @@ def _image_of(
 def jordan_wigner(operator: FermionOperator, *, n_modes: int) -> Observable:
     """Map a Hermitian fermionic operator onto a Pauli `Observable`.
 
-    Mode ``k`` is placed on wire ``k`` and ``c[k]`` maps to the Pauli string
+    Mode ``k`` is placed on qubit ``k`` and ``c[k]`` maps to the Pauli string
     ``Z[0] ... Z[k-1] sigma_minus[k]``, so a product of factors maps to the product of
     their images.  The result is exact for a sum of monomials and carries no fermionic
     special case into the runtime: it is the same `Observable` that `fq.expectation`
@@ -529,16 +531,17 @@ def jordan_wigner(operator: FermionOperator, *, n_modes: int) -> Observable:
 def parity_encoding(operator: FermionOperator, *, n_modes: int) -> Observable:
     """Map a Hermitian fermionic operator onto a Pauli `Observable` in the parity basis.
 
-    Wire ``k`` holds the parity of modes ``0`` through ``k`` instead of the occupation of
-    mode ``k``, so ``c[k]`` maps to
+    Qubit ``k`` holds the parity of modes ``0`` through ``k`` instead of the occupation
+    of mode ``k``, so ``c[k]`` maps to
     ``(Z[k-1] X[k] ... X[n-1] + i Y[k] X[k+1] ... X[n-1]) / 2``: the X string runs over the
     modes strictly above the factor, where `jordan_wigner`'s Z string runs over the modes
     strictly below it.  The two transforms are the same operator written in two bases, so a
     consumer written against `Observable` reads either one without being told which it
     holds; the images differ as matrices by the basis change between them.
 
-    This is a second encoding, not a smaller one.  The widest factor image still spans one
-    wire per mode and is reached at the opposite end of the mode list, so the reduction in
+    This is a second encoding, not a smaller one.  The widest factor image still spans
+    one qubit per mode and is reached at the opposite end of the mode list, so the
+    reduction in
     worst-case Pauli weight that motivates the Bravyi-Kitaev and ternary-tree encodings
     does not follow from it.
 

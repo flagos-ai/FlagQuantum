@@ -39,8 +39,8 @@ def test_repetition_lookup_decoder_uses_complete_history(syndrome, wire) -> None
     assert isinstance(decoder, Decoder)
     decoded = decoder.decode(history)
     assert decoded.consumed_rounds == 2
-    assert decoded.corrections == (Correction(round_index=1, wire=wire),)
-    assert decoded.pauli_frame.x_wires == (() if wire is None else (wire,))
+    assert decoded.corrections == (Correction(round_index=1, qubit=wire),)
+    assert decoded.pauli_frame.x_qubits == (() if wire is None else (wire,))
 
 
 @pytest.mark.parametrize("error_round", (0, 1, 2))
@@ -66,7 +66,7 @@ def test_compiled_feedback_corrects_single_error_in_any_round(
         expected = [(0, 0), (0, 0), (0, 0)]
         expected[error_round] = syndrome
         assert [record.bits for record in shot.syndrome_rounds] == expected
-        assert shot.executed_feedback[error_round].wire == wire
+        assert shot.executed_feedback[error_round].qubit == wire
         assert shot.raw_final_data_bits == (0, 0, 0)
         assert shot.decoded_data_bits == (0, 0, 0)
 
@@ -86,7 +86,7 @@ def test_offline_pauli_frame_restores_single_error_without_physical_feedback(
     for shot in result.shot_records:
         expected_raw = tuple(int(index == wire) for index in range(3))
         assert shot.raw_final_data_bits == expected_raw
-        assert shot.decode_result.pauli_frame.x_wires == (wire,)
+        assert shot.decode_result.pauli_frame.x_qubits == (wire,)
         assert shot.decoded_data_bits == (0, 0, 0)
         assert all(not item.applied for item in shot.executed_feedback)
         assert not shot.logical_failure
@@ -109,7 +109,7 @@ def test_runtime_streaming_feedback_corrects_single_error(
 
     assert result.logical_error_rate == 0.0
     for shot in result.shot_records:
-        assert shot.executed_feedback[error_round].wire == wire
+        assert shot.executed_feedback[error_round].qubit == wire
         assert shot.raw_final_data_bits == tuple(
             int(feedback_mode == "runtime_pauli_frame" and index == wire)
             for index in range(3)
@@ -181,8 +181,8 @@ def test_temporal_runtime_feedback_corrects_confirmable_data_errors(
     )
 
     for shot in result.shot_records:
-        assert shot.executed_feedback[error_round].wire is None
-        assert shot.executed_feedback[error_round + 1].wire == wire
+        assert shot.executed_feedback[error_round].qubit is None
+        assert shot.executed_feedback[error_round + 1].qubit == wire
         assert shot.decoded_data_bits == (0, 0, 0)
         assert not shot.logical_failure
 
@@ -288,7 +288,7 @@ def test_error_schedule_is_canonical_and_decoder_is_replaceable() -> None:
 
 
 def test_repetition_memory_validation_fails_closed() -> None:
-    with pytest.raises(ValueError, match="wire must be 0, 1, or 2"):
+    with pytest.raises(ValueError, match="qubit must be 0, 1, or 2"):
         ErrorEvent(0, 3)
     with pytest.raises(ValueError, match="cannot repeat"):
         ErrorSchedule((ErrorEvent(0, 1), ErrorEvent(0, 1)))

@@ -37,7 +37,7 @@ constants are evaluated as tiny CPU float64/complex128 matrices and transferred
 once to the requested device. Tensor parameters remain on their requested
 device, preserving the autograd path.
 
-The same truly sharded three-wire statevector now reports:
+The same truly sharded three-qubit statevector now reports:
 
 - complex64 maximum absolute error: `0.0`;
 - complex128 maximum absolute error: `0.0`;

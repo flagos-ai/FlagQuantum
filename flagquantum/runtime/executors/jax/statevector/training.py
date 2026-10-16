@@ -148,7 +148,7 @@ def plan_jax_sharded_statevector_training(
         world_size=int(state_plan.world_size),
         local_world_size=int(state_plan.local_world_size),
         node_count=int(state_plan.node_count),
-        n_wires=int(state_plan.n_wires),
+        n_qubits=int(state_plan.n_qubits),
         batch_size=int(state_plan.bsz),
         static_blockers=tuple(static_blockers),
         device_blockers=tuple(device_blockers),

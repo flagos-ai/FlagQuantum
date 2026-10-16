@@ -40,6 +40,9 @@ STATEVECTOR_STATE_MODES = frozenset(
     {"distributed_statevector", "jax_sharded_statevector", "statevector"}
 )
 MPS_STATE_MODES = frozenset({"distributed_mps", "jax_sharded_mps", "mps"})
+TENSOR_NETWORK_STATE_MODES = frozenset(
+    {"distributed_tensor_network", "jax_sharded_tensor_network", "tensor_network"}
+)
 EVIDENCE_BACKEND_FAMILIES = frozenset(
     {"statevector", "mps", "tensor_network", "unknown"}
 )
@@ -86,5 +89,6 @@ __all__ = (
     "SINGLE_DEVICE_DISTRIBUTION_SEMANTICS",
     "STATEVECTOR_STATE_MODES",
     "STATEVECTOR_TRAINING_CLAIMABILITY_STATUSES",
+    "TENSOR_NETWORK_STATE_MODES",
     "TRANSPORT_EVIDENCE_STATUSES",
 )

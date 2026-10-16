@@ -152,11 +152,11 @@ def test_a_native_sliced_profile_still_agrees_with_its_slicing_plan():
 def test_both_plan_kinds_export_the_same_planner_name():
     plan = _plan(3)
     expectation = TensorNetworkExpectationPlan(
-        n_wires=plan.n_wires,
+        n_qubits=plan.n_qubits,
         bsz=plan.bsz,
         nodes=plan.nodes,
         output_labels=plan.output_labels,
-        observable_wires=(0,),
+        observable_qubits=(0,),
         path=(),
     )
 

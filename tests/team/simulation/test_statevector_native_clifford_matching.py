@@ -44,6 +44,31 @@ def _repeated_matching_circuit(inputs: torch.Tensor) -> Circuit:
     return circuit
 
 
+def test_native_scalar_matching_has_a_wide_state_and_rollback_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        clifford_matching,
+        "native_cpu_clifford_matching_available",
+        lambda: True,
+    )
+    instructions = (Instruction("cx", (0, 1)), Instruction("cz", (2, 3)))
+    narrow = torch.zeros((1, 2**15), dtype=torch.complex128)
+    wide = torch.zeros((1, 2**16), dtype=torch.complex128)
+
+    assert not clifford_matching.native_clifford_matching_compile_enabled(
+        instructions, None, narrow, batch_size=1
+    )
+    assert clifford_matching.native_clifford_matching_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "0")
+    assert not clifford_matching.native_clifford_matching_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
+
+
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_native_clifford_matching_matches_rollback_and_preserves_input(
     monkeypatch: pytest.MonkeyPatch,
@@ -115,12 +140,12 @@ def test_native_clifford_matching_reuses_owned_output_with_exact_rollback(
         state: torch.Tensor,
         cx_mapping: torch.Tensor,
         cz_edges: Sequence[tuple[int, int]] | None,
-        n_wires: int,
+        n_qubits: int,
         *,
         output: torch.Tensor | None = None,
     ) -> torch.Tensor | None:
         requested_outputs.append(output)
-        return implementation(state, cx_mapping, cz_edges, n_wires, output=output)
+        return implementation(state, cx_mapping, cz_edges, n_qubits, output=output)
 
     monkeypatch.setattr(clifford_matching, "fused_clifford_matching_out", record_output)
     monkeypatch.setenv("FQ_CPU_CLIFFORD_MATCHING_OUTPUT_REUSE", "1")

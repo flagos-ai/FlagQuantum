@@ -56,7 +56,7 @@ def test_run_mps_wrapper_delegates_local_numerics(monkeypatch):
     assert fqmps.run_mps(fq.Circuit(2).h(0)) is expected
     assert len(calls) == 1
     assert isinstance(calls[0][0], fq.CircuitIR)
-    assert calls[0][1].n_wires == 2
+    assert calls[0][1].n_qubits == 2
     assert calls[0][2]["fuse_single_qubit"] is True
     assert calls[0][2]["spatial_bucket"] is True
 
@@ -284,13 +284,13 @@ def test_compile_mps_training_step_allows_parameter_updates_and_matches_mps():
         params,
         compile=False,
         max_bond=8,
-        dense_observable_wires=8,
+        dense_observable_qubits=8,
     )
     loss, grad = step(params)
 
     ref_params = params.detach().clone().requires_grad_(True)
     ref_loss = (
-        fqmps.run_mps(build(ref_params), max_bond=8, dense_observable_wires=8)
+        fqmps.run_mps(build(ref_params), max_bond=8, dense_observable_qubits=8)
         .expectation_z_sum()
         .sum()
     )
@@ -836,7 +836,7 @@ def test_noisy_mps_wrapper_passes_lowered_ir_and_explicit_rng(monkeypatch):
     assert run_noisy_mps_trajectory(circuit, model, generator=generator) is expected
     assert isinstance(calls[0][0], fq.CircuitIR)
     assert any(item.metadata.get("is_channel") for item in calls[0][0])
-    assert calls[0][1].n_wires == 1
+    assert calls[0][1].n_qubits == 1
     assert calls[0][2] is generator
 
 
@@ -1205,5 +1205,5 @@ def test_mps_planning_requires_a_concrete_numerical_state() -> None:
         MPSPlanningMixin()
     state = fqmps.run_mps(fq.Circuit(2).h(0).cx(0, 1))
     profile = state.bond_profile()
-    assert profile.n_wires == 2
+    assert profile.n_qubits == 2
     assert profile.state_norm_min == pytest.approx(1.0)

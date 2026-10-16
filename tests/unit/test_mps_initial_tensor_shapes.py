@@ -30,7 +30,7 @@ def test_initial_tensor_shapes_and_bond_validation(
             ownership=((0, 1),),
             rank=0,
             world=1,
-            n_wires=2,
+            n_qubits=2,
             device=torch.device("cpu"),
             dtype=torch.complex128,
         )

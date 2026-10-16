@@ -388,51 +388,49 @@ def _distributed_sparse_contraction(
         sliced_labels=sliced_labels,
     )
     if context is not None and context.initialized:
-        payload: list[
-            tuple[TensorNetworkSlicingPlan, tuple[PairContractionStep, ...]] | None
-        ] = [None]
-        if context.rank == 0:
-            cached = (
-                None
-                if plan_cache_path is None
-                else _load_persistent_plan(plan_cache_path, expected_key=cache_key)
+        # Every rank resolves the same plan from the same inputs rather than
+        # waiting for rank zero to hand it one. `nodes` is the projection of the
+        # circuit onto the requested bitstrings, and every plan-shaping argument
+        # is either a circuit property or a configuration value, so each rank
+        # computes one value and the object collective that used to carry it --
+        # two host-to-device lifts of a pickled tuple inside the measured region
+        # -- is not needed to make them agree. Rank zero alone writes the
+        # persistent plan, because that file is a cache and not a channel.
+        cached = (
+            None
+            if plan_cache_path is None
+            else _load_persistent_plan(plan_cache_path, expected_key=cache_key)
+        )
+        if cached is not None:
+            slicing, shared_steps = cached
+        else:
+            slicing = _build_slicing_plan(
+                nodes,
+                output_labels,
+                max_intermediate_size=max_intermediate_size,
+                max_intermediate_bytes=max_intermediate_bytes,
+                sliced_labels=sliced_labels,
             )
-            if cached is not None:
-                slicing, shared_steps = cached
-            else:
-                slicing = _build_slicing_plan(
-                    nodes,
-                    output_labels,
-                    max_intermediate_size=max_intermediate_size,
-                    max_intermediate_bytes=max_intermediate_bytes,
-                    sliced_labels=sliced_labels,
+            representative_tasks = _execution_slice_tasks(
+                slicing,
+                world_size=world_size,
+                local_world_size=local_world_size,
+            )
+            representative = _slice_nodes(
+                nodes,
+                dict(representative_tasks[0].assignments),
+            )
+            shared_steps = _contract_nodes_quality_multistart(
+                representative,
+                output_labels,
+            )
+            if plan_cache_path is not None and context.rank == 0:
+                _write_persistent_plan(
+                    plan_cache_path,
+                    cache_key=cache_key,
+                    slicing=slicing,
+                    steps=shared_steps,
                 )
-                representative_tasks = _execution_slice_tasks(
-                    slicing,
-                    world_size=world_size,
-                    local_world_size=local_world_size,
-                )
-                representative = _slice_nodes(
-                    nodes,
-                    dict(representative_tasks[0].assignments),
-                )
-                shared_steps = _contract_nodes_quality_multistart(
-                    representative,
-                    output_labels,
-                )
-                if plan_cache_path is not None:
-                    _write_persistent_plan(
-                        plan_cache_path,
-                        cache_key=cache_key,
-                        slicing=slicing,
-                        steps=shared_steps,
-                    )
-            payload[0] = (slicing, shared_steps)
-        dist.broadcast_object_list(payload, src=0, device=context.device)
-        combined_plan = payload[0]
-        if combined_plan is None:
-            raise RuntimeError("rank-zero tensor-network plan was not broadcast")
-        slicing, shared_steps = combined_plan
     else:
         slicing = _build_slicing_plan(
             nodes,
@@ -744,7 +742,7 @@ def distributed_tensor_network_expectation(
         world_size=world_size,
         tasks=outcome.tasks,
         rank_partial_bytes=outcome.rank_partial_bytes,
-        observable_wires=plan.observable_wires,
+        observable_qubits=plan.observable_qubits,
         distribution_semantics=outcome.semantics,
         working_set_preflight=outcome.working_set_preflight,
         rank_placement=placement,
@@ -954,7 +952,7 @@ def run_distributed_tensor_network(
             _tensor_nbytes(partial), local_tensor=partial
         )
         partial = _all_reduce_sum_autograd(partial)
-        state_cache = partial.reshape(plan.bsz, 2**plan.n_wires)
+        state_cache = partial.reshape(plan.bsz, 2**plan.n_qubits)
     elif world_size > 1 and backend_policy.torch_backend == "local_tensor":
         partials = []
         # One process contracted every simulated rank's slices, so these sizes
@@ -974,7 +972,7 @@ def run_distributed_tensor_network(
                 total = total + partial
         else:
             total = _zero_for_output(plan.nodes, plan.output_labels)
-        state_cache = total.reshape(plan.bsz, 2**plan.n_wires)
+        state_cache = total.reshape(plan.bsz, 2**plan.n_qubits)
         local_simulation = True
     local = run_tensor_network(
         circuit_or_ir,

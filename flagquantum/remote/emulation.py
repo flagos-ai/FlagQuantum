@@ -183,7 +183,7 @@ class TargetCompilationDiagnostic:
     logical_result_physical_slots: tuple[int, ...]
     allocation_identity: str | None
     physical_plan_version: str
-    logical_wire_count: int
+    logical_qubit_count: int
     physical_slot_count: int
     schedule_depth: int
     maximum_parallel_width: int
@@ -315,7 +315,9 @@ def _prepare_program(
     """
 
     if not ir.measurements:
-        requested = lower_outputs(samples(), n_wires=ir.n_wires, shots=shots, seed=seed)
+        requested = lower_outputs(
+            samples(), n_qubits=ir.n_wires, shots=shots, seed=seed
+        )
         return replace(ir, measurements=tuple(requested or ()))
     if len(ir.measurements) != 1:
         raise TargetEmulationError(
@@ -643,11 +645,11 @@ def _target_snapshot(
 
 
 def _local_counts(measurement: MeasurementResult, *, shots: int) -> dict[str, int]:
-    """Reduce one sample tensor to a logical-wire-ordered histogram.
+    """Reduce one sample tensor to a logical-qubit-ordered histogram.
 
-    The executor reads the sample tensor's last axis in the wire order the
+    The executor reads the sample tensor's last axis in the qubit order the
     measurement node carries, so a bitstring is built in that order and then
-    placed by logical wire. With no topology legalization the two orders
+    placed by logical qubit. With no topology legalization the two orders
     coincide, which is why this reproduces the executor's counts encoding
     exactly.
     """
@@ -891,7 +893,7 @@ def emulate(
         logical_result_physical_slots=physical_plan.logical_result_physical_slots,
         allocation_identity=physical_plan.allocation_identity,
         physical_plan_version=physical_plan.version,
-        logical_wire_count=physical_plan.logical_wire_count,
+        logical_qubit_count=physical_plan.logical_qubit_count,
         physical_slot_count=physical_plan.physical_slot_count,
         schedule_depth=legalization.schedule.depth,
         maximum_parallel_width=legalization.schedule.maximum_parallel_width,

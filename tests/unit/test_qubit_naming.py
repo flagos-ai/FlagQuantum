@@ -169,3 +169,71 @@ def test_public_model_defaults_avoid_deprecated_keywords(model_name, expected_qu
         warnings.simplefilter("error", DeprecationWarning)
         model = getattr(models, model_name)()
     assert model.quantum.policy.observable_qubits == expected_qubits
+
+
+def test_measurement_result_answers_the_wire_alias_with_a_warning():
+    """`fq.MeasurementResult` is exported, so its old field name keeps working.
+
+    The field is `qubits`; the old spelling is a forwarding property that warns,
+    the same pattern `fq.Circuit.n_wires` and `fq.OutputRequest.wires` use.
+    """
+
+    result = fq.run(fq.Circuit(2).h(0), outputs=fq.probabilities())
+    measurement = result.measurements[0]
+    assert measurement.qubits == (0, 1)
+    with pytest.warns(DeprecationWarning, match="qubits"):
+        assert measurement.wires == measurement.qubits
+    assert dataclasses.asdict(measurement)["qubits"] == (0, 1)
+    assert "wires" not in dataclasses.asdict(measurement)
+
+
+def test_a_qubit_named_measurement_signature_refuses_the_wire_spelling():
+    """The runtime helpers are not exported, so they are renamed, not shimmed."""
+
+    from flagquantum import observables
+    from flagquantum.runtime import measurements
+
+    requests = observables.lower_outputs(
+        observables.probabilities(), n_qubits=2, shots=None
+    )
+    measurements.validate_measurements(requests, n_qubits=2)
+    with pytest.raises(TypeError, match="n_wires"):
+        measurements.validate_measurements(requests, n_wires=2)
+
+
+def test_a_qubit_named_planner_estimate_refuses_the_wire_spelling():
+    from flagquantum.runtime.planner import estimates
+
+    assert estimates.estimate_state_bytes(n_qubits=3) == 64
+    with pytest.raises(TypeError, match="n_wires"):
+        estimates.estimate_state_bytes(n_wires=3)
+
+
+def test_dynamic_circuit_uses_qubit_wording():
+    """A dynamic program names its operands the way every other entry point does."""
+
+    from flagquantum.runtime.dynamic.circuit import DynamicCircuit
+
+    program = (
+        DynamicCircuit(n_qubits=2)
+        .h(0)
+        .measure(qubit=0)
+        .reset(qubit=1)
+        .conditional("x", qubits=(1,), conditions={0: 1})
+    )
+    assert program._instructions[-1].wires == (1,)
+    with pytest.raises(TypeError, match="wire"):
+        DynamicCircuit(n_qubits=2).measure(wire=0)
+
+
+def test_the_plan_analysis_view_exposes_a_qubit_named_count():
+    """`LayerPlan.wires` and `CircuitAnalysis.n_wires` are frozen plan-JSON keys.
+
+    Both stay, and both gain a qubit-named accessor, because the plan payload is
+    the reason they are excluded; the slice renames what it can reach without
+    re-keying that payload.
+    """
+
+    plan = fq.plan(fq.Circuit(3).h(0).cx(0, 1))
+    assert plan.analysis.n_qubits == 3
+    assert plan.layers[0].wires is not None

@@ -5,7 +5,7 @@
     "CX(n-1,n-2)",
     "RY(n-2,phi)"
   ],
-  "n_wires": 31,
+  "n_wires": 33,
   "name": "issue044_single_node_capacity_v2",
   "observable": "Z(n-2)",
   "optimizer": "adam",

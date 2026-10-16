@@ -44,6 +44,47 @@ def test_pauli_adjoint_matches_direct_tensor_calculation(
     torch.testing.assert_close(adjoints[0], gradient)
 
 
+def test_two_site_observable_scan_walks_a_chain_whose_bonds_differ(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reverse scan must survive the shape its own first step presents.
+
+    The walk starts at the rightmost site with the trivial environment
+    ``(batch, 1, 1)``, so the first tensor it reaches is ``(chi, physical, 1)``:
+    the two bond legs differ whenever the chain carries any correlation at all.
+    A transfer that fuses a bond leg with the physical leg and folds it against
+    the environment therefore has to say which leg it fused, and this test drives
+    the real scan rather than the transfer in isolation so that a caller which
+    hands it a square tensor cannot hide the difference. The dense expectation
+    below is computed straight from the two site tensors, so it does not share
+    the scan's contraction order.
+    """
+
+    def broadcast(tensor: torch.Tensor, *, src: int) -> None:
+        assert src == 0
+
+    monkeypatch.setattr(objectives.dist, "broadcast", broadcast)
+    generator = torch.Generator().manual_seed(29)
+    left = torch.randn(1, 1, 2, 2, generator=generator, dtype=torch.complex128)
+    right = torch.randn(1, 2, 2, 1, generator=generator, dtype=torch.complex128)
+    left.requires_grad_(True)
+    right.requires_grad_(True)
+    state = RankOwnedMPSState(2, 1, 0, 1, MPSConfig(), {0: left, 1: right}, ((0, 1),))
+    operator = torch.tensor([[1, 0], [0, -1]], dtype=torch.complex128)
+
+    # The chain as a dense state, then Z on wire 0 against it.
+    dense = torch.einsum("apb,bqc->pqac", left[0], right[0]).reshape(4)
+    operator = torch.tensor([[1, 0], [0, -1]], dtype=torch.complex128)
+    identity = torch.eye(2, dtype=torch.complex128)
+    expected = torch.real(torch.vdot(dense, torch.kron(operator, identity) @ dense))
+    expected_left, expected_right = torch.autograd.grad(expected, (left, right))
+
+    actual, adjoints = mps_expectation_and_adjoints(state, {0: "z"})
+    torch.testing.assert_close(actual, expected)
+    torch.testing.assert_close(adjoints[0], expected_left)
+    torch.testing.assert_close(adjoints[1], expected_right)
+
+
 def test_parameterized_observable_is_rejected_before_scan() -> None:
     tensor = torch.ones(1, 1, 2, 1, dtype=torch.complex128)
     state = RankOwnedMPSState(1, 1, 0, 1, MPSConfig(), {0: tensor}, ((0,),))

@@ -21,7 +21,7 @@ def _operand_symmetric(instruction: Instruction) -> bool:
     """Report whether an instruction's two operands may be exchanged.
 
     Raises:
-        DirectionLegalizationError: The instruction is a native two-wire
+        DirectionLegalizationError: The instruction is a native two-qubit
             opcode with no recorded operand semantics, so no direction rule
             can be applied to it.
     """

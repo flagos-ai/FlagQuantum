@@ -90,11 +90,9 @@ def repetition_route(distance: int, rounds: int, shots: int, seed: int) -> None:
         "repeat blocks",
         sum(1 for line in raw_text.splitlines() if line.strip().startswith("repeat")),
     )
-    try:
-        DetectorErrorModel.from_stim_text(raw_text)
-    except ValueError as error:
-        report("reader refusal", str(error)[:52] + "...")
-    flattened = DetectorErrorModel.from_stim_text(str(model.flattened()))
+    # The reader interprets a `repeat` block rather than refusing it, so the text
+    # goes in as Stim wrote it and no call to `flattened()` is needed.
+    flattened = DetectorErrorModel.from_stim_text(raw_text)
     report(
         "detectors / observables",
         f"{flattened.num_detectors} / {flattened.num_observables}",
@@ -207,7 +205,9 @@ def cross_check(distance: int, rounds: int, shots: int, seed: int) -> None:
         return
     matching = decode_all(get_decoder("minimum_weight_matching", expanded), syndromes)
     crossed = decode_all(cross, syndromes)
-    hyperedge = decode_all(get_decoder(BELIEF_PROPAGATION_OSD_NAME, combined), syndromes)
+    hyperedge = decode_all(
+        get_decoder(BELIEF_PROPAGATION_OSD_NAME, combined), syndromes
+    )
     report("shots", shots)
     report("matcher LER", round(float(np.mean(matching != answers)), 4))
     report("pymatching LER", round(float(np.mean(crossed != answers)), 4))

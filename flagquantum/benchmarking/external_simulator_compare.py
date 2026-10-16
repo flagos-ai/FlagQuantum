@@ -71,7 +71,7 @@ def _prepare_cirq(
         lambda: export_cirq(circuit.to_ir()), setup_iterations
     )
     simulator = cirq.Simulator(dtype=numpy.complex128, seed=SEED)
-    qubit_order = cirq.LineQubit.range(circuit.n_wires)
+    qubit_order = cirq.LineQubit.range(circuit.n_qubits)
 
     def execute() -> Any:
         result = simulator.simulate(converted.circuit, qubit_order=qubit_order)
@@ -115,7 +115,7 @@ def _prepare_pennylane(
     )
     device = qml.device(
         "lightning.qubit",
-        wires=range(circuit.n_wires),
+        wires=range(circuit.n_qubits),
         shots=None,
     )
 
@@ -154,7 +154,7 @@ def _prepare_engine(
 def run_case(
     *,
     engine: EngineName,
-    n_wires: int,
+    n_qubits: int,
     layers: int,
     threads: int,
     warmup: int,
@@ -176,7 +176,7 @@ def run_case(
             "warmup must be non-negative and iterations at least 3"
         )
     _configure_threads(threads)
-    circuit = build_workload(n_wires=n_wires, layers=layers)
+    circuit = build_workload(n_qubits=n_qubits, layers=layers)
     engine_setup, execute = _prepare_engine(
         engine,
         circuit,
@@ -209,7 +209,7 @@ def run_case(
     return {
         "workload": {
             "name": "hardware_efficient_statevector",
-            "n_wires": n_wires,
+            "n_wires": n_qubits,
             "layers": layers,
             "gate_count": len(circuit),
             "batch_size": 1,
@@ -237,7 +237,7 @@ def run_case(
 def run_benchmark(
     *,
     engine: EngineName,
-    n_wires: Sequence[int],
+    n_qubits: Sequence[int],
     layers: int,
     threads: int,
     warmup: int,
@@ -249,13 +249,13 @@ def run_benchmark(
 
     if engine not in _ENGINE_NAMES:
         raise ValueError(f"unsupported external simulator engine: {engine}")
-    if not n_wires:
-        raise ValueError("n_wires must contain at least one workload size")
+    if not n_qubits:
+        raise ValueError("n_qubits must contain at least one workload size")
     thread_environment = _configure_threads(threads)
     cases = tuple(
         run_case(
             engine=engine,
-            n_wires=width,
+            n_qubits=width,
             layers=layers,
             threads=threads,
             warmup=warmup,
@@ -263,7 +263,7 @@ def run_benchmark(
             setup_iterations=setup_iterations,
             calls_per_sample=calls_per_sample,
         )
-        for width in n_wires
+        for width in n_qubits
     )
     correctness_passed = all(bool(case["correctness"]["passed"]) for case in cases)
     all_measurements_stable = all(bool(case["stability"]["passed"]) for case in cases)
@@ -322,7 +322,7 @@ def _main(engine: EngineName) -> int:
     args = parser.parse_args()
     payload = run_benchmark(
         engine=engine,
-        n_wires=tuple(args.n_wires),
+        n_qubits=tuple(args.n_wires),
         layers=args.layers,
         threads=args.threads,
         warmup=args.warmup,

@@ -44,6 +44,35 @@ python benchmarks/flagship_mps_training.py \
 
 Compare equivalent exact-statevector execution from the same FlagQuantum IR:
 
+For independent jobs sharing one Linux x86 socket, use the maintained
+`socket_local_throughput` runner. The checked 22-qubit comparison, complete
+worker/thread matrix, optimization boundaries, and reproduction command are in
+[`SOCKET_LOCAL_MULTITASK_THROUGHPUT_LINUX_X86_20261003.md`](results/comparison/SOCKET_LOCAL_MULTITASK_THROUGHPUT_LINUX_X86_20261003.md).
+It is a replicated multitask-throughput result, not single-circuit or
+distributed-statevector scaling evidence.
+
+On a dual-socket Linux x86-64 host, `numa_memory_traffic` compares the default
+first-touch policy with forced bind and interleave while reading Intel uncore
+IMC CAS counters. It also runs the same value-and-complete-gradient workload
+through PennyLane Lightning, so the report contains absolute latency, DRAM
+bytes per call, correctness, stability, and an external same-semantics ratio:
+
+```bash
+export CUDA_VISIBLE_DEVICES=""
+export OMP_PROC_BIND=close OMP_PLACES=cores
+flagquantum-benchmark run numa_memory_traffic \
+  --workloads hardware_efficient_vqe qaoa_path_maxcut \
+  --engines flagquantum_adjoint pennylane_lightning_adjoint \
+  --policies default bind interleave --nodes 0,1 \
+  --cpu-list 0-63 --socket-cpus 0,32 --n-wires 22 --threads 64 \
+  --warmup 2 --calls 7 --source-revision "$(git rev-parse HEAD)" \
+  --json-output benchmarks/results/comparison/numa-memory-traffic.json \
+  --markdown-output benchmarks/results/comparison/NUMA_MEMORY_TRAFFIC.md
+```
+
+This requires permission to open system-wide perf events and Intel IMC PMUs
+that expose `cas_count_read` and `cas_count_write`.
+
 The executable implementations are
 [`simulator_compare.py`](../flagquantum/benchmarking/simulator_compare.py) for
 FlagQuantum/Qiskit Aer and
@@ -249,10 +278,10 @@ On this measured task, FlagQuantum is 1.468x faster than the same-run PennyLane
 Lightning bridge; the inapplicable local-brickwork control remains explicit.
 The adaptive dense-width follow-up is documented in
 [`BATCHED_STATEVECTOR_DENSE_WIDTH_CPU_ARM64_20261002_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_DENSE_WIDTH_CPU_ARM64_20261002_SCORECARD.md).
-It selects six-wire dense groups for complex128 batches at 18–19 qubits,
+It selects six-qubit dense groups for complex128 batches at 18–19 qubits,
 records a 1.379x focused rollback speedup on local brickwork, and measures
 FlagQuantum 1.241x faster than the same-run PennyLane Lightning bridge while
-retaining the explicit four-wire rollback and applicability boundary.
+retaining the explicit four-qubit rollback and applicability boundary.
 The terminal fused-rotation follow-up is documented in
 [`BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md`](results/comparison/BATCHED_STATEVECTOR_TERMINAL_FUSED_ROTATION_CPU_ARM64_20261002_SCORECARD.md).
 It records a 1.128x focused rollback speedup on the 18-qubit, batch-32 Dense
@@ -346,6 +375,14 @@ Python and PyTorch version families, device, thread limits, measurement scope,
 and calls per sample must match. This prevents timings from an arbitrary CI
 runner from approving or rejecting a baseline recorded on different hardware.
 
+Linux x86 baselines may additionally record the CPU model and process affinity.
+When present, both become mandatory comparison-profile fields. The simulator
+corpus gate can also name Qiskit Aer or PennyLane Lightning with
+`--comparison-engine`; it then locks correctness, stability, sample count,
+version identity, and the maximum native/external timing ratio. The maintained
+fixed-host example is documented in
+[`LINUX_X86_CPU_REGRESSION_GATE_20261004.md`](results/comparison/LINUX_X86_CPU_REGRESSION_GATE_20261004.md).
+
 Measure whether the silent `fq.train` path avoids per-step CUDA scalar reads:
 
 ```bash
@@ -371,17 +408,17 @@ flagquantum-benchmark run statevector_cpu_paths \
   --json-output benchmarks/results/local/statevector_cpu_paths.json
 ```
 
-It measures a rotation chain, a diagonal chain, a fused two-wire diagonal chain,
+It measures a rotation chain, a diagonal chain, a fused two-qubit diagonal chain,
 a CX ladder, a mixed chain, and joint marginal probabilities separately, records
 the engine's own runtime statistics per case, and exits non-zero when a case
 stops matching its reference. Restrict a run with `--cases`, control the
 intra-op thread count with `--threads`, and lower `--n-wires`/`--layers` for a
 smoke run.
 
-The two-wire diagonal chain repeats one `cz` pair per layer rather than walking
+The two-qubit diagonal chain repeats one `cz` pair per layer rather than walking
 a ladder, because two-qubit regions only fuse when consecutive gates share the
-identical wire tuple. It is the case that separates the diagonal kernel from the
-dense one where the single-wire kernel cannot reach: a two-wire region is
+identical qubit tuple. It is the case that separates the diagonal kernel from the
+dense one where the single-qubit kernel cannot reach: a two-qubit region is
 outside that kernel's domain.
 
 Ratios computed from that payload share one host, one input, and one warmup
@@ -406,7 +443,7 @@ only when that block agrees, and a switch that is off by default reads as
 # Default state: the pre-existing kernels.
 flagquantum-benchmark run statevector_cpu_paths \
   --cases rotation_chain --json-output /tmp/off.json
-# The same case with the opt-in elementwise single-wire kernel.
+# The same case with the opt-in elementwise single-qubit kernel.
 FQ_CPU_SINGLE_WIRE_ELEMENTWISE=1 flagquantum-benchmark run statevector_cpu_paths \
   --cases rotation_chain --json-output /tmp/on.json
 ```
@@ -488,3 +525,58 @@ secret material:
 ```bash
 python tools/check_release_evidence_environment.py --world-size 8
 ```
+
+### Promotion walkthrough
+
+A campaign is four commands: generate the key, measure a leg, seal it, and
+promote the set once the gate passes it. Nothing in the sequence promotes on
+trust, and the sealer is the only place a claim flag is set.
+
+```bash
+# 1. One key per campaign, 32 random bytes, never committed and never logged.
+export FQ_EVIDENCE_SIGNING_KEY="$(openssl rand -hex 32)"
+
+# 2. Measure. The producer writes measurements only; it cannot claim anything.
+python -m torch.distributed.run --nnodes=2 --nproc-per-node=4 \
+  --node-rank=0 --master-addr=<host> --master-port=29500 \
+  benchmarks/statevector_release_evidence.py --role capacity-completion \
+  --node-count 2 --local-world-size 4 \
+  --workload-manifest benchmarks/manifests/statevector_capacity_workload_v2.json \
+  --measurements /tmp/capacity_completion.json 2>&1 | tee /tmp/capacity_completion.log
+
+# 3. Seal. `--release-payload` is what makes the envelope release-grade, and it
+#    is refused for a single-device run. Cross-host legs need one
+#    `--device-uuid <uuid>@<node>` per rank, or every rank is attributed to the
+#    host the sealer runs on.
+python tools/seal_runtime_evidence.py \
+  --measurements /tmp/capacity_completion.json \
+  --raw-log /tmp/capacity_completion.log \
+  --workload benchmarks/manifests/statevector_capacity_workload_v2.json \
+  --scope scheduled_4_8_gpu_scale --release-payload --world-size 8 \
+  --collective-backend nccl --device-uuid <uuid0>@0 ... --device-uuid <uuid7>@1 \
+  --output benchmarks/results/smoke/release_candidates/<campaign>/<leg>.json
+
+# 4. Evaluate the candidate set, then promote it. Both steps read the same
+#    gate, so a set that fails evaluation cannot be promoted.
+python benchmarks/internal/evidence/statevector_release_gate.py \
+  --candidate benchmarks/results/smoke/release_candidates/<campaign>
+python tools/promote_release_candidates.py \
+  --candidate benchmarks/results/smoke/release_candidates/<campaign>
+
+# 5. The promoted directory must now audit clean.
+python benchmarks/audit_results.py \
+  --input benchmarks/results/scalability --require-scalability
+```
+
+The sealer records the commit from `git rev-parse HEAD`, so a campaign must run
+from a checkout whose revision a reader can obtain. Keep the single-device
+capacity baseline in its own declared directory outside
+`benchmarks/results/scalability/`: the strict audit requires every file in the
+promoted directory to be release-grade sharded scalability evidence, and a
+one-device run never can be.
+
+Both entry points read that baseline from the manifest's declared path, so the
+four commands above need no extra argument. `--baseline-directory` overrides it
+for a set whose baseline was measured elsewhere, which is what the contract
+tests use to hold a self-contained candidate set; the baseline is evaluated with
+the candidates and never moved, because one device has no ranks to shard across.

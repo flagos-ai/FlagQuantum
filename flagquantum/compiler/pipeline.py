@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import replace
 from math import isclose
 from types import MappingProxyType
@@ -10,16 +10,15 @@ from typing import Any, cast
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config
+from ..errors import CompilationError
 from .commutation import CommutationAnalysis, analyze_commutation
 from .directed_topology import DirectedCouplingMap
-from .pass_manager import (
-    OPTIMIZATION_PIPELINE,
-    AnalysisSpec,
-    PassFunction,
-    PassManager,
-    PassRegistry,
-    PassSpec,
+from .optimization_levels import (
+    DEFAULT_OPTIMIZATION_LEVEL,
+    optimization_level_stages,
 )
+from .pass_manager import OPTIMIZATION_PIPELINE as OPTIMIZATION_PIPELINE
+from .pass_manager import AnalysisSpec, PassFunction, PassRegistry, PassSpec
 from .routing import (
     CouplingMap,
     record_post_routing_optimization,
@@ -152,12 +151,33 @@ def _replace_param(instruction: Instruction, key: str, value: Any) -> Instructio
 def remove_identity_gates(
     ir: CircuitIR, analyses: Mapping[str, object] | None = None
 ) -> CircuitIR:
-    """Remove explicit identity gates and zero-angle rotations."""
+    """Remove every gate that is exactly the identity operator.
+
+    A single-qubit instruction is decided by `is_identity_one_qubit`, which reads
+    the angle triple the operator schema declares rather than a table of opcode
+    names kept here: that deletes the explicit `i`/`id` set this pass used to
+    carry and admits `u3(0, phi, lam)` when `phi + lam` vanishes, a zero-angle
+    `rx`, `ry`, `rz`, `phase` or `u1`, and every full turn that returns to `+I`.
+    See that function for why a trainable angle refuses, why only exact multiples
+    are considered, and why the fold is modulo `4*pi` rather than `2*pi` -- the
+    shorter fold would remove `rz(2*pi)`, which is `-I`, and the IR has nowhere
+    to record the sign. The import is local because `one_qubit_synthesis` reads
+    `_is_zero` from this module.
+
+    A multi-qubit instruction keeps the older rule, which reads the angle
+    parameter `_ROTATION_PARAM` names for its opcode, because
+    `canonical_euler_angles` describes the single-qubit group only. That leaves
+    the `crz(0)`, `rxx(0)`, `cphase(0)` and `rzz(0)` removals this pass already
+    performed untouched, and it declines a two-qubit half turn for the same reason
+    the single-qubit branch does: `rzz(2*pi)` is `-I`.
+    """
+
+    from .one_qubit_synthesis import is_identity_one_qubit
 
     rotations = _rotation_table(analyses)
     instructions = []
     for instruction in ir:
-        if instruction.name in {"i", "id"}:
+        if is_identity_one_qubit(instruction):
             continue
         param_name = rotations.get(instruction.name)
         if param_name is not None and _is_zero(instruction.params.get(param_name)):
@@ -167,17 +187,17 @@ def remove_identity_gates(
 
 
 class _WireLocalProgram:
-    """Instructions in program order, indexed by the latest writer of each wire.
+    """Instructions in program order, indexed by the latest writer of each qubit.
 
-    Both merge passes need the most recent instruction that touches a wire set,
+    Both merge passes need the most recent instruction that touches a qubit set,
     and they need to remove or rewrite it. Scanning the output list for that
     instruction costs the length of the untouched prefix, which is quadratic on a
-    circuit whose gates share no wire -- the shape a routing pass produces on a
-    wide device. Indexing by wire instead makes a pass linear in the gates times
-    their wires.
+    circuit whose gates share no qubit -- the shape a routing pass produces on a
+    wide device. Indexing by qubit instead makes a pass linear in the gates times
+    their qubits.
 
     ``position`` is the insertion sequence number. Sequence numbers only
-    increase, so the largest live one touching a wire is also the latest one in
+    increase, so the largest live one touching a qubit is also the latest one in
     program order, and positions do not shift when an earlier instruction is
     removed.
     """
@@ -204,11 +224,11 @@ class _WireLocalProgram:
             self._last_by_wire.setdefault(wire, []).append(self._position)
 
     def pop(self, position: int) -> None:
-        """Remove the instruction at ``position``, a wire's latest writer.
+        """Remove the instruction at ``position``, a qubit's latest writer.
 
         Both passes only ever remove the instruction they just looked up, so the
-        removed one is by construction the latest writer of every wire it touches
-        and the per-wire stack needs no repair beyond dropping its top entry.
+        removed one is by construction the latest writer of every qubit it touches
+        and the per-qubit stack needs no repair beyond dropping its top entry.
         """
 
         instruction = self._instructions.pop(position)
@@ -218,7 +238,7 @@ class _WireLocalProgram:
             stack.pop()
 
     def rewrite(self, position: int, instruction: Instruction) -> None:
-        """Replace the instruction at ``position``, keeping the wires it touches."""
+        """Replace the instruction at ``position``, keeping the qubits it touches."""
 
         assert instruction.wires == self._instructions[position].wires
         self._instructions[position] = instruction
@@ -233,7 +253,7 @@ class _WireLocalProgram:
 def merge_self_inverse(
     ir: CircuitIR, analyses: Mapping[str, object] | None = None
 ) -> CircuitIR:
-    """Remove identical self-inverse gates adjacent on their wires."""
+    """Remove identical self-inverse gates adjacent on their qubits."""
 
     self_inverse = _self_inverse_table(analyses)
     program = _WireLocalProgram()
@@ -258,7 +278,7 @@ def merge_self_inverse(
 def merge_adjacent_rotations(
     ir: CircuitIR, analyses: Mapping[str, object] | None = None
 ) -> CircuitIR:
-    """Merge rotations adjacent on their wires."""
+    """Merge rotations adjacent on their qubits."""
 
     rotations = _rotation_table(analyses)
     program = _WireLocalProgram()
@@ -293,7 +313,7 @@ def merge_adjacent_rotations(
 
 
 def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
-    """ASAP-schedule instructions without reversing per-wire dependencies."""
+    """ASAP-schedule instructions without reversing per-qubit dependencies."""
 
     layers: list[list[Instruction]] = []
     last_layer_by_wire: dict[int, int] = {}
@@ -311,16 +331,41 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
     return layers
 
 
-def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
-    return PassManager(default_pass_registry()).to_fixed_point(
-        _as_ir(circuit_or_ir), OPTIMIZATION_PIPELINE
+def _round_passes() -> dict[str, Callable[[CircuitIR], CircuitIR]]:
+    """Resolve the declared pass names to the implementations that own them.
+
+    The mapping is keyed on the names a level's declaration lists, so a name a
+    level lists and this mapping does not define is a `KeyError` at the first call
+    rather than a silently skipped pass.
+    """
+
+    from .commutation_cancellation import (
+        cancel_commuting_self_inverse,
+        merge_commuting_rotations,
     )
+    from .diagonal_before_measure import remove_diagonal_gates_before_measure
+    from .inverse_cancellation import merge_inverse_pairs
+    from .one_qubit_optimization import collapse_one_qubit_runs
+    from .two_qubit_optimization import collapse_two_qubit_blocks
+
+    return {
+        "remove_zero_state_resets": remove_zero_state_resets,
+        "remove_diagonal_gates_before_measure": remove_diagonal_gates_before_measure,
+        "remove_identity_gates": remove_identity_gates,
+        "merge_self_inverse": merge_self_inverse,
+        "merge_inverse_pairs": merge_inverse_pairs,
+        "merge_adjacent_rotations": merge_adjacent_rotations,
+        "merge_commuting_rotations": merge_commuting_rotations,
+        "cancel_commuting_self_inverse": cancel_commuting_self_inverse,
+        "collapse_one_qubit_runs": collapse_one_qubit_runs,
+        "collapse_two_qubit_blocks": collapse_two_qubit_blocks,
+    }
 
 
 # Four of the eight built-in passes live in their own module, and each of those
 # modules reads this one: `commutation_cancellation` reads `_SELF_INVERSE`,
-# `inverse_cancellation` reads `_WireLocalProgram`, `one_qubit_optimization` reads
-# the Euler tables and `_is_zero`, and `diagonal_before_measure` reads
+# `inverse_cancellation` reads the program index above, `one_qubit_optimization`
+# reads the Euler tables and `_is_zero`, and `diagonal_before_measure` reads
 # one_qubit_synthesis. An eager import in this direction would therefore be a
 # cycle, so each is bound through a wrapper that imports it at call time. The four
 # remaining passes are defined here and need no wrapper.
@@ -328,6 +373,8 @@ def _optimize_to_fixed_point(circuit_or_ir: Any) -> CircuitIR:
 # Each wrapper that needs one forwards the analyses it was handed rather than
 # reading this module's tables itself, so a pass in another module reads the same
 # declared facts as the passes defined here.
+
+
 def _remove_diagonal_gates_before_measure(ir: CircuitIR) -> CircuitIR:
     from .diagonal_before_measure import remove_diagonal_gates_before_measure
 
@@ -422,10 +469,78 @@ def default_pass_registry() -> PassRegistry:
     return PassRegistry(BUILTIN_PASSES, _BUILTIN_PASS_SPECS, _BUILTIN_ANALYSES)
 
 
-def optimize(circuit_or_ir: Any) -> CircuitIR:
-    """Apply target-independent circuit optimizations to a fixed point."""
+def _with_recorded_level(ir: CircuitIR, level: int) -> CircuitIR:
+    """Record the level the caller asked for, so the request is readable.
 
-    return _optimize_to_fixed_point(circuit_or_ir)
+    A caller who asked for level 0 and a caller who passed `optimize=False` to
+    `compile` get different programs only in this field: level 0 is a request
+    that was honored, and no field at all means no request was made.
+    """
+
+    metadata = dict(ir.metadata)
+    metadata["optimization"] = {"level": level}
+    return replace(ir, metadata=metadata)
+
+
+def _optimize_to_fixed_point(
+    circuit_or_ir: Any,
+    optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
+) -> CircuitIR:
+    """Run one declared level's pass sequence to a fixed point.
+
+    The sequence, and the reason each pass sits where it does, are declared in
+    `optimization_levels.OPTIMIZATION_LEVEL_STAGES`; this function is the loop
+    that runs the declaration rather than a second copy of it. A level whose
+    sequence is empty is answered with the program unchanged, which is what
+    level 0 means.
+    """
+
+    stages = optimization_level_stages(optimization_level)
+    ir = _as_ir(circuit_or_ir)
+    if not stages:
+        return _with_recorded_level(ir, optimization_level)
+    # `_round_passes` imports the passes here rather than at module scope: they read
+    # this layer, so a module-level import in this direction would be circular.
+    # `commutation_cancellation` reads `_SELF_INVERSE`, `_ROTATION_PARAM` and the
+    # parameter arithmetic below, `inverse_cancellation` reads
+    # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
+    # `_is_zero`, `two_qubit_optimization` reads `one_qubit_synthesis` for the same
+    # reason, and `diagonal_before_measure` reads one_qubit_synthesis.
+    passes = _round_passes()
+    max_rounds = len(ir) + 1
+    for _ in range(max_rounds):
+        previous_count = len(ir)
+        for name in stages:
+            ir = passes[name](ir)
+        if len(ir) == previous_count:
+            return _with_recorded_level(ir, optimization_level)
+    raise CompilationError("compiler optimization passes did not reach a fixed point")
+
+
+def optimize(
+    circuit_or_ir: Any,
+    *,
+    optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
+) -> CircuitIR:
+    """Apply target-independent circuit optimizations to a fixed point.
+
+    `optimization_level` selects one of the declared pass sequences in
+    `flagquantum.compiler.optimization_levels`: 1 collapses adjacent gates and
+    removes work that cannot be observed, 2 additionally commutes gates past one
+    another, and 0 is the request to leave the program as submitted. The level
+    this call used is recorded under `metadata["optimization"]`. A reserved or
+    unknown level raises `CompilationError` rather than falling back, so a
+    caller cannot be handed a weaker program than it asked for.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> from flagquantum.compiler import optimize
+        >>> program = fq.Circuit(1).h(0).h(0).to_ir()
+        >>> len(optimize(program, optimization_level=1).instructions)
+        0
+    """
+
+    return _optimize_to_fixed_point(circuit_or_ir, optimization_level)
 
 
 def compile(
@@ -436,17 +551,27 @@ def compile(
     ) = None,
     routing_strategy: str = "restore_after_each_gate",
     optimize: bool = True,
+    optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
     config: RuntimeConfig | None = None,
 ) -> CircuitIR:
-    """Compile a circuit with optional topology routing and optimization."""
+    """Compile a circuit with optional topology routing and optimization.
 
+    `optimization_level` is forwarded to `optimize` at both points this function
+    optimizes -- before routing and again after it, because routing inserts SWAPs
+    and the second pass is what cancels them. It is validated here whether or not
+    `optimize` is set: a reserved level is a capability this release does not
+    have, and a caller that also asked for no optimization is the one case where
+    ignoring the level would hide that instead of reporting it.
+    """
+
+    optimization_level_stages(optimization_level)
     ir = _as_ir(circuit_or_ir)
     selected_config = config or get_runtime_config()
     metadata = dict(ir.metadata)
     metadata["runtime_config"] = selected_config.to_manifest()
     ir = replace(ir, metadata=metadata)
     if optimize:
-        ir = _optimize_to_fixed_point(ir)
+        ir = _optimize_to_fixed_point(ir, optimization_level)
     if coupling_map is not None:
         # A device the router understands is handed over as it stands: an ordered
         # device carries a rule an edge sequence cannot express, and rebuilding it
@@ -468,7 +593,7 @@ def compile(
             strategy=selected_routing_strategy,
         )
         if optimize:
-            ir = _optimize_to_fixed_point(ir)
+            ir = _optimize_to_fixed_point(ir, optimization_level)
         ir = record_post_routing_optimization(ir)
         if strategy_selection is not None:
             metadata = dict(ir.metadata)

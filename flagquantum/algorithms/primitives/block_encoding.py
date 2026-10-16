@@ -20,7 +20,7 @@ exactly the condition ``alpha >= ||H||`` buys. ``A`` and ``sqrt(I - A**2)`` are 
 functions of ``H``, so they commute and ``U ** 2 = I`` holds identically rather than to
 within a tolerance of the eigenvectors. The flagged block of ``U`` is ``A``, so ``U`` is a
 block encoding of ``H`` at ``alpha``, and the ancilla needs no preparation: the flag is
-one wire left in ``|0>``.
+one qubit left in ``|0>``.
 
 **The same construction is also a qubitization, which is the property that makes it worth
 more than its block.** The walk step is the flag's phase flip composed with the encoding,
@@ -56,12 +56,12 @@ a cost: a caller who wants the gate count reads it back with
 :func:`~flagquantum.compiler.resource_estimation.estimate_resources`.
 
 **What is deliberately absent, and is owned rather than silent.** There is one
-implementation (the spectral one) and one flag wire, so the protocols are the surface
+implementation (the spectral one) and one flag qubit, so the protocols are the surface
 those consumers will be written against rather than a claim of a family already built: a
 Pauli linear-combination encoding, whose preparation is a superposition over coefficients
-rather than the identity, is the next member, and the multi-wire flag reflection it will
+rather than the identity, is the next member, and the multi-qubit flag reflection it will
 need is not here. The eigendecomposition is dense and exact, so the cost is that of
-diagonalising the matrix and the gate emitted is one dense matrix on ``n + 1`` wires: this
+diagonalising the matrix and the gate emitted is one dense matrix on ``n + 1`` qubits: this
 is the demonstration scale the algorithm modules work at, not a subroutine with a
 gate-efficient synthesis. No error bound is reported, because the construction is exact for
 a matrix that is exactly Hermitian and a caller holding an approximation holds its error
@@ -72,13 +72,14 @@ caller who wants the derivative of the decomposition has autograd on the matrix 
 on a circuit built from one.
 
 **The register parameter is spelled ``qubits``, and the older primitives are not.** This
-package is migrating every public ``wire``-named parameter to its qubit-named spelling, and
-``tools/check_qubit_vocabulary.py`` fails closed when a new public parameter grows the
-ledger -- correctly, because a migration that admits new debt never finishes. So a module
-landing now lands on the target vocabulary rather than on the one being retired, and
-``append_qft(wires=...)`` beside ``append_apply(qubits=...)`` is the seam of a migration in
-progress rather than a mistake. ``contracts/qubit-vocabulary-contract.toml`` owns the
-ledger; this module owns none of it and adds nothing to it.
+package is migrating every public parameter named after the retired vocabulary to its
+qubit-named spelling, and ``tools/check_qubit_vocabulary.py`` fails closed when a new
+public parameter grows the ledger -- correctly, because a migration that admits new debt
+never finishes. So a module landing now lands on the target vocabulary rather than on the
+one being retired, and a seam between the two spellings inside this package is the seam of
+a migration in progress rather than a mistake.
+``contracts/qubit-vocabulary-contract.toml`` owns the ledger; this module owns none of it
+and adds nothing to it.
 
 This unit carries no performance, capacity, or hardware claim of its own, and it does not
 select a runtime.
@@ -109,7 +110,7 @@ __all__ = [
 # while staying far below what a caller's spoiled matrix is out by.
 _TOLERANCE = 1e-6
 
-# The walk step's reflection is a phase flip on the flag wire, whose all-zero state the
+# The walk step's reflection is a phase flip on the flag qubit, whose all-zero state the
 # projector ``|0><0|`` selects.
 _FLAG_REFLECTION = "z"
 
@@ -125,12 +126,12 @@ class BlockEncoding(Protocol):
 
     @property
     def num_system(self) -> int:
-        """The number of wires the encoded operator acts on."""
+        """The number of qubits the encoded operator acts on."""
         ...
 
     @property
     def num_ancilla(self) -> int:
-        """The number of ancilla wires whose zero state flags the encoded block."""
+        """The number of ancilla qubits whose zero state flags the encoded block."""
         ...
 
     @property
@@ -145,7 +146,7 @@ class BlockEncoding(Protocol):
 
         Args:
             circuit: The circuit to extend.
-            ancilla: The flag wire, which the encoding must leave in its zero state for
+            ancilla: The flag qubit, which the encoding must leave in its zero state for
                 the flagged block to be the one the encoding names.
             qubits: The operator's own qubits, ``num_system`` of them.
         """
@@ -169,7 +170,7 @@ class WalkEncoding(BlockEncoding, Protocol):
 
         Args:
             circuit: The circuit to extend.
-            ancilla: The flag wire.
+            ancilla: The flag qubit.
             qubits: The operator's own qubits.
         """
         ...
@@ -181,7 +182,7 @@ class WalkEncoding(BlockEncoding, Protocol):
 
         Args:
             circuit: The circuit to extend.
-            ancilla: The flag wire.
+            ancilla: The flag qubit.
             qubits: The operator's own qubits.
         """
         ...
@@ -303,17 +304,17 @@ class SpectralBlockEncoding:
 
     @property
     def num_system(self) -> int:
-        """The number of wires the encoded operator acts on."""
+        """The number of qubits the encoded operator acts on."""
         return int(self.matrix.shape[0]).bit_length() - 1
 
     @property
     def num_ancilla(self) -> int:
-        """The number of ancilla wires flagging the encoded block, which is one."""
+        """The number of ancilla qubits flagging the encoded block, which is one."""
         return 1
 
     @property
     def select(self) -> torch.Tensor:
-        """The reflection the encoding applies, on the flag wire and the operator's."""
+        """The reflection the encoding applies, on the flag qubit and the operator's."""
         return self._select
 
     def block(self) -> torch.Tensor:
@@ -332,7 +333,7 @@ class SpectralBlockEncoding:
 
         Args:
             circuit: The circuit to extend.
-            ancilla: The flag wire, left in its zero state by this encoding.
+            ancilla: The flag qubit, left in its zero state by this encoding.
             qubits: The operator's own qubits, :attr:`num_system` of them.
 
         Raises:
@@ -352,7 +353,7 @@ class SpectralBlockEncoding:
 
         Args:
             circuit: The circuit to extend.
-            ancilla: The flag wire.
+            ancilla: The flag qubit.
             qubits: The operator's own qubits.
 
         Raises:
@@ -372,7 +373,7 @@ class SpectralBlockEncoding:
 
         Args:
             circuit: The circuit to extend.
-            ancilla: The flag wire.
+            ancilla: The flag qubit.
             qubits: The operator's own qubits.
 
         Raises:
@@ -478,8 +479,8 @@ def _reflection(matrix: torch.Tensor, alpha: float) -> torch.Tensor:
         alpha: The subnormalisation, at least the matrix's spectral norm.
 
     Returns:
-        The reflection, ``2 ** (n + 1)`` by ``2 ** (n + 1)`` for an ``n``-wire matrix, in
-        double precision on the CPU, the flag wire's ``|0>`` block leading.
+        The reflection, ``2 ** (n + 1)`` by ``2 ** (n + 1)`` for an ``n``-qubit matrix,
+        in double precision on the CPU, the flag qubit's ``|0>`` block leading.
     """
     eigenvalues, eigenvectors = torch.linalg.eigh(matrix.to(torch.complex128))
     # The clamp is what makes the construction survive an ``alpha`` that only rounds to the
@@ -503,41 +504,38 @@ def _reflection(matrix: torch.Tensor, alpha: float) -> torch.Tensor:
 
 
 def _require_register(
-    encoding: SpectralBlockEncoding, ancilla: int, wires: Sequence[int]
+    encoding: SpectralBlockEncoding, ancilla: int, qubits: Sequence[int]
 ) -> None:
-    """Check that ``ancilla`` and ``wires`` name the register the encoding needs.
-
-    Private, and it keeps the wire spelling the migration has not yet reached here: the
-    public parameter is ``qubits``, and this is the one place the two names meet.
+    """Check that ``ancilla`` and ``qubits`` name the register the encoding needs.
 
     Args:
         encoding: The encoding about to be appended.
-        ancilla: The flag wire.
-        wires: The operator's own wires.
+        ancilla: The flag qubit.
+        qubits: The operator's own qubits.
 
     Raises:
         ValueError: If ``ancilla`` is not an integer; if the register is not
-            :attr:`~SpectralBlockEncoding.num_system` wires; if ``ancilla`` is one of
-            them; or if a wire appears twice.
+            :attr:`~SpectralBlockEncoding.num_system` qubits; if ``ancilla`` is one of
+            them; or if a qubit appears twice.
     """
     if isinstance(ancilla, bool) or not isinstance(ancilla, int):
         raise ValueError(
             f"ancilla must be a wire index, got {ancilla!r}; the flag is one wire, and a "
             "list of them is not one wire"
         )
-    width = len(wires)
+    width = len(qubits)
     if width != encoding.num_system:
         raise ValueError(
             f"the register must be {encoding.num_system} wire(s) for this encoding, "
             f"got {width}"
         )
-    if ancilla in wires:
+    if ancilla in qubits:
         raise ValueError(
-            f"ancilla {ancilla} is one of the operator's own wires {list(wires)}; the flag "
+            f"ancilla {ancilla} is one of the operator's own wires {list(qubits)}; the flag "
             "wire is not part of the register the encoded operator acts on"
         )
-    if len(set(wires)) != width:
+    if len(set(qubits)) != width:
         raise ValueError(
-            f"the register must be distinct, got {list(wires)}; an operator acts on each "
+            f"the register must be distinct, got {list(qubits)}; an operator acts on each "
             "wire once"
         )

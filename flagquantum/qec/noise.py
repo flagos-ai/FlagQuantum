@@ -103,7 +103,7 @@ class RepetitionNoiseProfile:
         if self.data_bit_flip_probability:
             channel = bit_flip_channel(self.data_bit_flip_probability)
             for wire in range(3):
-                model.add("cx", channel, wires=wire)
+                model.add("cx", channel, qubits=wire)
         if self.syndrome_readout_error_probability:
             error = _symmetric_readout_error(self.syndrome_readout_error_probability)
             model.add_readout((3, 4), error)
@@ -119,7 +119,7 @@ class PhenomenologicalNoise:
 
     The three data fields name the three single-qubit Pauli faults:
     ``data_flip`` is an X fault, ``phase_flip`` a Z fault, and ``both_flip`` a Y
-    fault, which is the two of them at once. Each applies to every data wire at
+    fault, which is the two of them at once. Each applies to every data qubit at
     the start of every syndrome round, before that round's parity-check CNOTs.
     ``measurement_flip`` applies to every syndrome measurement of every check in
     every round. All four are independent per location per round.
@@ -149,8 +149,8 @@ class PhenomenologicalNoise:
     A vector is read only beside a code, so the record states one and the length
     is refused where the code is known, by the ``*_rates`` accessors below. The
     index of an element is stated there too: the per-qubit vectors are indexed by
-    the code's own ``data_wires`` order, which is the column order
-    ``css_code_matrices`` gives every matrix rather than a wire number, and the
+    the code's own ``data_qubits`` order, which is the column order
+    ``css_code_matrices`` gives every matrix rather than a qubit number, and the
     per-check vector by the matrix row order upstream uses -- Z-type checks
     first, in the order the code declares them, and then the X-type checks. A
     code that declares only Z-type checks, the repetition code among them, sees
@@ -184,7 +184,7 @@ class PhenomenologicalNoise:
             object.__setattr__(self, name, _rate_vector(getattr(self, name), name=name))
 
     def data_flip_rates(self, *, num_qubits: int) -> tuple[float, ...]:
-        """Return the effective X-fault rate of every data qubit, in wire order.
+        """Return the effective X-fault rate of every data qubit, in qubit order.
 
         An element whose rate is zero is a location that cannot fire, so the
         construction routes enumerate no mechanism for it.
@@ -199,7 +199,7 @@ class PhenomenologicalNoise:
         )
 
     def phase_flip_rates(self, *, num_qubits: int) -> tuple[float, ...]:
-        """Return the effective Z-fault rate of every data qubit, in wire order."""
+        """Return the effective Z-fault rate of every data qubit, in qubit order."""
 
         return _resolved_rates(
             self.phase_flip_per_qubit,
@@ -210,7 +210,7 @@ class PhenomenologicalNoise:
         )
 
     def both_flip_rates(self, *, num_qubits: int) -> tuple[float, ...]:
-        """Return the effective Y-fault rate of every data qubit, in wire order."""
+        """Return the effective Y-fault rate of every data qubit, in qubit order."""
 
         return _resolved_rates(
             self.both_flip_per_qubit,

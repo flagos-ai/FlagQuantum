@@ -8,6 +8,7 @@ from typing import Any
 
 import torch
 
+from ....core.finite_differences import central_difference_gradient
 from ....core.parameters import Parameter
 from .split_real_imag import (
     _complex128_pauli_expectation,
@@ -88,16 +89,26 @@ def _finite_difference_gradient(
     *,
     epsilon: float,
 ) -> torch.Tensor:
-    values = []
-    for name in parameter_order:
-        plus = dict(bindings)
-        minus = dict(bindings)
-        plus[name] = bindings[name] + epsilon
-        minus[name] = bindings[name] - epsilon
-        plus_value = _complex128_pauli_expectation(_bind_p3_ir(ir, plus), terms)
-        minus_value = _complex128_pauli_expectation(_bind_p3_ir(ir, minus), terms)
-        values.append((plus_value - minus_value) / (2.0 * epsilon))
-    return torch.stack(values)
+    """Differentiate the P3 shadow by the shared central difference.
+
+    The quotient itself is Core's, so this oracle cannot drift away from the
+    ``fq.gradient`` fallback that serves users. Only the projection is local: a
+    displaced tensor has to be turned back into a parameter binding before the
+    shadow can be evaluated at it.
+    """
+
+    base = torch.stack([bindings[name] for name in parameter_order])
+    fixed = {
+        name: value for name, value in bindings.items() if name not in parameter_order
+    }
+
+    def evaluate(flat: torch.Tensor) -> torch.Tensor:
+        perturbed: dict[str, torch.Tensor] = dict(fixed)
+        for index, name in enumerate(parameter_order):
+            perturbed[name] = flat[index]
+        return _complex128_pauli_expectation(_bind_p3_ir(ir, perturbed), terms)
+
+    return central_difference_gradient(evaluate, base, step=epsilon)
 
 
 def run_split_real_imag_autograd_conformance(

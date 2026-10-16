@@ -41,11 +41,12 @@ from flagquantum.qec import (
     PhenomenologicalNoise,
     RepetitionCode,
     RotatedSurfaceCode,
+    SteaneCode,
     build_memory_circuit,
     sample_memory_circuit,
 )
 from flagquantum.qec.circuit import MeasurementRef
-from flagquantum.qec.codes import CodeCheck
+from flagquantum.qec.codes import CodeCheck, ancilla_bands
 from flagquantum.qec.dem_construction import _check_rate_order
 from flagquantum.qec.pauli import Pauli
 from flagquantum.qec.sampling import _measurement_plan, _noise_locations, _noisy_program
@@ -114,9 +115,18 @@ _FAMILY_NOISES = (
     ),
 )
 
+# One record read out both ways. The Steane code declares a logical observable in
+# each basis, so the two experiments differ only in the basis their data qubits
+# are prepared and read in, and the sampler has to follow the record rather than
+# the circuit shape, which is the same for both.
+_BASES = (
+    pytest.param(SteaneCode(), 3, "z", id="steane-d3-z"),
+    pytest.param(SteaneCode(), 3, "x", id="steane-d3-x"),
+)
 
-def _memory(code, rounds: int):
-    return build_memory_circuit(code, rounds=rounds)
+
+def _memory(code, rounds: int, basis: str = "z"):
+    return build_memory_circuit(code, rounds=rounds, readout_basis=basis)
 
 
 def _tolerance(rates: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -204,7 +214,7 @@ def _forced_fault(code, rounds: int, family: str, qubit: int):
     """
 
     memory = build_memory_circuit(code, rounds=rounds)
-    count = len(memory.code.data_wires)
+    count = len(memory.code.data_qubits)
     vector = tuple(1.0 if position == qubit else 0.0 for position in range(count))
     noise = PhenomenologicalNoise(**{family: 0.0, f"{family}_per_qubit": vector})
     model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
@@ -343,6 +353,90 @@ def test_the_sampled_observable_rates_match_the_model(code, rounds: int, noise) 
         f"widest observable deviation is {float(deviation.max()):.2f} standard "
         f"errors at observable {int(deviation.argmax())}"
     )
+
+
+@pytest.mark.parametrize(("code", "rounds", "basis"), _BASES)
+def test_the_model_and_the_sampler_agree_in_either_readout_basis(
+    code, rounds: int, basis: str
+) -> None:
+    """The join holds in both bases, and the model is what proves it.
+
+    The model is derived from the same record through the construction route,
+    which reads the source's basis rotation for itself, so agreement here is two
+    independent readings of one basis rather than one reading compared with
+    itself. The exact half runs at probability one, where a location on the wrong
+    side of the rotation would change a parity; the statistical half adds the
+    detector pair rates, which a marginal comparison cannot see.
+    """
+
+    memory = _memory(code, rounds, basis)
+    exact = PhenomenologicalNoise(data_flip=1.0, measurement_flip=1.0)
+    sample = sample_memory_circuit(memory, noise=exact, shots=4, seed=_SEED)
+    expected = DetectorErrorModel.from_memory_circuit(memory, noise=exact).dem_sampling(
+        shots=1, seed=0
+    )
+
+    for shot in range(sample.shots):
+        assert sample.detectors[shot].tolist() == expected.detectors[0].tolist()
+        assert sample.observables[shot].tolist() == expected.observables[0].tolist()
+
+    physical = PhenomenologicalNoise(
+        data_flip=_PROBABILITY, measurement_flip=_PROBABILITY
+    )
+    model = DetectorErrorModel.from_memory_circuit(memory, noise=physical)
+    sampled = sample_memory_circuit(memory, noise=physical, shots=_SHOTS, seed=_SEED)
+
+    observed = np.asarray(sampled.detectors.numpy(), dtype=np.float64).mean(axis=0)
+    expected_rates = model.detector_rates().numpy()
+    assert (
+        float((np.abs(observed - expected_rates) / _tolerance(expected_rates)).max())
+        <= _SIGMA
+    )
+    pair = np.asarray(sampled.detectors.numpy(), dtype=np.float64)
+    observed_pair = (pair[:, :, None] * pair[:, None, :]).mean(axis=0)
+    expected_pair = _exact_pair_rates(model)
+    assert (
+        float((np.abs(observed_pair - expected_pair) / _tolerance(expected_pair)).max())
+        <= _SIGMA
+    )
+
+
+@pytest.mark.parametrize(("code", "rounds", "basis"), _BASES)
+def test_the_rotation_offsets_every_round_without_becoming_a_round(
+    code, rounds: int, basis: str
+) -> None:
+    """The rotation is the experiment's, so it moves the rounds and is not one.
+
+    A Z-basis experiment lowers to the round loop alone; an X-basis one lowers to
+    one rotation instruction per data qubit and then the same loop. Every round
+    boundary is therefore shifted by the rotation's length, which is what the
+    sampler places its locations against, while the rotation itself must not be
+    read as a round: it is one location per qubit rather than a block measuring
+    every check, and a plan that counted it as a round would either refuse the
+    program or attribute a data fault to round one round too early.
+    """
+
+    memory = _memory(code, rounds, basis)
+    plan = _measurement_plan(memory)
+    noise = PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.02)
+    located = {
+        (item.kind, item.round_index, item.wire): item.instruction_index
+        for item in _noise_locations(memory, plan, noise)
+    }
+
+    assert plan.offset == (len(code.data_qubits) if basis == "x" else 0)
+    assert located[("data", 0, 0)] == plan.offset
+    assert located[("data", 1, 1)] == plan.offset + plan.block
+    assert located[("data", 2, 2)] == plan.offset + 2 * plan.block
+    assert (
+        located[("measurement", 0, memory.code.checks[0].ancilla_qubit)]
+        == plan.offset + plan.measure_offsets[0]
+    )
+    assert (
+        located[("measurement", 2, memory.code.checks[-1].ancilla_qubit)]
+        == plan.offset + 2 * plan.block + plan.measure_offsets[-1]
+    )
+    assert plan.offset < plan.block
 
 
 @pytest.mark.parametrize("noise", _FAMILY_NOISES)
@@ -514,7 +608,7 @@ def test_a_data_location_precedes_its_round_and_a_measurement_location_its_reado
     # and only the index says which side of the readout the flip is on.
     assert (
         tuple(
-            located[("measurement", "bit_flip", 0, check.ancilla_wire)]
+            located[("measurement", "bit_flip", 0, check.ancilla_qubit)]
             for check in memory.code.checks
         )
         == plan.measure_offsets
@@ -540,14 +634,14 @@ def test_the_three_data_faults_are_three_channels_at_one_instruction() -> None:
     located = _noise_locations(memory, plan, noise)
 
     first_round = [item for item in located if item.round_index == 0]
-    assert len(first_round) == len(memory.code.data_wires) * 3
+    assert len(first_round) == len(memory.code.data_qubits) * 3
     assert {item.channel for item in first_round} == {
         "bit_flip",
         "phase_flip",
         "y_flip",
     }
     assert {item.instruction_index for item in first_round} == {0}
-    for wire in memory.code.data_wires:
+    for wire in memory.code.data_qubits:
         per_wire = {item.channel: item for item in first_round if item.wire == wire}
         assert set(per_wire) == {"bit_flip", "phase_flip", "y_flip"}
         assert per_wire["bit_flip"].probability == pytest.approx(0.01)
@@ -576,7 +670,7 @@ def test_a_rounds_data_locations_are_one_group_before_the_round() -> None:
     plan = _measurement_plan(memory)
     noise = PhenomenologicalNoise(data_flip=0.01, phase_flip=0.02, both_flip=0.03)
     program = _noisy_program(plan, _noise_locations(memory, plan, noise))
-    group = len(memory.code.data_wires) * 3
+    group = len(memory.code.data_qubits) * 3
 
     leading = program.instructions[:group]
     assert [instruction.name for instruction in leading] == (
@@ -604,7 +698,7 @@ def test_a_rounds_data_locations_are_one_group_before_the_round() -> None:
             sum(
                 1 for instruction in program.instructions if instruction.name == channel
             )
-            == len(memory.code.data_wires) * memory.rounds
+            == len(memory.code.data_qubits) * memory.rounds
         )
 
 
@@ -684,7 +778,7 @@ def test_a_per_element_rate_reaches_the_locations_the_record_names(
 
     memory = _memory(code, rounds)
     plan = _measurement_plan(memory)
-    wires = tuple(memory.code.data_wires)
+    wires = tuple(memory.code.data_qubits)
     data_rates = tuple(0.001 * (position + 1) for position in range(len(wires)))
     check_rates = tuple(0.001 * (position + 1) for position in range(len(code.checks)))
     noise = PhenomenologicalNoise(
@@ -705,7 +799,7 @@ def test_a_per_element_rate_reaches_the_locations_the_record_names(
     # position, so the rate each check carries is the row order's, not the plan's.
     order = _check_rate_order(tuple(code.checks))
     by_wire = {
-        int(check.ancilla_wire): position for position, check in enumerate(code.checks)
+        int(check.ancilla_qubit): position for position, check in enumerate(code.checks)
     }
     for item in locations:
         if item.kind != "measurement":
@@ -726,7 +820,7 @@ def test_the_channel_is_placed_at_the_locations_own_rate(code, rounds: int) -> N
 
     memory = _memory(code, rounds)
     plan = _measurement_plan(memory)
-    wires = tuple(memory.code.data_wires)
+    wires = tuple(memory.code.data_qubits)
     rates = tuple(0.02 * (position + 1) for position in range(len(wires)))
     noise = PhenomenologicalNoise(data_flip=0.5, data_flip_per_qubit=(0.0,) + rates[1:])
     program = _noisy_program(plan, _noise_locations(memory, plan, noise))
@@ -763,7 +857,7 @@ def test_a_silent_element_lowers_only_its_own_detectors(code, rounds: int) -> No
     loud = PhenomenologicalNoise(data_flip=rate, measurement_flip=rate)
     quiet = PhenomenologicalNoise(
         data_flip=rate,
-        data_flip_per_qubit=(0.0,) + (rate,) * (len(memory.code.data_wires) - 1),
+        data_flip_per_qubit=(0.0,) + (rate,) * (len(memory.code.data_qubits) - 1),
         measurement_flip=rate,
     )
     loud_model = DetectorErrorModel.from_memory_circuit(memory, noise=loud)
@@ -787,7 +881,7 @@ def test_a_silent_element_lowers_only_its_own_detectors(code, rounds: int) -> No
         noise=PhenomenologicalNoise(
             data_flip_per_qubit=tuple(
                 rate if position == 0 else 0.0
-                for position in range(len(memory.code.data_wires))
+                for position in range(len(memory.code.data_qubits))
             )
         ),
     )
@@ -806,7 +900,7 @@ def test_a_sampled_per_element_profile_matches_the_model(code, rounds: int) -> N
     """
 
     memory = _memory(code, rounds)
-    wires = tuple(memory.code.data_wires)
+    wires = tuple(memory.code.data_qubits)
     strong = 2 * _PROBABILITY
     data_rates = tuple(
         strong if position % 2 else 0.0 for position in range(len(wires))
@@ -852,7 +946,7 @@ def test_the_placement_does_not_depend_on_the_strength_it_is_built_for() -> None
     assert weak == strong
     assert (
         len(weak)
-        == len(memory.code.data_wires) * memory.rounds
+        == len(memory.code.data_qubits) * memory.rounds
         + len(memory.code.checks) * memory.rounds
     )
 
@@ -976,7 +1070,7 @@ def test_a_detector_naming_an_ancilla_no_check_owns_is_refused() -> None:
 
     inner = RepetitionCode(distance=3)
     memory = _memory(inner, 2)
-    orphaned = _OrphanAncilla(inner, orphan_wire=5)
+    orphaned = _OrphanAncilla(inner, orphan_qubit=5)
     # A syndrome detector compares two rounds, so it reads an ancilla rather than
     # a data wire, which is what makes it the reference that can go orphaned.
     index = next(
@@ -985,7 +1079,7 @@ def test_a_detector_naming_an_ancilla_no_check_owns_is_refused() -> None:
         if item.parity[0].round_index is not None
     )
     detector = memory.detectors.detectors[index]
-    owned = detector.parity[0].wire
+    owned = detector.parity[0].qubit
 
     circuit = replace(
         memory,
@@ -1004,9 +1098,9 @@ def test_a_detector_naming_an_ancilla_no_check_owns_is_refused() -> None:
         ),
     )
 
-    assert owned in orphaned.ancilla_wires
-    assert 5 in orphaned.ancilla_wires
-    assert all(check.ancilla_wire != 5 for check in orphaned.checks)
+    assert owned in orphaned.ancilla_qubits
+    assert 5 in orphaned.ancilla_qubits
+    assert all(check.ancilla_qubit != 5 for check in orphaned.checks)
     with pytest.raises(ValueError, match="which no check owns"):
         sample_memory_circuit(
             circuit, noise=PhenomenologicalNoise(data_flip=0.01), shots=4, seed=_SEED
@@ -1023,7 +1117,7 @@ class _OrphanAncilla:
     """
 
     inner: RepetitionCode
-    orphan_wire: int
+    orphan_qubit: int
 
     @property
     def distance(self) -> int:
@@ -1038,12 +1132,28 @@ class _OrphanAncilla:
         return self.inner.num_ancilla_qubits + 1
 
     @property
-    def data_wires(self) -> tuple[int, ...]:
-        return self.inner.data_wires
+    def num_ancilla_x_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[0])
 
     @property
-    def ancilla_wires(self) -> tuple[int, ...]:
-        return self.inner.ancilla_wires + (self.orphan_wire,)
+    def num_ancilla_z_qubits(self) -> int:
+        return len(ancilla_bands(self.checks)[1])
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return self.num_ancilla_x_qubits
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return self.num_ancilla_z_qubits
+
+    @property
+    def data_qubits(self) -> tuple[int, ...]:
+        return self.inner.data_qubits
+
+    @property
+    def ancilla_qubits(self) -> tuple[int, ...]:
+        return self.inner.ancilla_qubits + (self.orphan_qubit,)
 
     @property
     def checks(self) -> tuple[CodeCheck, ...]:

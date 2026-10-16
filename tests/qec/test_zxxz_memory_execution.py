@@ -302,7 +302,7 @@ def test_the_memory_experiment_declares_one_observable_and_its_own_detectors(
         assert len(z_frame.observables) == len(x_frame.observables) == 1
         assert [
             {
-                reference.wire
+                reference.qubit
                 for reference in observable.measurement_parity
                 if reference.round_index is None
             }
@@ -310,7 +310,7 @@ def test_the_memory_experiment_declares_one_observable_and_its_own_detectors(
         ] == [set(z_observable.support)]
         assert [
             {
-                reference.wire
+                reference.qubit
                 for reference in observable.measurement_parity
                 if reference.round_index is None
             }
@@ -349,8 +349,8 @@ def test_the_readout_is_compared_with_no_syndrome_round(distance: int) -> None:
         check
         for check in code.checks
         if all(
-            (wire in code.logical_observables[1].x_wires)
-            == (wire in check.stabilizer.x_wires)
+            (wire in code.logical_observables[1].x_qubits)
+            == (wire in check.stabilizer.x_qubits)
             for wire in check.stabilizer.support
         )
     )

@@ -39,15 +39,36 @@ def transfer_mps_operator_right_environment(
     operator: torch.Tensor,
     environment: torch.Tensor,
 ) -> torch.Tensor:
-    """Move a batched MPS operator environment from right to left."""
+    """Move a batched MPS operator environment from right to left.
 
-    return torch.einsum(
-        "bipr,pq,bjqs,brs->bij",
-        tensor.conj(),
-        operator,
-        tensor,
-        environment,
-    )
+    The four-operand contraction
+    ``sum_{p,q,r,s} conj(T[i,p,r]) O[p,q] T[j,q,s] E[r,s]`` is a reassociation
+    of two batched matrix products once the operator is folded into the bra
+    tensor's physical leg, ``L[i,q,r] = sum_p conj(T[i,p,r]) O[p,q]``: the
+    environment contracts against ``L`` over ``r``, and the result contracts
+    against the ket tensor over the fused ``(q, s)`` pair. Naming that order
+    matters because the operator is diagonal at every site but the measured one,
+    and leaving the order to the einsum planner costs 2.8x at the recorded hot
+    shape -- environment ``(1, 64, 64)``, tensor ``(1, 64, 2, 64)``, operator
+    ``(2, 2)`` -- measured as a chain, which is what the scan is.
+
+    A site tensor's two bond legs are not one leg: ``T[i, p, r]`` contracts the
+    left bond ``i`` with the site to its left and the right bond ``r`` with the
+    site to its right, and a scan walking right to left hands this function an
+    environment that lives on ``r``. Every reshaping below therefore names the
+    leg it folds, because the two dimensions are equal only in the interior of a
+    bond-uniform chain. The edge tensors of a chain whose bond is still growing,
+    and the first site after each truncation, are exactly where they differ.
+    """
+
+    batch = tensor.shape[0]
+    left, physical, right = tensor.shape[1], tensor.shape[2], tensor.shape[3]
+    lifted = torch.einsum("bipr,pq->biqr", tensor.conj(), operator)
+    contracted = torch.bmm(
+        lifted.reshape(batch, left * physical, right), environment
+    ).reshape(batch, left, physical * right)
+    ket = tensor.reshape(batch, left, physical * right)
+    return torch.bmm(contracted, ket.transpose(1, 2))
 
 
 def mps_local_observable_adjoint(
@@ -95,7 +116,7 @@ def mps_local_observable_adjoint(
 def mps_z_zz_local_scan(
     inputs: Sequence[torch.Tensor],
     tensors: Sequence[torch.Tensor],
-    wires: Sequence[int],
+    qubits: Sequence[int],
     z_terms: Mapping[int, Sequence[int]],
     zz_terms: Mapping[int, Sequence[int]],
     *,
@@ -103,11 +124,11 @@ def mps_z_zz_local_scan(
 ) -> tuple[torch.Tensor, ...]:
     """Advance all Z and adjacent-ZZ channels across one rank-local site block."""
 
-    if len(tensors) != len(wires):
-        raise ValueError("MPS observable tensors and wires must have equal length")
+    if len(tensors) != len(qubits):
+        raise ValueError("MPS observable tensors and qubits must have equal length")
     norm, previous_z, *channel_values = inputs
     channels = torch.stack(channel_values)
-    for wire, tensor in zip(wires, tensors, strict=True):
+    for qubit, tensor in zip(qubits, tensors, strict=True):
         next_norm = environment_transfer(norm, tensor, z=False, compiled=compiled)
         next_z = environment_transfer(norm, tensor, z=True, compiled=compiled)
         channel_list = list(
@@ -117,9 +138,9 @@ def mps_z_zz_local_scan(
                 compiled=compiled,
             ).unbind(0)
         )
-        for index in z_terms.get(int(wire), ()):
+        for index in z_terms.get(int(qubit), ()):
             channel_list[index] = next_z
-        for index in zz_terms.get(int(wire), ()):
+        for index in zz_terms.get(int(qubit), ()):
             channel_list[index] = environment_transfer(
                 previous_z,
                 tensor,
@@ -133,19 +154,19 @@ def mps_z_zz_local_scan(
 def mps_heisenberg_local_scan(
     inputs: Sequence[torch.Tensor],
     tensors: Sequence[torch.Tensor],
-    wires: Sequence[int],
+    qubits: Sequence[int],
     coefficients: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
 ) -> tuple[torch.Tensor, ...]:
     """Advance the five-channel nearest-neighbor Heisenberg MPO on one rank."""
 
     if len(inputs) != 5:
         raise ValueError("Heisenberg MPS scan requires five input channels")
-    if len(tensors) != len(wires):
-        raise ValueError("Heisenberg MPS tensors and wires must have equal length")
+    if len(tensors) != len(qubits):
+        raise ValueError("Heisenberg MPS tensors and qubits must have equal length")
     field_z, coupling_x, coupling_y, coupling_z = coefficients
     norm, open_x, open_y, open_z, energy = inputs
     operator_cache: dict[tuple[torch.device, torch.dtype], dict[str, torch.Tensor]] = {}
-    for wire, tensor in zip(wires, tensors, strict=True):
+    for qubit, tensor in zip(qubits, tensors, strict=True):
         key = (tensor.device, tensor.dtype)
         operators = operator_cache.get(key)
         if operators is None:
@@ -165,15 +186,15 @@ def mps_heisenberg_local_scan(
             tensor,
             operators["i"],
         )
-        next_energy = next_energy + field_z[wire] * next_z
-        if wire > 0:
+        next_energy = next_energy + field_z[qubit] * next_z
+        if qubit > 0:
             for coupling, opened, axis in (
                 (coupling_x, open_x, "x"),
                 (coupling_y, open_y, "y"),
                 (coupling_z, open_z, "z"),
             ):
                 next_energy = next_energy + coupling[
-                    wire - 1
+                    qubit - 1
                 ] * transfer_mps_operator_environment(
                     opened,
                     tensor,

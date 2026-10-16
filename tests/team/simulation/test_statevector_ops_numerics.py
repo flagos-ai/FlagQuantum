@@ -5,12 +5,14 @@ import math
 import pytest
 import torch
 
+import flagquantum.simulation.statevector.fixed_layer_cpu as fixed_layer_cpu
 import flagquantum.simulation.statevector.operations as statevector_ops
 import flagquantum.simulation.statevector.product_state as product_state
 import flagquantum.simulation.statevector.two_qubit_cpu as two_qubit_cpu
 from flagquantum import Circuit
 from flagquantum.core import Instruction
 from flagquantum.simulation.native_cpu import native_cpu_one_qubit_layer_available
+from flagquantum.simulation.statevector.batching import _rotation_region_angles
 from flagquantum.simulation.statevector.cz_graph import (
     _apply_cz_graph_cpu,
     _cz_graph_signs_cpu,
@@ -26,7 +28,6 @@ from flagquantum.simulation.statevector.index_basis import (
 from flagquantum.simulation.statevector.local import (
     _batched_kronecker_product,
     _cpu_disjoint_dense_max_wires,
-    _rotation_region_angles,
 )
 from flagquantum.simulation.statevector.operations import (
     _apply_cross_wire_diagonal_cpu,
@@ -93,6 +94,29 @@ def test_native_fixed_clifford_batch_layer_does_not_bypass_autograd(
 
     assert inputs.grad is not None
     assert circuit._last_statevector_runtime["native_cpu_one_qubit_layer_regions"] == 0
+
+
+def test_native_scalar_fused_rotation_has_a_wide_state_and_rollback_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        fixed_layer_cpu, "native_cpu_one_qubit_layer_available", lambda: True
+    )
+    instructions = (Instruction("ry", (0,), params={"theta": 0.2}),)
+    narrow = torch.zeros((1, 2**15), dtype=torch.complex128)
+    wide = torch.zeros((1, 2**16), dtype=torch.complex128)
+
+    assert not fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, narrow, batch_size=1
+    )
+    assert fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "0")
+    assert not fixed_layer_cpu.native_parameterized_layer_compile_enabled(
+        instructions, None, wide, batch_size=1
+    )
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
@@ -325,6 +349,76 @@ def test_native_rotation_clifford_tiles_match_rollback_and_preserve_input(
         assert tuple(step.fused_cx_targets for step in fused_tiles) == (
             (1, 3, 5),
             (7,),
+        )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_scalar_rotation_clifford_matches_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    generator = torch.Generator().manual_seed(9151)
+    inputs = (
+        torch.randn((1, 2**16), generator=generator)
+        + 1j * torch.randn((1, 2**16), generator=generator)
+    ).to(dtype)
+    original = inputs.clone()
+    circuit = Circuit(16, bsz=1, dtype=dtype, inputs=inputs)
+    for wire in range(16):
+        circuit.ry(wire, 0.03 * (wire + 1)).rz(wire, -0.02 * (wire + 1))
+    for wire in range(0, 16, 2):
+        circuit.cx(wire, wire + 1)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_CLIFFORD_MATCHING", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime[
+                "native_cpu_parameterized_one_qubit_layer_regions"
+            ]
+            > 0
+        )
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_native_scalar_fused_rotation_matches_chain_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    dtype: torch.dtype,
+) -> None:
+    generator = torch.Generator().manual_seed(9157)
+    inputs = (
+        torch.randn((1, 2**16), generator=generator)
+        + 1j * torch.randn((1, 2**16), generator=generator)
+    ).to(dtype)
+    original = inputs.clone()
+    circuit = Circuit(16, bsz=1, dtype=dtype, inputs=inputs)
+    for wire in range(16):
+        circuit.rx(wire, 0.01 * (wire + 1))
+        circuit.ry(wire, 0.02 * (wire + 1))
+        circuit.rz(wire, -0.03 * (wire + 1))
+    for wire in range(15):
+        circuit.cx(wire, wire + 1)
+
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "0")
+    expected = circuit.state(refresh=True)
+    monkeypatch.setenv("FQ_CPU_NATIVE_SCALAR_FUSED_ROTATION_LAYER", "1")
+    actual = circuit.state(refresh=True)
+
+    tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+    torch.testing.assert_close(inputs, original, atol=0, rtol=0)
+    if native_cpu_one_qubit_layer_available():
+        assert (
+            circuit._last_statevector_runtime[
+                "native_cpu_parameterized_one_qubit_layer_regions"
+            ]
+            > 0
         )
 
 
@@ -2336,7 +2430,7 @@ def test_cpu_product_state_execution_matches_dense_statevector(
     dense_circuit = _product_state_qft_circuit(18, dtype=dtype)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "0")
     expected = dense_circuit.state(refresh=True)
-    assert dense_circuit._initial_state_workspace is not None
+    assert dense_circuit._initial_state_workspace is None
 
     product_circuit = _product_state_qft_circuit(18, dtype=dtype)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1")
@@ -2378,7 +2472,7 @@ def test_cpu_product_state_swap_remapping_preserves_independent_components(
     rollback_circuit = _product_state_swap_routing_circuit(18)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", "0")
     expected = rollback_circuit.state(refresh=True)
-    assert rollback_circuit._initial_state_workspace is not None
+    assert rollback_circuit._initial_state_workspace is None
 
     remapped_circuit = _product_state_swap_routing_circuit(18)
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_SWAP_REMAPPING", "1")
@@ -2411,6 +2505,31 @@ def test_cpu_product_state_execution_declines_entanglement_dense_plan(
             circuit.cx(control, target)
 
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1")
+    circuit.state(refresh=True)
+
+    assert circuit._initial_state_workspace is None
+
+
+def test_owned_zero_state_preserves_an_exposed_initial_state() -> None:
+    circuit = Circuit(6, dtype=torch.complex128)
+    initial = circuit.initial_state()
+    expected_initial = initial.clone()
+    for wire in range(circuit.n_qubits):
+        circuit.ry(wire, theta=0.03 * (wire + 1))
+    circuit.cx(0, 1).cx(2, 3)
+
+    result = circuit.state(refresh=True)
+
+    assert result.data_ptr() != initial.data_ptr()
+    assert circuit.initial_state().data_ptr() == initial.data_ptr()
+    torch.testing.assert_close(initial, expected_initial, rtol=0, atol=0)
+
+
+def test_owned_zero_state_has_an_environment_rollback(monkeypatch) -> None:
+    circuit = Circuit(6, dtype=torch.complex128)
+    circuit.h(0).cx(0, 1)
+    monkeypatch.setenv("FQ_CPU_STATEVECTOR_OWNED_ZERO_STATE", "0")
+
     circuit.state(refresh=True)
 
     assert circuit._initial_state_workspace is not None

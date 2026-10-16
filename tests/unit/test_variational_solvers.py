@@ -134,13 +134,13 @@ def _argmax(mapping):
 def test_the_cost_operator_carries_one_zz_term_per_edge_in_edge_order() -> None:
     hamiltonian = maxcut_hamiltonian(3, TRIANGLE)
     assert [term.pauli for term in hamiltonian.terms] == ["ZZ", "ZZ", "ZZ"]
-    assert [term.wires for term in hamiltonian.terms] == [(0, 1), (1, 2), (2, 0)]
+    assert [term.qubits for term in hamiltonian.terms] == [(0, 1), (1, 2), (2, 0)]
 
 
 def test_the_cost_operator_keeps_a_weight_and_spans_the_graph_wires() -> None:
     hamiltonian = maxcut_hamiltonian(4, ((0, 3, 0.25),))
     assert [float(term.coefficient) for term in hamiltonian.terms] == [0.25]
-    assert hamiltonian.n_wires == 4
+    assert hamiltonian.n_qubits == 4
 
 
 def test_a_pair_and_a_triple_may_be_mixed_in_one_edge_list() -> None:
