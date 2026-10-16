@@ -40,6 +40,8 @@ _PROVENANCE_FIELDS = frozenset(
 _BUNDLE_STATUSES = frozenset(
     {"succeeded", "unsupported", "validation_failed", "failed"}
 )
+
+
 def _evidence_shape_error(payload: Mapping[str, Any]) -> tuple[str, str] | None:
     fields = frozenset(payload)
     if fields != _BUNDLE_FIELDS:

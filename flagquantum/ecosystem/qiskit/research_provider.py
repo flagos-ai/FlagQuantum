@@ -30,7 +30,7 @@ def _run_statevector(circuit: Circuit) -> torch.Tensor:
     from .aer import run
 
     result = run(circuit)
-    if result.state is None:
+    if not isinstance(result.state, torch.Tensor):
         raise RuntimeError("Qiskit Aer did not return the requested statevector")
     return result.state
 

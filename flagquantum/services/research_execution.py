@@ -581,9 +581,11 @@ def _execute_vqe(
             estimate,
             route_plan,
             {
-                "objective_evaluations": result.resources.objective_evaluations
-                if result.resources is not None
-                else None,
+                "objective_evaluations": (
+                    result.resources.objective_evaluations
+                    if result.resources is not None
+                    else None
+                ),
                 "exact_energy_error": exact_error,
                 "energy_variance": variance.variance,
                 "optimizer_converged": optimizer_converged,
