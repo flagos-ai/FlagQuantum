@@ -56,10 +56,10 @@ from .research_execution import (
     ResearchCapabilityError,
     ResearchCapabilityEvidenceBundle,
     ResearchCapabilityRef,
-    ResearchExecutionOptions,
     execute_research_capability,
     validate_research_evidence,
 )
+from .research_options import ResearchExecutionOptions
 from .research_schemas import (
     ResearchSchemaDocument,
     describe_research_schema,
