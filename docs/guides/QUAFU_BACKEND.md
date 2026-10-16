@@ -312,8 +312,8 @@ print(result.counts[0])
 Call `job.cancel()` to request cancellation. A task already sent to hardware may
 stop being observed without refunding consumed capacity.
 
-The published 0.2.0 release predates this direct-submission feature. Install the
-`0.3.0rc3` prerelease or use a source checkout containing this change.
+The published 0.2.0 release predates this direct-submission feature. Install
+`flagquantum==0.3.0` or use a source checkout containing this change.
 
 For local compilation before submission, explicitly pass `compiler="qsteed"`
 and install the plugin below. The service compiler option is distinct from the

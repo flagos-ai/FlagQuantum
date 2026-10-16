@@ -17,6 +17,15 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+## 0.3.0 (2026-10-16)
+
+- Publishes the 0.3 release line as a stable package for Python 3.10 through
+  3.12, with the cross-platform Stable ABI distribution pipeline.
+- Adds recoverable remote job submissions for Quafu and Jiuding through
+  opt-in receipts, plus ordered multi-circuit Quafu collection results.
+- Includes English and Chinese editions of the six-lesson FlagOS 2026
+  workshop.
+
 - Added opt-in `fq.submit(..., receipt=path)` recovery for Quafu and native
   Jiuding jobs. Matching requests restore automatically; configuration changes,
   damaged records and uncertain attempts fail without automatic resubmission.
