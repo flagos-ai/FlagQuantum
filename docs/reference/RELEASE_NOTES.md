@@ -17,6 +17,17 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+## 0.3.1 (release pending)
+
+- Includes the approved local research-capability services added after the
+  0.3.0 distribution was built. The public `flagquantum.services` surface
+  discovers and describes three bounded operations, validates and estimates
+  requests, executes supported local CPU work, and validates structured
+  evidence. No MCP transport or agent runtime is included in the core package.
+- The supported ground-state VQE scope remains a supplied two-qubit Pauli sum
+  with an explicit ansatz and optimizer. Molecular Hamiltonian construction,
+  remote execution, and unsupported scientific scopes are not implied.
+
 ## 0.3.0 (2026-10-16)
 
 - Publishes the 0.3 release line as a stable package for Python 3.10 through
