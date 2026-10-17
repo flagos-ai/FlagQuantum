@@ -491,8 +491,9 @@ status = "supported"
 priority = "now"
 dependency_class = "none"
 maturity_ref = "noisy_simulation"
-reason = "FlagQuantum has a trajectory noise path. Batched trajectory execution is narrower than the CUDA-Q baseline."
-baseline_gap = "No batched trajectory result is recorded in this checkout."
+reason = "FlagQuantum executes trajectory noise on two representations. The statevector runner is batched across trajectories: `run_noisy_statevector` returns a `BatchedStatevectorTrajectoryResult` whose `trajectory_batch_size` is the caller's, and two batch sizes over one seed give identical retained states, identical per-trajectory seeds and identical expectation values, so batching is an execution strategy rather than a change of answer. The result records the sample counts of its own fast paths (the unitary-branch, amplitude-damping and generic-Kraus counters), the base seed and the noise-model identity a resumed checkpoint is checked against, per-trajectory ownership for rank-local execution, and adaptive stopping against a target standard error. The MPS runner schedules one sampled trajectory per call and collects those into a Monte Carlo result instead, so batching belongs to the statevector path rather than to the row's whole surface. The planner selects the representation from the noise model and the execution options, so a caller does not choose it by rewriting the program."
+baseline_gap = "No measured cross-backend comparison exists in this checkout: the row asserts that trajectory noise runs on both representations, not that either matches the baseline's throughput. Batches of trajectories are executed for the statevector path and not for the MPS one, where a trajectory is scheduled on its own."
+evidence = ["flagquantum/runtime/executors/statevector/noisy.py", "flagquantum/runtime/executors/mps/noisy.py", "flagquantum/runtime/trajectories", "tests/unit/test_parity_trajectory_rows.py", "tests/test_noise.py", "tests/unit/test_trajectory_runtime.py"]
 
 [[domains.capabilities]]
 id = "backend_density_matrix"
