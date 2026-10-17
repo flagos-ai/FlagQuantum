@@ -38,6 +38,12 @@ These examples do not use that alias:
   — a third-party target declaration that imports the published extension
   namespace and the Core capability vocabulary that describes evidence. It builds
   no circuit, so it needs no root alias either.
+- [`extensions/reference_pass_extension.py`](extensions/reference_pass_extension.py)
+  — a third-party compiler pass. It imports `CircuitIR` and `Instruction` from
+  `flagquantum.core.ir` and its manifest and request types from
+  `flagquantum.ecosystem.extensions`, which is what a pass package outside this
+  repository can reach; the root alias would only give it a second name for the
+  circuit type it is handed.
   [`extensions/declared_target_execution.py`](extensions/declared_target_execution.py)
   is the run that follows it: one call takes that declaration and locally executes a
   circuit the declared device can actually run, so a provider sees the whole path

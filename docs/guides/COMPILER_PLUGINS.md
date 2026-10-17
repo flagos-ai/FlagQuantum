@@ -150,3 +150,19 @@ There is no implicit pass selection, no fallback, and no way for an installed
 package to join the default optimization pipeline. An unusable declaration, a
 refused negotiation, an SDK mismatch, and a failed start are reported as
 extension boundary errors before the pass is registered.
+
+Before release, a pass package runs the pass-level check rather than the
+circuit-compiler one:
+
+```python
+from flagquantum.ecosystem.extensions.conformance import (
+    run_compiler_pass_conformance,
+)
+
+report = run_compiler_pass_conformance(create_extension())
+```
+
+It certifies admission, the host-built registered name, `CircuitIR` ownership,
+determinism, and cleanup. `examples/extensions/reference_pass_extension.py` is a
+worked example: a pass that rewrites each `swap` into the three `cx` gates it
+equals.

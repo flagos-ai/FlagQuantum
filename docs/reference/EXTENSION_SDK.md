@@ -52,13 +52,19 @@ Importing FlagQuantum does not discover, import, or activate extensions.
 
 ## Conformance
 
-`flagquantum.ecosystem.extensions` supplies reusable backend, provider, and
-circuit-compiler checks covering manifest/payload serialization, capability
-honesty, PyTorch gradients, dtype/device preservation, CircuitIR ownership,
-determinism, isolated errors, and cleanup. The conformance submodule remains an
-equivalent explicit import path. Reference extensions are in
-`examples/extensions/reference_extensions.py` and
-`examples/extensions/reference_compiler_extension.py`.
+`flagquantum.ecosystem.extensions` supplies reusable backend, provider,
+circuit-compiler, and compiler-pass checks covering manifest/payload
+serialization, capability honesty, PyTorch gradients, dtype/device preservation,
+CircuitIR ownership, determinism, isolated errors, and cleanup. The compiler-pass
+check reports admission and the host-built registered name as separate steps, so
+a crossing change that let a declared name reach a built-in one fails for the
+author who runs the check rather than at compile time. It is imported from the
+`conformance` submodule, as is the device check; the three conformance names the
+extension namespace already exports are unchanged, because that namespace is
+pinned as an exact set by the candidate protocol contract. Reference extensions
+are in `examples/extensions/reference_extensions.py`,
+`examples/extensions/reference_compiler_extension.py`, and
+`examples/extensions/reference_pass_extension.py`.
 
 ## Backend execution admission
 

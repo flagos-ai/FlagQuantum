@@ -121,6 +121,53 @@ def run_compiler_conformance(extension: Any) -> ConformanceReport:
     return ConformanceReport(extension.manifest.name, tuple(checks))
 
 
+def run_compiler_pass_conformance(extension: Any) -> ConformanceReport:
+    """Validate admission, host naming, IR ownership, determinism, and cleanup.
+
+    A compiler pass has no target and no payload, so the properties worth
+    certifying are the ones the crossing promises a plugin author: the declaration
+    is admissible, the registered name is the host's rather than the pass's, the
+    transform is IR to IR, it leaves its input alone, it agrees with itself, and
+    it leaks no lifecycle state.
+    """
+
+    # Imported here rather than at module scope because admission reaches the
+    # Compiler, and importing this package must not load the Compiler.
+    from ...compiler.pass_manager import EXTENSION_PASS_PREFIX
+    from .pass_admission import IR_CAPABILITY, check_pass_admission
+
+    checks = [check_manifest_serialization(extension)]
+    registered = check_pass_admission(extension)
+    if not registered.startswith(EXTENSION_PASS_PREFIX):
+        raise AssertionError(
+            f"pass would register as {registered!r}, outside the host prefix "
+            f"{EXTENSION_PASS_PREFIX!r}, so it could take a built-in name"
+        )
+    checks.extend(("admissible", "host_named"))
+    registry = ExtensionRegistry().with_extension(extension)
+    request = CapabilityRequest(required=frozenset({IR_CAPABILITY}))
+    handle = registry.negotiate("compiler_pass", extension.manifest.name, request)
+    handle.start(ExtensionConfig())
+    try:
+        source = CircuitIR(2, (Instruction("h", (0,)),))
+        source_hash = source.content_hash
+        first = handle.invoke("transform", source)
+        second = handle.invoke("transform", source)
+        if not isinstance(first, CircuitIR) or not isinstance(second, CircuitIR):
+            raise AssertionError("pass must return CircuitIR")
+        if source.content_hash != source_hash:
+            raise AssertionError("pass mutated its input CircuitIR")
+        if first.content_hash != second.content_hash:
+            raise AssertionError("pass output is not deterministic")
+        checks.extend(("circuit_ir", "input_immutable", "deterministic"))
+    finally:
+        handle.close()
+    if getattr(extension, "active", False):
+        raise AssertionError("pass leaked active lifecycle state")
+    checks.append("cleanup")
+    return ConformanceReport(extension.manifest.name, tuple(checks))
+
+
 def run_device_conformance(extension: Any) -> ConformanceReport:
     """Validate a device declaration, its snapshot, and fail-closed matching."""
 
@@ -220,6 +267,7 @@ __all__ = (
     "check_manifest_serialization",
     "run_backend_conformance",
     "run_compiler_conformance",
+    "run_compiler_pass_conformance",
     "run_device_conformance",
     "run_provider_conformance",
 )

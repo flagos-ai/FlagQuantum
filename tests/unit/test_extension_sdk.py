@@ -9,6 +9,7 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.ecosystem.extensions.sdk as extension_sdk
+from flagquantum.compiler.pass_manager import OPTIMIZATION_PIPELINE
 from flagquantum.ecosystem.extensions import (
     CapabilityRequest,
     ExtensionCompatibilityError,
@@ -23,7 +24,12 @@ from flagquantum.ecosystem.extensions import (
 from flagquantum.ecosystem.extensions.conformance import (
     run_backend_conformance,
     run_compiler_conformance,
+    run_compiler_pass_conformance,
     run_provider_conformance,
+)
+from flagquantum.ecosystem.extensions.pass_admission import (
+    PassAdmissionError,
+    check_pass_admission,
 )
 
 pytestmark = pytest.mark.unit
@@ -42,6 +48,14 @@ COMPILER_SPEC = importlib.util.spec_from_file_location(
 assert COMPILER_SPEC and COMPILER_SPEC.loader
 COMPILER_REFERENCE = importlib.util.module_from_spec(COMPILER_SPEC)
 COMPILER_SPEC.loader.exec_module(COMPILER_REFERENCE)
+
+PASS_REFERENCE_PATH = ROOT / "examples/extensions/reference_pass_extension.py"
+PASS_SPEC = importlib.util.spec_from_file_location(
+    "reference_pass_extension", PASS_REFERENCE_PATH
+)
+assert PASS_SPEC and PASS_SPEC.loader
+PASS_REFERENCE = importlib.util.module_from_spec(PASS_SPEC)
+PASS_SPEC.loader.exec_module(PASS_REFERENCE)
 
 
 def test_reference_backend_and_provider_pass_conformance_without_root_mutation():
@@ -64,6 +78,145 @@ def test_reference_compiler_preserves_ir_ownership_and_determinism():
         "deterministic",
         "cleanup",
     )
+
+
+def test_reference_pass_certifies_the_whole_pass_contract():
+    root_before = set(fq.__all__)
+    extension = PASS_REFERENCE.ReferenceSwapPass()
+
+    report = run_compiler_pass_conformance(extension)
+
+    assert report.extension == "reference_swap_pass"
+    assert report.checks == (
+        "manifest_serialization",
+        "admissible",
+        "host_named",
+        "circuit_ir",
+        "input_immutable",
+        "deterministic",
+        "cleanup",
+    )
+    assert not extension.active
+    assert set(fq.__all__) == root_before
+
+
+def test_the_reference_pass_rewrites_the_swap_it_names_and_carries_the_rest():
+    source = fq.CircuitIR(
+        2,
+        (fq.Instruction("h", (0,)), fq.Instruction("swap", (0, 1))),
+        metadata={"origin": "example"},
+    )
+    extension = PASS_REFERENCE.ReferenceSwapPass()
+    extension.start(ExtensionConfig())
+
+    transformed = extension.transform(source)
+    extension.close()
+
+    assert [item.name for item in transformed.instructions] == ["h", "cx", "cx", "cx"]
+    assert [item.wires for item in transformed.instructions[1:]] == [
+        (0, 1),
+        (1, 0),
+        (0, 1),
+    ]
+    assert transformed.instructions[0] is source.instructions[0]
+    assert transformed.metadata == {"origin": "example"}
+    assert [item.name for item in source.instructions] == ["h", "swap"]
+
+
+def test_the_pass_runner_registers_the_host_name_rather_than_the_declared_one():
+    extension = PASS_REFERENCE.ReferenceSwapPass()
+
+    registered = check_pass_admission(extension)
+
+    assert registered == "extension.reference_swap_pass.decompose_swap"
+    assert extension.pass_name == "decompose_swap"
+
+
+def _pass_whose_transform(transform):
+    """The reference pass with only its transform replaced, so it stays admissible."""
+
+    class _Scripted(PASS_REFERENCE.ReferenceSwapPass):
+        def transform(self, program):
+            return transform(program)
+
+    return _Scripted()
+
+
+def test_the_pass_runner_fails_when_the_crossing_stops_prefixing(monkeypatch):
+    # The runner is a regression detector for the crossing, so the regression it
+    # exists to catch is simulated rather than waited for.
+    monkeypatch.setattr(
+        "flagquantum.ecosystem.extensions.pass_admission.check_pass_admission",
+        lambda extension: "remove_identity_gates",
+    )
+
+    with pytest.raises(AssertionError, match="outside the host prefix"):
+        run_compiler_pass_conformance(PASS_REFERENCE.ReferenceSwapPass())
+
+
+def test_the_pass_runner_refuses_a_declaration_admission_would_refuse():
+    class _NoIR(PASS_REFERENCE.ReferenceSwapPass):
+        manifest = ExtensionManifest(
+            name="no_ir_pass",
+            version="1.0.0",
+            kind="compiler_pass",
+            capabilities=frozenset(),
+        )
+
+    with pytest.raises(PassAdmissionError, match="circuit_ir"):
+        run_compiler_pass_conformance(_NoIR())
+
+
+def test_a_pass_that_mutates_the_program_it_was_given_is_refused():
+    def mutating(program):
+        object.__setattr__(program, "instructions", ())
+        return program
+
+    with pytest.raises(AssertionError, match="mutated its input"):
+        run_compiler_pass_conformance(_pass_whose_transform(mutating))
+
+
+def test_a_pass_that_disagrees_with_itself_is_refused():
+    applications = []
+
+    def drifting(program):
+        applications.append(1)
+        return fq.CircuitIR(2, (fq.Instruction("h", (0,)),) * len(applications))
+
+    with pytest.raises(AssertionError, match="not deterministic"):
+        run_compiler_pass_conformance(_pass_whose_transform(drifting))
+
+
+def test_a_pass_that_returns_something_other_than_ir_is_refused():
+    def not_ir(program):
+        return [instruction.name for instruction in program.instructions]
+
+    with pytest.raises(AssertionError, match="must return CircuitIR"):
+        run_compiler_pass_conformance(_pass_whose_transform(not_ir))
+
+
+def test_a_pass_that_asks_for_a_built_in_name_still_cannot_take_it():
+    class _Rival(PASS_REFERENCE.ReferenceSwapPass):
+        pass_name = "remove_identity_gates"
+
+    rival = _Rival()
+
+    assert check_pass_admission(rival) == (
+        "extension.reference_swap_pass.remove_identity_gates"
+    )
+    # The bare name the pass asked for is still the pipeline's own, which is why
+    # admission has nothing to refuse here: the prefix makes the request harmless.
+    assert "remove_identity_gates" in OPTIMIZATION_PIPELINE
+    assert "cleanup" in run_compiler_pass_conformance(rival).checks
+
+
+def test_a_pass_that_leaks_its_lifecycle_state_is_refused():
+    class _Leaking(PASS_REFERENCE.ReferenceSwapPass):
+        def close(self):
+            pass
+
+    with pytest.raises(AssertionError, match="leaked active lifecycle state"):
+        run_compiler_pass_conformance(_Leaking())
 
 
 def test_compiler_discovery_loads_only_requested_kind(monkeypatch):
