@@ -370,7 +370,7 @@ def test_qir_result_projection_is_explicit_and_validated() -> None:
     """A caller-supplied result projection replaces the declared measurement."""
 
     program = CircuitIR(3, (Instruction("h", (0,)),), dtype="complex128")
-    text = emit_qir(program, result_wires=(1,))
+    text = emit_qir(program, result_qubits=(1,))
 
     assert (
         "  call void @__quantum__qis__mz__body"
@@ -380,7 +380,7 @@ def test_qir_result_projection_is_explicit_and_validated() -> None:
 
     for rejected in ((0, 0), (), (0, 3), (0, -1), (0, "1")):
         with pytest.raises(ValueError, match="unique in-range integers"):
-            emit_qir(program, result_wires=rejected)  # type: ignore[arg-type]
+            emit_qir(program, result_qubits=rejected)  # type: ignore[arg-type]
 
     twice = CircuitIR(
         2,
