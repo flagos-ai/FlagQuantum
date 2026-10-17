@@ -8,6 +8,7 @@ from typing import Any, ClassVar
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, FancyBboxPatch
 
 from ..core._qubit_aliases import warn_qubit_alias
@@ -216,13 +217,11 @@ class MPLDrawer:
         if figsize is None:
             figsize = (self.n_layers + 3, self.n_qubits + 1)
         self._fig = fig if fig else plt.figure(figsize=figsize)
-        self._ax = self._fig.add_axes(
-            [0, 0, 1, 1],
-            xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_qubits + 0.5),
-            xticks=[],
-            yticks=[],
-        )
+        self._ax: Axes = self._fig.add_axes((0.0, 0.0, 1.0, 1.0))
+        self._ax.set_xlim(-2, self.n_layers + 1)
+        self._ax.set_ylim(-1, self.n_qubits + 0.5)
+        self._ax.set_xticks(())
+        self._ax.set_yticks(())
         self._ax.axis("off")
         self._ax.set_facecolor("#F7F7F7")
         self._ax.invert_yaxis()
@@ -238,7 +237,7 @@ class MPLDrawer:
 
         opts = wire_options or {}
         for qubit_label, idx in self.qubit_map.items():
-            line = plt.Line2D(
+            line = Line2D(
                 (-1, self.n_layers),
                 (idx, idx),
                 color=opts.get("color", "#333333"),
@@ -387,7 +386,7 @@ class MPLDrawer:
     ) -> None:
         """Draw parameterized controlled gates (CRX, CRY, CRZ)"""
         # Connecting qubit
-        line = plt.Line2D(
+        line = Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
@@ -419,7 +418,7 @@ class MPLDrawer:
     ) -> None:
         """Draw parameterized controlled phase gate (CP)"""
         # Connecting qubit
-        line = plt.Line2D(
+        line = Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
@@ -495,7 +494,7 @@ class MPLDrawer:
         min_qubit = min(control1, control2, target)
         max_qubit = max(control1, control2, target)
 
-        line = plt.Line2D(
+        line = Line2D(
             (x, x), (min_qubit, max_qubit), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
@@ -522,7 +521,7 @@ class MPLDrawer:
         self._ax.add_patch(circ)
         d = self._circ_rad * 0.7
         self._ax.add_line(
-            plt.Line2D(
+            Line2D(
                 (x - d, x + d),
                 (target - d, target + d),
                 color="#333333",
@@ -531,7 +530,7 @@ class MPLDrawer:
             )
         )
         self._ax.add_line(
-            plt.Line2D(
+            Line2D(
                 (x - d, x + d),
                 (target + d, target - d),
                 color="#333333",
@@ -545,7 +544,7 @@ class MPLDrawer:
         min_qubit = min(control, target1, target2)
         max_qubit = max(control, target1, target2)
 
-        line = plt.Line2D(
+        line = Line2D(
             (x, x), (min_qubit, max_qubit), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
@@ -562,14 +561,14 @@ class MPLDrawer:
 
         d = self._swap_dx
         for target in [target1, target2]:
-            l1 = plt.Line2D(
+            l1 = Line2D(
                 (x - d, x + d),
                 (target - d, target + d),
                 color="#333333",
                 linewidth=1.5,
                 zorder=2,
             )
-            l2 = plt.Line2D(
+            l2 = Line2D(
                 (x - d, x + d),
                 (target + d, target - d),
                 color="#333333",
@@ -583,7 +582,7 @@ class MPLDrawer:
         self, x: float, control: int, target: int, target_symbol: str = "X"
     ) -> None:
         """Draw controlled gates (CX, CY, CZ, CPhase)"""
-        line = plt.Line2D(
+        line = Line2D(
             (x, x), (control, target), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
@@ -610,7 +609,7 @@ class MPLDrawer:
             self._ax.add_patch(circ)
             d = self._circ_rad * 0.7
             self._ax.add_line(
-                plt.Line2D(
+                Line2D(
                     (x - d, x + d),
                     (target - d, target + d),
                     color="#333333",
@@ -619,7 +618,7 @@ class MPLDrawer:
                 )
             )
             self._ax.add_line(
-                plt.Line2D(
+                Line2D(
                     (x - d, x + d),
                     (target + d, target - d),
                     color="#333333",
@@ -683,7 +682,7 @@ class MPLDrawer:
         min_qubit = min(mapped_qubits)
         max_qubit = max(mapped_qubits)
 
-        line = plt.Line2D(
+        line = Line2D(
             (x, x), (min_qubit, max_qubit), color="#333333", linewidth=1.5, zorder=1
         )
         self._ax.add_line(line)
@@ -691,14 +690,14 @@ class MPLDrawer:
         d = self._swap_dx
 
         # Top X
-        l1 = plt.Line2D(
+        l1 = Line2D(
             (x - d, x + d),
             (min_qubit - d, min_qubit + d),
             color="#333333",
             linewidth=1.5,
             zorder=2,
         )
-        l2 = plt.Line2D(
+        l2 = Line2D(
             (x - d, x + d),
             (min_qubit + d, min_qubit - d),
             color="#333333",
@@ -709,14 +708,14 @@ class MPLDrawer:
         self._ax.add_line(l2)
 
         # Bottom X
-        l1 = plt.Line2D(
+        l1 = Line2D(
             (x - d, x + d),
             (max_qubit - d, max_qubit + d),
             color="#333333",
             linewidth=1.5,
             zorder=2,
         )
-        l2 = plt.Line2D(
+        l2 = Line2D(
             (x - d, x + d),
             (max_qubit + d, max_qubit - d),
             color="#333333",

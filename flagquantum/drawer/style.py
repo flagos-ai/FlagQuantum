@@ -12,7 +12,6 @@ try:
     import matplotlib.pyplot as plt
 except (ModuleNotFoundError, ImportError):
     _has_mpl = False
-    plt = None
 
 
 def _needs_mpl(func: Callable[[], None]) -> Callable[[], None]:
