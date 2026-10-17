@@ -235,21 +235,46 @@ def _legacy_fixed_point(ir: CircuitIR) -> CircuitIR:
     pass earned was reported as a removal *this* pass earned.
 
     The substitution is therefore made against the binding the implementation
-    actually reads -- ``pipeline`` holds ``remove_zero_state_resets`` at module scope,
-    so that name is the switch -- and the loop, its order, and every other pass are
-    the shipped ones. A pass added to ``pipeline`` is now in both sides by
-    construction, and ``removed_by_the_pass_in_the_pipeline`` keeps meaning what its
-    name says.
+    actually reads, and the loop, its order, and every other pass stay the shipped
+    ones, so a pass added to the pipeline is in both sides by construction. That
+    binding used to be ``pipeline.remove_zero_state_resets`` read at call time by a
+    hand-written sequence; it is now ``pipeline.default_pass_registry``, because the
+    round is built from the declared level and the registry is what resolves a name
+    to the function that implements it. A module-scope name that nothing reads any
+    more is not a switch: assigning it changes a variable and not the pipeline, and
+    the two sides then measure the same program -- which reports every population's
+    ``legacy_instruction_count`` as the optimized one and
+    ``removed_by_the_pass_in_the_pipeline`` as zero.
+
+    The substituted registry is built from the shipped one's own accessors and is
+    handed back through the same callable the pipeline uses, so the substitution
+    states one fact -- which implementation answers this name -- rather than a second
+    copy of the sequence and the loop.
     """
 
     from flagquantum.compiler import pipeline
+    from flagquantum.compiler.pass_manager import PassRegistry, PassSpec
 
-    original = pipeline.remove_zero_state_resets
-    pipeline.remove_zero_state_resets = lambda program: program
+    identity = lambda program: program  # noqa: E731 - a stand-in, not a pass
+
+    original = pipeline.default_pass_registry
+
+    def _registry_without_the_pass() -> PassRegistry:
+        shipped = original()
+        return PassRegistry(
+            {**shipped.passes, "remove_zero_state_resets": identity},
+            {
+                **shipped.specs,
+                "remove_zero_state_resets": PassSpec(identity),
+            },
+            shipped.analyses,
+        )
+
+    pipeline.default_pass_registry = _registry_without_the_pass
     try:
         return optimize(ir)
     finally:
-        pipeline.remove_zero_state_resets = original
+        pipeline.default_pass_registry = original
 
 
 def rule_contract() -> dict[str, Any]:
