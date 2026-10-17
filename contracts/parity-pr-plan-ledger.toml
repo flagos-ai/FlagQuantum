@@ -10,7 +10,7 @@
 #
 # Regenerate never: edit this file with the change that lands a row.
 schema = "flagquantum_parity_pr_plan_ledger_v1"
-row_count = 101
+row_count = 102
 
 [[rows]]
 id = "W0-00"
@@ -940,6 +940,14 @@ id = "W7-06"
 kind = ["impl"]
 gate_tier = ["pr-default"]
 size = "S"
+depends_on = []
+status = "landed"
+annotated = true
+[[rows]]
+id = "W7-07"
+kind = ["tool", "contract"]
+gate_tier = ["pr-default"]
+size = "M"
 depends_on = []
 status = "landed"
 annotated = true

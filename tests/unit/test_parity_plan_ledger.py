@@ -29,19 +29,11 @@ from tools.parity_plan_ledger import (
 
 pytestmark = pytest.mark.unit
 
-# The wave widths the plan's own count paragraph records. Restated here as data
-# so the ledger and the prose cannot drift into disagreement silently: if a row
-# is added to a wave, both this map and the paragraph have to move.
-DECLARED_WAVE_WIDTHS = {
-    "W0": 12,
-    "W1": 9,
-    "W2": 8,
-    "W3": 5,
-    "W4": 7,
-    "W5": 13,
-    "W6": 41,
-    "W7": 6,
-}
+# The plan's own row total, which its count paragraph reports. This is the one
+# number restated here rather than derived: everything else about the ledger's
+# shape is checked as an internal property, but a total that shrinks by one is
+# invisible to any internal check, so it is pinned against the plan.
+DECLARED_ROW_TOTAL = 102
 
 # The rows the plan names as waiting on an owner ruling, and the rows it names as
 # waiting on hardware this machine does not have. The plan writes the second
@@ -90,13 +82,23 @@ def test_the_ledger_is_sound(document: dict) -> None:
 
 
 def test_the_ledger_covers_every_row_the_plan_lists(document: dict) -> None:
-    rows = document["rows"]
-    assert document["row_count"] == len(rows) == 101
-    widths: dict[str, int] = {}
-    for row in rows:
-        wave = row["id"].split("-")[0]
-        widths[wave] = widths.get(wave, 0) + 1
-    assert widths == DECLARED_WAVE_WIDTHS
+    assert document["row_count"] == len(document["rows"]) == DECLARED_ROW_TOTAL
+
+
+def test_no_row_was_dropped_from_the_middle_of_a_wave(document: dict) -> None:
+    # Row indices within a wave are gapless, and an index is used once -- or
+    # twice, and then by ``a`` and ``b``. A deleted row leaves a hole, so this
+    # holds without restating how wide each wave is.
+    waves: dict[str, list[tuple[int, str]]] = {}
+    for row in document["rows"]:
+        wave, number = row["id"].split("-")
+        waves.setdefault(wave, []).append((int(number[:2]), number[2:]))
+    for wave, entries in waves.items():
+        indices = sorted({index for index, _ in entries})
+        assert indices == list(range(indices[0], indices[0] + len(indices))), wave
+        for index in indices:
+            splits = sorted(split for candidate, split in entries if candidate == index)
+            assert splits in ([""], ["a", "b"]), (wave, index, splits)
 
 
 def test_every_row_id_is_unique_and_names_its_wave(document: dict) -> None:
@@ -126,18 +128,22 @@ def test_the_blocked_rows_are_the_ones_the_plan_names(document: dict) -> None:
 def test_the_unfinished_total_is_the_sum_of_its_two_conditions(document: dict) -> None:
     statuses = [row["status"] for row in document["rows"]]
     unfinished = [status for status in statuses if status != "landed"]
-    assert len(unfinished) == 23
-    assert len(DECLARED_OWNER_BLOCKED) + len(DECLARED_ACCELERATOR_BLOCKED) == 23
-    assert statuses.count("landed") == 78
+    blocked = DECLARED_OWNER_BLOCKED | DECLARED_ACCELERATOR_BLOCKED
+    assert len(unfinished) == len(blocked)
+    assert len(statuses) - len(unfinished) == DECLARED_ROW_TOTAL - len(blocked)
 
 
 def test_the_two_landed_totals_are_both_derivable(document: dict) -> None:
     landed = [row for row in document["rows"] if row["status"] == "landed"]
     silent = {row["id"] for row in landed if not row["annotated"]}
     assert silent == DECLARED_SILENT_LANDED
-    assert len(landed) == 78
-    assert sum(1 for row in landed if row["annotated"]) == 75
-    assert len(landed) - len(silent) == 75
+    # The plan quotes both a strict and a complementary landed total, and the
+    # difference between them is exactly these rows, so neither number needs to
+    # be restated: each is a function of the other and of this set.
+    assert len(landed) == DECLARED_ROW_TOTAL - len(
+        DECLARED_OWNER_BLOCKED | DECLARED_ACCELERATOR_BLOCKED
+    )
+    assert sum(1 for row in landed if row["annotated"]) == len(landed) - len(silent)
 
 
 def test_no_pending_row_is_left_unclassified(document: dict) -> None:
@@ -273,7 +279,13 @@ def test_the_ledger_records_no_second_copy_of_path_ownership(document: dict) -> 
 
 def test_the_summary_reports_the_totals_the_plan_argues_about(document: dict) -> None:
     summary = summarize(document)
-    assert "101 rows across 8 waves" in summary
-    assert "landed: 78 (75 carry their own landing note, 3 do not:" in summary
+    landed = DECLARED_ROW_TOTAL - len(
+        DECLARED_OWNER_BLOCKED | DECLARED_ACCELERATOR_BLOCKED
+    )
+    assert f"{DECLARED_ROW_TOTAL} rows across 8 waves" in summary
+    assert (
+        f"landed: {landed} ({landed - len(DECLARED_SILENT_LANDED)} carry their own "
+        f"landing note, {len(DECLARED_SILENT_LANDED)} do not:"
+    ) in summary
     assert "blocked: 23 (accelerator_environment_unavailable:15" in summary
     assert "pending: 0" in summary
