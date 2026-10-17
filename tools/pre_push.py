@@ -268,6 +268,17 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             (python_executable, "tools/check_evidence_revisions.py"),
         ),
         Check(
+            # The ledger is the only enumerated record of the plan's rows, and the
+            # plan itself lives outside this repository. Nothing else reads it: the
+            # generated parity matrix is a different document about capabilities,
+            # and no gate walks `contracts/` looking for unregistered ledgers. A
+            # defect in it -- a row that disappears, a row that silently becomes
+            # done, a gate tier no lane runs -- is caught only here, and only
+            # before the branch is published.
+            "parity plan row ledger",
+            (python_executable, "tools/parity_plan_ledger.py", "--check"),
+        ),
+        Check(
             "multi-team ownership policy",
             (python_executable, "tools/check_team_scope.py", "--validate"),
         ),
