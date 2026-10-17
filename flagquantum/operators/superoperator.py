@@ -56,7 +56,7 @@ for a trace-preserving one.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from typing import Any, Protocol
 
 import torch
@@ -534,6 +534,33 @@ class SuperOperator:
                 f"(batch, {dimension}, {dimension}), got {shape}"
             )
 
+    def _apply_terms(
+        self,
+        state: torch.Tensor,
+        expand: Callable[[Factor], Factor],
+    ) -> torch.Tensor:
+        """Sum the terms over ``state``, letting ``expand`` widen each factor."""
+
+        total = torch.zeros_like(state)
+        for coefficient, left, right in self._terms:
+            term = state
+            if left is not None:
+                left_map = expand(left)
+                term = (
+                    left_map @ term
+                    if isinstance(left_map, torch.Tensor)
+                    else left_map.__matmul__(term)
+                )
+            if right is not None:
+                right_map = expand(right)
+                term = (
+                    term @ right_map
+                    if isinstance(right_map, torch.Tensor)
+                    else right_map.__rmatmul__(term)
+                )
+            total = total + coefficient * term
+        return total
+
     def apply(self, state: torch.Tensor) -> torch.Tensor:
         """Return the map applied to a ``(d, d)`` or ``(batch, d, d)`` state.
 
@@ -542,23 +569,113 @@ class SuperOperator:
         """
 
         self._validate_state(state)
-        total = torch.zeros_like(state)
-        for coefficient, left, right in self._terms:
-            term = state
-            if left is not None:
-                term = (
-                    left @ term
-                    if isinstance(left, torch.Tensor)
-                    else left.__matmul__(term)
-                )
-            if right is not None:
-                term = (
-                    term @ right
-                    if isinstance(right, torch.Tensor)
-                    else right.__rmatmul__(term)
-                )
-            total = total + coefficient * term
-        return total
+        return self._apply_terms(state, lambda factor: factor)
+
+    def apply_to_subsystem(
+        self,
+        state: torch.Tensor,
+        qubits: Sequence[int],
+        n_qubits: int,
+    ) -> torch.Tensor:
+        """Return the map applied to a subsystem of an ``n_qubits`` state.
+
+        :meth:`apply` is the map on the whole space and demands a state whose side
+        is exactly the map's dimension. This is the same map on part of a larger
+        one: ``qubits`` names the subsystem, the state is over ``n_qubits``
+        qubits, and every qubit the map does not name is left alone. Without this
+        a caller holding a map had to unpack it into operators and then name the
+        qubits again, which is a second reading of the same channel rather than a
+        use of it.
+
+        The factors are widened to the subsystem by
+        :func:`flagquantum.simulation.density_matrix.expand_operator` rather than
+        by a second expansion written here, so a local application and a local
+        Kraus application place a matrix on the same qubits. A matrix-free factor
+        is materialized by its own ``dense()`` before it is widened, because the
+        expansion places entries rather than acting on a state; the widened factor
+        is the size of the state itself, not ``d**4``, so this costs what the
+        state costs and needs no byte ceiling of its own.
+
+        Args:
+            state: The ``(2**n_qubits, 2**n_qubits)`` state, or a
+                ``(batch, 2**n_qubits, 2**n_qubits)`` batch of them.
+            qubits: The qubits the map acts on, in the order the map's own basis
+                uses. Its length must be ``log2(self.dimension)``.
+            n_qubits: The qubit count of the space ``state`` lives in.
+
+        Raises:
+            ValueError: If ``n_qubits`` is not a positive integer, if the state
+                shape or dtype does not match it, if ``qubits`` does not have one
+                entry per qubit the map acts on, or if a qubit is out of range or
+                repeated.
+
+        Examples:
+            The bit-flip channel on the second of two qubits leaves the first one
+            untouched, so ``|00><00|`` becomes an equal mixture of ``|00>`` and
+            ``|01>`` while the first qubit stays in ``|0>``:
+
+            >>> import torch
+            >>> from flagquantum.operators import SuperOperator
+            >>> x = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex128)
+            >>> i = torch.eye(2, dtype=torch.complex128)
+            >>> flip = SuperOperator.from_kraus(
+            ...     (0.5**0.5 * i, 0.5**0.5 * x)
+            ... )
+            >>> ground = torch.zeros(4, 4, dtype=torch.complex128)
+            >>> ground[0, 0] = 1.0
+            >>> flipped = flip.apply_to_subsystem(ground, (1,), 2)
+            >>> [[round(value, 12) for value in row] for row in flipped.real.tolist()]
+            [[0.5, 0.0, 0.0, 0.0], [0.0, 0.5, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
+        """
+
+        if isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 1:
+            raise ValueError(f"n_qubits must be a positive integer, got {n_qubits!r}")
+        dimension, dtype = self._require_summary()
+        if dimension & (dimension - 1):
+            raise ValueError(
+                "the map acts on a number of qubits only if its dimension is a "
+                f"power of two, got {dimension}"
+            )
+        target = tuple(int(qubit) for qubit in qubits)
+        if len(set(target)) != len(target):
+            raise ValueError(
+                f"the qubits the map acts on must be distinct, got {target}"
+            )
+        width = dimension.bit_length() - 1
+        if len(target) != width:
+            raise ValueError(
+                f"the map acts on {width} qubit(s) but {len(target)} were given"
+            )
+        if any(qubit < 0 or qubit >= n_qubits for qubit in target):
+            raise ValueError(
+                f"the qubits the map acts on must lie in [0, {n_qubits}), got {target}"
+            )
+        side = 2**n_qubits
+        shape = tuple(int(size) for size in state.shape)
+        expected = (side, side) if state.ndim == 2 else (shape[0], side, side)
+        if state.ndim not in (2, 3) or shape != expected:
+            raise ValueError(
+                f"the state must have shape ({side}, {side}) or "
+                f"(batch, {side}, {side}) for {n_qubits} qubits, got {shape}"
+            )
+        if state.dtype != dtype:
+            raise ValueError(
+                "the state dtype must match the superoperator dtype: "
+                f"{state.dtype} != {dtype}"
+            )
+
+        from ..simulation.density_matrix import expand_operator
+
+        def expand(factor: Factor) -> Factor:
+            return expand_operator(
+                _dense_matrix(factor),
+                target,
+                n_qubits,
+                dtype=state.dtype,
+                device=state.device,
+            )
+
+        return self._apply_terms(state, expand)
 
     def dense(self, *, max_bytes: int = DEFAULT_DENSE_MATRIX_BYTES) -> torch.Tensor:
         """Return the row-major ``d**2 x d**2`` matrix of the map.

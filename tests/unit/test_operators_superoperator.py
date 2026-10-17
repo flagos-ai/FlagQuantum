@@ -11,10 +11,18 @@ rather than a shared assumption.
 
 from __future__ import annotations
 
+from pathlib import Path
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
+    import tomli as tomllib
+
 import pytest
 import torch
 
 from flagquantum.operators import DEFAULT_DENSE_MATRIX_BYTES, SuperOperator
+from flagquantum.simulation.density_matrix import apply_kraus_density, expand_operator
 from flagquantum.simulation.lindblad_generator import Liouvillian
 
 pytestmark = pytest.mark.unit
@@ -2012,3 +2020,278 @@ def test_kraus_is_refused_above_its_byte_ceiling() -> None:
     message = str(refused.value)
     assert "16-byte ceiling" in message
     assert "apply the map instead of materializing it" in message
+
+
+def _seeded_state(n_qubits: int, dtype: torch.dtype, seed: int = 7) -> torch.Tensor:
+    """Return a random pure density matrix over ``n_qubits`` qubits."""
+
+    generator = torch.Generator().manual_seed(seed)
+    real = torch.randn(2**n_qubits, generator=generator, dtype=torch.float64)
+    imaginary = torch.randn(2**n_qubits, generator=generator, dtype=torch.float64)
+    amplitude = real + 1j * imaginary
+    amplitude = amplitude / amplitude.norm()
+    return torch.outer(amplitude, amplitude.conj()).to(dtype)
+
+
+def _seeded_operators(
+    dimension: int, dtype: torch.dtype, seed: int = 11
+) -> tuple[torch.Tensor, ...]:
+    """Return two arbitrary complex operators of one dimension."""
+
+    generator = torch.Generator().manual_seed(seed)
+    operators = []
+    for _ in range(2):
+        real = torch.randn(
+            dimension, dimension, generator=generator, dtype=torch.float64
+        )
+        imaginary = torch.randn(
+            dimension, dimension, generator=generator, dtype=torch.float64
+        )
+        operators.append((real + 1j * imaginary).to(dtype))
+    return tuple(operators)
+
+
+@pytest.mark.parametrize("dtype", [_COMPLEX64, _COMPLEX128])
+@pytest.mark.parametrize("n_qubits,width", [(1, 1), (2, 1), (2, 2), (3, 1), (3, 2)])
+def test_the_map_reaches_a_subsystem_the_way_the_kraus_route_places_it(
+    dtype: torch.dtype, n_qubits: int, width: int
+) -> None:
+    """The local application is measured against the independent Kraus route.
+
+    ``apply_kraus_density`` places each operator on the named qubits and
+    conjugates it, so it agrees with this method only if both widen through the
+    same expansion. Comparing the two is therefore a check on the placement rather
+    than a comparison of this method with itself.
+    """
+
+    operators = _seeded_operators(2**width, dtype)
+    mapped = SuperOperator.from_kraus(operators)
+    state = _seeded_state(n_qubits, dtype)
+    for qubits in _qubit_choices(n_qubits, width):
+        mine = mapped.apply_to_subsystem(state, qubits, n_qubits)
+        theirs = apply_kraus_density(state, operators, qubits, n_qubits)
+        assert torch.allclose(mine, theirs.reshape(mine.shape), atol=1e-6), (
+            dtype,
+            qubits,
+        )
+
+
+@pytest.mark.parametrize("dtype", [_COMPLEX64, _COMPLEX128])
+@pytest.mark.parametrize("n_qubits", [1, 2, 3])
+def test_the_all_qubits_case_is_the_whole_space_application(
+    dtype: torch.dtype, n_qubits: int
+) -> None:
+    """Naming every qubit must reduce to ``apply``, or the two disagree on one map."""
+
+    operators = _seeded_operators(2**n_qubits, dtype)
+    mapped = SuperOperator.from_kraus(operators)
+    state = _seeded_state(n_qubits, dtype)
+    assert torch.allclose(
+        mapped.apply_to_subsystem(state, tuple(range(n_qubits)), n_qubits),
+        mapped.apply(state),
+        atol=1e-6,
+    )
+
+
+@pytest.mark.parametrize("dtype", [_COMPLEX64, _COMPLEX128])
+def test_the_qubit_order_is_the_order_the_expansion_already_uses(
+    dtype: torch.dtype,
+) -> None:
+    """Two qubits are placed in the caller's order, not in ascending order.
+
+    A two-qubit map that is not symmetric under swapping its qubits gives a
+    different state when it is placed on ``(0, 1)`` and on ``(1, 0)``, so the
+    reading is pinned where the candidates separate: the difference below is
+    large, and each of the two agrees with ``expand_operator`` called with the
+    same order.
+    """
+
+    left = torch.tensor(
+        [
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+        ],
+        dtype=dtype,
+    )
+    mapped = SuperOperator.left_multiply(left)
+    state = _seeded_state(2, dtype)
+
+    ascending = mapped.apply_to_subsystem(state, (0, 1), 2)
+    descending = mapped.apply_to_subsystem(state, (1, 0), 2)
+
+    assert not torch.allclose(
+        ascending, descending
+    ), "a qubit order that cannot change the answer is an order that is not read"
+    assert float((ascending - descending).abs().max()) > 1e-2
+    for qubits, result in (((0, 1), ascending), ((1, 0), descending)):
+        expected = expand_operator(left, qubits, 2, dtype=state.dtype) @ state
+        assert torch.allclose(result, expected, atol=1e-6), qubits
+
+
+def test_the_qubits_the_map_does_not_name_are_left_alone() -> None:
+    """A local channel is that channel on the subsystem and the identity elsewhere.
+
+    The register is a product of ``|0><0|`` on the first qubit with a random state
+    on the second, so the result has to be the same product with the map applied to
+    its second factor. That pins *which* subsystem moved rather than merely that
+    the trace survived, and it is checked against ``apply`` rather than against a
+    second widening written inside the test.
+    """
+
+    dtype = _COMPLEX128
+    identity = torch.eye(2, dtype=dtype)
+    flip = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=dtype)
+    mapped = SuperOperator.from_kraus((0.5**0.5 * identity, 0.5**0.5 * flip))
+
+    second = _seeded_state(1, dtype)
+    zero = torch.tensor([[1.0, 0.0], [0.0, 0.0]], dtype=dtype)
+    # Qubit 0 is the slowly varying tensor axis, so ``kron(qubit 0, qubit 1)``
+    # puts the untouched ``|0><0|`` where the product below expects it.
+    state = torch.kron(zero, second)
+
+    result = mapped.apply_to_subsystem(state, (1,), 2)
+
+    assert torch.allclose(result, torch.kron(zero, mapped.apply(second)), atol=1e-12)
+    assert float(result.trace().real) == pytest.approx(float(state.trace().real))
+    # A partial trace pairs the row index with the column index of the traced
+    # qubit, so it is a diagonal sum rather than a sum over two axes. Both
+    # marginals are read, so neither qubit's share is inferred from the whole.
+    register = result.reshape(2, 2, 2, 2)
+    assert torch.allclose(torch.einsum("akck->ac", register), zero, atol=1e-12)
+    assert torch.allclose(
+        torch.einsum("kbkd->bd", register), mapped.apply(second), atol=1e-12
+    )
+
+
+def test_a_batch_axis_is_applied_row_by_row() -> None:
+    """The batch axis is a stack of independent states, not a second dimension."""
+
+    dtype = _COMPLEX128
+    mapped = SuperOperator.from_kraus(_seeded_operators(2, dtype))
+    batch = torch.stack([_seeded_state(2, dtype, seed=seed) for seed in range(5)])
+
+    result = mapped.apply_to_subsystem(batch, (1,), 2)
+
+    assert result.shape == batch.shape
+    for index in range(batch.shape[0]):
+        single = mapped.apply_to_subsystem(batch[index], (1,), 2)
+        assert torch.allclose(result[index], single, atol=1e-12)
+
+
+def test_a_non_tensor_factor_is_materialized_before_it_is_widened() -> None:
+    """A protocol factor is widened through its own ``dense()``, not ignored."""
+
+    dtype = _COMPLEX128
+    matrix = torch.tensor([[0.0, 2.0], [0.0, 0.0]], dtype=dtype)
+    factor = _MatrixFactor(matrix, tag="widened")
+    mapped = SuperOperator.left_multiply(factor)
+    state = _seeded_state(2, dtype)
+
+    result = mapped.apply_to_subsystem(state, (1,), 2)
+
+    expected = expand_operator(matrix, (1,), 2, dtype=state.dtype) @ state
+    assert torch.allclose(result, expected, atol=1e-12)
+    assert torch.allclose(
+        result, SuperOperator.left_multiply(matrix).apply_to_subsystem(state, (1,), 2)
+    )
+
+
+def test_the_subsystem_route_refuses_every_argument_it_cannot_place() -> None:
+    """Each refusal names the argument rather than failing inside a matmul."""
+
+    dtype = _COMPLEX128
+    mapped = SuperOperator.from_kraus(_seeded_operators(2, dtype))
+    state = _seeded_state(2, dtype)
+
+    for n_qubits in (0, -1, True, 2.0):
+        with pytest.raises(ValueError, match="n_qubits must be a positive integer"):
+            mapped.apply_to_subsystem(state, (0,), n_qubits)  # type: ignore[arg-type]
+
+    # A three-level map is not a map on qubits at all, so the qubit count cannot
+    # be the first thing that is wrong with it.
+    square = SuperOperator.from_kraus((torch.eye(_DIMENSION, dtype=dtype),))
+    with pytest.raises(ValueError, match="power of two"):
+        square.apply_to_subsystem(torch.eye(_DIMENSION, dtype=dtype), (0,), 2)
+
+    with pytest.raises(ValueError, match="acts on 1 qubit"):
+        mapped.apply_to_subsystem(state, (0, 1), 2)
+
+    with pytest.raises(ValueError, match="must be distinct"):
+        mapped.apply_to_subsystem(state, (1, 1), 2)
+
+    with pytest.raises(ValueError, match=r"must lie in \[0, 2\)"):
+        mapped.apply_to_subsystem(state, (2,), 2)
+
+    with pytest.raises(ValueError, match="must have shape"):
+        mapped.apply_to_subsystem(torch.eye(2, dtype=dtype), (0,), 2)
+
+    with pytest.raises(ValueError, match="dtype must match"):
+        mapped.apply_to_subsystem(state.to(_COMPLEX64), (0,), 2)
+
+    # The whole-space route keeps its own sentence for the same mistake, so the
+    # two entry points are distinguishable in what they report.
+    with pytest.raises(ValueError, match=r"must have shape \(2, 2\)"):
+        mapped.apply(torch.eye(4, dtype=dtype))
+
+
+def _qubit_choices(n_qubits: int, width: int) -> list[tuple[int, ...]]:
+    """Return every ordered choice of ``width`` distinct qubits of ``n_qubits``."""
+
+    from itertools import permutations
+
+    return [tuple(choice) for choice in permutations(range(n_qubits), width)]
+
+
+_ABSENCE_CLAIM = (
+    "no application of a map to a subsystem",
+    "no application of a superoperator to a subsystem",
+)
+
+
+def test_the_parity_row_no_longer_denies_the_subsystem_route() -> None:
+    """The contract sentence this method was written for is no longer in the row.
+
+    The row named its remaining distance as the absence of exactly this operation,
+    so the absence is what has to be re-read once the operation exists. Every row
+    in the matrix is searched rather than only this one, because the claim used to
+    live in two places -- the reason and a ``search:`` evidence token -- and a
+    rewrite that fixed one of them would leave the other standing.
+    """
+
+    matrix = (
+        Path(__file__).resolve().parents[2] / "contracts" / "cudaq-parity-matrix.toml"
+    )
+    document = tomllib.loads(matrix.read_text())
+    rows = {
+        row["id"]: row
+        for domain in document["domains"]
+        for row in domain["capabilities"]
+    }
+
+    assert len(rows) == 95
+    row = rows["super_operator_algebra"]
+    assert row["status"] == "partial"
+
+    for field in ("reason", "baseline_gap", "evidence"):
+        text = row.get(field)
+        if text is None:
+            continue
+        haystack = " ".join(text) if isinstance(text, list) else text
+        for needle in _ABSENCE_CLAIM:
+            assert needle not in haystack, (field, needle)
+
+    assert "apply_to_subsystem" in row["reason"]
+    assert "flagquantum/simulation/density_matrix.py" in row["evidence"]
+
+    # No other row may take the claim over, which is why the scan is not scoped to
+    # the row that used to make it.
+    for row_id, other in rows.items():
+        for field in ("reason", "baseline_gap", "evidence"):
+            text = other.get(field)
+            if text is None:
+                continue
+            haystack = " ".join(text) if isinstance(text, list) else text
+            for needle in _ABSENCE_CLAIM:
+                assert needle not in haystack, (row_id, field, needle)
