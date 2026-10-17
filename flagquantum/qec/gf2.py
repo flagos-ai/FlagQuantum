@@ -44,7 +44,7 @@ from collections.abc import Sequence
 __all__ = ("in_span", "nullspace", "rank", "reduce_rows", "reduce_vector")
 
 
-def reduce_rows(rows: list[int]) -> tuple[int, ...]:
+def reduce_rows(rows: Sequence[int]) -> tuple[int, ...]:
     """Return a reduced pivot for each independent row of ``rows``.
 
     A row that is already a combination of the pivots found so far reduces to zero
@@ -93,19 +93,19 @@ def reduce_vector(vector: int, pivots: Sequence[int]) -> int:
     return vector
 
 
-def rank(rows: list[int]) -> int:
+def rank(rows: Sequence[int]) -> int:
     """Return the GF(2) rank of ``rows`` read as bit vectors."""
 
     return len(reduce_rows(rows))
 
 
-def in_span(vector: int, rows: list[int]) -> bool:
+def in_span(vector: int, rows: Sequence[int]) -> bool:
     """Whether ``vector`` is a GF(2) combination of ``rows``."""
 
     return reduce_vector(vector, reduce_rows(rows)) == 0
 
 
-def nullspace(rows: list[int], width: int) -> tuple[int, ...]:
+def nullspace(rows: Sequence[int], width: int) -> tuple[int, ...]:
     """Return one basis of the vectors ``rows`` leave at zero, over ``width`` bits.
 
     The basis is read off the same elimination the rest of this module uses rather

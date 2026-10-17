@@ -15,14 +15,13 @@ operator vocabulary the repository already owns.
 
 from __future__ import annotations
 
-from ..diagnostics import _diagnostic
+from ..diagnostics import LevelDiagnostic, _diagnostic
 from .model import (
     CONSTANT_OPCODE,
     TERMINATORS,
     VALUE_KINDS,
     BlockRecord,
     FunctionRecord,
-    LevelDiagnostic,
     Operation,
     ProgramRecord,
     ValueRef,

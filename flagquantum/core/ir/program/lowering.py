@@ -27,7 +27,7 @@ from __future__ import annotations
 from typing import Any
 
 from .. import CircuitIR, IRSerializationError, IRValidationError
-from ..diagnostics import LEVEL_PROGRAM, PUBLIC_LEVEL, _diagnostic
+from ..diagnostics import LEVEL_PROGRAM, PUBLIC_LEVEL, LevelDiagnostic, _diagnostic
 from .model import (
     CONSTANT_OPCODE,
     INVALID_INPUT,
@@ -36,7 +36,6 @@ from .model import (
     BlockRecord,
     FunctionRecord,
     LevelConversion,
-    LevelDiagnostic,
     Operation,
     ProgramRecord,
     ValueRef,

@@ -599,11 +599,13 @@ def _ring_edges(num_qubits: int, residue: int) -> tuple[tuple[int, int], ...]:
     qubits rather than its direction.
     """
 
-    return tuple(
-        tuple(sorted((wire, (wire + 1) % num_qubits)))
-        for wire in range(num_qubits)
-        if wire % 2 == residue
-    )
+    edges: list[tuple[int, int]] = []
+    for wire in range(num_qubits):
+        if wire % 2 != residue:
+            continue
+        forward, backward = wire, (wire + 1) % num_qubits
+        edges.append((forward, backward) if forward < backward else (backward, forward))
+    return tuple(edges)
 
 
 def ring_floquet_code(num_qubits: int) -> FloquetCode:

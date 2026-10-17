@@ -245,7 +245,7 @@ class _TopologyCostModel:
                 "in flagquantum.core.operator_schema.OPERATOR_SCHEMAS"
             )
         if symmetric:
-            return self._device.has_weak_edge(control, target)
+            return self._weak.has_edge(control, target)
         return self._device.has_edge(control, target)
 
     def needs_orientation_swap(
