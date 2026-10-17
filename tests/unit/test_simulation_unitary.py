@@ -246,9 +246,9 @@ def test_a_program_over_the_ceiling_is_refused_before_anything_is_allocated(
 def test_exactly_the_ceiling_is_accepted() -> None:
     """The limit is a ceiling, not an off-by-one: one wire below it must work."""
 
-    assert get_unitary(fq.Circuit(MAX_UNITARY_QUBITS).h(0), dtype=torch.complex64).shape[
-        0
-    ] == (1 << MAX_UNITARY_QUBITS)
+    assert get_unitary(
+        fq.Circuit(MAX_UNITARY_QUBITS).h(0), dtype=torch.complex64
+    ).shape[0] == (1 << MAX_UNITARY_QUBITS)
 
 
 @pytest.mark.parametrize("kind", ("channel", "dynamic", "condition"))

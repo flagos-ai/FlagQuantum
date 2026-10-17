@@ -83,11 +83,15 @@ one that is missing.
 
 `flagquantum/compiler/pass_manager.py` is new and owns three things: a pass name,
 an ordered sequence of those names, and the manager that runs one over a program.
-`OPTIMIZATION_PIPELINE` is the existing nine-step round, in the existing order,
-with no step added or removed. `PassRegistry` is immutable; adding a pass returns
-a new registry and mutating the mapping raises. `PassManager.run` applies a
-sequence; `PassManager.to_fixed_point` applies it until a round removes no
-instruction, which is the condition the inline loop tested.
+`OPTIMIZATION_PIPELINE` is the round `compile` runs, and it is read from the
+declaration that owns it: `optimization_levels.OPTIMIZATION_LEVEL_STAGES` names
+every pass each optimization level runs, and the default level is the round.
+Restating the sequence in `pass_manager` would make the round and the levels two
+authorities over one fact, so the constant is a projection of the table rather
+than a copy of it. `PassRegistry` is immutable; adding a pass returns a new
+registry and mutating the mapping raises. `PassManager.run` applies a sequence;
+`PassManager.to_fixed_point` applies it until a round removes no instruction,
+which is the condition the inline loop tested.
 
 The module owns no pass body. Every built-in implementation stays where it
 already is, and `pipeline.BUILTIN_PASSES` binds the names to those functions. The
@@ -95,10 +99,13 @@ module also owns no extension protocol: it accepts a callable.
 
 ### 2. The replacement is the proof, not the interface
 
-`_optimize_to_fixed_point` is deleted and re-expressed as
-`PassManager(default_pass_registry()).to_fixed_point(ir, OPTIMIZATION_PIPELINE)`.
-`optimize` and `compile` are not modified in any other way: same signature, same
-result, same callers. This satisfies the replacement gate in
+`_optimize_to_fixed_point` stops looping and re-expresses the loop as
+`PassManager(default_pass_registry()).to_fixed_point(ir, stages)`, where `stages`
+is the sequence the requested level declares. The function itself stays, because
+it is also what resolves the requested level and records it in the program's
+metadata, and that is a Compiler concern rather than a manager one. `optimize` and
+`compile` are not modified in any other way: same signature, same result, same
+callers. This satisfies the replacement gate in
 [ARCH-012](../architecture/decisions/ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md):
 one implementation is swapped behind an existing boundary without modifying its
 consumers. The round limit was `len(ir) + 1` inline and is `len(ir) + 1` by
@@ -211,9 +218,11 @@ installation that uses backend admission is unaffected.
 
 ## Acceptance
 
-- The built-in pipeline is bit-identical for every input: same names, same order,
-  same round limit. `tests/unit/test_compiler_pass_manager.py` pins the order and
-  the two-round case the inline comment named.
+- The built-in pipeline is unchanged for every input: the round is the sequence
+  the default level already declared, resolved through the same registry, with the
+  same round limit. `test_the_round_is_the_default_levels_declaration` pins the
+  round to that declaration and `test_the_manager_reproduces_the_pipeline_the_inline_loop_implemented`
+  pins the two-round case the inline comment named.
 - Each built-in registry binding agrees with the module that implements the pass,
   so the registry cannot drift away from the pass that owns the transformation.
 - An extension pass changes compilation with no FlagQuantum source modified and

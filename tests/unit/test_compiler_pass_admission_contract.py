@@ -20,7 +20,7 @@ from typing import Any
 
 import pytest
 
-from flagquantum.compiler import pass_manager, pipeline
+from flagquantum.compiler import optimization_levels, pass_manager, pipeline
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.ecosystem.extensions import pass_admission, sdk
 from flagquantum.errors import CapabilityError, CompilationError
@@ -219,6 +219,25 @@ def test_the_reserved_names_are_exactly_the_pipeline_the_contract_names(
     assert frozenset(pipeline.BUILTIN_PASSES) == pass_manager.RESERVED_PASS_NAMES
 
 
+def test_the_round_is_the_default_levels_declaration() -> None:
+    # One authority over what a round runs. Restating the sequence beside the level
+    # table would let a reordering in the declaration leave `compile` running the
+    # old order while every test of the declaration still passed, and widening the
+    # reserved names by hand would let a name the round runs be redefinable.
+    default = optimization_levels.DEFAULT_OPTIMIZATION_LEVEL
+    declared = optimization_levels.OPTIMIZATION_LEVEL_STAGES[default]
+
+    assert declared == pass_manager.OPTIMIZATION_PIPELINE
+    assert frozenset(declared) == pass_manager.RESERVED_PASS_NAMES
+    every_name_any_level_runs = {
+        name
+        for stages in optimization_levels.OPTIMIZATION_LEVEL_STAGES.values()
+        for name in stages
+    }
+    registry = pipeline.default_pass_registry()
+    assert set(registry.names) == every_name_any_level_runs
+
+
 def test_the_declared_immutability_and_fresh_registry_facts_hold(
     contract: dict[str, Any],
 ) -> None:
@@ -318,9 +337,13 @@ def test_the_inline_loop_the_contract_replaces_is_gone(
 
     assert "while True" not in source
     assert source.count("PassManager(default_pass_registry()).to_fixed_point") == 1
-    assert contract["replacement_proof"]["replaced_implementation"].startswith(
-        "the inline nine-call fixed-point loop"
-    )
+    # The target is named by the function it lived in rather than by a call count,
+    # so a change to the round's length cannot make the contract describe a
+    # replacement that was never performed.
+    replaced = contract["replacement_proof"]["replaced_implementation"]
+    assert replaced.startswith("the inline fixed-point loop")
+    assert "_optimize_to_fixed_point" in replaced
+    assert "len(ir) == previous_count" not in source
 
 
 def test_the_declared_failure_modes_are_capability_errors(
@@ -416,8 +439,8 @@ def test_every_declared_invariant_is_named_by_a_test() -> None:
         "default_pass_registry resolves exactly the built-in pipeline names and no extension name": (
             "test_the_default_path_resolves_no_extension_pass"
         ),
-        "the built-in pipeline names, their order, and the number of rounds the fixed-point loop runs are unchanged by the refactor": (
-            "test_the_documented_order_is_preserved_by_the_refactor"
+        "the round is the declaration of the default optimization level in OPTIMIZATION_LEVEL_STAGES, and every name it runs resolves in default_pass_registry": (
+            "test_the_round_is_the_default_levels_declaration"
         ),
         "a sequence is resolved in full before the first pass runs, so an unknown name leaves the program untouched": (
             "test_an_unregistered_name_is_refused_before_any_pass_runs"

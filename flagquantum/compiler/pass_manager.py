@@ -1,11 +1,13 @@
 """Named, replaceable circuit-optimization passes, their analyses, and the manager.
 
-The optimization pipeline used to be nine inline calls inside
+The optimization pipeline used to be a run of inline calls inside
 ``pipeline._optimize_to_fixed_point``. That spelling named no pass, so a pass could
 not be replaced, listed, or supplied from outside the repository, and the Compiler
 extension protocol's ``compiler_pass`` kind had no consumer. This module supplies
 the machinery that makes a pass a name: a registry, a sequence, and a manager that
-runs one over a program.
+runs one over a program. ``OPTIMIZATION_PIPELINE`` is read from the level
+declaration that owns it rather than restated here, so the round and the declared
+levels cannot drift apart.
 
 Transformation and analysis are told apart here. A *pass* returns a program; an
 *analysis* returns a fact about one and changes nothing. Several of the facts the
@@ -50,52 +52,44 @@ from typing import cast
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
 from ..errors import CapabilityError, CompilationError
+from .optimization_levels import DEFAULT_OPTIMIZATION_LEVEL, OPTIMIZATION_LEVEL_STAGES
 
+# A transformation: one program in, one program out.
 PassFunction = Callable[[CircuitIR], CircuitIR]
-"""A transformation: one program in, one program out."""
 
+# A read-only fact: a program in, and the facts it declared it needs.
 AnalysisFunction = Callable[..., object]
-"""A read-only fact: a program in, and the facts it declared it needs."""
 
+# A pass that reads the analyses it declares. It is called with the program and a
+# lazily resolved mapping from each analysis it named to that analysis' value.
+# Reading a key computes it; leaving it unread costs nothing.
 AnalysisConsumer = Callable[[CircuitIR, Mapping[str, object]], CircuitIR]
-"""A pass that reads the analyses it declares.
 
-It is called with the program and a lazily resolved mapping from each analysis it
-named to that analysis' value. Reading a key computes it; leaving it unread costs
-nothing.
-"""
-
+# What a name in a registry resolves to. A pass that declares no analysis is a
+# `PassFunction` and may be called with the program alone; a pass that declares some
+# is an `AnalysisConsumer` and is called with the facts it named. The two are one
+# field because a name resolves to the implementation of the pass, and
+# `PassSpec.function` is that same object -- a registry refuses a spec and a binding
+# that disagree.
 PassBinding = PassFunction | AnalysisConsumer
-"""What a name in a registry resolves to.
-
-A pass that declares no analysis is a `PassFunction` and may be called with the
-program alone; a pass that declares some is an `AnalysisConsumer` and is called
-with the facts it named. The two are one field because a name resolves to the
-implementation of the pass, and `PassSpec.function` is that same object -- a
-registry refuses a spec and a binding that disagree.
-"""
 
 # An extension pass is registered under this prefix and nothing else may use it.
 # The prefix is what lets `PassRegistry` tell "a name a plugin supplied" from "a
 # name this repository guarantees".
 EXTENSION_PASS_PREFIX = "extension."
 
-# One round of the fixed optimization pipeline. `remove_identity_gates` appears
-# twice because the passes between the two calls expose new identity pairs, which
-# is a property of the sequence rather than of the pass. Those passes are also the
-# reserved names: exactly the names `compile` is defined by, and so exactly the
-# names an extension may not redefine.
-OPTIMIZATION_PIPELINE: tuple[str, ...] = (
-    "remove_zero_state_resets",
-    "remove_diagonal_gates_before_measure",
-    "remove_identity_gates",
-    "merge_self_inverse",
-    "merge_inverse_pairs",
-    "merge_adjacent_rotations",
-    "cancel_commuting_self_inverse",
-    "remove_identity_gates",
-    "collapse_one_qubit_runs",
-)
+# One round of the fixed optimization pipeline, read from the declaration that owns
+# it rather than restated here. `optimization_levels.OPTIMIZATION_LEVEL_STAGES`
+# declares what each level runs, and the default level is the round: a pass the
+# round runs and the level table does not declare would be reachable only through
+# one of the two, and the two lists would then be two authorities over one fact.
+# `remove_identity_gates` appears twice because the passes between the two calls
+# expose new identity pairs, which is a property of the sequence rather than of the
+# pass. These names are also the reserved names: exactly the names `compile` is
+# defined by, and so exactly the names an extension may not redefine.
+OPTIMIZATION_PIPELINE: tuple[str, ...] = OPTIMIZATION_LEVEL_STAGES[
+    DEFAULT_OPTIMIZATION_LEVEL
+]
 
 RESERVED_PASS_NAMES = frozenset(OPTIMIZATION_PIPELINE)
 

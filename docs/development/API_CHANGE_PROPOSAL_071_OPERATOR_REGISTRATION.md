@@ -358,8 +358,9 @@ This is the finding that changes the shape of the whole contract, and it was not
 in 067.
 
 `collapse_one_qubit_runs` (`flagquantum/compiler/one_qubit_optimization.py:355`)
-is the last pass of `OPTIMIZATION_PIPELINE`
-(`flagquantum/compiler/pass_manager.py:45-55`, where it is the last of nine).
+is the last one-qubit pass of `OPTIMIZATION_PIPELINE`
+(`flagquantum/compiler/pass_manager.py`, where the round runs it immediately
+before `collapse_two_qubit_blocks`).
 `_is_foldable` at `:294` returns
 `True` for any single-wire instruction that carries a matrix, and `_emit` at
 `:256` writes the product back as `u3` and `phase`/`rz`, whose angles come from

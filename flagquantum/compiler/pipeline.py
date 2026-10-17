@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
 from math import isclose
 from types import MappingProxyType
@@ -10,7 +10,6 @@ from typing import Any, cast
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.runtime_config import RuntimeConfig, get_runtime_config
-from ..errors import CompilationError
 from .commutation import CommutationAnalysis, analyze_commutation
 from .directed_topology import DirectedCouplingMap
 from .optimization_levels import (
@@ -18,7 +17,13 @@ from .optimization_levels import (
     optimization_level_stages,
 )
 from .pass_manager import OPTIMIZATION_PIPELINE as OPTIMIZATION_PIPELINE
-from .pass_manager import AnalysisSpec, PassFunction, PassRegistry, PassSpec
+from .pass_manager import (
+    AnalysisSpec,
+    PassFunction,
+    PassManager,
+    PassRegistry,
+    PassSpec,
+)
 from .routing import (
     CouplingMap,
     record_post_routing_optimization,
@@ -94,7 +99,7 @@ _BUILTIN_ANALYSES: Mapping[str, AnalysisSpec] = MappingProxyType(
         "commutation_blocks": AnalysisSpec(_commutation_blocks),
     }
 )
-"""The analyses the built-in passes declare, by name."""
+# The analyses the built-in passes declare, by name.
 
 
 def _rotation_table(analyses: Mapping[str, object] | None) -> Mapping[str, str]:
@@ -331,44 +336,14 @@ def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
     return layers
 
 
-def _round_passes() -> dict[str, Callable[[CircuitIR], CircuitIR]]:
-    """Resolve the declared pass names to the implementations that own them.
-
-    The mapping is keyed on the names a level's declaration lists, so a name a
-    level lists and this mapping does not define is a `KeyError` at the first call
-    rather than a silently skipped pass.
-    """
-
-    from .commutation_cancellation import (
-        cancel_commuting_self_inverse,
-        merge_commuting_rotations,
-    )
-    from .diagonal_before_measure import remove_diagonal_gates_before_measure
-    from .inverse_cancellation import merge_inverse_pairs
-    from .one_qubit_optimization import collapse_one_qubit_runs
-    from .two_qubit_optimization import collapse_two_qubit_blocks
-
-    return {
-        "remove_zero_state_resets": remove_zero_state_resets,
-        "remove_diagonal_gates_before_measure": remove_diagonal_gates_before_measure,
-        "remove_identity_gates": remove_identity_gates,
-        "merge_self_inverse": merge_self_inverse,
-        "merge_inverse_pairs": merge_inverse_pairs,
-        "merge_adjacent_rotations": merge_adjacent_rotations,
-        "merge_commuting_rotations": merge_commuting_rotations,
-        "cancel_commuting_self_inverse": cancel_commuting_self_inverse,
-        "collapse_one_qubit_runs": collapse_one_qubit_runs,
-        "collapse_two_qubit_blocks": collapse_two_qubit_blocks,
-    }
-
-
-# Four of the eight built-in passes live in their own module, and each of those
+# Six of the ten built-in passes live in their own module, and each of those
 # modules reads this one: `commutation_cancellation` reads `_SELF_INVERSE`,
 # `inverse_cancellation` reads the program index above, `one_qubit_optimization`
-# reads the Euler tables and `_is_zero`, and `diagonal_before_measure` reads
-# one_qubit_synthesis. An eager import in this direction would therefore be a
-# cycle, so each is bound through a wrapper that imports it at call time. The four
-# remaining passes are defined here and need no wrapper.
+# reads the Euler tables and `_is_zero`, `two_qubit_optimization` reads
+# `one_qubit_synthesis`, and `diagonal_before_measure` reads one_qubit_synthesis.
+# An eager import in this direction would therefore be a cycle, so each is bound
+# through a wrapper that imports it at call time. The four remaining passes are
+# defined here and need no wrapper.
 #
 # Each wrapper that needs one forwards the analyses it was handed rather than
 # reading this module's tables itself, so a pass in another module reads the same
@@ -395,14 +370,25 @@ def _cancel_commuting_self_inverse(
     return cancel_commuting_self_inverse(ir, analyses)
 
 
+def _merge_commuting_rotations(ir: CircuitIR) -> CircuitIR:
+    from .commutation_cancellation import merge_commuting_rotations
+
+    return merge_commuting_rotations(ir)
+
+
 def _collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
     from .one_qubit_optimization import collapse_one_qubit_runs
 
     return collapse_one_qubit_runs(ir)
 
 
-# The built-in passes, bound to the functions that implement them, in the order and
-# with the calls the inline fixed-point loop used.
+def _collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
+    from .two_qubit_optimization import collapse_two_qubit_blocks
+
+    return collapse_two_qubit_blocks(ir)
+
+
+# The built-in passes, bound to the functions that implement them.
 BUILTIN_PASSES: Mapping[str, PassFunction] = MappingProxyType(
     {
         "remove_zero_state_resets": remove_zero_state_resets,
@@ -411,17 +397,17 @@ BUILTIN_PASSES: Mapping[str, PassFunction] = MappingProxyType(
         "merge_self_inverse": merge_self_inverse,
         "merge_inverse_pairs": _merge_inverse_pairs,
         "merge_adjacent_rotations": merge_adjacent_rotations,
+        "merge_commuting_rotations": _merge_commuting_rotations,
         "cancel_commuting_self_inverse": _cancel_commuting_self_inverse,
         "collapse_one_qubit_runs": _collapse_one_qubit_runs,
+        "collapse_two_qubit_blocks": _collapse_two_qubit_blocks,
     }
 )
-"""Maps every name in `OPTIMIZATION_PIPELINE` to the function that implements it.
-
-Every binding is callable with one program argument, which is what
-`PassRegistry.resolve` returns and what a caller that does not care about analyses
-calls. A binding that declares analyses through `_BUILTIN_PASS_SPECS` also accepts
-the resolved facts as a second argument, and the manager passes them.
-"""
+# Maps every name in `OPTIMIZATION_PIPELINE` to the function that implements it.
+# Every binding is callable with one program argument, which is what
+# `PassRegistry.resolve` returns and what a caller that does not care about analyses
+# calls. A binding that declares analyses through `_BUILTIN_PASS_SPECS` also accepts
+# the resolved facts as a second argument, and the manager passes them.
 
 
 # What each built-in pass declares about the pipeline: the analyses it reads and the
@@ -451,16 +437,18 @@ _BUILTIN_PASS_SPECS: Mapping[str, PassSpec] = MappingProxyType(
             uses=("rotation_parameters",),
             preserves=("rotation_parameters",),
         ),
+        "merge_commuting_rotations": PassSpec(_merge_commuting_rotations),
         "cancel_commuting_self_inverse": PassSpec(
             _cancel_commuting_self_inverse,
             uses=("self_inverse_opcodes", "commutation_blocks"),
             preserves=("self_inverse_opcodes",),
         ),
         "collapse_one_qubit_runs": PassSpec(_collapse_one_qubit_runs),
+        "collapse_two_qubit_blocks": PassSpec(_collapse_two_qubit_blocks),
     }
 )
-"""What each built-in pass declares, by name. Every function identity matches
-`BUILTIN_PASSES`; a registry refuses a spec whose function is a different object."""
+# What each built-in pass declares, by name. Every function identity matches
+# `BUILTIN_PASSES`; a registry refuses a spec whose function is a different object.
 
 
 def default_pass_registry() -> PassRegistry:
@@ -489,32 +477,21 @@ def _optimize_to_fixed_point(
     """Run one declared level's pass sequence to a fixed point.
 
     The sequence, and the reason each pass sits where it does, are declared in
-    `optimization_levels.OPTIMIZATION_LEVEL_STAGES`; this function is the loop
-    that runs the declaration rather than a second copy of it. A level whose
-    sequence is empty is answered with the program unchanged, which is what
-    level 0 means.
+    `optimization_levels.OPTIMIZATION_LEVEL_STAGES`. This function resolves the
+    declaration and hands it to `PassManager.to_fixed_point`, which owns the loop
+    and the termination condition; neither the sequence nor the loop has a second
+    copy here. A level whose sequence is empty is answered with the program
+    unchanged, which is what level 0 means.
     """
 
     stages = optimization_level_stages(optimization_level)
     ir = _as_ir(circuit_or_ir)
     if not stages:
         return _with_recorded_level(ir, optimization_level)
-    # `_round_passes` imports the passes here rather than at module scope: they read
-    # this layer, so a module-level import in this direction would be circular.
-    # `commutation_cancellation` reads `_SELF_INVERSE`, `_ROTATION_PARAM` and the
-    # parameter arithmetic below, `inverse_cancellation` reads
-    # `_WireLocalProgram`, `one_qubit_optimization` reads the Euler tables and
-    # `_is_zero`, `two_qubit_optimization` reads `one_qubit_synthesis` for the same
-    # reason, and `diagonal_before_measure` reads one_qubit_synthesis.
-    passes = _round_passes()
-    max_rounds = len(ir) + 1
-    for _ in range(max_rounds):
-        previous_count = len(ir)
-        for name in stages:
-            ir = passes[name](ir)
-        if len(ir) == previous_count:
-            return _with_recorded_level(ir, optimization_level)
-    raise CompilationError("compiler optimization passes did not reach a fixed point")
+    return _with_recorded_level(
+        PassManager(default_pass_registry()).to_fixed_point(ir, stages),
+        optimization_level,
+    )
 
 
 def optimize(

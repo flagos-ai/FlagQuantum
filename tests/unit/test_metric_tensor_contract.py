@@ -525,7 +525,9 @@ def test_the_stabilizer_mode_serves_no_state_and_is_not_approximated() -> None:
 
     witness = _witness("product")
     point = _GATE._witness_point(witness)
-    with pytest.raises(ValidationError, match="mode='stabilizer' requires an expectation"):
+    with pytest.raises(
+        ValidationError, match="mode='stabilizer' requires an expectation"
+    ):
         gradient_module.metric_tensor(
             _GATE._witness_builder(witness),
             point,

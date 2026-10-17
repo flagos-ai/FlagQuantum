@@ -199,7 +199,8 @@ def test_a_noisy_program_refuses_the_modes_that_cannot_hold_a_mixed_state() -> N
 
     for mode in ("statevector", "mps", "tensor_network"):
         with pytest.raises(
-            ValueError, match="supports mode='auto', mode='density_matrix', or mode='stabilizer'"
+            ValueError,
+            match="supports mode='auto', mode='density_matrix', or mode='stabilizer'",
         ):
             fq.run(
                 circuit,

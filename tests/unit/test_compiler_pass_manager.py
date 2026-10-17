@@ -1,11 +1,12 @@
 """The optimization pipeline is a named, replaceable sequence of registered passes.
 
-The pipeline used to be nine inline calls in `pipeline._optimize_to_fixed_point`,
-and these tests exist so that it stays a nameable sequence: every pass the
-pipeline runs resolves in the default registry, the order is the order the inline
-loop documented, and the manager reproduces the loop's fixed-point semantics. The
-last group pins the two properties that make an extension pass possible at all --
-a name resolves to a pass, and a built-in name cannot be taken.
+The pipeline used to be an inline fixed-point loop in
+`pipeline._optimize_to_fixed_point`, and these tests exist so that it stays a
+nameable sequence: every pass the round runs resolves in the default registry, the
+round is the pass sequence the level table declares rather than a second copy of
+it, and the manager reproduces the loop's fixed-point semantics. The last group
+pins the two properties that make an extension pass possible at all -- a name
+resolves to a pass, and a built-in name cannot be taken.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from types import MappingProxyType
 import pytest
 
 import flagquantum as fq
-from flagquantum.compiler import pass_manager, pipeline
+from flagquantum.compiler import optimization_levels, pass_manager, pipeline
 from flagquantum.core.ir import (
     CircuitIR,
     Instruction,
@@ -97,29 +98,34 @@ def test_the_pipeline_names_each_built_in_pass_at_least_once() -> None:
 
 def test_remove_identity_gates_runs_twice_because_the_sequence_says_so() -> None:
     # The repetition is a property of the sequence, not of the pass: the passes
-    # between the two calls expose new identity pairs.
+    # between the two calls expose new identity pairs. Both positions are pinned,
+    # because the second call's job depends on which of those passes precede it.
     sequence = pass_manager.OPTIMIZATION_PIPELINE
 
-    assert sequence.count("remove_identity_gates") == 2
-    assert sequence[2] == "remove_identity_gates"
-    assert sequence[-2] == "remove_identity_gates"
+    positions = [
+        index for index, name in enumerate(sequence) if name == "remove_identity_gates"
+    ]
+    assert positions == [2, 8]
+    assert sequence[positions[1] - 1] == "cancel_commuting_self_inverse"
 
 
-def test_the_documented_order_is_preserved_by_the_refactor() -> None:
-    # The whole sequence is pinned, not only its ends: the order is the artifact
-    # this refactor made explicit, so reordering it has to be a deliberate edit to
-    # this assertion rather than a silent one.
-    assert pass_manager.OPTIMIZATION_PIPELINE == (
-        "remove_zero_state_resets",
-        "remove_diagonal_gates_before_measure",
-        "remove_identity_gates",
-        "merge_self_inverse",
-        "merge_inverse_pairs",
-        "merge_adjacent_rotations",
-        "cancel_commuting_self_inverse",
-        "remove_identity_gates",
-        "collapse_one_qubit_runs",
-    )
+def test_the_round_is_the_default_level_and_has_no_second_declaration() -> None:
+    # The round is read from the declaration that owns it rather than restated
+    # beside it: `optimization_levels.OPTIMIZATION_LEVEL_STAGES` is the one
+    # authority over which passes run and in what order, and the default level is
+    # the round. Restating the sequence here would make a reordering in the
+    # declaration invisible to `compile`.
+    level = optimization_levels.DEFAULT_OPTIMIZATION_LEVEL
+
+    assert (
+        optimization_levels.OPTIMIZATION_LEVEL_STAGES[level]
+    ) == pass_manager.OPTIMIZATION_PIPELINE
+    # The order is the declaration's, so it is pinned where it is declared; what
+    # this assertion holds is the two ends and the round-tripped pair, which is what
+    # a sequence that silently lost a slot would break.
+    assert pass_manager.OPTIMIZATION_PIPELINE[0] == "remove_zero_state_resets"
+    assert pass_manager.OPTIMIZATION_PIPELINE[-1] == "collapse_two_qubit_blocks"
+    assert set(pass_manager.OPTIMIZATION_PIPELINE) == pass_manager.RESERVED_PASS_NAMES
 
 
 def test_the_manager_reproduces_the_pipeline_the_inline_loop_implemented() -> None:

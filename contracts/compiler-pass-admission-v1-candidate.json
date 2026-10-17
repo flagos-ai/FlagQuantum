@@ -71,7 +71,7 @@
     "no extension value can produce a registered name equal to a built-in pass name",
     "PassRegistry refuses to shadow a registered name and refuses a reserved built-in name on an otherwise empty registry",
     "default_pass_registry resolves exactly the built-in pipeline names and no extension name",
-    "the built-in pipeline names, their order, and the number of rounds the fixed-point loop runs are unchanged by the refactor",
+    "the round is the declaration of the default optimization level in OPTIMIZATION_LEVEL_STAGES, and every name it runs resolves in default_pass_registry",
     "a sequence is resolved in full before the first pass runs, so an unknown name leaves the program untouched",
     "optimize_with_extension_pass runs the built-in pipeline to its own fixed point and then the admitted pass exactly once",
     "the extension handle is closed even when the admitted pass or the pipeline fails"
@@ -111,7 +111,7 @@
       "flagquantum.compiler.pipeline.optimize",
       "flagquantum.compiler.pipeline.compile"
     ],
-    "replaced_implementation": "the inline nine-call fixed-point loop that previously lived in flagquantum.compiler.pipeline._optimize_to_fixed_point",
+    "replaced_implementation": "the inline fixed-point loop that previously lived in flagquantum.compiler.pipeline._optimize_to_fixed_point",
     "chain": [
       "flagquantum.ecosystem.extensions.pass_admission.admit_pass_extension",
       "flagquantum.compiler.pass_manager.PassRegistry.with_pass",
@@ -120,10 +120,10 @@
     ],
     "second_implementation_required": true,
     "scenario_test_required": true,
-    "result_unchanged_note": "The replaced loop and the manager produce the same program for the same input; the sequence is the same nine names in the same order and the round limit is the same expression."
+    "result_unchanged_note": "The replaced loop and the manager produce the same program for the same input, because the loop's body was the same sequence the level declaration names, resolved through the same registry, with the same round limit."
   },
   "out_of_scope": {
-    "analysis_passes": "CUDA-Q separates analysis passes from transformation passes. This contract defines no analysis concept, because no FlagQuantum consumer needs one yet.",
+    "analysis_passes": "CUDA-Q separates analysis passes from transformation passes. This contract defines no analysis-pass kind: the analyses the manager resolves are facts a transformation pass declares it reads, not a pass whose result is a fact, and no FlagQuantum consumer needs the latter yet.",
     "host_pass_manager_export": "There is no public fq.PassManager. The registry and manager are Compiler-internal, and the only host-facing reach is optimize_with_extension_pass.",
     "pass_plugin_conformance_runner": "run_compiler_conformance covers the compiler kind. A pass-level conformance runner is not defined here.",
     "sdk_namespace_addition": "No name is added to flagquantum.ecosystem.extensions.__all__."

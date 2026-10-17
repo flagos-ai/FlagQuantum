@@ -102,7 +102,7 @@ def test_the_declared_levels_are_three_runnable_and_one_reserved() -> None:
 
 
 def test_every_declared_pass_name_resolves_to_an_implementation() -> None:
-    """Tie the table to the loop's own roster, in both directions.
+    """Tie the table to the built-in roster, in both directions.
 
     Level 2 is the round body the loop ran before the parameter existed, so the
     set of names it uses is the implementation roster. A name in the table with no
@@ -111,11 +111,15 @@ def test_every_declared_pass_name_resolves_to_an_implementation() -> None:
     silently keeps running a pass it does not declare.
     """
 
-    roster = compiler_pipeline._round_passes()
+    roster = compiler_pipeline.BUILTIN_PASSES
     declared = {
         name for stages in OPTIMIZATION_LEVEL_STAGES.values() for name in stages
     }
     assert declared == set(roster), sorted(declared ^ set(roster))
+    # The registry is what the round actually resolves through, so a roster entry
+    # that the default registry refuses would fail at the first round instead of
+    # here.
+    assert set(compiler_pipeline.default_pass_registry().names) == declared
 
 
 def test_level_two_is_the_union_and_level_one_is_its_subsequence() -> None:

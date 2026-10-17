@@ -268,7 +268,9 @@ def test_a_single_data_error_is_detected_and_its_syndrome_identifies_the_wire() 
     # A single X error becomes a logical error exactly when it anticommutes with
     # the declared logical Z operator, which is exactly when it lies in that
     # operator's support.
-    (observable,) = tuple(item for item in code.logical_observables if not item.x_qubits)
+    (observable,) = tuple(
+        item for item in code.logical_observables if not item.x_qubits
+    )
     assert logicals == set(observable.support)
     assert len(logicals) == code.distance
 
