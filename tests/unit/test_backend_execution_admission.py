@@ -5,6 +5,7 @@ backend is admitted, `fq.run` reaches it without any FlagQuantum source change,
 and every failure mode is rejected before a kernel starts.
 """
 
+import inspect
 import types
 from pathlib import Path
 from typing import Any, ClassVar
@@ -34,9 +35,14 @@ from flagquantum.ecosystem.extensions.admission import (
     check_backend_admission,
     withdraw_backend,
 )
+from flagquantum.ecosystem.qiskit.aer import (
+    QiskitAerDependencyError,
+    QiskitAerExecutionError,
+)
 from flagquantum.errors import CapabilityError, ExecutionError, FlagQuantumError
 from flagquantum.runtime.backend_registry import (
     BackendCapabilities,
+    BackendExecutor,
     get_backend_capabilities,
     list_backends,
     refresh_backend_registry,
@@ -886,3 +892,126 @@ def test_the_reference_backend_imports_only_the_extension_namespace():
         name for name in imported if name.split(".")[0] == "flagquantum"
     }
     assert flagquantum_imports == {"flagquantum.ecosystem.extensions"}
+
+
+# --- The shipped simulator plugin -------------------------------------------
+
+
+def _shipped_aer_plugin():
+    """The extension instance this distribution declares for Qiskit Aer."""
+
+    declared = tomllib.loads(PYPROJECT_PATH.read_text(encoding="utf-8"))
+    keys = declared["project"]["entry-points"][EXTENSION_ENTRY_POINT_GROUP]
+    assert "backend.qiskit_aer" in keys, "pyproject.toml stopped declaring the plugin"
+    return discover_extensions("backend").entries[("backend", "qiskit_aer")]
+
+
+def test_the_shipped_aer_plugin_is_admitted_rather_than_refused():
+    """A declared plugin that admission refuses is a capability with no occupant.
+
+    The parity row for simulator plugins asks for a conforming occupant of the
+    admission boundary, not for the boundary itself. ``pyproject.toml`` declares
+    ``backend.qiskit_aer``, so this asserts the occupant: the declaration is
+    complete enough for Runtime to learn the backend's capabilities before
+    planning, and the route is a call Runtime makes rather than only the call
+    the SDK makes. Reinstate either half of the old refusal and this fails here
+    instead of at the first user who selects the backend.
+    """
+
+    extension = _shipped_aer_plugin()
+    capabilities = check_backend_admission(extension)
+
+    assert capabilities.name == "qiskit_aer"
+    assert capabilities.devices == ("cpu",)
+    assert capabilities.dtypes == ("complex64", "complex128")
+    assert capabilities.supports_statevector is True
+    assert capabilities.supports_density_matrix is False
+    assert capabilities.supports_mps is False
+    assert capabilities.supports_autograd is False
+    assert capabilities.supports_distributed is False
+    # A CPU statevector evaluator reaches one device, so it must not acquire a
+    # scalability claim by omission.
+    assert capabilities.scalability_claim_allowed is False
+    assert "qiskit_aer" not in list_backends()
+    assert resolve_backend_executor("qiskit_aer") is None
+
+
+def test_the_shipped_aer_plugin_is_both_the_sdk_member_and_the_runtime_route():
+    """The two protocols are satisfied by one object, and both calls still bind.
+
+    ``ExecutionBackendExtension`` is called as ``execute(program, parameters)``
+    and ``BackendExecutor`` as ``execute(program, *, options)``. Serving Runtime
+    is mandatory -- admission refuses a backend that does not -- but adding the
+    route must not cost the SDK its own shape, which is what the shipped
+    extension, its ``run`` entry, and the documented example still use.
+    """
+
+    extension = _shipped_aer_plugin()
+    assert isinstance(extension, ExecutionBackendExtension)
+    assert isinstance(extension, BackendExecutor)
+
+    signature = inspect.signature(extension.execute)
+    signature.bind(object(), {"options": None})
+    signature.bind(object(), options={})
+
+
+def test_the_aer_plugin_refuses_a_planned_fact_it_cannot_honour(admitted):
+    """A fact the bridge cannot honour is named, before any simulation starts.
+
+    Runtime hands a route a mapping of planned facts. A bridge that reads the
+    ones it knows and drops the rest would report a run that differs from the
+    plan while claiming to have served it, which is the silent fallback the
+    architecture forbids. Each refusal below happens on the mapping alone, so
+    none of them needs Qiskit installed -- the boundary fails closed whether or
+    not the optional dependency is present.
+    """
+
+    extension = _shipped_aer_plugin()
+    handle, capabilities = admitted(extension)
+    assert capabilities.name == "qiskit_aer"
+    try:
+        with pytest.raises(QiskitAerExecutionError, match="world_size"):
+            extension.execute(
+                object(), options={"backend": "qiskit_aer", "world_size": 2}
+            )
+        with pytest.raises(QiskitAerExecutionError, match="does not produce gradients"):
+            extension.execute(object(), options={"require_gradients": True})
+        with pytest.raises(QiskitAerExecutionError, match="unsupported field"):
+            extension.execute(object(), options={"execution_path": "native"})
+        with pytest.raises(TypeError, match="not both"):
+            extension.execute(object(), {"options": None}, options={})
+    finally:
+        handle.close()
+
+
+def test_runtime_reaches_the_admitted_aer_route_rather_than_refusing_it(admitted):
+    """The route is reached: only the optional third-party install may be missing.
+
+    Binding the keyword proves admission accepts the shape; it does not prove
+    Runtime arrives. This drives ``fq.run`` at the admitted plugin and splits the
+    two outcomes that matter. A dependency error means the call entered the
+    bridge and stopped at the one thing an optional extra owns. An execution
+    result means Qiskit is installed and the backend served the run. Anything
+    else -- a shape refusal, a planning refusal -- is the defect coming back,
+    because those happen before a backend is ever called.
+    """
+
+    extension = _shipped_aer_plugin()
+    handle, capabilities = admitted(extension)
+    try:
+        try:
+            result = fq.run(
+                _bell(),
+                options=fq.ExecutionOptions(
+                    backend=capabilities.name, mode="statevector"
+                ),
+            )
+        except ExecutionError as error:
+            assert isinstance(
+                error.__cause__, QiskitAerDependencyError
+            ), f"the route was not reached: {error}"
+        else:
+            assert result.runtime["execution_path"] == "admitted_extension_backend"
+            assert result.runtime["backend"] == "qiskit_aer"
+    finally:
+        handle.close()

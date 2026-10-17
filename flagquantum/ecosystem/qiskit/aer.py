@@ -12,7 +12,7 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from importlib import import_module, metadata
-from typing import Any, Literal, cast
+from typing import Any, ClassVar, Literal, cast
 
 import torch
 
@@ -27,6 +27,33 @@ from flagquantum.observables import OutputRequest
 from flagquantum.runtime import ExecutionOptions, ExecutionResult, MeasurementResult
 
 OutputKind = Literal["statevector", "samples", "counts"]
+
+# The planned request Runtime hands an admitted route. Every field is listed so an
+# unrecognised one is refused by name instead of ignored: a field this bridge never
+# reads is a fact the caller believed it had set, and silently dropping it would
+# make the plan describe something other than what ran.
+RUNTIME_FACTS = frozenset(
+    {
+        "backend",
+        "device",
+        "mode",
+        "dtype",
+        "batch_size",
+        "world_size",
+        "target",
+        "require_gradients",
+        "allow_approximate",
+        "runtime_config",
+        "distribution_semantics",
+    }
+)
+
+# The deliverables a plan may ask for. Every one of them is a projection of the
+# state this bridge returns, and Runtime performs the projection, so none is
+# refused: the route hands back the richest form it can produce and the plan takes
+# what it asked for. The set is written out so a target this bridge has never been
+# measured against is refused by name instead of being treated as one of these.
+PLANNED_TARGETS = frozenset({"full_state", "expectation", "samples", "few_amplitudes"})
 
 
 class QiskitAerDependencyError(ImportError):
@@ -450,6 +477,22 @@ class QiskitAerBackend:
         ),
     )
 
+    # What Runtime learns before it plans, in the field names of the type Runtime
+    # builds. The eight facts are the ones this bridge can honour: Aer evaluates a
+    # statevector on the CPU in one of two precisions and offers no density-matrix
+    # or MPS method, no autograd, and no distribution across ranks. Name and
+    # executor are host-owned and admission adds them, so they are not declared.
+    backend_capabilities: ClassVar[dict[str, Any]] = {
+        "tensor_backend": "torch",
+        "devices": ("cpu",),
+        "dtypes": ("complex64", "complex128"),
+        "supports_autograd": False,
+        "supports_distributed": False,
+        "supports_statevector": True,
+        "supports_density_matrix": False,
+        "supports_mps": False,
+    }
+
     def __init__(self) -> None:
         self._active = False
         self._defaults: dict[str, Any] = {}
@@ -486,9 +529,43 @@ class QiskitAerBackend:
             self._defaults["seed"] = _optional_seed(self._defaults["seed"])
         self._active = True
 
-    def execute(self, program: Any, parameters: Any = None) -> ExecutionResult:
+    def execute(
+        self,
+        program: Any,
+        parameters: Any = None,
+        *,
+        options: Mapping[str, Any] | None = None,
+    ) -> Any:
+        """Execute one program, either as the SDK member or as the Runtime route.
+
+        Two callers reach this method and they pass different things. The
+        extension SDK calls ``execute(program, parameters)`` with a mapping of
+        ``options``, ``outputs`` and ``shots`` and expects an
+        ``ExecutionResult``. Runtime calls ``execute(program, *, options)`` with
+        the planned request -- the call shape ``BackendExecutor`` declares and
+        admission binds -- and expects a value ``normalize_execution_result``
+        can adapt. The keyword is what tells them apart, so a call that supplies
+        both is refused rather than resolved by precedence.
+
+        Called as the Runtime route, the return is the bare statevector row.
+        Measurement requests belong to the plan, so Runtime collects them from
+        the state it was handed instead of the backend assembling them a second
+        time from facts it was not given.
+
+        Raises:
+            QiskitAerExecutionError: The planned request declares a fact this
+                bridge cannot honour.
+        """
+
         if not self._active:
             raise RuntimeError("Qiskit Aer backend is not active")
+        if options is not None:
+            if parameters is not None:
+                raise TypeError(
+                    "execute takes either the SDK parameter mapping or the Runtime "
+                    "options keyword, not both"
+                )
+            return self._execute_planned(program, options)
         if parameters is None:
             request: dict[str, Any] = {}
         elif isinstance(parameters, Mapping):
@@ -520,6 +597,94 @@ class QiskitAerBackend:
             shots=request.get("shots"),
             threads=self._defaults.get("threads"),
         )
+
+    def _execute_planned(self, program: Any, facts: Mapping[str, Any]) -> torch.Tensor:
+        """Run the planned request, refusing every fact this bridge cannot honour.
+
+        A refusal is collected rather than raised at the first one, so a caller
+        learns every reason at once instead of re-planning once per field. What
+        survives translation is the statevector row Runtime adapts; everything
+        else about the request -- shots, measurement selection, conditioning --
+        is the plan's, and Runtime derives it from the state handed back.
+        """
+
+        unknown = sorted(set(facts) - RUNTIME_FACTS)
+        if unknown:
+            raise QiskitAerExecutionError(
+                "planned request carries unsupported field(s): " + ", ".join(unknown)
+            )
+        refusals: list[str] = []
+        if facts.get("backend") not in {None, "qiskit_aer"}:
+            refusals.append(
+                f"backend {facts.get('backend')!r} is not this bridge's route"
+            )
+        if facts.get("device") not in {None, "cpu"}:
+            refusals.append(f"device {facts.get('device')!r} is unsupported")
+        if facts.get("mode") not in {None, "auto", "statevector"}:
+            refusals.append(
+                f"mode {facts.get('mode')!r} is unsupported; this bridge evaluates "
+                "statevectors only"
+            )
+        if facts.get("batch_size") not in {None, 1}:
+            refusals.append(
+                f"batch_size {facts.get('batch_size')!r} is unsupported; one program "
+                "row is evaluated per call"
+            )
+        if facts.get("world_size") not in {None, 1}:
+            refusals.append(
+                f"world_size {facts.get('world_size')!r} is unsupported; this bridge "
+                "does not partition a workload across ranks"
+            )
+        if facts.get("target") not in PLANNED_TARGETS:
+            refusals.append(
+                f"target {facts.get('target')!r} is not one of "
+                + ", ".join(sorted(PLANNED_TARGETS))
+            )
+        if facts.get("require_gradients"):
+            refusals.append("this bridge does not produce gradients")
+        if facts.get("allow_approximate"):
+            refusals.append(
+                "this bridge evaluates exactly and has no approximate mode to permit"
+            )
+        if facts.get("distribution_semantics") not in {
+            None,
+            "single_device_fast_path",
+        }:
+            refusals.append(
+                "distribution_semantics "
+                f"{facts.get('distribution_semantics')!r} is unsupported"
+            )
+        if refusals:
+            raise QiskitAerExecutionError(
+                "planned request is outside this bridge's contract: "
+                + "; ".join(refusals)
+            )
+        planned = ExecutionOptions(
+            backend="qiskit_aer",
+            device="cpu",
+            mode="statevector",
+            precision=cast("str | None", facts.get("dtype")),
+            batch_size=1,
+        )
+        configured_seed = self._defaults.get("seed")
+        if configured_seed is not None:
+            planned = replace(planned, seed=cast("int | None", configured_seed))
+        result = _run_with_resources(
+            program,
+            options=planned,
+            outputs=None,
+            shots=None,
+            threads=self._defaults.get("threads"),
+        )
+        state = result.state
+        if not isinstance(state, torch.Tensor):
+            # A statevector request either produces the row or fails; a result
+            # without one means the bridge changed and this route would return
+            # something Runtime cannot adapt, so it is refused here instead.
+            raise QiskitAerExecutionError(
+                "a statevector request produced no state to hand back"
+            )
+        return state
 
     def close(self) -> None:
         self._defaults.clear()
