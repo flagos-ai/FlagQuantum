@@ -51,7 +51,7 @@ Random Clifford peak RSS is effectively unchanged versus rollback (592.7 vs
 594.4 MiB), but remains 10.7% above Lightning's 535.4 MiB. Timing and memory
 details, all raw samples, package versions, IR hashes, and correctness fields are
 retained in the [JSON artifact](batched_statevector_static_clifford_layer_cpu_arm64_20261001.json).
-The generated [comparison table](BATCHED_STATEVECTOR_STATIC_CLIFFORD_LAYER_CPU_ARM64_20261001.md)
+The generated [comparison table](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 is the compact view of the same data.
 
 ## User code

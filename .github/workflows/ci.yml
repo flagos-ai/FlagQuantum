@@ -26,12 +26,13 @@ on:
 # commit and allowed to finish. The cost is a queued matrix per push to `main`
 # rather than a dropped one, and that is the trade this file makes knowingly.
 #
-# Every job below then joins one of eight named buckets scoped to this pull
-# request or pushed branch -- `cpucore-3.1x`, `coverage`, `distributed`, and
+# Every job below then joins one of sixteen named buckets scoped to this pull
+# request or pushed branch -- `cpucore-3.1x`, `runtime`, eight `coverage`
+# shards, `distributed`, and
 # `light-a`/`b`/`c`. The scope is essential: repository-global buckets made an
 # unrelated pull request wait behind every older run in the same bucket, so a
 # healthy 15-minute matrix regularly took an hour to report. A concurrency
-# group admits one job at a time, so the eight bucket suffixes remain the
+# group admits one job at a time, so the sixteen bucket suffixes remain the
 # per-run ceiling while the organisation's 20-runner pool remains the aggregate
 # ceiling across repositories and pull requests.
 #
@@ -45,7 +46,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -64,7 +65,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install --upgrade pip setuptools wheel
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: English repository content
         run: python tools/check_repository_language.py
       - name: Ruff production and test surface
@@ -84,6 +87,7 @@ jobs:
           --follow-imports skip
           tools/ci_tier.py
           tools/check_evidence_revisions.py
+          tools/check_evidence_retention.py
       - name: Enforce package boundaries and module budgets
         run: python tools/check_architecture.py
       - name: Validate multi-team ownership policy
@@ -106,6 +110,15 @@ jobs:
             exit 0
           fi
           python tools/check_team_scope.py --require-classified --base "$BASE_SHA"
+      - name: Require retention metadata for new benchmark evidence
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "no base revision is available for this event; skipping"
+            exit 0
+          fi
+          python tools/check_evidence_retention.py --base "$BASE_SHA"
       - name: Enforce core, extras, interop, and external-platform dependencies
         run: python tools/check_dependency_policy.py
       - name: Verify Amazon Braket circuit interoperability contract
@@ -261,14 +274,14 @@ jobs:
 
   cpu-core:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # Two of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -276,21 +289,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
-      - name: Run smoke and unit tests with bounded workers
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Compile the package on the supported interpreter
+        run: python -m compileall -q flagquantum
+      - name: Run pull-request compatibility smoke tests
+        if: github.event_name == 'pull_request'
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=loadscope --durations=50
+          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+        run: python -m pytest -m smoke -q
+      - name: Run complete smoke and unit tests after merge
+        if: github.event_name != 'pull_request'
+        env:
+          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
         run: python tools/ci_tier.py pr-default
-      - name: Run integration tests with bounded workers
-        # The smoke/unit tier exercises every supported interpreter. The
-        # integration tier proves runtime behavior rather than interpreter
-        # compatibility, so run that repository-wide suite once on the newest
-        # supported Python instead of repeating it three times.
-        if: matrix.python-version == '3.12'
-        env:
-          PYTEST_ADDOPTS: -n 2 --dist=loadscope --durations=50
-        run: python tools/ci_tier.py pr-runtime
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
       - name: Prove NumPy and the 3.11 standard library are absent
@@ -326,16 +338,77 @@ jobs:
           for name in ('cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
       - name: Prove core import does not load JAX
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
+
+  cpu-core-3-12-tests:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Run smoke and unit tests with bounded workers
+        env:
+          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+        run: python tools/ci_tier.py pr-default
+      - name: Prove JAX is absent from the PyTorch-only environment
+        run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
+      - name: Prove NumPy is absent from the PyTorch-only environment
+        run: python -c "import importlib.util; assert importlib.util.find_spec('numpy') is None"
+      - name: Prove external quantum frameworks are absent from core
+        run: >-
+          python -c "import importlib.util;
+          assert all(importlib.util.find_spec(name) is None
+          for name in ('cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
+      - name: Prove core import does not load JAX
+        run: python -m pytest tests/smoke/test_no_jax_core.py -q
+
+  cpu-runtime:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-runtime
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Run integration tests with bounded workers
+        env:
+          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+        run: python tools/ci_tier.py pr-runtime
       - name: Prove native distributed runtime does not require JAX
-        if: matrix.python-version == '3.12'
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
       - name: Run the launched distributed tests under a real launcher
-        if: matrix.python-version == '3.12'
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
+
+  cpu-core-3-12:
+    name: cpu-core (3.12)
+    needs: [cpu-core-3-12-tests, cpu-runtime]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      queue: max
+    steps:
+      - name: Require Python 3.12 unit and runtime suites to pass
+        run: >-
+          test '${{ needs.cpu-core-3-12-tests.result }}' = success
+          && test '${{ needs.cpu-runtime.result }}' = success
 
   jax-optional:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -345,13 +418,13 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
 
   azure-optional:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -363,9 +436,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - name: Install the declared Azure extra
-        run: python -m pip install -e '.[dev,azure]'
+        run: python -m pip install --no-build-isolation -e '.[dev,azure]'
       - name: Verify the certified QDK Azure versions and the offline provider suite
         # No Azure credential, workspace resource id, or network submission is
         # used here. The suite exercises the fake workspace and target path plus
@@ -381,7 +454,7 @@ jobs:
 
   triton-optional:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -391,14 +464,14 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,cuda]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev,cuda]'
       - name: Run the Triton kernels that do not need a device
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
 
   qiskit-optional:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -410,8 +483,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Qiskit and Aer versions
         run: |
           set -euxo pipefail
@@ -440,7 +513,7 @@ jobs:
 
   cirq-optional:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -452,8 +525,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Cirq Core versions
         run: |
           set -euxo pipefail
@@ -477,8 +550,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Amazon Braket SDK versions
         run: |
           set -euxo pipefail
@@ -502,8 +575,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified CUDA-Q versions
         run: |
           set -euxo pipefail
@@ -516,7 +589,7 @@ jobs:
 
   pennylane-optional:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -528,8 +601,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified PennyLane versions
         run: |
           set -euxo pipefail
@@ -542,7 +615,7 @@ jobs:
 
   dependency-bounds:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
@@ -550,9 +623,19 @@ jobs:
       matrix:
         include:
           - python: "3.10"
-            torch: "torch==2.5.*"
+            torch: "torch>=2.10,<2.11"
           - python: "3.12"
-            torch: "torch>=2.5,<2.14"
+            torch: "torch>=2.10,<2.11"
+          - python: "3.12"
+            torch: "torch>=2.11,<2.12"
+          - python: "3.12"
+            torch: "torch>=2.12,<2.13"
+          - python: "3.10"
+            torch: "torch>=2.13,<2.14"
+          - python: "3.12"
+            torch: "torch>=2.13,<2.14"
+          - python: "3.12"
+            torch: "torch>=2.14,<2.15"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -560,7 +643,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install pytest
-      - run: python -m pip install -e . --no-deps
+      - run: python -m pip install --no-build-isolation -e . --no-deps
       - run: python -m pytest tests/smoke tests/test_native_circuit.py -q
       # The declared development floor is a claim about this repository's own
       # toolchain, so it is installed and run rather than trusted. Only the 3.12
@@ -581,7 +664,8 @@ jobs:
     # Ubuntu 22.04 keeps the distributable native extension honest on GCC 11,
     # which is still the default compiler on a maintained Linux LTS release.
     runs-on: ubuntu-22.04
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    timeout-minutes: 30
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -591,7 +675,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install build setuptools wheel
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      # Reproducible artifacts are compiled against PyTorch's 2.10 Stable ABI.
+      # The cold-install steps below validate the resulting artifacts against
+      # the declared runtime range, including preinstalled vendor baselines.
+      - run: python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
       - name: Reproducible wheel and sdist builds
         run: |
           SOURCE_DATE_EPOCH=1767225600 python -m build --no-isolation --outdir dist-a
@@ -601,15 +688,44 @@ jobs:
           cp dist-a/* dist/
       - name: Verify artifact contents
         run: python tools/verify_distribution_artifacts.py dist
-      - name: Clean-install wheel and run quick start
+      - name: Verify one wheel on older PyTorch runtimes
+        timeout-minutes: 15
+        run: |
+          python -m venv /tmp/fq-torch-compat
+          /tmp/fq-torch-compat/bin/python -m pip install packaging
+          for version in 2.10 2.11 2.12; do
+            /tmp/fq-torch-compat/bin/python -m pip install "torch==${version}.*" --index-url https://download.pytorch.org/whl/cpu
+            /tmp/fq-torch-compat/bin/python -m pip install dist/*.whl
+            (
+              cd /tmp
+              /tmp/fq-torch-compat/bin/python -c "import torch; from importlib.metadata import requires; from packaging.requirements import Requirement; r=next(Requirement(x) for x in requires('flagquantum') if Requirement(x).name == 'torch'); assert r.specifier.contains(torch.__version__), (r, torch.__version__); from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR); import flagquantum as fq; assert fq.Circuit(2).h(0).cx(0,1).state().shape[-1] == 4"
+            )
+          done
+      - name: Build and test the publishable manylinux wheel
+        uses: pypa/cibuildwheel@v4.3.0
+        with:
+          # cp310-abi3 is the single wheel for every supported CPython.
+          # cibuildwheel builds it against torch 2.10 and tests it on 2.14.
+          only: cp310-manylinux_x86_64
+          output-dir: wheelhouse
+      - name: Verify publishable manylinux wheel contents
+        run: python tools/verify_distribution_artifacts.py wheelhouse
+      - name: Cold-install CPU wheel and run quick start
+        timeout-minutes: 5
+        env:
+          PIP_CACHE_DIR: /tmp/fq-user-install-cache
         run: |
           python -m venv /tmp/fq-wheel
-          /tmp/fq-wheel/bin/python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          install_started=$SECONDS
+          /tmp/fq-wheel/bin/python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
           /tmp/fq-wheel/bin/python -m pip install dist/*.whl
+          install_elapsed=$((SECONDS - install_started))
+          echo "Cold Linux CPU wheel install: ${install_elapsed}s" >> "$GITHUB_STEP_SUMMARY"
           pushd /tmp
           /tmp/fq-wheel/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
           /tmp/fq-wheel/bin/python -c "from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)"
           /tmp/fq-wheel/bin/python -c "from flagquantum.runtime.capabilities import load_operator_profile; assert load_operator_profile('statevector_local_p0').name == 'statevector_local_p0'"
+          /tmp/fq-wheel/bin/python -c "from flagquantum import services; assert callable(services.search_research_capabilities); assert callable(services.execute_research_capability); assert any(item.capability_id == 'ground_state.solve.vqe' for item in services.search_research_capabilities({}))"
           /tmp/fq-wheel/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
           /tmp/fq-wheel/bin/python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('jax', 'datasets', 'transformers', 'matplotlib', 'cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
           popd
@@ -618,7 +734,7 @@ jobs:
         run: |
           python -m venv /tmp/fq-sdist
           /tmp/fq-sdist/bin/python -m pip install setuptools wheel
-          /tmp/fq-sdist/bin/python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          /tmp/fq-sdist/bin/python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
           /tmp/fq-sdist/bin/python -m pip install --no-build-isolation dist/*.tar.gz
           pushd /tmp
           /tmp/fq-sdist/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
@@ -631,9 +747,48 @@ jobs:
           name: flagquantum-distributions-${{ github.sha }}
           path: dist/
 
+  release-wheel-platform:
+    # Linux is exercised by `package`; these are the two native toolchains that
+    # cannot be represented by an Ubuntu source build.  Keeping the exact
+    # cibuildwheel route in pull-request CI prevents a release tag from being
+    # the first time MSVC or the macOS artifact verifier is exercised.
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            artifact: macos-arm64
+            identifier: cp310-macosx_arm64
+          - os: windows-2022
+            artifact: windows-amd64
+            identifier: cp310-win_amd64
+    # Reuse an existing light bucket rather than increasing the repository's
+    # share of the organisation-wide runner pool.
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and test the release wheel
+        uses: pypa/cibuildwheel@v4.3.0
+        with:
+          only: ${{ matrix.identifier }}
+          output-dir: wheelhouse
+      - name: Verify release wheel contents
+        run: python tools/verify_distribution_artifacts.py wheelhouse
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flagquantum-${{ matrix.artifact }}-${{ github.sha }}
+          path: wheelhouse/
+
   distributed-cpu:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-distributed
       queue: max
@@ -642,24 +797,30 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python tools/ci_tier.py pr-distributed
 
-  coverage:
+  coverage-shard:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # Eight of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
       queue: max
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    env:
+      COVERAGE_FILE: .coverage.${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install "torch>=2.5,<2.14" --index-url https://download.pytorch.org/whl/cpu
-      - run: python -m pip install -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching]'
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
       - name: Run maintained-runtime tests with coverage on pull requests
         if: github.event_name == 'pull_request'
         # The two full P5 trajectory conformance tests already run in the
@@ -667,18 +828,53 @@ jobs:
         # instrumented minutes here; pushes to main still measure them below.
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
-          -n 2 --dist=loadscope --durations=50
+          -n 2 --dist=worksteal --durations=50
+          -p tools.pytest_shard
+          --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
-          --cov-report=term-missing
-          --cov-report=xml
+          --cov-report=
       - name: Run complete maintained-runtime tests with coverage after merge
         if: github.event_name != 'pull_request'
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
-          -n 2 --dist=loadscope --durations=50
+          -n 2 --dist=worksteal --durations=50
+          -p tools.pytest_shard
+          --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
-          --cov-report=term-missing
-          --cov-report=xml
+          --cov-report=
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-shard-${{ matrix.shard }}-${{ github.sha }}
+          path: .coverage.${{ matrix.shard }}
+          include-hidden-files: true
+
+  coverage:
+    needs: coverage-shard
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    # Reuse shard zero's bucket after it finishes. Aggregation is serial
+    # metadata work, so it needs no tenth runner slot.
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-0
+      queue: max
+    steps:
+      - name: Require every coverage shard to pass
+        run: test '${{ needs.coverage-shard.result }}' = success
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install 'pytest-cov>=4.0.0,<8'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-shard-*-${{ github.sha }}
+          path: coverage-data
+          merge-multiple: true
+      - name: Combine coverage shards
+        run: |
+          python -m coverage combine coverage-data
+          python -m coverage xml
       - name: Enforce coverage policy
         run: python tools/check_coverage.py
       - uses: actions/upload-artifact@v4
@@ -688,7 +884,7 @@ jobs:
 
   supply-chain:
     runs-on: ubuntu-latest
-    # One of the eight GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
@@ -700,14 +896,19 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - run: python -m pip install --upgrade pip setuptools wheel
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - name: Install project and security tooling
         run: >-
-          python -m pip install -e '.[dev]'
+          python -m pip install --no-build-isolation -e '.[dev]'
           pip-audit bandit cyclonedx-bom
       - name: Audit installed dependencies
+        # Snapshot the installed environment and remove only PEP 440 local build
+        # suffixes such as PyTorch's `+cpu`. `--disable-pip --no-deps` prevents
+        # the audit from resolving or downloading a different environment.
         run: |
-          python -m pip list --format freeze --exclude flagquantum > audit-requirements.txt
-          pip-audit --strict --no-deps --requirement audit-requirements.txt
+          python tools/write_audit_requirements.py audit-requirements.txt
+          pip-audit --strict --disable-pip --no-deps --requirement audit-requirements.txt
       - name: Static security analysis
         run: bandit -q -lll -r flagquantum -x flagquantum/testing
       - name: Generate CycloneDX SBOM

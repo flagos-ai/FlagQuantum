@@ -6,6 +6,22 @@ import flagquantum as fq
 from flagquantum.drawer import draw
 from flagquantum.drawer.ir_adapter import to_drawable_circuit
 
+
+@pytest.mark.parametrize("shape", [(), (1,)])
+def test_mpl_draw_formats_scalar_tensor_without_changing_gradient(shape):
+    pytest.importorskip("matplotlib")
+    import torch
+
+    from flagquantum.drawer.mpl_drawer import MPLDrawer
+
+    parameter = torch.tensor(0.372519, requires_grad=True).reshape(shape)
+    before = parameter.detach().clone()
+    drawer = MPLDrawer(fq.Circuit(1))
+    assert drawer._get_param_str([parameter]) == "(0.37)"
+    assert parameter.requires_grad
+    torch.testing.assert_close(parameter.detach(), before)
+
+
 pytestmark = pytest.mark.integration
 
 

@@ -8,6 +8,11 @@ Existing violations are migration work, not approved exceptions.
 
 Use English throughout the repository, including comments, docstrings, errors,
 logs, documentation, fixtures, notebook output, diagram labels, and filenames.
+The six Chinese workshop notebooks directly under
+`workshops/flagos2026/notebooks_cn/` may use Chinese in Markdown-cell teaching
+prose only. Their code cells and reusable code examples must stay identical to
+the English edition. Outputs, metadata, filenames, nested directories, and all
+other repository content remain subject to the English-only rule.
 Translate technical meaning, decisions, qualifications, and historical status
 faithfully. Preserve identifiers, equations, links, numerical results, and code
 behavior. Do not delete documentation or conceal text using Unicode escapes.

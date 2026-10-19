@@ -8,6 +8,11 @@ for isolated demos.
 
 All repository content must be written in English: source comments, docstrings,
 exceptions, documentation, tests, examples, notebook text, diagrams, and filenames.
+The sole localization exception is Markdown-cell teaching prose in the six
+Chinese workshop notebooks directly under
+`workshops/flagos2026/notebooks_cn/`. Code cells, outputs, metadata, filenames,
+and reusable code examples remain English and aligned with `notebooks/`.
+This exception does not apply to nested directories or other workshop files.
 Translate existing material without deleting technical meaning, changing recorded
 approval status, or rewriting raw numerical evidence. Check rendered figures as
 well as text; a text scan cannot certify the language of raster images.

@@ -5,6 +5,11 @@ The v0.2 baseline remains an immutable audit record of the historical surface.
 The current manifest selects the retained subset while the final frozen
 contract is still being built. Updating either artifact requires an explicitly
 authorized API review; neither may be regenerated merely to make CI pass.
+
+The presence and type of ``fq.__version__`` remain part of the stable surface,
+but its release-specific literal is intentionally not compared with the v0.2
+value. Package metadata and runtime version identity derive from the same source
+in ``flagquantum.version`` and are verified by the distribution checks.
 """
 
 from __future__ import annotations
@@ -266,7 +271,14 @@ def validate() -> tuple[str, ...]:
             "current stable exports are absent from the reviewed baseline and "
             f"require an approved additive API contract: {', '.join(missing)}",
         )
-    compared_names = [name for name in names if name not in authorized_changes]
+    # A version export cannot retain the historical release's literal while a
+    # new distribution is cut. Keep the name in the manifest and baseline, but
+    # leave its release-specific value to the package artifact checks.
+    compared_names = [
+        name
+        for name in names
+        if name not in authorized_changes and name != "__version__"
+    ]
     expected = {
         "stable_exports": compared_names,
         "exports": {name: historical_exports[name] for name in compared_names},

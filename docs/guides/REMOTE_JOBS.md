@@ -1,6 +1,6 @@
 # Submit and resume remote jobs
 
-This API requires the development version; it is not in PyPI 0.2.0.
+This API is available in `flagquantum==0.3.0`; it is not in PyPI 0.2.0.
 `fq.run()` still waits for a result. Use `fq.submit()` when a Notebook should
 remain available while a remote task is queued or running. Submission waits only
 for preparation and the provider's acknowledgement, not for execution completion.
@@ -43,6 +43,81 @@ The first detached Quafu journey supports full-register counts. Omit `compiler`
 to use service compilation, or pass `compiler="qsteed"` for local compilation.
 Grouped expectations remain available through `fq.run()`, but are not accepted
 by `submit()` because they can produce several hardware tasks.
+
+## Multiple circuits in one Quafu job
+
+Pass a list rather than calling `submit` in a loop. Each circuit becomes one
+task (#0, #1, #2) under a single parent job and one saved receipt. This example
+requires configured Quafu access. On its first run it creates a real hardware
+job; later runs validate the saved request and restore that job:
+
+```python
+from pathlib import Path
+
+import flagquantum as fq
+
+circuits = [fq.Circuit(3).x(qubit) for qubit in range(3)]
+target = "quafu:Baihua"
+shots = 1024
+receipt = Path("three-circuits.receipt.json")
+
+print("Receipt path:", receipt.resolve())
+job = fq.submit(
+    circuits, target=target, shots=shots, outputs=fq.counts(),
+    receipt=receipt, name="asymmetric three-circuit check",
+)
+print("Job ID:", job.id)
+
+result = job.wait(timeout=300)
+for index, counts in enumerate(result.counts):
+    print(index, counts)
+```
+
+For ideal execution the dominant strings would be `100`, `010`, `001`, in
+that order (q0 on the left); hardware can add noise. Counts are already in
+FlagQuantum order, not the portal's classical-register display order.
+`shots=1024` applies to each circuit: this example requests 3072 shots overall.
+`receipt=` submits and saves on the first run; subsequent matching calls restore
+the same job without another submission. Keep the receipt and the SDK-created
+`<receipt>.request.json` journal together in your personal,
+persistent directory. This relative filename is resolved against the current
+working directory, printed above; it is not a search of previous cloud jobs.
+After a restart use the same directory or the same absolute receipt path.
+Circuit identities are ordered: changing a gate, angle,
+width, circuit count or circuit order rejects reuse, as do changes to target or
+shots. Restoring, waiting, corrupt/missing files and configuration mismatches
+never trigger an automatic submission fallback.
+
+The SDK reserves its journal exclusively before submission. If a journal exists but
+the receipt is missing (for example, the POST response was lost or receipt
+saving failed), stop and reconcile with Quafu. Do not delete the guard and rerun
+blindly. An overlapping attempt cannot reserve the same path twice; this is a
+local guard, not provider-side exactly-once submission. Local files are trusted
+context, not proof of what hardware executed. For an intentional new experiment,
+choose a new receipt filename only after checking the previous attempt.
+
+The same `receipt=` option supports Quafu single-circuit jobs and native Jiuding
+jobs. Jiuding additionally checks image, devices, project and queue. Credentials
+are not persisted; provide current credentials on each call as usual. Existing
+manually saved receipts without a request journal remain usable with
+`fq.restore_job(path)`, but cannot be silently adopted by `submit(receipt=...)`.
+Without `receipt=`, `submit` continues to create a new job on every call.
+
+The first collection slice accepts nonempty, same-width logical circuits with
+full-register counts, a shared target and service compilation (`compiler=None`).
+Mixed widths, explicit physical mappings, local compilers and Jiuding lists are
+not supported. A one-element list still creates a collection.
+
+The adapter reads `max_tasks_per_job` from the target's public metadata before
+submitting and fails if that limit cannot be verified. It makes one collection
+POST with no automatic retry or legacy fallback. Status, wait and cancellation
+apply to the whole job. A partially finished collection is reported as failed;
+missing or failed rows are never silently dropped. Result pagination is aligned
+by task sequence, and returned counts/shot accounting are checked per circuit.
+
+Use the matching updated client to restore collection receipts. Older single
+circuit receipts remain supported. Offline tests do not establish that a live
+platform accepted a collection or that a specific device is available.
 
 ## Restore after restarting the Notebook
 
@@ -106,6 +181,31 @@ job = fq.submit(
 job.save("jiuding-job.json")
 print(job.id)
 ```
+
+To run one circuit across multiple accelerators in the selected Jiuding queue,
+set `devices`. The model still comes from `target` (or from the queue when the
+model suffix is omitted):
+
+```python
+job = fq.submit(
+    fq.Circuit(30).h(0).cx(0, 29),
+    target="jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+    devices=4,
+    project="YOUR_PROJECT_SET.YOUR_PROJECT",
+    queue="YOUR_A100_QUEUE",
+    image="YOUR_FLAGQUANTUM_IMAGE",
+    outputs=fq.expectation_ps(z=(0, 29)),
+    credentials=credentials,
+)
+```
+
+`devices=4` means four accelerators are reserved and four distributed ranks are
+started; it is not merely a scheduling hint. Multi-device jobs are currently
+single-node, GPU-only and require a power-of-two device count. The statevector
+evolution is sharded, while the current general result path explicitly gathers
+the state before materializing outputs. Inspect
+`result.runtime["distributed_execution"]` and
+`result.runtime["result_materialization"]` for the two sets of evidence.
 
 A submit-ready entry has this shape:
 
@@ -197,6 +297,10 @@ or provisioned by FlagQuantum:
 - `target="jiuding:gpu"` is the FlagQuantum target selector; the chosen Jiuding
   queue determines the concrete GPU model. Use `jiuding:gpu/<model>` only when
   an exact model match is required.
+- `target="jiuding:cpu"` selects CPU execution inside the job. On an
+  accelerator-backed queue, FlagQuantum still preserves the queue's physical
+  accelerator model in the Jiuding scheduling request; runtime device selection
+  and platform placement are independent.
 
 Users must obtain project membership, queue access and the image reference from
 their Jiuding administrator or Jiuding console. One user's values generally do

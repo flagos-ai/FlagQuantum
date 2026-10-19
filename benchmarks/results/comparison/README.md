@@ -17,7 +17,7 @@ Aer, Cirq, and PennyLane artifacts. Its machine-readable companion is
 Contract tests regenerate both files and fail if either view drifts from the
 raw measurements.
 
-[`SIMULATOR_ADAPTIVE_DENSE_FUSION_WIDTH_CPU_ARM64_20260924.md`](SIMULATOR_ADAPTIVE_DENSE_FUSION_WIDTH_CPU_ARM64_20260924.md)
+[`SIMULATOR_ADAPTIVE_DENSE_FUSION_WIDTH_CPU_ARM64_20260924.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 records the native rollback A/B and refreshed cross-framework evidence for the
 measured complex128 dense-fusion width policy.
 
@@ -31,7 +31,7 @@ records the 22-qubit Linux x86 follow-up that routes wide product-state mixed
 Qiskit Aer and PennyLane Lightning comparisons, absolute times, route evidence,
 public usage, boundaries, stop conditions, and reproduction commands.
 
-[`NATIVE_CPU_DENSE_FUSIONS_LINUX_X86_20261006.md`](NATIVE_CPU_DENSE_FUSIONS_LINUX_X86_20261006.md)
+[`NATIVE_CPU_DENSE_FUSIONS_LINUX_X86_20261006.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 records the native Hadamard/controlled-phase and CX/RZZ/SWAP passes on a pinned
 22-qubit Linux x86 comparison. It includes all six statevector workloads,
 FlagQuantum/Aer/Lightning absolute times and speedups, focused rollback runs,
@@ -61,19 +61,19 @@ through the native CPU layer kernel. It includes the rejected broad-routing
 experiment, same-run PennyLane Lightning native-batch comparison, exact times,
 memory, correctness, example code, limitations, and reproduction steps.
 
-[`BATCHED_STATEVECTOR_ROTATION_CLIFFORD_FUSION_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_ROTATION_CLIFFORD_FUSION_CPU_ARM64_20261003_SCORECARD.md)
+[`BATCHED_STATEVECTOR_ROTATION_CLIFFORD_FUSION_CPU_ARM64_20261003_SCORECARD.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 records the exact rollback A/B for fusing local rotation tiles with their next
 disjoint CX matching. It includes absolute time, the execution-RSS reduction,
 same-run PennyLane Lightning comparison, public example, boundaries, raw JSON,
 and an exact reproduction command.
 
-[`BATCHED_STATEVECTOR_PRODUCT_STATE_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_PRODUCT_STATE_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md)
+[`BATCHED_STATEVECTOR_PRODUCT_STATE_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 records the direct-from-zero first-layer kernel and final-slice assembly. It
 includes the copy-based rollback A/B, absolute time and RSS, a prominent
 PennyLane Lightning comparison, public example, boundaries, raw JSON, and an
 exact reproduction command.
 
-[`BATCHED_STATEVECTOR_STATIC_PRODUCT_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md`](BATCHED_STATEVECTOR_STATIC_PRODUCT_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md)
+[`BATCHED_STATEVECTOR_STATIC_PRODUCT_INITIALIZATION_CPU_ARM64_20261003_SCORECARD.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 records the specialized direct initializer for complete static Clifford product
 layers. It includes the exact rollback A/B, absolute time and RSS, a prominent
 PennyLane Lightning comparison, public example, safety boundaries, raw JSON,
@@ -121,25 +121,25 @@ permutation-index rollback and PennyLane Lightning adjoint. It includes exact
 timings, isolated peak RSS, metadata size, correctness, example code, the
 time-memory tradeoff, and an exact reproduction command.
 
-[`NATIVE_CPU_ADJOINT_HOST_MEMORY_BUDGET_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_HOST_MEMORY_BUDGET_CPU_ARM64_20260930.md)
+[`NATIVE_CPU_ADJOINT_HOST_MEMORY_BUDGET_CPU_ARM64_20260930.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 records the 24-qubit complex128 CPU adjoint checkpoint cliff, the host-aware
 default's absolute forward/backward/total time and peak RSS, and a censored
 static-512-MiB rollback. It includes the cgroup safety boundary, public example,
 limitations, and exact reproduction commands.
 
-[`NATIVE_CPU_ADJOINT_BUDGETED_BLOCK_CHECKPOINTS_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_BUDGETED_BLOCK_CHECKPOINTS_CPU_ARM64_20260930.md)
+[`NATIVE_CPU_ADJOINT_BUDGETED_BLOCK_CHECKPOINTS_CPU_ARM64_20260930.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 measures the bounded-memory fallback between reversible adjoint and full
 rematerialization. It records the exact checkpoint plan, replayed-gate count,
 absolute 24-qubit time, rollback speedup, correctness coverage, and reproduction
 commands for the 1 GiB and 512 MiB policies.
 
-[`NATIVE_CPU_ADJOINT_LOW_MEMORY_CX_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_LOW_MEMORY_CX_CPU_ARM64_20260930.md)
+[`NATIVE_CPU_ADJOINT_LOW_MEMORY_CX_CPU_ARM64_20260930.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 records the 24-qubit memory-tiered CPU CX adjoint path. It compares the native
 zero-state-scratch in-place kernel with budgeted block checkpoints and the
 faster two-state-scratch fused gather, including absolute time, peak RSS,
 correctness checks, public example, and exact reproduction commands.
 
-[`NATIVE_CPU_ADJOINT_CX_CYCLES_CPU_ARM64_20260930.md`](NATIVE_CPU_ADJOINT_CX_CYCLES_CPU_ARM64_20260930.md)
+[`NATIVE_CPU_ADJOINT_CX_CYCLES_CPU_ARM64_20260930.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 records the compact in-place permutation-cycle kernel and its performance and
 memory gap to both per-CNOT pairs and fused dual-state gather.
 

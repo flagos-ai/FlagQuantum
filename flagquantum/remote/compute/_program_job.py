@@ -135,9 +135,37 @@ def decode_program_result(
             requested_target=requested_target,
             effective_target=selected_target,
         )
+        evidence = value.get("evidence", {})
+        distributed_execution = (
+            evidence.get("distributed_execution")
+            if isinstance(evidence, dict)
+            else None
+        )
+        result_materialization = (
+            evidence.get("result_materialization")
+            if isinstance(evidence, dict)
+            else None
+        )
         return replace(
             result,
-            runtime={**result.runtime, "execution_path": "jiuding_batch_program"},
+            runtime={
+                **result.runtime,
+                "execution_path": "jiuding_batch_program",
+                "devices": evidence.get("devices", 1),
+                "distribution_semantics": (
+                    result_materialization.get("distribution_semantics")
+                    if isinstance(result_materialization, dict)
+                    else "single_device_fast_path"
+                ),
+                "execution_distribution_semantics": (
+                    distributed_execution.get("distribution_semantics")
+                    if isinstance(distributed_execution, dict)
+                    else "single_device_fast_path"
+                ),
+                "scalability_claim_allowed": False,
+                "distributed_execution": distributed_execution,
+                "result_materialization": result_materialization,
+            },
         )
     if "state" not in value:
         raise RuntimeError("Jiuding program job returned no state or measurements")
@@ -145,12 +173,28 @@ def decode_program_result(
     from ._workspace_results import decode_tensor
 
     evidence = dict(value.get("evidence", {}))
+    distributed_execution = evidence.get("distributed_execution")
+    result_materialization = evidence.get("result_materialization")
     return ExecutionResult(
         state=decode_tensor(value["state"]),
         runtime={
             "execution_path": "jiuding_batch_program",
             "device": evidence.get("device"),
             "elapsed_seconds": evidence.get("elapsed_seconds"),
+            "devices": evidence.get("devices", 1),
+            "distribution_semantics": (
+                result_materialization.get("distribution_semantics")
+                if isinstance(result_materialization, dict)
+                else "single_device_fast_path"
+            ),
+            "execution_distribution_semantics": (
+                distributed_execution.get("distribution_semantics")
+                if isinstance(distributed_execution, dict)
+                else "single_device_fast_path"
+            ),
+            "scalability_claim_allowed": False,
+            "distributed_execution": distributed_execution,
+            "result_materialization": result_materialization,
         },
         provenance={
             "requested_target": requested_target,

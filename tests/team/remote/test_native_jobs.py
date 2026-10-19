@@ -51,6 +51,33 @@ def test_inline_command_executes_circuit_and_decodes_result():
     torch.testing.assert_close(decoded.state, expected.state)
 
 
+def test_multi_device_command_uses_one_torchrun_rank_per_device():
+    command = _command(
+        {
+            "schema": SCHEMA,
+            "version": VERSION,
+            "operation": "statevector",
+            "request_id": "batch-program",
+            "target": "jiuding:gpu/A100",
+            "program": fq.Circuit(2).to_ir().to_dict(),
+        },
+        "test-run",
+        devices=4,
+    )
+    args = shlex.split(command)
+    assert args[:5] == [
+        "python",
+        "-u",
+        "-m",
+        "torch.distributed.run",
+        "--nnodes=1",
+    ]
+    assert "--master-addr=127.0.0.1" in args
+    assert "--master-port=29500" in args
+    assert "--nproc-per-node=4" in args
+    assert args[-3] == "flagquantum.remote.compute._distributed_job"
+
+
 def chunks(value):
     data = json.dumps(value).encode()
     digest = hashlib.sha256(data).hexdigest()
@@ -85,6 +112,18 @@ def test_transport_bounds_precede_execution():
         _decode_lines(["FQ_RESULT_run 0/4097 digest a"], "run")
     with pytest.raises(RuntimeError, match="Malformed"):
         _decode_lines(["FQ_RESULT_run invalid"], "run")
+
+
+@pytest.mark.parametrize("devices", (0, -1, 1.5, True))
+def test_native_submission_rejects_invalid_device_count_before_context(devices):
+    client = NativeJiudingJobClient(project="set.project", queue="queue")
+    with pytest.raises(ValueError, match="devices must be a positive integer"):
+        client.submit_program(
+            fq.Circuit(2),
+            target="jiuding:gpu/A100",
+            image="image",
+            devices=devices,
+        )
 
 
 def test_project_context_uses_authenticated_user_and_queue(monkeypatch):
@@ -140,3 +179,52 @@ def test_project_context_uses_authenticated_user_and_queue(monkeypatch):
     assert all("workspaces" not in path for path in paths)
     assert client.workspace() == context
     assert len(paths) == 3
+
+
+def test_multi_device_submission_reserves_the_same_number_of_accelerators(
+    monkeypatch,
+):
+    client = NativeJiudingJobClient(project="set.project", queue="queue")
+    monkeypatch.setattr(
+        client,
+        "workspace",
+        lambda: {
+            "queueId": "queue-id",
+            "queueName": "queue",
+            "clusterName": "cluster",
+            "acceleratorModel": "A100",
+        },
+    )
+    monkeypatch.setattr(
+        client,
+        "_catalog_image",
+        lambda image, region: {
+            "registryUrl": "registry/image",
+            "imageRegion": "PROJSET",
+        },
+    )
+    monkeypatch.setattr(
+        client,
+        "_request",
+        lambda *args, **kwargs: {"type": "loki", "uid": "logs"},
+    )
+    monkeypatch.setattr(client, "_auth", lambda: {"AIRS-Token": "token"})
+    captured = {}
+
+    def launch(**options):
+        captured.update(options)
+        return {"jobId": "job-id", **options["record"]}
+
+    monkeypatch.setattr(client, "_launch_command", launch)
+    receipt = client.submit_program(
+        fq.Circuit(3).h(0).cx(0, 2),
+        target="jiuding:gpu/A100",
+        image="image",
+        devices=4,
+    )
+    assert captured["gpus"] == 4
+    assert captured["image_region"] == "PROJSET"
+    assert captured["cpus"] >= 4
+    assert "--nproc-per-node=4" in captured["command"]
+    assert receipt["devices"] == 4
+    assert receipt["execution_distribution_semantics"] == "sharded_across_ranks"

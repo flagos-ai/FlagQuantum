@@ -132,6 +132,7 @@ class GroundStateResources:
     trainable_parameters: int
     optimizer_steps: int
     objective_evaluations: int
+    backend_executions: int
     execution_mode: str = "local_statevector"
 
 
@@ -179,6 +180,24 @@ class ExactSectorReference:
     sector_basis_states: tuple[str, ...] = ()
     unsupported: UnsupportedCapability | None = None
     schema: str = _REFERENCE_SCHEMA
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class EnergyVarianceReference:
+    """Independent energy-variance validation for one final statevector."""
+
+    status: Literal["completed", "unsupported"]
+    hamiltonian: PauliSum
+    provenance: ExecutionProvenance
+    tolerance: float
+    energy: float | None = None
+    variance: float | None = None
+    passed: bool = False
+    unsupported: UnsupportedCapability | None = None
+    schema: str = "flagquantum.energy_variance_reference.v1"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -367,6 +386,25 @@ def _unsupported_vqe_result(
     )
 
 
+def validate_ground_state_vqe_request(
+    request: GroundStateVQERequest,
+) -> UnsupportedCapability | None:
+    """Return why a request is outside the bounded VQE contract, if it is."""
+
+    if request.schema != _REQUEST_SCHEMA:
+        return UnsupportedCapability(
+            "UNSUPPORTED_REQUEST_SCHEMA",
+            f"only {_REQUEST_SCHEMA} is supported",
+            {"received": request.schema},
+        )
+    return _unsupported_reason(
+        request.hamiltonian,
+        fixed_hamming_weight=request.fixed_hamming_weight,
+        ansatz=request.ansatz,
+        optimizer=request.optimizer,
+    )
+
+
 def exact_sector_reference(
     hamiltonian: PauliSum, *, fixed_hamming_weight: int
 ) -> ExactSectorReference:
@@ -425,6 +463,117 @@ def exact_sector_reference(
     )
 
 
+def energy_variance_reference(
+    hamiltonian: PauliSum,
+    statevector: StatevectorEvidence,
+    *,
+    tolerance: float = 1e-5,
+) -> EnergyVarianceReference:
+    """Validate a final state using ``<H^2> - <H>^2`` on CPU.
+
+    This calculation is independent of the optimizer's convergence condition.
+    It consumes the serialized final state rather than the live training tensor.
+    """
+
+    if not isinstance(tolerance, (int, float)) or isinstance(tolerance, bool):
+        raise TypeError("tolerance must be a real number")
+    tolerance = float(tolerance)
+    if not math.isfinite(tolerance) or tolerance < 0:
+        raise ValueError("tolerance must be finite and non-negative")
+
+    reason = _unsupported_reason(hamiltonian, fixed_hamming_weight=1)
+    expected_size = 1 << hamiltonian.n_qubits if reason is None else 0
+    if reason is None and (
+        len(statevector.basis_states) != expected_size
+        or len(statevector.amplitudes) != expected_size
+    ):
+        reason = UnsupportedCapability(
+            "UNSUPPORTED_STATEVECTOR_SHAPE",
+            "statevector evidence must cover every computational-basis state",
+            {
+                "expected_amplitudes": expected_size,
+                "received_amplitudes": len(statevector.amplitudes),
+            },
+        )
+    if reason is not None:
+        payload = {
+            "hamiltonian": asdict(hamiltonian),
+            "status": "unsupported",
+            "tolerance": tolerance,
+            "unsupported": asdict(reason),
+        }
+        return EnergyVarianceReference(
+            status="unsupported",
+            hamiltonian=hamiltonian,
+            tolerance=tolerance,
+            unsupported=reason,
+            provenance=_provenance(
+                "flagquantum.services.energy_variance_reference", payload
+            ),
+        )
+
+    import torch
+
+    state = torch.tensor(
+        [complex(item.real, item.imag) for item in statevector.amplitudes],
+        dtype=torch.complex128,
+        device="cpu",
+    )
+    norm = torch.linalg.vector_norm(state)
+    if not bool(torch.isfinite(norm)) or not math.isclose(
+        float(norm), 1.0, rel_tol=0.0, abs_tol=1e-6
+    ):
+        reason = UnsupportedCapability(
+            "UNSUPPORTED_STATEVECTOR_NORM",
+            "statevector evidence must be finite and normalized",
+            {"received_norm": float(norm)},
+        )
+        payload = {
+            "hamiltonian": asdict(hamiltonian),
+            "status": "unsupported",
+            "tolerance": tolerance,
+            "unsupported": asdict(reason),
+        }
+        return EnergyVarianceReference(
+            status="unsupported",
+            hamiltonian=hamiltonian,
+            tolerance=tolerance,
+            unsupported=reason,
+            provenance=_provenance(
+                "flagquantum.services.energy_variance_reference", payload
+            ),
+        )
+
+    matrix = _native_hamiltonian(hamiltonian).matrix(
+        dtype=torch.complex128, device="cpu"
+    )
+    applied = matrix @ state
+    energy = float(torch.vdot(state, applied).real)
+    second_moment = float(torch.vdot(applied, applied).real)
+    raw_variance = second_moment - energy * energy
+    variance = max(0.0, raw_variance)
+    passed = variance <= tolerance
+    payload = {
+        "hamiltonian": asdict(hamiltonian),
+        "status": "completed",
+        "tolerance": tolerance,
+        "energy": energy,
+        "variance": variance,
+        "passed": passed,
+    }
+    return EnergyVarianceReference(
+        status="completed",
+        hamiltonian=hamiltonian,
+        tolerance=tolerance,
+        energy=energy,
+        variance=variance,
+        passed=passed,
+        provenance=_provenance(
+            "flagquantum.services.energy_variance_reference", payload
+        ),
+    )
+
+
 def run_ground_state_vqe(request: GroundStateVQERequest) -> GroundStateVQEResult:
     """Run the bounded FlagQuantum-owned VQE contract without provider fallback.
 
@@ -433,21 +582,7 @@ def run_ground_state_vqe(request: GroundStateVQERequest) -> GroundStateVQEResult
     from dense diagonalization evidence.
     """
 
-    if request.schema != _REQUEST_SCHEMA:
-        return _unsupported_vqe_result(
-            request,
-            UnsupportedCapability(
-                "UNSUPPORTED_REQUEST_SCHEMA",
-                f"only {_REQUEST_SCHEMA} is supported",
-                {"received": request.schema},
-            ),
-        )
-    reason = _unsupported_reason(
-        request.hamiltonian,
-        fixed_hamming_weight=request.fixed_hamming_weight,
-        ansatz=request.ansatz,
-        optimizer=request.optimizer,
-    )
+    reason = validate_ground_state_vqe_request(request)
     if reason is not None:
         return _unsupported_vqe_result(request, reason)
 
@@ -514,6 +649,7 @@ def run_ground_state_vqe(request: GroundStateVQERequest) -> GroundStateVQEResult
         trainable_parameters=1,
         optimizer_steps=request.optimizer.max_evaluations - 1,
         objective_evaluations=request.optimizer.max_evaluations,
+        backend_executions=request.optimizer.max_evaluations,
     )
     evidence = {
         "request": request.to_dict(),
@@ -542,6 +678,7 @@ __all__ = (
     "ComplexAmplitude",
     "ConvergencePoint",
     "ExactSectorReference",
+    "EnergyVarianceReference",
     "ExecutionProvenance",
     "GroundStateAnsatz",
     "GroundStateOptimizer",
@@ -554,6 +691,8 @@ __all__ = (
     "StatevectorEvidence",
     "UnsupportedCapability",
     "exact_sector_reference",
+    "energy_variance_reference",
     "ground_state_vqe_capability",
     "run_ground_state_vqe",
+    "validate_ground_state_vqe_request",
 )

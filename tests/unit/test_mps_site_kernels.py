@@ -15,6 +15,68 @@ from flagquantum.simulation.mps.site_kernels import (
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_eager_two_site_contraction_keeps_complex_math_and_gradients(
+    monkeypatch, dtype
+):
+    def reject_real_channel(*args, **kwargs):
+        raise AssertionError(
+            "eager complex contraction must not use real-channel GEMMs"
+        )
+
+    monkeypatch.setattr(site_kernels, "_run", reject_real_channel)
+    generator = torch.Generator().manual_seed(37)
+    left = torch.randn(
+        2, 3, 2, 2, 3, dtype=dtype, generator=generator, requires_grad=True
+    )
+    right = torch.randn(
+        2, 3, 3, 2, 4, dtype=dtype, generator=generator, requires_grad=True
+    )
+    matrix = torch.randn(2, 4, 4, dtype=dtype, generator=generator, requires_grad=True)
+    actual = apply_two_site_gate_contraction_bucket(left, right, matrix, compiled=False)
+    expected = torch.stack(
+        [
+            torch.einsum(
+                "ij,bljr->blir",
+                matrix[k],
+                torch.einsum("blsm,bmtr->blstr", left[k], right[k]).reshape(3, 2, 4, 4),
+            ).reshape(3, 4, 8)
+            for k in range(2)
+        ]
+    )
+    torch.testing.assert_close(actual, expected)
+    inputs = (left, right, matrix)
+    actual_grads = torch.autograd.grad(
+        actual.abs().square().sum(), inputs, retain_graph=True
+    )
+    expected_grads = torch.autograd.grad(expected.abs().square().sum(), inputs)
+    for actual_grad, expected_grad in zip(actual_grads, expected_grads, strict=True):
+        torch.testing.assert_close(actual_grad, expected_grad)
+
+
+@pytest.mark.gpu
+def test_eager_two_site_contraction_preserves_precision_with_tf32_enabled():
+    if not torch.cuda.is_available():
+        pytest.skip("requires a CUDA-compatible accelerator")
+    generator = torch.Generator().manual_seed(39)
+    left = torch.randn(2, 1, 3, 2, 4, dtype=torch.complex64, generator=generator)
+    right = torch.randn(2, 1, 4, 2, 3, dtype=torch.complex64, generator=generator)
+    matrix = torch.randn(2, 1, 4, 4, dtype=torch.complex64, generator=generator)
+    expected = apply_two_site_gate_contraction_bucket(
+        left, right, matrix, compiled=False
+    )
+    previous = torch.backends.cuda.matmul.allow_tf32
+    try:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        actual = apply_two_site_gate_contraction_bucket(
+            left.cuda(), right.cuda(), matrix.cuda(), compiled=False
+        )
+        assert torch.backends.cuda.matmul.allow_tf32 is True
+        torch.testing.assert_close(actual.cpu(), expected, atol=2e-5, rtol=2e-5)
+    finally:
+        torch.backends.cuda.matmul.allow_tf32 = previous
+
+
 @pytest.mark.parametrize(
     ("route", "kind"),
     (

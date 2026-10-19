@@ -41,6 +41,7 @@ for why an undecidable call site is skipped rather than reported.
 from __future__ import annotations
 
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +55,10 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from census_wire_vocabulary import (  # noqa: E402
     DECLARATION_KINDS,
+    AttributeCensus,
+    Census,
+    DefinitionCensus,
+    DocumentationCensus,
     all_public_attribute_names,
     attribute_census,
     census,
@@ -88,6 +93,46 @@ EXPECTED_HEADER = {
 }
 
 
+@dataclass(frozen=True)
+class VocabularySnapshot:
+    """One immutable reading of every source surface the contract reconciles.
+
+    Contract mutation tests change only the ledger. Re-reading and reparsing the
+    same repository for every mutation made the result no stronger and turned a
+    policy module into the longest unit-test scope in CI. Callers opt into reuse
+    explicitly, so a caller that changes source files continues to get a fresh
+    reading by omitting ``snapshot``.
+    """
+
+    parameters: Census
+    attributes: AttributeCensus
+    definitions: DefinitionCensus
+    public_parameters: frozenset[str]
+    public_attributes: tuple[str, ...]
+    documentation: DocumentationCensus
+    docstrings: tuple[tuple[str, str], ...]
+    docstring_examples: tuple[tuple[str, str], ...]
+    call_site_mismatches: tuple[str, ...]
+
+
+def scan_vocabulary(package_root: Path | None = None) -> VocabularySnapshot:
+    """Read all source-dependent inputs once without changing their semantics."""
+
+    return VocabularySnapshot(
+        parameters=census(package_root),
+        attributes=attribute_census(package_root),
+        definitions=definition_census(package_root),
+        public_parameters=public_parameter_names(package_root),
+        public_attributes=all_public_attribute_names(package_root),
+        # These surfaces intentionally remain repository-wide when a focused
+        # package fixture is supplied, matching the pre-snapshot gate.
+        documentation=documentation_census(),
+        docstrings=docstring_census(),
+        docstring_examples=docstring_example_tokens(),
+        call_site_mismatches=qubit_keyword_mismatches(),
+    )
+
+
 def _load_toml(path: Path) -> dict[str, Any]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
@@ -103,8 +148,14 @@ def _duplicates(values: list[str]) -> list[str]:
 
 
 def contract_errors(
-    contract: dict[str, Any], *, package_root: Path | None = None
+    contract: dict[str, Any],
+    *,
+    package_root: Path | None = None,
+    snapshot: VocabularySnapshot | None = None,
 ) -> tuple[str, ...]:
+    if snapshot is not None and package_root is not None:
+        raise ValueError("snapshot and package_root are mutually exclusive")
+    reading = snapshot if snapshot is not None else scan_vocabulary(package_root)
     errors: list[str] = []
 
     for name, value in EXPECTED_HEADER.items():
@@ -195,8 +246,8 @@ def contract_errors(
             f"qubit vocabulary retirement names sites outside the baseline: {unknown[:3]}"
         )
 
-    scanned = census(package_root)
-    scanned_attributes = attribute_census(package_root)
+    scanned = reading.parameters
+    scanned_attributes = reading.attributes
     declarations = {
         site.identifier: site.declaration
         for site in (*scanned_attributes.ledgered, *scanned_attributes.excluded)
@@ -239,10 +290,9 @@ def contract_errors(
             "re-measure boundary.measured_private"
         )
 
-    declared_parameters = public_parameter_names(package_root)
+    declared_parameters = reading.public_parameters
     declared_attributes = {
-        identifier.rsplit("::", 1)[1]
-        for identifier in all_public_attribute_names(package_root)
+        identifier.rsplit("::", 1)[1] for identifier in reading.public_attributes
     }
     for alternative in forbidden:
         if alternative in declared_parameters:
@@ -256,11 +306,11 @@ def contract_errors(
             )
 
     errors.extend(_attribute_errors(contract, scanned_attributes))
-    errors.extend(_definition_errors(contract, package_root))
-    errors.extend(_documentation_errors(contract))
-    errors.extend(_docstring_errors(contract))
-    errors.extend(_docstring_example_errors(contract))
-    errors.extend(_call_site_errors(contract))
+    errors.extend(_definition_errors(contract, reading.definitions))
+    errors.extend(_documentation_errors(contract, reading.documentation))
+    errors.extend(_docstring_errors(contract, reading.docstrings))
+    errors.extend(_docstring_example_errors(contract, reading.docstring_examples))
+    errors.extend(_call_site_errors(contract, reading.call_site_mismatches))
 
     slices = list(contract.get("slices", ()))
     if not slices:
@@ -629,7 +679,9 @@ def _retired_attribute_kinds(contract: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def _documentation_errors(contract: dict[str, Any]) -> list[str]:
+def _documentation_errors(
+    contract: dict[str, Any], scanned: DocumentationCensus
+) -> list[str]:
     """Reconcile the keywords the documentation tells a reader to write.
 
     A documented keyword argument is an instruction: a reader copies it into a
@@ -681,7 +733,6 @@ def _documentation_errors(contract: dict[str, Any]) -> list[str]:
             )
         exempt[relative] = keywords
 
-    scanned = documentation_census()
     reported: dict[str, list[str]] = {}
     for site in scanned.sites:
         relative, _, keyword = site.partition("::")
@@ -710,7 +761,9 @@ def _documentation_errors(contract: dict[str, Any]) -> list[str]:
     return errors
 
 
-def _docstring_errors(contract: dict[str, Any]) -> list[str]:
+def _docstring_errors(
+    contract: dict[str, Any], scanned: tuple[tuple[str, str], ...]
+) -> list[str]:
     """Reconcile the wire vocabulary the package's own docstrings and comments publish.
 
     A docstring is what `help()` prints and what an editor shows on hover; a comment is
@@ -756,7 +809,7 @@ def _docstring_errors(contract: dict[str, Any]) -> list[str]:
             exempt.setdefault(container, []).append(token)
 
     reported: dict[str, list[str]] = {}
-    for container, token in docstring_census():
+    for container, token in scanned:
         reported.setdefault(container, []).append(token)
 
     for container, tokens in sorted(reported.items()):
@@ -775,14 +828,16 @@ def _docstring_errors(contract: dict[str, Any]) -> list[str]:
         errors.append(f"qubit vocabulary docstring exemption {container} is stale")
 
     measured = int(section.get("measured_tokens", -1))
-    if measured != len(docstring_census()):
+    if measured != len(scanned):
         errors.append(
             "qubit vocabulary docstring measured_tokens must equal the live scan"
         )
     return errors
 
 
-def _docstring_example_errors(contract: dict[str, Any]) -> list[str]:
+def _docstring_example_errors(
+    contract: dict[str, Any], scanned: tuple[tuple[str, str], ...]
+) -> list[str]:
     """Reconcile the wire vocabulary on docstring lines that `doctest` executes.
 
     The prose ledger above skips `>>>` blocks, because those lines are a program
@@ -830,7 +885,7 @@ def _docstring_example_errors(contract: dict[str, Any]) -> list[str]:
             exempt.setdefault(container, []).append(token)
 
     reported: dict[str, list[str]] = {}
-    for container, token in docstring_example_tokens():
+    for container, token in scanned:
         reported.setdefault(container, []).append(token)
 
     for container, tokens in sorted(reported.items()):
@@ -851,7 +906,7 @@ def _docstring_example_errors(contract: dict[str, Any]) -> list[str]:
         )
 
     measured = int(section.get("measured_tokens", -1))
-    if measured != len(docstring_example_tokens()):
+    if measured != len(scanned):
         errors.append(
             "qubit vocabulary docstring example measured_tokens must equal the live scan"
         )
@@ -860,7 +915,7 @@ def _docstring_example_errors(contract: dict[str, Any]) -> list[str]:
 
 def _definition_errors(
     contract: dict[str, Any],
-    package_root: Path | None,
+    scanned: DefinitionCensus,
 ) -> list[str]:
     """Reconcile the module-level definition names against a live scan.
 
@@ -909,7 +964,6 @@ def _definition_errors(
             f"baseline: {unknown[:3]}"
         )
 
-    scanned = definition_census(package_root)
     live = {site.identifier: site for site in scanned.ledgered}
     retired = set(retirement)
     appeared = sorted(set(live) - (baseline - retired))
@@ -998,7 +1052,7 @@ def aliased_sites(contract: dict[str, Any], surface: str) -> set[str]:
     }
 
 
-def _call_site_errors(contract: dict[str, Any]) -> list[str]:
+def _call_site_errors(contract: dict[str, Any], findings: tuple[str, ...]) -> list[str]:
     """Refuse a call site that passes a wire- or qubit-named keyword its callee rejects.
 
     The one surface with no baseline to reconcile against. Every other ledger here
@@ -1020,7 +1074,7 @@ def _call_site_errors(contract: dict[str, Any]) -> list[str]:
     surface = surfaces.get("call_site_surface")
     if not isinstance(surface, str) or not surface:
         errors.append("qubit vocabulary contract must name the call-site surface")
-    for finding in qubit_keyword_mismatches():
+    for finding in findings:
         relative, _, rest = finding.partition("::")
         errors.append(
             f"qubit vocabulary call site passes a keyword its callee rejects: {relative} "
@@ -1029,7 +1083,7 @@ def _call_site_errors(contract: dict[str, Any]) -> list[str]:
     return errors
 
 
-def _report(contract: dict[str, Any]) -> None:
+def _report(contract: dict[str, Any], snapshot: VocabularySnapshot) -> None:
     for surface, label in (
         ("parameter", "baseline sites"),
         ("attribute", "attribute sites"),
@@ -1052,7 +1106,7 @@ def _report(contract: dict[str, Any]) -> None:
         for slice_id, done, left in rows:
             print(f"  {slice_id:5s} retired {done:3d}  remaining {left:3d}")
 
-    scanned = documentation_census()
+    scanned = snapshot.documentation
     exempted = sum(
         1
         for row in contract.get("documentation", {}).get("exempt", ())
@@ -1070,8 +1124,8 @@ def _report(contract: dict[str, Any]) -> None:
     )
     print(
         "Qubit vocabulary docstrings and comments: "
-        f"{kept} of {len(docstring_census())} wire-named tokens kept as recorded "
-        f"({len(docstring_census()) - kept} to reword)"
+        f"{kept} of {len(snapshot.docstrings)} wire-named tokens kept as recorded "
+        f"({len(snapshot.docstrings) - kept} to reword)"
     )
 
     example_section = contract.get("docstring_example", {})
@@ -1080,7 +1134,7 @@ def _report(contract: dict[str, Any]) -> None:
     )
     print(
         "Qubit vocabulary docstring examples: "
-        f"{pinned} of {len(docstring_example_tokens())} executable wire-named tokens "
+        f"{pinned} of {len(snapshot.docstring_examples)} executable wire-named tokens "
         "pinned by name rather than owed as debt"
     )
 
@@ -1089,18 +1143,19 @@ def _report(contract: dict[str, Any]) -> None:
     # assume a silent gate means an absent one.
     print(
         "Qubit vocabulary call sites: "
-        f"{len(qubit_keyword_mismatches())} keywords passed that their callee rejects "
+        f"{len(snapshot.call_site_mismatches)} keywords passed that their callee rejects "
         "(invariant: 0)"
     )
 
 
 def main() -> int:
     contract = _load_toml(CONTRACT)
-    errors = contract_errors(contract)
+    snapshot = scan_vocabulary()
+    errors = contract_errors(contract, snapshot=snapshot)
     if errors:
         print("\n".join(errors))
         return 1
-    _report(contract)
+    _report(contract, snapshot)
     return 0
 
 

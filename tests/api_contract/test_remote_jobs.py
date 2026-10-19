@@ -1,5 +1,6 @@
 """Detached jobs remain resumable and never resubmit during observation."""
 
+import inspect
 import json
 from unittest.mock import Mock
 
@@ -205,6 +206,7 @@ def test_jiuding_native_jobs_restore_without_resubmission(monkeypatch, tmp_path)
     from flagquantum.remote.compute._native_job import NativeJiudingJobClient
 
     calls = []
+    submit_options = []
     state = ["Pending"]
     expected = fq.run(fq.Circuit(1))
     credentials = JiudingCredentials(
@@ -221,6 +223,7 @@ def test_jiuding_native_jobs_restore_without_resubmission(monkeypatch, tmp_path)
 
         def submit_program(self, *args, **kwargs):
             calls.append("submit")
+            submit_options.append(kwargs)
             return {
                 "jobId": "compute-123",
                 "project": self.project,
@@ -249,6 +252,7 @@ def test_jiuding_native_jobs_restore_without_resubmission(monkeypatch, tmp_path)
         project="test.project",
         queue="test-queue",
         credentials=credentials,
+        devices=4,
     )
     assert job.status() == "queued"
     with pytest.raises(ExecutionError):
@@ -262,6 +266,7 @@ def test_jiuding_native_jobs_restore_without_resubmission(monkeypatch, tmp_path)
     assert restored.result() is expected
     assert calls.count("submit") == 1
     assert calls == ["submit"]
+    assert submit_options[0]["devices"] == 4
     assert len(clients) == 2
     assert all(client.credentials is credentials for client in clients)
     restored.cancel()
@@ -284,6 +289,17 @@ def test_explicit_jiuding_credentials_are_rejected_for_quafu(quafu):
             target="quafu:Baihua",
             shots=1024,
             credentials=credentials,
+        )
+    assert quafu.posts == []
+
+
+def test_devices_are_rejected_for_quafu_before_submission(quafu):
+    with pytest.raises(TypeError, match="devices apply only to Jiuding"):
+        fq.submit(
+            fq.Circuit(2),
+            target="quafu:Baihua",
+            shots=1024,
+            devices=2,
         )
     assert quafu.posts == []
 
@@ -313,6 +329,7 @@ def test_approved_job_state_and_receipt_contract(quafu, tmp_path):
         ).read_text()
     )
     assert list(get_args(jobs.JobStatus)) == contract["statuses"]
+    assert str(inspect.signature(fq.submit)) == contract["public_signatures"]["submit"]
     job = fq.submit(fq.Circuit(2), target="quafu:Baihua", shots=1024)
     path = tmp_path / "job.json"
     job.save(path)

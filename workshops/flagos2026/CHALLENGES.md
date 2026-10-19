@@ -13,7 +13,7 @@ Deliver a circuit or small function, a plot, and an explanation of one surprisin
 
 ## AI and scientific computing
 
-- **Does the quantum layer help this model?** Compare lab 07 with a small classical baseline using separate training and test inputs. Match the comparison budget and report parameter counts. Do not infer quantum advantage from a toy fit.
+- **Does the quantum layer help this model?** Compare example 03 with a small classical baseline using separate training and test inputs. Match the comparison budget and report parameter counts. Do not infer quantum advantage from a toy fit.
 - **How expressive is your ansatz?** Remove and add layers in VQE. Compare final energy with the exact solution across several seeds. Separate representational limits from optimization failures. Start with 08.
 - **Can QAOA find good cuts?** Change the graph, add a layer, and report the probability of sampling an optimal cut as well as expected cut size. Start with 15.
 - **Noise versus sampling.** Combine the ideas in 09 and 10. Explain which errors shrink with more shots and which do not.
@@ -32,7 +32,7 @@ Deliver a failing case, a fix or experiment, and a repeatable correctness check.
 ## Real-device investigations
 
 - **Does the learned setting survive deployment?** Repeat lab 13 for several reachable targets and record the hardware task ID, calibration context when available, and shot count.
-- **Mapping matters.** With instructor approval, compare two currently valid physical mappings of the same circuit. Record the returned physical circuits and results. Start with 12 and 05.
+- **Mapping matters.** With instructor approval, compare two currently valid physical mappings of the same circuit. Record the returned physical circuits and results. Start with reference notebook 12 and example 06.
 - **Measure in another basis.** Add the basis rotation needed to estimate X as well as Z. State what this adds to your knowledge and what it still cannot prove about the state.
 
 These projects require device access. Agree on a submission budget before running them. A replay may support analysis, but label it as a replay.

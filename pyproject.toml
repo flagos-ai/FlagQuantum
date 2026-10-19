@@ -1,7 +1,9 @@
 # pyproject.toml
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "torch>=2.5,<2.14"]
+# Compile the native extension against the oldest PyTorch Stable ABI that we
+# target. Keep compatible preinstalled vendor runtimes within the runtime range.
+requires = ["setuptools>=77.0.3", "wheel", "torch>=2.10,<2.11"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -16,7 +18,8 @@ license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "torch>=2.5,<2.14",
+    "torch>=2.10,<2.15",
+    "tomli>=2.0,<3; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -79,6 +82,14 @@ azure = [
     "qdk[azure]>=1.32.3,<2",
 ]
 
+# The open-source FlagQuantum adapter converts provider matrices and returned
+# samples at the NumPy boundary.  The separately licensed Kaiwu SDK is
+# intentionally not redistributed by this extra and must be installed from the
+# artifact approved by the user's QBoson organization.
+kaiwu = [
+    "numpy>=1.24,<3",
+]
+
 braket = [
     "amazon-braket-sdk>=1.117,<2; python_version >= '3.11'",
 ]
@@ -125,7 +136,7 @@ viz = [
 ]
 
 invertible = [
-    "torch>=2.5,<2.14",
+    "torch>=2.13,<2.14",
 ]
 
 all = [
@@ -170,6 +181,45 @@ flagquantum = [
 
 [tool.setuptools.dynamic]
 version = {attr = "flagquantum.version.__version__"}
+
+[tool.cibuildwheel]
+# One CPython 3.10 limited-API wheel covers the complete interpreter range.
+# The extension is compiled against PyTorch 2.10's Stable ABI and tested with
+# the newest supported runtime, so it is not rebuilt for every PyTorch minor.
+build = "cp310-*"
+skip = "*-musllinux_*"
+build-frontend = {name = "pip", args = ["--no-build-isolation"]}
+before-build = [
+    "python -m pip install --upgrade setuptools wheel",
+    "python -m pip install 'torch>=2.10,<2.11'",
+]
+before-test = "python -m pip install 'torch>=2.14,<2.15'"
+test-command = "python -c \"import flagquantum as fq; from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR); assert fq.Circuit(2).h(0).cx(0, 1).state().shape[-1] == 4\""
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+manylinux-x86_64-image = "manylinux_2_28"
+before-build = [
+    "python -m pip install --upgrade setuptools wheel",
+    "python -m pip install 'torch>=2.10,<2.11' --index-url https://download.pytorch.org/whl/cpu",
+]
+before-test = "python -m pip install 'torch>=2.14,<2.15' --index-url https://download.pytorch.org/whl/cpu"
+repair-wheel-command = "auditwheel repair --exclude libc10.so --exclude libtorch.so --exclude libtorch_cpu.so --exclude libtorch_python.so -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.macos]
+archs = ["native"]
+# PyTorch remains an external runtime dependency. Bundling its dylibs would
+# turn a small FlagQuantum wheel into another copy of PyTorch.
+repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} --no-sanitize-rpaths --ignore-missing-dependencies -e libc10 -e libtorch -e libtorch_cpu -e libtorch_python -e libomp -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+before-build = [
+    "python -m pip install --upgrade setuptools wheel",
+    "python -m pip install \"torch>=2.10,<2.11\" --index-url https://download.pytorch.org/whl/cpu",
+]
+before-test = "python -m pip install \"torch>=2.14,<2.15\" --index-url https://download.pytorch.org/whl/cpu"
+repair-wheel-command = "delvewheel repair --exclude \"c10.dll;torch.dll;torch_cpu.dll;torch_python.dll\" -w {dest_dir} {wheel}"
 
 [tool.black]
 line-length = 88

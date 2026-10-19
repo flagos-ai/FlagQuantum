@@ -42,6 +42,11 @@ def test_fq_run_executes_bell_measurements_through_jiuding(monkeypatch) -> None:
     monkeypatch.setenv("JIUDING_WORKSPACE", "golden-path")
     monkeypatch.setattr(execution, "_CLIENTS", {})
     monkeypatch.setattr(JiudingClient, "start_executor", lambda self, **kwargs: None)
+    monkeypatch.setattr(
+        JiudingClient,
+        "workspace",
+        lambda self: {"acceleratorModel": "KUNLUN_R300"},
+    )
 
     def execute_locally(self, request, *, port, timeout):
         assert port == 57621

@@ -1,7 +1,49 @@
 # Python and dependency policy
 
 The executable support matrix is `dependency-policy.toml`. FlagQuantum core
-supports Python 3.10–3.12 and installs only PyTorch. Every optional dependency
+supports Python 3.10–3.12 and accepts PyTorch 2.10.x–2.14.x. The native extension is
+built once against the PyTorch 2.10 Stable ABI and shipped as a CPython 3.10+
+limited-API wheel. CI then loads that same binary with every declared PyTorch
+minor instead of assuming source compatibility implies binary compatibility.
+Ordinary upstream CPU/CUDA installations continue to recommend PyTorch
+2.13.x–2.14.x. The lower floor preserves externally managed accelerator builds
+such as `2.10.0+metax3.8.1.0`; pip's normal installed-package preference retains
+these compatible versions without `--no-deps`. Do not use eager dependency
+upgrades or overwrite a vendor runtime with an upstream CPU/CUDA build.
+Compatibility is not a security certification: the platform must maintain its
+vendor runtime and patches. The `invertible` extra retains its separate 2.13.x
+requirement.
+
+CI runs core smoke checks on each declared minor and loads the same 2.10-built
+wheel with 2.10, 2.11 and 2.12; the existing package/release checks cover 2.13 and
+2.14. On 2026-10-11, public main `03427de55ddb50e796971aa95557c82c987a23c3`
+passed source single-card autograd plus two/eight-card statevector forward,
+sharded Adam training and checkpoint recovery on MetaX C550 using
+`cr.metax-tech.com/public-library/maca-pytorch:3.8.1.2-torch2.10-py312-ubuntu24.04-amd64`.
+The rc3 manylinux wheel also passed a device Bell-circuit check with dependency
+installation disabled for that pre-fix metadata. Native extension loading on
+that vendor runtime, multi-node execution, performance and capacity expansion
+were not certified by those checks.
+
+Source builds require setuptools 77.0.3 or newer for SPDX license metadata.
+Do not upgrade build tools in a managed vendor runtime if another package pins
+them (the C550 image's xformers pins setuptools 69.5.1). Build a wheel in a
+separate environment that can reuse the vendor torch, then install that wheel
+normally in the original runtime. For an already downloaded source checkout:
+
+```console
+python -m venv --system-site-packages /tmp/fq-build
+/tmp/fq-build/bin/python -m pip install 'setuptools>=77.0.3' wheel
+/tmp/fq-build/bin/python -m pip wheel . --no-build-isolation --no-deps -w /tmp/fq-dist
+python -m pip install /tmp/fq-dist/*.whl
+python -m pip check
+```
+
+Here `--no-deps` applies only to wheel construction, never to the final runtime
+installation. Use fresh build/output directories for each build. Published wheel
+users need none of these source-build steps.
+
+Every optional dependency
 group in `pyproject.toml` must have an exact, classified entry in that matrix;
 `python tools/check_dependency_policy.py` rejects missing groups, requirement
 drift, unclassified extras and aggregate extras that no longer equal their
@@ -54,12 +96,16 @@ distribution's own requirements as the citation, rather than exempted per file.
 scripts whose module-level imports are entry points, not modules any marker
 selects.
 
-`numpy` is itself on `core_forbidden_imports`. It appears in no extra, `torch`
-declares no numpy requirement, and `import flagquantum` loads it nowhere, so
-every `cpu-core` leg reports `Failed to initialize NumPy` while the suite still
-passes. Recording that as policy makes the existing absence proofs — the
-`cpu-core` assertion, `tests/unit/test_dependency_policy.py`, and the
-`check_import_time.py` probe — cover numpy without a second scanner.
+`numpy` is itself on `core_forbidden_imports`. It appears only in the `kaiwu`
+remote-provider extra; `torch` declares no numpy requirement, and
+`import flagquantum` loads it nowhere, so every `cpu-core` leg reports
+`Failed to initialize NumPy` while the suite still passes. The `kaiwu` extra
+contains only the open adapter's NumPy boundary and deliberately does not
+redistribute the separately reviewed Kaiwu SDK. Recording NumPy as forbidden
+in core makes the existing absence proofs — the `cpu-core` assertion,
+`tests/unit/test_dependency_policy.py`, and the `check_import_time.py` probe —
+cover it without a second scanner, while the coverage lane installs the extra
+and executes the adapter tests.
 
 A standard-library module added in a later supported Python needs the
 `try`/`except ModuleNotFoundError` fallback, not a `sys.version_info` test.
@@ -79,8 +125,11 @@ activated. Native CPU and CUDA paths remain independent of Torch-FL.
 
 The CI matrix tests the oldest and newest supported Python lines. Dependency
 lower bounds are exercised by a dedicated compatibility lane and current local
-acceptance exercises the upper supported environment. Ranges describe tested
-support, not aspirational compatibility.
+acceptance exercises the upper supported environment. The native wheel is
+compiled against the oldest Stable ABI target, then tested without rebuilding
+on the oldest and newest supported PyTorch runtimes. Widening the range still
+requires that cross-version binary check. Ranges describe tested support, not
+aspirational compatibility.
 
 The `dev` extra is bounded like the runtime extras, because it is the toolchain
 this repository installs to check itself: an unbounded entry lets an upstream

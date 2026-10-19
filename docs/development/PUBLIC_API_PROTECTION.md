@@ -144,6 +144,13 @@ The baseline and candidate JSON files are authoritative for exact signatures,
 fields, and supported deltas. Do not copy a signature from a policy illustration
 or regenerate a snapshot to approve an implementation change.
 
+`fq.__version__` is protected as a stable root export, but its literal value is
+release metadata rather than a compatibility invariant. The baseline therefore
+retains the historical 0.2.0 value as an audit record while the checker excludes
+that one literal from equality comparison. Distribution checks verify that the
+runtime value, package metadata, wheel names, and source archive names agree for
+each release.
+
 The final frozen contract must cover surface, signatures, types, fields, enum
 values, schema versions, and selected behavioral invariants. Its checker must
 use Python introspection and explicit schema readers. The existing baseline

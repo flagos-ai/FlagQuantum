@@ -135,6 +135,26 @@ integration_tests = "tests/test_backends.py"
 hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/architecture/RUNTIME_ARCHITECTURE.md"
 
+[capabilities.research_capability_services]
+title = "Research capability discovery, execution, and evidence"
+summary = "Discover and execute the bounded local ground-state research slice through one transport-neutral service contract with preflight, scientific validation, and tamper-evident evidence."
+category = "simulation_and_training"
+user_goals = ["Discover an executable scientific operation", "Preflight a bounded VQE request before numerical work", "Execute VQE with exact-reference and energy-variance validation", "Audit a transport-neutral evidence bundle"]
+public_apis = ["flagquantum.services.search_research_capabilities", "flagquantum.services.describe_research_capability", "flagquantum.services.estimate_research_capability", "flagquantum.services.validate_research_capability_input", "flagquantum.services.execute_research_capability", "flagquantum.services.validate_research_evidence", "flagquantum.services.list_research_schemas", "flagquantum.services.describe_research_schema"]
+runtime_modes = ["statevector"]
+hardware = ["cpu"]
+gradient_support = "not_applicable"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md"
+documentation = "flagquantum/services/README.md"
+level = "production_supported"
+owner = "FlagQuantum services maintainers"
+limitations = "Approved namespace-scoped service contract at production-supported maturity for a bounded local CPU slice; it is not a Stable Core root API. A thin external adapter may call the public service, but FlagQuantum remains the only owner of its domain semantics. The executable scope is exactly three local CPU operations: two-qubit real Pauli-sum VQE in the fixed weight-one sector, exact diagonalization in that sector, and energy-variance validation of a normalized full statevector. Inputs use Hartree coefficients and wire_0_is_leftmost ordering. The VQE path uses the existing single-excitation ansatz and bounded Adam workflow; it is deterministic and records no random seed because this slice performs no stochastic sampling. VQE defaults to flagquantum-native and may explicitly select the optional local qiskit-aer or pennylane-lightning adapters. Multiple providers require separate fallback authorization; fallback advances only past an unknown or locally unavailable adapter, never an execution failure or scientific-validation failure, and all route assessments and attempts are content-hashed. Remote targets, QPUs, shot execution, noise models, broader Hamiltonians, alternate ansatzes, alternate optimizers, persistence, tenant control, natural-language routing, MCP dependencies, and every fallback axis outside that unavailable-only provider policy are unsupported. Evidence hashes detect accidental or untrusted mutation but are not signatures or runtime certification."
+focused_tests = "tests/team/services/test_research_execution.py"
+integration_tests = "tests/optional/test_research_external_provider_parity.py"
+hardware_evidence = ".github/workflows/ci.yml"
+operational_runbook = "flagquantum/services/README.md"
+
 [capabilities.gradient_methods]
 title = "One gradient entry point with a reported method"
 summary = "Differentiate a parameterized circuit through any exact execution mode without choosing an executor-specific route, and read which method produced the derivative."
@@ -1053,6 +1073,24 @@ focused_tests = "tests/test_openqasm_compiler.py"
 integration_tests = "tests/test_openqasm_import.py"
 hardware_evidence = "not_applicable_pure_contract"
 operational_runbook = "flagquantum/compiler/README.md"
+
+[capabilities.qcis_import]
+title = "Static ideal-circuit QCIS import"
+summary = "Convert numeric or parameterized QCIS gate text and terminal Z measurements to owned CircuitIR without a compiler or container dependency."
+category = "deployment_and_extension"
+user_goals = ["Import static QCIS from any supported producer", "Bind and simulate parameterized QCIS circuits", "Inspect label mapping and timing loss"]
+public_apis = ["flagquantum.ecosystem.qcis.import_qcis"]
+runtime_modes = ["control_plane_conversion"]
+hardware = ["cpu_control_plane"]
+gradient_support = "symbolic_parameters_with_cpu_autograd_validation"
+distribution_semantics = "not_applicable"
+quick_start = "flagquantum/ecosystem/qcis/README.md"
+documentation = "flagquantum/ecosystem/qcis/README.md"
+level = "experimental"
+owner = "interop maintainers"
+limitations = "Lossless refers only to supported ideal circuit semantics, not complete QCIS hardware semantics. Static gate text: X2P, X2M, Y2P, Y2M, RZ, CZ, X, Y, Z, H, S, SD, T, TD, RX, RY, RXY, and distinct terminal M operands. Numeric Q labels are compacted in ascending order with original labels retained; absent idle qubit extent is unknown. Terminal measurements request exact Z-basis probabilities because QCIS specifies no shots. I and B require explicit allow_lossy=True and report omitted timing/alignment; annotations are not executable timing or noise semantics. Angles support finite decimals, pi, named parameters, parentheses, unary signs, addition, subtraction, multiplication and division by nonzero constants; other expressions fail. Bind via the existing Circuit API; converting IR to Circuit requires explicitly restoring terminal output requests. Shared expressions preserve first-order CPU autograd after binding. Unknown instructions, pulses, reset, dynamic control, malformed text, and nonterminal or duplicate measurement fail even with allow_lossy. No external compiler, container, SDK, Runtime, or Simulation dependency is introduced at the import boundary."
+focused_tests = "tests/unit/test_qcis_import.py"
+integration_tests = "tests/integration/test_qcis_import.py"
 
 [capabilities.qiskit_aer_execution]
 title = "Qiskit Aer execution bridge"

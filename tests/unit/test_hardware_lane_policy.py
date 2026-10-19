@@ -81,6 +81,29 @@ TRUSTED_EVENTS = frozenset(
 )
 
 
+def test_scheduled_gpu_job_runs_single_device_runtime_regressions() -> None:
+    job = _jobs(WORKFLOWS / "scheduled-hardware.yml")["gpu-scheduled"]
+    assert "gpu" in _runs_on(job)
+    steps = job["steps"]
+    assert isinstance(steps, list)
+    step = next(
+        step
+        for step in steps
+        if step.get("name") == "Run single-device runtime regressions"
+    )
+    command = step["run"]
+    assert "python -m pytest" in command
+    assert (
+        "tests/unit/test_density_matrix_output.py::"
+        "test_noisy_density_keeps_accelerator_and_gradient" in command
+    )
+    assert (
+        "tests/unit/test_mps_site_kernels.py::"
+        "test_eager_two_site_contraction_preserves_precision_with_tf32_enabled"
+        in command
+    )
+
+
 def _jobs(path: Path) -> dict[str, dict[str, object]]:
     document = yaml.safe_load(path.read_text(encoding="utf-8"))
     jobs = document.get("jobs")

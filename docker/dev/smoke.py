@@ -45,7 +45,7 @@ def main() -> None:
         if not compiled.instructions:
             raise RuntimeError("QSteed returned an empty circuit")
     fq.run(circuit)
-    packages = ("qsteed", "flagquantum-compiler-qsteed") if args.qsteed else ("jax",)
+    packages = ("flagquantum-compiler-qsteed",) if args.qsteed else ("jax",)
     for package in ("flagquantum", "torch", *packages):
         print(f"{package}={version(package)}")
     print(f"Development stack smoke passed: torch={device}, qsteed={args.qsteed}")

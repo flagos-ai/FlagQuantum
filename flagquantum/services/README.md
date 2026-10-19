@@ -39,6 +39,57 @@ never falls back to another provider. `exact_sector_reference(...)` is a
 separate dense reference operation so its evidence cannot be confused with the
 variational simulation.
 
+The experimental research-capability surface adds deterministic discovery and
+preflight over that bounded workflow. It currently describes exactly three
+operation identities: `ground_state.solve.vqe`, `ground_state.solve.exact`, and
+`validate.energy_variance`. `search_research_capabilities(...)` accepts only
+structured filters; it does not parse natural language or make research
+decisions. Validation and estimation run before numerical work and support only
+the existing two-qubit local CPU scope. Target facts and fallback authorization
+remain owned by Core and Runtime; MCP and other protocol adapters remain outside
+this repository.
+
+## Research service development boundary
+
+An agent may write exploratory FlagQuantum code for a new scientific question.
+A service is different: it is a repeatable operation with a declared input
+schema, supported domain, resource bounds, numerical reference, failure
+behavior, and versioned evidence. Generated exploratory code does not become a
+service merely because it produced one plausible result. The agent or client
+owns natural-language interpretation, task decomposition, session state, and
+approval; services own only the bounded scientific operation and its evidence.
+
+Promote an exploratory workflow into this package only when independent
+reference cases and tolerances cover its supported domain, unsupported inputs
+fail explicitly, and a clean installed distribution reproduces the result.
+Keep molecular-model construction separate from a VQE operation until that
+construction has its own validated contract. A successful VQE over a supplied
+Pauli sum must not be described as end-to-end molecular energy prediction.
+
+The proposed sequence after this initial two-qubit CPU slice is to stabilize
+the capability identifiers, schemas, resource estimates, and evidence bundle;
+then add scientific scopes one at a time with independent validation. Additional
+providers must implement the same contract. Provider fallback remains explicit
+and recorded, never a hidden response to execution or validation failure.
+This is a development direction, not a claim that those scopes or providers are
+available in the current release.
+
+The first M3 routing slice accepts an explicit `provider_order` for
+`ground_state.solve.vqe`. A list with more than one provider is rejected unless
+`allow_provider_fallback=True`, and authorized fallback advances only past an
+unknown or locally unavailable provider. Execution failures and scientific
+validation failures never trigger substitution. The Evidence Bundle retains the
+ordered route, every attempt, the selected provider, and whether fallback was
+used. Only `flagquantum-native` is installed today; provider registration is not
+a public mutable API.
+
+`list_research_schemas()` and `describe_research_schema(schema_id)` publish the
+installed JSON Schema Draft 2020-12 documents for those operations. They are
+resource lookups, not additional scientific operations. An edge adapter must
+serve these documents from installed FlagQuantum and must not keep a copied
+schema catalog. Unknown schema identities fail closed, and each lookup returns
+an isolated copy so an adapter cannot mutate process-wide contract state.
+
 ```bash
 python -m pytest tests/team/services tests/test_service_preflight.py -q
 python tools/check_architecture.py

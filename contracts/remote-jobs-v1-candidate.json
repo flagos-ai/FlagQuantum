@@ -3,7 +3,7 @@
   "implementation_authorized": true,
   "approval": {
     "owner": "Repository API owner via conversation",
-    "date": "2026-09-20",
+    "date": "2026-10-11",
     "proposal": "docs/api-changes/FQ-REMOTE-JOBS.md"
   },
   "credential_injection_authorized": true,
@@ -12,7 +12,7 @@
     "restore_job"
   ],
   "public_signatures": {
-    "submit": "(program: 'Circuit | CircuitIR', *, target: 'str', outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, shots: 'int | None' = None, compiler: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, name: 'str | None' = None, image: 'str | None' = None, workspace: 'str | None' = None, project: 'str | None' = None, queue: 'str | None' = None, credentials: 'JiudingCredentials | None' = None) -> 'RemoteJob'",
+    "submit": "(program: 'Circuit | CircuitIR | Sequence[Circuit | CircuitIR]', *, target: 'str', devices: 'int | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, shots: 'int | None' = None, compiler: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, name: 'str | None' = None, image: 'str | None' = None, workspace: 'str | None' = None, project: 'str | None' = None, queue: 'str | None' = None, credentials: 'JiudingCredentials | None' = None, receipt: 'str | Path | None' = None) -> 'RemoteJob'",
     "restore_job": "(path: 'str | Path', *, credentials: 'JiudingCredentials | None' = None) -> 'RemoteJob'",
     "RemoteJob.status": "(self) -> 'JobStatus'",
     "RemoteJob.result": "(self) -> 'ExecutionResult'",
@@ -28,5 +28,20 @@
     "cancelled",
     "unknown"
   ],
-  "receipt_schema": "flagquantum.remote-job.v1"
+  "receipt_schema": "flagquantum.remote-job.v1",
+  "receipt_approval": {
+    "owner": "Repository API owner via conversation",
+    "date": "2026-10-15",
+    "proposal": "docs/api-changes/FQ-REMOTE-JOB-RECEIPT-20261015.md",
+    "request_journal_schema": "flagquantum.remote-request.v1"
+  },
+  "collection_approval": {
+    "owner": "Repository API owner via conversation",
+    "date": "2026-10-15",
+    "proposal": "docs/api-changes/FQ-QUAFU-MULTICIRCUIT-JOBS-20261015.md",
+    "provider": "quafu",
+    "input": "nonempty same-width logical circuit sequence",
+    "result": "ExecutionResult.counts in input order",
+    "receipt_context_schema": "flagquantum.quafu-collection.v1"
+  }
 }

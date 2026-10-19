@@ -17,6 +17,114 @@ from flagquantum.remote.compute.jiuding import JiudingClient
 pytestmark = pytest.mark.unit
 
 
+def test_project_shared_catalog_image_keeps_its_submission_region(client, tmp_path):
+    script = tmp_path / "task.py"
+    script.write_text("def main(): return 42")
+    client._catalog_image = Mock(
+        return_value={"registryUrl": "internal/team/runtime:v1"}
+    )
+    client._launch_command = Mock(return_value={"jobId": "shared-job"})
+    client.submit(
+        script,
+        target="jiuding:cpu",
+        image="runtime:v1",
+        image_region="PROJSET",
+        receipt=tmp_path / "receipt.json",
+    )
+    client._catalog_image.assert_called_once_with("runtime:v1", "PROJSET")
+    options = client._launch_command.call_args.kwargs
+    assert options["image_region"] == "PROJSET"
+    assert options["executable_image"] == "internal/team/runtime:v1"
+
+
+def test_auto_catalog_finds_only_project_shared_image(client):
+    item = {
+        "id": "shared",
+        "name": "runtime",
+        "tag": "v1",
+        "status": 10,
+        "clusterId": client.workspace()["clusterId"],
+        "registryUrl": "internal/team/runtime:v1",
+    }
+    client._request = Mock(
+        side_effect=[{"items": [item]}, {"items": []}, {"items": []}]
+    )
+    resolved = client._catalog_image("runtime:v1", "AUTO")
+    assert resolved["imageRegion"] == "PROJSET"
+    assert resolved["registryUrl"] == item["registryUrl"]
+    assert [call.args[1]["repoTypes"] for call in client._request.call_args_list] == [
+        "PROJSET",
+        "PRIVATE",
+        "PUBLIC",
+    ]
+
+
+def test_auto_catalog_rejects_cross_region_ambiguity(client):
+    item = {
+        "id": "image",
+        "name": "runtime",
+        "tag": "v1",
+        "status": 10,
+        "clusterId": client.workspace()["clusterId"],
+    }
+    client._request = Mock(
+        side_effect=[{"items": [item]}, {"items": [item]}, {"items": []}]
+    )
+    with pytest.raises(ValueError, match="not uniquely resolved"):
+        client._catalog_image("runtime:v1", "AUTO")
+
+
+def test_auto_catalog_deduplicates_shared_and_private_aliases(client):
+    item = {
+        "id": "shared-id",
+        "name": "runtime",
+        "tag": "v1",
+        "status": 10,
+        "clusterId": client.workspace()["clusterId"],
+        "registryUrl": "internal/team/runtime:v1",
+    }
+    client._request = Mock(
+        side_effect=[
+            {"items": [item]},
+            {"items": [{**item, "id": "private-id"}]},
+            {"items": []},
+        ]
+    )
+    resolved = client._catalog_image("runtime:v1", "AUTO")
+    assert resolved["imageRegion"] == "PROJSET"
+    assert resolved["id"] == "shared-id"
+    client._request = Mock(
+        side_effect=[
+            {"items": [item]},
+            {"items": [{**item, "registryUrl": "internal/other/runtime:v1"}]},
+            {"items": []},
+        ]
+    )
+    with pytest.raises(ValueError, match="not uniquely resolved"):
+        client._catalog_image("runtime:v1", "AUTO")
+
+
+def test_full_registry_address_does_not_match_other_owners_leaf(client):
+    item = {
+        "id": "other",
+        "name": "runtime",
+        "tag": "v1",
+        "status": 10,
+        "clusterId": client.workspace()["clusterId"],
+        "registryUrl": "internal/other/runtime:v1",
+    }
+    client._request = Mock(return_value={"items": [item]})
+    with pytest.raises(ValueError, match="not uniquely resolved"):
+        client._catalog_image("internal/team/runtime:v1", "PROJSET")
+
+
+def test_auto_catalog_does_not_hide_service_errors(client):
+    client._request = Mock(side_effect=RuntimeError("HTTP 403"))
+    with pytest.raises(RuntimeError, match="HTTP 403"):
+        client._catalog_image("runtime:v1", "AUTO")
+    assert client._request.call_count == 1
+
+
 def test_explicit_credentials_are_validated_redacted_and_not_serializable():
     credentials = JiudingCredentials(
         access_key=" explicit-ak ", secret_key=" explicit-sk "
@@ -697,7 +805,11 @@ def test_submit_creates_then_launches_once_with_zero_gpu(client, tmp_path):
         "/api/v1/job",
     ]
     resource = calls[0].args[1]["advanceConfigInfos"][0]["resourceConfigList"][0]
-    assert resource["roleInfoList"][0]["resourceRequestDetail"]["acceleratorCount"] == 0
+    requested = resource["roleInfoList"][0]["resourceRequestDetail"]
+    assert requested["acceleratorCount"] == 0
+    assert requested["acceleratorModel"] == "NVIDIA_A100-SXM4-40GB"
+    assert receipt["resources"]["target"] == "jiuding:cpu"
+    assert receipt["resources"]["accelerator_model"] == ("NVIDIA_A100-SXM4-40GB")
     assert "test-token" not in json.dumps(receipt)
 
 

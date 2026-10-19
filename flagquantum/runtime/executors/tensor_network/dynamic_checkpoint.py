@@ -328,14 +328,22 @@ def _checkpoint_payload(
         "rank_tensor_preflight_validated": (result.rank_tensor_preflight_validated),
         "completed": result.completed,
         "next_record_index": result.next_record_index,
+        "rematerialized_forward_value_count": result.rematerialized_forward_value_count,
+        "rematerialized_forward_bytes": result.rematerialized_forward_bytes,
     }
 
 
 def _result_from_payload(
     payload: dict[str, Any],
 ) -> DistributedTNDynamicReverseSegmentResult:
+    payload = dict(payload)
     if payload.pop("version", None) != TN_DYNAMIC_CHECKPOINT_VERSION:
         raise RuntimeError("unsupported dynamic TN checkpoint payload version")
+    # Executor-owned v2 compatibility: older writers omitted these accounting
+    # counters. Preserve the saved frontier; only newly measured work can be
+    # counted after resuming such a checkpoint.
+    payload.setdefault("rematerialized_forward_value_count", 0)
+    payload.setdefault("rematerialized_forward_bytes", 0)
     return DistributedTNDynamicReverseSegmentResult(**payload)
 
 

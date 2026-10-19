@@ -4,6 +4,12 @@ FlagQuantum prefers Quafu's current task API and falls back to the legacy SQC
 HTTP contract when the new platform is unavailable before submission.
 Installing `quafusqc` is not required.
 
+For detached multi-circuit jobs, pass a same-width circuit list to `fq.submit`;
+see [one collection, one receipt](REMOTE_JOBS.md#multiple-circuits-in-one-quafu-job).
+Collections require the current task API, verified target limits and logical
+service compilation. Unlike the single-circuit compatibility path, they never
+fall back to SQC or silently create separate parent jobs.
+
 ## Configure credentials
 
 Keep credentials outside source control. `QUAFU_API_KEY` authenticates the
@@ -306,8 +312,8 @@ print(result.counts[0])
 Call `job.cancel()` to request cancellation. A task already sent to hardware may
 stop being observed without refunding consumed capacity.
 
-The published 0.2.0 release predates this direct-submission feature. Use a source
-checkout containing this change until the next release is published.
+The published 0.2.0 release predates this direct-submission feature. Install
+`flagquantum==0.3.0` or use a source checkout containing this change.
 
 For local compilation before submission, explicitly pass `compiler="qsteed"`
 and install the plugin below. The service compiler option is distinct from the
@@ -321,18 +327,18 @@ The Quafu examples use the independently maintained
 plugin. Installing FlagQuantum alone, or its `quafu` extra, does not install
 this compiler plugin. The `quafu` extra supplies the optional calibration reader.
 
-Use Python 3.12 for the verified setup below. From a FlagQuantum 0.2 checkout:
+Python 3.10 through 3.12 are supported. From a FlagQuantum source checkout:
 
 ```bash
 python -m pip install -e .
-python -m pip install "qsteed @ git+https://github.com/BAQIS-Quantum/qsteed.git@46584efde731aea9eec27b5466919b76fe5f3184"
-python -m pip install flagquantum-compiler-qsteed==0.1.0
+python -m pip install flagquantum-compiler-qsteed==0.2.0
 ```
 
-The plugin requires FlagQuantum `>=0.2,<0.3` and QSteed
-`0.2.3+quafu.sqc`. Install the pinned upstream build before the plugin;
-PyPI QSteed `0.2.2` is not a supported substitute. The plugin itself is
-[published on PyPI](https://pypi.org/project/flagquantum-compiler-qsteed/0.1.0/).
+The plugin requires FlagQuantum `>=0.2` and privately vendors the verified
+compiler-only closure of QSteed `0.2.3+quafu.sqc`. Do not separately install
+QSteed, QuarkCircuit, QuarkStudio, a database, or a web service for this local
+compiler path. The plugin is
+[published on PyPI](https://pypi.org/project/flagquantum-compiler-qsteed/0.2.0/).
 
 FlagQuantum discovers the installed `compiler.qsteed` entry point automatically.
 Verify installation without provider credentials or a hardware submission:

@@ -21,6 +21,15 @@ from flagquantum.ecosystem.pennylane import (
     run,
     to_pennylane,
 )
+from flagquantum.ecosystem.pennylane.research_provider import (
+    PennyLaneLightningResearchVQEProvider,
+)
+from flagquantum.services import (
+    GroundStateOptimizer,
+    GroundStateVQERequest,
+    PauliSum,
+    PauliSumTerm,
+)
 
 qml = pytest.importorskip("pennylane")
 pytestmark = [pytest.mark.integration, pytest.mark.pennylane]
@@ -77,6 +86,27 @@ def test_pennylane_execution_statevector_matches_native(dtype: torch.dtype) -> N
     assert result.compatibility["external_backend_explicit"] is True
     assert result.provenance["flagquantum_ir_hash"] == circuit.to_ir().content_hash
     assert result.provenance["pennylane_lightning_version"]
+
+
+def test_research_provider_executes_real_lightning_statevectors() -> None:
+    provider = PennyLaneLightningResearchVQEProvider()
+    request = GroundStateVQERequest(
+        hamiltonian=PauliSum(
+            n_qubits=2,
+            terms=(PauliSumTerm(1.0, "ZI"),),
+        ),
+        fixed_hamming_weight=1,
+        optimizer=GroundStateOptimizer(max_evaluations=2),
+    )
+
+    assert provider.availability().available
+    result = provider.run_vqe(request)
+
+    assert result.status == "completed"
+    assert result.resources is not None
+    assert result.resources.objective_evaluations == 2
+    assert result.resources.backend_executions == 4
+    assert result.provenance.provider == "PennyLane Lightning"
 
 
 def test_pennylane_execution_preserves_idle_wire_extent() -> None:

@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+EXPECTED_COMMUNITY_REVISION="b648b531c034bd6ae9b7a34fed994c717967cc72"
+EXPECTED_PLUGIN_REVISION="f047bce7b1077449967bbe9e9fab5741542b48d4"
+
+if [[ $# -lt 2 || $# -gt 3 ]]; then
+  echo "usage: $0 /absolute/kaiwu-community /absolute/kaiwu-pytorch-plugin [/absolute/python]" >&2
+  exit 2
+fi
+
+COMMUNITY_ROOT="$1"
+PLUGIN_ROOT="$2"
+PYTHON_BIN="${3:-python3}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPOSITORY_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
+OFFLINE_GUARD_DIR="$SCRIPT_DIR/offline_guard"
+
+for source_root in "$COMMUNITY_ROOT" "$PLUGIN_ROOT"; do
+  if [[ "$source_root" != /* ]]; then
+    echo "source roots must be absolute paths: $source_root" >&2
+    exit 2
+  fi
+  if [[ ! -d "$source_root/.git" || ! -d "$source_root/src" ]]; then
+    echo "source root is not a Git checkout with src/: $source_root" >&2
+    exit 2
+  fi
+  if [[ -n "$(git -C "$source_root" status --porcelain --untracked-files=all)" ]]; then
+    echo "source checkout must be clean: $source_root" >&2
+    exit 2
+  fi
+done
+
+if [[ "$PYTHON_BIN" == */* ]]; then
+  if [[ "$PYTHON_BIN" != /* || ! -x "$PYTHON_BIN" ]]; then
+    echo "explicit Python path must be absolute and executable" >&2
+    exit 2
+  fi
+elif ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  echo "Python command is unavailable: $PYTHON_BIN" >&2
+  exit 2
+fi
+
+COMMUNITY_REVISION="$(git -C "$COMMUNITY_ROOT" rev-parse HEAD)"
+PLUGIN_REVISION="$(git -C "$PLUGIN_ROOT" rev-parse HEAD)"
+if [[ "$COMMUNITY_REVISION" != "$EXPECTED_COMMUNITY_REVISION" ]]; then
+  echo "Kaiwu Community revision mismatch: $COMMUNITY_REVISION" >&2
+  exit 1
+fi
+if [[ "$PLUGIN_REVISION" != "$EXPECTED_PLUGIN_REVISION" ]]; then
+  echo "Kaiwu PyTorch Plugin revision mismatch: $PLUGIN_REVISION" >&2
+  exit 1
+fi
+
+unset QBOSON_USER_ID QBOSON_SDK_CODE QBOSON_PROJECT_NO
+export PYTHONNOUSERSITE=1
+export PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/flagquantum-kaiwu-pycache-$$"
+export TRANSFORMERS_OFFLINE=1
+export HF_HUB_OFFLINE=1
+export FLAGQUANTUM_NETWORK_DISABLED=1
+export FLAGQUANTUM_TEST_KAIWU_SOURCE=1
+export PYTHONPATH="$OFFLINE_GUARD_DIR:$COMMUNITY_ROOT/src:$PLUGIN_ROOT/src:$REPOSITORY_ROOT"
+
+cd -- "$REPOSITORY_ROOT"
+"$PYTHON_BIN" -B -m pytest -q \
+  tests/team/ecosystem/test_boundary_inventory.py \
+  tests/team/ecosystem/test_kaiwu_a800_smoke_contract.py \
+  tests/team/ecosystem/test_kaiwu_draft_boundary.py \
+  tests/team/ecosystem/test_kaiwu_matrix_boundary.py \
+  tests/team/ecosystem/test_kaiwu_community_conformance.py \
+  tests/team/ecosystem/test_kaiwu_sampler.py \
+  tests/team/ecosystem/test_kaiwu_qdiffusion_binding.py \
+  tests/team/ecosystem/test_kaiwu_pytorch_plugin_conformance.py \
+  tests/team/ecosystem/test_qdiffusion_live_system_probe.py \
+  tests/team/ecosystem/test_qdiffusion_acceptance_assembler.py \
+  tests/team/ecosystem/test_qdiffusion_acceptance_validator.py \
+  tests/team/ecosystem/test_qdiffusion_artifact_preflight.py \
+  tests/team/ecosystem/test_qdiffusion_cli_entrypoints.py \
+  tests/team/ecosystem/test_qdiffusion_environment_lock.py \
+  tests/team/ecosystem/test_qdiffusion_environment_lock_builder.py \
+  tests/team/ecosystem/test_qdiffusion_failure_evidence.py \
+  tests/team/ecosystem/test_qdiffusion_portability_replay_live.py \
+  tests/team/ecosystem/test_qdiffusion_private_io.py \
+  tests/team/ecosystem/test_qdiffusion_provider_inputs.py \
+  tests/team/ecosystem/test_qdiffusion_protein_evaluate.py \
+  tests/team/ecosystem/test_qdiffusion_protein_training_live.py \
+  tests/team/ecosystem/test_qdiffusion_quota_plan.py \
+  tests/team/ecosystem/test_qdiffusion_readiness.py \
+  tests/team/ecosystem/test_qdiffusion_source_preflight.py \
+  tests/team/ecosystem/test_qdiffusion_sdk_approval.py \
+  tests/team/ecosystem/test_qdiffusion_sdk_wheel_inspection.py \
+  tests/team/ecosystem/test_qdiffusion_strict_json.py \
+  tests/team/ecosystem/test_qdiffusion_transfer_builder.py \
+  tests/team/ecosystem/test_qdiffusion_transfer_bundle.py \
+  tests/integration/test_kaiwu_vertical_slice.py \
+  tests/team/remote/test_kaiwu_credentials.py \
+  tests/team/remote/test_kaiwu_jobs.py \
+  tests/team/remote/test_kaiwu_live_smoke.py \
+  tests/team/remote/test_kaiwu_resume.py \
+  tests/team/remote/test_kaiwu_client.py \
+  tests/team/remote/test_kaiwu_sdk.py

@@ -3,6 +3,35 @@
 The original course checks were run on September 9, 2026. This record concerns the learning materials,
 not event capacity or platform certification.
 
+## Deployment regression reported on October 10, 2026
+
+A workshop-only Jupyter deployment ran all 18 notebooks with every remote-submission switch set to `False`.
+Ten notebooks passed and eight failed. Seven failures shared a repository-root lookup that assumed the complete
+Git checkout was present; notebook 01 also contained deployment-side credential and shell-command edits that
+were not valid Python. The deployed environment imported FlagQuantum 0.2.0 from site-packages, and the Quafu
+exercise still selected the legacy QSteed/SQC path even though the platform supplied current Task API settings.
+
+This revision addresses those findings without changing the numerical lessons that passed:
+
+- The seven affected notebooks locate `flagos2026/notebooks` in either a full checkout or a workshop-only tree,
+  create `flagos2026/outputs`, and raise a clear error when the workshop cannot be located.
+- Notebook 01 reports the imported package version, path, and source commit. Notebook validation rejects saved
+  outputs, saved execution counts, in-cell FlagQuantum installation, shell credential exports, and literal
+  credential assignments.
+- Quafu labs 05 and 13 use the current Task API through `fq.run(..., compiler=None)`, read `QUAFU_API_KEY` and
+  the optional `QUAFU_TASK_SERVER_URL` only from the process environment, and preserve an error record when a
+  submission outcome needs reconciliation.
+- Automated layout tests cover all seven locators in both deployment structures and the missing-layout error.
+
+The 18 source notebooks pass JSON and Python syntax checks and contain no saved execution state. The 15 layout
+regression cases pass. On October 10, 2026, all 18 notebooks also completed in the deployed workshop kernel with
+remote switches disabled. Separately authorized live checks then completed on both providers: a 1024-shot Quafu
+Dongling task reached `completed`, and a two-CPU Jiuding task reached `Succeed` with Bell probabilities close to
+`[0.5, 0, 0, 0.5]`. The Jiuding rehearsal exposed stale workshop calls that omitted the required compute target
+and still passed the removed `gpus` keyword; labs 04 and 16 and the standalone helper now use the current
+`target="jiuding:..."` contract. Rotate any credential that appeared in an autosaved notebook or terminal output;
+deleting the visible cell does not revoke an exposed key.
+
 ## Local execution
 
 - Python 3.12.14 and PyTorch 2.13.0.
@@ -21,7 +50,8 @@ local links resolved, and no Chinese text remained in the workshop materials.
 The local machine had no CUDA GPU, so notebook 02 skipped that branch.
 The submission switches in notebooks 04 and 05 remained off. No participant credentials were used and no new cloud or hardware jobs were created.
 
-The event login flow, concurrent users, GPU images, and current QSteed/Quafu configuration must still be rehearsed using [the instructor guide](INSTRUCTOR.md).
+The event login flow, concurrent users, GPU images, current Quafu Task API configuration, and optional QSteed
+exercise must still be rehearsed using [the instructor guide](INSTRUCTOR.md).
 
 To repeat the local numerical checks from the repository root:
 
@@ -80,3 +110,53 @@ No new QPU or Jiuding task was submitted.
 
 The README now highlights the three featured experiments, and FIELD_NOTES.md provides prediction and interpretation prompts.
 The instructor guide includes a first-time-reader pilot procedure. That human usability pilot and live event-resource rehearsal remain pending.
+# Current layout and historical numbering
+
+The main course now consists of six flat notebooks numbered 01–06. Earlier
+validation records below retain their original lab numbers: original 01, 03,
+07, 18, 04 and 05 correspond to current examples 01, 02, 03, 04, 05 and 06.
+The other twelve notebooks are preserved in reference_notebooks/. Moving files
+does not establish a new live execution pass or alter the recorded outcomes.
+
+## October 12: revised cloud examples, real submissions
+
+The personal copies of revision `5a2270e29` were opened and executed cell by
+cell with real submissions enabled, before the filename-only course reordering.
+One initial task per provider was submitted. After restarting each kernel,
+the notebook restored the same task ID. Repeating receipt preflight and the
+submission cell made zero new `fq.submit` calls, observed through a forwarding
+wrapper around the original API. Temporary diagnostics were removed afterward.
+
+Recovery and duplicate prevention passed; end-to-end execution did not:
+
+- Jiuding reported `Succeed`, but result collection timed out. Read-only Loki
+  queries returned zero result lines, including a query for the unique result
+  prefix without the job-label filter. The underlying cause is not established.
+- Quafu accepted the task, then returned `Failed` with
+  `precheck.edgeUnusable`, stage `precheck`, `retryable=False`, and no counts.
+  This does not establish which physical edge caused the precheck failure.
+
+No automatic retry task was created. Existing receipts/results were preserved.
+The immutable private image has not been rebuilt with the current source.
+Two-account storage authorization isolation remains unverified.
+
+## October 12: authorized-device Quafu follow-up
+
+The current task service rejected an explicit `all-redispatch` test with HTTP
+403, `backend_not_allowed`; that target was not permitted for the test key.
+This is not evidence that all hardware submissions are forbidden. Read-only
+inventory showed Baihua and Dongling online, with the other named hardware
+devices calibrating.
+
+A separate, explicit Baihua hardware submission returned task
+`ua7e5aa75-261012-191610` and counts
+`{'11': 481, '00': 507, '01': 23, '10': 13}`, totaling 1024 real shots.
+The original Dongling precheck failure is unchanged. Example 06 now defaults to
+Baihua and supports an instructor-provided `QUAFU_TARGET`; it does not silently
+retry or redirect a submitted task. Existing receipts must match the selected
+target, so changing configuration cannot rebind an old task.
+
+Jiuding remains unverified end to end. Its query matches the platform's own
+dashboard template, and adding cluster/project headers still returned no logs.
+A single-line-command diagnostic was rejected at experiment creation with HTTP
+403 and returned no job ID; the command hypothesis has not been validated.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import configparser
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICY = ROOT / "contracts" / "coverage-policy.toml"
+COVERAGERC = ROOT / ".coveragerc"
 
 
 def test_global_floor_rejects_coverage_below_the_floor():
@@ -99,3 +101,11 @@ def test_parse_coverage_reads_the_measured_source_root(tmp_path: Path):
 
     assert global_rate == pytest.approx(70.0)
     assert packages == {"runtime": pytest.approx(50.0)}
+
+
+def test_raw_coverage_data_is_portable_across_shard_runners() -> None:
+    config = configparser.ConfigParser()
+    config.read(COVERAGERC, encoding="utf-8")
+
+    assert config.get("run", "source") == "flagquantum"
+    assert config.getboolean("run", "relative_files") is True

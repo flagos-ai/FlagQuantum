@@ -27,6 +27,7 @@ from .qpu.quafu import QuafuProvider
 if TYPE_CHECKING:
     from ..circuit import Circuit
     from ..core.ir import CircuitIR
+    from ..deployment.cloud import DeploymentPackage
     from ..observables import OutputRequest
 
 JobStatus = Literal["queued", "running", "succeeded", "failed", "cancelled", "unknown"]
@@ -118,6 +119,11 @@ class RemoteJob:
         """Query once and normalize state; unrecognized states remain unknown."""
         if isinstance(self._client, QuafuProvider):
             self._raw_status = self._client.query_status(self._handle())
+            if (
+                self._receipt.native_receipt is not None
+                and self._raw_status.lower() == "partiallyfinished"
+            ):
+                return "failed"
             return _normalize(self._raw_status)
         jobs = self._client.status(self._jiuding_receipt())
         # An experiment may have previous attempts: inspect the submitted job only.
@@ -133,6 +139,18 @@ class RemoteJob:
                 f"Job {self.id} is {state} ({self.raw_status}); no result fetched"
             )
         if isinstance(self._client, QuafuProvider):
+            if self._receipt.native_receipt is not None:
+                from ._quafu_collection import collection_result
+
+                return collection_result(
+                    self._client,
+                    self._handle(),
+                    self._receipt.native_receipt,
+                    width=self._receipt.n_wires,
+                    output_name=self._receipt.output_name,
+                    target=self.target,
+                    name=self._receipt.name,
+                )
             from .qpu.execution import counts_result
 
             native = validate_deployment_result(
@@ -222,9 +240,10 @@ class RemoteJob:
 
 
 def submit(
-    program: Circuit | CircuitIR,
+    program: Circuit | CircuitIR | Sequence[Circuit | CircuitIR],
     *,
     target: str,
+    devices: int | None = None,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
     shots: int | None = None,
     compiler: str | None = None,
@@ -235,6 +254,7 @@ def submit(
     project: str | None = None,
     queue: str | None = None,
     credentials: JiudingCredentials | None = None,
+    receipt: str | Path | None = None,
 ) -> RemoteJob:
     """Submit once and return without waiting for remote execution.
 
@@ -243,9 +263,132 @@ def submit(
     otherwise the existing provider configuration is used.
     Submission includes preparation and network I/O. Unsupported output requests
     fail before a task is submitted. Save the returned job for later restoration.
+
+    A Quafu sequence submits one collection of same-width logical circuits.
+    Shots apply per circuit; result().counts preserves the input order.
+
+    With receipt=path, restore a matching prior request or submit once and save.
+    A changed request, damaged record or uncertain prior attempt raises instead
+    of resubmitting. Keep the receipt and its SDK-owned request journal together
+    in a personal persistent directory. Credentials are not stored.
+
+    Examples:
+        Requires provider credentials and quota; this explicitly submits real work::
+
+            job = fq.submit(circuits, target="quafu:Baihua", shots=1024,
+                            outputs=fq.counts(), receipt="experiment.receipt.json")
+            result = job.wait(timeout=300)
     """
     from ..core.ir import ensure_circuit_ir
 
+    if receipt is not None:
+        from ._job_receipts import request_digest, resume_or_submit
+
+        if isinstance(program, Sequence) and not isinstance(program, (str, bytes)):
+            program = tuple(ensure_circuit_ir(item) for item in program)
+        else:
+            program = ensure_circuit_ir(program)
+        if isinstance(target, str) and target.startswith("jiuding:"):
+            project = project or os.environ.get("JIUDING_PROJECT")
+            devices = 1 if devices is None else devices
+        identity = request_digest(
+            program,
+            outputs=outputs,
+            shots=shots,
+            settings={
+                "target": target,
+                "shots": shots,
+                "devices": devices,
+                "compiler": compiler,
+                "target_qubits": target_qubits,
+                "name": name,
+                "image": image,
+                "workspace": workspace,
+                "project": project,
+                "queue": queue,
+            },
+        )
+        return resume_or_submit(
+            receipt,
+            identity=identity,
+            target=target,
+            submitter=lambda: submit(
+                program,
+                target=target,
+                devices=devices,
+                outputs=outputs,
+                shots=shots,
+                compiler=compiler,
+                target_qubits=target_qubits,
+                name=name,
+                image=image,
+                workspace=workspace,
+                project=project,
+                queue=queue,
+                credentials=credentials,
+            ),
+            restore=lambda path: restore_job(path, credentials=credentials),
+        )
+
+    if isinstance(program, Sequence) and not isinstance(program, (str, bytes)):
+        if not program:
+            raise ValueError("program collection must not be empty")
+        if not isinstance(target, str) or not target.startswith("quafu:"):
+            raise CapabilityError("Circuit collections currently support Quafu only")
+        if compiler is not None or target_qubits is not None:
+            raise CapabilityError(
+                "Quafu collections require logical service compilation"
+            )
+        if any(
+            value is not None
+            for value in (
+                image,
+                workspace,
+                project,
+                queue,
+                credentials,
+                devices,
+            )
+        ):
+            raise TypeError("Jiuding options do not apply to Quafu collections")
+        circuits = tuple(ensure_circuit_ir(item) for item in program)
+        if len({item.n_wires for item in circuits}) != 1:
+            raise CapabilityError(
+                "Quafu collections currently require same-width circuits"
+            )
+        if not target.partition(":")[2].strip():
+            raise ValueError("target must name a Quafu backend")
+        from ._quafu_collection import submit_collection
+
+        prepared = [
+            _prepare_quafu_package(
+                item,
+                target=target,
+                outputs=outputs,
+                shots=shots,
+                compiler=None,
+                target_qubits=None,
+                name=name,
+                collection=True,
+            )
+            for item in circuits
+        ]
+        quafu_client = QuafuProvider(reverse_result_bits=True)
+        handle, context = submit_collection(
+            quafu_client, [item[0] for item in prepared]
+        )
+        return RemoteJob(
+            _Receipt(
+                handle.task_id,
+                target,
+                circuits[0].n_wires,
+                name=name,
+                output_name=prepared[0][2],
+                submission_identity=dict(handle.payload),
+                native_receipt=dict(context),
+            ),
+            quafu_client,
+        )
     ir = ensure_circuit_ir(program)
     provider, separator, backend = target.partition(":")
     if not separator or not backend.strip() or provider not in {"quafu", "jiuding"}:
@@ -267,8 +410,16 @@ def submit(
         client = NativeJiudingJobClient(
             project=selected_project, queue=queue, credentials=credentials
         )
+        selected_devices = 1 if devices is None else devices
+        if type(selected_devices) is not int or selected_devices < 1:
+            raise ValueError("devices must be a positive integer")
         native = client.submit_program(
-            ir, target=target, image=image, outputs=outputs, shots=shots
+            ir,
+            target=target,
+            image=image,
+            outputs=outputs,
+            shots=shots,
+            devices=selected_devices,
         )
         return RemoteJob(
             _Receipt(str(native["jobId"]), target, ir.n_wires, native_receipt=native),
@@ -276,10 +427,11 @@ def submit(
             native,
         )
     if any(
-        value is not None for value in (image, workspace, project, queue, credentials)
+        value is not None
+        for value in (image, workspace, project, queue, credentials, devices)
     ):
         raise TypeError(
-            "image, project, queue, workspace and credentials apply only to "
+            "image, project, queue, workspace, credentials and devices apply only to "
             "Jiuding submission"
         )
     return _submit_quafu(
@@ -293,7 +445,7 @@ def submit(
     )
 
 
-def _submit_quafu(
+def _prepare_quafu_package(
     ir: CircuitIR,
     *,
     target: str,
@@ -302,7 +454,8 @@ def _submit_quafu(
     compiler: str | None,
     target_qubits: Sequence[int] | None,
     name: str | None,
-) -> RemoteJob:
+    collection: bool = False,
+) -> tuple[DeploymentPackage, tuple[int, ...], str | None]:
     from ..deployment import CloudBackendProfile, create_deployment_package
     from .qpu.execution import validate_quafu_output
     from .qpu.quafu import _service_options, _validate_quafu_shots
@@ -333,7 +486,9 @@ def _submit_quafu(
             "metadata": {
                 "provider_options": options,
                 "compilation_location": "service",
-                "service_compiler": "quarkcircuit",
+                "service_compiler": (
+                    "platform_default" if collection else "quarkcircuit"
+                ),
             },
         }
         mapping = tuple(options["target_qubits"])
@@ -350,6 +505,28 @@ def _submit_quafu(
         name=name.strip() if name else "flagquantum_job",
         **package_options,
     )
+    return package, mapping, output.name
+
+
+def _submit_quafu(
+    ir: CircuitIR,
+    *,
+    target: str,
+    outputs: OutputRequest | Sequence[OutputRequest] | None,
+    shots: int | None,
+    compiler: str | None,
+    target_qubits: Sequence[int] | None,
+    name: str | None,
+) -> RemoteJob:
+    package, mapping, output_name = _prepare_quafu_package(
+        ir,
+        target=target,
+        outputs=outputs,
+        shots=shots,
+        compiler=compiler,
+        target_qubits=target_qubits,
+        name=name,
+    )
     client = QuafuProvider(reverse_result_bits=compiler is None)
     handle = client.submit(package)
     submission_identity = build_result_metadata(handle)
@@ -360,11 +537,11 @@ def _submit_quafu(
         _Receipt(
             handle.task_id,
             target,
-            ir.n_wires,
+            package.n_qubits,
             compiler,
             mapping,
             name,
-            output.name,
+            output_name,
             submission_identity=submission_identity,
         ),
         client,
@@ -571,6 +748,24 @@ def restore_job(
                 "quafu", receipt.id, backend, receipt.submission_identity
             )
         )
+        if (receipt.native_receipt is not None) != (
+            "collection_sha256" in receipt.submission_identity
+        ):
+            raise ValueError(
+                "Quafu collection receipt context is missing or unexpected"
+            )
+        if receipt.native_receipt is not None:
+            from ._quafu_collection import validate_context
+
+            if receipt.compiler is not None or receipt.target_qubits:
+                raise ValueError(
+                    "Quafu collection receipt must use logical compilation"
+                )
+            validate_context(
+                receipt.native_receipt,
+                width=receipt.n_wires,
+                identity=receipt.submission_identity,
+            )
         return RemoteJob(
             receipt, QuafuProvider(reverse_result_bits=receipt.compiler is None)
         )

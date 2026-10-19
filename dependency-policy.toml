@@ -1,6 +1,6 @@
 schema = "flagquantum_dependency_policy_v2"
 python = ["3.10", "3.11", "3.12"]
-core = ["torch>=2.5,<2.14"]
+core = ["torch>=2.10,<2.15", "tomli>=2.0,<3; python_version < '3.11'"]
 
 [extras]
 # The development extra is the toolchain this repository installs to check
@@ -19,6 +19,7 @@ stim = ["stim>=1.16,<2"]
 pymatching = ["pymatching>=2.3,<3"]
 cuda = ["triton>=3.1,<4"]
 azure = ["qdk[azure]>=1.32.3,<2"]
+kaiwu = ["numpy>=1.24,<3"]
 braket = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'"]
 cirq = ["cirq-core>=1.6.1,<1.8; python_version >= '3.11'"]
 cudaq = ["cudaq>=0.15.1,<0.17; python_version >= '3.11'"]
@@ -27,7 +28,7 @@ qiskit = ["qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1", "sympy>=1.13,<2"]
 pennylane = ["pennylane>=0.44.1,<0.46; python_version >= '3.11'"]
 examples = ["datasets>=2.20.0", "transformers>=4.40.0"]
 viz = ["matplotlib>=3.5.0"]
-invertible = ["torch>=2.5,<2.14"]
+invertible = ["torch>=2.13,<2.14"]
 all = ["pytest>=7.0.0,<10", "pytest-cov>=4.0.0,<8", "pytest-xdist>=3.0.0,<4", "ruff>=0.15.0,<0.17", "black>=24.1.0,<27", "mypy>=2.0.0,<3", "build>=1.2.0,<2", "pre-commit>=3.7.0,<5", "tomli>=2.0,<3; python_version < '3.11'", "pyyaml>=6.0,<7", "matplotlib>=3.5.0", "jax>=0.10,<0.11", "datasets>=2.20.0", "transformers>=4.40.0", "triton>=3.1,<4"]
 interop-all = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'", "cirq-core>=1.6.1,<1.8; python_version >= '3.11'", "pennylane>=0.44.1,<0.46; python_version >= '3.11'", "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'", "qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1", "sympy>=1.13,<2"]
 
@@ -40,7 +41,7 @@ interop = ["braket", "cirq", "pennylane", "quafu", "qiskit"]
 # A remote QPU provider SDK is neither an interop translation of a circuit
 # object nor an aggregate member: it only ever runs inside `flagquantum.remote`,
 # and the core install must stay without it.
-remote_provider = ["azure"]
+remote_provider = ["azure", "kaiwu"]
 user_experience = ["examples", "viz"]
 compatibility = ["invertible"]
 aggregate = ["all", "interop-all"]
@@ -58,7 +59,7 @@ core_dependency_allowed = false
 optional_extra_allowed = false
 
 [import_policy]
-core_allowed_distributions = ["torch"]
+core_allowed_distributions = ["torch", "tomli"]
 core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "numpy", "pennylane", "pymatching", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
 
 # A root named here may be referenced in a collected module only behind a guard,
@@ -75,7 +76,7 @@ core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "
 numpy = ["jax", "matplotlib", "pymatching", "qiskit", "stim"]
 
 [tested]
-torch = ["2.5", "2.13"]
+torch = ["2.10", "2.11", "2.12", "2.13", "2.14"]
 jax = ["0.10"]
 stim = ["1.16"]
 pymatching = ["2.3"]

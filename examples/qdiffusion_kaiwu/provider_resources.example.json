@@ -1,0 +1,16 @@
+{
+  "captured_at": "<required-aware-UTC-timestamp>",
+  "claim_boundary": "Account-resource observation only; it is not spend approval, project assignment, provider evidence, execution evidence, or acceptance evidence.",
+  "resources": [
+    {"available": 0, "mode": "optimization", "target": "SPQC-1", "used": 0},
+    {"available": 0, "mode": "sampling", "target": "SPQC-1", "used": 0},
+    {"available": 0, "mode": "optimization", "target": "SPQC-550", "used": 0},
+    {"available": 0, "mode": "sampling", "target": "SPQC-550", "used": 0},
+    {"available": 0, "mode": "optimization", "target": "SPQC-1000", "used": 0},
+    {"available": 0, "mode": "sampling", "target": "SPQC-1000", "used": 0}
+  ],
+  "schema": "flagquantum.qboson_provider_resources",
+  "source": "authenticated_resource_bill",
+  "valid_until": "<required-aware-UTC-timestamp-no-more-than-24-hours-later>",
+  "version": "1.0"
+}

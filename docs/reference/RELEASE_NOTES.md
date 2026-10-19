@@ -17,6 +17,64 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+## 0.3.1 (release pending)
+
+- Includes the approved local research-capability services added after the
+  0.3.0 distribution was built. The public `flagquantum.services` surface
+  discovers and describes three bounded operations, validates and estimates
+  requests, executes supported local CPU work, and validates structured
+  evidence. No MCP transport or agent runtime is included in the core package.
+- The supported ground-state VQE scope remains a supplied two-qubit Pauli sum
+  with an explicit ansatz and optimizer. Molecular Hamiltonian construction,
+  remote execution, and unsupported scientific scopes are not implied.
+
+## 0.3.0 (2026-10-16)
+
+- Publishes the 0.3 release line as a stable package for Python 3.10 through
+  3.12, with the cross-platform Stable ABI distribution pipeline.
+- Adds recoverable remote job submissions for Quafu and Jiuding through
+  opt-in receipts, plus ordered multi-circuit Quafu collection results.
+- Includes English and Chinese editions of the six-lesson FlagOS 2026
+  workshop.
+
+- Added opt-in `fq.submit(..., receipt=path)` recovery for Quafu and native
+  Jiuding jobs. Matching requests restore automatically; configuration changes,
+  damaged records and uncertain attempts fail without automatic resubmission.
+  Existing calls without a receipt and standalone `fq.restore_job` are unchanged.
+
+## 0.3.0rc3 (2026-10-10)
+
+- Corrected the cross-platform Stable ABI release build after rc2 validation:
+  Linux x86_64, macOS arm64, and Windows amd64 now each produce and test one
+  `cp310-abi3` wheel for the supported Python 3.10 through 3.12 range.
+- Made the native CPU extension portable to MSVC, including Stable ABI flag
+  propagation, OpenMP SIMD compilation, and portable bit lookup, without
+  changing the public Python API or the supported PyTorch runtime range.
+- Kept `0.3.0rc2` immutable. rc3 is the release candidate that includes the
+  verified macOS arm64 and Windows amd64 wheel pipeline corrections.
+
+## 0.3.0rc2 (2026-10-10)
+
+- Migrated the native CPU extension to CPython's limited API and PyTorch's
+  Stable ABI. Each supported platform now ships one `cp310-abi3` wheel for
+  Python 3.10 through 3.12 instead of rebuilding the extension for every
+  interpreter minor.
+- Compiled release artifacts against the PyTorch 2.10 Stable ABI baseline and
+  validated them on the supported PyTorch `>=2.13,<2.15` runtime range. PyTorch
+  2.10 is a build baseline, not the user runtime dependency.
+- Updated development images to install the self-contained
+  `flagquantum-compiler-qsteed==0.2.0` package. The plugin vendors its verified
+  compiler-only closure and no longer requires cloning QSteed during image
+  builds.
+- Preserved the existing `v0.3.0rc1` tag and incomplete GitHub prerelease as an
+  immutable record. Its wheel build did not complete and no `0.3.0rc1`
+  distribution was uploaded to PyPI; rc2 is the corrected release candidate.
+
+## 0.3.0rc1 (2026-10-10)
+
+This release candidate packages the user-visible work completed since 0.2.0 for
+installation and provider-workflow validation before the final 0.3.0 release.
+
 These entries were written while the release that shipped as `0.2.0` was still
 called the first alpha, which is why some of them say the "first-alpha API
 freeze" remains pending. That freeze landed as the protected Stable Core

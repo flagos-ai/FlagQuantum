@@ -107,6 +107,23 @@ def test_submit_program_manages_artifacts_when_receipt_is_omitted(monkeypatch) -
     assert submit.call_args.args[1].measurements[0].shots == 1024
 
 
+def test_cpu_program_keeps_cpu_runtime_on_accelerator_queue(monkeypatch) -> None:
+    client = _client()
+    submit = Mock(return_value={"jobId": "job-1"})
+    monkeypatch.setattr(
+        "flagquantum.remote.compute._managed_program.submit_managed_program",
+        submit,
+    )
+
+    client.submit_program(
+        fq.Circuit(1),
+        target="jiuding:cpu",
+        image="flagquantum-runtime:v1",
+    )
+
+    assert submit.call_args.kwargs["selected_target"] == "jiuding:cpu"
+
+
 def test_program_request_executes_through_standard_runtime(
     tmp_path: Path,
     monkeypatch,
@@ -155,6 +172,9 @@ def test_program_result_is_a_normal_execution_result() -> None:
             "accelerator": "A100",
             "cpu_fallback_used": False,
             "target": "jiuding:gpu/NVIDIA_A100-SXM4-40GB",
+            "devices": 4,
+            "distributed_execution": {"distribution_semantics": "sharded_across_ranks"},
+            "result_materialization": {"distribution_semantics": "replicated_per_rank"},
         },
     }
 
@@ -166,6 +186,10 @@ def test_program_result_is_a_normal_execution_result() -> None:
 
     assert result.to_statevector().shape == (4,)
     assert result.runtime["execution_path"] == "jiuding_batch_program"
+    assert result.runtime["devices"] == 4
+    assert result.runtime["distribution_semantics"] == "replicated_per_rank"
+    assert result.runtime["execution_distribution_semantics"] == "sharded_across_ranks"
+    assert result.runtime["scalability_claim_allowed"] is False
     assert result.provenance["cpu_fallback_used"] is False
 
 

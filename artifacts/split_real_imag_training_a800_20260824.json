@@ -31,7 +31,7 @@
     "max_norm_drift": 5e-05
   },
   "environment": {
-    "native_cuda_image": "flagquantum/sc27-core:frozen-e07a642",
+    "native_cuda_image": "flagquantum/sc27-core:frozen-e07a642de9e10fc948c4c131210a243ec13b7c01",
     "native_cuda_image_id": "sha256:a6a6d2c4d50c9ac503eeae562e841add24a1b71a7e70410709c6ca6a87722d7b",
     "flagos_image": "harbor.baai.ac.cn/flagos-dev/vllm-plugin-fl@sha256:8244e20acbad1a3ede024404b13d129fa6d83933e1320f93b75e404a85efbb4b",
     "torch_fl_revision": "2e00b393cf80088706b460a187aef185d3a283f4",

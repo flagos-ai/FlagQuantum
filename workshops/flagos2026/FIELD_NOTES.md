@@ -30,7 +30,7 @@ A seed controls some random choices; it does not guarantee identical answers acr
 
 ## Questions for the three featured experiments
 
-### Lab 07: one loss, two learning systems
+### Example 03: one loss, two learning systems
 
 - Before training, which parameters do you expect to receive gradients?
 - After training, what evidence shows that both parts of the model changed?
@@ -41,7 +41,7 @@ If you get stuck, inspect the parameter names, gradient norms, and before/after 
 The encoder bias and quantum offset enter the same total angle. A good fit does not uniquely identify them.
 This small cosine-fitting problem illustrates joint differentiation; it does not demonstrate quantum advantage.
 
-### Lab 18: one problem, three simulators
+### Example 04: one problem, three simulators
 
 - What stays the same when the simulation mode changes?
 - Why compare gradients before running the optimizer?

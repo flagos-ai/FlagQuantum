@@ -89,7 +89,7 @@ flagquantum-benchmark run batched_statevector_memory \
 Raw evidence:
 [`batched_statevector_memory_cpu_arm64_20261001.json`](batched_statevector_memory_cpu_arm64_20261001.json).
 Generated complete table:
-[`BATCHED_STATEVECTOR_MEMORY_CPU_ARM64_20261001.md`](BATCHED_STATEVECTOR_MEMORY_CPU_ARM64_20261001.md).
+[`BATCHED_STATEVECTOR_MEMORY_CPU_ARM64_20261001.md`](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2).
 
 ## Limits
 

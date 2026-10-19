@@ -60,6 +60,7 @@ from flagquantum.compiler.translate import translate
 from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.extensions.target_sdk import target_capability_snapshot
 from flagquantum.ecosystem.pennylane import run as run_pennylane
+from flagquantum.ecosystem.qcis import import_qcis
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.ecosystem.simulators import recommend as recommend_simulator
 from flagquantum.lindblad import plan as plan_lindblad_evolution
@@ -231,6 +232,7 @@ ENTRIES = (
     get_unitary,
     import_openqasm,
     import_openqasm_to_ir,
+    import_qcis,
     jordan_wigner,
     maxcut_hamiltonian,
     molecular_integrals,

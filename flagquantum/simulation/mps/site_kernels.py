@@ -540,6 +540,16 @@ def apply_two_site_gate_contraction_bucket(
     _STATS.rxx_bucket_calls += 1
     if matrices.ndim == 3:
         matrices = matrices.unsqueeze(1).expand(-1, left.shape[1], -1, -1)
+    if not compiled:
+        # Real-channel GEMMs can inherit TF32 from the caller/vendor default.
+        # Keep eager complex64 contractions at their requested precision without
+        # changing process-global matmul settings or moving work to the host.
+        pair = torch.einsum("kblsm,kbmtr->kblstr", left, right)
+        bonds, batch, left_dim, _, _, right_dim = pair.shape
+        pair = pair.reshape(bonds, batch, left_dim, 4, right_dim)
+        return torch.einsum("kbij,kbljr->kblir", matrices, pair).reshape(
+            bonds, batch, left_dim * 2, 2 * right_dim
+        )
     real_inputs = (
         torch.view_as_real(left),
         torch.view_as_real(right),

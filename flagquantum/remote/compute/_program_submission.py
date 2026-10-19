@@ -71,8 +71,10 @@ class _ProgramSubmissionMixin(ABC):
             assert measurements is not None
             ir = replace(ir, measurements=measurements)
             operation = "measurements"
-        _, model = self._resolve_compute_target(target)
-        selected_target = f"jiuding:gpu/{model}" if model else "jiuding:cpu"
+        chip_type, model = self._resolve_compute_target(target)
+        selected_target = (
+            "jiuding:cpu" if chip_type == "cpu" else f"jiuding:{chip_type}/{model}"
+        )
         if receipt is None:
             from ._managed_program import submit_managed_program
 

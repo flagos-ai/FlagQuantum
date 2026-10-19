@@ -19,16 +19,18 @@ Policies and workflows for changing, testing, and releasing FlagQuantum.
 The list above is the policy core. Most files in this directory are recorded
 delivery artifacts rather than current policy, and they are grouped by family:
 
-- `API_CHANGE_PROPOSAL_0*.md` (70 files, including the 001 listed above) — one
+- `API_CHANGE_PROPOSAL_0*.md` (76 files, including the 001 listed above) — one
   proposal per API decision, in numeric order. Start from
   `API_CHANGE_PROPOSAL_001_STABLE_CORE.md` and follow
   the [public API protection](PUBLIC_API_PROTECTION.md) process before reusing a
   proposal as authority.
-- `IR_PHASE_*.md` (34 files) — internal IR phase plans, reviews, and approval
-  packets. The current state is summarized in
+- `IR_PHASE_*.md` (5 files) — retained internal IR baselines and the current
+  approval packet. Archived reviews are indexed in
+  [the evidence archive](evidence-archives.json), and the current state is
+  summarized in the
   [compiler and IR implementation map](IR_IMPLEMENTATION_STATUS.md).
-- `HYBRID_COMPILATION_PHASE*_EVIDENCE.md` (46 files) — per-phase compilation
-  evidence records. The contract they support is
+- `HYBRID_COMPILATION_PHASE*_EVIDENCE.md` (37 files) — contract-bound
+  per-phase compilation evidence records. The contract they support is
   [private hybrid compilation contract](HYBRID_COMPILATION_PRIVATE_CONTRACT.md).
 - `team-readiness/` — per-domain migration inventories, boundary handoffs, and
   target-capability reconciliations.

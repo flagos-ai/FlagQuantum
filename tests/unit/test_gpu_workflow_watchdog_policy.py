@@ -71,8 +71,8 @@ def test_the_required_names_are_names_github_actually_reports():
         "cpu-core (3.11)",
         "cpu-core (3.12)",
         "cudaq-optional",
-        "dependency-bounds (3.10, torch==2.5.*)",
-        "dependency-bounds (3.12, torch>=2.5,<2.14)",
+        "dependency-bounds (3.10, torch>=2.13,<2.14)",
+        "dependency-bounds (3.12, torch>=2.13,<2.14)",
         "distributed-cpu",
         "jax-optional",
         "package",
@@ -102,8 +102,8 @@ def test_matrix_check_names_are_derived_the_way_github_names_them():
     produced = _produced_checks(root)
     assert "cpu-core (3.10)" in produced
     assert "cpu-core (3.12)" in produced
-    assert "dependency-bounds (3.10, torch==2.5.*)" in produced
-    assert "dependency-bounds (3.12, torch>=2.5,<2.14)" in produced
+    assert "dependency-bounds (3.10, torch>=2.13,<2.14)" in produced
+    assert "dependency-bounds (3.12, torch>=2.13,<2.14)" in produced
     document = yaml.safe_load(
         (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     )

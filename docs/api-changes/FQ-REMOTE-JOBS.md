@@ -28,6 +28,14 @@ is never included in a receipt. The argument is rejected for Quafu jobs.
 Explicit and discovered credentials converge before authentication; both use the
 same HMAC exchange, token cache, expiry refresh and control-plane request path.
 
+On 2026-10-11, the API owner authorized the provider-neutral `devices` keyword
+for native Jiuding submissions. `target` selects the accelerator kind/model and
+`devices=N` selects how many devices the job must both reserve and actually use.
+For `N > 1`, the adapter launches exactly N torch-distributed ranks on one node;
+it rejects unsupported CPU, non-power-of-two and oversized requests before the
+remote experiment is created. The platform-specific `acceleratorCount` name is
+kept inside the Jiuding adapter rather than exposed at the root API.
+
 ## Scope and compatibility
 
 Remote submission is a separate user journey from synchronous execution, so two
@@ -43,6 +51,15 @@ and rejects `workspace` for new submissions. Jiuding submits an inline circuit
 through HTTP, runs the image-installed executor, and retrieves bounded results
 through authenticated job logs. It requires an explicit image. Synchronous `run`
 retains its resident-workspace behavior. No released API is removed.
+
+Native Jiuding GPU jobs accept `devices`. Omitting it is equivalent to one
+device and preserves the existing path. `devices > 1` is currently single-node
+distributed statevector execution: the state evolves in rank-owned shards and
+the scheduler request reserves the same number of accelerators. Compact outputs
+and state export currently perform an explicit full-state gather after the
+sharded computation. Result evidence records both phases, marks the gather as
+replicated materialization, and therefore makes no capacity or scalability
+claim for the end-to-end result path.
 
 A job exposes `id`, `target`, `raw_status`, `status()`, `result()`,
 `wait(timeout=300.0, poll_interval=3.0)`, `cancel()`, and `save(path)`.

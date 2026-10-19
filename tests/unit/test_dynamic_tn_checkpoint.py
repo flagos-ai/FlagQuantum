@@ -13,9 +13,54 @@ from flagquantum.runtime.executors.tensor_network.dynamic_checkpoint import (
 )
 from flagquantum.runtime.executors.tensor_network.dynamic_reverse import (
     DistributedTNDynamicReverseSegment,
+    DistributedTNDynamicReverseSegmentResult,
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_checkpoint_payload_preserves_reverse_frontier_and_counters(legacy, tmp_path):
+    result = DistributedTNDynamicReverseSegmentResult(
+        cotangents={"value": torch.tensor([1.0, 2.0])},
+        segment_identity="segment-a",
+        executed_reverse_ids=("record-a",),
+        subgroup_collective_count=1,
+        subgroup_collective_bytes=8,
+        redistribution_count=2,
+        redistribution_sent_bytes=16,
+        redistribution_received_bytes=16,
+        accumulated_cotangent_count=3,
+        released_forward_value_count=4,
+        peak_cached_forward_bytes=64,
+        ready_cotangent_ids=("value",),
+        pending_cotangent_contributions={"pending": 1},
+        rank_consensus_validated=True,
+        rank_tensor_preflight_validated=True,
+        completed=False,
+        next_record_index=1,
+        rematerialized_forward_value_count=5,
+        rematerialized_forward_bytes=128,
+    )
+    payload = dynamic_checkpoint._checkpoint_payload(result)
+    if legacy:
+        del payload["rematerialized_forward_value_count"]
+        del payload["rematerialized_forward_bytes"]
+    path = tmp_path / "rank.pt"
+    torch.save(payload, path)
+    restored = dynamic_checkpoint._result_from_payload(
+        torch.load(path, weights_only=True)
+    )
+    assert "version" in payload
+    for field in result.__dataclass_fields__:
+        if field == "cotangents":
+            torch.testing.assert_close(
+                restored.cotangents["value"], result.cotangents["value"]
+            )
+        elif legacy and field.startswith("rematerialized_forward_"):
+            assert getattr(restored, field) == 0
+        else:
+            assert getattr(restored, field) == getattr(result, field)
 
 
 @pytest.mark.parametrize("manifest", [None, [], "invalid"])

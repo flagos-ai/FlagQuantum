@@ -12,11 +12,13 @@ from tools.verify_distribution_artifacts import (
     ALLOWED_WHEEL_PACKAGE_ROOTS,
     REQUIRED_MEMBER_SUFFIXES,
     _allowed_wheel_member,
+    _bundled_torch_library,
     _forbidden,
     _is_native_extension,
     _missing_native_extension,
     _missing_required_members,
     artifact_errors,
+    release_matrix_errors,
 )
 
 try:
@@ -29,22 +31,19 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
 DIST_INFO = "flagquantum-0.2.0.dist-info"
-NATIVE_EXTENSION = (
-    "flagquantum/simulation/native_cpu/_C.cpython-312-x86_64-linux-gnu.so"
-)
+NATIVE_EXTENSION = "flagquantum/simulation/native_cpu/_C.abi3.so"
 
 RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "cd.yml"
 
-# `python -m build` writes to `dist` unless `--outdir` says otherwise.
-_BUILD_OUTPUT = re.compile(r"\bpython\s+-m\s+build\b(?:[^\n]*?--outdir[=\s]+(\S+))?")
-# The verifier takes exactly one directory, which is the directory it inspects.
-_ARTIFACT_VERIFICATION = re.compile(
-    r"\btools/verify_distribution_artifacts\.py\s+(\S+)"
-)
 _PUBLISH_ACTION = "pypa/gh-action-pypi-publish"
 
 
-def _fake_wheel(tmp_path: Path, *, native_extension: str | None) -> Path:
+def _fake_wheel(
+    tmp_path: Path,
+    *,
+    native_extension: str | None,
+    torch_requirement: str = "torch>=2.10,<2.15",
+) -> Path:
     """A minimal wheel that satisfies every artifact rule except the extension.
 
     The checks below are about what the verifier requires of a real build, so
@@ -67,7 +66,8 @@ def _fake_wheel(tmp_path: Path, *, native_extension: str | None) -> Path:
         archive.writestr(
             f"{DIST_INFO}/METADATA",
             "Metadata-Version: 2.1\nName: flagquantum\n"
-            "Requires-Dist: torch>=2.5,<2.14\n",
+            f"Requires-Dist: {torch_requirement}\n"
+            'Requires-Dist: tomli>=2.0,<3; python_version < "3.11"\n',
         )
     return path
 
@@ -118,18 +118,67 @@ def test_distribution_quarantine_rejects_repo_only_members():
 
 
 def test_distribution_allows_only_flagquantum_package_root() -> None:
-    assert ALLOWED_WHEEL_PACKAGE_ROOTS == ("flagquantum/",)
+    assert ALLOWED_WHEEL_PACKAGE_ROOTS == ("flagquantum/", "flagquantum.libs/")
     assert _allowed_wheel_member("flagquantum/core/ir/__init__.py")
     assert _allowed_wheel_member("flagquantum/ecosystem/qiskit/aer.py")
+    assert _allowed_wheel_member("flagquantum.libs/libgomp.so.1")
     assert _allowed_wheel_member("flagquantum-0.2.0.dist-info/METADATA")
     assert not _allowed_wheel_member("unrelated_plugin/__init__.py")
 
 
+def test_distribution_keeps_pytorch_runtime_libraries_external() -> None:
+    assert _bundled_torch_library("flagquantum.libs/libtorch_cpu.so")
+    assert _bundled_torch_library("flagquantum.libs/c10.dll")
+    assert _bundled_torch_library("flagquantum/.dylibs/libc10.dylib")
+    assert not _bundled_torch_library("flagquantum.libs/libgomp.so.1")
+
+
+def test_distribution_rejects_an_abi_incompatible_torch_requirement(
+    tmp_path: Path,
+) -> None:
+    wheel = _fake_wheel(
+        tmp_path,
+        native_extension=NATIVE_EXTENSION,
+        torch_requirement="torch>=2.5,<2.15",
+    )
+
+    assert any("PyTorch 2.10-2.14 range" in error for error in artifact_errors(wheel))
+
+
+def test_native_extension_uses_only_pytorch_stable_or_header_only_apis() -> None:
+    source_root = ROOT / "flagquantum" / "simulation" / "native_cpu" / "csrc"
+    sources = tuple(source_root.glob("*.cpp")) + tuple(source_root.glob("*.h"))
+    assert sources
+    forbidden = ("#include <ATen/", "#include <torch/extension.h>", "at::")
+
+    for source in sources:
+        contents = source.read_text(encoding="utf-8")
+        assert not [marker for marker in forbidden if marker in contents], source
+        torch_headers = re.findall(r"#include <(torch/[^>]+)>", contents)
+        assert not [
+            header
+            for header in torch_headers
+            if not header.startswith(("torch/csrc/stable/", "torch/headeronly/"))
+        ], source
+
+
 def test_distribution_requires_runtime_profiles_and_numerical_contract() -> None:
     assert _missing_required_members(REQUIRED_MEMBER_SUFFIXES) == ()
-    assert _missing_required_members(REQUIRED_MEMBER_SUFFIXES[1:]) == (
-        "flagquantum/simulation/numerics/double-single-contract.toml",
-    )
+    assert _missing_required_members(
+        tuple(
+            name
+            for name in REQUIRED_MEMBER_SUFFIXES
+            if name != "flagquantum/simulation/numerics/double-single-contract.toml"
+        )
+    ) == ("flagquantum/simulation/numerics/double-single-contract.toml",)
+
+
+def test_distribution_requires_research_service_modules() -> None:
+    required = "flagquantum/services/research_execution.py"
+    assert required in REQUIRED_MEMBER_SUFFIXES
+    assert _missing_required_members(
+        tuple(name for name in REQUIRED_MEMBER_SUFFIXES if name != required)
+    ) == (required,)
 
 
 def test_distribution_requires_the_compiled_native_extension(tmp_path) -> None:
@@ -166,6 +215,24 @@ def test_native_extension_members_are_matched_by_directory_and_module_name() -> 
     assert not _is_native_extension("flagquantum/other/_C.cpython-312-darwin.so")
 
 
+def test_release_matrix_requires_every_supported_wheel_and_one_sdist(
+    tmp_path: Path,
+) -> None:
+    platforms = (
+        "manylinux_2_28_x86_64",
+        "macosx_11_0_arm64",
+        "win_amd64",
+    )
+    artifacts = tuple(
+        tmp_path / f"flagquantum-0.2.0-cp310-abi3-{platform}.whl"
+        for platform in platforms
+    ) + (tmp_path / "flagquantum-0.2.0.tar.gz",)
+
+    assert release_matrix_errors(artifacts) == ()
+    errors = release_matrix_errors(artifacts[1:])
+    assert "release wheel is missing: cp310 manylinux_x86_64" in errors
+
+
 def test_project_description_matches_the_readme_positioning() -> None:
     """PyPI shows this line, so it must not drift away from the README."""
 
@@ -175,8 +242,7 @@ def test_project_description_matches_the_readme_positioning() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert description == (
-        "A PyTorch-first framework for differentiable quantum computing "
-        "and quantum AI."
+        "A PyTorch-first framework for differentiable quantum computing and quantum AI."
     )
     assert description in readme
 
@@ -212,43 +278,46 @@ def _publishing_job() -> dict[str, object]:
 
 
 def test_the_release_verifies_the_artifact_it_publishes() -> None:
-    """The published file must be the file this workflow inspected.
+    """The publisher downloads and verifies the complete matrix before upload."""
 
-    `ci.yml`'s `package` job verifies the artifacts it builds and stops there,
-    and `python -m build` in the release job is a second, independent build. So
-    the file users receive was the only one no gate had opened: a build that
-    dropped the compiled `_C` module, or that swept in tests and caches, would
-    have been uploaded successfully and then described, elsewhere, as verified.
-    The release must therefore run the same verifier over the directory it built.
-    """
-
-    steps = _publishing_job()["steps"]
+    job = _publishing_job()
+    steps = job["steps"]
     commands = [str(step.get("run", "")) for step in steps]
-
-    built = [
-        match.group(1) or "dist"
-        for command in commands
-        for match in [_BUILD_OUTPUT.search(command)]
-        if match
-    ]
-    assert built, "the release builds the distributions it publishes"
-
-    verified = [
-        match.group(1)
-        for command in commands
-        for match in [_ARTIFACT_VERIFICATION.search(command)]
-        if match
-    ]
-    assert sorted(verified) == sorted(built)
+    assert set(job["needs"]) == {"build-sdist", "build-wheels"}
 
     publication = next(
         index
         for index, step in enumerate(steps)
         if str(step.get("uses", "")).startswith(_PUBLISH_ACTION)
     )
+    download = next(
+        index
+        for index, step in enumerate(steps)
+        if str(step.get("uses", "")).startswith("actions/download-artifact")
+    )
     verification = next(
         index
         for index, command in enumerate(commands)
-        if _ARTIFACT_VERIFICATION.search(command)
+        if "verify_distribution_artifacts.py --release-matrix dist" in command
     )
-    assert verification < publication
+    assert download < verification < publication
+
+
+def test_release_builds_the_supported_platform_and_interpreter_matrix() -> None:
+    document = yaml.safe_load(RELEASE_WORKFLOW.read_text(encoding="utf-8"))
+    job = document["jobs"]["build-wheels"]
+    platforms = {
+        (entry["os"], entry["artifact"])
+        for entry in job["strategy"]["matrix"]["include"]
+    }
+
+    assert platforms == {
+        ("ubuntu-22.04", "manylinux-x86_64"),
+        ("macos-14", "macos-arm64"),
+        ("windows-2022", "windows-amd64"),
+    }
+    assert job["strategy"]["max-parallel"] <= 4
+    assert any(
+        str(step.get("uses", "")).startswith("pypa/cibuildwheel@")
+        for step in job["steps"]
+    )

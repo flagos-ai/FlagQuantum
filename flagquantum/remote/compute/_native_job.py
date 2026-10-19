@@ -32,9 +32,30 @@ def _one(rows: list[dict[str, Any]], name: str, label: str) -> dict[str, Any]:
     return matches[0]
 
 
-def _command(request: dict[str, Any], run_id: str) -> str:
+def _command(request: dict[str, Any], run_id: str, *, devices: int = 1) -> str:
     """Encode data as an argument; never interpolate user data into Python code."""
+    request = {**request, "devices": devices}
     encoded = base64.b64encode(json.dumps(request, allow_nan=False).encode()).decode()
+    if devices > 1:
+        command = shlex.join(
+            [
+                "python",
+                "-u",
+                "-m",
+                "torch.distributed.run",
+                "--nnodes=1",
+                "--master-addr=127.0.0.1",
+                "--master-port=29500",
+                f"--nproc-per-node={devices}",
+                "-m",
+                "flagquantum.remote.compute._distributed_job",
+                encoded,
+                run_id,
+            ]
+        )
+        if len(command.encode()) > _MAX_COMMAND:
+            raise ValueError("Circuit exceeds the 64 KiB inline job command limit")
+        return command
     code = """import base64,hashlib,json,sys
 from flagquantum.remote.compute._workspace_executor import execute
 p=json.loads(base64.b64decode(sys.argv[1]))
@@ -186,6 +207,7 @@ class NativeJiudingJobClient(JiudingClient):
         image: str,
         outputs: Any = None,
         shots: int | None = None,
+        devices: int = 1,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """Submit one circuit to the native executor and return its handle.
@@ -205,6 +227,8 @@ class NativeJiudingJobClient(JiudingClient):
         """
         if kwargs:
             raise TypeError("Unsupported native job options: " + ", ".join(kwargs))
+        if type(devices) is not int or devices < 1:
+            raise ValueError("devices must be a positive integer")
         ir = ensure_circuit_ir(program)
         if outputs is None and shots is not None:
             raise TypeError("shots requires an explicit sampling output")
@@ -216,7 +240,18 @@ class NativeJiudingJobClient(JiudingClient):
         ir = replace(ir, measurements=measurements or ())
         w = self.workspace()
         chip, model = self._resolve_compute_target(target)
-        selected = f"jiuding:gpu/{model}" if chip == "gpu" else "jiuding:cpu"
+        if devices > 1:
+            if chip != "gpu":
+                raise ValueError("devices > 1 requires a Jiuding GPU target")
+            if devices & (devices - 1):
+                raise ValueError(
+                    "distributed statevector devices must be a power of two"
+                )
+            if devices > 2**ir.n_wires:
+                raise ValueError(
+                    "devices cannot exceed the circuit statevector amplitude count"
+                )
+        selected = "jiuding:cpu" if chip == "cpu" else f"jiuding:{chip}/{model}"
         from ._workspace_executor import SCHEMA, VERSION
 
         run_id = uuid.uuid4().hex
@@ -230,9 +265,13 @@ class NativeJiudingJobClient(JiudingClient):
                 "program": ir.to_dict(),
             },
             run_id,
+            devices=devices,
         )
-        catalog = self._catalog_image(image, "PRIVATE")
-        executable = catalog.get("registryUrl")
+        catalog = self._catalog_image(image, "AUTO")
+        image_region = catalog["imageRegion"]
+        executable = catalog.get(
+            "baseUrl" if image_region == "PUBLIC" else "registryUrl"
+        )
         if not isinstance(executable, str) or not executable:
             raise ValueError("Image has no executable registry URL")
         # Preflight the same authenticated log service used for result retrieval.
@@ -262,17 +301,21 @@ class NativeJiudingJobClient(JiudingClient):
             "artifact_transport": "job_logs",
             "datasource_uid": datasource["uid"],
             "created_ms": int(time.time() * 1000),
+            "devices": devices,
+            "execution_distribution_semantics": (
+                "sharded_across_ranks" if devices > 1 else "single_device_fast_path"
+            ),
         }
         try:
             return self._launch_command(
                 command=command,
                 w=w,
                 executable_image=executable,
-                image_region="PRIVATE",
+                image_region=image_region,
                 model=model,
-                gpus=int(chip == "gpu"),
-                cpus=2,
-                memory_gib=2,
+                gpus=devices if chip == "gpu" else 0,
+                cpus=max(2, devices),
+                memory_gib=max(2, 2 * devices),
                 run_id=run_id,
                 receipt=receipt,
                 record=record,

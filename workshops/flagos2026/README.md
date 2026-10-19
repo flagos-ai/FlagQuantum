@@ -1,129 +1,148 @@
-# FlagQuantum Workshop: choose your own experiment
+# FlagQuantum: six experiments to keep
 
-Build quantum programs, train models, explore physics, and understand what happens between your code and a real device.
-This is a collection of hands-on labs, not a course you must finish in one sitting.
-Choose a question that interests you and follow its prerequisites. Beginners and experienced developers can start in different places.
+A small collection of complete examples, not an eighteen-stop API tour.
+Learn a task here, then reuse the same FlagQuantum code in your own Python project.
 
-All teaching material is in English. Each notebook writes the core computation in its cells, explains the expected result,
-and ends with an experiment you can change yourself. The default calculations are small enough for a laptop CPU.
+## Choose a learning route
 
-## Three experiments to remember
+- First circuit: **01**, then **02** when you know basic PyTorch gradients.
+- Hybrid training: **01 → 02 → 03**; familiarity with Linear, Sequential and batches helps.
+- Simulation choices: **01 → 02 → 04**; keep the default mode until you have a reason to compare representations.
+- Remote execution: **01 → 05 → 06**; the training lessons are not prerequisites.
 
-These labs connect a scientific question to a result you can inspect and explain.
-Choose one after completing its prerequisites; each also works entirely on a laptop CPU.
+01–04 run on a local CPU without a cloud account. 05 requires Jiuding access,
+a verified job image/project/queue and shared storage. 06 requires Quafu access,
+an available hardware target and shot quota. Follow [Setup](SETUP.md) before
+either remote lesson. The published switches stay off; the event deployment
+explicitly enables real submissions after configuration is verified.
 
-| Experiment | What you will take away |
-| --- | --- |
-| [One loss, two learning systems](notebooks/training/07_hybrid_model.ipynb) | A fitted hybrid model, held-out predictions, and evidence that both classical and quantum parameters receive gradients. |
-| [One problem, three simulators](notebooks/simulation/18_one_problem_three_simulators.ipynb) | The same energy-minimization problem solved with statevector, MPS, and tensor-network execution, with explicit value and gradient checks. |
-| [From a learned angle to a measurement](notebooks/cloud/13_trained_hardware.ipynb) | A saved trained circuit and a comparison separating learning error from measurement variation, with optional live hardware execution. |
+Open the English or Chinese link in the table below. Use a fresh kernel, read
+the learning goal, and run cells in order with Shift+Enter. Each lesson explains
+the expected output and how to rerun safely; an assertion passing is a numerical
+check, not proof that the explanation is clear to a new reader.
 
-Use the [field notes](FIELD_NOTES.md) to record a prediction, explain a result, and decide what to change next.
+## The main workshop
 
-## Find your starting point
+Start with the circuit example. Choose the next experiment by the question you
+want to answer; every notebook creates its own state and runs in a fresh kernel.
 
-| You want to… | Suggested route |
-| --- | --- |
-| Start from zero | 01 → 02 → 03 → 09 |
-| Bring your PyTorch experience | 03 → 07 → 14 → 13 |
-| Solve a small scientific problem | 03 → 08 → 18 → 11, then 10 |
-| Explore optimization on graphs | 03 → 15 → 09 |
-| Use cloud resources and real hardware | 04 → 16, then 05 → 06 → 13 |
-| Understand the software underneath | 12 → 17, then 14 and 11 |
-
-These arrows suggest useful background, not a shared notebook session.
-Each lab creates its own variables and can run in a fresh kernel. Lab 06 can use a recorded hardware result;
-its live option reads the result saved by lab 05.
-
-## Lab catalog
-
-Notebooks are grouped by learning topic. Keep the lab numbers when following
-the routes above; each notebook still runs independently.
-
-| Folder | Labs | Focus |
-| --- | --- | --- |
-| [basics](notebooks/basics/) | 01, 02, 09 | Circuits, device selection, and measurement uncertainty |
-| [training](notebooks/training/) | 03, 07, 14 | Parameter learning, hybrid models, and gradient checks |
-| [simulation](notebooks/simulation/) | 10, 11, 18 | Noise, MPS, and agreement across simulation representations |
-| [compilation](notebooks/compilation/) | 12, 17 | Circuit transformations and compiler extensions |
-| [cloud](notebooks/cloud/) | 04, 05, 06, 13, 16 | Jiuding, Quafu, and interpretation of remote results |
-| [applications](notebooks/applications/) | 08, 15 | VQE and graph optimization |
-
-| Lab | Question you will answer | Level | Additional resources |
+| Example | The question | Standard APIs to remember | Evidence you should obtain |
 | --- | --- | --- | --- |
-| [01 · First circuit](notebooks/basics/01_first_circuit.ipynb) | How does each gate change the state? | Beginner | None |
-| [02 · CPU and GPU](notebooks/basics/02_cpu_gpu.ipynb) | Can I run the same circuit on another device? | Beginner | Optional CUDA GPU |
-| [03 · Training from scratch](notebooks/training/03_quantum_training.ipynb) | How does a quantum parameter learn? | Beginner | None |
-| [04 · A cloud job](notebooks/cloud/04_jiuding_jobs.ipynb) | How do I submit my own Python program and retrieve its result? | Intermediate | Jiuding for submission |
-| [05 · Quantum hardware](notebooks/cloud/05_quafu_hardware.ipynb) | How do I execute the circuit I wrote on a QPU? | Intermediate | Quafu and QSteed for submission |
-| [06 · Result comparison](notebooks/cloud/06_compare_results.ipynb) | What do hardware counts tell me? | Beginner | Recorded data included |
-| [07 · Hybrid model](notebooks/training/07_hybrid_model.ipynb) | Can one optimizer train classical and quantum layers? | Intermediate | None |
-| [08 · VQE](notebooks/applications/08_vqe.ipynb) | Can a circuit learn a low-energy state? | Intermediate | None |
-| [09 · Shot uncertainty](notebooks/basics/09_shots.ipynb) | How many measurements do I need? | Beginner/intermediate | None |
-| [10 · Noise](notebooks/simulation/10_noise.ipynb) | How does relaxation change the answer? | Intermediate | None |
-| [11 · MPS](notebooks/simulation/11_mps.ipynb) | When can an entangled state be stored compactly? | Advanced | None |
-| [12 · Compilation](notebooks/compilation/12_compilation.ipynb) | What can a compiler remove without changing the result? | Intermediate | Optional QSteed and calibration access |
-| [13 · Learned parameter on hardware](notebooks/cloud/13_trained_hardware.ipynb) | Does a locally trained circuit give the expected hardware measurement? | Intermediate | Optional Quafu and QSteed |
-| [14 · Gradient checks](notebooks/training/14_gradients.ipynb) | How can I verify a gradient before trusting training? | Advanced | None |
-| [15 · QAOA and Max-Cut](notebooks/applications/15_maxcut.ipynb) | How does a graph problem become a circuit objective? | Intermediate/advanced | None |
-| [16 · Cloud sweep](notebooks/cloud/16_cloud_sweep.ipynb) | How do I manage several reproducible experiments? | Advanced | Jiuding for submission |
-| [17 · Compiler extension](notebooks/compilation/17_extension.ipynb) | Can I implement and test my own compiler transformation? | Advanced | None |
-| [18 · Three simulators](notebooks/simulation/18_one_problem_three_simulators.ipynb) | Do different simulation representations agree on energies, gradients, and training? | Intermediate/advanced | None |
+| [Build and measure a Bell circuit](notebooks/01_first_circuit.ipynb) | What do amplitudes and probabilities mean? | `fq.Circuit`, gates, `fq.run` | The expected Bell probabilities and a checked plot |
+| [Train a quantum parameter](notebooks/02_quantum_training.ipynb) | How does a circuit learn a target? | `fq.Module`, PyTorch gradients and optimizer | A finite gradient and decreasing loss |
+| [Combine classical and quantum layers](notebooks/03_hybrid_model.ipynb) | Can one optimizer train both? | `fq.Module`, `torch.nn.Sequential` | Held-out predictions and updates in both layers |
+| [One objective, three simulators](notebooks/04_one_problem_three_simulators.ipynb) | Can I change representation without changing the problem? | `fq.run`, `fq.expectation`, `fq.ExecutionOptions` | Independent energy reference, gradient agreement and convergence |
+| [Run a circuit on Jiuding](notebooks/05_jiuding_jobs.ipynb) | How is remote execution different from local execution? | `fq.submit`, `job.status`, `job.wait`, receipts | A real CPU job and local/remote agreement |
+| [Measure on Quafu](notebooks/06_quafu_hardware.ipynb) | How do hardware counts differ from an ideal prediction? | `fq.submit`, `fq.counts`, `job.result` | A real task ID, shot accounting and interpretable counts |
 
-## Coverage and next topics
+The first four examples need only a laptop CPU. The final two require access to
+the named service; submitting consumes real resources. A disabled switch is a
+local rehearsal, not evidence that a cloud job ran. Queue waits are not failures,
+and a task ID alone does not prove completion.
 
-These 18 labs introduce the main local learning and remote execution workflows;
-they are not a complete tour of every FlagQuantum module or API. In particular,
-cloud job submission is not a lesson in partitioning one state across devices,
-and saving a trained circuit is not a deployment-package tutorial.
+The six notebooks sit directly in notebooks/, numbered 01–06 in learning order.
+Optional material lives separately in reference_notebooks/; its original numbers
+are reference identifiers, not additional course steps.
 
-The following topics have reference material but no dedicated workshop lab yet:
+## How to use each example
 
-| Topic | Continue with |
-| --- | --- |
-| Circuit drawing and presentation | [Drawer](../../flagquantum/drawer/README.md) |
-| Execution planning and runtime controls | [Runtime](../../flagquantum/runtime/README.md) |
-| Distributed statevector and MPS training | [Statevector examples](../../examples/distributed_statevector_topologies/README.md), [MPS examples](../../examples/distributed_mps/README.md) |
-| Deployment packages | [Capability catalog](../../docs/generated/CAPABILITIES.md) |
-| Calibration-based device models and experiment validation | [Digital twin](../../flagquantum/twin/README.md) |
-| Repetition-code memory experiments and decoding | [QEC](../../flagquantum/qec/README.md) |
-| Optional JAX execution and other framework adapters | [JAX](../../flagquantum/simulation/jax/README.md), [Ecosystem](../../flagquantum/ecosystem/README.md) |
+### Choose your teaching language
 
-Use the [capability catalog](../../docs/generated/CAPABILITIES.md) for support
-boundaries. Future labs should teach a runnable task with an interpretable
-result; module coverage alone is not a reason to add another notebook.
+The English edition remains in `notebooks/`; the Chinese teaching edition lives
+alongside it in `notebooks_cn/`. Both have the same six numbered examples,
+identical executable cells, and identical take-home Python snippets.
 
-## Get ready
+| Example | English | Chinese |
+| --- | --- | --- |
+| 01: Bell circuit | [Open](notebooks/01_first_circuit.ipynb) | [Open](notebooks_cn/01_first_circuit.ipynb) |
+| 02: Quantum training | [Open](notebooks/02_quantum_training.ipynb) | [Open](notebooks_cn/02_quantum_training.ipynb) |
+| 03: Hybrid model | [Open](notebooks/03_hybrid_model.ipynb) | [Open](notebooks_cn/03_hybrid_model.ipynb) |
+| 04: Three simulators | [Open](notebooks/04_one_problem_three_simulators.ipynb) | [Open](notebooks_cn/04_one_problem_three_simulators.ipynb) |
+| 05: Jiuding CPU job | [Open](notebooks/05_jiuding_jobs.ipynb) | [Open](notebooks_cn/05_jiuding_jobs.ipynb) |
+| 06: Quafu hardware | [Open](notebooks/06_quafu_hardware.ipynb) | [Open](notebooks_cn/06_quafu_hardware.ipynb) |
 
-Follow [Setup](SETUP.md), select the workshop Python kernel, and run:
+Changing language does not reset an experiment: both editions use the same
+personal output directory and matching cloud receipts. This avoids submitting
+the same saved task again just because you switched languages. New personal
+copies include both editions; existing edited copies are never overwritten.
+Setup guides and code output remain English. Existing workshop images need a
+separate template update before the Chinese edition becomes available in them.
 
-```bash
-python workshops/flagos2026/scripts/preflight.py
-```
+### Run an experiment
 
-A kernel is the Python process that executes notebook cells. Open a lab and run one cell at a time with Shift+Enter.
-Read the prediction or question before executing its cell. When changing a model or a circuit-building step, restart from its initialization cell.
-The standalone scripts in `scripts/` are reference programs for later use; you do not need to import them to complete the labs.
+1. Read the question and predict the answer.
+2. Run the cells in order with Shift+Enter in a fresh kernel.
+3. Inspect the numerical check and figure, not just the absence of an exception.
+4. Change one parameter, rerun from initialization, and explain the difference.
+5. Copy the **Take it home** example into your own Python file.
 
-## How the cloud services fit together
+Environment diagnostics and file exports are folded and labeled as setup or
+optional material. They are not another quantum API. The main computation stays
+in the notebook and uses `import flagquantum as fq`; there is no `lesson.submit`
+or alternate workshop execution interface.
 
-**FlagQuantum** is the Python framework used throughout these experiments.
-**Liangzhi Cloud** is the event portal; the instructor supplies its address and navigation.
-**Jiuding** runs Python jobs on classical CPUs and GPUs.
-**Quafu** executes quantum circuits on hardware, and **QSteed** compiles circuits for a selected device.
+Follow [Setup](SETUP.md) for installation and the event environment. Notebook
+cells never install packages or accept credentials. The event image supplies
+platform configuration; a local user configures service access outside source.
+The workshop directory/identity helper is only for the venue's file layout.
 
-Cloud and hardware actions are disabled until you enable the relevant switch in a notebook.
-Lab 12's optional hardware compilation can contact the calibration service without submitting an execution task.
-A local pass does not establish that the event has available GPU or QPU resources.
+## Quality bar for a main example
 
-Lab 13 trains a parameter locally and optionally submits the frozen circuit to hardware.
-It does not run a hardware training loop. Lab 06 labels recorded data as `historical_replay` and never presents it as your live run.
+A main example must have one clear question, a complete experiment, and a result
+the reader can interpret. It must run independently, show the standard API,
+include an independent numerical check where applicable, and end with a small
+reusable example. Local computation must work without cloud credentials or
+accelerator hardware. A failure must remain visible; do not silently substitute
+a backend or label recorded data as a live run.
 
-## Build something of your own
+Cloud examples additionally identify the exact submission cell, save a receipt
+before waiting, distinguish queued/failed/completed states, and prevent accidental
+duplicate submissions. Supporting storage and recovery code stays in folded
+cells, with its purpose explained rather than hidden behind a new execution API.
 
-See the [challenge board](CHALLENGES.md) for open-ended projects at different levels.
-Keep your outputs in `outputs/`, which is excluded from Git. Save enough information for another participant to reproduce your result.
-A useful final artifact is a short explanation with a circuit, a chart, and a numerical check—not just a screenshot saying that code ran.
+Validation records must state source/version, kernel, hardware, live task IDs,
+retries and limitations. A local preview, a mocked provider test and a real
+cloud submission are different evidence. See [Validation](VALIDATION.md).
 
-Instructors can use the [teaching guide](INSTRUCTOR.md), [environment notes](environment/README.md),
-and [validation record](VALIDATION.md) to prepare the venue and choose demonstrations.
+After installing [the teaching tools](environment/requirements.txt), verify inline
+plot rendering with `python scripts/verify_inline_plots.py --kernel python3` from
+this workshop directory. This starts bounded Jupyter probes for the six plotting
+examples in both editions (use `--language en` or `--language cn` for just one),
+checks for PNG output even when the environment defaults to Agg, and
+never submits a cloud task or modifies the source notebooks. Ordinary core unit
+tests check the plotting setup without depending on Jupyter packages.
+
+## Reference library, not required coursework
+
+The remaining notebooks are retained for deeper questions; they are not extra
+steps beginners must complete. No existing learning material is deleted.
+
+- Devices and finite shots: [02](reference_notebooks/basics/02_cpu_gpu.ipynb), [09](reference_notebooks/basics/09_shots.ipynb).
+- Physics applications: [08 VQE](reference_notebooks/applications/08_vqe.ipynb), [15 Max-Cut](reference_notebooks/applications/15_maxcut.ipynb).
+- Noise and compact states: [10](reference_notebooks/simulation/10_noise.ipynb), [11 MPS](reference_notebooks/simulation/11_mps.ipynb).
+- Gradient verification: [14](reference_notebooks/training/14_gradients.ipynb).
+- Compilation and extensions: [12](reference_notebooks/compilation/12_compilation.ipynb), [17](reference_notebooks/compilation/17_extension.ipynb).
+- Hardware comparison and deployment of a trained angle: [06](reference_notebooks/cloud/06_compare_results.ipynb), [13](reference_notebooks/cloud/13_trained_hardware.ipynb).
+- Multiple cloud experiments: [16](reference_notebooks/cloud/16_cloud_sweep.ipynb).
+
+[Cloud job field notes](CLOUD_JOBS.md) cover complete Python programs, accelerator
+selection, raw public-API examples and recovery. [Field notes](FIELD_NOTES.md)
+help explain a scientific result; [Challenges](CHALLENGES.md) suggest extensions.
+
+## Instructor responsibilities
+
+Before teaching, ask someone new to FlagQuantum to follow a route without help.
+After each lesson, ask them to explain what the circuit does, what the printed
+result means, and what rerunning the relevant cell will do. For cloud lessons,
+also ask whether they have submitted, queued, restored or retrieved a task.
+Record the first confusing cell and revise it; do not mark this reader check
+complete on the basis of automated execution or a mock submission test.
+
+Provision the kernel, optional compiler plugin, personal mounts and service
+configuration before teaching. Do not require participants to debug deployment
+plumbing in the main experiment. Personal directory names avoid collisions but
+do not replace platform ACLs; two-account isolation needs separate verification.
+
+Use [Instructor notes](INSTRUCTOR.md) and [Environment notes](environment/README.md).
+CPU examples do not establish GPU support or distributed scalability. The three
+simulator example checks CPU correctness and gradient agreement, not performance.

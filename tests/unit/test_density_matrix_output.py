@@ -27,6 +27,49 @@ _ROW_LETTERS = "abcdefghij"
 _COLUMN_LETTERS = "ABCDEFGHIJ"
 
 
+@pytest.mark.parametrize("device", ["cpu", "cuda:1", torch.device("cuda:3")])
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_noisy_density_method_forwards_circuit_device(
+    monkeypatch: pytest.MonkeyPatch, device: str | torch.device, dtype: torch.dtype
+) -> None:
+    import flagquantum.runtime.noise_registry as registry
+
+    circuit = fq.Circuit(1, device=device, dtype=dtype)
+    model = NoiseModel().add("x", depolarizing_channel(0.05))
+    expected = torch.eye(2, dtype=dtype).unsqueeze(0)
+
+    def execute(
+        actual_circuit: fq.Circuit, actual_model: NoiseModel, **options: object
+    ) -> torch.Tensor:
+        assert actual_circuit is circuit
+        assert actual_model is model
+        assert options == {"device": device, "dtype": dtype}
+        return expected
+
+    monkeypatch.setattr(registry, "noisy_density_matrix", execute)
+    assert circuit.noisy_density_matrix(model) is expected
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_noisy_density_keeps_accelerator_and_gradient(dtype: torch.dtype) -> None:
+    if not torch.cuda.is_available():
+        pytest.skip("requires a CUDA-compatible accelerator")
+    from flagquantum.noise import amplitude_damping_channel
+
+    real_dtype = torch.float64 if dtype == torch.complex128 else torch.float32
+    theta = torch.tensor(0.31, device="cuda:0", dtype=real_dtype, requires_grad=True)
+    circuit = fq.Circuit(1, device=theta.device, dtype=dtype).ry(0, theta)
+    model = NoiseModel().add("ry", amplitude_damping_channel(0.3, dtype=dtype))
+    rho = circuit.noisy_density_matrix(model)
+    assert rho.device == theta.device
+    assert rho.dtype == dtype
+    expectation = (rho[:, 0, 0] - rho[:, 1, 1]).real.sum()
+    torch.testing.assert_close(expectation, 0.3 + 0.7 * theta.cos())
+    expectation.backward()
+    torch.testing.assert_close(theta.grad, -0.7 * theta.detach().sin())
+
+
 def _reference_reduction(state: torch.Tensor, keep: tuple[int, ...]) -> torch.Tensor:
     """Reduce a statevector to ``keep``, in that order, by explicit contraction."""
 

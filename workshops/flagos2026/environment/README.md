@@ -12,8 +12,8 @@ python -m pip freeze > workshop-environment.txt
 python workshops/flagos2026/scripts/preflight.py > workshop-preflight.json
 ```
 
-Also record the container image address and digest, QSteed plugin version or commit, operating system,
-GPU driver and CUDA versions, Jiuding queue, Quafu backend, and the time you checked them.
+Also record the container image address and digest, optional QSteed plugin version or commit, operating system,
+GPU driver and CUDA versions, Jiuding queue, Quafu Task API endpoint label, backend, and the time you checked them.
 An image digest identifies the exact image contents, even if a tag is later changed.
 
 Inspect `pip freeze` output before sharing it: editable installs can include private paths or package URLs.

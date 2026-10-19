@@ -48,7 +48,7 @@ The optimized, rollback, and Lightning relative median absolute deviations are
 15.88%, 15.98%, and 8.13%, respectively. Raw samples, versions, IR hash,
 correctness values, and all memory probes are retained in the
 [JSON artifact](batched_statevector_dense_width_cpu_arm64_20261002.json). The
-generated [comparison table](BATCHED_STATEVECTOR_DENSE_WIDTH_CPU_ARM64_20261002.md)
+generated [comparison table](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-2026-10-09.2)
 is the compact view of the same run.
 
 ## User code

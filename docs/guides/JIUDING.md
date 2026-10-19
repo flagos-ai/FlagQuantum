@@ -120,7 +120,7 @@ result type but have different latency and lifecycle semantics.
 | Need | Entry point | Required resource | Lifecycle |
 | --- | --- | --- | --- |
 | Interactive or repeated execution | [`fq.run(..., target="jiuding:...")`](#repeated-low-latency-workspace-execution) | A running development workspace | Reuses one resident process and SSH channel; no Job ID |
-| Native detached circuits (development version) | [`fq.submit(...)`](REMOTE_JOBS.md#jiuding-native-jobs) | Project, queue and runtime image | HTTP submission and bounded log results; no SSH or workspace |
+| Native detached circuits (0.3 release line) | [`fq.submit(...)`](REMOTE_JOBS.md#jiuding-native-jobs) | Project, queue and runtime image | HTTP submission and bounded log results; no SSH or workspace |
 | Shared-storage, recoverable work | [`JiudingClient.submit_program(...)`](#recoverable-batch-execution) | A running workspace, runtime image and queue capacity | Creates a batch Job; recoverable by Job ID |
 
 Use `fq.run` when startup latency would dominate the calculation. Use
@@ -212,6 +212,9 @@ adapter allocates one instance (default 2 cores, 2 GiB, 0 GPUs).
 Select GPU execution explicitly with `target="jiuding:gpu"`; this first adapter
 allocates exactly one GPU. CPU is a first-class target, never an implicit
 fallback from an unavailable accelerator.
+An accelerator-backed queue can still run a CPU job. FlagQuantum keeps
+`target="jiuding:cpu"` as the runtime choice while sending the queue's physical
+accelerator model unchanged to Jiuding for placement.
 
 ```python
 receipt = client.submit(
@@ -530,3 +533,18 @@ see [the root-entry evidence](../development/evidence/jiuding_root_run_20260909.
 GPU-side probability and Pauli-expectation reduction was validated with the
 `v0.2.0-36ee8a65ae509a0df0d25318015a6433194c7b53-cu128-a100` image. See
 [the remote-measurement evidence](../development/evidence/jiuding_remote_measurements_20260909.json).
+
+## Project-set shared images
+
+Native `fq.submit(..., image="registry/project/runtime:tag")` resolves an exact
+image across the authenticated PRIVATE, PROJSET and PUBLIC catalogs. It submits
+with the resolved image region, without changing image visibility. Prefer the
+full registry address; a short name and tag must resolve to one executable image
+address across these catalogs. Different catalog IDs for the same address are
+aliases, not distinct images; PROJSET is preferred when that shared alias exists.
+Different-address ambiguity and catalog authorization errors stop before job creation.
+
+For shared-script submission with `JiudingClient.submit`, use
+`image_region="PROJSET"` for a project-set shared image. PUBLIC and PRIVATE
+remain supported with their existing defaults. Receipt and duplicate-submission
+protection are unchanged.
