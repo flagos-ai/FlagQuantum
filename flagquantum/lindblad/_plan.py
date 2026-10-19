@@ -352,6 +352,7 @@ def build_lindblad_plan(
         device=resolved_device,
         tolerance=tolerance,
         qubit_space=qubit_space,
+        dimensions=dimensions,
     )
     density_matrix = _normalize_initial_state(
         initial_state,
@@ -368,6 +369,7 @@ def build_lindblad_plan(
         dtype=dtype,
         device=resolved_device,
         qubit_space=qubit_space,
+        dimensions=dimensions,
     )
     observable_matrices = _normalize_observables(
         observables,
@@ -375,6 +377,7 @@ def build_lindblad_plan(
         dtype=dtype,
         device=resolved_device,
         qubit_space=qubit_space,
+        dimensions=dimensions,
     )
     request = {
         "n_qubits": canonical_n_qubits,

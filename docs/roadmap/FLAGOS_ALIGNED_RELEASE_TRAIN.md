@@ -109,6 +109,19 @@ of M1: time dependence, direct boson coefficient binding, and constrained-space
 execution remain separate gates. Proposal 073 must rebase its future plan-schema
 extension onto this baseline.
 
+The next M1 slice connects existing `BosonOperator` values directly to the
+same static CPU dynamics input normalization. Explicit `dimensions=` supplies
+mode truncations; Hamiltonians, collapse operators, and the low-level observable
+mapping reuse `to_matrix` and its existing byte ceiling. No algebra, numerical
+engine, public export, or plan schema is added. Run
+`python -m examples.boson_interference`; the focused acceptance is
+`tests/unit/test_lindblad_boson_consumer.py`: independent two-photon interference
+and loss laws, basis order and spectator modes, the exact two-excitation cutoff,
+unchanged dense-plan identities, batching, gradients/adjoints, and early refusals.
+This completes a bounded static boson consumer, not direct trainable algebra
+coefficient binding. That binding and proposal 073's time controls remain open;
+review their shared parameter contract before dependent implementation.
+
 An internal state-space proposal must be tested against both tensor-product
 spaces and an anyon fusion-space example with fixed total charge. Product
 dimensions alone do not describe all constrained spaces. Introduce only the

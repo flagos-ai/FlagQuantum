@@ -20,6 +20,7 @@ import torch
 from ..core.ir.state_space import ProductStateSpace
 from ..errors import ValidationError
 from ..observables import Observable
+from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES, BosonOperator
 from .density_matrix import expand_operator
 from .lindblad_integrators import KRYLOV_SCHEMES, SOLVE_RESTART
 from .matrix_free_hamiltonian import PauliSum, PauliSumTerm
@@ -95,7 +96,27 @@ def _as_complex_matrix(
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
+    dimensions: Sequence[int] | None = None,
 ) -> torch.Tensor:
+    if isinstance(value, BosonOperator):
+        if dimensions is None:
+            raise _error(
+                "boson_dimensions_required",
+                "bosonic operators require explicit dimensions; mode k uses dimensions[k]",
+                name,
+            )
+        # Refuse before to_matrix builds even the per-mode ladder matrices.
+        if dim * dim * torch.complex128.itemsize > DEFAULT_DENSE_MATRIX_BYTES:
+            raise _error(
+                "invalid_boson_operator",
+                f"bosonic dense materialization exceeds the existing "
+                f"{DEFAULT_DENSE_MATRIX_BYTES}-byte ceiling; truncate the space",
+                name,
+            )
+        try:
+            value = value.to_matrix(dict(enumerate(dimensions)))
+        except (TypeError, ValueError) as exc:
+            raise _error("invalid_boson_operator", str(exc), name) from exc
     try:
         matrix = torch.as_tensor(value, dtype=dtype, device=device)
     except (TypeError, ValueError, RuntimeError) as exc:
@@ -511,12 +532,14 @@ def _normalize_hamiltonian(
     device: torch.device,
     tolerance: float,
     qubit_space: bool = True,
+    dimensions: Sequence[int] | None = None,
 ) -> PauliSum | torch.Tensor:
     """Validate a Hamiltonian and return what evolution consumes.
 
     A Pauli sum stays matrix-free; only an opaque dense input is kept as a
     matrix. Hermiticity is decided here so that planning, execution and plan
     serialization cannot disagree about whether a request was accepted.
+    Boson operators use their existing dense conversion at explicit mode dimensions.
     """
 
     terms = _hamiltonian_terms(hamiltonian, n_wires=n_wires)
@@ -536,6 +559,7 @@ def _normalize_hamiltonian(
         dim=dim,
         dtype=dtype,
         device=device,
+        dimensions=dimensions,
     )
     if not torch.allclose(matrix, torch.conj(matrix).T, atol=tolerance, rtol=0.0):
         raise _error(
@@ -623,6 +647,7 @@ def _normalize_collapse_terms(
     dtype: torch.dtype,
     device: torch.device,
     qubit_space: bool = True,
+    dimensions: Sequence[int] | None = None,
 ) -> tuple[tuple[torch.Tensor, float], ...]:
     result = []
     for index, item in enumerate(collapse_operators or ()):
@@ -703,6 +728,7 @@ def _normalize_collapse_terms(
                 dim=dim,
                 dtype=dtype,
                 device=device,
+                dimensions=dimensions,
             )
         result.append((full, numeric_rate))
     return tuple(result)
@@ -716,6 +742,7 @@ def _normalize_collapse_operators(
     dtype: torch.dtype,
     device: torch.device,
     qubit_space: bool = True,
+    dimensions: Sequence[int] | None = None,
 ) -> tuple[torch.Tensor, ...]:
     return tuple(
         (rate**0.5) * operator
@@ -726,6 +753,7 @@ def _normalize_collapse_operators(
             dtype=dtype,
             device=device,
             qubit_space=qubit_space,
+            dimensions=dimensions,
         )
     )
 
@@ -737,6 +765,7 @@ def _normalize_observables(
     dtype: torch.dtype,
     device: torch.device,
     qubit_space: bool = True,
+    dimensions: Sequence[int] | None = None,
 ) -> dict[str, torch.Tensor]:
     if observables is None:
         return {}
@@ -778,6 +807,7 @@ def _normalize_observables(
                 dim=dim,
                 dtype=dtype,
                 device=device,
+                dimensions=dimensions,
             )
         if label in result:
             raise _error(

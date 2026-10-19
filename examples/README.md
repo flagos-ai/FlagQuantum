@@ -12,6 +12,11 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`boson_interference.py`](boson_interference.py) — it uses the existing
+  `flagquantum.lindblad` namespace and boson algebra for two-photon interference
+  and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
+  Unconditional output probabilities, survival, and plan serialization share the
+  existing dynamics path; this is a bounded CPU model.
 - [`kaiwu_matrix_boundary.py`](kaiwu_matrix_boundary.py) — it imports the
   experimental Kaiwu ecosystem surface directly to demonstrate local QUBO and
   Ising interoperability without credentials, provider submission, or quota.

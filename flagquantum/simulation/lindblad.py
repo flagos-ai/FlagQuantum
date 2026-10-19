@@ -273,6 +273,7 @@ def plan_density_matrix_evolution(
         device=resolved_device,
         tolerance=tolerance,
         qubit_space=space.is_qubit_space,
+        dimensions=dimensions,
     )
     initial_matrices = _normalize_initial_state(
         initial_state,
@@ -292,6 +293,7 @@ def plan_density_matrix_evolution(
         dtype=dtype,
         device=resolved_device,
         qubit_space=space.is_qubit_space,
+        dimensions=dimensions,
     )
     _normalize_observables(
         observables,
@@ -299,6 +301,7 @@ def plan_density_matrix_evolution(
         dtype=dtype,
         device=resolved_device,
         qubit_space=space.is_qubit_space,
+        dimensions=dimensions,
     )
     step_size = (
         0.0
@@ -355,7 +358,10 @@ def evolve_density_matrix(
     ``operator`` (a dense matrix, ``"amplitude_damping"``, or
     ``"sigma_minus"``), ``rate``, and optional ``qubit``/``qubits``.  Rates,
     Hamiltonian coefficients, and time values must use the same inverse-time
-    unit.  The named amplitude-damping operator is ``sqrt(rate) * |0><1|``;
+    unit. BosonOperator inputs require explicit ``dimensions`` and reuse their
+    existing bounded dense conversion for Hamiltonians, collapse operators, and
+    observables; mode k uses dimensions[k]. Algebra coefficients remain numeric.
+    The named amplitude-damping operator is ``sqrt(rate) * |0><1|``;
     rates are never interpreted as channel probabilities.
 
     ``method="runge-kutta"`` takes two explicit fourth-order Runge--Kutta steps
@@ -441,6 +447,7 @@ def evolve_density_matrix(
         device=resolved_device,
         tolerance=validation_tolerance,
         qubit_space=space.is_qubit_space,
+        dimensions=dimensions,
     )
     rho = _normalize_initial_state(
         initial_state,
@@ -461,6 +468,7 @@ def evolve_density_matrix(
         dtype=dtype,
         device=resolved_device,
         qubit_space=space.is_qubit_space,
+        dimensions=dimensions,
     )
     observable_matrices = _normalize_observables(
         observables,
@@ -468,6 +476,7 @@ def evolve_density_matrix(
         dtype=dtype,
         device=resolved_device,
         qubit_space=space.is_qubit_space,
+        dimensions=dimensions,
     )
     generator = Liouvillian(hamiltonian_representation, collapse, hilbert_dimension=dim)
 
