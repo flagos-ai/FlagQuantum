@@ -1765,12 +1765,61 @@ the mechanism the method rests on and the reason it needs no noise model of its 
 that repeating a gate repeats its error and that repeating a gate does not change the error of
 the gates beside it. Crosstalk between neighbouring gates, a drift over the run, or a
 calibration that changed between the unfolded and folded points all violate the assumption, and
-none of them is visible in the program: what the unit reports is a length ratio, and the
-conversion from a length ratio to a noise strength is exactly the part it does not estimate.
-A caller who reads the realized factor as a measured error strength has substituted the
+none of them is visible in the program. What the fold reports is a length ratio; what it
+repeats is whatever the noise model says each instruction carries. Those two are separated by a
+reading rather than by a footnote, and the reading is the one below.
+
+**The strength is measured, and it is not the ratio.** A plan carries no noise model, so it
+cannot know what its repeats were worth. `fold_noise_amplification(body, plan, model)` returns a
+`FoldNoiseAmplification` that counts channel **applications** — one channel the model applies
+at one instruction — on the body and on the folded program, and reports the ratio it measured
+per qubit, the qubits the fold never reached, the instructions the model covers, and an
+identity naming both the plan and the model it was taken over. Counting needs no arithmetic on
+a channel parameter, so it holds for a depolarizing channel, a damping channel and a mixture
+alike, and it is exact rather than a first-order estimate. The plan is re-derived from the body
+rather than trusted, because a plan pasted from a same-length sibling agrees on every count it
+records and disagrees on the program.
+
+```python
+import torch
+
+from flagquantum.algorithms import fold_noise_amplification, fold_program
+from flagquantum.circuit import Circuit
+from flagquantum.noise import NoiseModel, depolarizing_channel
+
+model = NoiseModel().add(
+    ("h", "cx", "rz", "ry", "t"), depolarizing_channel(0.03, dtype=torch.complex128)
+)
+body = Circuit(2).h(0).cx(0, 1).rz(0, 0.4).ry(1, 0.6).t(0)
+for strategy in ("gate", "circuit"):
+    plan = fold_program(body, scale_factor=1.4, strategy=strategy)
+    reading = fold_noise_amplification(body, plan, model)
+    print(
+        strategy,
+        f"ratio={plan.scale_factor:.2f}",
+        f"noise={reading.amplification:.4f}",
+        f"per_qubit={reading.per_qubit}",
+        f"uniform={reading.reached_uniformly}",
+    )
+# gate ratio=1.40 noise=1.3333 per_qubit=((0, 4, 6), (1, 2, 2)) uniform=False
+# circuit ratio=3.00 noise=2.8333 per_qubit=((0, 4, 11), (1, 2, 6)) uniform=False
+#   -- neither row is the ratio it was asked for, and neither is a single number.
+```
+
+Three causes are separated there, and no plan states any of them. The gate fold spends its one
+pair on the leading `h`, which sits on qubit 0 alone, so qubit 0 goes from four applications to
+six while qubit 1 stays at two: the length rose by `1.4`, the count rose by `1.3333`, and the
+two qubits saw `1.5` and `1.0`. The circuit fold repeats whole bodies and still lands at
+`2.8333` rather than `3.0`, because the adjoint it inserts carries `tdg`, a name this model does
+not list, so qubit 1 reaches `3.0` exactly while the qubit holding the `t` reaches `2.75`. A
+model that names only part of the body is the third cause: a fold of `t` inserts `t`, `tdg`,
+`t`, and a model naming only `t` reaches two of the three instructions. A qubit the model never
+touches is reported as a qubit with no ratio rather than as one whose ratio is `1`, and a model
+that applies a channel to no instruction of the body is refused rather than read as a ratio of
+zero. A caller who reads the realized factor as a measured error strength has substituted the
 device's behaviour for the model's, which is the misreading this boundary exists to prevent.
 
-**Not here:** any estimate of the noise a fold amplifies; any channel-parameter scaling, which
+**Not here:** any channel-parameter scaling, which
 is `error_mitigation.py`'s unit and is refused together with a fold because the two are
 different units of scale; any fold of a program carrying a noise channel, a non-unitary
 instruction, or nothing to fold; any strategy beyond the two named; and any request below
@@ -1778,7 +1827,9 @@ instruction, or nothing to fold; any strategy beyond the two named; and any requ
 request two factors that realize the same length either, because repeated abscissas make the
 extrapolation's linear system singular. No demonstration here is a performance, scaling or
 hardware claim: the whole path is single-process CPU statevector simulation on programs the
-caller supplies, and the noise it amplifies is the one the caller's model declares.
+caller supplies, and the noise it amplifies is the one the caller's model declares. The reading
+above reports where a fold's repeats landed; it does not move them, so a noise-model-aware
+placement of the added pairs is not here either.
 
 ## SPSA optimization
 

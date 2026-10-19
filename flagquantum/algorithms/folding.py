@@ -55,6 +55,32 @@ the executors and readout-error mitigation stays with
 :func:`flagquantum.algorithms.plan_readout_mitigation`; this unit produces a
 program and one record about it, and the extrapolation it feeds lives in
 :mod:`flagquantum.algorithms.error_mitigation`.
+
+**What the fold amplifies, measured rather than assumed.** A plan reports a length
+ratio, and the strength a curve sees is not that ratio: the fold repeats
+instructions, so it repeats the error of exactly the instructions the noise model
+names. :func:`flagquantum.algorithms.fold_noise_amplification` is the reading that
+distinguishes the two, and it counts channel *locations* -- one channel the model
+applies at one instruction -- on the body and on the folded program. Counting
+needs no arithmetic on a channel parameter, so it holds for a depolarizing
+channel, a damping channel and a mixture alike, and it is exact rather than first
+order. The cases it separates are the ones a caller cannot read off the plan. A
+model that names only part of the body makes the real gain *below* the ratio. A
+model that names the repeated instruction but not the inverse the fold inserts
+makes it below the ratio too, because the inverse is a different gate name -- a
+fold of ``t`` inserts ``t``, ``tdg``, ``t`` and a model naming only ``t`` reaches
+two of the three instructions. And a gate fold, which spends its pairs on the
+body's leading instructions, can make the gain *above* the ratio on the qubits the
+pairs landed on while leaving the rest at one. Measured on the five-instruction
+body ``h``, ``cx``, ``rz``, ``ry``, ``t``: with a model naming exactly ``h`` and
+``cx``, a gate fold to a realized ratio of 1.4 amplifies qubit 0 by 2.0 and qubit 1
+by 1.0, so the program is 1.6667 times as noisy where the ratio says 1.4 and no
+single number is the strength, while the same request under a circuit fold
+realizes 3.0 and amplifies both qubits by 3.0; with a model naming only ``h``, a
+gate fold to 3.0 amplifies qubit 0 by 3.0, leaves qubit 1 silent, and reports four
+of the five instructions uncovered. The reading names which of those a plan is in,
+per qubit, and reports the instructions the model does not cover rather than
+averaging them away.
 """
 
 from __future__ import annotations
@@ -76,7 +102,10 @@ __all__ = (
     "FOLDING_ASSUMPTIONS",
     "FOLDING_SCHEMA",
     "FOLDING_STRATEGIES",
+    "FOLD_NOISE_SCHEMA",
+    "FoldNoiseAmplification",
     "FoldingPlan",
+    "fold_noise_amplification",
     "fold_program",
 )
 
@@ -494,5 +523,351 @@ def fold_program(
             len(body),
             len(sequence),
             folded.content_hash,
+        ),
+    )
+
+
+#: The schema a fold's noise reading is taken under.
+FOLD_NOISE_SCHEMA = "flagquantum.fold_noise_amplification.v1"
+
+
+def _channel_locations(
+    program: "CircuitIR", noise_model: Any
+) -> tuple[dict[int, int], int]:
+    """Return the per-qubit and total count of channel applications on ``program``.
+
+    A location is one channel the model applies at one instruction, so a rule
+    matched on two qubits contributes two locations and a rule the model states
+    on a qubit the instruction does not touch contributes none. The count is the
+    unit a fold acts in: a fold repeats instructions, so it repeats exactly the
+    channel applications those instructions carry, and no arithmetic on a channel
+    parameter is involved.
+    """
+
+    per_qubit: dict[int, int] = {}
+    for instruction in program.instructions:
+        for _channel, wires in noise_model.channels_for(instruction):
+            for qubit in wires:
+                per_qubit[qubit] = per_qubit.get(qubit, 0) + 1
+    return per_qubit, sum(per_qubit.values())
+
+
+def _noise_identity(
+    plan_identity: str,
+    noise_identity: str,
+    per_qubit: tuple[tuple[int, int, int], ...],
+    covered: int,
+    uncovered: int,
+) -> str:
+    """Return the content hash that names what a noise reading was taken over.
+
+    The model's own identity is hashed and not only the counts: two models of the
+    same shape and different probabilities apply the same number of channels, so a
+    hash over counts alone would give two readings of two different noise strengths
+    one name. The counts say *where* the fold's repeats landed, the model says what
+    they were worth, and a reading names both or it names neither.
+    """
+
+    payload = json.dumps(
+        {
+            "schema": FOLD_NOISE_SCHEMA,
+            "plan_identity": plan_identity,
+            "noise_identity": noise_identity,
+            "per_qubit": [list(entry) for entry in per_qubit],
+            "covered_instructions": covered,
+            "uncovered_instructions": uncovered,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode()
+    return hashlib.sha256(payload).hexdigest()
+
+
+@dataclass(frozen=True)
+class FoldNoiseAmplification:
+    """How much noise one fold added, and where the added noise landed.
+
+    :func:`fold_program` returns a length ratio and takes no noise model, because
+    a fold is a program transform and the ratio is a property of the program. The
+    ratio is therefore *not* the strength the curve sees, and the two differ in a
+    direction a caller cannot read off the plan: a fold repeats instructions, so
+    it repeats the error of exactly the instructions the noise model names, and an
+    instruction the model does not name is repeated with no added error at all.
+    This record is that difference, measured against a model rather than assumed.
+
+    The unit is a channel *location*: one channel the model applies at one
+    instruction. It is the unit the fold acts in, so it needs no arithmetic on a
+    channel parameter and no ordering between channels, and it is exact.
+
+    Attributes:
+        strategy: The strategy of the plan this reading was taken over.
+        scale_factor: That plan's realized length ratio, so the reading can be
+            compared with the ratio it is not.
+        body_locations: Channel applications on the body.
+        folded_locations: Channel applications on the folded program.
+        covered_instructions: Body instructions the model applies at least one
+            channel to.
+        uncovered_instructions: Body instructions it applies none to. A fold
+            repeats these without adding error, so this is the count
+            :data:`FOLDING_ASSUMPTIONS` names as unchecked.
+        per_qubit: One ``(qubit, body, folded)`` entry per qubit the model
+            touches, in ascending qubit order. A qubit the fold did not reach has
+            equal counts, which is a curve that cannot move on that qubit however
+            many points it has.
+        silent_qubits: The qubits the body's instructions act on that the model
+            never applies a channel to, in ascending order. A readout supported
+            only on these reads the same expectation at every scale factor
+            because the fold adds no noise there, not because the fold failed.
+        noise_identity: The noise model's own identity, so the reading names the
+            model it was taken over even though it does not carry the model. Two
+            models of the same shape and different probabilities apply the same
+            number of channels, so the counts alone would not tell them apart.
+        identity: ``sha256`` over the schema, the plan's own identity, the model's
+            identity, the per-qubit counts and the coverage counts.
+    """
+
+    strategy: str
+    scale_factor: float
+    body_locations: int
+    folded_locations: int
+    covered_instructions: int
+    uncovered_instructions: int
+    per_qubit: tuple[tuple[int, int, int], ...]
+    silent_qubits: tuple[int, ...]
+    noise_identity: str
+    identity: str
+
+    def __post_init__(self) -> None:
+        if self.strategy not in FOLDING_STRATEGIES:
+            raise ValueError(
+                f"unsupported folding strategy {self.strategy!r}; expected one of "
+                f"{', '.join(FOLDING_STRATEGIES)}"
+            )
+        if self.body_locations < 1:
+            raise ValueError(
+                "a noise reading needs at least one channel application on the "
+                f"body, and {self.body_locations} was given; a ratio with no noise "
+                "in its denominator is not an amplification"
+            )
+        if self.folded_locations < self.body_locations:
+            raise ValueError(
+                "a fold can only repeat instructions, so it cannot apply a channel "
+                f"fewer times than the body did, and {self.folded_locations} is "
+                f"fewer than {self.body_locations}"
+            )
+        counted = sum(folded for _qubit, _body, folded in self.per_qubit)
+        if counted != self.folded_locations:
+            raise ValueError(
+                "the per-qubit counts must add up to the folded total, and "
+                f"{counted} does not equal {self.folded_locations}"
+            )
+        if not self.noise_identity:
+            raise ValueError(
+                "a noise reading must name the noise model it was taken over"
+            )
+        if not self.identity:
+            raise ValueError("a noise reading must carry the identity of its inputs")
+
+    @property
+    def amplification(self) -> float:
+        """The ratio of folded to body channel applications.
+
+        It is at least one and it is not the plan's ``scale_factor``: the ratio is
+        a length statement, this is a noise statement, and they agree only when
+        the model names every instruction of the body and every inverse the fold
+        inserts.
+        """
+
+        return self.folded_locations / self.body_locations
+
+    def amplification_on(self, qubits: Any) -> float | None:
+        """The same ratio restricted to ``qubits``, or ``None`` where there is none.
+
+        This is the reading a caller with one observable wants, because a fold
+        spends its pairs where the strategy puts them and not where the
+        observable is sensitive. ``None`` means the model applies no channel to
+        any of these qubits, so the fold amplifies nothing there and the curve is
+        flat by construction rather than by measurement.
+
+        Raises:
+            ValueError: if ``qubits`` is not an iterable of qubit indices.
+        """
+
+        try:
+            selected = {int(qubit) for qubit in qubits}
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"qubits must be an iterable of qubit indices, and {qubits!r} was given"
+            ) from exc
+        body = sum(entry[1] for entry in self.per_qubit if entry[0] in selected)
+        folded = sum(entry[2] for entry in self.per_qubit if entry[0] in selected)
+        if body == 0:
+            return None
+        return folded / body
+
+    @property
+    def reached_uniformly(self) -> bool:
+        """Whether every qubit the model touches gained noise by the same factor.
+
+        A gate fold reaches the body's leading instructions first, so its pairs
+        land on a subset of the qubits; a circuit fold repeats the whole body and
+        so cannot be uneven. This is the property that decides whether one
+        observable's curve is representative of another's.
+        """
+
+        ratios = {folded / body for _qubit, body, folded in self.per_qubit if body}
+        return len(ratios) <= 1
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the reading as plain JSON-serializable data."""
+
+        return {
+            "schema": FOLD_NOISE_SCHEMA,
+            "strategy": self.strategy,
+            "scale_factor": self.scale_factor,
+            "body_locations": self.body_locations,
+            "folded_locations": self.folded_locations,
+            "amplification": self.amplification,
+            "covered_instructions": self.covered_instructions,
+            "uncovered_instructions": self.uncovered_instructions,
+            "per_qubit": [list(entry) for entry in self.per_qubit],
+            "silent_qubits": list(self.silent_qubits),
+            "reached_uniformly": self.reached_uniformly,
+            "noise_identity": self.noise_identity,
+            "identity": self.identity,
+        }
+
+
+def fold_noise_amplification(
+    body: Circuit | "CircuitIR",
+    plan: FoldingPlan,
+    noise_model: Any,
+) -> FoldNoiseAmplification:
+    """Measure how much noise ``plan``'s fold added to ``body``, and where.
+
+    A fold's own record states a length ratio, and the strength a zero-noise
+    extrapolation sees is not that ratio: the fold repeats instructions, so it
+    repeats the error of the instructions the model names and of no others.
+    A model that names part of the body makes the real gain below the ratio, a
+    model that names the repeated instruction but not the inverse the fold
+    inserts makes it below the ratio too, and a model that names the instructions
+    a gate fold happens to reach makes it above the ratio. This function states
+    which case a caller is in by counting channel applications on both programs
+    and reporting the ratio it measured rather than the ratio the plan claims.
+
+    Counting is the unit because it needs no arithmetic on a channel parameter:
+    it holds for a depolarizing channel, a damping channel and a mixture alike,
+    and it is exact rather than first order.
+
+    Args:
+        body: The program that was folded, as a
+            :class:`~flagquantum.circuit.Circuit` or a
+            :class:`~flagquantum.core.ir.CircuitIR`.
+        plan: The plan :func:`fold_program` returned for it.
+        noise_model: The model whose channels the fold repeats, a
+            :class:`~flagquantum.noise.NoiseModel`.
+
+    Returns:
+        The reading, carrying both location totals, the per-qubit counts, the
+        coverage counts and the identity of all of them.
+
+    Raises:
+        TypeError: if ``body`` is neither a circuit nor an IR.
+        ValueError: if ``body`` is empty; if the plan is not this body's fold,
+            which is decided by re-deriving the fold and comparing identities
+            rather than by trusting the recorded counts, at the cost of one more
+            fold; or if the model applies a channel to no instruction of the
+            body, because a ratio whose denominator is zero is not an
+            amplification.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> from flagquantum.algorithms import fold_noise_amplification, fold_program
+        >>> from flagquantum.noise import NoiseModel, depolarizing_channel
+        >>> body = fq.Circuit(2).h(0).h(1)
+        >>> plan = fold_program(body, scale_factor=3.0)
+        >>> model = NoiseModel().add("h", depolarizing_channel(0.03))
+        >>> reading = fold_noise_amplification(body, plan, model)
+        >>> reading.body_locations, reading.folded_locations, reading.amplification
+        (2, 6, 3.0)
+    """
+
+    from ..core.ir import CircuitIR, ensure_circuit_ir
+
+    if not isinstance(body, (Circuit, CircuitIR)):
+        raise TypeError(
+            "a noise reading needs the built body as a Circuit or a CircuitIR, and "
+            f"{type(body).__name__} was given"
+        )
+    body_ir = ensure_circuit_ir(body)
+    if not body_ir.instructions:
+        raise ValueError(
+            "an empty program applies no channel, so a fold of it amplifies no "
+            "noise and the reading would be a ratio to zero"
+        )
+    # The plan is checked by re-deriving it rather than by comparing the counts it
+    # records: a plan pasted from another body of the same length agrees on every
+    # count and disagrees on the program, and the identity covers the program.
+    derived = fold_program(
+        body_ir,
+        scale_factor=plan.requested_scale_factor,
+        strategy=plan.strategy,  # type: ignore[arg-type]
+    )
+    if derived.identity != plan.identity:
+        raise ValueError(
+            "the plan is not this body's fold: re-deriving it at the requested "
+            f"scale factor {plan.requested_scale_factor!r} under the "
+            f"{plan.strategy!r} strategy returned identity {derived.identity[:12]} "
+            f"where the plan carries {plan.identity[:12]}. A reading taken over a "
+            "plan built from another program would report that program's noise "
+            "under this one's name."
+        )
+
+    body_per_qubit, body_total = _channel_locations(body_ir, noise_model)
+    folded_per_qubit, folded_total = _channel_locations(plan.program, noise_model)
+    if body_total == 0:
+        raise ValueError(
+            "the noise model applies a channel to no instruction of the body, so "
+            "the fold amplifies no noise and the ratio would be a division by "
+            f"zero; the body has {len(body_ir.instructions)} instructions and the "
+            "model names none of them"
+        )
+
+    per_qubit = tuple(
+        (qubit, body_per_qubit.get(qubit, 0), folded_per_qubit.get(qubit, 0))
+        for qubit in sorted(set(body_per_qubit) | set(folded_per_qubit))
+    )
+    covered = sum(
+        1
+        for instruction in body_ir.instructions
+        if any(True for _ in noise_model.channels_for(instruction))
+    )
+    silent = tuple(
+        sorted(
+            {
+                qubit
+                for instruction in body_ir.instructions
+                for qubit in instruction.wires
+            }
+            - set(body_per_qubit)
+        )
+    )
+    return FoldNoiseAmplification(
+        strategy=plan.strategy,
+        scale_factor=plan.scale_factor,
+        body_locations=body_total,
+        folded_locations=folded_total,
+        covered_instructions=covered,
+        uncovered_instructions=len(body_ir.instructions) - covered,
+        per_qubit=per_qubit,
+        silent_qubits=silent,
+        noise_identity=noise_model.identity,
+        identity=_noise_identity(
+            plan.identity,
+            noise_model.identity,
+            per_qubit,
+            covered,
+            len(body_ir.instructions) - covered,
         ),
     )

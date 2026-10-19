@@ -12,9 +12,19 @@ thing the longer program buys is more of the same channel. That is an assumption
 about the device rather than about the program, and a fold cannot check it: a
 crosstalk term coupling two gates is spread over a pair of instructions rather
 than attached to one, so repeating a gate does not repeat that term the way the
-device applies it. What the unit therefore does not do is estimate the noise it
-amplifies: it lengthens the program and reports the length ratio, and the noise
-follows because the model is matched per instruction.
+device applies it. The plan therefore reports a length ratio, and the strength a
+curve sees is a different number: the fold repeats instructions, so it repeats the
+error of exactly the instructions the model names. `fold_noise_amplification` is
+the reading that separates the two. It counts channel *applications* -- one channel
+the model applies at one instruction -- on the body and on the folded program,
+which needs no arithmetic on a channel parameter and so holds for a depolarizing
+channel, a damping channel and a mixture alike, and it reports the count per qubit
+because a gate fold spends its pairs where the strategy puts them rather than where
+the observable is sensitive. The count is below the ratio for two distinct reasons,
+and a caller who reads only the plan cannot tell which one applies: a pair lands on
+one qubit of a multi-qubit body, and the inverse a fold inserts is a different name --
+a ``t`` is followed by ``tdg`` -- so a model that lists the gate and not its inverse
+stops counting at the inverse even in a fold that repeats whole bodies.
 
 Two strategies are offered and they realize different factors. `circuit` repeats
 whole bodies, so its length ratio is ``1 + 2m`` and a request between two odd
@@ -50,7 +60,13 @@ from typing import Any
 
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, fold_program, run_zne
+from flagquantum.algorithms import (
+    Hamiltonian,
+    HamiltonianTerm,
+    fold_noise_amplification,
+    fold_program,
+    run_zne,
+)
 from flagquantum.circuit import Circuit
 from flagquantum.core.ir import CircuitIR, ensure_circuit_ir
 from flagquantum.errors import CapabilityError
@@ -162,9 +178,8 @@ def main() -> None:
     report("premise", "the noise is local to the instruction that carries it, so")
     print(f"  {'':<{LABEL_WIDTH}}  repeating an instruction repeats its noise and")
     print(f"  {'':<{LABEL_WIDTH}}  nothing else; that is an assumption about the")
-    print(f"  {'':<{LABEL_WIDTH}}  device rather than about the program, and this")
-    print(f"  {'':<{LABEL_WIDTH}}  unit therefore does not estimate the noise it")
-    print(f"  {'':<{LABEL_WIDTH}}  amplifies")
+    print(f"  {'':<{LABEL_WIDTH}}  device rather than about the program, and it is the")
+    print(f"  {'':<{LABEL_WIDTH}}  one thing here no program and no model can check")
     print()
 
     print("inputs")
@@ -223,6 +238,55 @@ def main() -> None:
     print(f"  {'':<{LABEL_WIDTH}}  ``|+>`` into a mixture of ``|+>`` and ``|->``, and")
     print(f"  {'':<{LABEL_WIDTH}}  both give the same ``zz`` after a ``cx``, so the")
     print(f"  {'':<{LABEL_WIDTH}}  ``zz`` curve is flat where the ``xx`` curve is not")
+    print()
+
+    print("how much noise the fold added, counted against the model")
+    for strategy in ("gate", "circuit"):
+        plan = fold_program(circuit, scale_factor=REQUESTED, strategy=strategy)
+        reading = fold_noise_amplification(circuit, plan, noise)
+        report(
+            f"{strategy} length ratio",
+            f"{plan.scale_factor:.2f}  in {plan.folded_instructions} instructions",
+        )
+        report(
+            f"{strategy} channel applications",
+            f"{reading.body_locations} -> {reading.folded_locations}"
+            f"  (x{reading.amplification:.4f})",
+        )
+        report(
+            f"{strategy} per qubit",
+            "  ".join(
+                f"q{qubit}: {body_count} -> {folded_count}"
+                for qubit, body_count, folded_count in reading.per_qubit
+            ),
+        )
+        report(
+            f"{strategy} uniform per qubit",
+            f"{reading.reached_uniformly}"
+            f"  covered {reading.covered_instructions}/"
+            f"{reading.covered_instructions + reading.uncovered_instructions}",
+        )
+    print(f"  {'':<{LABEL_WIDTH}}  -- the ratio is a length statement and this is a")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  noise statement, and the two differ in the direction"
+    )
+    print(f"  {'':<{LABEL_WIDTH}}  a caller cannot read off the plan. The gate fold")
+    print(f"  {'':<{LABEL_WIDTH}}  spent its pair on the leading ``h``, which sits on")
+    print(f"  {'':<{LABEL_WIDTH}}  qubit 0 alone: qubit 0 gains two of its four")
+    print(f"  {'':<{LABEL_WIDTH}}  applications and qubit 1 gains none, so the count")
+    print(f"  {'':<{LABEL_WIDTH}}  rises by 1.3333 where the length rose by 1.4 and no")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  single number is the strength either qubit sees. The"
+    )
+    print(
+        f"  {'':<{LABEL_WIDTH}}  circuit fold repeated the whole body and still lands"
+    )
+    print(f"  {'':<{LABEL_WIDTH}}  at 2.8333 rather than 3.0, because the adjoint it")
+    print(f"  {'':<{LABEL_WIDTH}}  inserts carries ``tdg``, a name this model does not")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  list: qubit 1 reaches 3.0 exactly and qubit 0, which"
+    )
+    print(f"  {'':<{LABEL_WIDTH}}  carries the ``t``, reaches 2.75")
     print()
 
     print("measured curves, one per strategy, at the abscissas each can reach")
@@ -342,7 +406,9 @@ def main() -> None:
     print("  is only as good as the locality it assumes -- and its curve is only as")
     print("  readable as its readout is sensitive, which is why the flat ``zz``")
     print("  curve above is a statement about the observable rather than about the")
-    print("  noise.")
+    print("  noise. The ratio a plan reports is a length, not a strength: ask")
+    print("  fold_noise_amplification for the strength, and ask it per qubit,")
+    print("  because a gate fold's pairs land on a subset of the qubits.")
 
 
 if __name__ == "__main__":

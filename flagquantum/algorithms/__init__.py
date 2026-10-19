@@ -107,10 +107,13 @@ from .error_mitigation import (
     scale_noise_model,
 )
 from .folding import (
+    FOLD_NOISE_SCHEMA,
     FOLDING_ASSUMPTIONS,
     FOLDING_SCHEMA,
     FOLDING_STRATEGIES,
     FoldingPlan,
+    FoldNoiseAmplification,
+    fold_noise_amplification,
     fold_program,
 )
 from .logical_resources import (
@@ -206,9 +209,11 @@ __all__ = [
     "CobylaOptimizer",
     "CobylaResult",
     "ExtrapolationFit",
+    "FOLD_NOISE_SCHEMA",
     "FOLDING_ASSUMPTIONS",
     "FOLDING_SCHEMA",
     "FOLDING_STRATEGIES",
+    "FoldNoiseAmplification",
     "FoldingPlan",
     "Hamiltonian",
     "HamiltonianTerm",
@@ -280,6 +285,7 @@ __all__ = [
     "extrapolate_richardson",
     "feature_selection",
     "fold_frozen_core",
+    "fold_noise_amplification",
     "fold_program",
     "folding",
     "grover",
