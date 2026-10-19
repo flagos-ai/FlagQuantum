@@ -21,6 +21,7 @@ phrase was chosen and for what it leaves uncovered.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -41,6 +42,36 @@ TIMEOUT_SECONDS = 120
 #: prints this from the operator rather than quoting it, so the test can compare a
 #: run's energy against the exact value instead of against the run.
 _GROUND_ENERGY = -2.2360679774997898
+
+#: The tolerance a value an example computed in double precision is compared at.
+#: The ground energy above is the case that forced it: it is the operator's own
+#: diagonalization of a two-qubit Hamiltonian, which reached
+#: -2.2360679774997898 here and -2.2360679774997889 on the x86 runner -- 9.0e-16
+#: apart, one unit in the last place of 2.2. That is the arithmetic's own floor and
+#: not a reading of the operator, so a transcript comparison of the printed digits
+#: records which `eigvals` path the build shipped.
+_DOUBLE_TOLERANCE = 1e-12
+
+#: The tolerance a value an example computed in single precision is compared at.
+#: Every energy in the VQE example is a float32 statevector expectation, and a
+#: descent stops where the step it can still resolve stops moving it, so two
+#: machines that sum the same statevector in a different order stop at different
+#: points: the reported optimum measured -2.2360680103302002 here and
+#: -2.2360682487487793 on the x86 runner, 2.4e-07 apart and both about 2e-07 from
+#: the exact value. A digit-for-digit comparison of those records a BLAS reduction
+#: order; the claim the example is making is that the run reached the optimum.
+_SINGLE_PRECISION_TOLERANCE = 1e-6
+
+#: The bound a statevector reading is required to sit under when the claim is that
+#: it is at the arithmetic's floor rather than at a value. The Trotter example
+#: measures each primitive's residual against the dense exponential of the same
+#: word after dividing out one global phase, which is exactly zero in exact
+#: arithmetic, so the printed residual is the noise: measured as 0.0, 1.110e-16,
+#: 1.475e-17 and 1.120e-16 across the six rows here and as 0.0 for the row that
+#: read 1.110e-16 on the x86 runner. Pinning any one of them pins a summation
+#: order, while the floor bound below still fails by fourteen orders when the
+#: phase division is wrong.
+_STATEVECTOR_FLOOR = 1e-15
 
 # Every script in the directory, one entry per unit that has one.
 SCRIPTS = (
@@ -303,6 +334,26 @@ def _labelled(output: str, label: str) -> str:
         if separator and name.strip() == label:
             return value.strip()
     raise AssertionError(f"the example printed no {label!r} line:\n{output}")
+
+
+def _number(output: str, label: str) -> float:
+    """Return a labelled line's value as a float.
+
+    A quantity an example *measures* is compared as a number at a stated
+    tolerance rather than as the text it was printed as, for the reason the two
+    tolerance constants above give. A quantity the example writes out -- a gate
+    list, a count, a boolean, an exception name -- stays a text comparison, since
+    the text is the claim.
+    """
+    return float(_labelled(output, label))
+
+
+def _residual_and_gates(output: str, label: str) -> tuple[float, str]:
+    """Split a ``residual <float>, gates <list>`` line into its two claims."""
+    residual, separator, gates = _labelled(output, label).partition(", gates ")
+    assert separator, f"{label!r} printed no ', gates ' separator"
+    assert residual.startswith("residual "), residual
+    return float(residual.split()[1]), gates
 
 
 def _premise(output: str) -> str:
@@ -727,10 +778,19 @@ def test_variational_solvers_example_fits_qaoa_and_shows_the_saddle() -> None:
     # and the mass the optimized circuit puts on the two maximum cuts rises with
     # it. The energies are pinned as the evidence for this instance; the claim the
     # row carries is the gap column, which falls towards zero without reaching it.
+    # Each energy is a float32 descent's endpoint, so it is compared as a number at
+    # the tolerance such an endpoint repeats at: this run measured -1.473527074 here
+    # and -1.473527431 on the x86 runner, which is a ninth decimal and not the
+    # energy.
     rows = {layers: _labelled(output, str(layers)).split() for layers in (1, 2, 3)}
-    assert rows[1][0] == "-1.473527074"
-    assert rows[2][0] == "-1.914364219"
-    assert rows[3][0] == "-2.972455502"
+    for layers, expected in (
+        (1, -1.473527074),
+        (2, -1.914364219),
+        (3, -2.972455502),
+    ):
+        assert float(rows[layers][0]) == pytest.approx(
+            expected, abs=_SINGLE_PRECISION_TOLERANCE
+        )
     gaps = [float(rows[layers][1]) for layers in (1, 2, 3)]
     assert gaps == sorted(gaps, reverse=True)
     assert gaps[-1] > 0.0
@@ -760,7 +820,11 @@ def test_vqe_solvers_example_runs_four_entry_points_on_one_instance() -> None:
     assert "vqe solvers -- flagquantum.algorithms.core" in output
     # The instance's optimum is the operator's own value rather than a run's, so
     # the gap column below is a distance to a known number and not a self-report.
-    assert _labelled(output, "ground energy") == "-2.2360679774997898"
+    # It is read as a number because it is the operator's diagonalization, whose
+    # last place is the build's.
+    assert _number(output, "ground energy") == pytest.approx(
+        _GROUND_ENERGY, abs=_DOUBLE_TOLERANCE
+    )
     assert (
         _labelled(output, "operator") == "[(1.0, (0, 1)), (-1.0, (0,)), (-1.0, (1,))]"
     )
@@ -769,17 +833,34 @@ def test_vqe_solvers_example_runs_four_entry_points_on_one_instance() -> None:
     # parameters rather than the last history entry: the two columns differ.
     assert _labelled(output, "caller tensor unchanged") == "True"
     assert _labelled(output, "two runs agree bit for bit") == "True"
-    assert _labelled(output, "energy") == "-2.2360680103302002"
-    assert _labelled(output, "start energy") == "0.885204017162323"
+    # Both of these are float32 reads of a descent, so they are compared as
+    # numbers at the tolerance a float32 stopping point repeats at.
+    assert _number(output, "energy") == pytest.approx(
+        -2.2360680103302002, abs=_SINGLE_PRECISION_TOLERANCE
+    )
+    assert _number(output, "start energy") == pytest.approx(
+        0.885204017162323, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     # The screen is exact, so the three gradients are an identity on the reference
     # state rather than an approximation: only the Y rotation moves at |00>.
     assert _labelled(output, "adapt selected") == "(0,)"
     assert _labelled(output, "adapt initial energy") == "1"
-    assert _labelled(output, "adapt energy") == "-1.4142135623730354"
-    assert _labelled(output, "adapt converged") == "True"
-    assert _labelled(output, "first screening pass") == (
-        "['-1.000000', '0.000000', '-0.000000']"
+    assert _number(output, "adapt energy") == pytest.approx(
+        -1.4142135623730354, abs=_SINGLE_PRECISION_TOLERANCE
     )
+    assert _labelled(output, "adapt converged") == "True"
+    # The gradient vector is parsed rather than transcribed, because the sign of a
+    # zero has no claim in it: the first entry is the one direction that moves and
+    # the other two are exactly zero.
+    gradients = [
+        float(token)
+        for token in re.findall(
+            r"-?\d+\.\d+", _labelled(output, "first screening pass")
+        )
+    ]
+    assert len(gradients) == 3
+    assert gradients[0] == pytest.approx(-1.0, abs=_SINGLE_PRECISION_TOLERANCE)
+    assert all(abs(value) < _SINGLE_PRECISION_TOLERANCE for value in gradients[1:])
     assert _labelled(output, "iteration 0 selected") == (
         "pool index 0 at gradient -1.000000"
     )
@@ -788,7 +869,9 @@ def test_vqe_solvers_example_runs_four_entry_points_on_one_instance() -> None:
     # reports its exit condition rather than the distance to the ground state.
     assert _labelled(output, "stationary selected") == "()"
     assert _labelled(output, "stationary adapt iterations") == "0"
-    assert _labelled(output, "stationary energy") == "-1.9999999999999991"
+    assert _number(output, "stationary energy") == pytest.approx(
+        -1.9999999999999991, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert _labelled(output, "stationary energy above ground") == "0.236068"
     assert _labelled(output, "stationary converged") == "True"
     # Three runs, one boolean, two reasons. The first two stop at the same energy
@@ -814,15 +897,23 @@ def test_vqe_solvers_example_runs_four_entry_points_on_one_instance() -> None:
     # this pool cannot close.
     assert min(exhausted_energy, tolerance_energy, budget_energy) - _GROUND_ENERGY > 0.5
     # The deepening path reports one record per depth and the parameter count each
-    # depth asks for, which is what makes the padding visible.
+    # depth asks for, which is what makes the padding visible. The per-depth
+    # energies are float32 end points, so they are parsed and compared against the
+    # exact optimum instead of transcribed.
     assert _labelled(output, "depths") == "(1, 2, 3)"
     assert _labelled(output, "parameters per depth") == "[2, 4, 6]"
-    assert _labelled(output, "energy per depth") == (
-        "['-2.2360680103', '-2.2360682487', '-2.2360682487']"
-    )
+    per_depth = [
+        float(token)
+        for token in re.findall(r"-?\d+\.\d+", _labelled(output, "energy per depth"))
+    ]
+    assert len(per_depth) == 3
+    for energy in per_depth:
+        assert energy == pytest.approx(_GROUND_ENERGY, abs=_SINGLE_PRECISION_TOLERANCE)
     # The schedule's cost is a measured number rather than a claim.
     assert _labelled(output, "stages in the schedule") == "2"
-    assert _labelled(output, "hybrid energy") == "-2.2360680103302002"
+    assert _number(output, "hybrid energy") == pytest.approx(
+        -2.2360680103302002, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert _labelled(output, "records") == "600"
     assert _labelled(output, "objective evaluations") == "1200"
     assert _labelled(output, "parameter groups") == "('quantum',)"
@@ -1018,25 +1109,25 @@ def test_trotter_example_measures_the_defect_and_shows_every_refusal() -> None:
     # same word after dividing out one global phase, so every entry is at the
     # dtype's own floor. The gate lists are the decomposition itself: no basis
     # change for a diagonal word, a Hadamard for x, sdg-h forward and h-s backward
-    # for y, and one CX per extra supported wire either side of the rotation.
-    assert _labelled(output, "Z on (0,)") == "residual 1.110e-16, gates 1 ['rz']"
-    assert (
-        _labelled(output, "X on (0,)") == "residual 0.000e+00, gates 3 ['h', 'rz', 'h']"
-    )
-    assert _labelled(output, "Y on (0,)") == (
-        "residual 1.475e-17, gates 5 ['sdg', 'h', 'rz', 'h', 's']"
-    )
-    assert _labelled(output, "ZZ on (0, 1)") == (
-        "residual 1.110e-16, gates 3 ['cx', 'rz', 'cx']"
-    )
-    assert _labelled(output, "XZY on (2, 0, 1)").startswith(
-        "residual 1.120e-16, gates 11 ['h', 'sdg', 'h', 'cx', 'cx', 'rz', 'cx', 'cx'"
-    )
-    # The same word with a target in the middle that carries I: the identity
-    # consumes its wire and contributes no support, so this is the ZZ ladder.
-    assert _labelled(output, "ZIZ on (0, 1, 2)") == (
-        "residual 1.110e-16, gates 3 ['cx', 'rz', 'cx']"
-    )
+    # for y, and one CX per extra supported wire either side of the rotation. The
+    # residual is checked as a floor and the gate list as text, because the floor
+    # is the arithmetic's noise and the list is the claim.
+    for label, gates in (
+        ("Z on (0,)", "1 ['rz']"),
+        ("X on (0,)", "3 ['h', 'rz', 'h']"),
+        ("Y on (0,)", "5 ['sdg', 'h', 'rz', 'h', 's']"),
+        ("ZZ on (0, 1)", "3 ['cx', 'rz', 'cx']"),
+        (
+            "XZY on (2, 0, 1)",
+            "11 ['h', 'sdg', 'h', 'cx', 'cx', 'rz', 'cx', " "'cx', 'h', 'h', 's']",
+        ),
+        # The same word with a target in the middle that carries I: the identity
+        # consumes its wire and contributes no support, so this is the ZZ ladder.
+        ("ZIZ on (0, 1, 2)", "3 ['cx', 'rz', 'cx']"),
+    ):
+        residual, printed = _residual_and_gates(output, label)
+        assert residual <= _STATEVECTOR_FLOOR, label
+        assert printed == gates, label
     # The defect against torch.matrix_exp, at three step counts per order.
     assert _labelled(output, "order 1, 2 steps") == "defect 5.085577e-02"
     assert _labelled(output, "order 1, 4 steps") == "defect 2.533908e-02"
@@ -1052,7 +1143,11 @@ def test_trotter_example_measures_the_defect_and_shows_every_refusal() -> None:
     assert "(the defect falls off as step**2)" in output
     # Commuting terms are reached exactly, which is what makes the defect above a
     # statement about non-commutation rather than about the method being inexact.
-    assert _labelled(output, "two commuting z terms") == "defect 2.220e-16"
+    # Exactly, here, means at the floor: the printed 2.220e-16 is one summation's
+    # noise and not a value the product formula determines.
+    commuting, _, printed = _labelled(output, "two commuting z terms").partition(" ")
+    assert commuting == "defect"
+    assert float(printed) <= _STATEVECTOR_FLOOR
     # The declared order is not sorted: the same two terms in the other order emit
     # a different gate sequence and reach a different state.
     assert _labelled(output, "z then x gates") == "['rz', 'h', 'rz', 'h']"

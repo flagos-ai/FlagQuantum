@@ -1730,9 +1730,15 @@ body = Circuit(2).h(0).cx(0, 1).rz(0, 0.4).ry(1, 0.6).t(0)
 for strategy in ("gate", "circuit"):
     plan = fold_program(body, scale_factor=1.4, strategy=strategy)
     gap = float((exact_state(body) - exact_state(plan.program)).abs().max())
-    print(strategy, plan.scale_factor, plan.folded_instructions, plan.exact, f"{gap:.1e}")
-# gate 1.4 7 True 1.6e-16
-# circuit 3.0 15 False 1.6e-16
+    print(
+        strategy, plan.scale_factor, plan.folded_instructions, plan.exact, f"{gap:.0e}"
+    )
+# gate 1.4 7 True 2e-16
+# circuit 3.0 15 False 2e-16
+#   -- the gap is the fold's own arithmetic noise, one part in 1e16 of the state.
+#      It is quoted to one figure because that is all the arithmetic determines:
+#      the same two folds measured 1.6e-16 on one build and 2.0e-16 on another,
+#      which is two units in the last place of a complex128 amplitude.
 
 model = NoiseModel().add(
     ("h", "cx", "rz", "ry", "t"), depolarizing_channel(0.03, dtype=torch.complex128)
@@ -2348,10 +2354,16 @@ for layers in (1, 2, 3):
     result = run_qaoa(4, edges, torch.full((2 * layers,), 0.1))
     state = qaoa_circuit(4, edges, result.gammas, result.betas).state().reshape(-1)
     mass = (state.abs() ** 2).real
-    print(layers, f"{float(result.energy):.9f}", f"{float(mass.max()):.6f}")
-# 1 -1.473527074 0.162757
-# 2 -1.914364219 0.237453
-# 3 -2.972455502 0.494200
+    print(layers, f"{float(result.energy):.6f}", f"{float(mass.max()):.6f}")
+# 1 -1.473527 0.162757
+# 2 -1.914364 0.237453
+# 3 -2.972456 0.494200
+#   -- both columns are float32 reads of a float32 run, so they are quoted at six
+#      decimals, which is the seven significant figures a float32 carries at these
+#      magnitudes and not the nine an earlier draft printed. The optimizer stops
+#      where the step it can still resolve stops moving it, so the ninth figure was
+#      a property of the summation order: this energy measured -1.473527074 on one
+#      build and -1.473527431 on another, agreeing in every digit quoted here.
 
 parameters = torch.zeros(6, requires_grad=True)
 loss = qaoa_loss(4, edges, parameters[:3], parameters[3:], cost)
@@ -2423,26 +2435,38 @@ from flagquantum.algorithms import (
 edges = ((0, 1), (1, 2), (2, 0))
 objective = maxcut_objective(3, edges)
 start = torch.full((2,), 0.05)
-print(round(float(objective(start)), 6), float(run_qaoa(3, edges, start, steps=300).energy))
-# 0.059502 -0.9999997615814209  -- the start's cost, and where Adam lands
+print(
+    round(float(objective(start)), 6),
+    f"{float(run_qaoa(3, edges, start, steps=300).energy):.6f}",
+)
+# 0.059502 -1.000000  -- the start's cost, and where Adam lands
 spsa = SPSAOptimizer(
     maxiter=400, perturbation=0.05, generator=torch.Generator().manual_seed(11)
 ).minimize(objective, start)
-print(spsa.value, spsa.steps, spsa.evaluations, spsa.history[0])
-# -0.9999911189079285 400 1201 0.05950213968753815
+print(
+    f"{float(spsa.value):.6f}",
+    spsa.steps,
+    spsa.evaluations,
+    f"{float(spsa.history[0]):.6f}",
+)
+# -0.999991 400 1201 0.059502
 #   -- the cost at the last iterate, the updates, the calls, and the starting cost
 simplex = NelderMeadOptimizer(maxiter=200).minimize(objective, start)
-print(simplex.value, simplex.evaluations, simplex.converged)
-# -1.0000003576278687 706 False
+print(f"{float(simplex.value):.6f}", simplex.converged)
+# -1.000000 False
 #   -- at the optimum to the float32 resolution, with the flag reading False
 ```
 
-On that instance, whose optimum is `-1.0`, all three routes land at it: Adam at
-`-0.9999997615814209`, SPSA at `-0.9999911189079285` in 1201 evaluations, and the
-simplex at `-1.0000003576278687` in 706. The simplex reaches the optimum while
-reporting `converged=False`, because that flag measures the two spreads collapsing
-and not the energy arriving, and SPSA reports no flag at all; the route is
-asserted on the energy rather than on the flag.
+On that instance, whose optimum is `-1.0`, all three routes land at it, to the six
+decimals a `float32` energy repeats at: Adam, SPSA in 1201 evaluations, and the
+simplex. The simplex reaches the optimum while reporting `converged=False`, because
+that flag measures the two spreads collapsing and not the energy arriving, and SPSA
+reports no flag at all; the route is asserted on the energy rather than on the flag.
+The simplex's evaluation count is not quoted, for the reason the six decimals are
+not nine: it counts how many reflections the stopping rule took before the spreads
+collapsed, which is downstream of a comparison the build's arithmetic can flip, and
+it moved between 121 and 718 across small starts on one machine while the energy it
+reached stayed within 4e-07 of `-1.0`.
 
 **Not here:** a cost Hamiltonian for a general QUBO or Ising instance; any
 constraint, penalty or slack term; the constrained derivative-free handling COBYLA
@@ -2849,8 +2873,13 @@ def step(target, adjoint=False):
 identity = torch.eye(64, dtype=torch.complex128)
 print(round(float((step(encoding) - step(encoding).mH).abs().max()), 3))
 # 1.744  -- the encoding is not Hermitian, because the terms share the ladder ancilla the multi-controlled gates are built from
-print(f"{(step(encoding, adjoint=True) @ step(encoding) - identity).abs().max():.2e}")
-# 5.48e-07  -- the adjoint inverts the step, which needs the select's terms reversed: reusing them forward leaves 1.77 here
+adjoint_residual = float((step(encoding, adjoint=True) @ step(encoding) - identity).abs().max())
+print(adjoint_residual < 1e-5, round(adjoint_residual / 1e-7, -1))
+# True 10.0  -- the adjoint inverts the step, which needs the select's terms reversed: reusing them forward leaves 1.77 here
+#   -- the residual is one float32 matrix product's noise, 5.5e-07 on one build and
+#      5.6e-07 on another, so it is quoted as the order it sits at rather than as a
+#      digit; what the two numbers together claim is that it is six orders under the
+#      1.77 a forward reuse of the same terms leaves.
 ladder_zero = [state for state in range(64) if state & (1 << 2) == 0]
 restricted = step(encoding)[ladder_zero][:, ladder_zero]
 observed = torch.sort(torch.cos(torch.angle(torch.linalg.eigvals(restricted)))).values

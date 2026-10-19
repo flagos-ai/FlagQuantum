@@ -171,17 +171,27 @@ number a threshold estimate reads:
 
 ```python
 reference = surface.detector_error_model().compile_sampler(seed=4).sample(shots=200000)[1]
-print(round(float(combined.observable_rates()[0]), 6))
-# 0.146392  -- the default reading against Stim's own sampler
-print(round(float(graphlike.observable_rates()[0]), 6))
-# 0.189091  -- the expanded reading, 29% above it
-print(round(float(reference[:, 0].mean()), 6))
-# 0.146475  -- Stim's sampler of the same detector error model text
+print(round(float(combined.observable_rates()[0]), 3))
+# 0.146  -- the default reading against Stim's own sampler
+print(round(float(graphlike.observable_rates()[0]), 3))
+# 0.189  -- the expanded reading, 29% above it
+print(round(float(reference[:, 0].mean()), 3))
+# 0.146  -- Stim's sampler of the same detector error model text
 ```
 
-Stim's sampler of the *decomposed* text reports the same 0.146475, so the
-disagreement is in the reading and not in the sampling. The two readings are
-therefore a choice rather than a preference:
+Three decimals, and not the six an earlier draft printed, because one of the three
+numbers is Stim's and not this package's: a sampled mean over 200000 shots is a
+draw from Stim's random stream, whose exact value belongs to the Stim build in use.
+It read `0.146475` here and `0.146075` on the CI runner, four hundredths of a
+percentage point apart and both well under one standard error of the estimate
+(`sqrt(0.146 * 0.854 / 200000)` is `7.9e-4`). What the block claims is which of the
+two readings agrees with Stim, and that survives the third decimal: the expanded
+reading sits ten times further from Stim's rate than the default one does. The
+first two lines are rounded to match so the three are compared like for like.
+
+Stim's sampler of the *decomposed* text reports the same rate, so the disagreement
+is in the reading and not in the sampling. The two readings are therefore a choice
+rather than a preference:
 
 - **Decoding a syndrome.** Decompose and merge. A minimum-weight matcher needs a
   graphlike model, `get_decoder("minimum_weight_matching", graphlike)` or
