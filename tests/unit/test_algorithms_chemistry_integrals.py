@@ -10,8 +10,12 @@ output.
 
 1. The contracted engine reproduces an independently written closed-form
    contraction of ``s`` primitives: the overlap, kinetic, nuclear-attraction
-   and all four two-electron classes of H2 at 1.4 bohr, to a measured relative
-   error of ``2.9e-16``.
+   and all four two-electron classes of H2 at 1.4 bohr, to a relative error at
+   the float64 floor: ``2.9e-16`` on an arm64 build and ``3.7e-16`` on an x86
+   lane, which is one to two units in the last place of 1.0. The bound is four
+   ulp of the dtype rather than a digit one build produced, because the two
+   sides evaluate the same nine contractions and their difference is the
+   arithmetic's.
 2. The ``p`` and ``d`` classes are the derivative content they claim to be:
    every one agrees with the exact Cartesian raising operator applied to the
    verified ``s``-only closed forms, to a measured worst relative error of
@@ -26,7 +30,10 @@ output.
    spread of exactly ``0.0``, so no permutation can read a half-filled slot.
 5. The integrals are invariant under a rigid translation of the whole molecule
    (measured worst ``1.4e-14``) and, for an ``s``-only molecule, under a rigid
-   rotation (bitwise ``0.0`` for the overlap and the core Hamiltonian). For a
+   rotation to the float64 floor: ``0.0`` for the overlap and the core
+   Hamiltonian on an arm64 build and ``1.1e-16``, one ulp of 0.5, on an x86
+   lane, which is what the rotated coordinates' own rounding costs. The algebra
+   is exact; the positions handed to it are not bit-identical. For a
    molecule with ``p`` functions the tensor is not elementwise rotation
    invariant, and the test says so: the shell-block scalars are invariant
    (measured worst ``7.1e-14``) while the elementwise difference is measured
@@ -79,6 +86,11 @@ from flagquantum.algorithms.chemistry_integrals import (
 from flagquantum.errors import CapabilityError, ValidationError
 
 pytestmark = pytest.mark.unit
+
+# The float64 unit roundoff. A bound written as a multiple of this says "a few
+# units in the last place", which is a claim about the dtype; a bound written as a
+# decimal digit is a claim about the build that produced it.
+_EPS = torch.finfo(torch.float64).eps
 
 
 # --- geometries, in angstroms, shared with the molecular driver's tests ---
@@ -742,7 +754,8 @@ def test_the_contracted_engine_reproduces_a_closed_form_contraction() -> None:
         relative = abs(measured[label] - wanted) / abs(wanted)
         worst = max(worst, relative)
         assert relative < 1e-12, f"{label}: {measured[label]} vs {wanted}"
-    assert worst < 3e-16, f"worst relative error {worst:.3e}"
+    ulps = worst / _EPS
+    assert ulps <= 4, f"worst relative error {worst:.3e}, {ulps:.2f} ulp of 1.0"
 
 
 def test_the_h2_integrals_carry_the_tabulated_four_decimals() -> None:
@@ -1052,9 +1065,10 @@ def test_a_rigid_rotation_leaves_an_s_only_molecule_alone() -> None:
     zeros = torch.zeros(3, dtype=torch.float64)
     original = molecular_integrals(_h2())
     turned = molecular_integrals(_rotated(_h2(), rotation, zeros))
-    assert float((original.overlap - turned.overlap).abs().max()) == 0.0
+    assert float((original.overlap - turned.overlap).abs().max()) <= 4 * _EPS
     assert (
-        float((original.core_hamiltonian - turned.core_hamiltonian).abs().max()) == 0.0
+        float((original.core_hamiltonian - turned.core_hamiltonian).abs().max())
+        <= 4 * _EPS
     )
     assert float((original.two_electron - turned.two_electron).abs().max()) < 1e-12
 
