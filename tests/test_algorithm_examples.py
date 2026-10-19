@@ -195,16 +195,17 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
         "is the device's readout behaviour",
         "not a free improvement",
     ),
-    # Two halves. "the noise is local to the instruction that carries it, so
-    # repeating an instruction repeats its noise and nothing else" is the
-    # assumption the fold rests on, and "this unit therefore does not estimate
-    # the noise it amplifies" is what it gives up to reach it -- the fold reports
-    # a length ratio and nothing about the device it ran on. Pinning only the
-    # first would leave the disclaimer deletable, and a length ratio read as a
-    # measured error strength is exactly the misreading the second half prevents.
+    # Two halves, and the second one moved when the amplification reading landed.
+    # "the noise is local to the instruction that carries it, so repeating an
+    # instruction repeats its noise and nothing else" is still the assumption the
+    # fold rests on, and the second half now names what stays unchecked: not the
+    # amplification, which the example prints per wire against a model, but the
+    # locality itself, which no program carries and no measurement in this
+    # checkout tests. Pinning only the first would leave the locality claim
+    # looking like something the fold had verified.
     "folding": (
         "the noise is local to the instruction that carries it",
-        "does not estimate the noise it amplifies",
+        "no program and no model can check",
     ),
     # Three halves, because the premise has three: the cost layer and the operator
     # "describe one graph" is what the unit pairs so a caller cannot score one
@@ -729,6 +730,31 @@ def test_folding_example_lengthens_by_an_identity_and_shows_what_it_cost() -> No
     assert gate_points == sorted(gate_points, reverse=True)
     assert circuit_points == sorted(circuit_points, reverse=True)
     assert len(set(gate_points)) == 4 and len(set(circuit_points)) == 4
+    # The amplification section reports a length ratio and a count of channel
+    # applications side by side, and the two disagree. The gate fold is uneven --
+    # wire 1 keeps both of its applications while wire 0 gains two -- because its
+    # one pair is two instructions on wire 0; the circuit fold repeats whole
+    # bodies and still lands below 3.0, because the adjoint it inserts carries
+    # tdg, a name the model does not list. Both numbers are read off the output
+    # rather than recomputed, so the example has to print them for this to hold.
+    gate_ratio = _labelled(output, "gate length ratio").split()
+    circuit_ratio = _labelled(output, "circuit length ratio").split()
+    assert (gate_ratio[0], gate_ratio[2]) == ("1.40", "7")
+    assert (circuit_ratio[0], circuit_ratio[2]) == ("3.00", "15")
+    gate_counts = _labelled(output, "gate channel applications").replace("->", " ")
+    circuit_counts = _labelled(output, "circuit channel applications").replace(
+        "->", " "
+    )
+    gate_body, gate_folded = (int(part) for part in gate_counts.split()[:2])
+    circuit_body, circuit_folded = (int(part) for part in circuit_counts.split()[:2])
+    assert gate_body == circuit_body
+    # The length ratio rises by 1.4 and the noise count by less than that: a
+    # length ratio is not a strength, which is the whole point of the section.
+    assert gate_folded / gate_body < 1.4
+    assert circuit_folded / circuit_body < 3.0
+    assert circuit_folded > gate_folded
+    assert "q1: 2 -> 2" in _labelled(output, "gate per qubit")
+    assert _labelled(output, "gate uniform per qubit").startswith("False")
     # Both estimates land nearer the noiseless value than the unmitigated point
     # did. The comparison is the claim; the numbers behind it are printed beside
     # it and are not pinned, because a different but equally correct channel moves

@@ -33,11 +33,14 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms import (
+    FOLD_NOISE_SCHEMA,
     FOLDING_ASSUMPTIONS,
     FOLDING_SCHEMA,
     FOLDING_STRATEGIES,
+    FoldNoiseAmplification,
     Hamiltonian,
     HamiltonianTerm,
+    fold_noise_amplification,
     fold_program,
     run_zne,
 )
@@ -958,3 +961,256 @@ def test_a_folded_run_is_reproducible_and_does_not_depend_on_the_request_beyond_
         item.expectation for item in second.measurements
     ]
     assert first.fit == second.fit
+
+
+# --------------------------------------------------------------------------
+# The fold's noise amplification, measured against a model.
+#
+# A plan reports a length ratio. These tests are about the other quantity, the
+# ratio of channel *applications*, which is what a curve actually sees and which
+# the plan does not carry. The assertions are of two shapes for the same reason
+# as above: a ratio that could be improved is an inequality or a closed form, and
+# a count that is the evidence itself is pinned.
+# --------------------------------------------------------------------------
+
+
+def phase_only_body() -> fq.Circuit:
+    """Five instructions whose only population change is the leading ``x``."""
+
+    circuit = fq.Circuit(1)
+    circuit.x(0)
+    circuit.rz(0, 0.3)
+    circuit.t(0)
+    circuit.sdg(0)
+    circuit.rz(0, 0.2)
+    return circuit
+
+
+def test_the_reading_separates_the_length_ratio_from_the_strength() -> None:
+    """A gate fold reaches 1.4 in length and 2.0 in noise on one qubit, and says both."""
+
+    model = NoiseModel()
+    model.add(("h", "cx"), depolarizing_channel(0.03))
+    plan = fold_program(body(), scale_factor=1.4)
+    reading = fold_noise_amplification(body(), plan, model)
+
+    assert plan.scale_factor == 1.4
+    # The pair lands on the leading h, which is on qubit 0, so qubit 0 gains it
+    # and qubit 1 does not. This is the whole point: one plan, two strengths.
+    assert reading.per_qubit == ((0, 2, 4), (1, 1, 1))
+    assert reading.amplification_on((0,)) == pytest.approx(2.0)
+    assert reading.amplification_on((1,)) == pytest.approx(1.0)
+    # The whole-program ratio is between the two and equals neither the ratio nor
+    # either qubit's, which is why a caller with an observable has to ask by qubit.
+    assert reading.amplification == pytest.approx(5 / 3)
+    assert reading.amplification != pytest.approx(plan.scale_factor)
+    assert reading.reached_uniformly is False
+
+
+def test_a_circuit_fold_repeats_the_whole_body_so_it_cannot_be_uneven() -> None:
+    """The two strategies differ in where the added noise lands, not only how much."""
+
+    model = NoiseModel()
+    model.add(("h", "cx"), depolarizing_channel(0.03))
+    plan = fold_program(body(), scale_factor=1.4, strategy="circuit")
+    reading = fold_noise_amplification(body(), plan, model)
+
+    # A request of 1.4 costs a circuit fold three whole bodies, so every covered
+    # instruction repeats three times and the ratio is recovered exactly.
+    assert plan.scale_factor == 3.0
+    assert reading.reached_uniformly is True
+    assert reading.amplification == pytest.approx(3.0)
+    assert reading.amplification == pytest.approx(plan.scale_factor)
+    assert reading.amplification_on((0,)) == pytest.approx(3.0)
+    assert reading.amplification_on((1,)) == pytest.approx(3.0)
+
+
+def test_a_model_that_names_the_gate_and_not_its_inverse_reads_below_the_ratio() -> (
+    None
+):
+    """A fold of ``t`` inserts ``t``, ``tdg``, ``t``; a model naming ``t`` reaches two."""
+
+    model = NoiseModel()
+    model.add("t", depolarizing_channel(0.02))
+    program = fq.Circuit(1).t(0)
+    plan = fold_program(program, scale_factor=3.0)
+    assert names(plan.program) == ["t", "tdg", "t"]
+
+    reading = fold_noise_amplification(program, plan, model)
+    assert reading.body_locations == 1
+    assert reading.folded_locations == 2
+    assert reading.amplification == pytest.approx(2.0)
+    assert reading.amplification < plan.scale_factor
+    assert reading.covered_instructions == 1
+    assert reading.uncovered_instructions == 0
+
+
+def test_full_coverage_of_the_gate_names_is_still_not_uniform_coverage() -> None:
+    """Two ways a fold drops below its ratio, and only one of them is a body the model skips."""
+
+    model = NoiseModel()
+    model.add(("h", "cx", "rz", "ry", "t"), depolarizing_channel(0.03))
+    body5 = fq.Circuit(2).h(0).cx(0, 1).rz(0, 0.4).ry(1, 0.6).t(0)
+
+    gate_plan = fold_program(body5, scale_factor=1.4)
+    gate = fold_noise_amplification(body5, gate_plan, model)
+    # Every instruction carries a channel, and the gate fold is still uneven: the
+    # pair it spends is two instructions on qubit 0 alone, so qubit 0 gains half
+    # its applications again while qubit 1 gains none.
+    assert (gate.covered_instructions, gate.uncovered_instructions) == (5, 0)
+    assert gate.per_qubit == ((0, 4, 6), (1, 2, 2))
+    assert gate.amplification == pytest.approx(4 / 3)
+    assert gate.reached_uniformly is False
+
+    circuit_plan = fold_program(body5, scale_factor=1.4, strategy="circuit")
+    circuit = fold_noise_amplification(body5, circuit_plan, model)
+    # The circuit fold repeats whole bodies, so its own pairs are uniform, and it
+    # is *still* uneven: the adjoint body it inserts carries ``tdg``, which this
+    # model does not name, so the qubit holding the ``t`` loses one application
+    # per repeat while the other qubit loses none.
+    assert circuit_plan.scale_factor == 3.0
+    assert (circuit.covered_instructions, circuit.uncovered_instructions) == (5, 0)
+    assert circuit.per_qubit == ((0, 4, 11), (1, 2, 6))
+    assert circuit.amplification == pytest.approx(17 / 6)
+    assert circuit.amplification < circuit_plan.scale_factor
+    assert circuit.amplification_on((1,)) == pytest.approx(3.0)
+    assert circuit.reached_uniformly is False
+
+
+def test_a_qubit_the_model_never_touches_is_named_rather_than_reported_as_one() -> None:
+    """A silent qubit's flat curve is the model's absence, not a measurement of the fold."""
+
+    model = NoiseModel()
+    model.add("h", depolarizing_channel(0.03))
+    plan = fold_program(body(), scale_factor=3.0)
+    reading = fold_noise_amplification(body(), plan, model)
+
+    assert reading.per_qubit == ((0, 1, 3),)
+    assert reading.silent_qubits == (1,)
+    # No channel on qubit 1 means no denominator, so the honest answer is that
+    # there is no ratio rather than a ratio of one.
+    assert reading.amplification_on((1,)) is None
+    assert reading.amplification_on((0,)) == pytest.approx(3.0)
+    # Coverage is reported rather than averaged into the ratio: four of the five
+    # instructions carry no channel, so the fold repeats them without adding error.
+    assert (reading.covered_instructions, reading.uncovered_instructions) == (1, 4)
+
+
+def test_the_reading_is_the_count_the_closed_form_is_evaluated_at() -> None:
+    """The measured population follows the reading's ratio, not the plan's."""
+
+    from flagquantum.runtime.noise_registry import noisy_density_matrix
+
+    model = model_for(("x",), 0.1)
+    plan = fold_program(phase_only_body(), scale_factor=1.4)
+    reading = fold_noise_amplification(phase_only_body(), plan, model)
+    # The pair lands on the leading x, so the channel the population is measured
+    # through runs three times while the program is only 1.4 times as long.
+    assert reading.amplification_on((0,)) == pytest.approx(3.0)
+    assert plan.scale_factor == 1.4
+
+    density = noisy_density_matrix(plan.program, model, dtype=torch.complex128)
+    measured = 0.5 * (1.0 - float(Z.expectation(density)))
+    at_reading = (1.0 + (1.0 - 2.0 * 0.1) ** 3) / 2.0
+    at_ratio = (1.0 + (1.0 - 2.0 * 0.1) ** 1.4) / 2.0
+    assert measured == pytest.approx(at_reading, abs=_EVIDENCE_TOLERANCE)
+    # The two candidate abscissas are far enough apart that the assertion above
+    # is a discrimination rather than a coincidence.
+    assert measured != pytest.approx(at_ratio, abs=1e-3)
+
+
+def test_the_reading_refuses_a_plan_built_from_another_program() -> None:
+    """A plan records counts a same-length sibling would agree with, so the program is compared."""
+
+    model = NoiseModel()
+    model.add(("h", "cx"), depolarizing_channel(0.03))
+    plan = fold_program(body(), scale_factor=3.0)
+    # Five instructions, so every count this sibling records matches the plan's
+    # except the identity, which covers the program itself.
+    other = fq.Circuit(2).x(0).cx(0, 1).rz(0, 0.3).ry(1, 0.2).t(0)
+    assert len(ensure_circuit_ir(other).instructions) == plan.body_instructions
+
+    with pytest.raises(ValueError, match="the plan is not this body's fold"):
+        fold_noise_amplification(other, plan, model)
+
+
+def test_a_model_that_covers_nothing_is_refused_rather_than_read_as_a_ratio_of_zero() -> (
+    None
+):
+    """An empty denominator is a refusal, and the message names what was counted."""
+
+    model = NoiseModel()
+    model.add("zz", depolarizing_channel(0.03))
+    plan = fold_program(body(), scale_factor=3.0)
+    with pytest.raises(ValueError, match="applies a channel to no instruction"):
+        fold_noise_amplification(body(), plan, model)
+
+    empty = fq.Circuit(2)
+    with pytest.raises(ValueError, match="an empty program applies no channel"):
+        fold_noise_amplification(empty, fold_program(body(), scale_factor=3.0), model)
+    with pytest.raises(TypeError, match="needs the built body as a Circuit"):
+        fold_noise_amplification("h(0)", plan, model)  # type: ignore[arg-type]
+
+
+def test_the_reading_serializes_to_the_schema_it_declares_and_back() -> None:
+    """The record is data: the schema names it and a JSON round trip keeps the identity."""
+
+    model = NoiseModel()
+    model.add(("h", "cx"), depolarizing_channel(0.03))
+    plan = fold_program(body(), scale_factor=1.4)
+    reading = fold_noise_amplification(body(), plan, model)
+    payload = reading.to_dict()
+
+    assert payload["schema"] == FOLD_NOISE_SCHEMA
+    assert payload["per_qubit"] == [[0, 2, 4], [1, 1, 1]]
+    assert payload["amplification"] == pytest.approx(5 / 3)
+    assert payload["reached_uniformly"] is False
+    assert json.loads(json.dumps(payload)) == payload
+    # The same body, plan and model produce the same identity, and a different
+    # model produces a different one, so the reading is named by its inputs.
+    assert fold_noise_amplification(body(), plan, model).identity == reading.identity
+    other = NoiseModel()
+    other.add(("h", "cx"), depolarizing_channel(0.04))
+    assert fold_noise_amplification(body(), plan, other).identity != reading.identity
+
+
+def test_the_reading_is_frozen_and_rejects_a_record_that_describes_no_fold() -> None:
+    """The record's own arithmetic is checked, so a pasted count fails at construction."""
+
+    import dataclasses
+
+    model = NoiseModel()
+    model.add(("h", "cx"), depolarizing_channel(0.03))
+    plan = fold_program(body(), scale_factor=1.4)
+    reading = fold_noise_amplification(body(), plan, model)
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        reading.body_locations = 99  # type: ignore[misc]
+
+    def made(**overrides: object) -> object:
+        fields = {
+            "strategy": reading.strategy,
+            "scale_factor": reading.scale_factor,
+            "body_locations": reading.body_locations,
+            "folded_locations": reading.folded_locations,
+            "covered_instructions": reading.covered_instructions,
+            "uncovered_instructions": reading.uncovered_instructions,
+            "per_qubit": reading.per_qubit,
+            "silent_qubits": reading.silent_qubits,
+            "noise_identity": reading.noise_identity,
+            "identity": reading.identity,
+        }
+        fields.update(overrides)
+        return FoldNoiseAmplification(**fields)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="per-qubit counts must add up"):
+        made(per_qubit=((0, 2, 1), (1, 1, 1)))
+    with pytest.raises(ValueError, match="needs at least one channel application"):
+        made(body_locations=0)
+    with pytest.raises(ValueError, match="cannot apply a channel fewer times"):
+        made(folded_locations=1)
+    with pytest.raises(ValueError, match="must carry the identity of its inputs"):
+        made(identity="")
+    with pytest.raises(ValueError, match="must name the noise model it was taken"):
+        made(noise_identity="")
+    with pytest.raises(ValueError, match="unsupported folding strategy"):
+        made(strategy="random")
