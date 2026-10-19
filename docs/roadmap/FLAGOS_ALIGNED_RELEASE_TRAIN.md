@@ -15,11 +15,11 @@ statement of current support. For capabilities available today, see the
 FlagQuantum is moving toward one durable quantum computing workflow:
 
 ```text
-build once
-  → train with PyTorch
-  → choose a supported numerical representation and execution method
-  → scale across chips when the workload requires it
-  → deploy the trained program to quantum hardware
+express a circuit or physical model
+  → declare outputs, constraints, and accuracy requirements
+  → plan a supported representation and execution method
+  → simulate or execute and inspect results
+  → optionally optimize with PyTorch, scale, or deploy
 ```
 
 Backend choice should not require users to rewrite their model. Planning,
