@@ -19,6 +19,7 @@ from .optimization_levels import (
 from .pass_manager import OPTIMIZATION_PIPELINE as OPTIMIZATION_PIPELINE
 from .pass_manager import (
     AnalysisSpec,
+    PassBinding,
     PassFunction,
     PassManager,
     PassRegistry,
@@ -457,22 +458,55 @@ def default_pass_registry() -> PassRegistry:
     return PassRegistry(BUILTIN_PASSES, _BUILTIN_PASS_SPECS, _BUILTIN_ANALYSES)
 
 
-def _with_recorded_level(ir: CircuitIR, level: int) -> CircuitIR:
+def _with_recorded_level(
+    ir: CircuitIR, level: int, admitted: tuple[str, ...] = ()
+) -> CircuitIR:
     """Record the level the caller asked for, so the request is readable.
 
     A caller who asked for level 0 and a caller who passed `optimize=False` to
     `compile` get different programs only in this field: level 0 is a request
     that was honored, and no field at all means no request was made.
+
+    A program built with admitted passes records their names beside the level,
+    because a program a caller's own pass changed is not the program the level
+    describes and the difference has to be readable from the result rather than
+    only from the call. The key appears only when there is something to say, so a
+    program that ran nothing but the built-in stages carries no new field.
     """
 
     metadata = dict(ir.metadata)
     metadata["optimization"] = {"level": level}
+    if admitted:
+        metadata["admitted_passes"] = list(admitted)
     return replace(ir, metadata=metadata)
+
+
+def _registry_admitting(
+    passes: Mapping[str, PassBinding] | None,
+) -> PassRegistry:
+    """The built-in registry, extended with the caller's own names.
+
+    Registration completes before the first pass runs, so a reserved built-in name,
+    a name already taken, an empty name, and a name bound to something that is not
+    callable are all refused while the program is untouched. The names are added in
+    the order the mapping declares them, because a pass runs on the program the
+    previous one produced and the order is therefore part of the request.
+
+    `with_pass` accepts no declaration, so a pass that reads or preserves an
+    analysis is registered on a `PassRegistry` directly -- `default_pass_registry`
+    is exported beside the manager for exactly that route.
+    """
+
+    registry = default_pass_registry()
+    for name, function in (passes or {}).items():
+        registry = registry.with_pass(name, function)
+    return registry
 
 
 def _optimize_to_fixed_point(
     circuit_or_ir: Any,
     optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
+    passes: Mapping[str, PassBinding] | None = None,
 ) -> CircuitIR:
     """Run one declared level's pass sequence to a fixed point.
 
@@ -481,23 +515,31 @@ def _optimize_to_fixed_point(
     declaration and hands it to `PassManager.to_fixed_point`, which owns the loop
     and the termination condition; neither the sequence nor the loop has a second
     copy here. A level whose sequence is empty is answered with the program
-    unchanged, which is what level 0 means.
+    unchanged, which is what level 0 means -- unless the caller admitted passes, in
+    which case they run and the empty level is the whole of the built-in work.
+
+    An admitted pass joins the sequence after the declared stages rather than
+    replacing one of them, and it joins it inside the loop, so it runs whenever the
+    loop runs a round. A pass that is not idempotent therefore keeps the loop going
+    until `to_fixed_point` refuses to continue, which is the same verdict the
+    built-in passes are held to.
     """
 
     stages = optimization_level_stages(optimization_level)
     ir = _as_ir(circuit_or_ir)
-    if not stages:
+    admitted = tuple((passes or {}).keys())
+    sequence = (*stages, *admitted)
+    if not sequence:
         return _with_recorded_level(ir, optimization_level)
-    return _with_recorded_level(
-        PassManager(default_pass_registry()).to_fixed_point(ir, stages),
-        optimization_level,
-    )
+    optimized = PassManager(_registry_admitting(passes)).to_fixed_point(ir, sequence)
+    return _with_recorded_level(optimized, optimization_level, admitted)
 
 
 def optimize(
     circuit_or_ir: Any,
     *,
     optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
+    passes: Mapping[str, PassBinding] | None = None,
 ) -> CircuitIR:
     """Apply target-independent circuit optimizations to a fixed point.
 
@@ -509,15 +551,37 @@ def optimize(
     unknown level raises `CompilationError` rather than falling back, so a
     caller cannot be handed a weaker program than it asked for.
 
+    `passes` admits transformations this repository does not ship. Each name is a
+    pass name the caller owns and each value is the transformation it resolves to,
+    and the passes run after the level's declared stages, in the order the mapping
+    declares them, inside the same fixed-point loop. The names they ran under are
+    recorded under `metadata["admitted_passes"]`. A name a built-in pass already
+    owns is refused with `PassRegistryError` before any pass runs, because a
+    caller-supplied pass must never redefine what the level means. A pass that
+    needs an analysis, or that vouches for one, is registered on a `PassRegistry`
+    instead and run through `PassManager`: a mapping carries names and functions,
+    not declarations.
+
     Examples:
+        >>> import math
         >>> import flagquantum as fq
+        >>> from dataclasses import replace
         >>> from flagquantum.compiler import optimize
-        >>> program = fq.Circuit(1).h(0).h(0).to_ir()
-        >>> len(optimize(program, optimization_level=1).instructions)
-        0
+        >>> from flagquantum.core.ir import Instruction
+        >>> def lower_x_to_rx(program):
+        ...     # One qubit wide, so the replacement names that qubit directly.
+        ...     return replace(program, instructions=tuple(
+        ...         Instruction("rx", (0,), {"theta": math.pi})
+        ...         if held.name == "x" else held
+        ...         for held in program.instructions
+        ...     ))
+        >>> program = fq.Circuit(1).x(0).to_ir()
+        >>> out = optimize(program, optimization_level=0, passes={"acme.rx": lower_x_to_rx})
+        >>> [held.name for held in out.instructions], out.metadata["admitted_passes"]
+        (['rx'], ['acme.rx'])
     """
 
-    return _optimize_to_fixed_point(circuit_or_ir, optimization_level)
+    return _optimize_to_fixed_point(circuit_or_ir, optimization_level, passes)
 
 
 def compile(
@@ -530,6 +594,7 @@ def compile(
     optimize: bool = True,
     optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
     config: RuntimeConfig | None = None,
+    passes: Mapping[str, PassBinding] | None = None,
 ) -> CircuitIR:
     """Compile a circuit with optional topology routing and optimization.
 
@@ -539,16 +604,29 @@ def compile(
     `optimize` is set: a reserved level is a capability this release does not
     have, and a caller that also asked for no optimization is the one case where
     ignoring the level would hide that instead of reporting it.
+
+    `passes` is forwarded the same way and therefore runs at both points too: it is
+    part of the optimization rather than an epilogue, so an admitted pass sees the
+    program a level's stages would have handed it, and after routing it sees the
+    SWAPs the router inserted. Admitting passes while `optimize` is off is refused
+    rather than ignored, because the caller asked for a transformation and the same
+    call asked for nothing to run.
     """
 
     optimization_level_stages(optimization_level)
+    if passes and not optimize:
+        raise ValueError(
+            "compile() was given passes while optimization is switched off; the "
+            "admitted passes would not run, so the request is refused rather than "
+            "answered with the program unchanged"
+        )
     ir = _as_ir(circuit_or_ir)
     selected_config = config or get_runtime_config()
     metadata = dict(ir.metadata)
     metadata["runtime_config"] = selected_config.to_manifest()
     ir = replace(ir, metadata=metadata)
     if optimize:
-        ir = _optimize_to_fixed_point(ir, optimization_level)
+        ir = _optimize_to_fixed_point(ir, optimization_level, passes)
     if coupling_map is not None:
         # A device the router understands is handed over as it stands: an ordered
         # device carries a rule an edge sequence cannot express, and rebuilding it
@@ -570,7 +648,7 @@ def compile(
             strategy=selected_routing_strategy,
         )
         if optimize:
-            ir = _optimize_to_fixed_point(ir, optimization_level)
+            ir = _optimize_to_fixed_point(ir, optimization_level, passes)
         ir = record_post_routing_optimization(ir)
         if strategy_selection is not None:
             metadata = dict(ir.metadata)

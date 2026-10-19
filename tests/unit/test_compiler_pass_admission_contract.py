@@ -14,6 +14,7 @@ making the code do something the contract does not say makes it fail.
 
 from __future__ import annotations
 
+import ast
 import json
 from pathlib import Path
 from typing import Any
@@ -336,7 +337,24 @@ def test_the_inline_loop_the_contract_replaces_is_gone(
     source = (ROOT / "flagquantum/compiler/pipeline.py").read_text(encoding="utf-8")
 
     assert "while True" not in source
-    assert source.count("PassManager(default_pass_registry()).to_fixed_point") == 1
+    # The manager is the single fixed-point authority: every `to_fixed_point` call
+    # in this module sits inside `_optimize_to_fixed_point`, and there is one of
+    # them. The site is counted by attribute name rather than by a construction
+    # spelling, so the pin is about the replacement and not about how the registry
+    # handed to the manager is assembled.
+    module = ast.parse(source)
+    sites = [
+        node
+        for node in ast.walk(module)
+        if isinstance(node, ast.Attribute) and node.attr == "to_fixed_point"
+    ]
+    assert len(sites) == 1
+    owner = next(
+        node
+        for node in ast.walk(module)
+        if isinstance(node, ast.FunctionDef) and node.name == "_optimize_to_fixed_point"
+    )
+    assert any(node is sites[0] for node in ast.walk(owner))
     # The target is named by the function it lived in rather than by a call count,
     # so a change to the round's length cannot make the contract describe a
     # replacement that was never performed.
