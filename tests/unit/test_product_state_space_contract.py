@@ -75,7 +75,9 @@ class _ProductSpaceFake:
         return index
 
 
-@pytest.fixture(params=(_ProductSpaceFake, ProductStateSpace), ids=("contract-fake", "core"))
+@pytest.fixture(
+    params=(_ProductSpaceFake, ProductStateSpace), ids=("contract-fake", "core")
+)
 def space_factory(request) -> Callable[[tuple[int, ...]], ProductSpace]:
     return request.param
 

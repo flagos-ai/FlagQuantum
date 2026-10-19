@@ -56,6 +56,7 @@ from .lindblad_integrators import DEFAULT_INTEGRATOR, advance_interval
 from .lindblad_request import (
     _normalize_collapse_operators,
     _normalize_hamiltonian,
+    _resolve_state_space,
     _solve_max_iterations,
     _solve_tolerance,
 )
@@ -66,7 +67,7 @@ __all__ = ("adjoint_gradient",)
 def adjoint_gradient(
     hamiltonian: Any,
     initial_state: Any,
-    n_qubits: int,
+    n_qubits: int | None,
     times: Any,
     cost: Callable[[torch.Tensor], torch.Tensor],
     collapse_operators: Sequence[Any] | None = None,
@@ -78,6 +79,7 @@ def adjoint_gradient(
     solve_tolerance: float | None = None,
     batch_size: int | None = None,
     require_gradients: bool = False,
+    dimensions: Sequence[int] | None = None,
 ) -> torch.Tensor:
     """Return ``d cost / d rho(t_0)`` for the normalized initial density matrix.
 
@@ -134,7 +136,8 @@ def adjoint_gradient(
             field="cost",
         )
     resolved_device = torch.device(device)
-    dim = 2**n_qubits
+    space = _resolve_state_space(n_qubits, dimensions)
+    dim = space.dimension
     tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
     # The forward sweep reuses the engine, so every input is validated once and
     # in one place. ``no_grad`` is what makes the memory claim structural rather
@@ -154,6 +157,7 @@ def adjoint_gradient(
             method=method,
             solve_tolerance=solve_tolerance,
             batch_size=batch_size,
+            dimensions=dimensions,
         )
     trajectory = forward.density_matrices
     if trajectory is None:  # pragma: no cover - asked for above
@@ -190,18 +194,20 @@ def adjoint_gradient(
         generator = Liouvillian(
             _normalize_hamiltonian(
                 hamiltonian,
-                n_wires=n_qubits,
+                n_wires=len(space.dimensions),
                 dim=dim,
                 dtype=dtype,
                 device=resolved_device,
                 tolerance=tolerance,
+                qubit_space=space.is_qubit_space,
             ),
             _normalize_collapse_operators(
                 collapse_operators,
-                n_wires=n_qubits,
+                n_wires=len(space.dimensions),
                 dim=dim,
                 dtype=dtype,
                 device=resolved_device,
+                qubit_space=space.is_qubit_space,
             ),
             hilbert_dimension=dim,
         )
