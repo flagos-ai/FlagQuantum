@@ -20,7 +20,7 @@ import torch
 from ..core.ir.state_space import ProductStateSpace
 from ..errors import ValidationError
 from ..observables import Observable
-from ..observables.boson import BosonOperator
+from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES, BosonOperator
 from .density_matrix import expand_operator
 from .lindblad_integrators import KRYLOV_SCHEMES, SOLVE_RESTART
 from .matrix_free_hamiltonian import PauliSum, PauliSumTerm
@@ -103,6 +103,14 @@ def _as_complex_matrix(
             raise _error(
                 "boson_dimensions_required",
                 "bosonic operators require explicit dimensions; mode k uses dimensions[k]",
+                name,
+            )
+        # Refuse before to_matrix builds even the per-mode ladder matrices.
+        if dim * dim * torch.complex128.itemsize > DEFAULT_DENSE_MATRIX_BYTES:
+            raise _error(
+                "invalid_boson_operator",
+                f"bosonic dense materialization exceeds the existing "
+                f"{DEFAULT_DENSE_MATRIX_BYTES}-byte ceiling; truncate the space",
                 name,
             )
         try:

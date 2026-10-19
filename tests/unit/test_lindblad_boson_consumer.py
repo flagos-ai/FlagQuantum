@@ -263,3 +263,18 @@ def test_vacuum_only_space_uses_the_declared_identity_factor() -> None:
     torch.testing.assert_close(
         result.populations, torch.ones((2, 1), dtype=torch.float64), atol=0, rtol=0
     )
+
+
+def test_oversized_mode_is_refused_before_allocating_ladders(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def refuse_allocation(dimension: int) -> tuple[torch.Tensor, torch.Tensor]:
+        pytest.fail(
+            "oversized materialization must be refused before ladder allocation"
+        )
+
+    monkeypatch.setattr(boson, "_ladder_matrices", refuse_allocation)
+    with pytest.raises(EvolutionValidationError) as caught:
+        fql.plan(boson.number(0), [1.0], [0.0, 0.1], dimensions=(10**9,))
+    assert caught.value.code == "invalid_boson_operator"
+    assert "ceiling" in str(caught.value)
