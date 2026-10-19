@@ -19,7 +19,6 @@ from math import isfinite
 from numbers import Real
 from typing import TYPE_CHECKING
 
-import numpy as np
 import torch
 
 if TYPE_CHECKING:
@@ -89,9 +88,7 @@ class HamiltonianIsingEncoding:
 
 
 MatrixLike = torch.Tensor | Sequence[Sequence[float]]
-# Spins reach these helpers as numpy arrays whenever the caller solved through
-# the sampler, whose `solve` returns an ``int8`` ndarray.
-SpinLike = torch.Tensor | np.ndarray | Sequence[float] | Sequence[Sequence[float]]
+SpinLike = torch.Tensor | Sequence[float] | Sequence[Sequence[float]]
 _MAX_EXACT_FLOAT64_INTEGER = 1 << 53
 
 
