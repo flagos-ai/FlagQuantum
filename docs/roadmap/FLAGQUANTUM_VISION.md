@@ -4,7 +4,8 @@
 
 ## Mission
 
-FlagQuantum aims to become foundational infrastructure for quantum AI:
+FlagQuantum aims to become a general quantum computing framework with a
+PyTorch-native quantum AI workflow:
 
 > Enable researchers and engineers to express quantum-classical models as
 > naturally as they use PyTorch today, while allowing the same model and
@@ -13,7 +14,27 @@ FlagQuantum aims to become foundational infrastructure for quantum AI:
 
 FlagQuantum is not intended to be only a feature-rich quantum simulator. It
 should become a coherent platform for constructing, training, compiling,
-scaling, validating, and deploying quantum AI workloads.
+scaling, validating, and deploying quantum workloads, including quantum AI.
+
+The scope includes superconducting, neutral-atom, trapped-ion, photonic, and
+topological computing users, alongside circuit, dynamics, and simulator
+developers. Their common language is program semantics, state spaces,
+operators, parameter binding, controls, measurements, constraints, and results.
+It does not require every physical problem to be rewritten as a qubit circuit.
+Topological computation is a computing model, not a hardware-provider
+category; its expression may involve fusion spaces or Majorana parity.
+
+Physical systems, computing models, numerical representations, and execution
+targets are independent dimensions. A provider adapter does not establish a
+local domain SDK, an operator algebra does not establish an execution backend,
+and a roadmap does not establish support. Domain features must reuse existing
+Core, Compiler, Runtime, Simulation, Compute/Remote, and PyTorch boundaries.
+They must not grow independent planners, training loops, result registries, or
+copies of the shared numerical cores.
+
+The dependency-ordered [M0-M4 delivery plan](FLAGOS_ALIGNED_RELEASE_TRAIN.md#shared-programming-and-m0-m4-delivery)
+defines the next complete scenarios and acceptance gates. It extends the
+existing architecture and capability sources rather than defining another one.
 
 This document records the long-term expectation. It is a direction and quality
 standard, not a claim that the current repository has already achieved it.

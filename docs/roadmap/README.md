@@ -7,7 +7,7 @@ targets.
 - [FlagQuantum vision](FLAGQUANTUM_VISION.md)
 - [Pre-open-source API quality and freeze plan](OPEN_SOURCE_API_QUALITY_PLAN.md)
 - [Capability maturity](CAPABILITY_MATURITY.md)
-- [Product roadmap](FLAGOS_ALIGNED_RELEASE_TRAIN.md)
+- [Product roadmap and shared-programming M0-M4 milestones](FLAGOS_ALIGNED_RELEASE_TRAIN.md)
 - [Domestic accelerator and numerical trust plan](DOMESTIC_ACCELERATOR_AND_NUMERICAL_TRUST_PLAN.md)
 - [FlagQuantum–Torch-FL integration and joint release plan](FLAGQUANTUM_TORCH_FL_INTEGRATION_PLAN.md)
 - [Quantum kernel architecture plan](QUANTUM_KERNEL_ARCHITECTURE_PLAN.md)

@@ -714,7 +714,9 @@ def _pair_primitives(
 def _overlap(left: AtomicOrbital, right: AtomicOrbital) -> float:
     """Return ``<a|b>``."""
 
-    return sum(
+    # Keep cancellation and accumulation accuracy independent of Python's
+    # version-specific float summation in ``sum``.
+    return math.fsum(
         weight * pair.overlap(left.angular, right.angular)
         for weight, _exponent, pair in _pair_primitives(left, right)
     )
