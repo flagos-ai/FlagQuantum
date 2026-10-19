@@ -39,6 +39,16 @@ a replacement obligation and which are not, what may be borrowed from outside th
 programme and under what terms, and what the programme explicitly declines to do.
 That is the content of this document.
 
+The [shared-programming M0-M4 roadmap](FLAGOS_ALIGNED_RELEASE_TRAIN.md#shared-programming-and-m0-m4-delivery)
+orders the general-framework work across superconducting, neutral-atom,
+trapped-ion, photonic, and topological scenarios. It reuses these same
+contracts and numerical cores. Photonic support is planned within that
+framework, rather than excluded as a separate product line; it remains
+unsupported until a complete execution path is validated. Topological
+computation contributes fusion-space, sector, and measurement requirements
+without being equated with a provider adapter or with QEC alone. These product
+requirements add no unmeasured parity or maturity claims.
+
 ## 2. The goal, stated so it can be falsified
 
 The product requirement is that CUDA-Q capability coverage is a **floor, not a

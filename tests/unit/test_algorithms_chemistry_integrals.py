@@ -262,7 +262,7 @@ def _s_repulsion(
 
 
 def _contract(two_centre):
-    return sum(
+    return math.fsum(
         left_coefficient
         * _primitive_normalisation(left_exponent)
         * right_coefficient
@@ -274,7 +274,7 @@ def _contract(two_centre):
 
 
 def _contract_four(four_centre, centres):
-    return sum(
+    return math.fsum(
         left_coefficient
         * _primitive_normalisation(left_exponent)
         * inner_left_coefficient
@@ -743,6 +743,24 @@ def test_the_contracted_engine_reproduces_a_closed_form_contraction() -> None:
         worst = max(worst, relative)
         assert relative < 1e-12, f"{label}: {measured[label]} vs {wanted}"
     assert worst < 3e-16, f"worst relative error {worst:.3e}"
+
+
+def test_overlap_preserves_a_small_contribution_between_cancelling_primitives() -> None:
+    """A contraction's value must not depend on its primitive storage order.
+
+    Equal exponents make the contraction analytically one bare Gaussian:
+    ``1e16 + 1 - 1e16 = 1``. Sequential float addition can erase that Gaussian
+    entirely, which is a stronger failure than the roundoff in an STO-3G sum.
+    """
+
+    origin = (0.0, 0.0, 0.0)
+    right = _primitive(1.0, origin, (0, 0, 0))
+    expected = _s_overlap(1.0, origin, 1.0, origin)
+    for coefficients in itertools.permutations((1e16, 1.0, -1e16)):
+        left = AtomicOrbital(
+            "H", origin, (0, 0, 0), tuple((value, 1.0) for value in coefficients)
+        )
+        assert _overlap(left, right) == pytest.approx(expected, rel=1e-15)
 
 
 def test_the_h2_integrals_carry_the_tabulated_four_decimals() -> None:
