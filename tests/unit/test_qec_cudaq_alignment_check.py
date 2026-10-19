@@ -112,7 +112,11 @@ def set_header_key(text: str, key: str, value: str) -> str:
 
 
 def append_to_list(text: str, row_id: str, key: str, item: str) -> str:
-    """Append one entry to a single-line or multi-line list inside a row."""
+    """Append one unquoted entry to a single-line or multi-line list inside a row.
+
+    ``item`` is the bare name; the quotes are supplied here for either shape, so a
+    caller does not have to know which one the row it targets is written in.
+    """
 
     lines = text.splitlines(keepends=True)
     start, end = block_span(lines, row_id)
@@ -123,7 +127,7 @@ def append_to_list(text: str, row_id: str, key: str, item: str) -> str:
             if stripped.rstrip().endswith("]"):
                 body = stripped.rstrip()[:-1].rstrip()
                 sep = "" if body.endswith("[") else ", "
-                lines[i] = f"{indent}{body}{sep}{item}]\n"
+                lines[i] = f'{indent}{body}{sep}"{item}"]\n'
             else:
                 lines.insert(i + 1, f'{indent}    "{item}",\n')
             return "".join(lines)

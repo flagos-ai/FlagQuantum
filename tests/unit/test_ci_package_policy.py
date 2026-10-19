@@ -114,12 +114,12 @@ def test_distribution_quarantine_rejects_repo_only_members():
     assert _forbidden("flagquantum/__pycache__/module.pyc")
     assert _forbidden("source/tests/test_api.py")
     assert _forbidden("source/examples/data.parquet")
-    assert not _forbidden("flagquantum/core/ir.py")
+    assert not _forbidden("flagquantum/core/ir/__init__.py")
 
 
 def test_distribution_allows_only_flagquantum_package_root() -> None:
     assert ALLOWED_WHEEL_PACKAGE_ROOTS == ("flagquantum/", "flagquantum.libs/")
-    assert _allowed_wheel_member("flagquantum/core/ir.py")
+    assert _allowed_wheel_member("flagquantum/core/ir/__init__.py")
     assert _allowed_wheel_member("flagquantum/ecosystem/qiskit/aer.py")
     assert _allowed_wheel_member("flagquantum.libs/libgomp.so.1")
     assert _allowed_wheel_member("flagquantum-0.2.0.dist-info/METADATA")

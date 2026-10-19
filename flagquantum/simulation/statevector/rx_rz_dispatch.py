@@ -48,13 +48,19 @@ def _apply_cataloged_rx_rz_sequence(
     rx_angles: torch.Tensor,
     rz_angles: torch.Tensor,
 ) -> object:
-    """Execute the fused sequence after exact catalog authorization."""
+    """Execute the fused sequence after exact catalog authorization.
 
-    if state.is_cuda:
-        _require_rx_rz_sequence_kernel(
-            device_type=state.device.type,
-            dtype=str(state.dtype).removeprefix("torch."),
-        )
+    The Triton provider declares ``devices=("cuda",)``, so authorization is the
+    only authority on whether this route may run. Guarding it on ``is_cuda`` and
+    then calling the provider unconditionally would let a non-CUDA tensor reach
+    the provider's own fallback without any catalog decision: a silent
+    degradation instead of a fail-closed refusal.
+    """
+
+    _require_rx_rz_sequence_kernel(
+        device_type=state.device.type,
+        dtype=str(state.dtype).removeprefix("torch."),
+    )
     from ...kernels.triton import repeated_rx_rz
 
     return repeated_rx_rz(state, rx_angles, rz_angles)

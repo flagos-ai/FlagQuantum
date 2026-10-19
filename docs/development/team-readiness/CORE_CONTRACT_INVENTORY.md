@@ -21,7 +21,7 @@ boundaries to converge; moving the Runtime facade into Core would not solve them
 
 | Concern | Current authority | Boundary meaning | State |
 | --- | --- | --- | --- |
-| Circuit semantics | `core/ir.py` | Canonical `CircuitIR`, instructions and measurements | Converged |
+| Circuit semantics | `core/ir/__init__.py` | Canonical `CircuitIR`, instructions and measurements | Converged |
 | Program artifacts | `core/_artifacts.py` | Internal versioned, content-addressed envelope | Core-owned; limited adoption |
 | Target capabilities | `core/target_capabilities.py` | Portable capability facts, requirements and matching vocabulary | Converged |
 | Numerical requirements | `core/numerics.py` | Precision, representation and accuracy requirements | Converged |

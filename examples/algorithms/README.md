@@ -16,7 +16,20 @@ python -m examples.algorithms.feature_selection
 python -m examples.algorithms.qarm
 python -m examples.algorithms.svd
 python -m examples.algorithms.error_mitigation
+python -m examples.algorithms.pec
+python -m examples.algorithms.cdr
+python -m examples.algorithms.readout_mitigation
+python -m examples.algorithms.folding
+python -m examples.algorithms.variational_solvers
+python -m examples.algorithms.vqe_solvers
 python -m examples.algorithms.spsa_optimizer
+python -m examples.algorithms.nelder_mead_optimizer
+python -m examples.algorithms.cobyla_optimizer
+python -m examples.algorithms.trotter
+python -m examples.algorithms.block_encoding
+python -m examples.algorithms.linear_combination
+python -m examples.algorithms.logical_resources
+python -m examples.algorithms.arithmetic
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -43,9 +56,95 @@ What they show:
   noise by polynomial least squares and by Richardson extrapolation over four
   scaled models, with the residual of an underfit, of a square fit, and of a
   non-polynomial family printed beside the estimate.
+- [`pec.py`](pec.py): a declared Pauli channel inverted from its Pauli transfer
+  matrix and inserted after the channel it inverts, with the cost that composes
+  over locations printed beside the estimate, and the four channel families whose
+  transfer matrix is not diagonal refused by name together with a channel whose
+  transfer eigenvalue reaches zero.
+- [`cdr.py`](cdr.py): the noise's effect on a target fitted as an affine
+  relation over Clifford training circuits built by snapping each rotation to its
+  nearest quarter turn, with the residual that exposes a premise which did not
+  hold printed beside a two-point fit's residual reported as absent and a
+  three-point fit's reported as a measurement.
+- [`readout_mitigation.py`](readout_mitigation.py): a declared readout confusion
+  inverted off a measured distribution, one block per readout rule, with the
+  amplification the correction costs printed beside the corrected vector, the
+  negative mass a corrected vector is allowed to carry summed and reported rather
+  than clipped away, a correlated pair shown inverted as one block rather than as
+  two marginals, and three refusals printed by measured quantity: a singular
+  value against the floor, a block width against the ceiling, and a bit-string
+  length against the plan's width.
+- [`folding.py`](folding.py): one program folded by both strategies, with the
+  requested factor printed beside the ratio each strategy actually realized, the
+  instructions each spent to reach it, the amplitude gap that shows the fold is
+  an identity rather than an approximation, and the pair's own location shown to
+  decide which observables can see the noise the fold added.
+- [`variational_solvers.py`](variational_solvers.py): a weighted MaxCut
+  instance solved by QAOA at three layer counts from one constant start, with the
+  cost operator checked against the cut spectrum enumerated in Python, the
+  gradient at the uniform superposition printed as exactly zero so the saddle is
+  shown rather than asserted, and the maximum cut decoded from the optimized
+  circuit's own probability distribution rather than read off the energy.
+- [`vqe_solvers.py`](vqe_solvers.py): one two-qubit operator minimized by all four
+  VQE entry points rather than by one, so the fixed-ansatz, the operator-growing,
+  the scheduled and the deepening descents are read side by side against the
+  operator's own ground energy. The ADAPT screen is printed as the exact
+  derivative it is -- measured from `|00>` at `-1.0, 0.0, -0.0` over three pool
+  directions -- and the same pool run from the stationary `|++>` state is shown
+  selecting nothing and still reporting `converged=True`, which is the premise
+  the unit cannot check rather than a defect. `converged` is then read against
+  three runs that reach it for three different reasons, and the one reporting
+  `False` is the one furthest from the ground energy, so the flag is an exit test
+  and not an arrival test. Two refusals close it: an objective with no gradient
+  and a pool element with none, each naming the entry point and the cause instead
+  of the torch backward error that names neither.
 - [`spsa_optimizer.py`](spsa_optimizer.py): a Pauli energy minimized from samples
   at two evaluations per step, with the parameter-shift gradient's own evaluation
   count measured beside it.
+
+- [`nelder_mead_optimizer.py`](nelder_mead_optimizer.py): the same Pauli energy
+  minimized with no gradient, no parameter-shift rule and no random draw, with
+  SPSA run beside it at the *same evaluation budget* so the two optimizer units
+  are compared on one objective rather than each being merely present, and the
+  two-well quartic printed to measure what a converged flag does not mean.
+- [`cobyla_optimizer.py`](cobyla_optimizer.py): that Pauli energy again, this time
+  under a constraint that binds, with the unconstrained run beside it so the cost
+  of the bound is a number, and one quadratic under one affine constraint solved
+  twice at two prices so the second half of the unit's premise is measured rather
+  than asserted: the cheaper price returns a point that violates the constraint
+  and still scores better than the feasible optimum, which is why `feasible` is
+  printed beside `value`.
+- [`trotter.py`](trotter.py): a transverse-field Ising Hamiltonian turned into the
+  circuit a product formula applies, with the defect at two step counts per order
+  measured against `torch.matrix_exp`, the primitive's own emitted gates printed
+  for six words, and the resulting circuit run through the static resource
+  estimator and the gradient path.
+- [`block_encoding.py`](block_encoding.py): a Hermitian matrix encoded into the
+  flagged block of a unitary, with the block read back out of the circuit one
+  basis state at a time and checked against both the matrix over `alpha` and the
+  matrix itself, the walk step's eigenphases matched against the matrix's own
+  spectrum from a different routine, a second implementation that holds no matrix
+  read by the same consumer, and the ten construction and three register refusals
+  printed by name.
+- [`linear_combination.py`](linear_combination.py): a six-term Pauli sum block
+  encoded from its coefficients alone, with `alpha` printed beside the spectral
+  and Frobenius norms it deliberately is not, the block read back out of the
+  circuit and checked against the signed sum and against the same sum with the
+  signs dropped, the walk step's cosines matched on the ladder-zero subspace
+  where the identity is claimed rather than on the whole register, and the
+  encoding's own non-Hermiticity printed as the reason the adjoint reverses the
+  select's terms instead of reusing them.
+- [`logical_resources.py`](logical_resources.py): a Clifford+T program costed on a
+  rotated surface code, with the compiler's own resource record printed beside the
+  report's copy of it so a second T rule would show, the distance sweep tabulated
+  against the model's closed form, the one-layer charge for a measurement record
+  shown against the same program without one, and the two refused opcode families,
+  a lowered channel, and six refused arguments each printed by name.
+- [`arithmetic.py`](arithmetic.py): a reversible adder built at seven widths and
+  then run on the statevector path, with the sum decoded back out of the runtime's
+  own state vector, the two ancillas' behaviour off the contract measured over
+  every input rather than described, the T-cost read from the compiler's own
+  Toffoli rule, and the conversion bound shown to be a bound the caller can raise.
 
 ## These scripts use the subpackage surface
 
@@ -54,8 +153,39 @@ root-level `fq.` name, with one exception. The algorithm scripts import from the
 subpackage -- `from flagquantum.algorithms.pca import principal_components` --
 rather than through `import flagquantum as fq`. `spsa_optimizer.py` imports both:
 the optimizer from the subpackage, and `flagquantum` itself for the `fq.Circuit`
-and `fq.run` calls its objective makes. `examples/README.md` records that
-boundary.
+and `fq.run` calls its objective makes. `nelder_mead_optimizer.py` imports both as
+well, for one more reason: it imports `SPSAOptimizer` beside
+`NelderMeadOptimizer` from the subpackage, so the comparison it prints is run
+through the two shipped units rather than reimplemented in the script.
+`cobyla_optimizer.py` imports both as well: the constrained optimizer from the
+subpackage, and `flagquantum` itself for the `fq.Circuit` and `fq.run` calls the
+energy it constrains is built from.
+`trotter.py` needs no root alias either:
+the circuit it builds is a `flagquantum.circuit.Circuit`, and the readout it takes
+is the package's own `expectation_ps`. `block_encoding.py` needs no root alias
+either: it composes `flagquantum.circuit.Circuit` and reads the unitary back with
+the package's own `get_unitary`. `linear_combination.py` needs no root alias
+either, and for the same reason: it builds the encoding from
+`flagquantum.algorithms.core.Hamiltonian`, composes `flagquantum.circuit.Circuit`,
+and reads the step back with `flagquantum.simulation.unitary.get_unitary`.
+`logical_resources.py` imports both: the estimator
+and the patch-size helper from the subpackage, and `flagquantum` itself for the
+`fq.Circuit` programs it costs. `arithmetic.py` imports both as well: the
+constructor and the register map from the subpackage, and `flagquantum` itself for
+the `fq.Circuit` register the adder is run on. `folding.py` needs no root alias
+either: it composes `flagquantum.circuit.Circuit`, wraps the programs it compares
+through `flagquantum.core.ir`, and reaches the fold itself from the subpackage
+with `from flagquantum.algorithms import fold_program`. `variational_solvers.py`
+needs no root alias either: it builds its basis states with
+`flagquantum.circuit.Circuit` and reaches the operator, the ansatz, and the solver
+from the subpackage, because the energy it reports is an expectation of a
+`flagquantum.algorithms.core.Hamiltonian` rather than a root-level object.
+`vqe_solvers.py` needs no root alias either, and for the same reason as
+`variational_solvers.py`: every object it touches -- the operator, the ansatz,
+the four entry points and the circuit it builds the reference state from -- comes
+from `flagquantum.circuit` or the `flagquantum.algorithms` subpackage, and the
+energy it reports is an expectation of a subpackage `Hamiltonian` rather than a
+root-level object. `examples/README.md` records that boundary.
 
 Each script prints the premise its unit rests on, because the premise is the part
 that is easiest to lose: quantum PCA's density matrix, its exponential and the
@@ -66,6 +196,30 @@ from a classical vector, feature selection runs no solver, the frequent-item
 fractions iterate the transactions in Python, the singular values come from a
 state built out of the classical `torch.linalg.svd` the readout estimates,
 zero-noise extrapolation rests on a polynomial-in-the-scale-factor assumption
-that is not checkable from the measurements it fits, and the SPSA update is built
-from a finite-difference estimate that is an estimate rather than a gradient. The
-guide holds the full boundary for each.
+that is not checkable from the measurements it fits, probabilistic error
+cancellation rests on the noise being exactly the channel the model declares at
+the location it declares it and pays for the inversion in programs rather than
+shots, gate and circuit folding rests on the noise being local to the instruction
+that carries it -- so repeating a gate with its own inverse repeats its error --
+and reports the length ratio it realized rather than any estimate of the noise it
+amplified, the QAOA solver pairs one checked edge list with both the circuit that
+rotates by it and the operator it is scored against, turns the uniform
+superposition's stationary point into a required start, and reports an energy
+that is a cost to compare rather than a bound, the SPSA update is built from a finite-difference estimate that is an
+estimate rather than a gradient, the Nelder-Mead search decides every step by
+ranking two objective values against each other, so a stochastic objective turns
+those decisions into a coin toss and the flag it ends on reports a collapsed
+simplex rather than a global minimum, and the product formula approximates the
+evolution with a defect that is measured rather than bounded, because a bound
+needs a commutator norm the caller has to supply, and the block encoding is
+built from a dense exact eigendecomposition whose cost is diagonalising the
+matrix with nothing here bounding the error of an approximate one, and the logical
+resource report counts rather than measures -- no circuit runs, no wall-clock time
+or memory is read, and the failure rate is absent because a logical error rate
+needs a device's threshold fit, so that number belongs to the device rather than to
+the unit. The adder is a construction and its T-cost is the compiler's own Toffoli
+rule rather than a second expansion of it written beside the circuit, and it is
+Cuccaro's ripple rather than the smaller Gidney-Ekera construction, because
+uncomputing by measurement and feedforward needs a mid-circuit measurement path
+this repository does not have in a circuit it can cost. The guide holds the full
+boundary for each.

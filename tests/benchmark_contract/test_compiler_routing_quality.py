@@ -9,12 +9,25 @@ by becoming an alias of one candidate, or by silently widening its scope.
 
 Only a small seeded basis is measured here, so this stays a fast
 ``benchmark_contract`` test. The basis is checked to contain the behaviour the
-recorded result turns on -- both resolutions of the automatic selection, and at
-least one program where its cost estimate picks the more expensive candidate --
-so it cannot pass on a basis that never exercises them.
-"""
+recorded result turns on -- every resolution of the automatic selection, and at
+least one program on which its cost estimate answers differently for the source
+program and for the optimized one ``compile`` actually routes -- so it cannot
+pass on a basis that never exercises them.
 
-from dataclasses import fields
+What this contract no longer holds is the check that the estimate sometimes picks
+a *worse* candidate than one of its alternatives. That check was meaningful while
+the candidate set was the two estimators, and it is now structurally
+unsatisfiable: ``select_routing_strategy`` minimizes over
+``DEPLOYABLE_ROUTING_STRATEGIES``, which includes ``sabre``, and pricing a
+planner is planning it, so the price of ``sabre`` is the SWAP count its plan
+actually inserts rather than an estimate of one. With an exactly-priced
+candidate in the set and that candidate retaining least on most programs, the
+choice lands on a best candidate on all 140 programs of the full basis as well as
+on this one. The estimate's error is still measured -- it is what
+``ratio_to_best_candidate`` would report above 1.0 -- but no basis in this
+benchmark reaches it, so asserting it here would be asserting a property the
+merged candidate set removed.
+"""
 
 import pytest
 
@@ -33,8 +46,8 @@ from flagquantum.compiler.optimization_levels import (
     optimization_level_stages,
 )
 from flagquantum.compiler.routing import (
+    DEPLOYABLE_ROUTING_STRATEGIES,
     ROUTING_STRATEGIES,
-    RoutingStrategySelection,
     select_routing_strategy,
 )
 
@@ -44,20 +57,17 @@ pytestmark = pytest.mark.benchmark_contract
 # turns on. ``grid3x3`` keeps a two-dimensional device in the basis, where the two
 # SABRE strategies separate furthest from the two estimate-driven ones and where
 # the largest program widths live. All three carry a program on which the cost
-# estimate picks the more expensive of its two candidates, so no one of them is
-# dead weight; ``ring6`` additionally carries a program on which the estimate
-# answers differently for the source program and for the routed one.
+# estimate answers differently for the source program and for the routed one, and
+# all three together exercise every resolution of the automatic selection.
 _BASIS_TOPOLOGIES = ("line4", "ring6", "grid3x3")
-_BASIS_SEEDS = (0, 1, 2)
-_BASIS_CASE_COUNT = 36
+_BASIS_SEEDS = (0, 1, 2, 3, 4)
+_BASIS_CASE_COUNT = 60
 
-# The strategies the automatic selection may resolve to. Read from the selection
-# type rather than restated, because that dataclass is what decides them.
-_CANDIDATES = tuple(
-    field.name
-    for field in fields(RoutingStrategySelection)
-    if field.name != "selected_strategy"
-)
+# The strategies the automatic selection may resolve to. Read from the constant
+# the selection itself minimizes over, because that constant is also what
+# ``flagquantum/deployment/routing_evidence.py`` accepts, so a name cannot reach
+# the choice without reaching the deployment contract.
+_CANDIDATES = tuple(DEPLOYABLE_ROUTING_STRATEGIES)
 
 
 @pytest.fixture(scope="module")
@@ -127,10 +137,23 @@ def test_published_order_is_total_and_ranks_the_two_search_strategies_first(
     assert values == sorted(values), f"quality_order is not the measured order: {order}"
     # The two search strategies are the reason the ordering is worth publishing:
     # they separate from the two estimate-driven strategies by more than a factor
-    # of two, and the automatic selection sits between the two groups.
+    # of two, and the automatic selection lands on the cheaper of them rather than
+    # between the two groups. It lands there because its candidate set contains
+    # ``sabre`` and ``sabre`` is priced by planning it, so the price it is ranked
+    # on is the SWAP count its plan inserts. A candidate set of only the two
+    # estimators would put ``auto`` between the groups, which is the scope this
+    # measurement exists to report.
     assert order[0] == "sabre_layout"
     assert by_label["sabre_layout"] < by_label["sabre"]
-    assert by_label["sabre"] < by_label[AUTOMATIC_SELECTION]
+    # A fixed strategy's total is the sum of its own per-program counts, while the
+    # automatic selection's total is the sum of the cheapest candidate's count on
+    # each program, so the selection can be strictly below every candidate it is
+    # allowed to pick. It is bounded by the cheapest candidate's total and not
+    # equal to it, and the count of programs on which it retains more than a
+    # candidate it could have picked is what would report the difference.
+    assert by_label[AUTOMATIC_SELECTION] <= min(
+        by_label[name] for name in _CANDIDATES
+    ), "the automatic selection retained more than its cheapest candidate"
     assert by_label[AUTOMATIC_SELECTION] < min(
         by_label["restore_after_each_gate"], by_label["persistent_layout"]
     )
@@ -142,7 +165,8 @@ def test_the_automatic_selection_resolves_to_the_candidates_its_estimate_ranks(
     payload: dict,
 ) -> None:
     selection = payload["automatic_selection"]
-    assert selection["ranked_strategy_count"] == len(_CANDIDATES) == 2
+    assert selection["ranked_strategy_count"] == len(_CANDIDATES)
+    assert len(_CANDIDATES) == len(DEPLOYABLE_ROUTING_STRATEGIES)
     resolved = selection["resolved_strategy_counts"]
     assert set(resolved) <= set(_CANDIDATES), (
         f"the automatic selection resolved to {sorted(resolved)}, which its cost "
@@ -153,7 +177,7 @@ def test_the_automatic_selection_resolves_to_the_candidates_its_estimate_ranks(
     # record a resolution without ever exercising the choice.
     assert all(
         resolved.get(label, 0) > 0 for label in _CANDIDATES
-    ), f"this basis never exercised both resolutions: {resolved}"
+    ), f"this basis never exercised every resolution: {resolved}"
     for row in payload["strategies"]:
         expected = (
             resolved
@@ -188,7 +212,7 @@ def test_the_automatic_selection_returns_the_route_of_the_candidate_it_names(
     assert selection["better_than_both_candidate_case_count"] == 0
 
 
-def test_the_cost_estimate_picks_the_cheaper_candidate_on_most_programs(
+def test_the_cost_estimate_picks_a_best_candidate_on_every_program(
     payload: dict,
 ) -> None:
     selection = payload["automatic_selection"]
@@ -197,22 +221,33 @@ def test_the_cost_estimate_picks_the_cheaper_candidate_on_most_programs(
         + selection["worse_than_best_candidate_case_count"]
     )
     assert decided == _BASIS_CASE_COUNT
-    assert selection["equal_to_best_candidate_case_count"] > (
-        selection["worse_than_best_candidate_case_count"]
-    )
-    # Non-vacuity: the estimate is measured to be wrong sometimes, so a basis
-    # that happened to contain only its good calls could not support the claim.
-    assert selection["worse_than_best_candidate_case_count"] > 0
-    assert selection["ratio_to_best_candidate"] < 1.05
+    assert selection["equal_to_best_candidate_case_count"] == _BASIS_CASE_COUNT
+    # This is the assertion the merged candidate set makes structural rather than
+    # measured. ``worse_than_best_candidate_case_count`` is the count of programs
+    # on which the estimate's choice retained more SWAPs than a candidate it could
+    # have chosen instead; it is zero here and on the full 140-program basis,
+    # because ``sabre`` is in the candidate set and its price is its plan. The
+    # bound is asserted rather than the count, so a basis that did reach a wrong
+    # call would still pass, and the ratio is what would report it.
+    assert selection["worse_than_best_candidate_case_count"] == 0
+    assert selection["better_than_both_candidate_case_count"] == 0
+    assert selection["ratio_to_best_candidate"] == 1.0
 
 
-def test_the_scope_of_the_cost_estimate_costs_twice_the_best_available_strategy(
+def test_the_scope_of_the_cost_estimate_excludes_the_strategy_that_retains_least(
     payload: dict,
 ) -> None:
     selection = payload["automatic_selection"]
     # The number this measurement exists to publish. The scope of the automatic
     # selection is already stated in the capability manifest; its price was not.
-    assert selection["ratio_to_best_available"] > 2.0
+    # The price is the one strategy the deployment contract does not accept:
+    # ``auto`` may reach ``restore_after_each_gate``, ``persistent_layout`` and
+    # ``sabre``, and ``sabre_layout`` is outside the set structurally, because it
+    # starts from a layout the search chose. The ratio is therefore above 1.0 and
+    # bounded by how much that excluded strategy would have saved, not above 2.0:
+    # the 2x figure belongs to the candidate set this one replaced, which was the
+    # two estimators alone.
+    assert selection["ratio_to_best_available"] > 1.0
     assert (
         selection["best_available_retained_inserted_swap_count"]
         <= _row(payload, "sabre_layout")["retained_inserted_swap_count"]

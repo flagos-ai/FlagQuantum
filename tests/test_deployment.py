@@ -1,5 +1,6 @@
 """Tests for FlagQuantum train-to-cloud deployment primitives."""
 
+import random
 from copy import deepcopy
 from dataclasses import replace
 
@@ -19,6 +20,7 @@ from flagquantum.deployment import (
     hamiltonian_expectation_from_counts,
     validate_deployment_package,
 )
+from flagquantum.deployment.routing_evidence import DeploymentRoutingEvidenceError
 from flagquantum.remote import validate_deployment_result
 from flagquantum.testing import InMemoryRemoteTarget
 
@@ -180,6 +182,71 @@ def test_deployment_reuses_compatible_compiled_routing_plan():
         circuit.state(),
         atol=1e-6,
     )
+
+
+def test_deployment_accepts_the_sabre_planner_the_automatic_choice_picks() -> None:
+    """The planner the automatic choice may pick must be deployable.
+
+    `sabre` is in the Compiler's deployable set, so a workload the automatic
+    choice hands to it produces a package the fail-closed deployment routing
+    contract accepts, including the candidate-set clause that only an automatic
+    plan carries. `sabre_layout` is the strategy outside that set, and the same
+    workload requested by name is refused: it starts from a layout its own search
+    chose, so the identity starting assignment a deployment artifact has to state
+    is not something it can promise.
+    """
+
+    rng = random.Random(0)
+    circuit = fq.Circuit(5)
+    for _ in range(5):
+        left, right = rng.sample(range(5), 2)
+        circuit.cx(left, right)
+        circuit.ry(rng.randrange(5), theta=rng.uniform(-0.7, 0.7))
+        left, right = rng.sample(range(5), 2)
+        circuit.cz(left, right)
+    coupling = CouplingMap.line(5)
+    backend = CloudBackendProfile(
+        provider="local",
+        name="line5",
+        n_qubits=5,
+        coupling_map=coupling,
+        is_simulator=True,
+    )
+
+    package = fqd.create_deployment_package(
+        circuit, backend=backend, routing_strategy="auto"
+    )
+
+    routing = package.metadata["routing_plan"]
+    selection = routing["strategy_selection"]
+    assert selection["selected_strategy"] == "sabre"
+    assert set(selection["candidates"]) == {
+        "restore_after_each_gate",
+        "persistent_layout",
+        "sabre",
+    }
+    # A planner is genuinely cheaper here, so this package proves the planner
+    # path rather than passing because the estimate happened to win.
+    assert (
+        selection["candidates"]["sabre"]["planned_inserted_swap_count"]
+        < selection["candidates"]["restore_after_each_gate"][
+            "planned_inserted_swap_count"
+        ]
+    )
+    assert routing["strategy"] == "sabre"
+    assert routing["initial_logical_to_physical"] == (0, 1, 2, 3, 4)
+    assert routing["final_logical_to_physical"] == (0, 1, 2, 3, 4)
+    assert routing["mapping_restored"] is True
+    assert torch.allclose(
+        fq.Circuit.from_ir(package.ir).state(),
+        circuit.state(),
+        atol=1e-6,
+    )
+
+    with pytest.raises(DeploymentRoutingEvidenceError, match="unsupported routing"):
+        fqd.create_deployment_package(
+            circuit, backend=backend, routing_strategy="sabre_layout"
+        )
 
 
 def test_deployment_preserves_compiler_bound_target_and_submission_options():

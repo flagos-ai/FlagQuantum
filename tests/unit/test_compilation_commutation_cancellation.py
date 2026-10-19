@@ -389,11 +389,14 @@ def test_a_removal_that_another_removal_depends_on_is_still_sound() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    """The pipeline has one place that composes optimization, and it uses it.
+    """The pipeline has one place that names optimization order, and it uses it.
 
     That place is the declared sequence `optimization_levels` owns, which the loop
     reads rather than restates, so the order this test pins is the declared one and
-    the loop's own body names no pass directly.
+    the loop's own body names no pass directly. `OPTIMIZATION_PIPELINE` is the
+    registry's own declaration of the same order, and the second half of the test
+    pins it too: the pass occupies one slot, after the rotation merge it depends
+    on, and the registry binds the name to this pass rather than to a look-alike.
     """
 
     import ast
@@ -409,6 +412,7 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     assert module.__file__ is not None
     with open(module.__file__, encoding="utf-8") as handle:
         tree = ast.parse(handle.read())
+
     loop = next(
         node
         for node in ast.walk(tree)
@@ -421,8 +425,57 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     }
     assert "optimization_level_stages" in called
     assert "cancel_commuting_self_inverse" not in called
-    # And nothing else in the pipeline reaches for the analysis directly.
-    assert "analyze_commutation" not in ast.dump(tree)
+
+    pipeline = list(module.OPTIMIZATION_PIPELINE)
+    assert pipeline.count("cancel_commuting_self_inverse") == 1
+    assert pipeline.index("cancel_commuting_self_inverse") > pipeline.index(
+        "merge_adjacent_rotations"
+    )
+    assert [
+        name
+        for name, function in module.BUILTIN_PASSES.items()
+        if function is module._cancel_commuting_self_inverse
+    ] == ["cancel_commuting_self_inverse"]
+
+    probe = CircuitIR(
+        2,
+        (
+            Instruction("cx", (0, 1)),
+            _rotation("rz", 0, 0.4),
+            Instruction("cx", (0, 1)),
+            Instruction("cy", (0, 1)),
+            _rotation("rz", 0, 0.5),
+            Instruction("cy", (0, 1)),
+        ),
+    )
+    routed = module.default_pass_registry().resolve("cancel_commuting_self_inverse")
+    assert routed(probe) == cancel_commuting_self_inverse(probe)
+    # This pass alone frees the two rotations rather than merging them; the merge
+    # is `merge_adjacent_rotations`, which the sequence places after it.
+    assert _names(routed(probe)) == ["rz", "rz"]
+    # The composition point names the analysis once, to register it, and never
+    # computes it: `analyze_commutation` may appear as an import and as the body of
+    # the one function that is registered as the `commutation_blocks` analysis, and
+    # nowhere else. A pass that reached for it directly would be a second route to
+    # the same fact, which is what the registry replaced.
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "analyze_commutation"
+    ]
+    assert len(calls) == 1
+    registered = [
+        name
+        for name, spec in module._BUILTIN_ANALYSES.items()
+        if getattr(spec.function, "__name__", None) == "_commutation_blocks"
+    ]
+    assert registered == ["commutation_blocks"]
+    assert module._BUILTIN_ANALYSES["commutation_blocks"].program_independent is False
+    # Nothing in the pipeline reaches for the analysis directly either: the one
+    # call site below is the registered analysis this pass declares, and a second
+    # route to the same fact is what the registry replaced.
 
 
 def test_the_analysis_is_asked_for_once_per_call() -> None:

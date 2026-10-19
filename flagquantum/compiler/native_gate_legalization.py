@@ -16,6 +16,13 @@ table rather than through a matrix decomposition, because the matrix of a named
 gate belongs to `flagquantum.simulation`, which this layer must not import. A
 named gate the table does not reach, and a matrix too wide for the entangler
 basis, are refused.
+
+A replacement is recorded as `basis_conversion`'s `GateDecompositionRecord`,
+because the same per-instruction loop answers a second question that has no
+device in it: convert this program from the basis it is written in into a
+basis the caller names. `remote/emulation.py` imports the record from this
+module and is unchanged, which is the replacement that move had to pass; it is
+the same class object, so the two import paths agree.
 """
 
 from __future__ import annotations
@@ -43,6 +50,10 @@ from ..core.target_capabilities import (
     match_target_capabilities,
 )
 from ..errors import CompilationError
+
+# `GateDecompositionRecord` is re-exported rather than defined here so that both
+# import paths name one class object.
+from .basis_conversion import GateDecompositionRecord
 from .basis_translation import translate
 from .one_qubit_synthesis import (
     HALF_PI_PULSE_OPCODES,
@@ -55,15 +66,6 @@ from .two_qubit_synthesis import SUPERCONTROLLED_ENTANGLERS, synthesize_two_qubi
 
 class NativeGateLegalizationError(CompilationError):
     """A circuit cannot be expressed by the evidenced native gate set."""
-
-
-@dataclass(frozen=True)
-class GateDecompositionRecord:
-    """One deterministic source-to-native instruction replacement."""
-
-    instruction_index: int
-    source_opcode: str
-    replacement_opcodes: tuple[str, ...]
 
 
 @dataclass(frozen=True)

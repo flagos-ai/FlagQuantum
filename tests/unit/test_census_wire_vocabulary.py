@@ -196,22 +196,29 @@ def test_the_repository_scan_separates_the_three_populations() -> None:
     assert len(scanned.aliases) == 11
     # The private bucket moves only as a side effect: `WQ-5` renamed the 41,
     # `WQ-6` the 23, `WQ-7` the 18 and `WQ-8` the 49 `wire`-named parameters of
-    # their own private helpers, which no ledger counts. It has fallen by two
-    # more, through two changes that could not see each other: one deleted
-    # `flagquantum/twin/region_model.py::_remap_wires`, because the Twin region
-    # composer relabels through `flagquantum.core.qubit_mapping.remap_qubits`
-    # rather than through a private copy of it; the other moved the
-    # observable-boundary Hamiltonian adjoint seed out of
-    # `statevector/reverse_adjoint_sweep.py` into `reverse_observable.py`, which
-    # already owns the statevector synthetic-boundary helpers, and the copy that
-    # moved was the branch's one private `n_wires` parameter, now the public
-    # `hamiltonian_adjoint_seed`'s `n_qubits`; the move is what returned the sweep
-    # module to the architecture ceiling. Each branch re-measured 226 to 225 on
-    # its own, so 224 is the measurement of the merge rather than of either
-    # parent. Removing a site shrinks the set, which the gate permits for a
-    # private bucket no ledger covers, and the contract's measured number is
-    # re-measured to match.
-    assert len(scanned.internal) == 224
+    # their own private helpers, which no ledger counts. No ledger covers this
+    # bucket, so it is the one surface the migration may leave wire-named, and
+    # this number is re-measured from the merged tree rather than added from the
+    # two parents: 252 against main's own 224, which is a net +28 and decomposes
+    # in both directions. The 30 sites the merge has and main does not are the
+    # branch's own private helpers -- 15 in `simulation/lindblad_request.py`,
+    # four in each of `simulation/stabilizer/engine.py` and
+    # `compiler/routing.py`, three in `compiler/qir.py`, two in
+    # `algorithms/chemistry.py`, and one each in `compiler/target_conformance.py`
+    # and `core/ir/__init__.py` -- each a branch-only module or helper whose
+    # private spelling main's side had already renamed, so none of them is work
+    # the merge dropped. The two main has and the merge does not are
+    # `core/ir.py::_normalize_wires::wires`, the helper the branch replaced with
+    # `_normalize_count`, and
+    # `qec/dem_construction.py::_inject_measurement_flip::ancilla_wire`, which the
+    # merged file spells `ancilla_qubit`; both are renames of private names, and
+    # neither is in a ledger. The split of `simulation/lindblad.py` into a
+    # request module beside it moved those 15 privately named parameters between
+    # two files without changing the total, because the bucket is keyed by
+    # parameter rather than by path. Removing a site shrinks the set, which the
+    # gate permits for a private bucket no ledger covers, and the contract's
+    # measured number is re-measured to match.
+    assert len(scanned.internal) == 252
     assert scanned.aliases and scanned.internal
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"

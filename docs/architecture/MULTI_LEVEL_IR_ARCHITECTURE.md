@@ -31,7 +31,7 @@ QCIS. Dynamic construction, local simulation, batched trajectories, capability
 assessment, and QASM 3 have experimental paths. CircuitIR is release-certified and
 protected.
 
-Implementation references: `flagquantum/core/ir.py`, `flagquantum/circuit.py`,
+Implementation references: `flagquantum/core/ir/__init__.py`, `flagquantum/circuit.py`,
 `flagquantum/compiler/pipeline.py`, `flagquantum/compiler/routing.py`,
 `flagquantum/runtime/execution.py`, `flagquantum/runtime/dynamic/`,
 `flagquantum/deployment/cloud.py`, `flagquantum/compiler/openqasm.py`,
@@ -1084,6 +1084,22 @@ Exceptions carry structured diagnostics; do not create public classes per gate/
 pass/provider. Warnings/remarks use sinks/reports/log policy, not print.
 
 ### 19.13 Layout and Stability
+
+**Correction, 2026-10-08: the internal directory below is not buildable in this
+tree, and the levels live in the IR package instead.** Measured, creating
+`flagquantum/_compiler/__init__.py` fails `tools/check_architecture.py` with
+`flagquantum/_compiler: unreviewed top-level package directory is forbidden`,
+because the directory is absent from `architecture.toml`
+`package_layout.allowed_top_level_directories`; one `from .._compiler import ...`
+line under `flagquantum/compiler/` fails the same gate with `compiler imports
+forbidden layer _compiler`, because `boundaries.compiler_forbidden` lists that
+name; and `team-ownership.toml` records `flagquantum/_compiler` among five
+patterns removed for matching no tracked path. `IR_007` therefore places the
+internal levels in `flagquantum/core/ir/**`, the package that already owns the
+public IR, and the sketch below is kept only as the shape of the intended
+responsibility split, not as a path to create. The internal/external stability
+table is unaffected: `Program/Quantum/TargetModule` remain Internal with no root
+export, and textual internal IR remains debug only.
 
 ```text
 flagquantum/

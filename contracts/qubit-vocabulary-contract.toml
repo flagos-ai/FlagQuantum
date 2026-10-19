@@ -36,8 +36,8 @@ dunders_public = true
 dunder_note = "a dunder is Python's public protocol, so `Circuit.__init__` is a user entry point: `fq.Circuit(n_wires=3)` is the single most user-visible call in the package. An underscore-only rule hid it, and every other public constructor, in the excluded bucket"
 measured_canonical = 341
 measured_deprecated_aliases = 11
-measured_private = 224
-private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous. It was 226 until two independent changes each removed one site, neither able to see the other: `flagquantum/twin/region_model.py::_remap_wires::wires` left when the Twin region composer began relabelling through `flagquantum.core.qubit_mapping.remap_qubits`, and `flagquantum/runtime/executors/statevector/reverse_adjoint_sweep.py::_local_expectation_z_hamiltonian_adjoint::n_wires` left when that adjoint seed moved into `reverse_observable.py` as `hamiltonian_adjoint_seed`, which reads `n_qubits` and returned the sweep module to the architecture ceiling. Each branch re-measured 226 to 225 on its own, and this merge is the first tree to hold both, so 224 is the measurement of the merge rather than of either parent. Only the private bucket moved -- `measured_canonical` and `measured_deprecated_aliases` did not -- which is what makes this a re-measurement rather than a relaxed threshold"
+measured_private = 252
+private_note = "private code keeps `wire` names; it is measured so the exclusion stays honest, and the gate requires this bucket to stay non-empty so the boundary cannot silently become vacuous. It was 226 until two independent changes each removed one site, neither able to see the other: `flagquantum/twin/region_model.py::_remap_wires::wires` left when the Twin region composer began relabelling through `flagquantum.core.qubit_mapping.remap_qubits`, and `flagquantum/runtime/executors/statevector/reverse_adjoint_sweep.py::_local_expectation_z_hamiltonian_adjoint::n_wires` left when that adjoint seed moved into `reverse_observable.py` as `hamiltonian_adjoint_seed`, which reads `n_qubits` and returned the sweep module to the architecture ceiling. Each branch re-measured 226 to 225 on its own, and main is the first tree to hold both, so 224 is main's own measurement. The merged tree measures 252, re-measured here rather than added from the two parents, and the delta decomposes in both directions: the 30 sites the merge has and main does not are the branch's own private helpers -- 15 in `simulation/lindblad_request.py`, four in each of `simulation/stabilizer/engine.py` and `compiler/routing.py`, three in `compiler/qir.py`, two in `algorithms/chemistry.py`, and one each in `compiler/target_conformance.py` and `core/ir/__init__.py` -- every one a branch-only module or helper whose private spelling main's side had already renamed, so none is work the merge dropped; the two main has and the merge does not are `core/ir.py::_normalize_wires::wires`, which the branch replaced with `_normalize_count`, and `qec/dem_construction.py::_inject_measurement_flip::ancilla_wire`, which the merged file spells `ancilla_qubit`. Both directions are renames of private names in a bucket no ledger covers. Only the private bucket moved -- `measured_canonical` and `measured_deprecated_aliases` did not -- which is what makes this a re-measurement rather than a relaxed threshold"
 
 [naming]
 # One rule, applied by root substitution. A hand-written list per slice would
@@ -120,7 +120,7 @@ call_site_condition = "invariant: a call site may pass a wire- or qubit-named ke
 # problem, and the ~225 lines of prose that use the noun for a foreign framework or
 # for the English verb are left alone.
 [documentation]
-measured_keywords = 4
+measured_keywords = 5
 measured_reproduce = "python -c \"from tools.census_wire_vocabulary import documentation_census as f; print(len(f().sites))\""
 owner = "WD-1"
 condition = "exempt: each entry names one file, one reason, and the whole multiset of spellings that file may show, so a fourth example inside an exempt plan needs its own record; every other file must show none, and the gate compares the multisets rather than a total, so moving a keyword from an exempt file to a live one cannot balance out"
@@ -148,8 +148,23 @@ owner = "WD-1"
 reason = "documents a live deprecated alias: `fq.Circuit(n_wires=2)` still constructs and warns, and [aliases].removal_version is the version that deletes it, so the page must name the spelling until then"
 keywords = ["n_wires="]
 
+# The third exemption, and the first one that is not a compatibility promise: the
+# spelling is a live *IR field* rather than a live parameter. `CircuitIR.n_wires` is
+# named in [exclusions].serialized_keys, because it is a key of the serialized IR
+# payload, so the migration cannot rename it without raising the IR version -- and
+# this block is executed by `tests/test_documentation_entry_examples.py`, so it
+# cannot be reworded into prose either. The example re-describes an existing program
+# at a higher dtype by constructing the IR record itself, which means it has to name
+# the field it constructs. Removal of the row is therefore tied to the version bump
+# the exclusion row's own removal_condition already names, not to this slice.
+[[documentation.exempt]]
+file = "docs/guides/ALGORITHMS.md"
+owner = "WD-1"
+reason = "the executed dtype example constructs `CircuitIR` directly, and `n_wires` is the record's own serialized field name, recorded in [exclusions].serialized_keys as unrenamable without an IR version bump; rewording the keyword would either name a field the record does not have or stop the example from running"
+keywords = ["n_wires="]
+
 [docstring]
-measured_tokens = 45
+measured_tokens = 42
 measured_reproduce = "python -c \"import sys; sys.path.insert(0, 'tools'); from census_wire_vocabulary import docstring_census as f; print(len(f()))\""
 owner = "WD-2"
 condition = "exempt: each entry names the containers and the token multiset they may show, and the gate reconciles per container, so a second occurrence inside an already-exempt docstring needs its own row; every other docstring and comment in the package must show none, and the comparison is a multiset rather than a total, so moving a token from an exempt docstring to a live one cannot balance out"
@@ -205,7 +220,6 @@ reason = "`[boundary]` is the public function surface, so a private parameter is
 identifier = [
     "flagquantum/_api.py::run::n_wires",
     "flagquantum/circuit.py::_composition_source::n_wires",
-    "flagquantum/core/ir.py::_normalize_count::n_wires",
     "flagquantum/simulation/lindblad.py::EvolutionPlan.n_qubits::n_wires",
     "flagquantum/simulation/mps/tebd.py::TEBDResult.n_qubits::n_wires",
     "flagquantum/twin/circuit_support.py::_circuit_depth::n_wires",
@@ -236,11 +250,6 @@ identifier = [
 reason = "a live attribute name on the public surface"
 [[docstring.keep]]
 identifier = [
-    "flagquantum/compiler/pipeline.py::_optimize_to_fixed_point::_WireLocalProgram",
-]
-reason = "a live private class name a module-scope comment names when it lists what each pass reads"
-[[docstring.keep]]
-identifier = [
     "flagquantum/drawer/ir_adapter.py::_op_qubits::wires",
     "flagquantum/drawer/ir_adapter.py::to_drawable_circuit::wires",
 ]
@@ -256,12 +265,6 @@ identifier = [
     "flagquantum/simulation/statevector/operations.py::_apply_single_wire_matrix::_cpu_single_wire_elementwise_enabled",
 ]
 reason = "a private module-level switch whose own name contains the word"
-[[docstring.keep]]
-identifier = [
-    "flagquantum/compiler/routing.py::<module>::test_multi_wire_routing_locality",
-]
-reason = "the path of a test the package ships"
-
 # The eighth surface, and the second one that is not prose. A `>>>` block inside a
 # docstring is a program the doctest runner executes, so a wire-named token on one of
 # those lines is a *code* token: rewording it is a rename, and a rename needs the
@@ -390,7 +393,7 @@ canonical = [
     "flagquantum/compiler/routing.py::CouplingMap.neighbors::wire",
     "flagquantum/compiler/routing.py::CouplingMap.ring::n_wires",
     "flagquantum/compiler/two_qubit_synthesis.py::synthesize_two_qubit::wires",
-    "flagquantum/core/ir.py::from_engine_qir::n_wires",
+    "flagquantum/core/ir/__init__.py::from_engine_qir::n_wires",
     "flagquantum/core/qubit_mapping.py::remap_qubits::wires",
     "flagquantum/deployment/cloud.py::expectation_z_from_counts::wires",
     "flagquantum/deployment/routing_evidence.py::build_deployment_routing_evidence::n_wires",
@@ -670,7 +673,7 @@ sites = [
     "flagquantum/circuit.py::Circuit.any::*wires",
     "flagquantum/circuit.py::Circuit.expectation_z::wires",
     "flagquantum/circuit.py::Circuit.gate::wires",
-    "flagquantum/core/ir.py::from_engine_qir::n_wires",
+    "flagquantum/core/ir/__init__.py::from_engine_qir::n_wires",
     "flagquantum/core/qubit_mapping.py::remap_qubits::wires",
     "flagquantum/drawer/mpl_drawer.py::MPLDrawer.__init__::wire_order",
     "flagquantum/drawer/text_drawer.py::TextDrawer.__init__::show_all_wires",
@@ -1024,7 +1027,7 @@ definition_count = 0
 files = [
     "flagquantum/circuit.py",
     "flagquantum/core/contracts.py",
-    "flagquantum/core/ir.py",
+    "flagquantum/core/ir/__init__.py",
     "flagquantum/core/operator_schema.py",
     "flagquantum/core/qubit_mapping.py",
     "flagquantum/drawer/ir_adapter.py",
@@ -1403,7 +1406,7 @@ reason = "`ExecutionRecordContract` builds its payload with `dataclasses.asdict`
 removal_condition = "the `ExecutionRecordContract` payload schema is versioned and migrated"
 
 [[attribute_exclusions.sites]]
-site = "flagquantum/core/ir.py::CircuitIR::n_wires"
+site = "flagquantum/core/ir/__init__.py::CircuitIR::n_wires"
 replacement = "n_qubits"
 declaration = "field"
 witness = "CircuitIR"
@@ -1412,7 +1415,7 @@ reason = "`CircuitIR` builds its payload from its own field names, so `n_wires` 
 removal_condition = "`IR_VERSION` is raised and the payload migrates in the same release"
 
 [[attribute_exclusions.sites]]
-site = "flagquantum/core/ir.py::Instruction::wires"
+site = "flagquantum/core/ir/__init__.py::Instruction::wires"
 replacement = "qubits"
 declaration = "field"
 witness = "CircuitIR"
@@ -1421,7 +1424,7 @@ reason = "`CircuitIR` builds its payload with `dataclasses.asdict`, which recurs
 removal_condition = "`IR_VERSION` is raised and the payload migrates in the same release"
 
 [[attribute_exclusions.sites]]
-site = "flagquantum/core/ir.py::MeasurementNode::wires"
+site = "flagquantum/core/ir/__init__.py::MeasurementNode::wires"
 replacement = "qubits"
 declaration = "field"
 witness = "CircuitIR"
@@ -1430,7 +1433,7 @@ reason = "`CircuitIR` builds its payload with `dataclasses.asdict`, which recurs
 removal_condition = "`IR_VERSION` is raised and the payload migrates in the same release"
 
 [[attribute_exclusions.sites]]
-site = "flagquantum/core/ir.py::ObservableNode::wires"
+site = "flagquantum/core/ir/__init__.py::ObservableNode::wires"
 replacement = "qubits"
 declaration = "field"
 witness = "CircuitIR"

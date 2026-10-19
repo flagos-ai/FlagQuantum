@@ -76,7 +76,7 @@ These exclusions are capability boundaries, not silent fallbacks.
 The current repository already provides:
 
 - stable `CircuitIR`, instructions, measurements, observables, serialization,
-  and content identity in `flagquantum/core/ir.py`;
+  and content identity in `flagquantum/core/ir/__init__.py`;
 - target-independent optimization and topology-aware circuit compilation in
   `flagquantum/compiler`;
 - local statevector, MPS, tensor-network, and selected gradient executors;

@@ -97,6 +97,27 @@ def test_the_documented_replacement_obligation_is_the_whole_of_it(
     assert len(proprietary) == 9
 
 
+def test_the_contraction_path_rows_carry_a_verdict() -> None:
+    """A surveyed project's outcome must be readable, not merely listed.
+
+    The tensor-network contraction path is the one place § 5 has produced a
+    decision, so the two rows that decide it must state which way they decided.
+    An unmarked row reads as still-open, which is how a stale survey becomes a
+    plan nobody owns.
+    """
+
+    text = STRATEGY.read_text(encoding="utf-8")
+    section = text.split("## 5. What may be borrowed", 1)[1].split("## 6.", 1)[0]
+    project_rows = [line for line in section.splitlines() if line.startswith("| ")][2:]
+    notes = {}
+    for line in project_rows:
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        notes[cells[0]] = cells[3]
+
+    assert "**Adopted**" in notes["cotengra"]
+    assert "**Surveyed, not adopted.**" in notes["opt_einsum"]
+
+
 def test_the_borrowable_count_matches_the_contract(
     rows: list[tuple[str, dict]],
 ) -> None:

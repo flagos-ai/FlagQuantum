@@ -19,7 +19,7 @@ from ..core.runtime_config import (
     get_runtime_config,
     runtime_config,
 )
-from ..errors import ExecutionError
+from ..errors import CapabilityError, ExecutionError
 from ..runtime.backend_registry import resolve_device, resolve_dtype
 from ..runtime.distributed.backend_policy import (
     DistributedBackendPolicy,
@@ -681,11 +681,19 @@ def _run_density_matrix_mode(
         state_mode="density_matrix",
         **plan_options,
     )
+    # A declared limit is this run's capacity: the plan states what the run needs.
+    limit = options.get("memory_limit_bytes")
+    if limit is not None and execution_plan.state_bytes > int(limit):
+        raise CapabilityError(
+            f"mode='density_matrix' needs {execution_plan.state_bytes} bytes for the "
+            f"dense density matrix, above memory_limit_bytes={int(limit)}; the exact "
+            "and dense representation has no smaller equivalent to fall back to"
+        )
     noisy_plan = build_noisy_execution_plan(
         execution_plan,
         representation="density_matrix",
         evolution="exact_channel",
-        memory_limit_bytes=options.get("memory_limit_bytes"),
+        memory_limit_bytes=limit,
         noise_model_identity=getattr(noise_model, "identity", None),
     )
     if provided_execution_plan is None:
@@ -847,7 +855,7 @@ def _run_standard_native_mode(
     plan_options: dict[str, Any],
     provided_execution_plan: ExecutionPlan | None,
 ) -> tuple[Any, ExecutionPlan]:
-    if mode != "density_matrix" and noise_model is not None:
+    if mode not in {"density_matrix", "stabilizer"} and noise_model is not None:
         raise ValueError("Noise models require density_matrix mode.")
     if mode == "statevector":
         return _run_statevector_mode(
@@ -877,8 +885,20 @@ def _run_standard_native_mode(
             provided_execution_plan=provided_execution_plan,
         )
     if mode == "stabilizer":
+        # Lowering happens here rather than in the executor, because a scene-level
+        # model becomes positioned channel instructions through a Compiler
+        # dependency Runtime already holds at this level and the executor boundary
+        # does not. The density-matrix sibling above lowers the same way; a run
+        # that already carries a plan does not lower again, because the plan was
+        # built from the lowered program and its own execution program is the one
+        # carrying the channels.
+        stabilizer_ir = (
+            execution_ir
+            if provided_execution_plan is not None
+            else lower_noise_model(execution_ir, noise_model)
+        )
         return run_stabilizer_mode(
-            execution_ir,
+            stabilizer_ir,
             options=options,
             plan_options=plan_options,
             provided_execution_plan=provided_execution_plan,

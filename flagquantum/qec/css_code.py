@@ -1,68 +1,75 @@
-"""A code record whose parity-check matrices are the source of truth.
+"""Calderbank-Shor-Steane codes given by the matrices they are written as.
 
-The code records in :mod:`flagquantum.qec.codes` are declared: a class states its
-qubit layout and builds its checks from it. This module is the other direction of
-the same seam. A caller who has the four Calderbank-Shor-Steane matrices and no
-class declares a :class:`CssCode`, and every count and layout a code record owes
--- the data qubits, the ancilla total and its two bands, the checks, the
-stabilizers, the logical observables -- is read off those matrices rather than
-asserted beside them.
+A Calderbank-Shor-Steane code is a family of Z-type checks, a family of X-type
+checks, and one logical operator per basis per logical qubit, all read over one
+block of data qubits. The four matrices say all of that, so this record is built
+from matrices and derives every count, every ancilla, and every check from them
+rather than keeping a second statement that could drift from them.
 
-Upstream divides the same two things between two headers, and this module follows
-that division rather than inventing one: ``code.h`` declares the code record, and
-``code_matrices.h`` declares ``css_code_matrices`` as the input interface of
-detector error model construction. :class:`~flagquantum.qec.CssCodeMatrices`
-therefore stays with the construction that reads it, and this record is built on
-top of it.
+**Two shapes of matrices reach this record, and both say the same thing.** The
+first hands over a :class:`~flagquantum.qec.CssCodeMatrices`, whose blocks are
+tensors and which states nothing about the code's distance; the second hands over
+the four blocks as sequences of sequences and states the weight its distance search
+reaches. The first is how a code read back out of an existing record arrives and how
+a family this package derives arrives, because such a family has already searched
+for its distance; the second is how a code written down by hand arrives.
 
-Two differences from a declared record are deliberate and are stated here rather
-than discovered by a caller.
+**One distance reading per shape, and neither overrides the other.** A record built
+from a :class:`~flagquantum.qec.CssCodeMatrices` is told its distance and checks that
+the matrices can support it: a stated logical operator of weight ``w`` proves the
+distance is at most ``w``, so a larger stated distance is refused. A record built
+from hand-written blocks is told only how far to search and derives the distance
+itself, as the least weight of a logical operator the search finds; a search that
+reaches its bound without finding one is refused rather than reported. Which reading
+applies is which shape the caller wrote, and a record that states both shapes or
+neither is refused.
 
-The distance is stated, not derived. Upstream's code record declares no distance
-accessor at all: a concrete class reads one out of the options it was built with,
-and its own factory refuses a construction that omits it. Computing a quantum
-code's distance is a minimum-weight-codeword problem and is exponential in
-general, so a record that derived it would refuse exactly the large matrices this
-route exists to serve. What the record does instead is refuse every distance its
-own matrices contradict, at a cost that does not grow with a search: a stated
-logical operator of weight ``w`` proves the code distance is at most ``w``, so a
-record claiming more than the lightest operator it states is refused rather than
-trusted. That is one direction of proof and not two, and a record that understates
-its distance is therefore accepted, because the direction that was dropped is the
-one that cannot mislead a caller into believing a code protects more than it does.
-
-The record is not registered by name. A name is how a caller who knows which code
-it wants avoids knowing which class declares it, and the identity of a CSS record
-is the matrix the caller hands over, which a name adds nothing to.
+**Every invariant the record relies on is checked, because the matrices are the
+caller's.** The two check families must commute, or they generate no stabilizer
+group, and the checks must leave at least one logical qubit. A declared logical
+operator must commute with the checks of the opposite family and must not be a
+product of its own family's checks, so that it is a logical operator rather than a
+stabilizer. The two logical families must pair up non-degenerately, because a code
+with that many logical qubits has that many independent pairs. The pairing between
+the two families is not checked beyond that rank.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from numbers import Integral
 
 import torch
 
-from .codes import CodeCheck, ancilla_bands
+from .codes import (
+    _DISTANCE_SEARCH_WEIGHT,
+    BinaryMatrix,
+    CodeCheck,
+    _block_width,
+    _mask,
+    _matrix_rows,
+    _minimum_logical_weight,
+    _refuse_non_logicals,
+    _supports,
+    ancilla_band_counts,
+)
 from .dem_construction import CssCodeMatrices
+from .gf2 import rank
 from .pauli import Pauli
+
+__all__ = ("CssCode",)
 
 
 def _row_masks(block: torch.Tensor, *, what: str) -> tuple[int, ...]:
-    """Read a matrix block as one integer bitmask per row.
-
-    Bit ``q`` of a row mask is column ``q``, so the two operations this module
-    needs -- the overlap parity of two rows and elimination over GF(2) -- are one
-    ``&`` and one ``^`` rather than a loop over columns.
-    """
+    """Return one mask per row of ``block``, bit ``i`` standing for column ``i``."""
 
     masks: list[int] = []
     for index, row in enumerate(block.tolist()):
         mask = 0
-        for column, entry in enumerate(row):
-            if entry:
-                mask |= 1 << column
-        if not mask:
+        for position, value in enumerate(row):
+            if value:
+                mask |= 1 << position
+        if mask == 0:
             raise ValueError(
                 f"{what} {index} is empty, so it states the identity operator: a "
                 "check and a logical observable must each act on at least one data "
@@ -73,143 +80,203 @@ def _row_masks(block: torch.Tensor, *, what: str) -> tuple[int, ...]:
 
 
 def _support(mask: int) -> tuple[int, ...]:
-    """Return the ascending qubit indices a row mask sets."""
+    """Return the data qubits a row mask acts on, in ascending order."""
 
-    support: list[int] = []
-    current = mask
-    while current:
-        low = current & -current
-        support.append(low.bit_length() - 1)
-        current ^= low
-    return tuple(support)
+    qubits: list[int] = []
+    position = 0
+    remaining = mask
+    while remaining:
+        if remaining & 1:
+            qubits.append(position)
+        remaining >>= 1
+        position += 1
+    return tuple(qubits)
 
 
 def _row_basis(rows: tuple[int, ...]) -> dict[int, int]:
-    """Reduce ``rows`` over GF(2) into a basis keyed by each row's pivot column."""
+    """Return a pivot map for the span of ``rows``, keyed by each pivot's top bit."""
 
     basis: dict[int, int] = {}
     for row in rows:
-        current = row
-        for pivot in sorted(basis, reverse=True):
-            if (current >> pivot) & 1:
-                current ^= basis[pivot]
-        if current:
-            basis[current.bit_length() - 1] = current
+        vector = row
+        while vector:
+            pivot = vector.bit_length() - 1
+            if pivot not in basis:
+                basis[pivot] = vector
+                break
+            vector ^= basis[pivot]
     return basis
 
 
 def _in_span(row: int, basis: dict[int, int]) -> bool:
-    """Whether ``row`` is a product of the basis vectors, i.e. reduces to zero."""
+    """Whether ``row`` is a combination of the rows ``basis`` was built from."""
 
-    current = row
-    for pivot in sorted(basis, reverse=True):
-        if (current >> pivot) & 1:
-            current ^= basis[pivot]
-    return current == 0
+    vector = row
+    while vector:
+        pivot = vector.bit_length() - 1
+        if pivot not in basis:
+            return False
+        vector ^= basis[pivot]
+    return True
+
+
+def _stated(block: object) -> bool:
+    """Whether one of the four block fields was stated rather than left at its default.
+
+    The hand-written shape leaves an unstated block at the empty tuple it defaults
+    to, and a caller who writes a block out passes a list, a tuple of rows, or a
+    tensor. Reading the question as "is this the default empty tuple?" answers all
+    three, which a truth test cannot: the truth value of a tensor is not defined,
+    and "stated but empty" is a different mistake from "never stated at all".
+    """
+
+    return not (isinstance(block, tuple) and not block)
 
 
 @dataclass(frozen=True, eq=False)
 class CssCode:
-    """A Calderbank-Shor-Steane code declared by its parity-check matrices.
+    """A Calderbank-Shor-Steane code, given by the matrices it is written as.
 
-    Column ``q`` of every block of ``matrices`` is data qubit ``q``, so the data
-    qubits are ``0..n-1`` and the checks take the ancillas that follow them, in
-    the order the two check blocks state their rows: the Z-type checks in the
-    order of ``hz``, then the X-type checks in the order of ``hx``. That is the
-    order the declared records already use, and it is why a record rebuilt from
-    another record's matrices describes the same experiment with its detectors
-    permuted by the check order rather than a different experiment: a detector's
-    identity is the check and the round it belongs to, and a matrix carries no
-    qubit labels for a rebuild to preserve.
+    Columns are data qubits and every block is read over the same ones, so a data
+    qubit's column index is its qubit index. Rows of ``hz`` are the Z-type checks and
+    rows of ``hx`` the X-type checks; rows of ``lz`` and ``lx`` are the logical
+    operators, one row per logical qubit and one column per data qubit. The checks
+    are laid out Z-type first, so the Z-type checks own the lower ancilla indices.
 
-    The record checks the algebra the four blocks do not.
-    :class:`~flagquantum.qec.CssCodeMatrices` holds the blocks to a common width
-    and to binary entries, which says the matrices are well formed and says
-    nothing about whether they describe a code. This record reads each stated
-    logical operator against the opposite-basis checks and refuses one that fails
-    either half of the definition -- a Z-type operator is a logical operator when
-    it commutes with every X-type check and is not a product of the Z-type checks,
-    and the X-type case is the mirror -- so matrices that do not describe a code
-    are refused at construction rather than decoded against a model of nothing.
-    The stated logical operators of one basis must also be independent, because
-    each one becomes one observable and two rows spanning one logical operator
-    would state two observables for it.
-
-    The pairing between the two logical families is not checked. This package's
-    records state one readout basis by convention, so an X-type logical list is
-    usually absent and a pairing check would be vacuous exactly where a caller
-    would expect it to bite.
-
-    `~flagquantum.qec.CssCodeMatrices` stores every block as a tensor, because
-    it normalizes an omitted one to an empty block, so the three optional fields
-    are the tensors they hold once a record carries them.
-
-    The distance is passed in and is refused when the record's own matrices
-    contradict it, as the module docstring states; it is not derived.
+    A record states its matrices one of two ways. A caller who holds a
+    :class:`~flagquantum.qec.CssCodeMatrices` passes ``matrices`` and the ``distance``
+    the code is claimed to have. A caller who writes the blocks out by hand passes
+    ``hz`` and ``hx``, the logical blocks as needed, and the weight its distance
+    search reaches as ``distance_search_weight``. The two readings of ``distance``,
+    the validation each shape runs, and the refusal of a record that states both
+    shapes or neither are stated in the module docstring.
 
     Args:
-        matrices: The four sparse binary blocks a CSS code is read by.
-        distance: The code distance, which the caller states for the same reason
-            upstream's own factory requires a ``distance`` option.
+        matrices: The four blocks as a :class:`~flagquantum.qec.CssCodeMatrices`.
+        distance: The distance the caller states, beside ``matrices``.
+        hz: The Z-type checks, one row per check.
+        hx: The X-type checks, one row per check.
+        lz: The Z-type logical operators, one row per logical qubit.
+        lx: The X-type logical operators, one row per logical qubit.
+        distance_search_weight: The weight the distance search for hand-written
+            blocks reaches, and the ceiling on the distance a derived shape can
+            separate from its own search.
 
     Raises:
-        TypeError: ``matrices`` is not a `~flagquantum.qec.CssCodeMatrices`, or
-            ``distance`` is not an integer.
-        ValueError: ``distance`` is not positive, or it exceeds the weight of the
-            lightest logical operator the matrices state; the matrices state no
-            check or no logical observable; a check row is empty; a logical
-            operator fails either half of its definition, naming the row and the
-            reason; or two stated logical operators of one basis are dependent.
+        TypeError: If ``matrices`` is neither ``None`` nor a
+            :class:`~flagquantum.qec.CssCodeMatrices`, if a hand-written block is not
+            a sequence of sequences, if a matrix entry is not an integer, or if
+            ``distance`` or ``distance_search_weight`` is not an integer.
+        ValueError: If a record states both shapes or neither, if a row acts on no
+            data qubit, if the blocks disagree about how many data qubits the code
+            has, if the two check families do not commute, if the checks leave no
+            logical qubit, if a logical family declares the wrong number of rows, if
+            a logical operator anticommutes with an opposite-family check or lies in
+            its own family's check span, if the two families pair up degenerately, if
+            the stated distance is below one or exceeds the lightest stated logical
+            weight, or if a family has no logical operator within
+            ``distance_search_weight``.
 
     Examples:
-        >>> import torch
-        >>> from flagquantum.qec import CssCode, CssCodeMatrices
-        >>> record = CssCode(
-        ...     matrices=CssCodeMatrices(
-        ...         hz=torch.tensor([[1, 1, 0], [0, 1, 1]]),
-        ...         lz=torch.tensor([[1, 1, 1]]),
-        ...     ),
-        ...     distance=3,
-        ... )
-        >>> record.num_data_qubits, record.num_ancilla_qubits, record.distance
-        (3, 2, 3)
+        The Steane code, whose Z-type and X-type checks are the same three weight-four
+        rows and whose logical operators are the same weight-three row in each basis.
+
+        >>> from flagquantum.qec import CssCode, SteaneCode
+        >>> h = [[0, 0, 0, 1, 1, 1, 1], [0, 1, 1, 0, 0, 1, 1], [1, 0, 1, 0, 1, 0, 1]]
+        >>> logical = [[1, 1, 1, 0, 0, 0, 0]]
+        >>> steane = CssCode(hz=h, hx=h, lz=logical, lx=logical)
+        >>> steane.num_data_qubits, steane.num_ancilla_qubits, steane.distance
+        (7, 6, 3)
+        >>> steane.stabilizers == SteaneCode().stabilizers
+        True
     """
 
-    matrices: CssCodeMatrices
-    distance: int
+    matrices: CssCodeMatrices | None = None
+    distance: int | None = None
+    hz: BinaryMatrix = ()
+    hx: BinaryMatrix = ()
+    lz: BinaryMatrix = ()
+    lx: BinaryMatrix = ()
+    distance_search_weight: int = _DISTANCE_SEARCH_WEIGHT
+
+    _width: int = field(init=False, repr=False)
+    _z_checks: tuple[tuple[int, ...], ...] = field(init=False, repr=False)
+    _x_checks: tuple[tuple[int, ...], ...] = field(init=False, repr=False)
+    _z_logicals: tuple[tuple[int, ...], ...] = field(init=False, repr=False)
+    _x_logicals: tuple[tuple[int, ...], ...] = field(init=False, repr=False)
+    _x_distance: int = field(init=False, repr=False)
+    _z_distance: int = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        if not isinstance(self.matrices, CssCodeMatrices):
+        matrices = self.matrices
+        hand_written = any(
+            _stated(block) for block in (self.hz, self.hx, self.lz, self.lx)
+        )
+        if matrices is not None:
+            if hand_written:
+                raise ValueError(
+                    "a CSS code record states its matrices either as a "
+                    "CssCodeMatrices or as four hand-written blocks, and both were "
+                    "stated: pass matrices= with distance=, or pass hz= and hx= "
+                    "without matrices=, so that the record knows which of the two "
+                    "readings of its distance applies"
+                )
+            self._read_matrices(matrices)
+            return
+        if not hand_written:
+            raise ValueError(
+                "a CSS code record states its matrices either as a CssCodeMatrices "
+                "with a distance or as hand-written blocks with a "
+                "distance_search_weight, and neither was stated: pass matrices= and "
+                "distance=, or pass hz= and hx= (with the logical blocks as needed) "
+                "and a distance_search_weight"
+            )
+        if self.distance is not None:
+            raise ValueError(
+                "a CSS code record states its distance either as the distance= of a "
+                "CssCodeMatrices or as the distance_search_weight= it searches a "
+                "hand-written block to, and distance= was stated beside hand-written "
+                "blocks: pass matrices= with distance=, or drop distance= and let the "
+                "search derive it"
+            )
+        self._read_hand_written_matrices()
+
+    def _read_matrices(self, matrices: CssCodeMatrices) -> None:
+        """Record the code a :class:`~flagquantum.qec.CssCodeMatrices` states.
+
+        The caller states the distance here, so what there is to check is that the
+        matrices can support it: they have to state a check, state a logical
+        operator, and contain no logical operator lighter than the stated distance.
+        """
+
+        if not isinstance(matrices, CssCodeMatrices):
             raise TypeError(
                 "a CSS code record is built from a CssCodeMatrices, not from "
-                f"{type(self.matrices).__name__}"
+                f"{type(matrices).__name__}"
             )
-        if isinstance(self.distance, bool) or not isinstance(self.distance, Integral):
+        if self.distance_search_weight != _DISTANCE_SEARCH_WEIGHT:
+            raise ValueError(
+                "a CSS code record built from a CssCodeMatrices states its distance "
+                "directly, so a distance_search_weight= has nothing to search: pass "
+                "distance=, or pass hz= and hx= and let the search derive the "
+                "distance from the matrices"
+            )
+        stated = self.distance
+        if isinstance(stated, bool) or not isinstance(stated, Integral):
             raise TypeError("CSS-code distance must be an integer")
-        if self.distance < 1:
+        if stated < 1:
             raise ValueError("CSS-code distance must be at least one")
-        object.__setattr__(self, "distance", int(self.distance))
-        self._require_a_code()
+        object.__setattr__(self, "distance", int(stated))
 
-    def _require_a_code(self) -> None:
-        z_checks = _row_masks(self.matrices.hz, what="Z-type check")
-        x_checks = _row_masks(
-            self.matrices.hx,  # type: ignore[arg-type]
-            what="X-type check",
-        )
+        z_checks = _row_masks(matrices.hz, what="Z-type check")
+        x_checks = _row_masks(matrices.hx, what="X-type check")
         if not z_checks and not x_checks:
             raise ValueError(
                 "the matrices state no check, so they do not describe a code: a "
                 "CSS code needs at least one stabilizer generator"
             )
-        z_logicals = _row_masks(
-            self.matrices.lz,  # type: ignore[arg-type]
-            what="Z-type logical observable",
-        )
-        x_logicals = _row_masks(
-            self.matrices.lx,  # type: ignore[arg-type]
-            what="X-type logical observable",
-        )
+        z_logicals = _row_masks(matrices.lz, what="Z-type logical observable")
+        x_logicals = _row_masks(matrices.lx, what="X-type logical observable")
         if not z_logicals and not x_logicals:
             raise ValueError(
                 "the matrices state no logical observable, so they do not describe "
@@ -223,7 +290,174 @@ class CssCode:
         self._require_logical(
             x_logicals, z_checks, _row_basis(x_checks), basis="X", checks="Z-type"
         )
-        self._require_distance_fits(z_logicals, x_logicals)
+        self._require_distance_fits(int(stated), z_logicals, x_logicals)
+
+        object.__setattr__(self, "_width", matrices.num_qubits)
+        object.__setattr__(self, "_z_checks", tuple(_support(m) for m in z_checks))
+        object.__setattr__(self, "_x_checks", tuple(_support(m) for m in x_checks))
+        object.__setattr__(self, "_z_logicals", tuple(_support(m) for m in z_logicals))
+        object.__setattr__(self, "_x_logicals", tuple(_support(m) for m in x_logicals))
+        # ``CssCodeMatrices`` keeps one distance and does not split it by family, so
+        # each family's distance here is that one stated distance.
+        object.__setattr__(self, "_x_distance", int(stated))
+        object.__setattr__(self, "_z_distance", int(stated))
+
+    def _read_hand_written_matrices(self) -> None:
+        """Record the code four hand-written blocks state, deriving its distance.
+
+        The caller states a search weight rather than a distance, so the record has
+        to derive the distance, and every invariant the derivation rests on is
+        checked before it runs.
+        """
+
+        if isinstance(self.distance_search_weight, bool) or not isinstance(
+            self.distance_search_weight, Integral
+        ):
+            raise TypeError("distance search weight must be an integer")
+        if self.distance_search_weight < 1:
+            raise ValueError("distance search weight must be at least one")
+
+        blocks = {
+            "hz": _matrix_rows(self.hz, name="hz"),
+            "hx": _matrix_rows(self.hx, name="hx"),
+            "lz": _matrix_rows(self.lz, name="lz"),
+            "lx": _matrix_rows(self.lx, name="lx"),
+        }
+        widths: dict[str, int] = {}
+        for name, rows in blocks.items():
+            for index, row in enumerate(rows):
+                if not any(row):
+                    raise ValueError(
+                        f"{name} row {index} acts on no data qubit, so it states an "
+                        "operator over nothing rather than a check or a logical "
+                        "operator"
+                    )
+            width = _block_width(rows, name=name)
+            if width is not None:
+                widths[name] = width
+        if not widths:
+            raise ValueError(
+                "no block states a check or a logical operator, so the matrices do "
+                "not state how many data qubits the code has"
+            )
+        if len(set(widths.values())) != 1:
+            stated = ", ".join(f"{name} has {width}" for name, width in widths.items())
+            raise ValueError(
+                "the blocks disagree about how many data qubits the code has: "
+                f"{stated}"
+            )
+        width = next(iter(widths.values()))
+
+        z_checks = blocks["hz"]
+        x_checks = blocks["hx"]
+        z_logicals = blocks["lz"]
+        x_logicals = blocks["lx"]
+        z_masks = tuple(_mask(row) for row in z_checks)
+        x_masks = tuple(_mask(row) for row in x_checks)
+        z_checks_as_pauli = tuple(Pauli(z_qubits=s) for s in _supports(z_checks))
+        x_checks_as_pauli = tuple(Pauli(x_qubits=s) for s in _supports(x_checks))
+        for z_index, z_check in enumerate(z_checks_as_pauli):
+            for x_index, x_check in enumerate(x_checks_as_pauli):
+                if not z_check.commutes_with(x_check):
+                    raise ValueError(
+                        f"hz row {z_index} and hx row {x_index} act on an odd number "
+                        "of shared data qubits, so the two check families do not "
+                        "commute and generate no stabilizer group: the matrices are "
+                        "not those of a stabilizer code"
+                    )
+
+        z_rank = rank(list(z_masks))
+        x_rank = rank(list(x_masks))
+        logical_qubits = width - z_rank - x_rank
+        if logical_qubits < 1:
+            raise ValueError(
+                f"the {len(z_checks)} Z-type and {len(x_checks)} X-type checks span "
+                f"{z_rank + x_rank} of the {width} data qubits, so no logical qubit "
+                "is left and the matrices describe a stabilizer state rather than a "
+                "code with a distance"
+            )
+
+        for name, rows in (("lz", z_logicals), ("lx", x_logicals)):
+            if rows and len(rows) != logical_qubits:
+                raise ValueError(
+                    f"{name} declares {len(rows)} logical operator(s) for a code with "
+                    f"{logical_qubits} logical qubit(s): a logical family has one "
+                    "operator per logical qubit, and a shorter or longer list is not "
+                    "one"
+                )
+        z_logicals_as_pauli = tuple(Pauli(z_qubits=s) for s in _supports(z_logicals))
+        x_logicals_as_pauli = tuple(Pauli(x_qubits=s) for s in _supports(x_logicals))
+        _refuse_non_logicals(
+            rows=z_logicals,
+            family="lz",
+            as_pauli=z_logicals_as_pauli,
+            opposite_checks=x_checks_as_pauli,
+            opposite_family="hx",
+            own_masks=z_masks,
+            own_family="hz",
+        )
+        _refuse_non_logicals(
+            rows=x_logicals,
+            family="lx",
+            as_pauli=x_logicals_as_pauli,
+            opposite_checks=z_checks_as_pauli,
+            opposite_family="hz",
+            own_masks=x_masks,
+            own_family="hx",
+        )
+
+        if z_logicals_as_pauli and x_logicals_as_pauli:
+            pairing = [
+                sum(
+                    0 if z_logical.commutes_with(x_logical) else 1 << column
+                    for column, x_logical in enumerate(x_logicals_as_pauli)
+                )
+                for z_logical in z_logicals_as_pauli
+            ]
+            pairing_rank = rank(pairing)
+            if pairing_rank != logical_qubits:
+                raise ValueError(
+                    "the declared Z-type and X-type logical operators pair up "
+                    f"degenerately: their {logical_qubits}-by-{logical_qubits} "
+                    f"pairing matrix has rank {pairing_rank}, so together they "
+                    "generate a smaller logical group than a code with that many "
+                    "logical qubits has"
+                )
+
+        x_distance = _minimum_logical_weight(
+            width=width,
+            commuting_rows=z_masks,
+            stabilizer_rows=x_masks,
+            bound=int(self.distance_search_weight),
+        )
+        z_distance = _minimum_logical_weight(
+            width=width,
+            commuting_rows=x_masks,
+            stabilizer_rows=z_masks,
+            bound=int(self.distance_search_weight),
+        )
+        if x_distance is None or z_distance is None:
+            missing = "X-type" if x_distance is None else "Z-type"
+            raise ValueError(
+                f"no {missing} logical operator of weight at most "
+                f"{self.distance_search_weight} exists, so this record cannot report "
+                "the code's distance: build it again with a distance_search_weight "
+                "the search reaches, because the record does not report a distance "
+                "nothing checked"
+            )
+
+        object.__setattr__(self, "hz", z_checks)
+        object.__setattr__(self, "hx", x_checks)
+        object.__setattr__(self, "lz", z_logicals)
+        object.__setattr__(self, "lx", x_logicals)
+        object.__setattr__(self, "distance", min(x_distance, z_distance))
+        object.__setattr__(self, "_width", width)
+        object.__setattr__(self, "_z_checks", _supports(z_checks))
+        object.__setattr__(self, "_x_checks", _supports(x_checks))
+        object.__setattr__(self, "_z_logicals", _supports(z_logicals))
+        object.__setattr__(self, "_x_logicals", _supports(x_logicals))
+        object.__setattr__(self, "_x_distance", x_distance)
+        object.__setattr__(self, "_z_distance", z_distance)
 
     @staticmethod
     def _require_logical(
@@ -267,56 +501,70 @@ class CssCode:
             )
 
     def _require_distance_fits(
-        self, z_logicals: tuple[int, ...], x_logicals: tuple[int, ...]
+        self,
+        stated: int,
+        z_logicals: tuple[int, ...],
+        x_logicals: tuple[int, ...],
     ) -> None:
         lightest = min(mask.bit_count() for mask in z_logicals + x_logicals)
-        if self.distance > lightest:
+        if stated > lightest:
             raise ValueError(
-                f"the stated distance {self.distance} exceeds the weight {lightest} "
-                "of the lightest logical operator these matrices state, and a stated "
+                f"the stated distance {stated} exceeds the weight {lightest} of the "
+                "lightest logical operator these matrices state, and a stated "
                 "logical operator proves the distance is at most its own weight: "
                 "state a logical operator of that weight, or a smaller distance"
             )
 
     @property
+    def x_distance(self) -> int:
+        """The least weight of an X-type logical operator of this code."""
+
+        return self._x_distance
+
+    @property
+    def z_distance(self) -> int:
+        """The least weight of a Z-type logical operator of this code."""
+
+        return self._z_distance
+
+    @property
     def num_data_qubits(self) -> int:
-        return self.matrices.num_qubits
-
-    @property
-    def num_ancilla_qubits(self) -> int:
-        return len(self.checks)
-
-    @property
-    def num_ancilla_x_qubits(self) -> int:
-        return len(ancilla_bands(self.checks)[0])
-
-    @property
-    def num_ancilla_z_qubits(self) -> int:
-        return len(ancilla_bands(self.checks)[1])
-
-    @property
-    def num_x_stabilizers(self) -> int:
-        return self.num_ancilla_x_qubits
-
-    @property
-    def num_z_stabilizers(self) -> int:
-        return self.num_ancilla_z_qubits
+        return self._width
 
     @property
     def data_qubits(self) -> tuple[int, ...]:
-        return tuple(range(self.num_data_qubits))
+        return tuple(range(self._width))
+
+    @property
+    def num_ancilla_qubits(self) -> int:
+        return len(self._z_checks) + len(self._x_checks)
 
     @property
     def ancilla_qubits(self) -> tuple[int, ...]:
-        first = self.num_data_qubits
+        first = self._width
         return tuple(first + index for index in range(self.num_ancilla_qubits))
+
+    @property
+    def num_ancilla_x_qubits(self) -> int:
+        return ancilla_band_counts(self.checks)[0]
+
+    @property
+    def num_ancilla_z_qubits(self) -> int:
+        return ancilla_band_counts(self.checks)[1]
+
+    @property
+    def num_x_stabilizers(self) -> int:
+        return len(self._x_checks)
+
+    @property
+    def num_z_stabilizers(self) -> int:
+        return len(self._z_checks)
 
     @property
     def checks(self) -> tuple[CodeCheck, ...]:
         checks: list[CodeCheck] = []
-        for index, mask in enumerate(_row_masks(self.matrices.hz, what="Z-type check")):
-            support = _support(mask)
-            ancilla = self.num_data_qubits + index
+        for index, support in enumerate(self._z_checks):
+            ancilla = self._width + index
             checks.append(
                 CodeCheck(
                     index=index,
@@ -326,13 +574,8 @@ class CssCode:
                 )
             )
         offset = len(checks)
-        x_checks = _row_masks(
-            self.matrices.hx,  # type: ignore[arg-type]
-            what="X-type check",
-        )
-        for index, mask in enumerate(x_checks):
-            support = _support(mask)
-            ancilla = self.num_data_qubits + offset + index
+        for index, support in enumerate(self._x_checks):
+            ancilla = self._width + offset + index
             checks.append(
                 CodeCheck(
                     index=offset + index,
@@ -349,36 +592,52 @@ class CssCode:
 
     @property
     def logical_observables(self) -> tuple[Pauli, ...]:
-        z_masks = _row_masks(
-            self.matrices.lz,  # type: ignore[arg-type]
-            what="Z-type logical observable",
-        )
-        x_masks = _row_masks(
-            self.matrices.lx,  # type: ignore[arg-type]
-            what="X-type logical observable",
-        )
         return tuple(
-            [Pauli(z_qubits=_support(mask)) for mask in z_masks]
-            + [Pauli(x_qubits=_support(mask)) for mask in x_masks]
+            [Pauli(z_qubits=support) for support in self._z_logicals]
+            + [Pauli(x_qubits=support) for support in self._x_logicals]
         )
 
     def __eq__(self, other: object) -> bool:
-        """Compare two records by the matrices and the distance they were built from.
+        """Compare two records by the distance and the matrices they were built from.
 
-        The comparison is written out rather than generated, for the reason
-        `~flagquantum.qec.DemSample` states: a generated one would ask ``bool()``
-        of a tensor, and a generated hash would not agree with a content
-        comparison, so instances are deliberately unhashable.
+        A tensor-backed record is compared block by block, because a tensor's own
+        equality is a tensor and ``bool()`` of one is not a comparison. A
+        hand-written record is compared block by block as the sequences it was
+        normalized to.
         """
 
         if not isinstance(other, CssCode):
             return NotImplemented
         if self.distance != other.distance:
             return False
-        return all(
-            bool(getattr(self.matrices, name).equal(getattr(other.matrices, name)))
-            for name in ("hz", "hx", "lz", "lx")
+        if self.matrices is not None or other.matrices is not None:
+            if self.matrices is None or other.matrices is None:
+                return False
+            return all(
+                bool(getattr(self.matrices, name).equal(getattr(other.matrices, name)))
+                for name in ("hz", "hx", "lz", "lx")
+            )
+        return (
+            self.hz == other.hz
+            and self.hx == other.hx
+            and self.lz == other.lz
+            and self.lx == other.lx
         )
 
+    def __hash__(self) -> int:
+        """Hash a hand-written record by its content, and refuse a tensor one.
 
-__all__ = ("CssCode",)
+        A record whose blocks are tensors has no content hash that agrees with the
+        block-by-block comparison above, so it is deliberately unhashable rather
+        than quietly hashed by identity. A record whose blocks are sequences is
+        immutable content and hashes by it, so equal records land in one hash
+        bucket and a set of them collapses.
+        """
+
+        if self.matrices is not None:
+            raise TypeError(
+                "unhashable type: 'CssCode': this record's matrices are a tensor, so "
+                "it has no content hash that agrees with its comparison; compare "
+                "records with == or hash a record built from hand-written blocks"
+            )
+        return hash((self.hz, self.hx, self.lz, self.lx, self.distance))

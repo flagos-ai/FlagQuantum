@@ -634,17 +634,17 @@ noise_does_not_change_the_reported_method = true
 [[refusals]]
 code = "stabilizer_serves_no_expectation"
 exception = "CapabilityError"
-message_phrase = "samples measurement outcomes; it cannot serve"
-message_source = "flagquantum/runtime/executors/stabilizer/sampling.py"
+message_phrase = "it cannot serve measurement kind(s)"
+message_source = "flagquantum/runtime/executors/stabilizer/route.py"
 trigger = "a loss that runs the circuit with options=ExecutionOptions(mode='stabilizer') and asks for an expectation"
 reachable_from = ["auto", "autograd", "parameter_shift", "finite_difference", "spsa"]
 
 [[refusals]]
 code = "noisy_execution_needs_auto_or_density_matrix"
 exception = "ValidationError"
-message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+message_phrase = "stable noisy execution supports mode='auto', mode='density_matrix', or"
 message_source = "flagquantum/runtime/planner/__init__.py"
-trigger = "a loss that passes a noise model to fq.run with a mode other than 'auto' or 'density_matrix'"
+trigger = "a loss that passes a noise model to fq.run with a mode other than 'auto', 'density_matrix', or 'stabilizer'"
 reachable_from = ["auto", "autograd", "finite_difference", "spsa"]
 
 [[refusals]]
@@ -739,7 +739,7 @@ measured_refusing_modes = ["distributed_mps", "distributed_statevector", "distri
 
 [[reframings.instances]]
 trigger = "a noise model with a mode other than auto or density_matrix"
-inner_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+inner_phrase = "stable noisy execution supports mode='auto', mode='density_matrix', or mode='stabilizer'"
 measured_refusing_modes = ["mps", "statevector", "tensor_network"]
 
 [verification]

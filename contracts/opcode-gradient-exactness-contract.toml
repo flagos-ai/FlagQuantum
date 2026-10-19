@@ -111,7 +111,7 @@ mode = "stabilizer"
 exception = "CapabilityError"
 message_phrase = "samples measurement outcomes"
 message_source = "flagquantum/runtime/planner/__init__.py"
-second_message_source = "flagquantum/runtime/executors/stabilizer/sampling.py"
+second_message_source = "flagquantum/runtime/executors/stabilizer/route.py"
 measured_opcodes_refused = 14
 trigger = "any differentiable opcode differentiated through a loss that runs in mode='stabilizer'"
 reachable_from = "fq.gradient(..., method='parameter_shift') over a fq.run call with ExecutionOptions(mode='stabilizer')"

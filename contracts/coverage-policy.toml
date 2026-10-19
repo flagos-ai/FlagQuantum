@@ -27,11 +27,24 @@
 # Its tests run in full in the `qiskit-optional` job, which does not measure
 # coverage.
 #
-# The floors were last set on 2026-09-17 at five points below the measured value,
+# The floors were first set on 2026-09-17 at five points below the measured value,
 # which the coverage job reported as 81.9% globally, so an unrelated refactor has
 # room to move while a real regression fails. Raise a floor when the measured
 # coverage grows past it; a floor may not be lowered without replacing the
 # coverage it gave up.
+#
+# On 2026-10-18 every measured directory that had crossed 60 since that pass was
+# given a floor, which is the reading the paragraph above already required. Each
+# new floor is five points below the value the coverage job's own selection
+# measured that day, and no existing floor moved: `core.ir`, `core.ir.program`,
+# `operators`, `remote.realtime`, `ecosystem.kaiwu`, `ecosystem.qcis`,
+# `remote.kaiwu`, `ecosystem.simulators`, `kernels`, `kernels.catalog`,
+# `lindblad`, `runtime.executors.stabilizer`, `simulation.native_cpu`. The first
+# seven are directories that did not exist when the pass was made.
+#
+# `runtime.profiles` is measured but reported with no statements, so it is the one
+# directory at or above 60 without a floor: a floor there would compare an empty
+# measurement against a number and never fail for a reason about the code.
 #
 # The `jax` and `pennylane` subpackages are covered only while their tests stay
 # selected by the coverage job (see its install line and marker expression), so
@@ -73,6 +86,12 @@ min = 69
 [packages.core]
 min = 83
 
+[packages."core.ir"]
+min = 88
+
+[packages."core.ir.program"]
+min = 89
+
 [packages.deployment]
 min = 85
 
@@ -88,17 +107,38 @@ min = 87
 [packages."ecosystem.extensions"]
 min = 82
 
+[packages."ecosystem.kaiwu"]
+min = 83
+
 [packages."ecosystem.pennylane"]
 min = 85
+
+[packages."ecosystem.qcis"]
+min = 94
+
+[packages."ecosystem.simulators"]
+min = 79
 
 [packages.experimental]
 min = 91
 
+[packages.kernels]
+min = 56
+
+[packages."kernels.catalog"]
+min = 87
+
 [packages.noise]
 min = 83
 
+[packages.lindblad]
+min = 80
+
 [packages.observables]
 min = 86
+
+[packages.operators]
+min = 95
 
 [packages.qec]
 min = 82
@@ -109,8 +149,14 @@ min = 81
 [packages."remote.compute"]
 min = 67
 
+[packages."remote.kaiwu"]
+min = 85
+
 [packages."remote.qpu"]
 min = 78
+
+[packages."remote.realtime"]
+min = 94
 
 [packages.runtime]
 min = 85
@@ -141,6 +187,9 @@ min = 79
 
 [packages."runtime.executors.mps"]
 min = 61
+
+[packages."runtime.executors.stabilizer"]
+min = 95
 
 [packages."runtime.executors.statevector"]
 min = 74
@@ -177,6 +226,9 @@ min = 91
 
 [packages."simulation.mps"]
 min = 84
+
+[packages."simulation.native_cpu"]
+min = 89
 
 [packages."simulation.numerics"]
 min = 88

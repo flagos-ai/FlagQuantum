@@ -255,6 +255,17 @@ class _XMemoryCode:
         return (Pauli(x_qubits=(0, 1)),)
 
 
+def test_an_x_type_logical_observable_is_refused_rather_than_misread() -> None:
+    """The terminal readout is in the Z basis, so an X memory is not expressible.
+
+    Accepting it would produce a detector layout whose terminal detectors assert
+    a determinism the readout cannot observe, so the code is refused instead.
+    """
+
+    with pytest.raises(ValueError, match="Z-type logical observable"):
+        build_memory_circuit(_XMemoryCode(), rounds=2)
+
+
 def test_an_x_type_memory_is_read_out_in_the_basis_it_declares() -> None:
     """A code declaring only an X observable has no Z memory, and does have an X one.
 

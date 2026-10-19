@@ -222,6 +222,14 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
     difference_conformance = verification.get("difference_conformance")
     if not isinstance(difference_conformance, str):
         errors.append("split real/imag P5 must name its difference diagnostic module")
+    elif not (ROOT / difference_conformance).is_file():
+        # The path is reported by the loop below like every other verification
+        # entry. Reading it here would raise instead of returning, so the one
+        # thing this branch must not do is read a name it has not confirmed.
+        errors.append(
+            "split real/imag P5 difference diagnostic "
+            f"{difference_conformance!r} is missing"
+        )
     else:
         difference_source = (ROOT / difference_conformance).read_text(encoding="utf-8")
         if "central_difference_gradient" not in difference_source:

@@ -7,14 +7,22 @@ and the measurement handles the experiment records are derived from the code the
 same way, so a recorded bit is named by a handle rather than by a column index a
 caller has to know.
 
-A memory experiment is read in one basis, and the experiment states which. The
-data qubits are prepared in that basis' state, the checks of that basis are
-deterministic in round zero and again against the terminal readout, and the
-logical observable read is the code's declared one in the same basis. Upstream
-derives the basis from the preparation kernel it is handed; here it is the
-``readout_basis`` field of the experiment, checked against the code's declared
-logical observables rather than assumed from them, because the Steane code
-declares one of each and a record alone does not say which experiment is meant.
+Which qubits are prepared and read out in the X basis is part of what is derived
+rather than assumed, and it is the record's one piece of authored frame
+information. By default no qubit is rotated, so the whole experiment is in the Z
+basis, which is the frame the code's declared logical observables are stated in,
+and the experiment reads the code's declared Z-type logical operator. Asked for a
+certified logical ``product`` instead, the builder rotates exactly the qubits
+that product carries an ``X`` factor on, at both ends of the experiment, and the
+product itself becomes the experiment's single observable. Asked for the whole
+experiment in the X basis, it rotates every data qubit and reads the code's
+declared X-type logical operator. All three routes go through the same builder,
+the same detector rule and the same observable layout: only the set of qubits
+rotated into the X basis differs. Upstream derives that set from the preparation
+kernel it is handed; here it is derived from the request and stored on the
+record, because the code alone does not name one experiment -- the Steane code
+declares a logical observable in each basis, so the same code and round count
+describe a Z memory and an X memory and only the record says which was built.
 """
 
 from __future__ import annotations
@@ -23,7 +31,8 @@ from dataclasses import dataclass
 from numbers import Integral
 from typing import Literal
 
-from .codes import CodeCheck, StabilizerCode, ancilla_bands
+from .codes import StabilizerCode, ancilla_band_counts
+from .logical import certify_logical_product
 from .pauli import Pauli
 
 _FUNCTION_NAME = "memory_experiment"
@@ -46,23 +55,22 @@ def _checked_basis(basis: object) -> ReadoutBasis:
     return basis
 
 
-def _carried_by(check: CodeCheck, basis: ReadoutBasis) -> bool:
-    """Return whether ``check``'s ancilla readout is in ``basis``.
-
-    A check's stabilizer is pure X or pure Z -- :class:`~flagquantum.qec.CodeCheck`
-    refuses a mixed one -- so a check is carried by exactly one basis, and a
-    detector whose parity reads that check's ancilla belongs to that basis.
-    """
-
-    return bool(check.stabilizer.x_qubits) == (basis == "x")
-
-
 def _readout_basis_of(pauli: Pauli) -> ReadoutBasis | None:
     """Return the basis ``pauli`` is measured in, or ``None`` when it is mixed."""
 
     if pauli.x_qubits and pauli.z_qubits:
         return None
     return "x" if pauli.x_qubits else "z"
+
+
+def _declared_readout(code: StabilizerCode, basis: ReadoutBasis) -> tuple[Pauli, ...]:
+    """Return the code's declared logical observables ``basis`` can measure."""
+
+    return tuple(
+        observable
+        for observable in code.logical_observables
+        if _readout_basis_of(observable) == basis
+    )
 
 
 def _readout_observables(
@@ -74,16 +82,12 @@ def _readout_observables(
     a Z-basis experiment reads the code's Z-type logical operator and an X-basis
     experiment the X-type one, which is upstream's ``get_observables_z`` and
     ``get_observables_x``. A code that declares no observable in the requested
-    basis has no memory experiment here, and that is refused where the basis is
+    basis has no memory experiment here, and that is refused where the frame is
     chosen rather than answered by dropping the observable and building an
     experiment with no logical qubit.
     """
 
-    observables = tuple(
-        observable
-        for observable in code.logical_observables
-        if _readout_basis_of(observable) == basis
-    )
+    observables = _declared_readout(code, basis)
     if not observables:
         name = basis.upper()
         article = "an" if basis == "x" else "a"
@@ -94,6 +98,37 @@ def _readout_observables(
             f"and no logical observable this code declares is {name}-type"
         )
     return observables
+
+
+def _pinned_checks(
+    code: StabilizerCode, *, x_readout: tuple[int, ...]
+) -> tuple[bool, ...]:
+    """Return, per check, whether it is deterministic in round zero and at the end.
+
+    A check is deterministic in the preparation state when the state pins the
+    eigenvalue the check measures. Each qubit of the check's support is prepared
+    in the Z basis unless it is in ``x_readout``, so the check is pinned exactly
+    when every qubit carrying an ``X`` factor was prepared in the X basis and
+    every qubit carrying a ``Z`` factor was prepared in the Z basis. With an empty
+    frame that is "a pure Z-type check" and with every data qubit rotated it is
+    "a pure X-type check"; a frame that rotates a subset needs a *pattern* of
+    rotations rather than all or none. The same condition holds again at the
+    terminal readout, because the experiment ends by measuring each data qubit in
+    that same basis.
+
+    A check that fails the condition is still measured every round: comparing two
+    consecutive rounds of it is what detects the errors the readout is vulnerable
+    to. It only loses its round-zero and terminal detectors.
+    """
+
+    rotated = frozenset(x_readout)
+    return tuple(
+        all(
+            (qubit in rotated) == (qubit in check.stabilizer.x_qubits)
+            for qubit in check.stabilizer.support
+        )
+        for check in code.checks
+    )
 
 
 @dataclass(frozen=True)
@@ -186,7 +221,7 @@ class LogicalObservable:
         if self.pauli.x_qubits and self.pauli.z_qubits:
             raise ValueError(
                 "observable readout reads one basis at a time, so its operator "
-                "must be pure X or pure Z rather than mixed"
+                "must be pure X-type or pure Z-type rather than mixed"
             )
         if not self.measurement_parity:
             raise ValueError("observable must reference at least one measurement")
@@ -229,15 +264,21 @@ class ObservableLayout:
 class MemoryCircuit:
     """Code-driven memory-experiment source with its detection layouts.
 
-    ``readout_basis`` is the basis the experiment prepares, checks and reads out
-    in, and it is part of the record rather than derived at use, because the code
-    alone does not name one experiment: the Steane code declares a logical
-    observable in each basis, so the same code and round count describe a Z
-    memory and an X memory and only the record says which was built. Everything
-    the basis decides -- the preparation and terminal rotation in ``source``, the
-    terminal detectors, and which of the code's observables the layout reads --
-    is derived from this one field, so no two fields of the record can describe
-    two different experiments.
+    ``x_readout_qubits`` is the set of data qubits this experiment prepares and
+    reads out in the X basis, in ascending order, and it is the record's one
+    authored statement of the experiment's frame. Everything the frame decides --
+    the preparation and terminal rotation in ``source``, which checks are
+    deterministic in round zero and again at the terminal readout, and which of
+    the code's observables the layout reads -- is derived from it, so no two
+    fields of the record can describe two different experiments.
+
+    It is empty for the default frame, in which the whole experiment is in the Z
+    basis and the observables are the code's declared Z-type logical observables.
+    It is every data qubit for an X-basis experiment, whose observables are the
+    code's declared X-type logical observables. It is the support of a certified
+    logical product otherwise, and that product is then the experiment's single
+    observable. ``readout_basis`` names which of the two pure frames that is, and
+    is derived from this field rather than stored beside it.
     """
 
     code: StabilizerCode
@@ -245,7 +286,7 @@ class MemoryCircuit:
     source: str
     detectors: DetectorLayout
     observables: ObservableLayout
-    readout_basis: ReadoutBasis = "z"
+    x_readout_qubits: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         if isinstance(self.rounds, bool) or not isinstance(self.rounds, Integral):
@@ -254,18 +295,36 @@ class MemoryCircuit:
             raise ValueError("memory rounds must be positive")
         if not isinstance(self.code, StabilizerCode):
             raise TypeError("code must implement the StabilizerCode protocol")
-        _checked_basis(self.readout_basis)
         if not self.source.strip():
             raise ValueError("memory circuit source must not be empty")
+        data_qubits = set(self.code.data_qubits)
+        for qubit in self.x_readout_qubits:
+            if isinstance(qubit, bool) or not isinstance(qubit, Integral):
+                raise TypeError("X readout qubits must be integers")
+            if qubit not in data_qubits:
+                raise ValueError(
+                    "X readout qubits must be declared data qubits of the code"
+                )
+        if tuple(sorted(set(self.x_readout_qubits))) != self.x_readout_qubits:
+            raise ValueError(
+                "X readout qubits must be unique and in ascending order, because "
+                "they are applied to the source in the order given"
+            )
         expected = _detector_count(
-            self.code, rounds=self.rounds, readout_basis=self.readout_basis
+            self.code, rounds=self.rounds, x_readout=self.x_readout_qubits
         )
         if len(self.detectors) != expected:
             raise ValueError(
-                "memory circuit detector count must match the code's checks and "
-                "the configured rounds"
+                "memory circuit detector count must match the code's checks, the "
+                "readout frame and the configured rounds"
             )
         self._validate_layout()
+
+    @property
+    def readout_basis(self) -> ReadoutBasis:
+        """Return the basis this experiment's logical observable is read in."""
+
+        return "x" if self.x_readout_qubits else "z"
 
     @property
     def measurement_refs(self) -> tuple[MeasurementRef, ...]:
@@ -280,7 +339,7 @@ class MemoryCircuit:
 
         The two sets need not coincide in either direction, which is why the
         vector is stated here rather than collected from the layouts. A one-round
-        experiment measures the checks the readout basis cannot compare -- on a
+        experiment measures the checks the readout frame cannot compare -- on a
         patch, its X-type checks under an all-zero preparation, or its Z-type
         checks under a ``|+>`` one -- and no detector names them, because such a
         check is deterministic neither in round zero nor at the terminal readout,
@@ -295,7 +354,7 @@ class MemoryCircuit:
             for round_index in range(self.rounds)
             for check in self.code.checks
         ]
-        refs.extend(MeasurementRef(None, wire) for wire in self.code.data_qubits)
+        refs.extend(MeasurementRef(None, qubit) for qubit in self.code.data_qubits)
         return tuple(refs)
 
     def _validate_layout(self) -> None:
@@ -320,43 +379,74 @@ class MemoryCircuit:
                         "detector syndrome measurement must reference a declared "
                         "ancilla qubit"
                     )
-        readout_observables = _readout_observables(self.code, self.readout_basis)
-        if len(self.observables) != len(readout_observables):
-            raise ValueError(
-                "observable layout must declare one observable per code logical "
-                f"the experiment's {self.readout_basis.upper()} readout basis can "
-                "measure"
-            )
+        if not self.x_readout_qubits:
+            self._validate_declared_observables()
+        else:
+            declared = _declared_readout(self.code, "x")
+            stated = tuple(item.pauli for item in self.observables.observables)
+            if not declared or stated != declared:
+                self._validate_rotated_observable()
         for observable in self.observables.observables:
-            if observable.pauli != readout_observables[observable.index]:
-                raise ValueError(
-                    "observable operator must match the code's declared logical "
-                    "observable"
-                )
             for reference in observable.measurement_parity:
                 if reference.qubit not in data_qubits:
                     raise ValueError(
                         "observable readout must reference a declared data qubit"
                     )
 
+    def _validate_declared_observables(self) -> None:
+        """Require the code's own declared logical observables, in order."""
+
+        readable = _readout_observables(self.code, "z")
+        if len(self.observables) != len(readable):
+            raise ValueError(
+                "observable layout must declare one observable per readable code "
+                "logical"
+            )
+        for observable in self.observables.observables:
+            if observable.pauli != readable[observable.index]:
+                raise ValueError(
+                    "observable operator must match the code's declared logical "
+                    "observable"
+                )
+
+    def _validate_rotated_observable(self) -> None:
+        """Require one certified logical product read out on exactly its X qubits."""
+
+        if len(self.observables) != 1:
+            raise ValueError(
+                "a rotated readout measures one logical product, so the observable "
+                "layout must declare exactly one observable"
+            )
+        (observable,) = self.observables.observables
+        certify_logical_product(self.code, observable.pauli)
+        if observable.pauli.x_qubits != self.x_readout_qubits:
+            raise ValueError(
+                "observable X-type factor must be exactly the wires the experiment "
+                "reads out in the X basis, because a qubit read out in the wrong "
+                "basis measures a different operator"
+            )
+
 
 def _require_ancilla_bands(code: StabilizerCode) -> None:
     """Refuse a record whose per-basis ancilla counts contradict its checks.
 
-    The two bands are a function of the checks, and
-    :func:`~flagquantum.qec.codes.ancilla_bands` derives them everywhere they are
-    read. A record that also reports the two counts is stating them a second
-    time, so this is where the two statements are compared: a count that does not
-    match the band its own checks define would otherwise be read by whoever asks
-    the record and ignored by whoever reads the checks, and the two readers would
-    disagree silently. A record that declares ancillas measuring neither basis --
-    a flag or an idle ancilla -- keeps them out of both bands and is unaffected,
-    because this compares the counts against the bands and not against the total.
+    The two counts are a function of the checks, and
+    :func:`~flagquantum.qec.codes.ancilla_band_counts` reads them off the checks
+    everywhere they are consumed. A record that also reports the two counts is
+    stating them a second time, so this is where the two statements are compared:
+    a count that does not match what its own checks measure would otherwise be
+    read by whoever asks the record and ignored by whoever reads the checks, and
+    the two readers would disagree silently. A record that declares ancillas
+    measuring neither basis -- a flag or an idle ancilla -- keeps them out of both
+    counts and is unaffected, because this compares counts and not the total. A
+    record whose checks measure both bases is compared the same way, because a
+    check that carries both factors counts once for each; the band *sets* are what
+    a mixed check leaves undefined, and this guard reads the counts rather than
+    the sets for exactly that reason.
     """
 
-    x_qubits, z_qubits = ancilla_bands(code.checks)
     stated = (code.num_ancilla_x_qubits, code.num_ancilla_z_qubits)
-    derived = (len(x_qubits), len(z_qubits))
+    derived = ancilla_band_counts(code.checks)
     if stated != derived:
         raise ValueError(
             "code reports "
@@ -368,56 +458,39 @@ def _require_ancilla_bands(code: StabilizerCode) -> None:
 
 
 def _detector_count(
-    code: StabilizerCode, *, rounds: int, readout_basis: ReadoutBasis
+    code: StabilizerCode, *, rounds: int, x_readout: tuple[int, ...] = ()
 ) -> int:
     """Return how many detectors one configured memory experiment must declare.
 
-    A check the readout basis carries is deterministic in round zero and again
-    against the terminal readout, so it declares one detector per round against
-    its predecessor plus a terminal one; a check the other basis carries is
+    A check the frame pins is deterministic in round zero and again against the
+    terminal readout, so it declares one detector per round against its
+    predecessor plus a terminal one; a check the frame does not pin is
     deterministic only against the round before it. The count is therefore
-    ``protected * (rounds + 1) + other * (rounds - 1)``, where ``protected``
-    counts the checks measuring the readout basis, and the two bases are the same
-    formula read over the two check bands.
+    ``pinned * (rounds + 1) + other * (rounds - 1)``. An empty frame reads the
+    code's declared Z-type logical observable, so a code that declares none is
+    refused here rather than answered with a layout that reads nothing.
     """
 
-    _readout_observables(code, readout_basis)
-    protected = sum(1 for check in code.checks if _carried_by(check, readout_basis))
+    if not x_readout:
+        _readout_observables(code, "z")
+    pinned = sum(_pinned_checks(code, x_readout=x_readout))
     total = len(code.checks)
-    return protected * (rounds + 1) + (total - protected) * (rounds - 1)
+    return pinned * (rounds + 1) + (total - pinned) * (rounds - 1)
 
 
-def _basis_rotation(basis: ReadoutBasis) -> str:
-    """Return the single-qubit gate that rotates a data qubit into ``basis``.
+def _check_source(code: StabilizerCode, *, x_readout: tuple[int, ...] = ()) -> str:
+    """Return the memory-experiment source whose frame is ``x_readout``.
 
-    A Z-basis experiment prepares the all-zero state the runtime starts in and
-    reads out through the runtime's final sample, so it needs no rotation at all;
-    an X-basis one is the same experiment conjugated by ``H`` on every data qubit,
-    which is why upstream's X memory is its Z memory with the preparation kernel
-    exchanged rather than a second circuit.
-    """
-
-    return "" if basis == "z" else "H"
-
-
-def _check_source(code: StabilizerCode, *, readout_basis: ReadoutBasis) -> str:
-    """Return the memory-experiment source in ``readout_basis``.
-
-    Every check is prepared, measured and reset the same way it is in the Z
-    source, because only the *data* basis changes the experiment: the loop always
+    Every check is prepared, measured and reset the same way whatever the frame,
+    because only the *data* qubits' basis changes the experiment: the loop always
     leaves each ancilla's Z-basis readout equal to its check's eigenvalue. What
-    the basis adds is the rotation of the data qubits -- into the basis state
-    before the first round and back before the terminal sample -- so the
-    preparation and the readout are the basis the checks of that basis are
+    the frame adds is the rotation of the data qubits -- into the frame's basis
+    state before the first round and back before the terminal sample -- so the
+    preparation and the readout are the basis the checks the frame pins are
     deterministic in.
     """
 
-    rotation = _basis_rotation(readout_basis)
-    rotate = (
-        []
-        if not rotation
-        else [f"    qp.{rotation}(wires={qubit})" for qubit in code.data_qubits]
-    )
+    rotate = [f"    qp.H(wires={qubit})" for qubit in x_readout]
     lines = [
         f"def {_FUNCTION_NAME}(rounds):",
         *rotate,
@@ -426,9 +499,19 @@ def _check_source(code: StabilizerCode, *, readout_basis: ReadoutBasis) -> str:
     ]
     for check in code.checks:
         ancilla = check.ancilla_qubit
+        # ``cnot_qubits`` states the Z-factor pairs first and the X-factor pairs
+        # after them, so the split is the Z run's length and the ``H`` pair wraps
+        # the X run alone -- never the Z run, which would conjugate the check
+        # into a different operator. A pure Z-type check has an empty X run and
+        # gets no ``H`` at all; a pure X-type one has an empty Z run and is the
+        # wrapped gadget alone. Those are the two shapes this emission already
+        # produced, and the mixed check uses both runs through the same ancilla.
+        split = len(check.stabilizer.z_qubits)
+        for control, target in check.cnot_qubits[:split]:
+            lines.append(f"        qp.CNOT(wires=[{control}, {target}])")
         if check.stabilizer.x_qubits:
             lines.append(f"        qp.H(wires={ancilla})")
-        for control, target in check.cnot_qubits:
+        for control, target in check.cnot_qubits[split:]:
             lines.append(f"        qp.CNOT(wires=[{control}, {target}])")
         if check.stabilizer.x_qubits:
             lines.append(f"        qp.H(wires={ancilla})")
@@ -440,20 +523,22 @@ def _check_source(code: StabilizerCode, *, readout_basis: ReadoutBasis) -> str:
 
 
 def _detector_layout(
-    code: StabilizerCode, *, rounds: int, readout_basis: ReadoutBasis
+    code: StabilizerCode, *, rounds: int, x_readout: tuple[int, ...] = ()
 ) -> DetectorLayout:
-    _readout_observables(code, readout_basis)
+    if not x_readout:
+        _readout_observables(code, "z")
+    pinned = _pinned_checks(code, x_readout=x_readout)
     detectors: list[Detector] = []
     for round_index in range(rounds):
-        for check in code.checks:
-            if round_index == 0 and not _carried_by(check, readout_basis):
+        for position, check in enumerate(code.checks):
+            if round_index == 0 and not pinned[position]:
                 continue
             parity = [MeasurementRef(round_index, check.ancilla_qubit)]
             if round_index > 0:
                 parity.append(MeasurementRef(round_index - 1, check.ancilla_qubit))
             detectors.append(Detector(index=len(detectors), parity=tuple(parity)))
-    for check in code.checks:
-        if not _carried_by(check, readout_basis):
+    for position, check in enumerate(code.checks):
+        if not pinned[position]:
             continue
         parity = [MeasurementRef(rounds - 1, check.ancilla_qubit)]
         parity.extend(MeasurementRef(None, qubit) for qubit in check.stabilizer.support)
@@ -462,8 +547,34 @@ def _detector_layout(
 
 
 def _observable_layout(
-    code: StabilizerCode, *, readout_basis: ReadoutBasis
+    code: StabilizerCode,
+    *,
+    x_readout: tuple[int, ...] = (),
+    product: Pauli | None = None,
 ) -> ObservableLayout:
+    """Return the observables one frame reads, in the order the code declares them.
+
+    A frame that rotates a proper subset of the data qubits is the frame of the
+    certified ``product`` that named it, and that product is the experiment's one
+    observable. An empty frame reads the code's declared Z-type logical
+    observables and a frame over every data qubit reads its declared X-type ones,
+    because those are the declared operators the frame's terminal readout can
+    measure.
+    """
+
+    if product is not None and x_readout:
+        return ObservableLayout(
+            (
+                LogicalObservable(
+                    index=0,
+                    pauli=product,
+                    measurement_parity=tuple(
+                        MeasurementRef(None, qubit) for qubit in product.support
+                    ),
+                ),
+            )
+        )
+    basis: ReadoutBasis = "x" if x_readout else "z"
     return ObservableLayout(
         tuple(
             LogicalObservable(
@@ -473,31 +584,43 @@ def _observable_layout(
                     MeasurementRef(None, qubit) for qubit in pauli.support
                 ),
             )
-            for index, pauli in enumerate(_readout_observables(code, readout_basis))
+            for index, pauli in enumerate(_readout_observables(code, basis))
         )
     )
 
 
 def build_memory_circuit(
-    code: StabilizerCode, *, rounds: int, readout_basis: ReadoutBasis = "z"
+    code: StabilizerCode,
+    *,
+    rounds: int,
+    product: Pauli | None = None,
+    readout_basis: ReadoutBasis = "z",
 ) -> MemoryCircuit:
     """Build a code's memory-experiment source and its detection layouts.
 
-    The experiment is read in ``readout_basis``: the data qubits are prepared in
-    that basis' state, and its checks are the ones deterministic in round zero and
-    again at the terminal readout. Such a check therefore gets one detector per
-    round comparing that round with the round before it, where round ``-1`` is the
-    known preparation, plus one terminal detector comparing the final syndrome
-    round with the terminal data readout. A check of the other basis is
-    deterministic in neither place: it gets one detector for every round after the
-    first, comparing two consecutive syndrome rounds, and nothing else. Which
-    basis that is is stated by ``readout_basis`` rather than inferred from the
-    code, because the Steane code declares a logical observable in each basis and
-    the same code and round count describe two different experiments.
+    The experiment is read in one frame. By default no data qubit is rotated, so
+    the whole experiment is in the Z basis: the code's Z-type checks are
+    deterministic in round zero, because the initial state is the all-zero state,
+    and again at the terminal readout. Such a check therefore gets one detector
+    per round comparing that round with the round before it, where round ``-1``
+    is the known preparation, plus one terminal detector comparing the final
+    syndrome round with the terminal data readout. A check the frame does not pin
+    is deterministic in neither place: it gets one detector for every round after
+    the first, comparing two consecutive syndrome rounds, and nothing else.
 
-    The code must declare a logical observable in the requested basis, which is
-    the operator the terminal readout realizes; a code that declares none is
-    refused.
+    Passing a ``product`` moves the experiment into that product's frame instead.
+    The product must be a certified logical operator of the same code, per
+    :func:`flagquantum.qec.certify_logical_product`; every data qubit it carries
+    an ``X`` factor on is prepared in the X basis and read out in the X basis, and
+    the product itself becomes the experiment's single observable. Asking for
+    ``readout_basis="x"`` rotates every data qubit and reads the code's declared
+    X-type logical operator. The detector rule is the same one stated above,
+    applied with each qubit's own basis: a check keeps its round-zero and
+    terminal detectors exactly when every qubit of its support was prepared in
+    the basis its factor needs.
+
+    The code must declare a logical observable the frame can read, which is the
+    operator the terminal readout realizes; a code that declares none is refused.
 
     The source itself is a bounded hybrid compiler program; this function neither
     lowers nor executes it.
@@ -505,18 +628,23 @@ def build_memory_circuit(
     Args:
         code: The stabilizer code record to build an experiment for.
         rounds: Positive number of syndrome-extraction rounds.
-        readout_basis: ``"z"`` or ``"x"``, the basis the experiment is prepared
-            and read out in.
+        product: A certified logical operator whose X support is the frame, or
+            ``None`` to select the frame by ``readout_basis``.
+        readout_basis: ``"z"`` or ``"x"``, the basis a frame selected by name is
+            prepared and read out in.
 
     Returns:
         A `~flagquantum.qec.MemoryCircuit` whose layouts describe the experiment
-        ``readout_basis`` configures.
+        the requested frame configures.
 
     Raises:
         TypeError: ``code`` does not implement the stabilizer-code protocol, or
-            ``rounds`` is not an integer, or ``readout_basis`` is not a string.
+            ``rounds`` is not an integer, or ``product`` is neither a Pauli
+            operator nor ``None``, or ``readout_basis`` is not a string.
         ValueError: ``rounds`` is not positive, ``readout_basis`` names no basis,
-            or the code declares no logical observable in that basis.
+            both ``product`` and an explicit ``readout_basis`` are stated, the
+            product is not a certified logical operator, or the code declares no
+            logical observable the frame can read.
 
     Examples:
         >>> import flagquantum.qec as qec
@@ -532,20 +660,38 @@ def build_memory_circuit(
     if not code.checks:
         raise ValueError("memory experiment requires a code with at least one check")
     _require_ancilla_bands(code)
-    basis = _checked_basis(readout_basis)
-    _readout_observables(code, basis)
     if isinstance(rounds, bool) or not isinstance(rounds, Integral):
         raise TypeError("rounds must be an integer")
     if rounds <= 0:
         raise ValueError("rounds must be positive")
     configured_rounds = int(rounds)
+    if product is not None:
+        if not isinstance(product, Pauli):
+            raise TypeError("product must be a Pauli operator or None")
+        if readout_basis != "z":
+            raise ValueError(
+                "product and an explicit readout_basis were both stated, and they "
+                "are two statements of the one readout frame; state the frame once"
+            )
+        certify_logical_product(code, product)
+        x_readout = product.x_qubits
+    else:
+        basis = _checked_basis(readout_basis)
+        x_readout = () if basis == "z" else tuple(code.data_qubits)
+    if _detector_count(code, rounds=configured_rounds, x_readout=x_readout) == 0:
+        raise ValueError(
+            f"a {configured_rounds}-round memory experiment of this code in this "
+            "readout frame has no deterministic detector, because no check is "
+            "pinned by the preparation state and comparing two syndrome rounds is "
+            "the only comparison left; increase the round count"
+        )
     return MemoryCircuit(
         code=code,
         rounds=configured_rounds,
-        source=_check_source(code, readout_basis=basis),
-        detectors=_detector_layout(code, rounds=configured_rounds, readout_basis=basis),
-        observables=_observable_layout(code, readout_basis=basis),
-        readout_basis=basis,
+        source=_check_source(code, x_readout=x_readout),
+        detectors=_detector_layout(code, rounds=configured_rounds, x_readout=x_readout),
+        observables=_observable_layout(code, x_readout=x_readout, product=product),
+        x_readout_qubits=x_readout,
     )
 
 

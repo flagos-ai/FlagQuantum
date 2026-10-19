@@ -413,6 +413,15 @@ def test_logical_observable_rejects_an_identity_operator() -> None:
         LogicalObservable(index=0, pauli=Pauli(), measurement_parity=())
 
 
+def test_logical_observable_rejects_a_mixed_type_operator() -> None:
+    with pytest.raises(ValueError, match="pure X-type or pure Z-type"):
+        LogicalObservable(
+            index=0,
+            pauli=Pauli(x_qubits=(0,), z_qubits=(0,)),
+            measurement_parity=(MeasurementRef(None, 0),),
+        )
+
+
 def test_logical_observable_accepts_a_pure_x_type_operator() -> None:
     """Both bases are readable, so neither pure Pauli type is refused.
 
@@ -432,12 +441,23 @@ def test_logical_observable_accepts_a_pure_x_type_operator() -> None:
 
 
 def test_logical_observable_rejects_a_mixed_operator() -> None:
-    with pytest.raises(ValueError, match="pure X or pure Z"):
+    with pytest.raises(ValueError, match="pure X(-type)? or pure Z(-type)?"):
         LogicalObservable(
             index=0,
             pauli=Pauli(x_qubits=(0,), z_qubits=(1,)),
             measurement_parity=(MeasurementRef(None, 0), MeasurementRef(None, 1)),
         )
+
+
+def test_logical_observable_admits_an_x_type_operator() -> None:
+    """The readout basis belongs to the experiment, not to the operator."""
+
+    observable = LogicalObservable(
+        index=0,
+        pauli=Pauli(x_qubits=(0, 1)),
+        measurement_parity=(MeasurementRef(None, 0), MeasurementRef(None, 1)),
+    )
+    assert observable.pauli == Pauli(x_qubits=(0, 1))
 
 
 def test_observable_layout_requires_a_dense_ordering() -> None:
@@ -532,7 +552,7 @@ def test_memory_circuit_rejects_a_non_code_object() -> None:
         )
 
 
-def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_wire() -> None:
+def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_qubit() -> None:
     built = _built_layout()
 
     with pytest.raises(ValueError, match="declared ancilla qubit"):
@@ -545,7 +565,7 @@ def test_memory_circuit_rejects_a_detector_on_an_unknown_ancilla_wire() -> None:
         )
 
 
-def test_memory_circuit_rejects_a_terminal_readout_on_an_ancilla_wire() -> None:
+def test_memory_circuit_rejects_a_terminal_readout_on_an_ancilla_qubit() -> None:
     built = _built_layout()
 
     with pytest.raises(ValueError, match="declared data qubit"):

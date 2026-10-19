@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from .sampling import StabilizerSamplingTarget, run_stabilizer_mode
+from .route import StabilizerTarget, run_stabilizer_mode
 
-__all__ = ("StabilizerSamplingTarget", "run_stabilizer_mode")
+__all__ = ("StabilizerTarget", "run_stabilizer_mode")

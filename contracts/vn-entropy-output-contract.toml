@@ -174,7 +174,7 @@ trigger = "fq.run(two_qubit_bell(), options=fq.ExecutionOptions(mode='stabilizer
 [[refusal]]
 name = "a noisy program refuses every mode that cannot hold a mixed state"
 exception = "ValidationError"
-message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+message_phrase = "stable noisy execution supports mode='auto', mode='density_matrix', or mode='stabilizer'"
 trigger = "fq.run(damped_program(), options=fq.ExecutionOptions(mode='mps'), outputs=fq.vn_entropy([0]), noise_model=damped_model())"
 
 [[baseline]]

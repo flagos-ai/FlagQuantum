@@ -49,6 +49,14 @@ class QuantumCloudTransport(Protocol):
         timeout: float,
     ) -> Mapping[str, Any]: ...
 
+    def put_json(
+        self,
+        url: str,
+        payload: Mapping[str, Any],
+        headers: Mapping[str, str],
+        timeout: float,
+    ) -> Mapping[str, Any]: ...
+
 
 class UrllibTransport:
     """Standard-library JSON/form transport."""
@@ -96,6 +104,23 @@ class UrllibTransport:
                 **dict(headers),
             },
             method="POST",
+        )
+        with request.urlopen(req, timeout=timeout) as response:
+            return cast(Mapping[str, Any], json.loads(response.read().decode("utf-8")))
+
+    def put_json(
+        self,
+        url: str,
+        payload: Mapping[str, Any],
+        headers: Mapping[str, str],
+        timeout: float,
+    ) -> Mapping[str, Any]:
+        data = json.dumps(dict(payload)).encode("utf-8")
+        req = request.Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json", **dict(headers)},
+            method="PUT",
         )
         with request.urlopen(req, timeout=timeout) as response:
             return cast(Mapping[str, Any], json.loads(response.read().decode("utf-8")))

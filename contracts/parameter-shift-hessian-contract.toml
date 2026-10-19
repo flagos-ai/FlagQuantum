@@ -79,9 +79,17 @@ result_detached = true
 # Every cell is evaluated independently, so the two halves of the matrix agree
 # through floating-point summation order rather than bit for bit.
 symmetry = "up_to_floating_point_summation_order"
-# `stabilizer` is the sixth execution mode and it cannot serve an
-# expectation-valued observable at all, so it is outside this route's reach
-# rather than a mode this route refuses on its own terms.
+# `stabilizer` is the sixth execution mode and it is outside this route's reach,
+# but not for the reason this file first recorded. That mode now serves
+# `expectation_ps`, so asking it for an expectation is no longer what refuses
+# this route: the refusal is the stabilizer representation's Clifford census.
+# Every opcode this route can differentiate is a rotation -- `rz`, `ry`, `u2`
+# and the rest of the admitted rows below -- and the representation holds a
+# Clifford opcode set and classifies by opcode rather than by angle, so a
+# parameter-shift program is refused as a non-Clifford circuit while the request
+# is being planned, before any route is selected. The refusal fails closed
+# instead of approximating, so the mode is still out of reach, and the refusal
+# row at the bottom of this file records the phrase that fires.
 serving_modes = [
     "auto",
     "statevector",
@@ -255,8 +263,13 @@ trigger = "the loss returns a tensor with more than one element"
 [[refusal]]
 case = "stabilizer_mode"
 exception = "CapabilityError"
-message_phrase = "cannot serve measurement kind(s) expectation_ps"
-trigger = "the loss executes in the stabilizer mode, which samples outcomes"
+# The phrase the stabilizer representation's Clifford census raises. It is one
+# carrying string literal: the two sentences on either side of it are separate
+# literals in an f-string concatenation, so a phrase spanning them would name
+# text that never appears in the source that owns the message.
+message_phrase = "is not a Clifford gate"
+message_source = "flagquantum/simulation/stabilizer/engine.py"
+trigger = "the loss executes in the stabilizer mode, whose representation admits Clifford opcodes only, on a witness program that carries the rotations this route differentiates"
 
 [verification]
 contract = "tests/unit/test_parameter_shift_hessian_contract.py"

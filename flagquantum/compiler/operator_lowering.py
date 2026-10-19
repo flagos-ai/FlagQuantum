@@ -17,6 +17,7 @@ BACKENDS = (
     "tensor_network",
     "qasm",
     "qcis",
+    "qir",
     "provider",
 )
 
@@ -193,6 +194,14 @@ def _builtin_registry() -> OperatorLoweringRegistry:
                     if not supported
                     else ""
                 )
+            elif backend == "qir":
+                strategy = "lowering"
+                implementation = "flagquantum.compiler.qir.emit_qir"
+                reason = (
+                    "channels require provider-specific lowering"
+                    if not supported
+                    else ""
+                )
             elif backend == "provider":
                 strategy = "serialization"
                 reason = (
@@ -232,11 +241,53 @@ def validate_lowering(
     return registry.validate_ir(backend, program)
 
 
+def require_static_gate_program(program: Any, *, language: str) -> CircuitIR:
+    """Refuse a program whose semantics a static gate text cannot carry.
+
+    :func:`validate_lowering` answers whether every opcode has a lowering. This
+    answers the other half of the same question: whether the *instruction
+    metadata* and the requested outputs are things a linear gate listing can
+    express. A text language that emits one gate after another can carry
+    neither a classical condition nor a runtime-dependent choice, so a program
+    with either one is refused by index and opcode rather than emitted with the
+    condition dropped, which would silently change what it computes.
+
+    ``language`` names the emitter in the refusal, so a caller learns which
+    target could not represent the instruction.
+    """
+
+    ir = ensure_circuit_ir(program)
+    for index, instruction in enumerate(ir.instructions):
+        metadata = instruction.metadata
+        if (
+            instruction.name in {"measure", "reset"}
+            or metadata.get("is_dynamic")
+            or metadata.get("is_channel")
+            or "conditions" in metadata
+            or "condition_clauses" in metadata
+        ):
+            raise UnsupportedLoweringError(
+                f"{language} cannot represent instruction {index} "
+                f"({instruction.name!r})."
+            )
+        if instruction.matrix is not None:
+            raise UnsupportedLoweringError(
+                f"{language} cannot represent the arbitrary matrix of "
+                f"instruction {index} ({instruction.name!r})."
+            )
+    if ir.observables:
+        raise UnsupportedLoweringError(
+            f"{language} cannot represent observable expectations."
+        )
+    return ir
+
+
 __all__ = [
     "BACKENDS",
     "DEFAULT_LOWERING_REGISTRY",
     "LoweringCapability",
     "OperatorLoweringRegistry",
     "UnsupportedLoweringError",
+    "require_static_gate_program",
     "validate_lowering",
 ]

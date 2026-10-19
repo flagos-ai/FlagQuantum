@@ -901,7 +901,7 @@ def test_an_exclusion_for_a_class_that_stopped_serializing_is_reported(
                 "def amplitude_estimation_circuit(n_counting_wires):\n"
                 "    return n_counting_wires\n"
             ),
-            "flagquantum/core/ir.py": (
+            "flagquantum/core/ir/__init__.py": (
                 "from dataclasses import dataclass\n"
                 "\n"
                 "\n"
@@ -918,7 +918,7 @@ def test_an_exclusion_for_a_class_that_stopped_serializing_is_reported(
         },
     )
     errors = _GATE.contract_errors(_contract(), package_root=package)
-    _some(errors, "core/ir.py::CircuitIR::n_wires is stale")
+    _some(errors, "core/ir/__init__.py::CircuitIR::n_wires is stale")
     _some(errors, "outside the ledger")
 
 
@@ -940,7 +940,7 @@ def test_an_exclusion_for_a_class_that_still_serializes_is_not_reported(
                 "def amplitude_estimation_circuit(n_counting_wires):\n"
                 "    return n_counting_wires\n"
             ),
-            "flagquantum/core/ir.py": (
+            "flagquantum/core/ir/__init__.py": (
                 "from dataclasses import asdict, dataclass\n"
                 "\n"
                 "\n"
@@ -963,9 +963,9 @@ def test_an_exclusion_for_a_class_that_still_serializes_is_not_reported(
     assert not [
         message
         for message in errors
-        if "core/ir.py::CircuitIR::n_wires is stale" in message
-        or "core/ir.py::Instruction::wires is stale" in message
-        or "core/ir.py::Instruction::wires" in message
+        if "core/ir/__init__.py::CircuitIR::n_wires is stale" in message
+        or "core/ir/__init__.py::Instruction::wires is stale" in message
+        or "core/ir/__init__.py::Instruction::wires" in message
     ], errors
 
 
@@ -1043,7 +1043,7 @@ def test_an_attribute_retirement_without_a_declaration_kind_is_reported() -> Non
     contract["attribute_retirement"] = {
         "sites": [
             {
-                "site": "flagquantum/core/ir.py::CircuitIR::n_wires",
+                "site": "flagquantum/core/ir/__init__.py::CircuitIR::n_wires",
                 "replacement": "n_qubits",
             }
         ]
@@ -1056,7 +1056,7 @@ def test_an_attribute_retirement_that_is_not_a_rename_is_reported() -> None:
     contract["attribute_retirement"] = {
         "sites": [
             {
-                "site": "flagquantum/core/ir.py::CircuitIR::n_wires",
+                "site": "flagquantum/core/ir/__init__.py::CircuitIR::n_wires",
                 "replacement": "width",
                 "declaration": "field",
             }
@@ -1070,7 +1070,7 @@ def test_an_attribute_retirement_with_an_unknown_declaration_kind_is_reported() 
     contract["attribute_retirement"] = {
         "sites": [
             {
-                "site": "flagquantum/core/ir.py::CircuitIR::n_wires",
+                "site": "flagquantum/core/ir/__init__.py::CircuitIR::n_wires",
                 "replacement": "n_qubits",
                 "declaration": "attribute",
             }
@@ -1098,7 +1098,7 @@ def test_an_attribute_alias_that_is_not_a_rename_is_reported() -> None:
         "removal_version": "0.4.0",
         "sites": [
             {
-                "site": "flagquantum/core/ir.py::CircuitIR::n_wires",
+                "site": "flagquantum/core/ir/__init__.py::CircuitIR::n_wires",
                 "replacement": "width",
             }
         ],

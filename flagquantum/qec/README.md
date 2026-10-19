@@ -126,6 +126,37 @@ projected onto a pair. The matcher enumerates the ways to pair the defective
 detectors, so it refuses a syndrome larger than its defect budget instead of
 returning a pairing that only looks cheapest.
 
+A syndrome the budget refuses is the case `sliding_window.py` exists for. A
+memory experiment's defect count grows with its rounds, so a long history is
+exactly where the exact matcher stops answering; the windowed decoder answers it
+by deciding a band of detectors at a time against a window of them, with the
+budget bounding one window's syndrome rather than the whole history's. It returns
+the same result record as the matcher, and with one window over the whole graph it
+selects the same mechanisms. A narrow window is a decision about a window, so
+observable agreement is bought with the width and not guaranteed, and no threshold
+or logical error rate is estimated from it:
+
+```python
+from flagquantum.qec import (
+    DetectorErrorModel,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    SlidingWindowMatchingDecoder,
+    build_memory_circuit,
+)
+
+long_model = DetectorErrorModel.from_memory_circuit(
+    build_memory_circuit(RepetitionCode(distance=3), rounds=60),
+    noise=PhenomenologicalNoise(data_flip=0.04, measurement_flip=0.04),
+).merge_duplicate_mechanisms()
+bands = SlidingWindowMatchingDecoder.from_detector_error_model(long_model)
+print(bands.commit, bands.window, bands.mechanism_span)
+```
+
+`get_decoder("sliding_window_matching", model, commit=..., window=...)` reaches
+the same decoder by name, and `get_decoder("minimum_weight_matching", model)`
+reaches the exact matcher.
+
 One fault stated twice is a second refusal, and merging is the repair. A model
 whose mechanisms repeat a signature — the same detectors *and* the same
 observables — is one a matcher must not weight, because the graph would hold two
@@ -238,6 +269,60 @@ strategy; and a detector that no mechanism flips is refused because PyMatching
 infers its detector count from its edges, so the syndrome vector would be
 renumbered. Both graphs are ones the matcher itself answers, so the cross-check's
 domain is narrower than the authority's and never the reverse.
+
+## Decode a model the matcher refuses by name
+
+A code whose mechanisms flip three detectors has no pair-graph, so the matcher
+declines it with a stated reason rather than projecting it onto an edge.
+`get_decoder("belief_propagation_osd", model)` answers that model instead of
+declining it:
+
+```python
+from flagquantum.errors import CapabilityError
+from flagquantum.qec import (
+    DetectorErrorModel,
+    MinimumWeightMatchingDecoder,
+    PhenomenologicalNoise,
+    SteaneCode,
+    build_memory_circuit,
+    get_decoder,
+)
+
+memory = build_memory_circuit(SteaneCode(), rounds=1)
+model = DetectorErrorModel.from_memory_circuit(
+    memory, noise=PhenomenologicalNoise(data_flip=0.05, measurement_flip=0.05)
+)
+print(model.num_detectors, model.num_errors)
+try:
+    MinimumWeightMatchingDecoder.from_detector_error_model(model)
+except CapabilityError as error:
+    print(str(error).split(",", 1)[0])
+
+decoder = get_decoder("belief_propagation_osd", model)
+result = decoder.decode([0, 1, 2])
+print(result.observables, round(result.weight, 6), result.converged, result.iterations)
+```
+
+The decoder iterates min-sum messages between detectors and mechanisms, then
+solves the syndrome exactly over the mechanisms that estimate favours most, and
+the result says whether the iteration converged and how many passes it spent.
+`result.mechanisms` names the mechanisms it selected, so the correction can be
+read rather than only applied, and `result.observables` is the prediction.
+
+It is a decoder and not an optimal one, and the boundary is measured rather than
+implied. On the one-round Steane model it reaches the least weight and the most
+likely observable for all 64 syndromes; on the one-round rotated surface code it
+carries more weight than the least-weight explanation on five syndromes of 256
+and differs from the most likely observable on three of them. A syndrome outside
+the span of the model's mechanisms is refused rather than answered. The
+registry reaches it by name -- `decoder_names()` holds this decoder beside the
+matcher, the windowed reading of it and the PyMatching cross-check -- and the
+reason the name was absent for a while is now the reason the registry states
+two protocols rather than one: what every name promises is the decoded
+syndrome, `DetectorErrorModelDecodeResult`, and the decoding graph the
+graphlike names build is `GraphlikeDetectorErrorModelDecoder`, which a model
+with a three-detector mechanism cannot satisfy. Asking this name for a
+`DecodingGraph` is refused with that reason.
 
 ## Build a model from matrices, without a circuit
 
@@ -378,6 +463,235 @@ declarations, so a text that states it only through its error targets —
 `error(0.1) D0`, which is what stim prints for a flat one-detector circuit — is
 read as a model with no detector and refused, where stim would infer the count.
 
+## Declare a code this package does not ship
+
+The other direction of the same record: `CssCode` takes the four blocks a caller
+writes and returns the same kind of code record the eight declared families
+return, so a code no record here declares reaches the memory circuit, the model,
+the sampler and the decoder through the same `StabilizerCode` protocol.
+
+```python
+from flagquantum.qec import CssCode
+
+checks = [
+    [0, 0, 0, 1, 1, 1, 1],
+    [0, 1, 1, 0, 0, 1, 1],
+    [1, 0, 1, 0, 1, 0, 1],
+]
+steane = CssCode(
+    hz=checks, hx=checks, lz=[[1, 1, 1, 0, 0, 0, 0]], lx=[[1, 1, 1, 0, 0, 0, 0]]
+)
+print(steane.num_data_qubits, steane.num_ancilla_qubits, steane.distance)  # 7 6 3
+```
+
+The blocks are plain sequences of `0`/`1` rows, so this module needs no array
+dependency; a tensor block is refused with the `.tolist()` that reads it named.
+Everything is checked rather than assumed: the two check families must commute,
+each declared logical operator must commute with the opposite check family while
+not lying in the span of its own, the declared operators of a family must pair up
+non-degenerately, the blocks must agree on a width that leaves at least one
+logical qubit, and an all-zero row is refused because it acts on no data qubit.
+
+The distance is the part worth stating carefully. It is **computed by searching
+the code**, not read off the operator the caller wrote down, so the same Steane
+code reports three whether its logical operator is declared at weight three or at
+weight seven. The search is bounded by `distance_search_weight`, which defaults to
+three; a code whose lightest logical operator is heavier than the bound is refused
+with the bound named rather than answered with the best weight it happened to
+reach. Raise the bound for a code that needs it, and expect the cost to grow with
+the data-qubit count.
+
+A check states one ancilla and one coupling order -- the Z-factor pairs first,
+then the X-factor pairs -- so a mixed X-and-Z stabilizer is measurable by one
+ancilla rather than needing a second, and `CodeCheck` states that rule once.
+What a *matrix* route can state is narrower than what the check protocol admits:
+this one takes a Z-type block and an X-type block, so a mixed stabilizer has no
+row here, because writing it as a row of each would describe two checks that do
+not commute. A family whose checks are all mixed is declared as a record instead,
+and `ZxxzSurfaceCode` is the first one.
+
+Two classes rather than one, and the split is the correction this section needs:
+the four blocks a caller writes, and the code algebra they are held to, belong to
+`CssCodeMatrices` in [dem_construction.py](dem_construction.py), while the record
+is [CssCode](css_code.py), which wraps a `CssCodeMatrices` with a **stated**
+distance -- the shape the section above uses. The distance search described earlier
+in this section is what the declared and derived families go through in
+[codes.py](codes.py) rather than what this route does, so the paragraphs above
+stand as written about the families and about the bound, and what changes is which
+class the four blocks are handed to. The eight declared records are the set this
+section names; `get_code` reaches three of them by name.
+
+## Derive a family from its lattice
+
+The two routes meet in one place: `triangular_colour_code` derives a family's
+matrices from a rule about its lattice and returns the same `CssCode` a caller
+would otherwise have written out, so the family is stated once rather than
+transcribed.
+
+```python
+from flagquantum.qec import triangular_colour_code
+
+colour = triangular_colour_code(5)
+print(colour.num_data_qubits, colour.num_ancilla_qubits, colour.distance)  # 19 18 5
+weights = {
+    max(len(check.stabilizer.z_wires), len(check.stabilizer.x_wires))
+    for check in colour.checks
+}
+print(sorted(weights))  # [4, 6]
+```
+
+Each check appears once with one of its two types populated, so a check's weight
+is the larger of its two supports rather than either one alone.
+
+Two things about it are worth knowing before reading its checks. Every face
+carries one X-type and one Z-type stabilizer, so the two check blocks are the same
+matrix and the patch is read out in either basis; and a face on the triangle's
+edge spans four qubits while a face in its bulk spans six, so one data fault
+lights three detectors and the model is **not** graphlike — the matcher refuses it
+and the belief-propagation decoder answers it. The distance is searched for over
+the derived matrices exactly as it is for a code a caller writes, so the reported
+distance is a property of the patch and not of the logical string the record
+declares. At distance three that patch is the Steane code under a relabelling of
+its wires; the family grows away from it, and either way nothing downstream can
+tell which route produced the record.
+
+## Derive a family from a torus
+
+The same route reaches a family whose lattice is periodic. `toric_code` identifies
+the opposite sides of a square grid, so no check sits on a boundary and every check
+has the same weight at every linear size.
+
+```python
+from flagquantum.qec import build_memory_circuit, toric_code
+
+torus = toric_code(3)
+print(torus.num_data_qubits, torus.num_ancilla_qubits, torus.distance)  # 18 18 3
+memory = build_memory_circuit(torus, rounds=3)
+print(len(memory.observables), [len(o.pauli.support) for o in memory.observables.observables])
+# 2 [3, 3]
+```
+
+This is the first record here that leaves **two** logical qubits, so the default
+memory experiment reads out two observables rather than one: a logical operator is
+a cycle that wraps the torus, and the two directions are separate operators whose
+representatives must be written down one per logical qubit. The linear size is the
+distance, so `toric_code(3)` and `toric_code(5)` are different codes rather than
+one code asked for at two distances, and the distance is searched for over the
+derived matrices with the linear size as the bound. That bound is the whole cost of
+the build, which is why the family is affordable at the small tori an experiment
+is built from and is not a way to write down a large one.
+
+The torus is also the clearest case of a model whose graphlikeness is a property of
+the **noise declaration** rather than of the code. A Z-type check has a detector at
+every round boundary and an X-type check only in the interior rounds, so a
+single-round model is graphlike under any noise: one round has no interior for an X
+fault to separate into. Add a Y fault and run at least two rounds, and that fault's
+X half and Z half land on different round boundaries, so one data fault lights four
+detectors, the model stops being graphlike, and the matcher refuses a model it
+accepted at one round. The belief-propagation decoder answers that model, and
+nothing about the code changed. `tests/qec/test_toric_memory_execution.py`
+decodes three hundred draws of that model, requires every correction to
+reproduce its syndrome, and compares the observables it predicts against the
+model's exact raw rate -- 0.0033 and 0.0100 against 0.1000 and 0.0933 at a
+one-percent fault rate. At five percent the same measurement is 0.2667 against
+0.3588, which is recorded rather than asserted: this decoder is a route to an
+answer, not a threshold claim.
+
+## Derive a record from any check matrices
+
+The lattice routes above are one family each. `qldpc_code` is the general case
+behind them: give it the two parity-check blocks and it returns the same `CssCode`
+a caller would otherwise have written out, with the logical operators derived
+rather than asked for.
+
+```python
+from flagquantum.qec import qldpc_code
+
+# The Steane code, stated as its three checks and nothing else.
+checks = [
+    [1, 1, 1, 0, 1, 0, 0],
+    [1, 1, 0, 1, 0, 1, 0],
+    [1, 0, 1, 1, 0, 0, 1],
+]
+steane = qldpc_code(hz=checks, hx=checks)
+print(steane.num_data_qubits, steane.num_ancilla_qubits, steane.distance)  # 7 6 3
+print([operator.to_text() for operator in steane.logical_observables])
+# ['Z1*Z4*Z5', 'X1*X4*X5']
+```
+
+The width is the number of columns, so the checks state how many data qubits the
+code has and a logical operator is read out of them. `CssCode` admits the same
+pair, but it also requires the logical operators, and the derivation here is what
+supplies them: it takes the null space of one check family modulo the span of the
+other, and then pairs the two families by symplectic elimination so that
+`lz[i]` and `lx[i]` are partners rather than merely both present.
+
+Two consequences are worth knowing before reading the output. The number of
+logical qubits is the **rank** of the matrices and not their row count, so a check
+written twice adds an ancilla and no logical qubit. And the basis is not unique: a
+complement of the stabilizer span has many representatives, and which one comes
+back is an implementation choice. The derived operator is the same *class* as the
+one a declared record states, not necessarily the same bits, which is why
+`bivariate_bicycle_code` is built on this route and still reports the parameters
+the literature states for its polynomials. The distance is searched over the code
+rather than read off the derived operator, so a representative far heavier than the
+code's cheapest logical operator still reports the cheaper number.
+
+A pair that does not commute, a pair whose checks leave no logical qubit, a row
+that acts on no data qubit, and a distance bound the search does not reach are
+each refused with the reason named rather than answered. One of the two blocks may
+be empty — a code with only Z-type checks still states its width — but not both,
+because then nothing states how many data qubits there are.
+
+## The one family written on the Boolean cube
+
+Every route above is a lattice patch or a pair of polynomials over a group.
+`reed_muller_code` is the first family stated on the cube instead: `RM(m, m)` is the
+span of the monomials of degree at most `m` evaluated at all `2**m` points, the two
+blocks two degrees apart are punctured where every variable is one, and their duals
+state the two check families.
+
+```python
+from flagquantum.qec import reed_muller_code
+
+code = reed_muller_code(4)
+print(code.num_data_qubits, code.num_ancilla_qubits, code.distance)  # 15 14 3
+print(code.x_distance, code.z_distance)  # 7 3
+```
+
+Those two numbers are why the record states them separately. The least X-type
+logical operator has weight seven and the least Z-type one has weight three, so the
+code's distance is the smaller of the two, and a bound that reaches the lighter
+family does not reach the other. **The default bound of three therefore refuses this
+code rather than reporting three as its distance**, because a record reports a
+searched number and three was never a search over the X-type family:
+
+```python
+from flagquantum.qec import reed_muller_code
+
+reed_muller_code(4)                        # ValueError: no X-type logical operator
+reed_muller_code(4, distance_search_weight=7)  # (7, 3), distance 3
+```
+
+Which block states which family is a convention rather than a fact about the code:
+the two blocks exchanged is the same code with the two Pauli families renamed, and
+both readings were measured before the rule was written. What that means for a
+caller is that a code whose literature states `(3, 7)` is this one, not a different
+one — pass the pair through `qldpc_code` and the two numbers come back exchanged.
+
+The rule is stated for every cube width at or above four, and this route builds the
+two smallest. Four is the smallest width whose punctured pair states a code at all:
+at width three the two blocks are one and zero degrees apart, their duals carry
+three and six rows over seven points, and ten of those eighteen pairs of rows
+anticommute, so there is no stabilizer group to return. Five is the widest the
+distance search is paid for, and the refusal above five says so in the open rather
+than waiting: the search has to exhaust every subset of weight up to six, which is
+942648 subsets over the thirty-one points of width five, 75611760 over the
+sixty-three of width six, and 5434287328 over the hundred and twenty-seven of width
+seven. The width five instance is the one worth knowing about — thirty-one data
+qubits carrying **eleven** logical qubits three errors apart, where a lattice patch
+of the same length carries one.
+
 ## Give one location its own rate
 
 `PhenomenologicalNoise` states a rate per fault family and, optionally, a rate per
@@ -412,6 +726,23 @@ indexed by matrix row — Z-type checks first, then X-type checks — while a co
 free to declare its checks in any order, so the declaration order and the vector's
 order are related by one named translation rather than by a convention each route
 re-states.
+
+This is a description of noise locations, not a `NoiseModel`, and the sampler
+places both kinds of location: a data fault at a round boundary and a measurement
+flip at a check's readout. The data kind is the one that has three fault families,
+and they are three channels at the one location rather than three locations: an X
+fault, a Z fault and a Y fault. The Y fault is one channel carrying the Y operator
+on its single non-identity branch, which is not the same mechanism as an X fault
+beside a Z fault — the two would fire independently, so the pair rates between the
+two detector bands would differ — and the sampler reproduces the model's pair
+rates, not a two-fault reading of them.
+
+A fault placed after a named gate has no location here, and neither does a
+depolarizing or a damping channel: the sampler places Pauli faults at the two
+positions the record describes and nothing else.
+
+The same placement stated by the other branch, kept in full, followed by the two
+corrections that reading needs:
 
 This is a description of noise locations stated at round boundaries and check
 readouts, and every family it states is a location on **both** routes. The
@@ -460,6 +791,22 @@ and a readout fault's position is the check it corrupts, which is the
 to two wires, which is a correlated fault rather than two independent ones. And a
 fault that would follow the program's last instruction, which is stated rather
 than dropped so the model cannot be silently thinner than the record.
+
+Two sentences in the paragraphs above are earlier readings, corrected here rather
+than left standing, and both corrections were read off the tree. The engine does
+execute one channel, but the merged sampler does not conjugate it:
+[channels.py](../noise/channels.py) declares `y_flip_channel`, and
+[sampling.py](sampling.py) places each of the three data families as its own channel
+at the one data location, which is the reading the paragraph before this one states
+and the reason a pair rate is one draw at one family's rate rather than a
+conjugation around the engine's flip. And a fault placed after a named gate does
+have a location: `flagquantum.noise.NoiseModel` is a record the sampler accepts
+beside `PhenomenologicalNoise`, and a gate-bound fault is placed immediately after
+the gate its rule matched -- the grammar the section below states. What the
+paragraph before this one keeps is the part that is still refused by name on both
+routes, and the section below lists it: a channel that is not a single-qubit Pauli
+fault, a rule naming `measure` or `reset`, a one-qubit channel bound to two wires,
+and a fault that would follow the program's last instruction.
 
 ## Say that two mechanisms are alternatives
 
@@ -516,8 +863,8 @@ family in `contracts/qec-cudaq-alignment-checklist.toml`.
 ## Sample the circuit itself, not the model
 
 `sampling.py` samples the same experiment from the circuit rather than from the
-model, so a logical-failure rate no longer depends on the statevector ceiling that
-bounds construction. It shares the code record and the noise record with the
+model, so a logical-failure rate comes from the circuit's own shots rather than
+from the model's sampled ones. It shares the code record and the noise record with the
 model above and nothing else: the model derives each mechanism's signature from
 the source, this module derives each mechanism's instruction position from the
 lowered program.
@@ -801,20 +1148,103 @@ states; a surface code's boundary rounds are half that wide, so the map refuses
 that geometry by name and the circuit-derived `MeasurementMap` is the map that
 covers it instead.
 
+## Move between a model and a realization
+
+`dem_circuit.py` goes the other way from construction: a model is written as the
+circuit it already is — one wire per detector, one per observable, one
+Pauli-frame channel per fault — and read back. That makes a model something a
+simulator can draw from, on the stabilizer engine, without a statevector.
+
+```python
+from flagquantum.qec import (
+    DetectorErrorModel,
+    PhenomenologicalNoise,
+    RepetitionCode,
+    build_memory_circuit,
+    circuit_from_detector_error_model,
+    detector_error_model_from_circuit,
+)
+from flagquantum.simulation.stabilizer import sample_noisy_measurements
+
+model = DetectorErrorModel.from_memory_circuit(
+    build_memory_circuit(RepetitionCode(distance=3), rounds=3),
+    noise=PhenomenologicalNoise(data_flip=0.02, measurement_flip=0.02),
+)
+realization = circuit_from_detector_error_model(model)
+shots = sample_noisy_measurements(realization, shots=100, seed=0)
+back = detector_error_model_from_circuit(
+    realization, num_detectors=model.num_detectors
+)
+print(shots.shape, back == model)
+```
+
+The two readings are exact in both directions, error ids included, because a
+frame's operators say which targets a fault flips and its declared masses say how
+often, so the mass is never recovered by squaring a square root. What the reader
+returns is not the circuit the model was built from and cannot be: a model states
+which detector parities a fault flips and never which measurements compose a
+detector, so the syndrome-extraction circuit, its gate sequence and its depth are
+outside it, and two different memory experiments of the same distance under the
+same noise record define the same model. The realization is the canonical
+detector-level circuit the model does determine, the detector count is the
+caller's because a wire index does not say which side of the split it is on, and a
+mechanism at probability zero is refused rather than dropped, because dropping it
+would leave a realization standing for a model with fewer mechanisms than the one
+it was read from.
+
+## Come from Stim
+
+A Stim user already has the circuit layer. What this package offers is the half
+that sits after it, and the interface between the two is the detector error model
+text: nothing under `flagquantum/` imports `stim`, so the `stim` extra is needed
+only by the code that generates circuits.
+
+```python
+import stim
+from flagquantum.qec import DetectorErrorModel, get_decoder
+
+circuit = stim.Circuit.generated(
+    "repetition_code:memory",
+    distance=3,
+    rounds=3,
+    before_round_data_depolarization=0.05,
+)
+text = str(circuit.detector_error_model().flattened())
+model = DetectorErrorModel.from_stim_text(text)
+decoder = get_decoder("minimum_weight_matching", model.merge_duplicate_mechanisms())
+print(model.num_detectors, len(model.errors), decoder is not None)
+```
+
+`str(circuit.detector_error_model())` on a multi-round circuit carries a `repeat`
+block, and `from_stim_text` interprets the block rather than refusing it, so the
+unflattened text is read directly and `.flattened()` is the form the guide's own
+fences use rather than the only form this reader accepts. An earlier revision of
+this section recorded the block as refused by name, which was true until
+[dem_text.py](dem_text.py) read blocks; the section above states what the reader
+does with one. The other refusals, the two readings of the `^` separator and the
+observable marginal each one implies, and what this route does not cover are in
+[Migrating a Stim workflow](../../docs/guides/STIM_USER_MIGRATION.md); that guide
+is executed fence by fence by `tests/qec/test_stim_user_migration.py`, and
+[`examples/qec/stim_user_migration.py`](../../examples/qec/stim_user_migration.py)
+is the runnable form of the same route.
+
 ## Change and verify
 
 Use [repetition.py](repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
-and [matching.py](matching.py) for the detector-error-model matcher,
-[belief_propagation.py](belief_propagation.py) for the decoder that reads the
-hyperedges the matcher refuses, [chunks.py](chunks.py) for the round-window
-decomposition, [sliding_window.py](sliding_window.py) for decoding those windows
-and the projections they are read through, [registry.py](registry.py) for
-reaching either by name,
+and [matching.py](matching.py) for the detector-error-model matcher, which is the
+authority decoder this layer ships, [belief_propagation.py](belief_propagation.py)
+for the decoder that reads the hyperedges the matcher refuses,
+[bposd.py](bposd.py) for the belief-propagation-and-ordered-statistics decoder
+reached by name, [chunks.py](chunks.py) for the round-window decomposition,
+[sliding_window.py](sliding_window.py) for the same decoder over a band of detectors
+at a time and for the projections those windows are read through,
+[registry.py](registry.py) for reaching a decoder by name,
 [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
-[noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py) for
-code records, [css_code.py](css_code.py) for a code record built from
+[dem_circuit.py](dem_circuit.py) for writing a model as a circuit and reading it
+back, [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py)
+for code records, [css_code.py](css_code.py) for a code record built from
 parity-check matrices, [dem_text.py](dem_text.py) for the stim text reader,
 [circuit.py](circuit.py) for detector and observable layouts, and
 [types.py](types.py) for records. Run from the repository root:

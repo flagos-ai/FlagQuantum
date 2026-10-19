@@ -27,6 +27,12 @@ from dataclasses import FrozenInstanceError
 import pytest
 import torch
 
+from flagquantum.algorithms.primitives.block_encoding import (
+    spectral_block_encoding,
+)
+from flagquantum.algorithms.primitives.block_encoding import (
+    subnormalisation as _primitive_subnormalisation,
+)
 from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
 from flagquantum.algorithms.svd import (
     SingularValueResult,
@@ -113,6 +119,31 @@ def _extracted_block(embedding: torch.Tensor, alpha: float) -> torch.Tensor:
     return torch.stack(columns, dim=1)
 
 
+def _primitive_block(
+    embedding: torch.Tensor, alpha: float | None = None
+) -> torch.Tensor:
+    """Return the same block, built this time by the promoted primitive encoding.
+
+    The mean-of-two-branches construction used to be private to this module and now
+    lives in :mod:`flagquantum.algorithms.primitives.block_encoding`; the private form is
+    kept beside it as the reference, and this reads the promoted one so the two are
+    compared rather than assumed equal.
+    """
+    n_qubits = int(embedding.shape[0]).bit_length() - 1
+    dimension = int(embedding.shape[0])
+    columns = []
+    for basis in range(dimension):
+        circuit = Circuit(1 + n_qubits)
+        for index in range(n_qubits):
+            if (basis >> (n_qubits - 1 - index)) & 1:
+                circuit.gate("x", 1 + index)
+        spectral_block_encoding(embedding, alpha).append_apply(
+            circuit, ancilla=0, qubits=list(range(1, 1 + n_qubits))
+        )
+        columns.append(circuit.state().reshape(-1)[:dimension])
+    return torch.stack(columns, dim=1)
+
+
 def _singular_vectors(
     matrix: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -142,6 +173,26 @@ def test_the_extraction_is_the_embedding_over_alpha() -> None:
         # The block of a real Hermitian matrix is real: the two branches' unitaries are
         # conjugates of one another, so their mean is real by construction.
         assert float(block.imag.abs().max()) < 1e-6
+
+
+def test_the_promoted_primitive_extracts_the_same_block() -> None:
+    """The primitive encoding promoted from this module's private form is the same block.
+
+    This is the equality the promotion is claimed on: the construction used to be private
+    here in the mean-of-two-branches form, it now lives in
+    :mod:`flagquantum.algorithms.primitives.block_encoding`, and the private form is kept
+    beside it as the reference. Asserting the two agree is what makes keeping both
+    honest, and it is asserted against the matrix's own spectrum above as well. The
+    subnormalisation this module validates with is the primitive's own function rather than
+    a second copy of it, which is the other half of the promotion.
+    """
+    assert _primitive_subnormalisation is _subnormalisation
+    for matrix in _MATRICES:
+        embedding = _embedding(matrix)
+        alpha = _subnormalisation(embedding, None)
+        private = _extracted_block(embedding, alpha)
+        promoted = _primitive_block(embedding, alpha)
+        assert float((private - promoted).abs().max()) < 1e-6
 
 
 def test_the_extraction_is_not_the_embedding_or_the_matrix() -> None:
@@ -191,12 +242,16 @@ def test_a_subnormalisation_without_room_for_the_block_is_refused() -> None:
         _subnormalisation(torch.zeros((4, 4), dtype=torch.float64), None)
     # The construction checks the same thing at its own entry, so a factor that never
     # passed through the builder cannot reach the selection's arccosine and be folded
-    # into the unit circle silently.
+    # into the unit circle silently. The private construction and the primitive encoding
+    # promoted from it both refuse it.
     with pytest.raises(ValueError, match="no unitary has an operator of norm"):
         _append_block_encoding(
             Circuit(3), embedding, spectral / 2.0, ancilla=0, qubits=[1, 2]
         )
-    # And the one thing the selection itself refuses: an argument that is not Hermitian.
+    with pytest.raises(ValueError, match="no unitary has an operator of norm"):
+        spectral_block_encoding(embedding, spectral / 2.0)
+    # And the one thing the construction refuses outright: a matrix that is not Hermitian,
+    # which is the same refusal the selection makes before either of them touches a gate.
     spoiled = _embedding(_NON_SYMMETRIC)
     spoiled[0, 3] += 0.5
     with pytest.raises(ValueError, match="not Hermitian"):
@@ -207,6 +262,35 @@ def test_a_subnormalisation_without_room_for_the_block_is_refused() -> None:
             ancilla=0,
             qubits=[1, 2],
         )
+    with pytest.raises(ValueError, match="not Hermitian"):
+        spectral_block_encoding(spoiled)
+
+
+def test_a_refused_append_leaves_the_circuit_as_it_was() -> None:
+    """Every refusal the append path can take is taken before the first gate.
+
+    The register checks run before the encoding's gate is emitted, so a caller whose qubits
+    are wrong keeps an empty circuit rather than a half-built encoding. The matrix and
+    subnormalisation refusals moved to construction when the encoding was promoted to the
+    primitive layer, where there is no caller's circuit yet to spoil.
+    """
+    encoding = spectral_block_encoding(_embedding(_NON_SYMMETRIC))
+    for ancilla, qubits in ((0, [0, 1]), (0, [1]), (0, [1, 1])):
+        circuit = Circuit(3)
+        with pytest.raises(ValueError):
+            encoding.append_apply(circuit, ancilla=ancilla, qubits=qubits)
+        assert circuit.to_qir() == []
+    # And the two refusals that used to be taken at the append's entry are now taken at
+    # construction, where the caller's circuit does not exist yet.
+    spoiled = _embedding(_NON_SYMMETRIC)
+    spoiled[0, 3] += 0.5
+    spectral = float(torch.linalg.matrix_norm(_embedding(_NON_SYMMETRIC), ord=2))
+    for target, factor in (
+        (spoiled, None),
+        (_embedding(_NON_SYMMETRIC), spectral / 2.0),
+    ):
+        with pytest.raises(ValueError):
+            spectral_block_encoding(target, factor)
 
 
 def test_a_refused_encoding_leaves_the_circuit_as_it_was() -> None:
@@ -214,19 +298,32 @@ def test_a_refused_encoding_leaves_the_circuit_as_it_was() -> None:
 
     The construction appends the ancilla's preparation before its selection, so a refusal
     taken after that first gate would leave the caller holding a half-built encoding. This
-    asserts the circuit is empty afterwards for each of the two refusal paths.
+    asserts the circuit is empty afterwards for each of the two refusal paths. The primitive
+    encoding promoted from that construction takes the matrix and the subnormalisation at
+    construction instead, where there is no caller's circuit yet to spoil, so what it can
+    still refuse at the append is the register -- and that refusal is taken before the first
+    gate as well. The factor handed in beside the spoiled matrix is the Hermitian
+    embedding's own, because the refusal under test is the matrix's: asking the
+    subnormalisation helper to price the spoiled matrix would take that refusal one call
+    earlier than the claim is about, and the call under test is the append.
     """
     embedding = _embedding(_NON_SYMMETRIC)
     alpha = _subnormalisation(embedding, None)
     spoiled = _embedding(_NON_SYMMETRIC)
     spoiled[0, 3] += 0.5
     for target, factor in (
-        (spoiled, _subnormalisation(spoiled, None)),
+        (spoiled, alpha),
         (embedding, alpha / 2.0),
     ):
         circuit = Circuit(3)
         with pytest.raises(ValueError):
             _append_block_encoding(circuit, target, factor, ancilla=0, qubits=[1, 2])
+        assert circuit.to_qir() == []
+    encoding = spectral_block_encoding(embedding)
+    for ancilla, qubits in ((0, [0, 1]), (0, [1]), (0, [1, 1])):
+        circuit = Circuit(3)
+        with pytest.raises(ValueError):
+            encoding.append_apply(circuit, ancilla=ancilla, qubits=qubits)
         assert circuit.to_qir() == []
 
 
@@ -526,7 +623,7 @@ def test_the_result_is_frozen() -> None:
         (torch.zeros(3, 3, dtype=torch.float64), "power of two"),
         (torch.zeros(8, 8, dtype=torch.float64), "bounded at 2 index qubits"),
         (torch.zeros(2, 2, dtype=torch.int64), "floating-point"),
-        (torch.zeros(2, 2, dtype=torch.float64), "no embedding to normalise"),
+        (torch.zeros(2, 2, dtype=torch.float64), "no block to normalise"),
         (torch.tensor([[1.0, float("nan")], [0.0, 1.0]]), "must be finite"),
     ],
 )

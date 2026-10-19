@@ -245,6 +245,47 @@
         "phase_flip"
       ]
     },
+    "qir": {
+      "supported": [
+        "ccx",
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "cswap",
+        "cx",
+        "cy",
+        "cz",
+        "h",
+        "i",
+        "phase",
+        "rx",
+        "rxx",
+        "ry",
+        "ryy",
+        "rz",
+        "rzz",
+        "s",
+        "sdg",
+        "swap",
+        "sx",
+        "sxdg",
+        "t",
+        "tdg",
+        "u1",
+        "u2",
+        "u3",
+        "x",
+        "y",
+        "z"
+      ],
+      "unsupported": [
+        "amplitude_damping",
+        "bit_flip",
+        "depolarizing",
+        "phase_flip"
+      ]
+    },
     "tensor_network": {
       "supported": [
         "ccx",

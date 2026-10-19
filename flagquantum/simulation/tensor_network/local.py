@@ -7,6 +7,7 @@ from typing import Any
 
 import torch
 
+from ..complex_bmm_dispatch import _layout_complex_bmm_declared_for
 from ..gate_matrix import gate_matrix
 from .models import (
     CompiledTNProgram,
@@ -76,9 +77,14 @@ def _build_tensor_network_plan(
     ):
         raise TypeError("cached tensor-network program must be a CompiledTNProgram")
     # Binding many small node objects costs more than rebuilding descriptors on
-    # CPU. Reuse the compiled template only with the fused CUDA path.
+    # a device the kernel catalog declares no fused contraction route for. The
+    # catalog, not a device literal, decides which executions those are.
     active_structure = (
-        compiled_structure if torch.device(device).type == "cuda" else None
+        compiled_structure
+        if _layout_complex_bmm_declared_for(
+            device_type=torch.device(device).type, dtype=dtype
+        )
+        else None
     )
 
     if active_structure is None:

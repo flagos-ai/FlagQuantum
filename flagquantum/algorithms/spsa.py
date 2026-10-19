@@ -36,14 +36,72 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable
+from dataclasses import dataclass
 
 import torch
 
 from ..errors import ValidationError
 
-__all__ = ["SPSAOptimizer"]
+__all__ = [
+    "SPSA_ASSUMPTIONS",
+    "SPSA_LIMITATIONS",
+    "SPSAOptimizer",
+    "SPSAResult",
+]
 
 Objective = Callable[[torch.Tensor], torch.Tensor]
+
+#: What has to hold for a run's reported point to mean anything.
+SPSA_ASSUMPTIONS: tuple[str, ...] = (
+    "The objective returns one finite scalar per call and does not modify the "
+    "tensor it is given. Every quantity this unit reports -- the estimate, the "
+    "update, and the cost in the trajectory -- is read from those calls, so an "
+    "objective that returns a vector or a not-a-number is refused rather than "
+    "reduced.",
+    "The perturbation is the direction of the finite difference and nothing "
+    "else. The estimate divides by the same sign vector it perturbed along, so "
+    "every coordinate is treated as having the same scale; a parameter whose "
+    "useful step is a thousand times another's is served worse here than by a "
+    "method that scales its coordinates, and no such scaling is applied.",
+    "The objective may be stochastic. This is the one unit in the package whose "
+    "estimate is built to survive a noisy value, which is why it spends two "
+    "evaluations per step whatever the parameter count instead of one per "
+    "coordinate. A deterministic objective is served more cheaply and more "
+    "accurately by autograd or by the simplex search beside this unit.",
+)
+
+#: What a result does not carry, and what its trajectory does not say.
+SPSA_LIMITATIONS: tuple[str, ...] = (
+    "The estimate is biased for every finite perturbation and is not a "
+    "gradient: its expectation reaches the objective's gradient only as the "
+    "perturbation shrinks, so one estimate is not a descent direction and the "
+    "update built from it is an approximation of a gradient step. Nothing in a "
+    "result's cost sequence is evidence that the objective decreased, and the "
+    "sequence is a record rather than a convergence claim.",
+    "The gain sequences are the caller's. `parameter_gain`, `stability`, "
+    "`perturbation`, and the two exponents are read as given and are not tuned "
+    "to the objective, because a perturbation that is right for one scale of "
+    "parameter is wrong for another. The measured consequence is that one "
+    "constant is not best on every objective: on a three-qubit MaxCut cost the "
+    "measured best energy over four hundred steps moves from -0.977 with the "
+    "default perturbation of 0.2 to -1.000 with 0.05, so a run whose cost "
+    "sequence stalls is a statement about those constants before it is a "
+    "statement about the optimizer.",
+    "There is no convergence flag and no stopping rule beyond the step budget. "
+    "The perturbation this optimizer divides by shrinks by construction, so a "
+    "difference between two calls that are close together is divided by a small "
+    "number and looks large; an iterate-spread threshold like the simplex "
+    "search's would therefore report a settled point as unsettled. A caller who "
+    "needs a convergence statement reads the cost sequence or runs the "
+    "deterministic unit instead.",
+    "The cost is a count of objective evaluations and not a latency, a device "
+    "cost, or a parallel schedule. The two evaluations of one step are "
+    "sequential calls, and no batching, vectorization, or asynchronous "
+    "evaluation is attempted.",
+    "Reproducibility is a property of the generator, not of the optimizer. A "
+    "caller who does not supply a `torch.Generator` gets one made for the "
+    "parameter device, and the run is then not replayable from the call site.",
+)
 
 #: Default stability constant as a fraction of ``maxiter`` when only ``maxiter``
 #: is given.  It is Spall's own starting recommendation.
@@ -382,3 +440,132 @@ class SPSAOptimizer:
         updated = parameters.to(torch.float64) - self.step_size * estimate
         self._index += 1
         return updated.to(parameters.dtype), cost
+
+    def minimize(
+        self,
+        objective: Objective,
+        parameters: torch.Tensor,
+        *,
+        steps: int | None = None,
+    ) -> SPSAResult:
+        """Run the recursion for a fixed budget and return the record.
+
+        This is the shape :meth:`NelderMeadOptimizer.minimize` has, so the two
+        gradient-free units can be handed the same objective and compared, which
+        is what :func:`~flagquantum.algorithms.variational.maxcut_objective`
+        exposes the QAOA cost for.  The step-wise surface stays: a caller
+        adapting a shot-based run wants to read a cost between updates, and one
+        that wants a fixed budget wants this.
+
+        The step-size and perturbation sequences are indexed by the optimizer's
+        own step counter, so a second call on the same object *continues* the
+        recursion rather than replaying it.  Both the counter and the generator
+        are part of the optimizer's state; a run that has to be replayable is
+        made by building a fresh optimizer with the same seed.
+
+        Args:
+            objective: A callable taking the flat parameter tensor and returning
+                one finite scalar. It must not modify the tensor it is given.
+            parameters: The starting point, a finite floating-point tensor of any
+                shape with at least one value.
+            steps: The number of updates to apply, defaulting to ``maxiter`` when
+                the optimizer was built with one. A run has to be given a budget
+                one way or the other, because an unbounded loop over a recursive
+                step-size sequence terminates on nothing.
+
+        Returns:
+            The last point the run reached, the cost at it, the cost before every
+            update, and the evaluations this run spent.
+
+        Raises:
+            ValidationError: If the objective is not callable, if the starting
+                point or the budget is not what its name promises, or if the
+                objective returns something other than one finite scalar.
+        """
+
+        if steps is None:
+            steps = self.maxiter
+        if steps is None:
+            raise ValidationError(
+                "minimize needs a step budget: this optimizer was built without "
+                "maxiter, so pass steps or rebuild it with maxiter, because a "
+                "recursive step-size sequence has no other stopping rule"
+            )
+        if isinstance(steps, bool) or not isinstance(steps, int) or steps < 1:
+            raise ValidationError(
+                f"steps must be a positive integer, and {steps!r} was given"
+            )
+
+        point = parameters
+        spent_before = self._evaluations
+        history: list[float] = []
+        for _ in range(steps):
+            point, cost = self.step_and_cost(objective, point)
+            history.append(float(cost))
+        value = self._evaluate(objective, point.clone())
+        return SPSAResult(
+            parameters=point.detach().clone(),
+            value=float(value),
+            history=tuple(history),
+            evaluations=self._evaluations - spent_before,
+            steps=len(history),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class SPSAResult:
+    """The point one :meth:`SPSAOptimizer.minimize` call reached, and its costs.
+
+    Attributes:
+        parameters: The final point, shaped like the one the run started from.
+            Unlike the simplex search's result this is the *last* iterate and not
+            a best-so-far: a biased steepest-descent-like recursion has no
+            comparison that would make one iterate better than another, and
+            keeping a running minimum would report a point the run did not
+            return to.
+        value: The objective at :attr:`parameters`, as a Python float, read with
+            one extra evaluation after the last update.
+        history: The objective value at each point *before* the update applied
+            there, so it has one entry per update and its first entry is the
+            starting cost. It is a record and not a descent: Adam and SPSA alike
+            can raise it.
+        evaluations: The objective evaluations the run spent, which is
+            ``3 * steps + 1``: two for the estimate, one for the reported cost,
+            and one for the final value.
+        steps: The number of parameter updates the run applied.
+        assumptions: What had to hold for the reported point to mean anything.
+        limitations: What the point and the trajectory do not carry.
+    """
+
+    parameters: torch.Tensor
+    value: float
+    history: tuple[float, ...]
+    evaluations: int
+    steps: int
+    assumptions: tuple[str, ...] = SPSA_ASSUMPTIONS
+    limitations: tuple[str, ...] = SPSA_LIMITATIONS
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.parameters, torch.Tensor):
+            raise TypeError("parameters must be the tensor the final point is")
+        if self.parameters.numel() == 0:
+            raise ValueError("parameters must contain at least one value")
+        if not math.isfinite(self.value):
+            raise ValueError(f"value must be finite, and {self.value!r} is not")
+        for name in ("steps", "evaluations"):
+            number = getattr(self, name)
+            if isinstance(number, bool) or not isinstance(number, int) or number < 1:
+                raise ValueError(f"{name} must be a positive integer")
+        if len(self.history) != self.steps:
+            raise ValueError(
+                "history must carry one cost per update, and it holds "
+                f"{len(self.history)} entries for {self.steps} steps"
+            )
+        if not all(math.isfinite(entry) for entry in self.history):
+            raise ValueError("history must hold finite costs")
+        if self.evaluations != 3 * self.steps + 1:
+            raise ValueError(
+                "a run spends two evaluations per estimate, one per reported "
+                f"cost, and one on the final value, so {self.steps} steps cost "
+                f"{3 * self.steps + 1} evaluations and not {self.evaluations}"
+            )

@@ -39,16 +39,19 @@ defaults to `2`, the level that runs all of it. Use
 | --- | --- |
 | Canonical optimization | [pipeline.py](pipeline.py) |
 | Declared optimization levels and the pass order each one runs | [optimization_levels.py](optimization_levels.py) |
+| The pass registry, the pass binding, and the fixed point | [pass_manager.py](pass_manager.py) |
 | Cancellation of a declared inverse pair | [inverse_cancellation.py](inverse_cancellation.py) |
 | Resets on a wire still in the zero state | [zero_state_reset.py](zero_state_reset.py) |
 | Commutation rules and the block partition | [commutation.py](commutation.py) |
 | Cancellation across a proven commuting gap | [commutation_cancellation.py](commutation_cancellation.py) |
 | Diagonal gates before a measurement | [diagonal_before_measure.py](diagonal_before_measure.py) |
-| Connectivity and routing | [routing.py](routing.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
+| Connectivity and routing | [coupling.py](coupling.py), [directed_topology.py](directed_topology.py), [routing.py](routing.py), [routing_cost.py](routing_cost.py), [sabre.py](sabre.py), [topology_legalization.py](topology_legalization.py) |
 | Qubit layouts and the layout restore | [layout.py](layout.py) |
 | Initial placement on a device | [layout_planning.py](layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](native_gate_legalization.py), [target_legalization.py](target_legalization.py) |
 | Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
+| Conversion into a named basis | [basis_conversion.py](basis_conversion.py) |
+| Exact quarter-turn rotations | [angle_synthesis.py](angle_synthesis.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](one_qubit_synthesis.py) |
 | One-qubit run folding | [one_qubit_optimization.py](one_qubit_optimization.py) |
 | Two-qubit block folding | [two_qubit_optimization.py](two_qubit_optimization.py) |
@@ -60,6 +63,241 @@ defaults to `2`, the level that runs all of it. Use
 | Emission and round-trip checks | [target_emission.py](target_emission.py), [target_conformance.py](target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
+| Static resource estimation | [resource_estimation.py](resource_estimation.py) |
+| QIR base-profile emission | [qir.py](qir.py) |
+
+## Replace a fact the passes read
+
+The optimizer's passes read two opcode tables -- the self-inverse opcodes and
+the opcodes whose parameter is a rotation angle -- and one derived partition of
+the program into commuting blocks. Those are registered analyses, not module
+globals: each pass declares what it `uses` and what it `preserves`, and the
+manager hands it exactly those facts.
+
+Nothing in this section is a stable public API. `PassRegistry`, `PassManager`
+and `PassSpec` live inside this package so that the optimizer keeps one
+composition authority, and an out-of-tree pass reaches the optimizer through
+`flagquantum.ecosystem.extensions.pass_admission` rather than by editing the
+default pipeline. The names below are for working on Compiler itself.
+
+Two properties are enforced before the first pass runs. A name that no analysis
+is registered under is refused where the pass is registered, so a misspelled
+declaration cannot leave a half-applied pipeline. And an analysis that says it
+is independent of the program is computed once for a whole fixed-point run,
+which is only sound if every pass that reads it also declares that it preserves
+it -- so a reader that omits the claim is refused rather than silently handed a
+stale table.
+
+A fact that does depend on the program, such as the commuting-block partition,
+is recomputed from the program the round actually produced, and only when a
+reader that declared it reads it. Replacing one `AnalysisSpec` in the registry
+changes what a pass removes without touching the pass.
+
+## Reach a Clifford+T basis
+
+A target publishes a gate set and no more, and the named-gate identities in
+`basis_translation.py` reach every opcode they name. A rotation is the one
+family they cannot reach: `rz`, `phase`, and `u1` are the same gate up to a
+global phase, no identity rewrites one of them, and the Euler synthesis needs a
+z-rotation opcode to rewrite into -- so a target publishing only `h`, `s`, `t`,
+and `cx` used to refuse a rotation outright.
+
+`angle_synthesis.py` closes the half that has an exact answer. `rz(n * pi/4)` is
+a single-qubit Clifford+T operator for every integer `n`, so it collapses onto
+eight residues, and each residue carries a short word over `t`, `tdg`, `s`,
+`sdg`, and `z`. `basis_translation.translate` consults those words as one more
+candidate rewrite, ranked by the same rule it applies to every rule: a fully
+native rewrite beats a shorter one that names a gate the target lacks.
+
+```python
+import math
+
+from flagquantum.compiler import angle_synthesis
+
+angle_synthesis.quarter_turns(3 * math.pi / 4)  # 3
+angle_synthesis.QUARTER_TURN_WORDS[3]  # (('s', 't'), ('tdg', 'z'))
+```
+
+Two properties are worth knowing before you read the table. Each residue's first
+word carries the minimum number of `t` gates, and the tests re-derive that by
+enumerating the vocabulary rather than trusting the table. Each residue also
+carries a fallback word, so a target publishing `t` but not `tdg` still reaches
+`rz(-pi/4)`; without it `{t, s}` is not a group and would miss a residue.
+
+What the module refuses is as load-bearing as what it answers. The classification
+is an exact equality against a multiple of `pi/4`, so `pi/8`, `pi/3`, and `0.3`
+fail closed rather than being answered with a rotation nobody asked for, and a
+trainable angle is refused by the same check so a rotation never leaves the
+autograd graph by being replaced with a constant word. Approximating an
+arbitrary angle to a target accuracy is the Ross-Selinger problem, needs exact
+arithmetic in `Z[omega, 1/sqrt(2)]` and integer factorization, and is not
+implemented here; the parity contract records that gap rather than papering over
+it.
+
+```bash
+pytest tests/unit/test_compilation_angle_synthesis.py
+```
+
+## Convert a program into a named basis
+
+Native-gate legalization answers a question about a device. The loop underneath
+it was never about one: choose a rewrite, check every leaf, bound the added
+operations, record the replacement. `basis_conversion.py` is that loop, and
+`native_gate_legalization.py` keeps the part that really is about a device --
+reading `gates.native` out of a capability snapshot, matching it through the
+capability matcher, and the wording its own refusals use.
+
+```python
+import flagquantum as fq
+
+from flagquantum.compiler.basis_conversion import convert_basis
+
+result = convert_basis(fq.Circuit(2).h(0).cx(0, 1), gates=("h", "cz"))
+print([item.name for item in result.program.instructions])  # ['h', 'h', 'cz', 'h']
+print([item.source_opcode for item in result.decompositions])  # ['cx']
+print(result.source_basis, result.target_basis)  # ('cx', 'h') ('cz', 'h')
+```
+
+The answer is a report, not a bare program: the result, both bases as distinct
+opcode names, one `GateDecompositionRecord` per rewritten instruction naming the
+source position and the replacement opcodes, both content hashes, and a
+`conversion_identity` over the whole claim. When nothing needed rewriting,
+`changed` is False and `program is result.source_program`, so a caller can tell
+"already in the basis" from "converted to it".
+
+A named basis is validated before it is used, and every offending entry is
+reported at once rather than the first. A bare string is refused instead of
+being iterated character by character, aliases are canonicalised, and a channel
+or a non-gate is refused by name -- there is no vendor basis table here and no
+default basis, because a conversion that guessed would be a conversion nobody
+asked for.
+
+What it will not do is approximate. A gate outside the basis with no exact
+decomposition is refused by name, and so is a decomposition whose own leaves
+escape the basis, so a converted program is always exactly the program it was
+given, up to the one global phase the IR cannot record. The four refusal kinds
+are listed in `REFUSAL_KINDS` and each one names the instruction it is about.
+
+The identity table is extensible without a second registry. A caller holding a
+verified identity the table does not carry appends it with
+`basis_translation.with_equivalence_rule`, which validates the rule and returns a
+new frozen mapping, and passes the result to `convert_basis`:
+
+```python
+from flagquantum.compiler.basis_conversion import convert_basis
+from flagquantum.compiler.basis_translation import (
+    EQUIVALENCE_RULES,
+    with_equivalence_rule,
+)
+from flagquantum.core.ir import Instruction
+
+
+def tdg_to_x_t_x(instruction):
+    # Tdg is X T X up to one global phase, the phase FlagQuantum IR cannot hold.
+    return tuple(
+        Instruction(name, instruction.wires, metadata=dict(instruction.metadata))
+        for name in ("x", "t", "x")
+    )
+
+
+rules = with_equivalence_rule(EQUIVALENCE_RULES, "tdg", tdg_to_x_t_x)
+converted = convert_basis(
+    fq.Circuit(1).gate("tdg", 0), gates=("h", "s", "t", "cx"), rules=rules
+)
+print([item.name for item in converted.program.instructions])
+# ['h', 's', 's', 'h', 't', 'h', 's', 's', 'h']
+```
+
+Registration is not permission to leave the basis: the search expands a
+registered rule's leaves through the table again, and every leaf is re-checked,
+so a rule that names a gate the target lacks is refused exactly like a built-in
+one. A new rule is appended rather than put first, so a rewrite the table
+already had keeps winning a tie; displacing the built-ins takes an explicit
+`replace=True`.
+
+```bash
+pytest tests/unit/test_compilation_basis_conversion.py
+pytest tests/unit/test_compilation_basis_translation.py
+```
+
+## Cost a static program
+
+`estimate_resources(program)` reports what a program contains and how its
+dependencies pack, without running it: the operation count per opcode, the
+schedule depth, the per-wire depth, the widest operation, the T family (`t` and
+`tdg`) and its depth, and the channel count. The depth is the compiler's own list
+schedule over the declared dependencies, so it is a lower bound for a real device
+rather than a duration: no gate timing, connectivity, or routing overhead enters
+it. A program whose instruction sequence has data dependence is refused with a
+`CapabilityError` naming the instruction index and the reason, because a
+straight-line list has no loop bound to estimate. Fault-tolerant costing is
+layered above this unit rather than folded into it;
+`flagquantum.algorithms.logical_resources` charges the tally and the depth on a
+rotated surface code.
+
+The record says which instruction sequence its figures are figures *of*. As
+written, the basis is `ESTIMATE_BASIS`, `static_instruction_sequence`. Pass
+`gates=` and the program is converted into that named basis first, and the basis
+is reported as `named_basis:` followed by the basis's own canonical names -- so
+a quarter-turn rotation counts as one `rz` in the first case and as one `t` in
+the second, and neither count is a claim about a run. The conversion's own
+identity travels on the record as `conversion_identity`, so a count over a
+rewritten sequence is traceable to the rewrite that produced it.
+
+Converting runs no more than counting does, and a basis that cannot express the
+program exactly is refused rather than approximated: `estimate_resources(c, gates=("h", "t", "cx"))`
+on a program carrying a `y`, or a channel, raises the same
+`BasisConversionError` [`convert_basis`](#convert-a-program-into-a-named-basis)
+raises. Naming a basis never turns a refusal into a number.
+
+```python
+import math
+import flagquantum as fq
+from flagquantum.compiler import estimate_resources
+
+as_written = estimate_resources(fq.Circuit(1).rz(0, math.pi / 4))
+print(as_written.basis, as_written.operation_counts)
+# static_instruction_sequence {'rz': 1}
+
+in_basis = estimate_resources(
+    fq.Circuit(1).rz(0, math.pi / 4), gates=("h", "t", "cx")
+)
+print(in_basis.basis, in_basis.operation_counts, in_basis.t_count)
+# named_basis:cx,h,t {'t': 1} 1
+```
+
+```bash
+pytest tests/unit/test_resource_estimation.py
+```
+
+## Emit QIR
+
+`qir.py` writes one program as QIR base-profile LLVM IR text: the
+`FlagQuantumEntryPoint` definition with its `entry_point` attribute, the
+`__quantum__qis__*` calls for the lowered program, a `__quantum__qis__mz__body`
+per measured wire, the `__quantum__rt__tuple_record_output` and
+`__quantum__rt__result_record_output` calls that record the output, the
+declarations those calls need, and the module flags that declare the QIR version
+and the two dynamic-management settings. `translate(program, format="qir-2.0")`
+reaches the same text, so a consumer can be pointed at either entry point. QIR is
+an open specification, so nothing here depends on a vendor component.
+
+What it does not do is the half its name does not cover. Both dynamic-management
+flags are `false`, so no `__quantum__rt__qubit_allocate_array`,
+`qubit_release_array`, or `read_result` call is emitted and a program cannot
+allocate a qubit at runtime through this path. Profile-QIR, the adaptive
+profile, pulse-level generation, and runtime library extension calls are absent.
+Only the constant-index pointer kind is emitted, and this is text rather than an
+object file: no LLVM compilation runs, so conformance is the repository's own
+semantic check plus a host C parser accepting the text as LLVM IR syntax. An
+opcode with no QIS instruction is lowered to a native sequence equal to the
+requested gate up to an unconditional global phase, which recorded measurement
+output cannot observe; a gate the base profile cannot carry is refused by index
+and opcode rather than approximated.
+
+```bash
+pytest tests/hybrid_compiler/test_qir_emission.py
+```
 
 ## Save and load OpenQASM
 

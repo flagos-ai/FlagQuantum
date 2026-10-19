@@ -13,6 +13,10 @@ studies.
 - [Quantum algorithms (demonstration scale)](ALGORITHMS.md)
 - [Construction-time circuit composition](CIRCUIT_COMPOSITION.md)
 
+## Quantum error correction
+
+- [Migrating a Stim workflow](STIM_USER_MIGRATION.md)
+
 ## Performance engineering
 
 - [Continuous performance and memory engineering](PERFORMANCE_ENGINEERING.md)

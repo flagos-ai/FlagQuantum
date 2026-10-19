@@ -8,7 +8,7 @@
   "owner": "integration",
   "implementation": {
     "authorized": false,
-    "note": "The contract is proposed, not approved, and implementation.authorized stays false: the final_layout vocabulary, the widened strategy vocabulary, and the re-routing semantics are unimplemented. One obstacle below, device identity compared by edge order, was a defect inside the existing v1 contract rather than a missing capability, and was fixed without that authorization; its status records the closure and the exact scope of it. Every obstacle below is reconciled by tests/unit/test_routing_plan_v2_candidate.py against the running code, so the document cannot silently go stale."
+    "note": "The contract is proposed, not approved, and implementation.authorized stays false: the final_layout vocabulary and the re-routing semantics are unimplemented. Two obstacles below were closed without that authorization and both are recorded in place. One, device identity compared by edge order, was a defect inside the existing v1 contract rather than a missing capability. The other, the strategy vocabulary copied into the deployment consumer as a two-element literal, was replaced by a read of the Compiler's own DEPLOYABLE_ROUTING_STRATEGIES; the authority it reads is the accepted set rather than the whole four-name vocabulary, so sabre is now admitted and sabre_layout's residual refusal is the initial-permutation obstacle's. Every obstacle below is reconciled by tests/unit/test_routing_plan_v2_candidate.py against the running code, so the document cannot silently go stale."
   },
   "public_api_change": false,
   "stable_core_change": false,
@@ -39,14 +39,27 @@
   "obstacles": {
     "strategy_vocabulary_is_a_copied_literal": {
       "site": "flagquantum/deployment/routing_evidence.py",
-      "clause": "strategy not in {\"restore_after_each_gate\", \"persistent_layout\"}",
+      "clause": "strategy not in DEPLOYABLE_ROUTING_STRATEGIES",
       "authority": "flagquantum/compiler/routing.py:24 ROUTING_STRATEGIES",
       "authority_members": 4,
-      "consumer_members": 2,
+      "consumer_members": 3,
+      "consumer_authority": "flagquantum/compiler/routing.py:57 DEPLOYABLE_ROUTING_STRATEGIES",
       "measured_refusal": "unsupported routing strategy",
-      "measured_count": "24 of 48 routed plans (12 sabre + 12 sabre_layout)",
-      "narrowing_experiment": "Widening only this literal, with every other clause of the validator left in place, makes the sabre plan pass every remaining check on the same programs and leaves sabre_layout refused by the initial-permutation clause instead. Both verdicts are asserted by tests/unit/test_routing_plan_v2_candidate.py.",
-      "proposed_change": "read the authority instead of a copy of it"
+      "measured_count": "12 of 48 routed plans (12 sabre_layout), down from 24 of 48 when the clause was a copy of the two estimating strategies",
+      "narrowing_experiment": "Widening only this clause, with every other clause of the validator left in place, makes the sabre plan pass every remaining check on the same programs and leaves sabre_layout refused by the initial-permutation clause instead. Both verdicts are asserted by tests/unit/test_routing_plan_v2_candidate.py.",
+      "proposed_change": "read the authority instead of a copy of it",
+      "status": "closed_by_single_authority_fix_widening_to_the_whole_vocabulary_still_open",
+      "change_landed": "the two-element set literal is gone and the clause is a membership test on the Compiler's own constant, so a strategy added to the Compiler reaches this seam without a consumer edit. The constant it reads is the deployment contract's accepted set rather than the whole vocabulary: select_routing_strategy minimizes over that same constant, so an automatic choice cannot hand a package a plan this fail-closed validator then refuses. That coupling is what makes the narrower authority the correct one here rather than an incomplete version of the requested change.",
+      "scope_of_the_closure": "The requested change named ROUTING_STRATEGIES; the landed clause reads DEPLOYABLE_ROUTING_STRATEGIES, which differs by exactly one member, sabre_layout. The difference is not a ranking and not an omission: sabre_layout starts from a placement the search chose, so a plan from it is refused by the initial-permutation clause whenever it is admitted past this one, which the widening experiment measures. Closing this obstacle therefore moves the sabre_layout refusal to obstacle 2 rather than removing it, and the decision that would remove it is obstacle 2's.",
+      "why_this_needed_no_authorization": "The proposal asks to be authorized for a new final_layout vocabulary, a widened strategy vocabulary, and a re-routing decision. This change implements none of them: it replaces a normative set copied into a consumer with a read of the Compiler's own constant, which is the single-authority rule the Compiler already applied to itself in optimization_levels. Acceptance strictly widens by exactly one member and every plan the copied literal accepted is still accepted, so implementation.authorized stays false for the proposal as a whole.",
+      "measured_before_and_after": {
+        "restore_after_each_gate": "accepted before and after",
+        "persistent_layout": "accepted before and after",
+        "sabre": "refused 'unsupported routing strategy' before, accepted after",
+        "sabre_layout": "refused 'unsupported routing strategy' before and after; refused 'routing initial permutation must be identity' when the clause is widened"
+      },
+      "clause_reachability": "No clause was removed and no clause was weakened. The one member this clause newly accepts, sabre, reaches every later clause, which is why the widening experiment can be run at all; the residual refusal keeps a reachable input in sabre_layout.",
+      "adjacent_clause_measured_while_reconciling": "A third clause now stands between the schema clause and the permutation clauses: a plan whose direction_semantics disagrees with the device it is validated against is refused by name before any permutation is read. It is the branch's own fail-closed check rather than an obstacle, because it refuses a mismatched plan/device pair and not a compiler facility, but it changes what a clause-removal experiment observes: a directed plan must be validated against the device it was routed onto to reach the permutation clause. tests/unit/test_routing_plan_v2_candidate.py asserts both verdicts."
     },
     "initial_permutation_must_be_identity": {
       "site": "flagquantum/deployment/routing_evidence.py",

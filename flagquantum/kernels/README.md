@@ -884,6 +884,27 @@ development evidence, not a release gate, framework-wide comparison, or
 scalability claim. Reproduce or validate it with
 [`benchmarks/statevector_marginal_probability_dispatch.py`](../../benchmarks/statevector_marginal_probability_dispatch.py).
 
+The density-matrix simulator's operator products are the same rank-three batched
+complex matrix multiplication as NUM-001, and it is the first wired consumer of
+that semantic. `flagquantum/simulation/density_matrix_dispatch.py` asks the route
+question once, from the operands' own declared device and precision, and the
+simulator contracts through `torch.bmm` only where the catalog declares no
+implementation. No measured comparison against `torch.bmm` is claimed for the
+density-matrix shapes, so the route is recorded rather than described as faster:
+both routes are counted and `density_matmul_route_stats()` reports how many
+products took each, which makes a change of route observable without a benchmark.
+The MPS canonical-transfer path above is unchanged and still uses `torch.bmm`.
+
+Route questions are asked through one shared helper.
+`flagquantum/simulation/kernel_dispatch.py` owns `_operand_kernel_axis`, which
+reduces an operand group to the single device and precision a catalog request
+needs, and `_catalog_declares_kernel`, which reports whether any evidence-backed
+implementation covers that request. The helper deliberately does not pin a
+provider: a record added for another provider changes the answer without editing
+a caller. Statevector, MPS, tensor-network, and density-matrix dispatch all reach
+the catalog through it, so an execution device is spelled once, in the request,
+and never as a device literal in a physics routine.
+
 The MPS-001 two-site gate-contraction route is opt-in through
 `FQ_TRITON_MPS_TWO_SITE=1`. The single-pair path authorizes the exact catalog
 entry for contiguous CUDA `complex64` tensors outside reverse execution once
@@ -1222,6 +1243,49 @@ device is CUDA. Runtime policy may use matcher output as one input to provider
 selection, but loading, live availability checks, priorities, and fallback
 execution remain separate responsibilities.
 
+### Execution device axis
+
+The device axis is a closed vocabulary, declared once as `KernelDevice` in
+`schema.py` and re-exported as the runtime set `KERNEL_DEVICES`:
+
+| Device | Meaning |
+| --- | --- |
+| `cpu` | PyTorch CPU execution |
+| `cuda` | PyTorch CUDA execution |
+| `flagos` | Domestic-accelerator execution through the FlagOS platform runtime |
+
+The catalog declares this axis itself instead of importing
+`flagquantum.compute`, because the protected boundaries in `architecture.toml`
+forbid `flagquantum.kernels` from importing `compute` (`kernel_forbidden`
+includes `compute`). To keep the declaration from becoming a second source of
+truth, `tests/unit/test_kernel_catalog.py` asserts that `KERNEL_DEVICES` equals
+the device types reported by `flagquantum.compute.list_platform_status()`. A
+divergence fails the unit tier, so the duplicate cannot drift silently.
+
+Validation refuses an implementation record that declares an undeclared device.
+A request naming an undeclared device is a **malformed request** and raises at
+`KernelRequest` construction, which is deliberately different from the
+capability mismatch reported when a declared device simply has no implementation
+for the semantic:
+
+```python
+KernelRequest(semantic_id="statevector.apply.rx_rz_sequence.local", device="gpu", ...)
+# ValueError: undeclared kernel request device: gpu; declared devices are cpu, cuda, flagos
+
+KernelRequest(semantic_id="statevector.apply.rx_rz_sequence.local", device="cpu", ...)
+# constructs; matching then reports one rejection per CUDA implementation with code "device"
+```
+
+Without the closed axis the two cases are indistinguishable, so a misspelled
+device would read as an unsupported device — a silent degradation instead of a
+fail-closed refusal.
+
+> The axis currently has no `flagos` implementation record. That is the correct
+> representation: the catalog states what exists, and the FlagOS route to
+> statevector execution today lives in `flagquantum.runtime.execution`, not in
+> the catalog. Recording a device with no executable symbol would be a planning
+> item masquerading as a machine record.
+
 ## Target inventory: 100 semantics and 800 implementations
 
 The program target is **100 semantic families** represented by approximately
@@ -1263,12 +1327,18 @@ These counts are portfolio envelopes. A candidate enters the machine catalog
 only when it has an executable symbol, a reference contract, and validation
 evidence. Until then it remains a planning item in this README.
 
-The error-mitigation row is the one family carrying a workload that already runs
+The error-mitigation row is the one family carrying workloads that already run
 without a fused kernel of its own: zero-noise extrapolation is a sequence of
-exact expectation reads at scaled noise strengths, so the foundation measurement
-and expectation kernels serve it and the unit lives in `flagquantum.algorithms`
-rather than here. Readout-error mitigation, probabilistic error cancellation and
-Clifford data regression remain planning items with no implementation.
+exact expectation reads at scaled noise strengths, probabilistic error
+cancellation is a sequence of exact programs with one Pauli conjugation inserted
+per inverted channel, and Clifford data regression measures exact expectations of
+Clifford training circuits and of the target they were snapped from, so the
+foundation measurement and expectation kernels serve all three and the units live
+in `flagquantum.algorithms` rather than here. None adds a numerical kernel this
+package owns: the Pauli transfer matrix is a dense matrix product over the
+channel's own operators, its inverse is applied through the existing Kraus path,
+and the regression is one two-column least-squares solve over the point count.
+Readout-error mitigation remains a planning item with no implementation.
 
 ## Status and maturity
 

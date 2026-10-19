@@ -9,11 +9,14 @@ Recommendation Systems", ITCS 2017, LIPIcs Vol. 67, 49:1-49:21, DOI
 10.4230/LIPIcs.ITCS.2017.49; the singular value decomposition of non-sparse low-rank
 matrices is the subject of Rebentrost, Steffens, Marvian and Lloyd, *Physical Review A*
 **97**(1), 012327 (2018), DOI 10.1103/PhysRevA.97.012327, approached there by exponentiating
-the matrix. The block encoding this module builds in private is the one of Gilyén, Su, Low
+the matrix. The block encoding this module is read against is the one of Gilyén, Su, Low
 and Wiebe, "Quantum singular value transformation and beyond: exponential improvements for
 quantum matrix arithmetics", STOC 2019, pp. 193-204, DOI 10.1145/3313276.3316366,
 Definition 1, which is where the subnormalisation factor and the convention
-``||A|| <= alpha + eps`` are fixed.
+``||A|| <= alpha + eps`` are fixed; the construction itself lives in
+:mod:`flagquantum.algorithms.primitives.block_encoding`, which is the module this unit's
+own readout and the walk step are both written against, and the private form it was
+promoted from is kept below as the reference the equality is asserted against.
 
 **The premise is the input model, and this unit does not meet it.** The algorithm's cost
 is counted in queries to a structure that returns the matrix's entries, and against that
@@ -40,7 +43,9 @@ Hamiltonian's ground-state energy at inverse-polynomial precision given a state 
 the ground state.
 
 **The block encoding, and what reading it costs.** The private construction below
-composes a preparation, a selection and the adjoint of the preparation. Its
+composes a preparation, a selection and the adjoint of the preparation; the primitive
+construction the readout and the walk step are written against flags the same block on a
+single ancilla left in ``|0>``. Its
 subnormalisation ``alpha`` is what the block is smaller than the embedding by: the
 extracted block is the embedding over ``alpha``, and ``alpha`` is at least the embedding's
 spectral norm, so ``||A|| <= alpha`` holds for the matrix whose embedding that is. **A
@@ -105,6 +110,7 @@ from dataclasses import dataclass
 import torch
 
 from ..circuit import Circuit
+from .primitives.block_encoding import subnormalisation as _subnormalisation
 from .primitives.phase_estimation import append_phase_estimation
 from .primitives.state_preparation import append_arbitrary_state
 
@@ -421,6 +427,12 @@ class _PhaseFromEmbedding:
 # need it, and no other Phase 2 unit encodes a matrix at all. Keep it here, private, until
 # that changes; promote it to ``primitives/block_encoding.py`` if a second algorithm
 # module ever needs a block encoding, since one consumer does not earn a module.
+#
+# That condition has since been met: the general construction now lives in
+# :mod:`flagquantum.algorithms.primitives.block_encoding`, which is the module this unit's
+# own readout and the walk step are both written against. The mean-of-two-branches form
+# below is kept as the reference the primitive was promoted from, and the block it
+# extracts is unchanged.
 def _append_block_encoding(
     circuit: Circuit,
     embedding: torch.Tensor,
@@ -586,61 +598,6 @@ def _embedding_of(A: torch.Tensor) -> torch.Tensor:  # noqa: N803
     return embedding
 
 
-def _subnormalisation(embedding: torch.Tensor, alpha: float | None) -> float:
-    """Return the subnormalisation a block encoding of ``embedding`` is read at.
-
-    ``None`` is the embedding's Frobenius norm, which is at least its spectral norm and is
-    available without diagonalising anything. A value is accepted when it is at least that
-    spectral norm, and **refused when it is below it**: the extracted block would then be
-    an operator of norm greater than one, and no unitary has such an operator as one of
-    its blocks, so the construction has no encoding to build and would be building
-    something else under the name of one.
-
-    Args:
-        embedding: The Hermitian matrix to encode.
-        alpha: The candidate subnormalisation, or ``None`` for the embedding's Frobenius
-            norm.
-
-    Returns:
-        The subnormalisation.
-
-    Raises:
-        ValueError: If the matrix is the zero matrix, whose Frobenius norm is not a
-            positive factor; if ``alpha`` is not a positive finite real number; or if it
-            is below the embedding's spectral norm.
-    """
-    if alpha is None:
-        factor = float(torch.linalg.matrix_norm(embedding, ord="fro"))
-        if factor == 0.0:
-            raise ValueError(
-                "the zero matrix has no embedding to normalise; its Frobenius norm is "
-                "zero, so the block would be divided by nothing"
-            )
-        return factor
-    if isinstance(alpha, bool) or not isinstance(alpha, (int, float)):
-        raise ValueError(
-            f"the subnormalisation must be a real number, got {alpha!r}; it is the "
-            "factor the block is smaller than the matrix by, and a flag or a tensor is "
-            "not one"
-        )
-    factor = float(alpha)
-    if not math.isfinite(factor) or factor <= 0.0:
-        raise ValueError(
-            f"the subnormalisation must be positive and finite, got {factor}; a "
-            "non-positive factor is not what the block is smaller than the matrix by"
-        )
-    spectral = float(torch.linalg.matrix_norm(embedding, ord=2))
-    if factor < spectral:
-        raise ValueError(
-            "the subnormalisation must be at least the embedding's spectral norm "
-            f"{spectral}, got {factor}; the block would be that matrix over {factor}, an "
-            "operator of norm greater than one, and no unitary has an operator of norm "
-            "greater than one as one of its blocks, so this is not a matrix that can be "
-            "encoded at this factor at all"
-        )
-    return factor
-
-
 def _input_amplitudes(A: torch.Tensor) -> torch.Tensor:  # noqa: N803
     """Return the amplitudes of the state phase estimation is applied to.
 
@@ -699,7 +656,8 @@ def _estimation_circuit(
         ValueError: If the amplitudes, the widths or the subnormalisation fail the
             validation :func:`~flagquantum.algorithms.primitives.state_preparation.append_arbitrary_state`,
             :func:`~flagquantum.algorithms.primitives.phase_estimation.append_phase_estimation`
-            or :func:`_subnormalisation` applies to them.
+            or :func:`~flagquantum.algorithms.primitives.block_encoding.subnormalisation`
+            applies to them.
     """
     n_embedding_qubits = int(embedding.shape[0]).bit_length() - 1
     evaluation = list(range(n_counting_qubits, n_counting_qubits + n_embedding_qubits))

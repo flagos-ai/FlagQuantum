@@ -5,20 +5,29 @@ backend is admitted, `fq.run` reaches it without any FlagQuantum source change,
 and every failure mode is rejected before a kernel starts.
 """
 
+import inspect
 import types
 from pathlib import Path
 from typing import Any, ClassVar
 
 import pytest
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - the 3.10 interpreter
+    import tomli as tomllib
 import torch
 
 import flagquantum as fq
 from flagquantum.ecosystem.extensions import (
+    EXTENSION_ENTRY_POINT_GROUP,
     CapabilityRequest,
     CapabilityResponse,
+    ExecutionBackendExtension,
     ExtensionCompatibilityError,
     ExtensionConfig,
     ExtensionManifest,
+    discover_extensions,
 )
 from flagquantum.ecosystem.extensions.admission import (
     BackendAdmissionError,
@@ -26,9 +35,14 @@ from flagquantum.ecosystem.extensions.admission import (
     check_backend_admission,
     withdraw_backend,
 )
+from flagquantum.ecosystem.qiskit.aer import (
+    QiskitAerDependencyError,
+    QiskitAerExecutionError,
+)
 from flagquantum.errors import CapabilityError, ExecutionError, FlagQuantumError
 from flagquantum.runtime.backend_registry import (
     BackendCapabilities,
+    BackendExecutor,
     get_backend_capabilities,
     list_backends,
     refresh_backend_registry,
@@ -40,6 +54,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_PATH = ROOT / "examples/extensions/reference_backend_extension.py"
+PYPROJECT_PATH = ROOT / "pyproject.toml"
 # Compiled from source rather than imported through the bytecode cache: a cached
 # .pyc survives a same-size edit made within the same second, which would let
 # this module assert against code that is no longer in the tree.
@@ -623,6 +638,103 @@ def test_an_extension_cannot_take_a_builtin_backend_name():
         check_backend_admission(extension)
 
 
+def test_a_route_that_keeps_the_sdk_call_shape_is_refused_at_admission():
+    """The SDK member is not the route: it is called a different way.
+
+    ``ExecutionBackendExtension`` requires ``execute(program, parameters=None)``
+    and ``BackendExecutor`` requires ``execute(program, *, options)``, and both
+    are ``runtime_checkable``, so an object with the first shape satisfies both
+    protocol checks while Runtime's call cannot reach it. The distinction only
+    shows up when the member is actually called, which is why admission calls
+    it: registering this backend would mean planning a circuit, spending a shot
+    budget, and failing inside the executor.
+    """
+
+    class SdkShape(_ScriptedBackend):
+        manifest = ExtensionManifest(
+            name="sdk_shape_backend",
+            version="1.0.0",
+            kind="backend",
+            capabilities=frozenset({"cpu"}),
+        )
+
+        def execute(self, program, parameters=None):
+            return torch.zeros((1, 2**program.n_wires), dtype=torch.complex64)
+
+    extension = SdkShape()
+    assert isinstance(extension, ExecutionBackendExtension)
+    with pytest.raises(BackendAdmissionError, match="cannot be called"):
+        check_backend_admission(extension)
+    with pytest.raises(BackendAdmissionError, match="cannot be called"):
+        admit_backend_extension(extension)
+    assert "sdk_shape_backend" not in list_backends()
+    assert resolve_backend_executor("sdk_shape_backend") is None
+
+
+def test_the_route_refusal_names_the_extension_and_the_call_runtime_makes():
+    """A refusal has to say which backend and which call, not just that one failed.
+
+    The two halves are asserted together because either alone is satisfiable by
+    a message that identifies nothing: a reader who cannot see the extension
+    name cannot map the error onto a manifest, and a reader who cannot see
+    ``options`` cannot tell this refusal from a missing-member one.
+    """
+
+    class SdkShape(_ScriptedBackend):
+        manifest = ExtensionManifest(
+            name="named_shape_backend",
+            version="1.0.0",
+            kind="backend",
+            capabilities=frozenset({"cpu"}),
+        )
+
+        def execute(self, program, parameters=None):
+            return torch.zeros((1, 2**program.n_wires), dtype=torch.complex64)
+
+    with pytest.raises(BackendAdmissionError) as raised:
+        admit_backend_extension(SdkShape())
+
+    message = str(raised.value)
+    assert "named_shape_backend" in message
+    assert "options" in message
+    assert "execute(program" in message
+
+
+def test_a_route_that_accepts_the_options_keyword_is_not_refused_for_its_shape():
+    """The check binds the call and does not inspect the parameter names.
+
+    ``_ScriptedBackend`` names the keyword ``options`` and the reference backend
+    does too, so a shape check that matched a spelling rather than a call would
+    pass every existing test. This one names the parameter something else and
+    accepts ``**kwargs`` as well, because what Runtime requires is that the
+    keyword is accepted, not what the callee calls it.
+    """
+
+    class Renamed(_ScriptedBackend):
+        manifest = ExtensionManifest(
+            name="renamed_shape_backend",
+            version="1.0.0",
+            kind="backend",
+            capabilities=frozenset({"cpu"}),
+        )
+
+        def execute(self, program, **plan_facts):
+            self.options = plan_facts
+            return torch.zeros((1, 2**program.n_wires), dtype=torch.complex64)
+
+    handle, capabilities = admit_backend_extension(Renamed())
+    try:
+        result = fq.run(
+            _bell(),
+            options=fq.ExecutionOptions(backend=capabilities.name, mode="statevector"),
+        )
+        assert result.runtime["execution_path"] == "admitted_extension_backend"
+    finally:
+        handle.close()
+        withdraw_backend(capabilities.name)
+        refresh_backend_registry()
+
+
 def test_a_non_backend_kind_is_rejected():
     extension = _variant("wrong_kind", kind="provider")
     with pytest.raises(BackendAdmissionError, match="kind"):
@@ -668,6 +780,46 @@ def test_checking_admission_registers_nothing(admitted):
     assert capabilities.name == "reference_statevector"
     assert "reference_statevector" not in list_backends()
     assert resolve_backend_executor("reference_statevector") is None
+
+
+def test_discovery_reaches_admission_for_every_shipped_entry_point() -> None:
+    """The two halves meet over installed metadata, not only over a hand-built one.
+
+    ``discover_extensions`` and ``admit_backend_extension`` were separate
+    authorities with no test that ran the first into the second against a real
+    entry-point group: every discovery test monkeypatches the metadata reader and
+    every admission test hands over an object it built itself, so the crossing a
+    caller actually performs was unowned. This test performs it on the entry
+    points the distribution declares, and asserts the crossing is total -- each
+    one is either admitted or refused by a ``BackendAdmissionError`` that names
+    it, never a third outcome and never a silent registration.
+    """
+
+    declared = tomllib.loads(PYPROJECT_PATH.read_text(encoding="utf-8"))
+    keys = declared["project"]["entry-points"][EXTENSION_ENTRY_POINT_GROUP]
+    expected = {tuple(key.split(".", 1)) for key in keys if key.startswith("backend.")}
+    assert expected, "pyproject.toml declares no backend extension entry point"
+
+    entries = discover_extensions("backend").entries
+    # Discovery reads installed distribution metadata, so a source checkout that
+    # was never installed yields nothing; CI installs the package with
+    # ``pip install -e``, which is what makes this coupling observable here.
+    assert expected <= set(
+        entries
+    ), f"declared {sorted(expected)} but discovered {sorted(entries)}"
+
+    for key, extension in entries.items():
+        name = extension.manifest.name
+        assert key == ("backend", name)
+        try:
+            capabilities = check_backend_admission(extension)
+        except BackendAdmissionError as error:
+            # A refusal is a verdict about this extension, not a swallowed
+            # failure: it must say which one it refused.
+            assert name in str(error)
+        else:
+            assert capabilities.name == name
+        assert resolve_backend_executor(name) is None
 
 
 def test_an_sdk_incompatible_extension_is_rejected_before_activation():
@@ -740,3 +892,126 @@ def test_the_reference_backend_imports_only_the_extension_namespace():
         name for name in imported if name.split(".")[0] == "flagquantum"
     }
     assert flagquantum_imports == {"flagquantum.ecosystem.extensions"}
+
+
+# --- The shipped simulator plugin -------------------------------------------
+
+
+def _shipped_aer_plugin():
+    """The extension instance this distribution declares for Qiskit Aer."""
+
+    declared = tomllib.loads(PYPROJECT_PATH.read_text(encoding="utf-8"))
+    keys = declared["project"]["entry-points"][EXTENSION_ENTRY_POINT_GROUP]
+    assert "backend.qiskit_aer" in keys, "pyproject.toml stopped declaring the plugin"
+    return discover_extensions("backend").entries[("backend", "qiskit_aer")]
+
+
+def test_the_shipped_aer_plugin_is_admitted_rather_than_refused():
+    """A declared plugin that admission refuses is a capability with no occupant.
+
+    The parity row for simulator plugins asks for a conforming occupant of the
+    admission boundary, not for the boundary itself. ``pyproject.toml`` declares
+    ``backend.qiskit_aer``, so this asserts the occupant: the declaration is
+    complete enough for Runtime to learn the backend's capabilities before
+    planning, and the route is a call Runtime makes rather than only the call
+    the SDK makes. Reinstate either half of the old refusal and this fails here
+    instead of at the first user who selects the backend.
+    """
+
+    extension = _shipped_aer_plugin()
+    capabilities = check_backend_admission(extension)
+
+    assert capabilities.name == "qiskit_aer"
+    assert capabilities.devices == ("cpu",)
+    assert capabilities.dtypes == ("complex64", "complex128")
+    assert capabilities.supports_statevector is True
+    assert capabilities.supports_density_matrix is False
+    assert capabilities.supports_mps is False
+    assert capabilities.supports_autograd is False
+    assert capabilities.supports_distributed is False
+    # A CPU statevector evaluator reaches one device, so it must not acquire a
+    # scalability claim by omission.
+    assert capabilities.scalability_claim_allowed is False
+    assert "qiskit_aer" not in list_backends()
+    assert resolve_backend_executor("qiskit_aer") is None
+
+
+def test_the_shipped_aer_plugin_is_both_the_sdk_member_and_the_runtime_route():
+    """The two protocols are satisfied by one object, and both calls still bind.
+
+    ``ExecutionBackendExtension`` is called as ``execute(program, parameters)``
+    and ``BackendExecutor`` as ``execute(program, *, options)``. Serving Runtime
+    is mandatory -- admission refuses a backend that does not -- but adding the
+    route must not cost the SDK its own shape, which is what the shipped
+    extension, its ``run`` entry, and the documented example still use.
+    """
+
+    extension = _shipped_aer_plugin()
+    assert isinstance(extension, ExecutionBackendExtension)
+    assert isinstance(extension, BackendExecutor)
+
+    signature = inspect.signature(extension.execute)
+    signature.bind(object(), {"options": None})
+    signature.bind(object(), options={})
+
+
+def test_the_aer_plugin_refuses_a_planned_fact_it_cannot_honour(admitted):
+    """A fact the bridge cannot honour is named, before any simulation starts.
+
+    Runtime hands a route a mapping of planned facts. A bridge that reads the
+    ones it knows and drops the rest would report a run that differs from the
+    plan while claiming to have served it, which is the silent fallback the
+    architecture forbids. Each refusal below happens on the mapping alone, so
+    none of them needs Qiskit installed -- the boundary fails closed whether or
+    not the optional dependency is present.
+    """
+
+    extension = _shipped_aer_plugin()
+    handle, capabilities = admitted(extension)
+    assert capabilities.name == "qiskit_aer"
+    try:
+        with pytest.raises(QiskitAerExecutionError, match="world_size"):
+            extension.execute(
+                object(), options={"backend": "qiskit_aer", "world_size": 2}
+            )
+        with pytest.raises(QiskitAerExecutionError, match="does not produce gradients"):
+            extension.execute(object(), options={"require_gradients": True})
+        with pytest.raises(QiskitAerExecutionError, match="unsupported field"):
+            extension.execute(object(), options={"execution_path": "native"})
+        with pytest.raises(TypeError, match="not both"):
+            extension.execute(object(), {"options": None}, options={})
+    finally:
+        handle.close()
+
+
+def test_runtime_reaches_the_admitted_aer_route_rather_than_refusing_it(admitted):
+    """The route is reached: only the optional third-party install may be missing.
+
+    Binding the keyword proves admission accepts the shape; it does not prove
+    Runtime arrives. This drives ``fq.run`` at the admitted plugin and splits the
+    two outcomes that matter. A dependency error means the call entered the
+    bridge and stopped at the one thing an optional extra owns. An execution
+    result means Qiskit is installed and the backend served the run. Anything
+    else -- a shape refusal, a planning refusal -- is the defect coming back,
+    because those happen before a backend is ever called.
+    """
+
+    extension = _shipped_aer_plugin()
+    handle, capabilities = admitted(extension)
+    try:
+        try:
+            result = fq.run(
+                _bell(),
+                options=fq.ExecutionOptions(
+                    backend=capabilities.name, mode="statevector"
+                ),
+            )
+        except ExecutionError as error:
+            assert isinstance(
+                error.__cause__, QiskitAerDependencyError
+            ), f"the route was not reached: {error}"
+        else:
+            assert result.runtime["execution_path"] == "admitted_extension_backend"
+            assert result.runtime["backend"] == "qiskit_aer"
+    finally:
+        handle.close()

@@ -1,0 +1,953 @@
+# FlagQuantum parity plan row ledger.
+#
+# The prose plan -- its titles, its per-row narratives, its measured
+# readings -- lives outside this repository and is commentary. This file is
+# the machine-readable record of the rows themselves: which wave each row
+# belongs to, what kind of work it delivers, how much of it there is, which
+# rows it waits on, which gate proves it, and whether it is done. It carries
+# no team column, because `team-ownership.toml` already owns path ownership
+# and a second copy of it here would be a second source of truth.
+#
+# Regenerate never: edit this file with the change that lands a row.
+schema = "flagquantum_parity_pr_plan_ledger_v1"
+row_count = 102
+
+[[rows]]
+id = "W0-00"
+kind = ["adr"]
+gate_tier = []
+size = "M"
+depends_on = []
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W0-01"
+kind = ["contract"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W0-00"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W0-02"
+kind = ["contract"]
+gate_tier = ["pr-default"]
+size = "L"
+depends_on = ["W0-01"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W0-03"
+kind = ["tool"]
+gate_tier = ["pr-default"]
+size = "L"
+depends_on = ["W0-02"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W0-04"
+kind = ["evidence"]
+gate_tier = ["benchmark_contract"]
+size = "M"
+depends_on = ["W0-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W0-05"
+kind = ["contract"]
+gate_tier = []
+size = "L"
+depends_on = ["W0-02"]
+status = "landed"
+annotated = false
+
+[[rows]]
+id = "W0-06"
+kind = ["fake", "conformance"]
+gate_tier = ["pr-default"]
+size = "L"
+depends_on = ["W0-05"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W0-07"
+kind = ["contract"]
+gate_tier = []
+size = "M"
+depends_on = ["W0-02"]
+status = "blocked"
+annotated = true
+blocker = "owner_decision_required"
+
+[[rows]]
+id = "W0-08"
+kind = ["fake", "conformance"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W0-07"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W0-09"
+kind = ["doc"]
+gate_tier = []
+size = "M"
+depends_on = ["W0-00"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W0-10"
+kind = ["contract"]
+gate_tier = []
+size = "L"
+depends_on = ["W0-08"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W0-11"
+kind = ["conformance"]
+gate_tier = ["pr-default"]
+size = "S"
+depends_on = []
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W1-01"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W0-08"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W1-02"
+kind = ["evidence"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W1-01"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W1-03"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W1-01"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W1-04"
+kind = ["evidence"]
+gate_tier = ["benchmark_contract"]
+size = "L"
+depends_on = ["W1-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W1-05"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W0-08"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W1-06"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W1-05"]
+status = "blocked"
+annotated = false
+blocker = "owner_decision_required"
+
+[[rows]]
+id = "W1-07a"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W0-08"]
+status = "landed"
+annotated = false
+
+[[rows]]
+id = "W1-07b"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W1-07a"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W1-08"
+kind = ["evidence"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W1-07b"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W2-01"
+kind = ["impl"]
+gate_tier = ["gpu-scheduled"]
+size = "XL"
+depends_on = ["W1-07a", "W1-07b"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W2-02"
+kind = ["impl"]
+gate_tier = ["gpu-scheduled"]
+size = "L"
+depends_on = ["W2-01"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W2-03"
+kind = ["contract", "impl"]
+gate_tier = ["pr-runtime", "gpu-scheduled"]
+size = "XL"
+depends_on = ["W2-01"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W2-04"
+kind = ["impl"]
+gate_tier = ["distributed_accel"]
+size = "XL"
+depends_on = ["W2-01"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W2-05"
+kind = ["contract"]
+gate_tier = ["pr-distributed"]
+size = "L"
+depends_on = ["W2-04"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W2-06"
+kind = ["impl"]
+gate_tier = ["gpu-scheduled"]
+size = "L"
+depends_on = ["W2-01"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W2-07"
+kind = ["evidence"]
+gate_tier = ["release_gate"]
+size = "L"
+depends_on = ["W2-04", "W2-05"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W2-08"
+kind = ["impl"]
+gate_tier = ["distributed_accel"]
+size = "M"
+depends_on = ["W2-04"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W3-01"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W1-07a", "W1-07b"]
+status = "landed"
+annotated = false
+
+[[rows]]
+id = "W3-02"
+kind = ["impl"]
+gate_tier = ["distributed_accel"]
+size = "XL"
+depends_on = ["W3-01", "W2-04"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W3-03"
+kind = ["impl"]
+gate_tier = ["gpu-scheduled"]
+size = "XL"
+depends_on = ["W3-01"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W3-04"
+kind = ["impl"]
+gate_tier = ["distributed_multinode"]
+size = "XL"
+depends_on = ["W3-03"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W3-05"
+kind = ["evidence"]
+gate_tier = ["release_gate"]
+size = "L"
+depends_on = ["W3-02", "W3-04"]
+status = "blocked"
+annotated = true
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W4-01"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W0-05"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W4-02"
+kind = ["contract", "impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W4-01"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W4-03"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W4-02"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W4-04"
+kind = ["impl"]
+gate_tier = ["gpu-scheduled"]
+size = "L"
+depends_on = ["W4-01", "W1-07a", "W1-07b"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W4-05"
+kind = ["contract"]
+gate_tier = []
+size = "L"
+depends_on = ["W0-06"]
+status = "blocked"
+annotated = false
+blocker = "owner_decision_required"
+
+[[rows]]
+id = "W4-06"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W4-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W4-07"
+kind = ["evidence"]
+gate_tier = ["release_gate"]
+size = "M"
+depends_on = ["W4-04", "W4-06"]
+status = "blocked"
+annotated = false
+blocker = "accelerator_environment_unavailable"
+
+[[rows]]
+id = "W5-01"
+kind = ["adr", "contract"]
+gate_tier = []
+size = "L"
+depends_on = ["W0-00"]
+status = "blocked"
+annotated = false
+blocker = "owner_decision_required"
+
+[[rows]]
+id = "W5-02"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "XL"
+depends_on = ["W5-01", "W0-06"]
+status = "blocked"
+annotated = false
+blocker = "owner_decision_required"
+
+[[rows]]
+id = "W5-03"
+kind = ["contract", "impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W5-02"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W5-04"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W0-06"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W5-05"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W5-02"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W5-06"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W5-05"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W5-07"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W5-02"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W5-08"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W5-02"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W5-09"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W5-04"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W5-10"
+kind = ["contract", "impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W5-04"]
+status = "blocked"
+annotated = false
+blocker = "owner_decision_required"
+
+[[rows]]
+id = "W5-11"
+kind = ["contract", "impl"]
+gate_tier = ["pr-default"]
+size = "XL"
+depends_on = ["W5-04"]
+status = "blocked"
+annotated = true
+blocker = "owner_decision_required"
+
+[[rows]]
+id = "W5-12"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W0-07"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W5-13"
+kind = ["contract", "impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W4-02"]
+status = "blocked"
+annotated = true
+blocker = "owner_decision_required"
+
+[[rows]]
+id = "W6-01"
+kind = ["contract", "impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W5-11"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-02a"
+kind = ["contract", "impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W6-01", "W4-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-02b"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "S"
+depends_on = ["W6-02a"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-03"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W1-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-04"
+kind = ["impl"]
+gate_tier = ["pr-runtime", "gpu-scheduled"]
+size = "L"
+depends_on = ["W6-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-05"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W6-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-06"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W5-04"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-07"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W6-06"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-08"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W6-01"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-09"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W0-08"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-10"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "XL"
+depends_on = ["W5-12"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-11"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W6-10"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-12"
+kind = ["contract"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = []
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-13"
+kind = ["evidence"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W6-01", "W6-06", "W6-07", "W6-08"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-14"
+kind = ["evidence"]
+gate_tier = ["pr-runtime"]
+size = "S"
+depends_on = ["W5-07"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-15"
+kind = ["evidence"]
+gate_tier = ["pr-default"]
+size = "S"
+depends_on = ["W5-07"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-16"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "S"
+depends_on = ["W6-01"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-17"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-08"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-18"
+kind = ["evidence"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-13", "W6-14", "W6-15"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-19"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-17"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-20"
+kind = ["evidence"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-19"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-21"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-10"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-22"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-07"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-23"
+kind = ["evidence"]
+gate_tier = ["pr-runtime"]
+size = "S"
+depends_on = ["W6-04"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-24"
+kind = ["evidence"]
+gate_tier = ["pr-default"]
+size = "S"
+depends_on = ["W6-23"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-25"
+kind = ["evidence"]
+gate_tier = ["pr-default"]
+size = "S"
+depends_on = ["W6-24"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-26"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = []
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-27"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "L"
+depends_on = []
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-28"
+kind = ["evidence"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-24"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-29"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-27"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-30"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-29"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-31"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-30"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-32"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W6-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-33"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W6-04"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-34"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W6-17"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-35"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-04", "W6-33"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-36"
+kind = ["evidence"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W6-04", "W6-35"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-37"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W6-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-38"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W6-37"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-39"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "L"
+depends_on = ["W6-38"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W6-40"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W6-26"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W7-01"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W5-04"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W7-02"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = ["W0-08"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W7-03"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "M"
+depends_on = ["W7-02"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W7-04"
+kind = ["impl"]
+gate_tier = ["pr-runtime"]
+size = "S"
+depends_on = ["W7-03"]
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W7-05"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "S"
+depends_on = []
+status = "landed"
+annotated = true
+
+[[rows]]
+id = "W7-06"
+kind = ["impl"]
+gate_tier = ["pr-default"]
+size = "S"
+depends_on = []
+status = "landed"
+annotated = true
+[[rows]]
+id = "W7-07"
+kind = ["tool", "contract"]
+gate_tier = ["pr-default"]
+size = "M"
+depends_on = []
+status = "landed"
+annotated = true

@@ -2,8 +2,9 @@
 
 ## Status
 
-**Proposed. No Stable Core change requested. The two vocabulary moves are not
-implemented. Obstacle 5 was a defect and has been fixed.**
+**Proposed. No Stable Core change requested. The `final_layout` vocabulary and the
+re-routing semantics are not implemented. Obstacles 1 and 5 were defects and are
+closed.**
 
 This proposal asks for a decision, not for a code change. It adds no strategy, no
 pass, and no public name. It records what the deployment routing contract
@@ -12,14 +13,20 @@ pass, and no public name. It records what the deployment routing contract
 for each refusal, and proposes the smallest vocabulary that would let a caller
 describe the programs the compiler already produces.
 
-One obstacle below was not a missing capability but a defect *inside* the v1
-contract, and it has been fixed without this proposal's authorization: obstacle 5,
-which compared two serializations of one device as though the serialization order
-were part of the hardware. That section records the closure and states exactly why
-it needed no authorization; `implementation.authorized` stays `false`, because the
-vocabulary and the re-routing semantics this proposal asks for are still
-unimplemented. Fixing the comparison removed the trigger of the second refusal,
-not the question behind it, so obstacle 5's second half remains an open decision.
+Two obstacles below were not missing capabilities but defects *inside* the v1
+contract, and both were fixed without this proposal's authorization. Obstacle 5
+compared two serializations of one device as though the serialization order were
+part of the hardware. Obstacle 1 held a copy of the Compiler's strategy vocabulary
+as a two-element set literal, so a strategy the Compiler had added was silently
+refused by the deployment consumer; the literal is gone and the clause reads the
+Compiler's own `DEPLOYABLE_ROUTING_STRATEGIES`. Each section records its closure
+and states exactly why it needed no authorization; `implementation.authorized`
+stays `false`, because the vocabulary and the re-routing semantics this proposal
+asks for are still unimplemented, and because obstacle 1's closure is deliberately
+narrower than the change this section requested. Fixing the comparison removed the
+trigger of the second refusal, not the question behind it, so both closures leave
+their questions open: obstacle 5's re-routing decision, and obstacle 1's residual
+`sabre_layout` refusal, which is obstacle 2's question wearing obstacle 1's name.
 
 The Compiler owns `flagquantum/compiler/**`. The contract below is consumed by
 `flagquantum/deployment/routing_evidence.py` and
@@ -79,32 +86,77 @@ below states what refuses first on its own reproduction, and
 rebuilding the validator's own source with one clause replaced — an experiment,
 not a reading of the source.
 
-### Obstacle 1: the strategy vocabulary is a copied literal
+### Obstacle 1: the strategy vocabulary is a copied literal — CLOSED
 
 | strategy | verdict | count |
 |---|---|---|
 | `restore_after_each_gate` | accepted | 12 |
 | `persistent_layout` | accepted | 12 |
-| `sabre` | `unsupported routing strategy` | 12 |
+| `sabre` | accepted | 12 |
 | `sabre_layout` | `unsupported routing strategy` | 12 |
 
-The validator holds a two-element set literal:
+The validator used to hold a two-element set literal:
 
 ```python
 if strategy not in {"restore_after_each_gate", "persistent_layout"}:
 ```
 
+It now reads the Compiler's own constant instead:
+
+```python
+if strategy not in DEPLOYABLE_ROUTING_STRATEGIES:
+```
+
 `flagquantum/compiler/routing.py:24` holds `ROUTING_STRATEGIES`, a four-element
-tuple, and the compiler dispatches on it. Widening only that literal — every
-other clause left in place — makes the `sabre` plan pass every remaining check on
-the same programs; see `tests/unit/test_routing_plan_v2_candidate.py`. So this
-obstacle is one copied literal, and its cost is that half the compiler's routing
-strategies cannot reach a provider.
+tuple, and the compiler dispatches on it. The constant the validator reads is the
+three-element `DEPLOYABLE_ROUTING_STRATEGIES` at `routing.py:57`, which is *not*
+the whole vocabulary — so this closure is narrower than what this section
+originally requested, and narrower for a reason that makes it the correct
+authority here rather than an incomplete version of the request.
+
+`select_routing_strategy` minimizes over that same constant. The set a caller may
+reach automatically and the set the deployment contract accepts are therefore one
+value, so an `auto` choice cannot hand a package a plan this fail-closed validator
+then refuses. Reading `ROUTING_STRATEGIES` instead would restore the drift in the
+other direction: `auto` would still be unable to reach `sabre_layout`, while a
+hand-written `sabre_layout` plan would be admitted past this clause only to be
+refused by obstacle 2.
+
+That is what the widening experiment measures. Widening only this clause to the
+four-name vocabulary, with every other clause left in place, makes the `sabre`
+plan pass every remaining check on the same programs and leaves `sabre_layout`
+refused by the initial-permutation clause instead; see
+`tests/unit/test_routing_plan_v2_candidate.py`, which asserts both verdicts and
+also asserts that the copied literal is gone and that the clause reads the
+authority.
+
+So this obstacle is closed, and what remains of it is obstacle 2. The cost it
+recorded — half the compiler's routing strategies cannot reach a provider — is
+now a quarter: `sabre` reaches a provider, and `sabre_layout` does not because a
+plan from it states a placement the v1 contract has no field for.
 
 This is the same defect class the Compiler fixed for itself in `optimization_levels`:
 a normative set copied into a consumer, so that adding a member to the authority
-silently narrows the consumer instead of widening it. The proposal asks the
-consumer to read the authority rather than a copy of it.
+silently narrows the consumer instead of widening it. The closure applies that
+same fix at this seam, against the accepted set.
+
+**Why the closure needed no authorization.** This proposal asks to be authorized
+for a new `final_layout` vocabulary, a widened strategy vocabulary, and a
+re-routing decision. The closure implements none of them: it replaces a normative
+set copied into a consumer with a read of the Compiler's own constant, and
+acceptance strictly widens by exactly one member. Every plan the copied literal
+accepted is still accepted, so `implementation.authorized` stays `false` for the
+proposal as a whole. `contracts/routing-plan-v2-candidate.json` records the
+closure, its measured scope, and the reachability of the clause.
+
+**A clause this closure's experiment exposed.** A third clause now stands between
+the schema clause and the permutation clauses: a plan whose `direction_semantics`
+disagrees with the device it is validated against is refused by name before any
+permutation is read. It is a fail-closed check on a mismatched plan/device pair
+rather than an obstacle, because it refuses no compiler facility, but it changes
+what a clause-removal experiment observes — a directed plan has to be validated
+against the device it was routed onto before the permutation clause is reachable.
+The test asserts both verdicts, so the layer order is pinned rather than assumed.
 
 ### Obstacle 2: the initial permutation must be the identity
 
@@ -327,15 +379,27 @@ the open half.
 ## Decision requested
 
 Admit a routing plan that reports a placement instead of asserting the identity.
-Two moves are requested; the third, the comparison fix, has landed as a defect fix
-and is recorded here so the decision below is read against the fixed state.
+Two moves are requested; the other two, the comparison fix and the copied
+vocabulary, have landed as defect fixes and are recorded here so the decision
+below is read against the fixed state.
 
-### 1. Read the strategy vocabulary from its authority
+### 1. Read the strategy vocabulary from its authority — CLOSED, at a narrower authority
 
 Replace the two-element set literal with a membership test reading
 `flagquantum.compiler.routing.ROUTING_STRATEGIES`. Adding a strategy to the
 compiler then widens the deployment contract instead of silently narrowing it,
 and the two cannot drift.
+
+**Closed in the direction that matters, deliberately short of the name requested.**
+The literal is gone and the clause reads `DEPLOYABLE_ROUTING_STRATEGIES`, which is
+the set `select_routing_strategy` minimizes over — so `auto` and the deployment
+contract cannot drift from each other, which is the property this move was asked
+for. Reading the four-name vocabulary instead would admit `sabre_layout` plans past
+this clause only to have obstacle 2 refuse them, and would make the accepted set a
+second, wider authority than the one the automatic choice uses. The residual
+`sabre_layout` refusal is obstacle 2's question, not this one's; see obstacle 1
+above for the measurement and `contracts/routing-plan-v2-candidate.json` for the
+recorded scope.
 
 ### 2. Report the placement in all three positions, with a named final state
 

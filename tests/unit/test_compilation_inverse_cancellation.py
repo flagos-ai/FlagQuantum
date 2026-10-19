@@ -553,7 +553,10 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
 
     The loop runs the sequence `optimization_levels` declares rather than a copy of
     it, so the composition this test pins is the declaration, and the check that the
-    loop reaches it is that the driver names no pass directly.
+    loop reaches it is that the driver names no pass directly. The loop itself no
+    longer names the pass either; it resolves names through the registry, so the
+    second half of the test pins exactly one registry binding answering for this
+    pass and its name occupying exactly one slot in the registered order.
     """
 
     composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
@@ -572,6 +575,26 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     }
     assert "optimization_level_stages" in called
     assert "merge_inverse_pairs" not in called
+
+    bound = [
+        name
+        for name, function in pipeline_module.BUILTIN_PASSES.items()
+        if function is pipeline_module._merge_inverse_pairs
+    ]
+    assert bound == ["merge_inverse_pairs"]
+    assert pipeline_module.OPTIMIZATION_PIPELINE.count("merge_inverse_pairs") == 1
+
+    probe = CircuitIR(
+        2,
+        (
+            Instruction("s", (0,)),
+            Instruction("sdg", (0,)),
+            Instruction("h", (1,)),
+        ),
+    )
+    routed = pipeline_module.default_pass_registry().resolve("merge_inverse_pairs")
+    assert routed(probe) == merge_inverse_pairs(probe)
+    assert _names(routed(probe)) == ["h"]
 
 
 def test_random_runs_of_the_declared_pairs_preserve_the_state() -> None:

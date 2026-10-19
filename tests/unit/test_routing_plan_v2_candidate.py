@@ -6,19 +6,23 @@ be: when an obstacle is closed, the assertion fails and the proposal has to be
 updated in the same commit. The contract is a candidate with
 ``implementation.authorized: false``, so that is the intended reading.
 
-Obstacle 5 is the exception: it was a defect inside the existing v1 contract
-rather than a missing capability, so it was fixed without the authorization the
-proposal asks for, and the test now asserts the *closed* state together with the
-two ways the fix could have gone too far. Its companion assertion, the one that
-pins what re-routing an already-routed program still does, is deliberately left
-as a refusal because deciding it is the proposal's business and not the fix's.
+Two obstacles are the exception, and both are recorded as closed rather than
+open. Obstacle 5 was a defect inside the existing v1 contract rather than a
+missing capability, so it was fixed without the authorization the proposal asks
+for. Obstacle 1 asked the validator to read the strategy vocabulary from its
+authority instead of copying a two-element literal, and the merged validator does
+read an authority — ``DEPLOYABLE_ROUTING_STRATEGIES``, the accepted set, which is
+narrower than the four-name vocabulary the proposal named. Both closures are
+asserted together with the ways they could have gone too far.
 
-Two of the obstacles sit behind each other: the strategy clause refuses before
-the permutation clauses are reached. Removing one clause to see what the *next*
-refusal is, and asserting what it says, is what attributes a refusal to a clause
-rather than to the first thing that happened to fire. ``_validator_without_one_clause``
-does that, in a module built from the validator's own source, so the experiment
-cannot drift from the code it is testing.
+Two of the remaining obstacles sit behind each other: the strategy clause refuses
+before the permutation clauses are reached, so for ``sabre_layout`` the second
+refusal is only visible once the first is lifted. Removing one clause to see what
+the *next* refusal is, and asserting what it says, is what attributes a refusal to
+a clause rather than to the first thing that happened to fire.
+``_validator_without_one_clause`` does that, in a module built from the
+validator's own source, so the experiment cannot drift from the code it is
+testing.
 """
 
 from __future__ import annotations
@@ -40,7 +44,11 @@ from flagquantum.compiler.directed_topology import (
 )
 from flagquantum.compiler.layout import remove_layout_restore
 from flagquantum.compiler.layout_planning import plan_dense_layout
-from flagquantum.compiler.routing import ROUTING_STRATEGIES
+from flagquantum.compiler.routing import (
+    DEPLOYABLE_ROUTING_STRATEGIES,
+    ROUTING_STRATEGIES,
+    select_routing_strategy,
+)
 from flagquantum.deployment.cloud import CloudBackendProfile, create_deployment_package
 from flagquantum.deployment.routing_evidence import (
     DeploymentRoutingEvidenceError,
@@ -77,7 +85,10 @@ GRID3X3 = (
 )
 GRID6 = ((0, 1), (1, 2), (0, 3), (1, 4), (2, 5), (3, 4), (4, 5))
 
-STRATEGY_CLAUSE = 'strategy not in {"restore_after_each_gate", "persistent_layout"}'
+STRATEGY_CLAUSE = "strategy not in DEPLOYABLE_ROUTING_STRATEGIES"
+COPIED_STRATEGY_CLAUSE = (
+    'strategy not in {"restore_after_each_gate", "persistent_layout"}'
+)
 SCHEMA_CLAUSE = 'plan.get("schema") != "flagquantum_routing_plan_v1"'
 STRATEGY_CLAUSE_WIDENED = (
     'strategy not in {"restore_after_each_gate", "persistent_layout", '
@@ -162,7 +173,19 @@ def test_candidate_records_a_proposal_and_authorizes_nothing() -> None:
         assert candidate[flag] is False, flag
 
 
-def test_obstacle_1_the_strategy_vocabulary_is_a_copied_literal() -> None:
+def test_obstacle_1_the_strategy_vocabulary_is_read_from_its_authority() -> None:
+    """Closed as a copied literal; what remains of it is obstacle 2.
+
+    The validator's clause is a membership test on
+    ``DEPLOYABLE_ROUTING_STRATEGIES`` rather than a two-element literal, so a
+    strategy added to the compiler reaches this seam without a consumer edit. The
+    authority it reads is the *accepted set* rather than the whole vocabulary, and
+    the difference is deliberate: the accepted set is the constant
+    ``select_routing_strategy`` minimizes over, so an automatic choice cannot hand
+    deployment a plan deployment refuses. ``sabre_layout`` is the one name outside
+    it, and it is outside for obstacle 2's reason rather than for ranking.
+    """
+
     candidate = _candidate()
     assert (
         len(ROUTING_STRATEGIES)
@@ -174,7 +197,17 @@ def test_obstacle_1_the_strategy_vocabulary_is_a_copied_literal() -> None:
         == 4
     )
 
+    source = inspect.getsource(
+        __import__("flagquantum.deployment.routing_evidence", fromlist=["_"])
+    )
+    assert source.count(STRATEGY_CLAUSE) == 1
+    assert source.count(COPIED_STRATEGY_CLAUSE) == 0
+
     coupling = CouplingMap(4, LINE4)
+    selection = select_routing_strategy(_program(), coupling)
+    assert set(selection.candidates) == set(DEPLOYABLE_ROUTING_STRATEGIES)
+    assert set(DEPLOYABLE_ROUTING_STRATEGIES) < set(ROUTING_STRATEGIES)
+
     for strategy in ROUTING_STRATEGIES:
         routed = compile_program(
             _program(), coupling_map=coupling, routing_strategy=strategy
@@ -185,13 +218,14 @@ def test_obstacle_1_the_strategy_vocabulary_is_a_copied_literal() -> None:
             routed.metadata["routing"],
             coupling,
         )
-        if strategy in {"restore_after_each_gate", "persistent_layout"}:
+        if strategy in DEPLOYABLE_ROUTING_STRATEGIES:
             assert verdict == "accepted", strategy
         else:
             assert verdict == "unsupported routing strategy", strategy
 
-    # Widening only the strategy literal is what shows the cost is the literal
-    # and not something about the plans those two strategies produce.
+    # Widening the clause to the whole vocabulary is what shows the residual
+    # refusal is obstacle 2's and not this clause's: `sabre` then passes every
+    # remaining check on the same program, and only `sabre_layout` is refused.
     widened = _validator_without_one_clause(strategy=STRATEGY_CLAUSE_WIDENED)
     for strategy in ROUTING_STRATEGIES:
         routed = compile_program(
@@ -241,17 +275,20 @@ def test_the_shadow_validator_is_the_real_validator_until_it_is_changed() -> Non
             coupling,
         ), strategy
 
-    # And the comparison is not vacuous: the same shadow, widened, disagrees with
-    # the real validator on exactly the plan the real validator refuses.
+    # And the comparison is not vacuous: the same shadow, widened to the whole
+    # vocabulary, disagrees with the real validator on the plan the real validator
+    # refuses, and the disagreement is the next obstacle rather than an acceptance.
     widened = _validator_without_one_clause(strategy=STRATEGY_CLAUSE_WIDENED)
-    sabre = compile_program(
-        _program(), coupling_map=coupling, routing_strategy="sabre"
-    ).metadata["routing"]
+    plan = dict(
+        compile_program(
+            _program(), coupling_map=coupling, routing_strategy="sabre_layout"
+        ).metadata["routing"]
+    )
     assert (
         _verdict(
             validate_deployment_routing_plan,
             DeploymentRoutingEvidenceError,
-            sabre,
+            plan,
             coupling,
         )
         == "unsupported routing strategy"
@@ -260,10 +297,10 @@ def test_the_shadow_validator_is_the_real_validator_until_it_is_changed() -> Non
         _verdict(
             widened.validate_deployment_routing_plan,
             widened.DeploymentRoutingEvidenceError,
-            sabre,
+            plan,
             coupling,
         )
-        == "accepted"
+        == "routing initial permutation must be identity"
     )
 
 
@@ -293,13 +330,14 @@ def test_obstacle_2_a_non_identity_placement_has_nowhere_to_be_reported() -> Non
 
     # The public planner reaches the same clause, one obstacle further back.
     grid = CouplingMap(6, GRID6)
+    directed_device = DirectedCouplingMap(6, GRID6)
     placement = plan_dense_layout(_program(), grid)
     assert placement != tuple(range(4)), (
         "plan_dense_layout returned the identity, so this device cannot "
         "demonstrate obstacle 2"
     )
     directed = route_to_directed_topology(
-        _program(), DirectedCouplingMap(6, GRID6), initial_layout=placement
+        _program(), directed_device, initial_layout=placement
     )
     assert (
         tuple(directed.metadata["routing"]["initial_logical_to_physical"]) == placement
@@ -318,12 +356,26 @@ def test_obstacle_2_a_non_identity_placement_has_nowhere_to_be_reported() -> Non
         schema='plan.get("schema") not in {"flagquantum_routing_plan_v1", '
         '"flagquantum_directed_routing_plan_v1", "flagquantum_directed_routing_plan_v2"}',
     )
+    # A third clause now stands between the schema and the permutation, so the
+    # experiment has to validate the plan against the device it was routed on.
+    # Validating a directed plan against an undirected device is not a stricter
+    # reading of the same question; it is a different one, and the direction
+    # clause answers it first.
     assert (
         _verdict(
             widened_all.validate_deployment_routing_plan,
             widened_all.DeploymentRoutingEvidenceError,
             directed.metadata["routing"],
             grid,
+        )
+        == "routing direction semantics disagree with the deployment backend"
+    )
+    assert (
+        _verdict(
+            widened_all.validate_deployment_routing_plan,
+            widened_all.DeploymentRoutingEvidenceError,
+            directed.metadata["routing"],
+            directed_device,
         )
         == "routing initial permutation must be identity"
     )

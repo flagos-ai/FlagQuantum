@@ -8,6 +8,7 @@ from typing import Any
 from .channels import (
     CHANNEL_FACTORIES,
     KrausChannel,
+    UnitaryMixture,
     amplitude_damping_channel,
     bit_flip_channel,
     channel_from_parameters,
@@ -18,6 +19,7 @@ from .channels import (
     reset_error_channel,
     thermal_relaxation_channel,
     two_qubit_depolarizing_channel,
+    y_flip_channel,
 )
 from .device_profile import DeviceNoiseProfile, GateDuration, QubitNoiseCalibration
 from .model import (
@@ -36,9 +38,10 @@ __all__ = (
     "GateDuration",
     "NoiseModel",
     "NoiseRule",
+    "QubitNoiseCalibration",
     "ReadoutError",
     "ReadoutRule",
-    "QubitNoiseCalibration",
+    "UnitaryMixture",
     "amplitude_damping_channel",
     "bit_flip_channel",
     "channel_from_parameters",
@@ -49,6 +52,7 @@ __all__ = (
     "reset_error_channel",
     "thermal_relaxation_channel",
     "two_qubit_depolarizing_channel",
+    "y_flip_channel",
     "noisy_density_matrix",
 )
 

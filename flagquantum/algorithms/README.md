@@ -3,8 +3,8 @@
 Algorithms assemble user-facing quantum and hybrid workflows from FlagQuantum
 circuits, observables, differentiation, and optimization. This package owns
 Hamiltonian helpers, reusable ansatz construction, VQE/QAOA-style workflows,
-and staged optimization recipes whose scientific behavior is tested end to
-end.
+Trotterized time evolution, and staged optimization recipes whose scientific
+behavior is tested end to end.
 
 Algorithms do not define circuit or operator semantics, compiler passes,
 runtime selection, provider lifecycle, numerical kernels, or benchmark claims.
@@ -19,8 +19,93 @@ executed by `tests/test_algorithm_examples.py`.
 
 ## Where to start
 
-- `core.py`: Hamiltonians, ansatz builders, losses, and complete algorithm
-  workflows.
+- `core.py`: Hamiltonians, ansatz builders, losses, and the four variational
+  eigensolver entry points, registered as the `algorithms_vqe_solvers` capability
+  with `tests/unit/test_vqe_solvers.py` as its focused unit and
+  [`examples/algorithms/vqe_solvers.py`](../../examples/algorithms/vqe_solvers.py)
+  as its golden path. `run_vqe` descends a fixed ansatz the caller supplies as a
+  `circuit_builder`; `run_adapt_vqe` grows one operator at a time from an operator
+  pool, screening each candidate by appending it at angle zero and
+  differentiating the objective there — an exact derivative rather than a
+  sampled estimate — then re-optimizing every accumulated angle;
+  `run_hybrid_vqe` runs one objective under a schedule of `OptimizationStage`
+  records and reports the records and objective evaluations that schedule cost;
+  and `run_layerwise_vqe` deepens a depth-indexed ansatz, starting each depth from
+  the coordinates the previous depth finished at with the newly appended ones at
+  zero, so a stage is a fresh descent rather than a warm restart of one and the
+  result carries one record per depth rather than one trajectory. **What a caller
+  reads as `converged` is an exit test and not an arrival test**: an exhausted
+  pool, a screening pass whose largest gradient fell under `gradient_tolerance`,
+  and a run that spent `max_adapt_iterations` all leave the loop, and the flag
+  names which happened rather than how close the energy came — measured on a
+  two-qubit instance, the run reporting `False` is the one furthest from the
+  ground energy. **The premise the screen cannot check is the reference state the
+  pool acts on**: screening is exact, so a reference state that is an eigenstate
+  of every pool generator screens every direction to exactly zero, the run selects
+  nothing, and it reports its exit above the ground energy. Because a descent
+  needs an objective that depends on what it updates, both `run_vqe` and
+  `run_adapt_vqe` check that dependence first and raise a `ValueError` naming the
+  entry point and the cause, rather than letting torch's `element 0 of tensors
+  does not require grad` stand for both. Every energy is an exact float32
+  statevector expectation at a finite step count, so a reported value is not a
+  bound, and `run_vqe`'s `energy` is a fresh evaluation of the returned parameters
+  rather than the last `history` entry.
+- `data_encoding.py`: encoding a classical feature vector onto a quantum state. `amplitude_encode` pads the vector to the next power of two with a caller-chosen value, normalises it by its euclidean norm, and hands it to the state-preparation primitive, so amplitude encoding spends the whole state vector on the data and costs a classical input that is already `2**n` amplitudes. `angular_encode` and `append_angular_encode` spend one rotation per feature instead — `'X'`, `'Y'`, or `'Z'`, mapped onto `rx`, `ry`, and `rz` the way CUDA-Q's `angular_encode` maps them, default `'Y'` — so the state is a product of independent rotations, the data on it is linear in the wire count rather than exponential, and the append form is what builds a data-reuploading map by interleaving the encoding with a variational block. Both halves hand the angle or the amplitude to the circuit as the tensor the caller supplied, so the encoder stays differentiable with respect to the features. Both refuse a repeated, negative, or non-integer wire and an input whose length disagrees with the wire count. Neither executes the circuit, selects a runtime, or carries a simulator object.
+- `chemistry.py`: the ansatz half of a chemistry workload — `uccsd_excitations`
+  enumerates the single and double excitations of an electron count in a
+  spin-orbital count, `excitation_operator` builds the fermionic generator of one
+  of them, `single_excitation` and `double_excitation` emit the exact circuit that
+  realizes its exponential, and `uccsd_ansatz` composes them into the complete
+  UCCSD circuit. `coupler_hardware_efficient_ansatz` and its parameter count cover
+  the coupler variant. The gate sequences are the ones CUDA-Q's `singleExcitation`,
+  `doubleExcitation`, `uccsd`, and `hwe` kernels apply. This unit reads no
+  integrals, drives no chemistry package, and solves no Hartree-Fock problem: it
+  is the state-preparation half, and a caller either supplies the Hamiltonian or
+  builds it with the two units below. Every
+  excitation requires its occupied indices below its virtual ones rather than
+  emitting the empty ladders the opposite order would produce.
+- `chemistry_integrals.py`: the integral engine under a chemistry workload, with no
+  external chemistry package behind it. `molecular_integrals` evaluates the
+  one-electron overlap, kinetic, and nuclear-attraction matrices and the dense
+  two-electron tensor of a `MolecularGeometry` by McMurchie-Davidson recursion
+  over contracted Cartesian Gaussians, so the numbers a chemistry workload is built
+  from are produced in this repository rather than imported. The basis table is
+  STO-3G for H through Ne, and a heavier element is refused rather than given a
+  contraction that does not exist. The Boys function and its recursion are the
+  numerically delicate part of that work; the rest is the Hermite expansion and the
+  eight-fold symmetry of the electron-repulsion tensor. Needing a numerical kernel
+  of that size to be exactly right is why this unit carries its own focused test
+  file built on closed-form references, which is not the pattern the rest of this
+  package follows.
+- `molecular.py`: the driver half, and the entry point a user actually calls.
+  `create_molecular_hamiltonian` turns a geometry into the second-quantized
+  Hamiltonian a variational chemistry workload consumes: it builds the integrals,
+  runs a restricted closed-shell Hartree-Fock solve from the bare core Hamiltonian,
+  transforms the integrals into the molecular-orbital basis, folds a frozen core
+  where one is asked for, restricts to an active space, and returns the
+  Jordan-Wigner `Observable` beside the Hartree-Fock energy and, where the
+  determinant space allows it, the exact `S_z = 0` ground-state energy.
+  `restricted_hartree_fock` and `exact_ground_state_energy` are the two halves of
+  that, callable on their own. What it refuses it refuses rather than approximating:
+  a multiplicity other than one, an odd electron count, a charge that leaves no
+  electrons, and an active space whose electron count does not have the parity of
+  the total.
+- `cdr.py`: Clifford data regression — the affine relation between what a
+  program should give and what the noise makes it give, fitted on Clifford
+  training circuits built by snapping each `rx`/`ry`/`rz`/`phase`/`u1` rotation
+  of the target to its nearest quarter turn and rewriting it into named Clifford
+  gates, then applied to the target's own noisy expectation. Every training
+  circuit is accepted by the stabilizer engine, so the premise that makes the
+  method cheap on hardware is enforced; the ideal values are read from exact
+  density simulation rather than from the stabilizer representation, so no
+  simulation cost is saved here and no capacity claim follows. A model that
+  names an operation the rewrite removes is refused rather than fitted on
+  circuits that receive less noise than the target, and a model that declares a
+  readout rule is refused rather than trained around it, and
+  `readout_mitigation.py` is the unit that corrects for one.
+  The estimate carries no error bound: the fit's residual is the only diagnostic
+  that exposes an affine premise that does not hold, and it is reported as absent
+  for a two-point fit rather than as an arithmetic zero.
 - `error_mitigation.py`: zero-noise extrapolation — one observable measured at
   several error strengths by scaling the single error-probability parameter each
   noise channel declares, then continued to zero by polynomial least squares or
@@ -29,8 +114,54 @@ executed by `tests/test_algorithm_examples.py`.
   parameters are not error probabilities is refused by name, and a model that
   declares a readout rule is refused rather than measured without it, because the
   estimate is `Tr(O rho)` and classical readout confusion is applied after
-  measurement. Probabilistic error cancellation, Clifford data regression and
-  readout-error mitigation are absent.
+  measurement. Readout-error mitigation is a separate unit beside it rather than a
+  mode of it, gate and circuit folding is a third alternative that lengthens the
+  program instead of scaling a channel parameter, and Clifford data regression and
+  probabilistic error cancellation are two more units beside it.
+- `pec.py`: probabilistic error cancellation — each declared Pauli channel is
+  inverted from its Pauli transfer matrix into an exact signed combination of
+  Pauli words, which is inserted after the channel it inverts and summed
+  exactly. A channel whose transfer matrix is not diagonal, and one whose
+  transfer spectrum reaches zero, are refused by name; `gamma` and the `gamma**2`
+  shot cost a sampled implementation would pay are reported beside the estimate,
+  together with the term count the run actually spends. Readout-error mitigation
+  and Clifford data regression are separate units beside it.
+- `readout_mitigation.py`: readout-error mitigation — a declared classical
+  confusion is inverted off a measured distribution. `NoiseModel`'s readout rules
+  are grouped into blocks, one block per rule, a rule naming several qubits being
+  inverted as one block rather than as its marginals; each block's inverse is
+  applied to the measured vector and the block's amplification — the induced
+  1-norm of its inverse, which is what a shot-based estimate inherits — is
+  reported, composing over blocks as a **product** rather than as the worst
+  block's. The correction is not forced onto the simplex: a corrected vector
+  routinely carries negative mass, and it is summed and reported beside the
+  vector rather than clipped, because clipping would return a different vector
+  under the same name. A block whose smallest singular value reaches the declared
+  floor is refused by name rather than inverted into weights no shot count can
+  support, a qubit named by two rules is refused rather than confused twice, and
+  a correlated block wider than the ceiling is refused before its matrix is
+  built. The premise is that the declared confusion is the device's confusion and
+  nothing here checks that.
+- `folding.py`: gate and circuit folding — the program is lengthened by an exact
+  identity, each instruction followed by its own inverse and then the instruction
+  again, either distributed one instruction at a time (`gate`) or as whole
+  repeated bodies (`circuit`), so the noise the instructions carry runs more times
+  while nothing but the dtype's rounding changes what is computed. `fold_program`
+  returns a `FoldingPlan` carrying the ratio it **realized** rather than the one
+  requested, and `run_zne(..., fold=...)` fits against that realized ratio because
+  it is the ratio the noise saw. **The two strategies are not interchangeable**: a
+  circuit fold reaches only `1 + 2m`, so a request of `1.4` on a five-instruction
+  body is met by `3.0` in fifteen instructions, while a gate fold meets `1.4`
+  exactly in seven and meets `2.2` exactly in eleven where the circuit strategy's
+  next reachable ratio costs it fifteen. A gate fold spends its pairs leftmost
+  first, so a readout blind to where they land reads a flat curve over a program
+  whose noise genuinely grew, and the unit reports the length ratio rather than a
+  noise strength: the conversion between the two is the part it does not estimate.
+  A program carrying a noise channel, an empty program, a non-unitary custom
+  instruction, a factor below one, and two requests that realize one length are
+  each refused by name before anything is built. No new execution path is
+  introduced — the fold builds a `CircuitIR` the existing runtime executes — and no
+  target, runtime option, result field, or Stable Core export follows from it.
 - `feature_selection.py`: feature selection as a QUBO — a subset's relevance and
   redundancy scored with a penalty on the size of the subset, built for a solver
   and evaluated at an assignment. No annealer is supplied: the repository has
@@ -65,8 +196,109 @@ executed by `tests/test_algorithm_examples.py`.
   evaluations per step whatever the parameter count. **The estimate is biased for
   every finite perturbation and is not a gradient**: an objective with an exact
   gradient is served more cheaply and exactly by autograd or parameter shift, and
-  the reason to use this unit is its evaluation cost. Demonstration scale: the
-  perturbation is drawn from a caller-owned `torch.Generator` so a run replays.
+  the reason to use this unit is its evaluation cost. `minimize(objective,
+  parameters, steps=...)` runs a fixed budget in one call and returns the last
+  iterate with the cost before every update, so it is the same shape
+  `NelderMeadOptimizer.minimize` has and one objective can be handed to both;
+  unlike that unit's result it carries no spread and no `converged` flag, because
+  a shrinking perturbation would report a settled point as unsettled.
+  Demonstration scale: the perturbation is drawn from a caller-owned
+  `torch.Generator` so a run replays, and `variational.py`'s
+  `maxcut_objective` is the QAOA cost exposed for this unit to consume.
+- `nelder_mead.py`: Nelder-Mead simplex search — a gradient-free optimizer that
+  compares objective values instead of differencing them, so it needs no
+  perturbation size, no step size, and no random draw at all. **It requires a
+  deterministic objective and it is a local method**: every step is a ranking of
+  two values against each other, and `converged` reports that two measured
+  spreads fell under the caller's thresholds rather than that the vertex is a
+  global minimum. Demonstration scale: the starting simplex is the caller's or a
+  coordinate-offset default, the run is single-threaded and unbatched, and the
+  reported cost is a count of objective calls rather than a latency.
+- `cobyla.py`: COBYLA trust-region search — the constrained counterpart of the
+  two units above, minimizing an objective under the inequality constraints
+  `constraint(parameters) >= 0`. Every step is the exact minimizer of a linear
+  program over a box: the objective and the constraints are replaced by affine
+  models at the current radius, a violated constraint is priced into the merit
+  with a coefficient that doubles when an accepted step fails to reduce it, and
+  the radius shrinks to `rhoend` or grows to `rhobeg` on the step's own evidence.
+  **It is a local method and the price is a schedule, not a calibrated weight**:
+  the subproblem is a linearization, so a converged run reports that the trust
+  region reached its floor rather than that it found a constrained optimum, and a
+  price that is too low returns an infeasible point that scores better than the
+  feasible optimum — which is why `minimize` returns `feasible` and `residual`
+  beside `value` rather than leaving a caller to compute them.
+  `minimize(objective, parameters, constraints=())` shares its shape with
+  `NelderMeadOptimizer.minimize`, so one constrained objective can be handed to
+  either; unlike that unit it reports an exact penalty price and the largest
+  violation the run ended on. Demonstration scale: the models are finite
+  differences with a radius-sized step, the run is single-threaded and unbatched,
+  and the reported cost is a count of distinct points read rather than a latency.
+- `variational.py`: variational solvers over a checked cost operator —
+  `maxcut_hamiltonian` builds the weighted MaxCut cost operator `sum w_ij Z_i
+  Z_j`, and `run_qaoa` fits QAOA angles to it. **The two share one checked edge
+  list**, because a QAOA circuit is built from weighted `ZZ` edges while an energy
+  is an expectation against some Hamiltonian and nothing inside either one relates
+  the two: the solver exists so that one graph's edge list reaches both the cost
+  layer and the operator, and a caller who assembles them separately still has the
+  freedom to mismatch them. **The start is the caller's and a finite layer count
+  is an approximation**: the uniform superposition is an eigenstate of every cost
+  and mixer term, so the objective's gradient at a zero start is exactly zero at
+  every layer count and a run started there returns the start and reports the
+  objective at it, and the reported energy is an expectation rather than a bound.
+  A self-loop, a repeated undirected pair, a non-real or non-finite weight, an
+  empty edge list, and a start that is not one even-length flat vector are each
+  refused by name. Demonstration scale: weighted MaxCut instances of three to
+  five edges on three to four qubits, fitted on the CPU statevector path, with
+  sampling, decoding and cut ranking left to the caller.
+- `trotter.py`: time evolution by a product formula — a weighted Pauli sum
+  becomes an ordinary `Circuit` whose unitary approximates `exp(-i * time * H)`,
+  with the exact circuit for one Pauli word's exponential underneath it, as a
+  basis change, a CX ladder, and one rotation. Two orders are built, 1 and 2, and
+  neither comes with a bound: the product is exact only when the terms commute,
+  and how far it is from exact otherwise is a number the caller measures, because
+  a bound needs a commutator norm the caller has. An identity term is refused
+  rather than dropped, since no gate here applies a global phase, and the declared
+  term order is preserved rather than sorted. There is no `exp_pauli` opcode:
+  emitting the decomposition is what lets the compiler's own passes count, route,
+  and differentiate it. Demonstration scale: the exact side of every comparison is
+  a dense matrix exponential, which exists at the sizes this repository simulates.
+- `logical_resources.py`: logical-layer resource estimation — a Clifford+T
+  program's operation counts, T family, and schedule depth, read out of
+  `compiler/resource_estimation.py` and costed on a rotated surface code at a
+  distance the caller names: `2 d^2 - 1` physical qubits per patch and `d`
+  surface-code cycles per logical layer. **A count and a footprint, and not a
+  measurement or a failure rate**: nothing runs, no wall-clock time or memory is
+  read, and no logical error rate is reported, because a threshold fit's
+  prefactor and threshold belong to the device rather than to this unit. The
+  input has to already be Clifford+T, so a parametric rotation is refused
+  rather than synthesised, and a compound operation whose T-count is its
+  decomposition's — a Toffoli, a controlled swap — is refused because a Toffoli
+  is not a Clifford gate and counting one as a single Clifford operation would
+  understate the T-count. No distillation factory, magic-state budget, routing
+  overhead, placement, scheduling, or device model is included, so the physical
+  figure is a floor for a circuit of these layers rather than a compiled
+  estimate.
+- `arithmetic.py`: reversible integer addition — `adder_circuit` builds Cuccaro's
+  in-place ripple, writing the sum of two `n`-bit registers into the second of
+  them on one working carry wire, and `adder_qubits` returns the register map so a
+  caller knows which wire carries what. `2 n` Toffolis and `6 n + 1` `cx`, `8 n + 1`
+  operations on `2 n + 2` wires. **A construction, and not a cost**: the T-count is
+  the compiler's own Toffoli rule — `ccx` lowers to the fifteen-gate `h`, `t`,
+  `tdg`, `cx` identity in `compiler/basis_translation.py`, reached through
+  `convert_basis` and priced by `compiler/resource_estimation.py` — so no seven-T
+  expansion is written here, because a second Toffoli cost would be a second
+  source of truth for the one number the two must agree on. Two wires must enter
+  holding `|0>`: the working carry wire, restored by the circuit, and the carry-out
+  wire, left holding the carry out of the most significant position. Only inputs
+  meeting that contract are promised a sum; the circuit is a permutation of the
+  whole space, so an off-contract input is reversible rather than added. Both
+  addends are quantum registers, so there is no classical addend, no
+  `add_constant`, and no modular, controlled, or comparison variant. **This is not
+  the Gidney-Ekera construction**: that one is smaller because it uncomputes its
+  ancillas by measuring them and feeding the outcomes forward, which needs a
+  mid-circuit measurement and a classical feedforward path this repository does
+  not have in a circuit it can cost statically. No circuit is executed, no runtime
+  is selected, and no simulator object is carried.
 - `__init__.py`: the intentionally small public algorithms surface.
 - `primitives/`: shared quantum primitives. Its contents are admitted only when at least two
   algorithm modules need them.

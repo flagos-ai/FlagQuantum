@@ -74,7 +74,6 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from dataclasses import fields
 from pathlib import Path
 from typing import Any
 
@@ -84,7 +83,10 @@ import flagquantum as fq
 from benchmarks.compiler_lookahead_swap import SEEDS, case_basis
 from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler.optimization_levels import DEFAULT_OPTIMIZATION_LEVEL
-from flagquantum.compiler.routing import ROUTING_STRATEGIES, RoutingStrategySelection
+from flagquantum.compiler.routing import (
+    DEPLOYABLE_ROUTING_STRATEGIES,
+    ROUTING_STRATEGIES,
+)
 from flagquantum.core.ir import CircuitIR
 
 SCHEMA = "flagquantum_compiler_routing_quality_benchmark_v1"
@@ -269,15 +271,14 @@ def run_benchmark(
 
     # What the automatic selection had to choose from, and how well it chose. The
     # candidates are read off ``RoutingStrategySelection`` rather than restated:
-    # that dataclass is the authoritative statement of which strategies the cost
-    # estimate can rank, and a fifth strategy cannot be added to the selection
-    # without adding a field there. Every comparison is made on the program the
-    # selection actually saw, not on the totals.
-    candidates = [
-        field.name
-        for field in fields(RoutingStrategySelection)
-        if field.name != "selected_strategy"
-    ]
+    # that record is the authoritative statement of which strategies the cost
+    # estimate can rank, and it states them as the keys of its ``candidates``
+    # mapping, built from ``DEPLOYABLE_ROUTING_STRATEGIES`` -- the same constant
+    # ``flagquantum/deployment/routing_evidence.py`` reads, so a fifth strategy
+    # cannot reach the choice without reaching the deployment contract too. Every
+    # comparison is made on the program the selection actually saw, not on the
+    # totals.
+    candidates = list(DEPLOYABLE_ROUTING_STRATEGIES)
     unknown = [name for name in candidates if name not in per_case]
     if unknown:
         raise ValueError(

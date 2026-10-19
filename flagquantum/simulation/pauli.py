@@ -2,14 +2,26 @@
 
 from __future__ import annotations
 
+import itertools
+import math
+import operator
 from collections.abc import Sequence
 
 import torch
 
+from ..errors import ValidationError
 from .matrices import GATE_MAT_DICT
 from .statevector.operations import _apply_matrix
 
 PauliProduct = Sequence[tuple[int, str]]
+
+_PAULI_WORD_CHARACTERS = frozenset({"I", "X", "Y", "Z"})
+# The four characters a Pauli word is written with, in CUDA-Q's own spelling.
+
+_PAULI_WORD_ORDER = ("I", "X", "Y", "Z")
+# The order the words are enumerated in, and the one :func:`pauli_words` and
+# :func:`normalized_pauli_basis` share. Identity leads, so a spectrum indexed by
+# the words puts the identity at position zero.
 
 
 def infer_n_qubits_from_dense_state(state: torch.Tensor) -> int:
@@ -45,6 +57,94 @@ def pauli_product_operator(
         )
         result = torch.kron(result, matrix)
     return result
+
+
+def pauli_words(n_qubits: int) -> tuple[str, ...]:
+    """Every Pauli word on ``n_qubits``, identity first, in one fixed order.
+
+    Character ``i`` of a word acts on qubit ``i``, so the first qubit is the most
+    significant character of the word. The order is lexicographic over ``I``,
+    ``X``, ``Y`` and ``Z``, which places the all-identity word at index zero and
+    is the order :func:`normalized_pauli_basis` enumerates the same words in. A
+    spectrum indexed by this tuple therefore has its trace at position zero.
+
+    Args:
+        n_qubits: The number of qubits, which is the length of every word.
+
+    Returns:
+        The ``4 ** n_qubits`` words.
+
+    Raises:
+        ValueError: If ``n_qubits`` is negative.
+
+    Examples:
+        >>> from flagquantum.simulation.pauli import pauli_words
+        >>> pauli_words(1)
+        ('I', 'X', 'Y', 'Z')
+        >>> len(pauli_words(3))
+        64
+    """
+
+    if not isinstance(n_qubits, int) or isinstance(n_qubits, bool):
+        raise ValidationError(
+            f"a Pauli word count must be an integer, got {n_qubits!r}"
+        )
+    if n_qubits < 0:
+        raise ValidationError(
+            f"a Pauli word count must be non-negative, got {n_qubits}"
+        )
+    return tuple(
+        "".join(characters)
+        for characters in itertools.product(_PAULI_WORD_ORDER, repeat=n_qubits)
+    )
+
+
+def normalized_pauli_basis(
+    n_qubits: int,
+    *,
+    dtype: torch.dtype,
+    device: torch.device | str,
+) -> tuple[torch.Tensor, ...]:
+    """The normalized Pauli words on ``n_qubits``, in :func:`pauli_words` order.
+
+    Element ``i`` is ``P_i / sqrt(d)`` for the word at index ``i`` of
+    :func:`pauli_words`, where ``d = 2 ** n_qubits`` is the Hilbert-space
+    dimension. The ``1 / sqrt(d)`` is what makes the family orthonormal under the
+    Hilbert--Schmidt inner product ``trace(B_i^dag B_j) == delta_ij``, which is
+    the property :meth:`flagquantum.operators.SuperOperator.matrix_in_basis`
+    requires: read a map in this basis and the result is its Pauli transfer
+    matrix, ``trace(P_i E(P_j)) / d``, with the identity at index zero.
+
+    Args:
+        n_qubits: The number of qubits each word acts on.
+        dtype: The complex dtype of the returned matrices.
+        device: The device of the returned matrices.
+
+    Returns:
+        The ``4 ** n_qubits`` matrices, each ``(d, d)``.
+
+    Raises:
+        ValueError: If ``n_qubits`` is negative.
+    """
+
+    # ``d`` is ``2 ** n_qubits``, so its square root is ``2 ** (n_qubits / 2)``:
+    # a half power at odd counts, which is a float and not a bit shift.
+    scale = 2.0 ** (-n_qubits / 2.0)
+    return tuple(
+        pauli_product_operator(
+            # Every character is handed over, identity included. A qubit absent from
+            # the product is already the identity matrix, so dropping ``I`` here
+            # would be a second spelling of one statement; measured against an
+            # oracle built from the literals, the two spellings agree on every word
+            # of one, two and three qubits, including the all-identity word.
+            tuple((qubit, character.lower()) for qubit, character in enumerate(word)),
+            n_qubits,
+            dtype=dtype,
+            device=device,
+        )
+        * scale
+        for word in pauli_words(n_qubits)
+    )
 
 
 def pauli_product_statevector_expectation(
@@ -86,9 +186,141 @@ def pauli_product_density_expectation(
     return torch.real(values)
 
 
+def finite_rotation_angle(theta: float) -> float:
+    """Read one rotation angle, refusing a value that does not denote a number.
+
+    ``bool`` and ``str`` are refused although ``float`` reads both: a flag is not an
+    angle, and the text of a number is a mistyped value rather than the number.  An
+    infinite or NaN angle would be carried into a silently wrong unitary, so it is
+    refused here rather than at the arithmetic.
+
+    This reader exists for callers that combine the angle *before* a gate sees it --
+    a dense exponential, or a Trotter step that scales an angle by a coefficient and
+    a step length.  A gate angle written straight onto :class:`~flagquantum.Circuit`
+    is read by :func:`flagquantum.core.ir._normalize_angle` instead.
+    """
+
+    if isinstance(theta, (bool, str)):
+        raise ValidationError(f"theta must be a real number, got {theta!r}")
+    try:
+        angle = float(theta)
+    except (TypeError, ValueError):
+        raise ValidationError(f"theta must be a real number, got {theta!r}") from None
+    if not math.isfinite(angle):
+        raise ValidationError(f"theta must be finite, got {theta!r}")
+    return angle
+
+
+def _pauli_word_targets(targets: Sequence[int]) -> tuple[int, ...]:
+    """Read the targets of a Pauli word one label at a time.
+
+    A label is read through the interpreter's own ``__index__`` protocol, which admits
+    the integral types the array libraries define and zero-dimensional integer tensors
+    while refusing floats and strings.  ``bool`` is refused although it satisfies
+    ``operator.index``: a flag is not a qubit, and reading it as one would address an
+    operator nobody asked for.
+    """
+
+    labels: list[int] = []
+    for target in targets:
+        if isinstance(target, bool):
+            raise ValidationError(
+                f"Pauli word target must be an integer, got {target!r}"
+            )
+        try:
+            labels.append(operator.index(target))
+        except TypeError:
+            raise ValidationError(
+                f"Pauli word target must be an integer, got {target!r}"
+            ) from None
+    if any(label < 0 for label in labels):
+        raise ValidationError(
+            f"Pauli word targets must be non-negative, got {tuple(labels)}"
+        )
+    return tuple(labels)
+
+
+def pauli_word_operators(
+    word: str,
+    targets: Sequence[int],
+) -> tuple[tuple[int, str], ...]:
+    """Read a Pauli word and its targets into the product form the kernels take.
+
+    The word is read the way CUDA-Q reads it: one character per target, in that
+    order, so ``"YX"`` beside ``(0, 2)`` is the product ``Y`` on qubit 0 times ``X``
+    on qubit 2.  An ``I`` consumes a target and contributes no support, which is
+    what lets a caller align a word with a qubit list without dropping the qubits
+    it does not act on.  A word and a target sequence of different lengths, a
+    character outside ``X``, ``Y``, ``Z`` and ``I``, and a repeated target are each
+    refused, because none of them denotes a Pauli product.
+    """
+
+    if not isinstance(word, str):
+        raise ValidationError(f"Pauli word must be a string, got {word!r}")
+    labels = _pauli_word_targets(targets)
+    if len(word) != len(labels):
+        raise ValidationError(
+            f"Pauli word {word!r} has {len(word)} characters for {len(labels)} "
+            "targets, and a word character acts on exactly one target"
+        )
+    unknown = sorted(set(word) - _PAULI_WORD_CHARACTERS)
+    if unknown:
+        raise ValidationError(
+            f"Pauli word {word!r} contains {unknown}, and every character must be "
+            "one of X, Y, Z, or I"
+        )
+    if len(set(labels)) != len(labels):
+        raise ValidationError(f"Pauli word targets must be unique, got {labels}")
+    return tuple(zip(labels, word, strict=True))
+
+
+def exponential_pauli_operator(
+    theta: float,
+    word: str,
+    targets: Sequence[int],
+    n_qubits: int,
+    *,
+    dtype: torch.dtype,
+    device: torch.device | str,
+) -> torch.Tensor:
+    """Materialize the dense unitary ``exp(-i * theta * P)`` of one Pauli word.
+
+    ``word`` and ``targets`` are read positionally, so character ``i`` of the word acts
+    on ``targets[i]`` and together they name the product ``P`` that is exponentiated.
+    The product is placed on ``n_qubits`` qubits, and an ``I`` character contributes no
+    support while still consuming its target.
+
+    A Pauli product squares to the identity, so the exponential is evaluated in closed
+    form rather than by exponentiating a matrix:
+    ``exp(-i * theta * P) = cos(theta) * I - i * sin(theta) * P``.  The expression is
+    exact for every angle, and an all-identity word therefore returns the global phase
+    ``exp(-i * theta) * I`` it denotes rather than the identity.
+
+    Examples:
+        >>> import torch
+        >>> from flagquantum.simulation.pauli import exponential_pauli_operator
+        >>> step = exponential_pauli_operator(
+        ...     1.0, "XX", (0, 1), 2, dtype=torch.complex128, device="cpu"
+        ... )
+        >>> float(step[0, 0].real)
+        0.5403023058681398
+    """
+
+    angle = finite_rotation_angle(theta)
+    operators = pauli_word_operators(word, targets)
+    identity = pauli_product_operator((), n_qubits, dtype=dtype, device=device)
+    product = pauli_product_operator(operators, n_qubits, dtype=dtype, device=device)
+    return math.cos(angle) * identity - 1j * math.sin(angle) * product
+
+
 __all__ = (
+    "exponential_pauli_operator",
+    "finite_rotation_angle",
     "infer_n_qubits_from_dense_state",
+    "normalized_pauli_basis",
     "pauli_product_density_expectation",
     "pauli_product_operator",
     "pauli_product_statevector_expectation",
+    "pauli_word_operators",
+    "pauli_words",
 )

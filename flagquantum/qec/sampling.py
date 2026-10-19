@@ -42,15 +42,22 @@ predicted rates.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from numbers import Integral
 from types import MappingProxyType
+from typing import Literal
 
 import torch
 
 from ..core.ir import CircuitIR, Instruction
-from ..noise import NoiseModel, bit_flip_channel
+from ..noise import (
+    KrausChannel,
+    NoiseModel,
+    bit_flip_channel,
+    phase_flip_channel,
+    y_flip_channel,
+)
 from ..simulation.stabilizer import sample_noisy_measurements
 from .circuit import MeasurementRef, MemoryCircuit
 from .dem import DemSample
@@ -64,7 +71,23 @@ from .dem_construction import (
 from .noise import PhenomenologicalNoise
 
 _MEASURE_OPCODE = "measure"
-_NOISE_OPCODE = "bit_flip"
+# The single-qubit fault a data location may carry, as the channel that places
+# it. The three names are the three Pauli faults the noise record states: an X
+# fault is `bit_flip`, a Z fault is `phase_flip`, and a Y fault is `y_flip`,
+# which is one branch carrying the square root of the rate rather than an X fault
+# and a Z fault that fire independently. A measurement fault is not a Pauli fault
+# at all; it is placed as `bit_flip` because a misreported syndrome bit is a flip
+# of that bit.
+_ChannelName = Literal["bit_flip", "phase_flip", "y_flip"]
+_DATA_FAULT_CHANNELS: Mapping[_ChannelName, Callable[[float], KrausChannel]] = (
+    MappingProxyType(
+        {
+            "bit_flip": bit_flip_channel,
+            "phase_flip": phase_flip_channel,
+            "y_flip": y_flip_channel,
+        }
+    )
+)
 
 # The one lowered opcode a memory experiment's readout-basis rotation is a
 # sequence of. The rotation itself is built once, in
@@ -73,22 +96,17 @@ _NOISE_OPCODE = "bit_flip"
 # program without re-deriving the experiment's basis semantics.
 _ROTATION_OPCODE = "h"
 
-# The Clifford conjugation the engine's one channel needs around it to become the
-# record's other data-fault families, as (before, after) opcodes.
-# ``H X H = Z`` and ``S_DAG X S = iY``, so a single bit-flip draw conjugated this
-# way *is* one Z or one Y fault rather than a pair of independent draws, which is
-# what a fault with one rate has to be. The construction route reaches the same
-# two Paulis by composing forced gates out of ``h`` and ``x``, because the source
-# it injects into carries no other parameter-free single-qubit gate; here the
-# conjugation is emitted directly and is the narrower statement of the same
-# identity. A measurement fault is the bit flip itself -- a readout is flipped in
-# the basis it is read in -- so its entry is empty on both sides.
-_FAMILY_CONJUGATION: Mapping[_MechanismKind, tuple[str, str]] = MappingProxyType(
+# Which channel each data-fault family is placed as. A location carries both
+# names because they have two readers: the family is the noise record's own field,
+# which is what a location is planned and recorded under, and the channel is the
+# Pauli that field faults with, which is what :func:`_noisy_program` emits there.
+# The two tables are the same three Paulis under the two names those readers use.
+_DATA_FAULT_CHANNEL_BY_FAMILY: Mapping[_MechanismKind, _ChannelName] = MappingProxyType(
     {
-        "data": ("", ""),
-        "phase": ("h", "h"),
-        "both": ("sdg", "s"),
-        "measurement": ("", ""),
+        "data": "bit_flip",
+        "phase": "phase_flip",
+        "both": "y_flip",
+        "measurement": "bit_flip",
     }
 )
 
@@ -240,10 +258,14 @@ class _NoiseLocation:
 
     ``kind`` names the noise record's own field, as
     :class:`~flagquantum.qec.dem_construction._Mechanism` does, so the two routes
-    enumerate the same families under the same names.
+    enumerate the same families under the same names, and ``channel`` names the
+    channel that family is placed as. A family's fault *is* one Pauli, so a
+    location states which of the three channels carries it rather than leaving
+    placement to re-derive a Pauli from a family's name.
     """
 
     kind: _MechanismKind
+    channel: _ChannelName
     round_index: int
     wire: int
     instruction_index: int
@@ -416,14 +438,15 @@ def _gate_bound_locations(
     length converts an instruction index into.
 
     Every channel :func:`~flagquantum.qec.dem_construction._gate_bound_mechanisms`
-    accepts is a single-qubit Pauli fault, so :data:`_FAMILY_CONJUGATION` can
-    express all of them and no location reaches the engine as a channel it would
-    refuse.
+    accepts is a single-qubit Pauli fault, so every one of them is one of the
+    three channels :data:`_DATA_FAULT_CHANNELS` holds and no location reaches the
+    engine as a channel it would refuse.
     """
 
     return tuple(
         _NoiseLocation(
             kind=mechanism.kind,
+            channel=_DATA_FAULT_CHANNEL_BY_FAMILY[mechanism.kind],
             round_index=mechanism.after_instruction // plan.block,
             wire=mechanism.wire,
             instruction_index=mechanism.after_instruction + 1,
@@ -438,21 +461,28 @@ def _round_boundary_locations(
 ) -> tuple[_NoiseLocation, ...]:
     """Return every location the round-boundary record configures, in order.
 
-    The three data families come first, one pass per family and each pass one
-    round per data qubit, with a location before the round's first instruction;
-    measurement locations come second, one per round per check, sitting before
-    the readout of the check it corrupts. Each location carries the rate that
-    named it -- the element of the vector, or the scalar when no vector is
-    stated -- and a location whose own rate is zero is dropped here rather than at
-    placement, so the caller never pays for a channel that cannot fire and a
-    per-element vector is how one quiet location between two noisy ones is stated.
+    A data location sits at the round's first instruction for every data qubit
+    and every one of the three data faults; a measurement location sits before the
+    readout of the check it corrupts. Each location carries the rate that named it
+    -- the element of the vector, or the scalar when no vector is stated -- and a
+    location whose own rate is zero is dropped here rather than at placement, so
+    the caller never pays for a channel that cannot fire and a per-element vector
+    is how one quiet location between two noisy ones is stated.
 
-    A qubit can therefore carry up to three locations in one round, one per
-    family, and the record states each family's rate separately: a profile that
-    is noisy in one Pauli and quiet in the others costs one channel per qubit, not
-    three. The families and their order are the ones
-    :func:`~flagquantum.qec.dem_construction._mechanisms` enumerates, so the two
-    routes place and record the same locations.
+    All three data faults are placed at the same instruction, and that is the
+    location model's own statement rather than a simplification: the record
+    applies each of them "to every data qubit at the start of every syndrome round,
+    before that round's parity-check CNOTs", so the three differ in which channel
+    is placed and not in where it goes. A round's three families are one group
+    before that round's first gate, one pass per family in the order
+    :func:`~flagquantum.qec.dem_construction._data_family_rates` states them, so a
+    family cannot be placed under one name here and recorded under another there.
+    The three channels are the three Pauli faults, and the Z fault propagates to
+    the X-type checks the way the X fault propagates to the Z-type ones, which is
+    a property of the circuit this module executes rather than anything derived
+    here. A Y fault is placed as one channel with one branch rather than as an X
+    fault and a Z fault beside each other, because the two would fire
+    independently and that is a different channel.
 
     The per-check vector is indexed in the matrix row order, Z-type checks first,
     which is not the declaration order the plan's offsets are in; the two are
@@ -467,14 +497,27 @@ def _round_boundary_locations(
 
     checks = tuple(memory.code.checks)
     data_wires = memory.code.data_qubits
+    data_families = _data_family_rates(noise, num_qubits=len(data_wires))
     measurement_flip_rates = noise.measurement_flip_rates(num_checks=len(checks))
-    rate_order = _check_rate_order(checks)
+    # The matrix row order is what a *per-check vector* is stated in, and it is
+    # the same translation the construction route applies, so a rate cannot name
+    # one check here and another there. A uniform rate is order-free, which is
+    # what lets a code carrying a mixed check -- with no family order to be read
+    # in -- be sampled at all.
+    rate_order = (
+        _check_rate_order(checks)
+        if noise.measurement_flip_per_check
+        else tuple(range(len(checks)))
+    )
     locations: list[_NoiseLocation] = []
-    for kind, rates in _data_family_rates(noise, num_qubits=len(data_wires)):
-        for round_index in range(memory.rounds):
-            start = plan.offset + round_index * plan.block
+    for round_index in range(memory.rounds):
+        start = plan.offset + round_index * plan.block
+        for kind, rates in data_families:
+            channel = _DATA_FAULT_CHANNEL_BY_FAMILY[kind]
             locations.extend(
-                _NoiseLocation(kind, round_index, int(qubit), start, rates[position])
+                _NoiseLocation(
+                    kind, channel, round_index, int(qubit), start, rates[position]
+                )
                 for position, qubit in enumerate(data_wires)
                 if rates[position]
             )
@@ -483,6 +526,7 @@ def _round_boundary_locations(
         locations.extend(
             _NoiseLocation(
                 "measurement",
+                "bit_flip",
                 round_index,
                 int(check.ancilla_qubit),
                 start + plan.measure_offsets[position],
@@ -509,35 +553,38 @@ def _noisy_program(
     decide what a location's rate is, and a per-element vector is exactly the
     case where the two could answer differently.
 
-    The channel itself is the engine's single bit flip in every case, wrapped in
-    the family's conjugation from :data:`_FAMILY_CONJUGATION`. The wrapper is
-    what makes the draw a Z or a Y with one rate rather than a pair of
-    independent bit flips, and it leaves the noiseless circuit alone because
-    ``H H`` and ``S_DAG S`` are the identity when the channel does not fire.
+    The channel is read off the location the same way its rate is, and for the
+    same reason: a location states the channel its family is placed as, so a
+    placement that decided the Pauli from the qubit alone would have to pick one of
+    the three and would silently place X faults where Z faults were configured.
+
+    Two locations may share an instruction and a qubit -- one per data-fault
+    family -- and each gets its own instruction, because two channels at one rate
+    are not the same channel as one channel at twice the rate. Each channel is
+    placed at the location's own rate and carries the Kraus pair its own factory
+    builds, which is what makes the composition exact: a Z fault at ``p_z`` and a
+    Y fault at ``p_y`` are independent channels, and the engine reads each one's
+    Pauli off the pair rather than off its name.
     """
 
-    by_index: dict[int, list[tuple[int, _MechanismKind, float]]] = {}
+    by_index: dict[int, list[tuple[_ChannelName, int, float]]] = {}
     for location in locations:
         by_index.setdefault(location.instruction_index, []).append(
-            (location.wire, location.kind, float(location.probability))
+            (location.channel, location.wire, float(location.probability))
         )
     instructions: list[Instruction] = []
     for index, instruction in enumerate(plan.program.instructions):
-        for wire, kind, probability in by_index.get(index, ()):
-            before, after = _FAMILY_CONJUGATION[kind]
-            if before:
-                instructions.append(Instruction(name=before, wires=(wire,)))
+        for channel, wire, probability in by_index.get(index, ()):
+            factory = _DATA_FAULT_CHANNELS[channel]
             instructions.append(
                 Instruction(
-                    name=_NOISE_OPCODE,
+                    name=channel,
                     wires=(wire,),
-                    params={"probability": probability},
-                    matrix=bit_flip_channel(probability).kraus,
+                    params={"probability": float(probability)},
+                    matrix=factory(probability).kraus,
                     metadata={"is_channel": True},
                 )
             )
-            if after:
-                instructions.append(Instruction(name=after, wires=(wire,)))
         instructions.append(instruction)
     return CircuitIR(
         n_wires=plan.program.n_wires,

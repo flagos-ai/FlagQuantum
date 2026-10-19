@@ -599,6 +599,7 @@ def _contraction_profile(
             n_slices=slicing.n_slices,
             sliced_labels=slicing.sliced_labels,
             total_intermediate_size=slicing.peak_size * slicing.n_slices,
+            contraction_path_source=slicing.contraction_path_source,
         )
         _CONTRACTION_PROFILE_CACHE[cache_key] = profile
         return profile

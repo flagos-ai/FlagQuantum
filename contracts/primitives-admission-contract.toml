@@ -90,6 +90,20 @@ differentiable = false
 differentiability_note = "A protocol. It declares a plain-application method and three amplitude-level methods, so it has no tensor argument and no gradient of its own; the differentiability of one of its implementations belongs to that implementation."
 
 [[primitive]]
+name = "BlockEncoding"
+module = "flagquantum/algorithms/primitives/block_encoding.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A protocol whose three properties and one method are written against a circuit and qubit indices. It carries no tensor of its own, so there is nothing at this boundary to differentiate; the construction that reads a tensor is `spectral_block_encoding`, which records that read in its own row."
+
+[[primitive]]
 name = "ControlledUnitary"
 module = "flagquantum/algorithms/primitives/types.py"
 admission_basis = "grounded_expectation"
@@ -102,6 +116,20 @@ accepts_tensor = false
 differentiability_shape = "no_tensor_argument"
 differentiable = false
 differentiability_note = "A protocol whose three methods take a circuit and qubit indices. It carries no tensor, so there is nothing here to differentiate, and a differentiable implementation declares that in its own module."
+
+[[primitive]]
+name = "LinearCombinationEncoding"
+module = "flagquantum/algorithms/primitives/linear_combination.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A frozen value object holding a Hamiltonian and the validated coefficient table read from it, whose append methods take a circuit and qubit indices. The one tensor it touches is the amplitude vector it builds itself for its own preparation, so no argument of a caller's is read as data and none is claimed to carry a gradient."
 
 [[primitive]]
 name = "PhaseEstimationSpec"
@@ -130,6 +158,34 @@ accepts_tensor = false
 differentiability_shape = "no_tensor_argument"
 differentiable = false
 differentiability_note = "A type alias for a callable read as an integer. The integer is classical, so no gradient path exists and none is implied."
+
+[[primitive]]
+name = "SpectralBlockEncoding"
+module = "flagquantum/algorithms/primitives/block_encoding.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A frozen value object whose append methods take a circuit and qubit indices, so no tensor is annotated on a method of its own. The matrix it holds is a tensor field carried by the dataclass, and the read of that matrix happens in `spectral_block_encoding`, whose row records the command that measured it; nothing the object holds reaches a circuit as a differentiable argument."
+
+[[primitive]]
+name = "WalkEncoding"
+module = "flagquantum/algorithms/primitives/block_encoding.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = false
+differentiability_shape = "no_tensor_argument"
+differentiable = false
+differentiability_note = "A protocol extending `BlockEncoding` with the walk step and its adjoint, whose two methods take a circuit and qubit indices. The eigenvalue identity it names is a property of the circuit an implementation emits rather than of an argument, so there is no tensor path here and none is implied."
 
 [[primitive]]
 name = "append_arbitrary_state"
@@ -181,7 +237,7 @@ admission_basis = "shared"
 # Measured from the import graph. The basis above is derived from these and from the
 # test/example callers the gate also counts, so a consumer that moves fails this contract.
 framework_consumers = ["flagquantum/algorithms/grover.py", "flagquantum/algorithms/qarm.py"]
-package_consumers = []
+package_consumers = ["flagquantum/algorithms/primitives/linear_combination.py"]
 distribution_semantics = "single_device_fast_path"
 accepts_tensor = false
 differentiability_shape = "no_tensor_argument"
@@ -233,11 +289,11 @@ differentiability_note = "Emits fixed rotation angles determined by the qubit co
 [[primitive]]
 name = "arbitrary_state"
 module = "flagquantum/algorithms/primitives/state_preparation.py"
-admission_basis = "public_unit"
+admission_basis = "confirmed"
 # Measured from the import graph. The basis above is derived from these and from the
 # test/example callers the gate also counts, so a consumer that moves fails this contract.
-framework_consumers = []
-package_consumers = []
+framework_consumers = ["flagquantum/algorithms/data_encoding.py"]
+package_consumers = ["flagquantum/algorithms/primitives/linear_combination.py"]
 distribution_semantics = "single_device_fast_path"
 accepts_tensor = true
 differentiability_shape = "classical_tensor_input"
@@ -314,6 +370,36 @@ accepts_tensor = false
 differentiability_shape = "no_tensor_argument"
 differentiable = false
 differentiability_note = "Emits fixed rotation angles determined by the qubit count; there is no tensor in the signature to differentiate."
+
+[[primitive]]
+name = "spectral_block_encoding"
+module = "flagquantum/algorithms/primitives/block_encoding.py"
+admission_basis = "public_unit"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = []
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = true
+differentiability_shape = "classical_tensor_input"
+differentiable = false
+differentiability_note = "The matrix is read as classical data: it is detached onto the CPU before it is validated, and the encoding is a classical precomputation over it whose eigenbasis becomes one fixed dense gate. A requires_grad matrix therefore receives no gradient, and the module docstring says so."
+differentiability_reproduce = '''python -c "import torch; from flagquantum.algorithms.primitives import spectral_block_encoding; m = torch.tensor([[1.0, 0.0], [0.0, -1.0]], dtype=torch.float64, requires_grad=True); e = spectral_block_encoding(m); print(m.grad_fn, e.select.requires_grad)"'''
+
+[[primitive]]
+name = "subnormalisation"
+module = "flagquantum/algorithms/primitives/block_encoding.py"
+admission_basis = "confirmed"
+# Measured from the import graph. The basis above is derived from these and from the
+# test/example callers the gate also counts, so a consumer that moves fails this contract.
+framework_consumers = ["flagquantum/algorithms/svd.py"]
+package_consumers = []
+distribution_semantics = "single_device_fast_path"
+accepts_tensor = true
+differentiability_shape = "classical_tensor_input"
+differentiable = false
+differentiability_note = "The matrix is read as classical data: the function detaches it onto the CPU and returns a float read off its norms, so the value it returns carries no dependence on a requires_grad argument and none is claimed."
+differentiability_reproduce = '''python -c "import torch; from flagquantum.algorithms.primitives import subnormalisation; m = torch.tensor([[1.0, 0.0], [0.0, -1.0]], dtype=torch.float64, requires_grad=True); print(subnormalisation(m), m.grad_fn)"'''
 
 [[primitive]]
 name = "uniform_state"

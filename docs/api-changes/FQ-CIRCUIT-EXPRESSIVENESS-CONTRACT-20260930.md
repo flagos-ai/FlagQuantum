@@ -26,7 +26,7 @@ operator semantics" and registers **35 opcodes**: 31 unitaries and 4 channels
 (`amplitude_damping`, `bit_flip`, `depolarizing`, `phase_flip`). None of them is
 `measure`, `reset`, or `barrier`.
 
-`Instruction.__post_init__` (`core/ir.py:338-379`) rejects an unknown opcode only
+`Instruction.__post_init__` (`core/ir/__init__.py:338-379`) rejects an unknown opcode only
 when three escape conditions are all false:
 
 ```python
@@ -50,7 +50,7 @@ IR instruction. Measured against this checkout:
 | `Instruction("barrier", (0, 1), metadata={"is_dynamic": True})` | accepted |
 
 The escape hatch is load-bearing, not accidental: `is_dynamic` is read or written at
-**16 sites outside `core/ir.py`**, across `ecosystem/qiskit`, `ecosystem/cirq`,
+**16 sites outside `core/ir/__init__.py`**, across `ecosystem/qiskit`, `ecosystem/cirq`,
 `runtime/dynamic`, `runtime/planner`, `compiler/_hybrid`,
 `compiler/target_emission.py`, `compiler/directed_topology.py`,
 `compiler/schedule_legalization.py`, and `services/preflight.py`.
@@ -151,7 +151,7 @@ capability is described in the parity backlog as an L1 gap, not an experimental 
 
 ### W2-05 cannot be an ordinary feature PR
 
-`IR_VERSION = "1.0"` (`core/ir.py:24`) is an **exact-match pin**, not a compatibility
+`IR_VERSION = "1.0"` (`core/ir/__init__.py:24`) is an **exact-match pin**, not a compatibility
 range:
 
 - `CircuitIR.__post_init__:440-443` raises `IRValidationError` for any other value
@@ -188,8 +188,8 @@ and that the decision must be taken before W2-01 through W2-04 choose the fields
 | --- | --- |
 | 35 registered opcodes, 0 of them measure/reset/barrier | `core/operator_schema.py`; enumerated via `OPERATOR_SCHEMAS` |
 | Module self-describes as the single semantic source | `core/operator_schema.py:1` |
-| Unknown opcode is accepted when `is_dynamic` is set | `core/ir.py:359-367`; reproduced against this checkout, table above |
-| `is_dynamic` is used at 16 sites outside `core/ir.py` | `grep -rn 'metadata.get("is_dynamic")\|"is_dynamic":' flagquantum/` |
+| Unknown opcode is accepted when `is_dynamic` is set | `core/ir/__init__.py:359-367`; reproduced against this checkout, table above |
+| `is_dynamic` is used at 16 sites outside `core/ir/__init__.py` | `grep -rn 'metadata.get("is_dynamic")\|"is_dynamic":' flagquantum/` |
 | `measure`/`reset` produced only by `DynamicCircuit` | `runtime/dynamic/circuit.py:25,37` |
 | Strict metadata key-set validation | `runtime/dynamic/hybrid_session.py:113-131` |
 | Lenient metadata validation for the same opcode | `compiler/schedule_legalization.py:84-93` |
@@ -206,7 +206,7 @@ and that the decision must be taken before W2-01 through W2-04 choose the fields
 | `DynamicCircuit` is not a public name | `hasattr(fq, "DynamicCircuit")` is `False`; absent from `docs/public_api_v1.json` |
 | `DynamicCircuit` is reachable by module path | `runtime/dynamic/__init__.py:20`, `flagquantum/dynamic.py:5` |
 | Dynamic execution requires the subclass | `runtime/dynamic/execution.py:779-780` |
-| IR version is an exact match | `core/ir.py:440-445` |
+| IR version is an exact match | `core/ir/__init__.py:440-445` |
 | IR version is serialized twice and read once | `runtime/execution_plan_contract.py:635`, `runtime/training_state.py:311,363` |
 | IR version is pinned by tests | `tests/unit/test_ir_public_api.py`, `tests/test_qiskit_interop.py` |
 | Condition vocabulary is free-form metadata | `compiler/schedule_legalization.py:43-54` |
@@ -282,7 +282,7 @@ that the contract does not regress while it is being decided:
 - **`IR_VERSION` and serialized programs.** Any candidate that adds an IR field
   changes what `"1.0"` means. The compatible path is either to keep `"1.0"` readable
   for programs without the new fields, or to accept `"1.0"` and `"1.1"` as a range and
-  migrate on read. `core/ir.py:440-443` currently refuses anything but the constant, and
+  migrate on read. `core/ir/__init__.py:440-443` currently refuses anything but the constant, and
   `runtime/training_state.py:363` refuses a checkpoint on the same basis, so the choice
   is a two-reader migration and not a one-line change.
 - **Stable Core names.** `IR_VERSION`, `CircuitIR`, `Instruction`, and `IRSerializationError`

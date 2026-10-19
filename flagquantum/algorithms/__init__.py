@@ -1,17 +1,73 @@
 """Quantum algorithms and hybrid optimization workflows."""
 
 from . import amplitude_estimation as amplitude_estimation
+from . import arithmetic as arithmetic
+from . import cdr as cdr
+from . import chemistry as chemistry
+from . import chemistry_integrals as chemistry_integrals
+from . import cobyla as cobyla
 from . import core as core
+from . import data_encoding as data_encoding
 from . import error_mitigation as error_mitigation
 from . import feature_selection as feature_selection
+from . import folding as folding
 from . import grover as grover
 from . import kmedians as kmedians
+from . import logical_resources as logical_resources
+from . import molecular as molecular
+from . import nelder_mead as nelder_mead
 from . import pca as pca
+from . import pec as pec
 from . import qarm as qarm
 from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
+from . import readout_mitigation as readout_mitigation
 from . import spsa as spsa
 from . import svd as svd
+from . import trotter as trotter
+from . import variational as variational
+from .arithmetic import (
+    AdderQubits,
+    adder_circuit,
+    adder_qubits,
+)
+from .cdr import (
+    CDR_ASSUMPTIONS,
+    CDR_LIMITATIONS,
+    CDR_SNAP_OPCODES,
+    CdrResult,
+    CliffordFit,
+    CliffordTrainingPoint,
+    CliffordVariant,
+    clifford_variants,
+    run_cdr,
+)
+from .chemistry import (
+    UCCSDExcitations,
+    coupler_hardware_efficient_ansatz,
+    coupler_hardware_efficient_parameter_count,
+    double_excitation,
+    excitation_operator,
+    single_excitation,
+    uccsd_ansatz,
+    uccsd_excitations,
+    uccsd_factors,
+)
+from .chemistry_integrals import (
+    ATOMIC_NUMBERS,
+    BASIS_SETS,
+    BOHR_RADIUS,
+    AtomicOrbital,
+    MolecularGeometry,
+    MolecularIntegrals,
+    molecular_integrals,
+)
+from .cobyla import (
+    COBYLA_ASSUMPTIONS,
+    COBYLA_LIMITATIONS,
+    CobylaOptimizer,
+    CobylaResult,
+)
 from .core import (
     AdaptVQEIteration,
     AdaptVQEResult,
@@ -36,6 +92,11 @@ from .core import (
     vqe_loss,
     zz_chain_hamiltonian,
 )
+from .data_encoding import (
+    amplitude_encode,
+    angular_encode,
+    append_angular_encode,
+)
 from .error_mitigation import (
     ExtrapolationFit,
     ZneMeasurement,
@@ -45,34 +106,182 @@ from .error_mitigation import (
     run_zne,
     scale_noise_model,
 )
+from .folding import (
+    FOLDING_ASSUMPTIONS,
+    FOLDING_SCHEMA,
+    FOLDING_STRATEGIES,
+    FoldingPlan,
+    fold_program,
+)
+from .logical_resources import (
+    LOGICAL_RESOURCE_BASIS,
+    SURFACE_CODE_MODEL,
+    LogicalResourceReport,
+    estimate_logical_resources,
+    surface_code_qubits_per_logical,
+)
+from .molecular import (
+    MAX_FCI_DETERMINANTS,
+    MOLECULAR_ASSUMPTIONS,
+    MOLECULAR_LIMITATIONS,
+    HartreeFockSolution,
+    MolecularHamiltonian,
+    create_molecular_hamiltonian,
+    exact_ground_state_energy,
+    fold_frozen_core,
+    molecular_orbital_integrals,
+    restricted_hartree_fock,
+    second_quantized_hamiltonian,
+)
+from .nelder_mead import (
+    NELDER_MEAD_ASSUMPTIONS,
+    NELDER_MEAD_LIMITATIONS,
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 from .optimization import (
     HybridOptimizationResult,
     OptimizationRecord,
     OptimizationStage,
     optimize_hybrid,
 )
-from .spsa import SPSAOptimizer
+from .pec import (
+    PauliTwirlDecomposition,
+    PecLocation,
+    PecResult,
+    pauli_twirl_decomposition,
+    run_pec,
+)
+from .readout_mitigation import (
+    MAX_CORRELATED_BLOCK_QUBITS,
+    NORMALIZATION_TOLERANCE,
+    READOUT_MITIGATION_ASSUMPTIONS,
+    READOUT_MITIGATION_LIMITATIONS,
+    READOUT_MITIGATION_SCHEMA,
+    SINGULAR_VALUE_FLOOR,
+    ReadoutBlock,
+    ReadoutMitigationPlan,
+    ReadoutMitigationResult,
+    plan_readout_mitigation,
+    run_readout_mitigation,
+    run_readout_mitigation_counts,
+)
+from .spsa import (
+    SPSA_ASSUMPTIONS,
+    SPSA_LIMITATIONS,
+    SPSAOptimizer,
+    SPSAResult,
+)
+from .trotter import (
+    TROTTER_ORDERS,
+    pauli_exponential_circuit,
+    trotter_circuit,
+)
+from .variational import (
+    QAOA_ASSUMPTIONS,
+    QAOA_LIMITATIONS,
+    QAOAResult,
+    maxcut_hamiltonian,
+    maxcut_objective,
+    run_qaoa,
+)
 
 __all__ = [
     "AdaptVQEIteration",
     "AdaptVQEResult",
+    "AdderQubits",
+    "ATOMIC_NUMBERS",
+    "AtomicOrbital",
+    "BASIS_SETS",
+    "BOHR_RADIUS",
+    "CDR_ASSUMPTIONS",
+    "CDR_LIMITATIONS",
+    "CDR_SNAP_OPCODES",
+    "COBYLA_ASSUMPTIONS",
+    "COBYLA_LIMITATIONS",
+    "CdrResult",
+    "CliffordFit",
+    "CliffordTrainingPoint",
+    "CliffordVariant",
+    "CobylaOptimizer",
+    "CobylaResult",
     "ExtrapolationFit",
+    "FOLDING_ASSUMPTIONS",
+    "FOLDING_SCHEMA",
+    "FOLDING_STRATEGIES",
+    "FoldingPlan",
     "Hamiltonian",
     "HamiltonianTerm",
+    "HartreeFockSolution",
     "HybridOptimizationResult",
     "LayerwiseVQEResult",
-    "OptimizerFactory",
+    "LOGICAL_RESOURCE_BASIS",
+    "LogicalResourceReport",
+    "MAX_CORRELATED_BLOCK_QUBITS",
+    "MAX_FCI_DETERMINANTS",
+    "MOLECULAR_ASSUMPTIONS",
+    "MOLECULAR_LIMITATIONS",
+    "MolecularGeometry",
+    "MolecularHamiltonian",
+    "MolecularIntegrals",
+    "NELDER_MEAD_ASSUMPTIONS",
+    "NELDER_MEAD_LIMITATIONS",
+    "NelderMeadOptimizer",
+    "NelderMeadResult",
+    "NORMALIZATION_TOLERANCE",
     "OptimizationRecord",
     "OptimizationStage",
+    "OptimizerFactory",
+    "PauliTwirlDecomposition",
+    "PecLocation",
+    "PecResult",
+    "QAOA_ASSUMPTIONS",
+    "QAOA_LIMITATIONS",
+    "QAOAResult",
+    "READOUT_MITIGATION_ASSUMPTIONS",
+    "READOUT_MITIGATION_LIMITATIONS",
+    "READOUT_MITIGATION_SCHEMA",
+    "ReadoutBlock",
+    "ReadoutMitigationPlan",
+    "ReadoutMitigationResult",
+    "SINGULAR_VALUE_FLOOR",
     "SPSAOptimizer",
+    "SPSAResult",
+    "SPSA_ASSUMPTIONS",
+    "SPSA_LIMITATIONS",
+    "SURFACE_CODE_MODEL",
+    "TROTTER_ORDERS",
+    "UCCSDExcitations",
     "VQEResult",
     "ZneMeasurement",
     "ZneResult",
+    "adder_circuit",
+    "adder_qubits",
+    "amplitude_encode",
     "amplitude_estimation",
+    "angular_encode",
+    "append_angular_encode",
+    "arithmetic",
+    "cdr",
+    "chemistry",
+    "chemistry_integrals",
+    "clifford_variants",
+    "cobyla",
+    "coupler_hardware_efficient_ansatz",
+    "coupler_hardware_efficient_parameter_count",
+    "create_molecular_hamiltonian",
+    "data_encoding",
+    "double_excitation",
     "error_mitigation",
+    "estimate_logical_resources",
+    "exact_ground_state_energy",
+    "excitation_operator",
     "extrapolate_polynomial",
     "extrapolate_richardson",
     "feature_selection",
+    "fold_frozen_core",
+    "fold_program",
+    "folding",
     "grover",
     "hardware_efficient_ansatz",
     "hardware_efficient_parameter_count",
@@ -80,23 +289,50 @@ __all__ = [
     "heisenberg_hva",
     "heisenberg_hva_parameter_count",
     "kmedians",
+    "logical_resources",
+    "maxcut_hamiltonian",
+    "maxcut_objective",
+    "molecular",
+    "molecular_integrals",
+    "molecular_orbital_integrals",
+    "nelder_mead",
     "optimize_hybrid",
+    "pauli_exponential_circuit",
     "pauli_term",
+    "pauli_twirl_decomposition",
     "pca",
+    "pec",
+    "plan_readout_mitigation",
     "qaoa_circuit",
     "qaoa_loss",
     "qarm",
     "quantum_kernel",
     "qubo",
+    "readout_mitigation",
+    "restricted_hartree_fock",
+    "run_adapt_vqe",
+    "run_cdr",
     "run_hybrid_vqe",
     "run_layerwise_vqe",
+    "run_pec",
+    "run_qaoa",
+    "run_readout_mitigation",
+    "run_readout_mitigation_counts",
     "run_vqe",
-    "run_adapt_vqe",
     "run_zne",
     "scale_noise_model",
+    "second_quantized_hamiltonian",
+    "single_excitation",
     "spsa",
+    "surface_code_qubits_per_logical",
     "svd",
     "transverse_field_ising",
+    "trotter",
+    "trotter_circuit",
+    "uccsd_ansatz",
+    "uccsd_excitations",
+    "uccsd_factors",
+    "variational",
     "vqe_loss",
     "zz_chain_hamiltonian",
 ]

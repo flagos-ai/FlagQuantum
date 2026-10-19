@@ -30,7 +30,8 @@
     "re_admission_note": "register_backend raises ValueError for a name that already has a record, so a second admission of the same name fails before it can displace the first route.",
     "host_side_module": "flagquantum.ecosystem.extensions.admission",
     "sdk_namespace_change": "none",
-    "sdk_namespace_change_note": "Admission is a host-side operation, so it is not added to flagquantum.ecosystem.extensions.__all__, which contracts/extension-protocol-v1-candidate.json pins as an exact set. That contract stays approved and unmodified; adding these names to it would be a separate namespace change with its own proposal."
+    "sdk_namespace_change_note": "Admission is a host-side operation, so it is not added to flagquantum.ecosystem.extensions.__all__, which contracts/extension-protocol-v1-candidate.json pins as an exact set. That contract stays approved and unmodified; adding these names to it would be a separate namespace change with its own proposal.",
+    "route_call_shape_checked_at_admission": true
   },
   "execution_route": {
     "protocol": "flagquantum.runtime.backend_registry.BackendExecutor",
@@ -50,7 +51,7 @@
       "distribution_semantics"
     ],
     "result_contract": "The returned object is normalized by flagquantum.runtime.result.normalize_execution_result, so a backend may return an ExecutionResult, a tensor state, or an object exposing state, samples, or summary.",
-    "sdk_protocol_unchanged": "flagquantum.ecosystem.extensions.sdk.ExecutionBackendExtension keeps execute(program, parameters=None). Its runtime-checkable form only requires an execute attribute, so an admitted route satisfies it as well. The plan-fact contract is Runtime-owned and additive."
+    "sdk_protocol_unchanged": "flagquantum.ecosystem.extensions.sdk.ExecutionBackendExtension keeps execute(program, parameters=None). Its runtime-checkable form only requires an execute attribute, so an admitted route satisfies it as well. The plan-fact contract is Runtime-owned and additive. The two shapes are not interchangeable in the other direction: satisfying both protocol checks does not mean Runtime can call the member, so admission binds the declared call and refuses a route that only accepts the SDK's positional parameters."
   },
   "declaration": {
     "shape": "mapping",
@@ -97,7 +98,8 @@
     "executor is present on exactly the backends admitted from an extension, and absent on built-in records",
     "capability_summary never exposes executor",
     "refresh_backend_registry preserves admitted backends and still drops ad hoc declarations without an executor",
-    "a name that already has an admitted route is rejected before registration rather than displaced"
+    "a name that already has an admitted route is rejected before registration rather than displaced",
+    "a route is refused at admission unless it accepts the call execute(program, *, options)"
   ],
   "fail_closed": {
     "unknown_backend_at_planning": "CapabilityError naming the backend",

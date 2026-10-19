@@ -21,6 +21,7 @@ phrase was chosen and for what it leaves uncovered.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -36,6 +37,52 @@ GUIDE = "docs/guides/ALGORITHMS.md"
 ROOT_ALIAS_IMPORT = "import flagquantum as fq"
 TIMEOUT_SECONDS = 120
 
+#: The ground energy of the two-qubit transverse-field Ising operator the VQE
+#: example runs on, ``-sqrt(5)``, as the operator itself computes it. The example
+#: prints this from the operator rather than quoting it, so the test can compare a
+#: run's energy against the exact value instead of against the run.
+_GROUND_ENERGY = -2.2360679774997898
+
+#: The tolerance a value an example computed in double precision is compared at.
+#: The ground energy above is the case that forced it: it is the operator's own
+#: diagonalization of a two-qubit Hamiltonian, which reached
+#: -2.2360679774997898 here and -2.2360679774997889 on the x86 runner -- 9.0e-16
+#: apart, one unit in the last place of 2.2. That is the arithmetic's own floor and
+#: not a reading of the operator, so a transcript comparison of the printed digits
+#: records which `eigvals` path the build shipped.
+_DOUBLE_TOLERANCE = 1e-12
+
+#: The tolerance a value an example computed in single precision is compared at.
+#: Every energy in the VQE example is a float32 statevector expectation, and a
+#: descent stops where the step it can still resolve stops moving it, so two
+#: machines that sum the same statevector in a different order stop at different
+#: points: the reported optimum measured -2.2360680103302002 here and
+#: -2.2360682487487793 on the x86 runner, 2.4e-07 apart and both about 2e-07 from
+#: the exact value. A digit-for-digit comparison of those records a BLAS reduction
+#: order; the claim the example is making is that the run reached the optimum.
+_SINGLE_PRECISION_TOLERANCE = 1e-6
+
+#: The tolerance a figure the guide quotes at four decimals is compared at. The
+#: variational-solvers example prints the mass on each maximum cut at six decimals
+#: and the guide quotes it at four, so four decimals is what an assertion on it can
+#: support: the sixth is where a hundred-step float32 descent stops on a given
+#: build. It read 0.494200 here and 0.494201 on the x86 runner, one unit in the
+#: sixth place -- exactly the width of the 1e-6 tolerance this carried, so that
+#: tolerance was the print quantum rather than the claim's, and a one-unit
+#: difference landed on its boundary where the binary representation decides.
+_QUOTED_MASS_TOLERANCE = 1e-4
+
+#: The bound a statevector reading is required to sit under when the claim is that
+#: it is at the arithmetic's floor rather than at a value. The Trotter example
+#: measures each primitive's residual against the dense exponential of the same
+#: word after dividing out one global phase, which is exactly zero in exact
+#: arithmetic, so the printed residual is the noise: measured as 0.0, 1.110e-16,
+#: 1.475e-17 and 1.120e-16 across the six rows here and as 0.0 for the row that
+#: read 1.110e-16 on the x86 runner. Pinning any one of them pins a summation
+#: order, while the floor bound below still fails by fourteen orders when the
+#: phase division is wrong.
+_STATEVECTOR_FLOOR = 1e-15
+
 # Every script in the directory, one entry per unit that has one.
 SCRIPTS = (
     "pca",
@@ -45,7 +92,20 @@ SCRIPTS = (
     "qarm",
     "svd",
     "error_mitigation",
+    "pec",
+    "cdr",
+    "readout_mitigation",
+    "folding",
+    "variational_solvers",
+    "vqe_solvers",
     "spsa_optimizer",
+    "nelder_mead_optimizer",
+    "cobyla_optimizer",
+    "trotter",
+    "block_encoding",
+    "linear_combination",
+    "logical_resources",
+    "arithmetic",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -101,14 +161,165 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
         "not checkable from the measurements",
         "no measured uncertainty",
     ),
+    # Two halves. "the noise the program experiences is exactly the channel the
+    # model declares, at the location the model declares it" is the assumption the
+    # inversion rests on, and "this path consumes no shots" is what it gives up to
+    # be exact. Pinning only the first would leave the cost's origin deletable,
+    # which is the half that keeps a gamma read as a measurement of this path
+    # rather than as the price a sampled implementation would pay.
+    "pec": (
+        "exactly the channel the model declares",
+        "consumes no shots",
+    ),
+    # Two halves. "the ideal expectation is affine in the noisy one over the
+    # region the training circuits span" is the relation the fit rests on, and
+    # "Clifford membership is enforced here and never exploited" is what the unit
+    # gives up to reach it: the training circuits are Clifford, and this path
+    # still pays to simulate them. Pinning only the first would leave the
+    # second deletable, and a Clifford training set read as a cheaper one is
+    # exactly the misreading the second half prevents.
+    "cdr": (
+        "affine in the noisy one",
+        "never exploited",
+    ),
+    # Two halves again. "the confusion the model declares is the device's readout
+    # behaviour" is the assumption the inversion rests on and the reason a
+    # corrected vector landing on the ideal one is a statement about the model
+    # rather than about a device, and "not a free improvement" is what the method
+    # gives up to be exact: inverting a stochastic matrix amplifies sampling
+    # noise, and the amplification is reported as a number rather than absorbed.
+    # Neither phrase covers its half's supporting detail -- the uncovered qubits
+    # that are left alone, or the negative mass a corrected vector is allowed to
+    # carry -- both of which can be dropped while the phrase remains.
+    "readout_mitigation": (
+        "is the device's readout behaviour",
+        "not a free improvement",
+    ),
+    # Two halves. "the noise is local to the instruction that carries it, so
+    # repeating an instruction repeats its noise and nothing else" is the
+    # assumption the fold rests on, and "this unit therefore does not estimate
+    # the noise it amplifies" is what it gives up to reach it -- the fold reports
+    # a length ratio and nothing about the device it ran on. Pinning only the
+    # first would leave the disclaimer deletable, and a length ratio read as a
+    # measured error strength is exactly the misreading the second half prevents.
+    "folding": (
+        "the noise is local to the instruction that carries it",
+        "does not estimate the noise it amplifies",
+    ),
+    # Three halves, because the premise has three: the cost layer and the operator
+    # "describe one graph" is what the unit pairs so a caller cannot score one
+    # graph's ansatz against another's operator; "a zero start cannot move" is the
+    # saddle that makes the start a required argument rather than a default; and
+    # "the energy is not a bound" is what a finite layer count gives up, so a
+    # fitted value is a cost to compare rather than a floor to trust. Pinning only
+    # the first would leave both concessions deletable, and a fitted energy read
+    # as a bound is exactly the misreading the third half prevents.
+    "variational_solvers": (
+        "describe one graph",
+        "a zero start cannot move",
+        "the energy is not a bound",
+    ),
     # Two halves. "the estimate is an estimate rather than a gradient" is the
     # estimator's bias, and "an objective with an exact gradient is served
     # cheaper and exact without it" is what that bias costs. Pinning only the
     # first would leave the recommendation deletable, which is the half that
     # keeps this unit from being read as a preferred optimizer.
+    # Three halves, one per reading a caller can get wrong. "stationary point of
+    # the pool" is the premise the ADAPT screen cannot check: an exact screen at a
+    # reference state that is an eigenstate of every generator is exactly zero, so
+    # the pool is blamed for the state. "why the loop stopped" is what the
+    # converged flag reports, against the arrival a reader expects. "the energy is
+    # not a bound" is what float32 and a finite step count give up together, so a
+    # reported value is a measurement rather than a floor to trust. Pinning only
+    # the second would leave the stationary-state premise deletable, which is the
+    # half that makes the first run's selection reproducible.
+    "vqe_solvers": (
+        "stationary point of the pool",
+        "why the loop stopped",
+        "the energy is not a bound",
+    ),
     "spsa_optimizer": (
         "an estimate rather than a gradient",
         "cheaper and exact without it",
+    ),
+    # Two halves, and they are halves of one premise rather than two
+    # concessions: "the objective has to be deterministic" is the input the
+    # method needs, and "a local minimum rather than the global one" is what
+    # a converged run therefore reports. Pinning only the first would leave
+    # the flag's meaning deletable, and a run whose flag reads as a global
+    # claim is exactly the misreading the second half prevents.
+    "nelder_mead_optimizer": (
+        "has to be deterministic",
+        "a local minimum rather than the global one",
+    ),
+    # Two halves. "the subproblem is a linearization" with "a converged run
+    # reports that its trust region reached its floor rather than that it found a
+    # constrained optimum" is what the method is and therefore what its flag
+    # means, and "the price it puts on a violated constraint is a schedule rather
+    # than a calibrated weight" is the half a caller has to act on. Pinning only
+    # the first would leave the second deletable, and a run whose value is read
+    # without its feasibility flag is exactly the misreading the second half
+    # prevents: this script measures a price at which the returned point is
+    # infeasible and still scores better than the feasible optimum.
+    "cobyla_optimizer": (
+        "the subproblem is a linearization",
+        "a schedule rather than a calibrated weight",
+    ),
+    # Two halves. "the product approximates exp(-i t H) and nothing here bounds how
+    # far apart they are" is the approximation's own concession, and "a commutator
+    # norm belongs to the caller" is who owns the bound that would close it.
+    # Pinning only the first would leave the ownership deletable, and a defect read
+    # as a bound on the unit's accuracy rather than as a number this script
+    # measured is exactly the misreading the second half prevents.
+    "trotter": (
+        "nothing here bounds",
+        "belongs to the caller",
+    ),
+    # Two halves. "the eigendecomposition is dense and exact, so the gate is one
+    # dense matrix on n + 1 qubits and the cost is diagonalising H" is the input
+    # model's own cost, and "nothing here bounds it" with the error left to the
+    # caller is who owns the accuracy. Pinning only the first would leave the
+    # ownership deletable, and a dense exact construction read as scale-free is
+    # the misreading the second half prevents.
+    "block_encoding": (
+        "nothing here bounds",
+        "belongs to the caller",
+    ),
+    # Two halves. "the preparation is a dense classical precomputation over 2 ** k
+    # amplitudes, exponential in the index register's width" is the input model's
+    # own cost -- the term count decides a register width, not a gate count -- and
+    # "belongs to the caller's 2 ** k amplitudes rather than to any bound this unit
+    # states" is who owns the accuracy and the cost the module declines to bound.
+    # Pinning only the first would leave the ownership deletable, and an
+    # exponential-in-the-index-register construction read as a cost claim is the
+    # misreading the second half prevents.
+    "linear_combination": (
+        "exponential in the index",
+        "belongs to the caller's",
+    ),
+    # Two halves. "the report counts rather than measures: nothing runs, no
+    # wall-clock time, memory, or allocation is read" is the input model the
+    # unit is honest about -- a report over a program text rather than an
+    # execution -- and "that number belongs to the device rather than to this
+    # unit" is who owns the failure rate it therefore cannot state. Pinning only
+    # the first would leave the ownership deletable, and a footprint read as a
+    # reliability claim is exactly the misreading the second half prevents.
+    "logical_resources": (
+        "counts rather than measures",
+        "belongs to the device",
+    ),
+    # Two halves. "belongs to the compiler's own Toffoli rule rather than to this
+    # construction ... no seven-T expansion is written here, because a second
+    # Toffoli cost would be a second source of truth for the one number the two
+    # must agree on" is who owns the cost the module declines to compute, and
+    # "Only the inputs the ancilla contract names are promised a sum" is the
+    # domain restriction that keeps an off-contract input from being read as an
+    # addition. Pinning only the first would leave the restriction deletable, and a
+    # reversible map read as an adder on every input is exactly the misreading the
+    # second half prevents.
+    "arithmetic": (
+        "compiler's own Toffoli rule",
+        "Only the inputs the ancilla contract names",
     ),
 }
 
@@ -133,6 +344,26 @@ def _labelled(output: str, label: str) -> str:
         if separator and name.strip() == label:
             return value.strip()
     raise AssertionError(f"the example printed no {label!r} line:\n{output}")
+
+
+def _number(output: str, label: str) -> float:
+    """Return a labelled line's value as a float.
+
+    A quantity an example *measures* is compared as a number at a stated
+    tolerance rather than as the text it was printed as, for the reason the two
+    tolerance constants above give. A quantity the example writes out -- a gate
+    list, a count, a boolean, an exception name -- stays a text comparison, since
+    the text is the claim.
+    """
+    return float(_labelled(output, label))
+
+
+def _residual_and_gates(output: str, label: str) -> tuple[float, str]:
+    """Split a ``residual <float>, gates <list>`` line into its two claims."""
+    residual, separator, gates = _labelled(output, label).partition(", gates ")
+    assert separator, f"{label!r} printed no ', gates ' separator"
+    assert residual.startswith("residual "), residual
+    return float(residual.split()[1]), gates
 
 
 def _premise(output: str) -> str:
@@ -317,6 +548,473 @@ def test_error_mitigation_example_shows_the_fits_and_both_refusals() -> None:
     assert "take away" in output
 
 
+def test_cdr_example_fits_the_noise_and_reads_the_residual() -> None:
+    output = _run("cdr")
+
+    assert "clifford data regression -- flagquantum.algorithms.cdr" in output
+    # Every labelled line, in order, because six labels repeat across the four
+    # training runs and the last-wins helper below would read the wrong one.
+    rows: dict[str, list[str]] = {}
+    for line in output.splitlines():
+        name, separator, value = line.partition(":")
+        if separator and name.strip() and not line.startswith(" " * 4):
+            rows.setdefault(name.strip(), []).append(value.strip())
+    # The training set is a rewrite of the target. Both rotations of the
+    # three-point target sit under the first quarter turn, so the nearest variant
+    # drops them -- residue zero is the empty word -- and the ladder puts each
+    # back as its own named word.
+    assert rows["snappable rotations"] == ["['phase', 'rx', 'ry', 'rz', 'u1']"]
+    assert rows["variants"] == [
+        "['nearest', 'ry-at-instruction-1', 'ry-at-instruction-2']"
+    ]
+    assert rows["angle shifts"] == ["['0.700000', '0.870796', '1.170796']"]
+    assert rows["nearest variant"] == ["['h', 'cx']"]
+    # The two-point fit: the residual is absent rather than zero, and the slope is
+    # the reciprocal of the shrinkage the model applied to the second point. The
+    # first point's ideal is 0.0 and its noisy read is the arithmetic's own floor
+    # rather than exactly zero, which is why the intercept is not exactly zero and
+    # rounds to it at three digits.
+    assert rows["observable"] == ["1.0 * z(0)", "1.0 * z(0) + 1.0 * x(1)"]
+    assert rows["training points"] == [
+        "[(0.0, -5.551115123125783e-17), (-0.9999999999999998, -0.9360000014305114)]",
+        "[(0.0, 0.0), (-0.9999999999999998, -0.8985600022101402), "
+        "(0.9999999999999998, 0.9360000014305113)]",
+    ]
+    assert rows["slope"] == ["1.068376066743", "1.090028329682"]
+    assert rows["intercept"] == ["0.000e+00", "-1.360e-02"]
+    assert rows["residual"] == ["None", "1.360355e-02", "1.110e-16"]
+    assert rows["degrees of freedom"] == ["0", "1"]
+    assert rows["unmitigated"] == ["-0.528505355905480", "-0.214372677510147"]
+    assert rows["mitigated"] == ["-0.564642473395035", "-0.247275844867047"]
+    assert rows["unmitigated error"] == ["3.614e-02", "4.043e-02"]
+    assert rows["mitigated error"] == ["4.441e-16", "7.524e-03", "1.665e-16"]
+    assert rows["distinct noisy values"] == ["3"]
+    assert rows["exact value"] == ["-0.564642473395035", "-0.254799344929041"]
+    # The residual separates a premise that held from one that did not, on the
+    # same three training circuits: the two-noise-source run leaves one that is
+    # 1.2e14 times the one-noise-source run's, and only the latter's mitigated
+    # value is on the exact value.
+    assert abs(float(rows["residual"][1]) / float(rows["residual"][2])) > 1e13
+    # And the two-point run's closeness is an identity rather than a check: its
+    # mitigated error is at the arithmetic's own floor, 1.7e13 times smaller than
+    # the three-point run's, which is the run whose premise was actually tested.
+    assert float(rows["mitigated error"][0]) < float(rows["mitigated error"][1]) / 1e13
+    # Two refusals, each by name: the readout rule, and a program with no
+    # snappable rotation at all -- refused by the stabilizer engine because the
+    # rewrite cannot reach the operation, not by a second gate list here.
+    assert rows["readout rule refused"][0].startswith(
+        "the noise model declares a readout rule"
+    )
+    assert rows["ccx refused"][0].startswith(
+        "CapabilityError -- instruction 1 'ccx' is not a Clifford gate"
+    )
+    _assert_premise("cdr", output)
+    assert "take away" in output
+
+
+def test_readout_mitigation_example_corrects_and_reports_what_it_cost() -> None:
+    output = _run("readout_mitigation")
+
+    assert (
+        "readout-error mitigation -- flagquantum.algorithms.readout_mitigation"
+        in output
+    )
+    # The correction is exact on the one-qubit case and carries the uncovered
+    # qubit through untouched, so the error is the floor of inverting one 2 by 2
+    # matrix rather than a value fitted to the assertion.
+    assert _labelled(output, "blocks") == "[[1]]"
+    assert _labelled(output, "covered qubits") == "[1]"
+    assert _labelled(output, "uncovered qubits") == "[0]"
+    assert (
+        _labelled(output, "measured")
+        == "['0.080000', '0.920000', '0.000000', '0.000000']"
+    )
+    assert _labelled(output, "corrected") == (
+        "['0.000000000000', '1.000000000000', '0.000000000000', '0.000000000000']"
+    )
+    assert float(_labelled(output, "largest error")) < 1e-15
+    # A correlated pair is one block of four rows, not two one-qubit blocks.
+    assert _labelled(output, "block width") == "4"
+    assert _labelled(output, "smallest singular value") == "0.760000"
+    # The reported amplification is the whole map's, and it is the product over
+    # blocks rather than the worst block's. The identity steps assert the product
+    # rather than pinned overheads, so a different but equally correct confusion
+    # moves all three numbers together instead of breaking one of them.
+    one = float(_labelled(output, "one-qubit amplification"))
+    pair = float(_labelled(output, "pair amplification"))
+    assert one > 1.0 and pair > 1.0
+    assert pair == pytest.approx(float(_labelled(output, "pair condition number")))
+    # The one-qubit plan is a single block, so there the product is the block's
+    # own amplification. The correlated pair amplifies *more* at a smaller
+    # per-qubit error than the singleton does at a larger one, because its
+    # smallest singular value is further from zero -- which is the reason the
+    # number is reported per device rather than inferred from the error rates.
+    assert pair > one
+    # The cost is quoted per shot: the bound the example prints is the one-qubit
+    # amplification over the square root of the count it printed, so the two
+    # numbers cannot drift apart without one of them being wrong.
+    # Both numbers are printed at nine decimals, so the tolerance is the print's
+    # own rounding rather than a number chosen to make this pass.
+    shots = int(_labelled(output, "shots"))
+    bound = float(_labelled(output, "standard error bound"))
+    assert abs(bound - one / shots**0.5) < 1e-9
+    # A corrected vector is not obliged to be a distribution: the negative mass is
+    # summed and the result says which side of the simplex it landed on instead of
+    # being clipped into one.
+    assert _labelled(output, "skewed corrected") == "['1.166667', '-0.166667']"
+    assert float(_labelled(output, "negative mass")) > 0.0
+    assert _labelled(output, "is_physical") == "False"
+    # The histogram path reads qubit 0 leftmost and normalizes by its own total.
+    assert _labelled(output, "total shots") == "4000"
+    # Three refusals, each naming what it measured: a singular value against the
+    # floor, a block width against the ceiling's matrix size, and a key length
+    # against the plan's width.
+    assert "smallest singular value" in _labelled(output, "a maximally confused qubit")
+    assert "exceeds the 10-qubit ceiling" in _labelled(output, "a block of 11 qubits")
+    assert "not a 2-character bit string" in _labelled(
+        output, "a one-character histogram"
+    )
+    _assert_premise("readout_mitigation", output)
+    assert "take away" in output
+
+
+def _two(output: str, label: str) -> tuple[float, float]:
+    """Return the two numbers an example printed after ``label``."""
+    left, right = _labelled(output, label).split()
+    return float(left), float(right)
+
+
+def test_folding_example_lengthens_by_an_identity_and_shows_what_it_cost() -> None:
+    output = _run("folding")
+
+    assert "gate and circuit folding -- flagquantum.algorithms.folding" in output
+    assert _labelled(output, "observable") == "1.0 * xx(0, 1)"
+    # The gate strategy reaches the requested 1.4 exactly in one pair, so its
+    # realized ratio is the request; the circuit strategy repeats whole bodies and
+    # can only reach odd ratios, so the same request becomes 3.0 and costs five
+    # pairs. Both facts are read off the row rather than recomputed here.
+    gate = _labelled(output, "fold gate").split()
+    circuit = _labelled(output, "fold circuit").split()
+    assert tuple(gate[:2]) == ("1.40", "1.40")
+    assert (gate[3], gate[4], gate[5]) == ("7", "1", "True")
+    assert tuple(circuit[:2]) == ("1.40", "3.00")
+    assert (circuit[3], circuit[4], circuit[5]) == ("15", "5", "False")
+    # The fold is an exact identity, so the extra instructions are ideal: the
+    # gap between the body's state and each folded program's state is the
+    # complex128 rounding floor and not a number the fold contributed. The bound
+    # is loose on purpose -- what must not appear is a gap the fold caused.
+    assert float(_labelled(output, "gate max amplitude gap")) < 1e-14
+    assert float(_labelled(output, "circuit max amplitude gap")) < 1e-14
+    # The pair lands on the first instruction, which sits before the entangler,
+    # and a zz readout is exactly blind to depolarizing there: both readings are
+    # the same number. The xx readout is not, so the two lines together say the
+    # flat zz curve is the observable's blindness rather than absent noise.
+    zz_plain, zz_folded = _two(output, "zz(0, 1) at 1.0 then 1.4")
+    assert zz_plain == zz_folded
+    xx_plain, xx_folded = _two(output, "xx(0, 1) at 1.0 then 1.4")
+    assert xx_folded < xx_plain
+    assert _labelled(output, "gate scale 1").split()[0] == (
+        _labelled(output, "circuit scale 1").split()[0]
+    )
+    # Each curve falls as more of the same channel is applied, and each strategy's
+    # own four points are distinct, which is the precondition the fit needs.
+    gate_points = [
+        float(_labelled(output, f"gate scale {factor}").split()[0])
+        for factor in ("1", "1.4", "1.8", "2.2")
+    ]
+    circuit_points = [
+        float(_labelled(output, f"circuit scale {factor}").split()[0])
+        for factor in ("1", "3", "5", "7")
+    ]
+    assert gate_points == sorted(gate_points, reverse=True)
+    assert circuit_points == sorted(circuit_points, reverse=True)
+    assert len(set(gate_points)) == 4 and len(set(circuit_points)) == 4
+    # Both estimates land nearer the noiseless value than the unmitigated point
+    # did. The comparison is the claim; the numbers behind it are printed beside
+    # it and are not pinned, because a different but equally correct channel moves
+    # them all together.
+    noiseless = float(_labelled(output, "noiseless value"))
+    for strategy in ("gate", "circuit"):
+        unmitigated = float(_labelled(output, f"{strategy} unmitigated"))
+        estimate = float(_labelled(output, f"{strategy} estimate"))
+        stated = _labelled(output, f"{strategy} distance")
+        distance = float(stated.split()[0])
+        against = float(stated.split(" against ")[1].split(",")[0])
+        residual = float(stated.split("residual")[1])
+        # Both distances are printed at four mantissa decimals, so the tolerance
+        # is the print's own rounding at that value's magnitude rather than a
+        # number chosen to pass.
+        assert distance == pytest.approx(abs(estimate - noiseless), abs=1e-6)
+        assert against == pytest.approx(abs(unmitigated - noiseless), abs=1e-6)
+        assert distance < against
+        # The residual is the diagnostic the estimate is read against, so it is
+        # printed beside it and has to be a real number here rather than absent.
+        assert 0.0 < residual < against
+    # Four refusals, each naming the thing it refused rather than a code.
+    assert "different units of scale" in _labelled(output, "fold with scaling")
+    assert "below one" in _labelled(output, "factor below one")
+    assert "realize the same one more than once" in _labelled(
+        output, "two requests, one length"
+    )
+    assert "no unitary inverse" in _labelled(output, "a channel in the body")
+    _assert_premise("folding", output)
+    assert "take away" in output
+
+
+def test_variational_solvers_example_fits_qaoa_and_shows_the_saddle() -> None:
+    output = _run("variational_solvers")
+
+    assert "variational solvers -- flagquantum.algorithms.variational" in output
+    # The operator is checked against the cut it stands for rather than trusted:
+    # a square with one diagonal has five edges and a largest cut of four, so the
+    # ground energy is the total less twice that cut, and the basis states that
+    # attain it are exactly the two maximum cuts.
+    assert _labelled(output, "largest cut (enumerated)") == "4 of 5 edges"
+    assert _labelled(output, "cut at the optimum") == "[(0, 1, 0, 1), (1, 0, 1, 0)]"
+    assert _labelled(output, "ground energy") == "-3"
+    assert _labelled(output, "total less twice the cut") == "-3"
+    assert _labelled(output, "argmin equals argmax") == "True"
+    # The saddle is shown rather than described: the gradient at the zero start is
+    # exactly zero, so the returned angles are the start and the energy is the
+    # objective there. A run that reported an optimum from that start would print
+    # a moved angle or a negative energy.
+    assert _labelled(output, "gradient at the zero start") == (
+        "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+    )
+    assert _labelled(output, "energy at the zero start") == "0"
+    assert _labelled(output, "angles returned") == "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+    assert _labelled(output, "steps taken") == "100"
+    # Three layers at this start reach the optimum and the shallower runs do not,
+    # and the mass the optimized circuit puts on the two maximum cuts rises with
+    # it. The energies are the evidence for this instance; the claim the row
+    # carries is the gap column, which falls towards zero without reaching it.
+    # Each energy is where a hundred fixed Adam steps stopped, so it is compared at
+    # the third decimal the example prints: the two-layer run measured -1.914364219
+    # here and -1.91436553 on the x86 runner, agreeing on every digit printed and
+    # not on the next one.
+    rows = {layers: _labelled(output, str(layers)).split() for layers in (1, 2, 3)}
+    for layers, expected in (
+        (1, -1.473527074),
+        (2, -1.914364219),
+        (3, -2.972455502),
+    ):
+        assert float(rows[layers][0]) == pytest.approx(expected, abs=1e-3)
+    gaps = [float(rows[layers][1]) for layers in (1, 2, 3)]
+    assert gaps == sorted(gaps, reverse=True)
+    assert gaps[-1] > 0.0
+    masses = [float(rows[layers][2]) for layers in (1, 2, 3)]
+    assert masses == sorted(masses)
+    assert masses[-1] > 0.9
+    # The cut is decoded from the optimized state rather than read off the
+    # energy: the two bitstrings above the threshold are exactly the two maximum
+    # cuts the brute-force spectrum found. Each mass is read as a number at the
+    # precision the guide quotes it at, and the two are compared against each
+    # other as well, because a symmetric pair is the claim and the shared digit is
+    # not.
+    first = _number(output, "mass at (0, 1, 0, 1)")
+    second = _number(output, "mass at (1, 0, 1, 0)")
+    for mass in (first, second):
+        assert mass == pytest.approx(0.4942, abs=_QUOTED_MASS_TOLERANCE)
+    assert first == pytest.approx(second, abs=_QUOTED_MASS_TOLERANCE)
+    assert _labelled(output, "bitstrings above 0.1") == "[(0, 1, 0, 1), (1, 0, 1, 0)]"
+    assert _labelled(output, "those are the largest cuts") == "True"
+    # Five refusals, each naming the thing it refused rather than a code.
+    assert "the same undirected pair" in _labelled(output, "one cut edge listed twice")
+    assert "constant shift rather than a cut" in _labelled(output, "an edge to itself")
+    assert "at least one" in _labelled(output, "no optimizer step at all")
+    assert "the count must be even" in _labelled(output, "an odd number of angles")
+    assert "one flat vector" in _labelled(output, "a start that is not flat")
+    _assert_premise("variational_solvers", output)
+    assert "take away" in output
+
+
+def test_vqe_solvers_example_runs_four_entry_points_on_one_instance() -> None:
+    output = _run("vqe_solvers")
+
+    assert "vqe solvers -- flagquantum.algorithms.core" in output
+    # The instance's optimum is the operator's own value rather than a run's, so
+    # the gap column below is a distance to a known number and not a self-report.
+    # It is read as a number because it is the operator's diagonalization, whose
+    # last place is the build's.
+    assert _number(output, "ground energy") == pytest.approx(
+        _GROUND_ENERGY, abs=_DOUBLE_TOLERANCE
+    )
+    assert (
+        _labelled(output, "operator") == "[(1.0, (0, 1)), (-1.0, (0,)), (-1.0, (1,))]"
+    )
+    # The fixed-ansatz run is deterministic and does not consume the caller's
+    # tensor, and its reported energy is the fresh evaluation of the returned
+    # parameters rather than the last history entry: the two columns differ.
+    assert _labelled(output, "caller tensor unchanged") == "True"
+    assert _labelled(output, "two runs agree bit for bit") == "True"
+    # Both of these are float32 reads of a descent, so they are compared as
+    # numbers at the tolerance a float32 stopping point repeats at.
+    assert _number(output, "energy") == pytest.approx(
+        -2.2360680103302002, abs=_SINGLE_PRECISION_TOLERANCE
+    )
+    assert _number(output, "start energy") == pytest.approx(
+        0.885204017162323, abs=_SINGLE_PRECISION_TOLERANCE
+    )
+    # The screen is exact, so the three gradients are an identity on the reference
+    # state rather than an approximation: only the Y rotation moves at |00>.
+    assert _labelled(output, "adapt selected") == "(0,)"
+    assert _labelled(output, "adapt initial energy") == "1"
+    assert _number(output, "adapt energy") == pytest.approx(
+        -1.4142135623730354, abs=_SINGLE_PRECISION_TOLERANCE
+    )
+    assert _labelled(output, "adapt converged") == "True"
+    # The gradient vector is parsed rather than transcribed, because the sign of a
+    # zero has no claim in it: the first entry is the one direction that moves and
+    # the other two are exactly zero.
+    gradients = [
+        float(token)
+        for token in re.findall(
+            r"-?\d+\.\d+", _labelled(output, "first screening pass")
+        )
+    ]
+    assert len(gradients) == 3
+    assert gradients[0] == pytest.approx(-1.0, abs=_SINGLE_PRECISION_TOLERANCE)
+    assert all(abs(value) < _SINGLE_PRECISION_TOLERANCE for value in gradients[1:])
+    assert _labelled(output, "iteration 0 selected") == (
+        "pool index 0 at gradient -1.000000"
+    )
+    assert _labelled(output, "iteration 0 energies") == "1.00000000 -> -1.41421356"
+    # The same pool at a stationary reference state selects nothing, and the run
+    # reports its exit condition rather than the distance to the ground state.
+    assert _labelled(output, "stationary selected") == "()"
+    assert _labelled(output, "stationary adapt iterations") == "0"
+    assert _number(output, "stationary energy") == pytest.approx(
+        -1.9999999999999991, abs=_SINGLE_PRECISION_TOLERANCE
+    )
+    assert _labelled(output, "stationary energy above ground") == "0.236068"
+    assert _labelled(output, "stationary converged") == "True"
+    # Three runs, one boolean, two reasons. The first two stop at the same energy
+    # for two different reasons -- the pool ran out and the largest gradient fell
+    # under the tolerance -- and both report the exit as True. The third spent its
+    # iteration budget at the very start, reports the exit as False, and is the
+    # one furthest from the ground energy of the three. So the flag tracks why the
+    # loop stopped and neither how close the energy came nor whether the run was
+    # cut short.
+    exhausted_energy = float(_labelled(output, "exhausted energy"))
+    tolerance_energy = float(_labelled(output, "tolerance energy"))
+    budget_energy = float(_labelled(output, "budget energy"))
+    assert _labelled(output, "a pool of one, exhausted") == "converged=True"
+    assert _labelled(output, "exhausted selected") == "(0,) of 1"
+    assert _labelled(output, "tolerance exit") == "converged=True"
+    assert _labelled(output, "tolerance selected") == "(0,)"
+    assert exhausted_energy == pytest.approx(tolerance_energy, abs=1e-9)
+    assert _labelled(output, "budget exit") == "converged=False"
+    assert _labelled(output, "budget selected") == "(0,)"
+    assert budget_energy > 0.9
+    # Every one of the three stops above the exact ground energy, because the pool
+    # reaches one wire only: a run reporting an arrival would be reporting a gap
+    # this pool cannot close.
+    assert min(exhausted_energy, tolerance_energy, budget_energy) - _GROUND_ENERGY > 0.5
+    # The deepening path reports one record per depth and the parameter count each
+    # depth asks for, which is what makes the padding visible. The per-depth
+    # energies are float32 end points, so they are parsed and compared against the
+    # exact optimum instead of transcribed.
+    assert _labelled(output, "depths") == "(1, 2, 3)"
+    assert _labelled(output, "parameters per depth") == "[2, 4, 6]"
+    per_depth = [
+        float(token)
+        for token in re.findall(r"-?\d+\.\d+", _labelled(output, "energy per depth"))
+    ]
+    assert len(per_depth) == 3
+    for energy in per_depth:
+        assert energy == pytest.approx(_GROUND_ENERGY, abs=_SINGLE_PRECISION_TOLERANCE)
+    # The schedule's cost is a measured number rather than a claim.
+    assert _labelled(output, "stages in the schedule") == "2"
+    assert _number(output, "hybrid energy") == pytest.approx(
+        -2.2360680103302002, abs=_SINGLE_PRECISION_TOLERANCE
+    )
+    assert _labelled(output, "records") == "600"
+    assert _labelled(output, "objective evaluations") == "1200"
+    assert _labelled(output, "parameter groups") == "('quantum',)"
+    # Two refusals, each naming the entry point and the cause rather than letting
+    # torch's backward error stand for both.
+    assert "run_vqe: the objective carries no gradient" in _labelled(
+        output, "run_vqe, builder ignores parameters"
+    )
+    assert "the operator at pool index 0 adds no dependence" in _labelled(
+        output, "run_adapt_vqe, non-rotational pool"
+    )
+    _assert_premise("vqe_solvers", output)
+    assert "does not do" in output
+
+
+def test_pec_example_inverts_a_channel_and_shows_every_refusal() -> None:
+    output = _run("pec")
+
+    assert "probabilistic error cancellation -- flagquantum.algorithms.pec" in output
+    # The channels are built at the estimate's own dtype, so the mitigated error
+    # below is the density simulation's floor rather than a complex64 gap reported
+    # as a complex128 result.
+    assert _labelled(output, "noiseless value") == "0.99999999999999978"
+    assert _labelled(output, "locations") == "['bit_flip(0,)', 'bit_flip(1,)']"
+    assert _labelled(output, "estimate dtype") == "torch.complex128"
+    # Two locations, each inverted, composed: the unmitigated read is 0.36 short
+    # and the mitigated one is on the noiseless value to the arithmetic's floor.
+    # The last two values moved by one unit in the last place when the twirl
+    # decomposition started reading its transfer matrix through
+    # ``SuperOperator.matrix_in_basis`` instead of its own einsum over the
+    # unnormalized Pauli products. The two formulations differ by at most
+    # 2.22e-16, and the identity row now rounds one ulp above one rather than
+    # exactly onto it, which is what a 16-term sum in a normalized basis does;
+    # the one-location read below is unchanged, and both formulations agree with
+    # the channel's closed-form transfer matrix to 2.98e-9 -- the width of the
+    # single-precision probability the channel is built from.
+    assert _labelled(output, "unmitigated") == "0.639999995231628"
+    assert _labelled(output, "mitigated") == "0.999999999999999"
+    assert _labelled(output, "unmitigated error") == "3.600e-01"
+    assert _labelled(output, "mitigated error") == "3.331e-16"
+    assert _labelled(output, "gamma") == "1.562500011642"
+    assert _labelled(output, "sampling overhead").startswith("2.441406286380")
+    assert _labelled(output, "exact programs") == "17 = 16 terms + 1"
+    assert _labelled(output, "shots consumed") == "0"
+    # The cost composes: one location's gamma squared is the two-location gamma.
+    assert _labelled(output, "one location") == "gamma 1.250000004657, 4 terms"
+    assert _labelled(output, "two locations") == "gamma 1.562500011642, 16 terms"
+    assert _labelled(output, "product of the parts") == "1.562500011642"
+    # Every admitted family is diagonal at this dtype, and the five are the ones
+    # the unit's own tolerance admits.
+    assert _labelled(output, "bit_flip").startswith("gamma 1.250000005")
+    assert _labelled(output, "phase_flip").startswith("gamma 1.250000005")
+    assert _labelled(output, "depolarizing").startswith("gamma 1.230769235")
+    assert _labelled(output, "phase_damping").startswith("gamma 1.054092554")
+    assert _labelled(output, "two_qubit_depolarizing").startswith(
+        "gamma 1.223880601, words 16"
+    )
+    # The four channel families whose transfer matrix is not diagonal, each with
+    # the magnitude the refusal measured.
+    assert _labelled(output, "amplitude_damping").startswith(
+        "refused -- channel 'amplitude_damping' is not a Pauli channel"
+    )
+    assert "1.000e-01" in output
+    assert _labelled(output, "coherent_overrotation").startswith(
+        "refused -- channel 'coherent_overrotation' is not a Pauli channel"
+    )
+    assert "1.987e-01" in output
+    assert _labelled(output, "reset_error").startswith(
+        "refused -- channel 'reset_error' is not a Pauli channel"
+    )
+    assert "5.000e-02" in output
+    assert _labelled(output, "thermal_relaxation").startswith(
+        "refused -- channel 'thermal_relaxation' is not a Pauli channel"
+    )
+    assert "1.000e+00" in output
+    # A channel whose inverse does not exist at all, as distinct from one that is
+    # merely outside the family.
+    assert _labelled(output, "bit_flip at 0.5").startswith(
+        "refused -- channel 'bit_flip' has a vanishing Pauli transfer eigenvalue at Y"
+    )
+    assert _labelled(output, "readout rule refused").startswith(
+        "the noise model declares a readout rule"
+    )
+    _assert_premise("pec", output)
+    assert "take away" in output
+
+
 def test_spsa_example_measures_its_cost_and_converges() -> None:
     output = _run("spsa_optimizer")
 
@@ -333,6 +1031,535 @@ def test_spsa_example_measures_its_cost_and_converges() -> None:
         "the objective modified the tensor it was given"
     )
     _assert_premise("spsa_optimizer", output)
+    assert "take away" in output
+
+
+def test_nelder_mead_example_is_exact_and_shows_what_converged_means() -> None:
+    output = _run("nelder_mead_optimizer")
+
+    assert "Nelder-Mead simplex search -- flagquantum.algorithms.nelder_mead" in output
+    assert _labelled(output, "iterations") == "67"
+    assert _labelled(output, "objective calls") == "132"
+    assert _labelled(output, "final energy") == "-2.0"
+    assert _labelled(output, "converged") == "True"
+    assert _labelled(output, "Nelder-Mead") == "-2.0"
+    assert _labelled(output, "SPSA, seed 13") == "-1.996896 in 132 calls"
+    assert _labelled(output, "SPSA, seed 5") == "-1.993104 in 132 calls"
+    assert _labelled(output, "SPSA, seed 11") == "-1.99134 in 132 calls"
+    assert _labelled(output, "spread across seeds") == "0.005556"
+    assert _labelled(output, "reported value") == "0.099366985524"
+    assert _labelled(output, "reported converged") == "True"
+    assert _labelled(output, "global minimum") == "-0.100617376638"
+    assert _labelled(output, "distance from the global") == "0.199984362162"
+    assert _labelled(output, "collinear simplex") == (
+        "the vertices must span all 2 parameter directions"
+    )
+    assert _labelled(output, "in-place objective").startswith(
+        "the objective modified the tensor it was given"
+    )
+    assert _labelled(output, "budget") == "maxiter must be a positive integer"
+    assert _labelled(output, "non-finite value") == (
+        "the objective returned a non-finite value"
+    )
+    _assert_premise("nelder_mead_optimizer", output)
+    assert "take away" in output
+
+
+def test_cobyla_example_shows_the_boundary_and_what_the_price_decides() -> None:
+    output = _run("cobyla_optimizer")
+
+    assert "COBYLA trust-region search -- flagquantum.algorithms.cobyla" in output
+    # The constrained run lands on the boundary and reports the energy there, and
+    # the same objective with no constraint is what that energy is measured
+    # against, so the reader sees the bound's cost rather than the bound alone.
+    assert _labelled(output, "iterations") == "53"
+    assert _labelled(output, "objective calls") == "312"
+    assert _labelled(output, "final energy") == "-1.2432199365413288"
+    assert _labelled(output, "final parameters") == "[0.9, 1.19e-08]"
+    assert _labelled(output, "residual") == "0.0"
+    assert _labelled(output, "feasible") == "True"
+    assert _labelled(output, "converged") == "True"
+    assert _labelled(output, "exact value at the floor") == "-1.2432199365"
+    assert _labelled(output, "energy the bound leaves") == "0.0"
+    assert _labelled(output, "energy the bound costs") == "0.7567800635"
+    # The price comparison is the premise's second half as a number: the cheaper
+    # price returns an infeasible point whose value beats the feasible optimum.
+    assert _labelled(output, "price 1.0") == "[2.5, 2.5] value 0.5"
+    assert _labelled(output, "cheap residual") == "1.0"
+    assert _labelled(output, "cheap feasible") == "False"
+    assert _labelled(output, "price 2.0") == "[2.0, 2.0] value 2.0"
+    assert _labelled(output, "exact residual") == "0.0"
+    assert _labelled(output, "exact feasible") == "True"
+    assert _labelled(output, "a cheaper point scores") == (
+        "0.5 against the feasible optimum's 2.0"
+    )
+    # Four refusals, and only one of them is about the objective: the other three
+    # are an option, a radius ordering, and a constraint that never returns a
+    # number, so a run cannot report a constraint it never read.
+    assert _labelled(output, "in-place objective").startswith(
+        "the objective modified the tensor it was given"
+    )
+    assert _labelled(output, "budget") == "maxiter must be a positive integer"
+    assert _labelled(output, "floor above the start") == (
+        "rhoend must be strictly below rhobeg"
+    )
+    assert _labelled(output, "non-finite constraint") == (
+        "constraint 0 returned a non-finite value"
+    )
+    _assert_premise("cobyla_optimizer", output)
+    assert "take away" in output
+
+
+def test_trotter_example_measures_the_defect_and_shows_every_refusal() -> None:
+    output = _run("trotter")
+
+    assert "Trotter product formula -- flagquantum.algorithms.trotter" in output
+    # The terms are printed in the order they were declared, and the count is
+    # pinned because a silently sorted or deduplicated term list would change the
+    # formula while leaving every downstream number plausible.
+    assert _labelled(output, "term count") == "5 in declared order"
+    assert _labelled(output, "wires") == "3"
+    # The primitive's residual is measured against the dense exponential of the
+    # same word after dividing out one global phase, so every entry is at the
+    # dtype's own floor. The gate lists are the decomposition itself: no basis
+    # change for a diagonal word, a Hadamard for x, sdg-h forward and h-s backward
+    # for y, and one CX per extra supported wire either side of the rotation. The
+    # residual is checked as a floor and the gate list as text, because the floor
+    # is the arithmetic's noise and the list is the claim.
+    for label, gates in (
+        ("Z on (0,)", "1 ['rz']"),
+        ("X on (0,)", "3 ['h', 'rz', 'h']"),
+        ("Y on (0,)", "5 ['sdg', 'h', 'rz', 'h', 's']"),
+        ("ZZ on (0, 1)", "3 ['cx', 'rz', 'cx']"),
+        (
+            "XZY on (2, 0, 1)",
+            "11 ['h', 'sdg', 'h', 'cx', 'cx', 'rz', 'cx', " "'cx', 'h', 'h', 's']",
+        ),
+        # The same word with a target in the middle that carries I: the identity
+        # consumes its wire and contributes no support, so this is the ZZ ladder.
+        ("ZIZ on (0, 1, 2)", "3 ['cx', 'rz', 'cx']"),
+    ):
+        residual, printed = _residual_and_gates(output, label)
+        assert residual <= _STATEVECTOR_FLOOR, label
+        assert printed == gates, label
+    # The defect against torch.matrix_exp, at three step counts per order.
+    assert _labelled(output, "order 1, 2 steps") == "defect 5.085577e-02"
+    assert _labelled(output, "order 1, 4 steps") == "defect 2.533908e-02"
+    assert _labelled(output, "order 1, 8 steps") == "defect 1.265847e-02"
+    assert _labelled(output, "order 2, 2 steps") == "defect 3.442249e-03"
+    assert _labelled(output, "order 2, 4 steps") == "defect 8.546989e-04"
+    assert _labelled(output, "order 2, 8 steps") == "defect 2.133117e-04"
+    # And the rate, which is the composition's rather than a bound: halving the
+    # step halves the first order's defect and quarters the second's.
+    assert _labelled(output, "order 1 rate").startswith("2.007 per doubling")
+    assert "(the defect falls off as step**1)" in output
+    assert _labelled(output, "order 2 rate").startswith("4.027 per doubling")
+    assert "(the defect falls off as step**2)" in output
+    # Commuting terms are reached exactly, which is what makes the defect above a
+    # statement about non-commutation rather than about the method being inexact.
+    # Exactly, here, means at the floor: the printed 2.220e-16 is one summation's
+    # noise and not a value the product formula determines.
+    commuting, _, printed = _labelled(output, "two commuting z terms").partition(" ")
+    assert commuting == "defect"
+    assert float(printed) <= _STATEVECTOR_FLOOR
+    # The declared order is not sorted: the same two terms in the other order emit
+    # a different gate sequence and reach a different state.
+    assert _labelled(output, "z then x gates") == "['rz', 'h', 'rz', 'h']"
+    assert _labelled(output, "x then z gates") == "['h', 'rz', 'h', 'rz']"
+    assert _labelled(output, "same circuit") == "False"
+    assert _labelled(output, "state distance") == "0.303293"
+    # The result is an ordinary circuit: the static estimator reads gates out of
+    # it, which is the whole reason exp_pauli is not an opcode here.
+    assert _labelled(output, "basis") == "static_instruction_sequence"
+    assert _labelled(output, "operations") == "4 over 1 of 1 wires"
+    assert _labelled(output, "counts") == "{'h': 2, 'rz': 2}"
+    assert _labelled(output, "t count") == "0"
+    # The coefficient reaches the rotation as a tensor, so it differentiates.
+    assert _labelled(output, "readout <Z>") == "0.715813373694"
+    assert _labelled(output, "d<Z>/d coefficient") == "-0.161660517061"
+    # Five refusals, each by name and each before a circuit exists.
+    assert _labelled(output, "a term that is a multiple of the identity").startswith(
+        "refused -- CapabilityError: term 0 is a multiple of the identity"
+    )
+    assert _labelled(output, "a coefficient with an imaginary part").startswith(
+        "refused -- CapabilityError: term 0 has coefficient (1+2j)"
+    )
+    assert _labelled(output, "a term past the declared register").startswith(
+        "refused -- ValueError: Pauli word 'Z' addresses wire(s) [2] outside a "
+        "2-wire circuit"
+    )
+    assert _labelled(output, "an order the module does not build").startswith(
+        "refused -- ValueError: order must be one of 1, 2, got 3"
+    )
+    assert _labelled(output, "a step count that is not a positive integer").startswith(
+        "refused -- ValueError: steps must be a positive integer, got 0"
+    )
+    assert "NOT REFUSED" not in output
+    _assert_premise("trotter", output)
+    assert "take away" in output
+
+
+def test_block_encoding_example_reads_its_block_back_out_of_the_circuit() -> None:
+    output = _run("block_encoding")
+
+    assert (
+        "Block encoding -- flagquantum.algorithms.primitives.block_encoding" in output
+    )
+    assert _labelled(output, "num_system") == "2"
+    assert _labelled(output, "num_ancilla") == "1"
+    # The default factor is the Frobenius norm, and the two are printed side by
+    # side so a factor that quietly became the spectral norm would show.
+    assert _labelled(output, "Frobenius norm") == _labelled(output, "alpha")
+    assert _labelled(output, "alpha clears the spectral norm") == "True"
+    # The block is read out of the circuit and checked against both `H / alpha`
+    # and `H`, because a construction that returned its argument agrees with the
+    # second and not the first. Both residuals are at the statevector's own floor.
+    assert float(_labelled(output, "circuit block vs H / alpha")) < 1e-6
+    assert float(_labelled(output, "dense block vs circuit block")) < 1e-6
+    assert float(_labelled(output, "circuit block vs H")) > 1.0
+    # The reflection is a reflection identically, not to within a truncated series.
+    assert float(_labelled(output, "U is Hermitian")) < 1e-12
+    assert float(_labelled(output, "U squared is the identity")) < 1e-12
+    assert float(_labelled(output, "U is unitary")) < 1e-12
+    # The walk identity: the observed cosines come from `eigvals` of the circuit's
+    # unitary and the expected ones from `eigvalsh` of the matrix, so the two sides
+    # are different routines and the agreement is the claim.
+    assert _labelled(output, "expected cosines") == _labelled(
+        output, "observed cosines"
+    )
+    assert float(_labelled(output, "agreement")) < 1e-6
+    # And the phases are non-trivial, which is what makes the identity more than a
+    # statement about a Hermitian matrix's own phases.
+    assert _labelled(output, "cosines off the endpoints") == "True"
+    # Without the phase flip the same unitary has cosines on the endpoints alone,
+    # and its spectrum is nowhere near the encoded one.
+    assert (
+        _labelled(output, "plain U cosines")
+        == "[-1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0]"
+    )
+    assert float(_labelled(output, "plain vs encoded spectrum")) > 1.0
+    # The step's definition, not only its spectrum: `W` is compared against the flag
+    # flip composed with the encoding, which is a matrix identity the cosines above
+    # cannot express because a step and its own encoding have the same kind of spectrum.
+    assert float(_labelled(output, "walk step vs flag flip of the encoding")) < 1e-6
+    # `W^dagger W` against the identity rather than the adjoint's cosines, which are
+    # `W`'s: this construction's step is Hermitian, so only the composition tells the two
+    # apart. The residual is the register's own floor, which is 5e-8 rather than 1e-15
+    # because the unitary is built by applying the gate to each basis state.
+    assert float(_labelled(output, "adjoint step inverts the step")) < 1e-6
+    # Two implementations, one consumer: the second one holds no matrix at all and
+    # the same protocol reads it, so the surface is a boundary rather than a class.
+    assert _labelled(output, "spectral is a BlockEncoding") == "True"
+    assert _labelled(output, "spectral is a WalkEncoding") == "True"
+    assert _labelled(output, "built is a WalkEncoding") == "True"
+    assert _labelled(output, "built source") == "two named gates, no matrix anywhere"
+    assert _labelled(output, "built walk cosines") == "[-1.0, -1.0, 1.0, 1.0]"
+    # And the second implementation is held to the same composition as the first, which
+    # is the part of the protocol a name alone cannot pin: it holds no matrix, so the
+    # composed unitary is the only witness that its walk step is the flag flip of its
+    # encoding rather than some other unitary with the same spectrum.
+    assert float(_labelled(output, "built walk vs flag flip of the encoding")) < 1e-6
+    # Ten construction refusals, each by name.
+    assert _labelled(output, "a matrix that is not a tensor").startswith(
+        "refused -- ValueError: matrix must be a torch.Tensor"
+    )
+    assert _labelled(output, "a matrix that is not square").startswith(
+        "refused -- ValueError: matrix must be square, got 2 row(s) and 3 column(s)"
+    )
+    assert _labelled(output, "a dimension that is not a power of two").startswith(
+        "refused -- ValueError: matrix must have a power-of-two dimension"
+    )
+    assert _labelled(output, "an integer matrix").startswith(
+        "refused -- ValueError: matrix must be a floating-point or complex matrix"
+    )
+    assert _labelled(output, "the zero matrix").startswith(
+        "refused -- ValueError: the zero matrix has no block to normalise"
+    )
+    assert _labelled(output, "a matrix with a non-finite entry").startswith(
+        "refused -- ValueError: matrix must hold only finite values"
+    )
+    assert _labelled(output, "a matrix that is not Hermitian").startswith(
+        "refused -- ValueError: the block encoding is built from the matrix's own "
+        "eigenbasis, and eigh reads one triangle"
+    )
+    assert _labelled(output, "a factor below the spectral norm").startswith(
+        "refused -- ValueError: the subnormalisation must be at least the matrix's "
+        "spectral norm"
+    )
+    assert _labelled(output, "a factor that is zero").startswith(
+        "refused -- ValueError: the subnormalisation must be positive and finite, got 0.0"
+    )
+    assert _labelled(output, "a factor that is not a real number").startswith(
+        "refused -- ValueError: the subnormalisation must be a real number, got True"
+    )
+    # Three register refusals, each taken before the first gate, so the circuit is
+    # empty rather than half-built: the gate is one dense matrix and there is no
+    # partial form of it.
+    assert _labelled(output, "the flag inside the register").startswith(
+        "refused -- ValueError: ancilla 1 is one of the operator's own wires"
+    )
+    assert _labelled(output, "one qubit for a two-qubit operator").startswith(
+        "refused -- ValueError: the register must be 2 wire(s) for this encoding, got 1"
+    )
+    assert _labelled(output, "a repeated qubit").startswith(
+        "refused -- ValueError: the register must be distinct, got [1, 1]"
+    )
+    for label in (
+        "the flag inside the register",
+        "one qubit for a two-qubit operator",
+        "a repeated qubit",
+    ):
+        assert _labelled(output, f"gates after {label}") == "0"
+    assert "NOT REFUSED" not in output
+    _assert_premise("block_encoding", output)
+    assert "take away" in output
+
+
+def test_linear_combination_example_encodes_the_pauli_sum_from_its_coefficients() -> (
+    None
+):
+    output = _run("linear_combination")
+
+    # The factor is read off the coefficients and is checked against the two norms it is
+    # deliberately not. A construction that silently defaulted to the Frobenius norm would
+    # agree with the block and disagree with the coefficients, so both are pinned -- and
+    # the Frobenius norm is pinned as *different* rather than as larger or smaller, because
+    # a one-wire Pauli product has Frobenius norm `2 ** (n / 2)` and the two are not ordered
+    # against each other at all.
+    assert _labelled(output, "alpha is the sum of the magnitudes") == "True"
+    assert _labelled(output, "alpha clears the spectral norm") == "True"
+    assert _labelled(output, "alpha is the Frobenius norm") == "False"
+    assert (
+        abs(
+            float(_labelled(output, "Frobenius norm"))
+            - float(_labelled(output, "sum of the coefficient magnitudes"))
+        )
+        > 0.1
+    )
+    # One index wire per factor of two in the term count, plus the ladder the select
+    # needs: six terms is three index wires and one ladder ancilla, not six of either.
+    assert _labelled(output, "index_width") == "3"
+    assert _labelled(output, "ladder ancillas") == "1"
+    # The block is the *signed* sum over alpha, and the two residuals beside it are what
+    # separate the three candidate readings of it: the sum itself, and the same sum with
+    # the signs dropped, which is what a preparation carrying no relative phase gives.
+    assert float(_labelled(output, "circuit block vs H / alpha")) < 1e-6
+    assert float(_labelled(output, "circuit block vs H")) > 1.0
+    assert float(_labelled(output, "circuit block vs the sum of magnitudes")) > 0.1
+    assert float(_labelled(output, "the signed and unsigned sums differ")) > 0.1
+    # The encoding is a unitary and is not its own adjoint. The deviation is pinned as a
+    # lower bound rather than an exact value: it is the property that makes the adjoint's
+    # term reversal necessary, and a construction that was accidentally Hermitian would
+    # make the reversal untestable rather than wrong.
+    assert float(_labelled(output, "U is unitary")) < 1e-6
+    assert float(_labelled(output, "U is Hermitian")) > 1.0
+    # The walk identity is claimed on the ladder-zero subspace rather than on the whole
+    # register, and both halves are pinned: every encoded eigenvalue is attained there,
+    # and the subspace carries more eigenvalues than the encoding does, which is what
+    # "restricted" means rather than "equal".
+    assert _labelled(output, "encoded cosines attained") == "4 of 4"
+    assert int(_labelled(output, "subspace eigenvalues")) > 2 * 4
+    assert _labelled(output, "the subspace holds more than the encoding") == "True"
+    assert _labelled(output, "cosines off the endpoints") == "True"
+    assert _labelled(output, "subspace cosines").startswith("[-1.0, -1.0")
+    # The adjoint is checked as a composition over the whole register, because this
+    # construction's step is not its own adjoint and a spectrum cannot tell the two orders
+    # apart. `W^dagger W` is the assertion the reversal is what satisfies.
+    assert float(_labelled(output, "W^dagger W vs the identity")) < 1e-6
+    assert float(_labelled(output, "W W^dagger vs the identity")) < 1e-6
+    assert float(_labelled(output, "U^dagger U vs the identity")) < 1e-6
+    # Two implementations, one consumer, and the second one is the one that holds a dense
+    # matrix while this one never forms it: the same block read out of both is the
+    # replacement evidence, and the register shapes are what tell them apart.
+    assert _labelled(output, "this is a BlockEncoding") == "True"
+    assert _labelled(output, "this is a WalkEncoding") == "True"
+    assert _labelled(output, "spectral num_ancilla") == "1"
+    assert _labelled(output, "spectral alpha") == "4.5"
+    assert float(_labelled(output, "the two blocks agree")) < 1e-6
+    _assert_premise("linear_combination", output)
+
+
+def test_logical_resources_example_costs_one_program_and_refuses_the_rest() -> None:
+    output = _run("logical_resources")
+
+    assert "Logical resources -- flagquantum.algorithms.logical_resources" in output
+    # The reuse, which is the property the whole slice rests on: the report's copy
+    # of the compiler's record is printed beside the compiler's own, so a second
+    # tally would print two different numbers rather than agreeing twice.
+    for compiler_label, report_label in (
+        ("compiler n_operations", "report estimate n_operations"),
+        ("compiler depth", "report estimate depth"),
+        ("compiler t_count", "report t_count"),
+        ("compiler t_depth", "report t_depth"),
+        ("compiler per_qubit_depth", "report per_qubit_depth"),
+    ):
+        assert _labelled(output, compiler_label) == _labelled(
+            output, report_label
+        ), compiler_label
+    assert _labelled(output, "compiler n_operations") == "7"
+    assert _labelled(output, "compiler depth") == "5"
+    assert _labelled(output, "compiler per_qubit_depth") == "(5, 3, 5)"
+    assert _labelled(output, "the two records are equal") == "True"
+    # The partition: four Cliffords and three Ts over seven operations, and the T
+    # depth is not the T count.
+    assert _labelled(output, "clifford_count") == "4"
+    assert _labelled(output, "report t_count") == "3"
+    assert _labelled(output, "n_clifford_t") == "7"
+    assert _labelled(output, "report t_depth") == "2"
+    assert _labelled(output, "clifford + t == operations") == "7"
+    # The footprint at the default distance, against the model's own arithmetic.
+    assert _labelled(output, "code_distance") == "5"
+    assert _labelled(output, "physical qubits per logical") == "49"
+    assert _labelled(output, "report n_qubits") == "3"
+    assert _labelled(output, "logical_depth") == "5"
+    assert _labelled(output, "surface_code_cycles") == "25"
+    assert _labelled(output, "physical_qubits") == "147"
+    assert _labelled(output, "spacetime_volume") == "3675"
+    # The distance sweep, and the model's closed form beside it, so a row that
+    # stopped agreeing with `2 d^2 - 1` would show rather than being recomputed.
+    assert _labelled(output, "qubits/logical") == "17      49      97     161     241"
+    assert _labelled(output, "2 d^2 - 1") == _labelled(output, "qubits/logical")
+    assert _labelled(output, "cycles") == "15      25      35      45      55"
+    assert _labelled(output, "physical qubits") == "51     147     291     483     723"
+    assert (
+        _labelled(output, "spacetime volume") == "765    3675   10185   21735   39765"
+    )
+    # A measurement is outside the schedule and is charged one further layer; the
+    # tally and the qubit count are not touched by it.
+    assert _labelled(output, "n_measurements") == "0"
+    assert _labelled(output, "n_measurements, measured") == "2"
+    assert _labelled(output, "logical_depth, none") == "5"
+    assert _labelled(output, "logical_depth, measured") == "6"
+    assert _labelled(output, "cycles, measured") == "30"
+    assert _labelled(output, "physical qubits, measured") == "147"
+    assert _labelled(output, "tally, measured") == "(4, 3)"
+    # The serialized record, under the maturity schema's own field name.
+    assert _labelled(output, "kind") == "flagquantum.logical_resource_report"
+    assert _labelled(output, "basis") == "clifford_t_tally_times_surface_code_distance"
+    assert _labelled(output, "surface_code_model") == "rotated_surface_code_2d"
+    assert _labelled(output, "estimate kind") == "flagquantum.resource_estimate"
+    assert _labelled(output, "capability_evidence keys") == "['limitations']"
+    # Each refusal, and the two kinds of argument refusal distinguished by type:
+    # a distance or a logical count that is out of range is a ValueError, and one
+    # that is not an integer at all is a TypeError.
+    assert "NOT REFUSED" not in output
+    for label in (
+        "one parametric rotation",
+        "several parametric rotations",
+        "a Toffoli",
+        "a controlled swap",
+        "a Toffoli beside a rotation",
+        "a Trotter step",
+        "a lowered noise channel",
+    ):
+        assert "CapabilityError" in _labelled(output, label), label
+    for label in ("distance below three", "an even distance"):
+        assert "ValueError" in _labelled(output, label), label
+    assert "TypeError" in _labelled(output, "a distance that is not an integer")
+    assert "ValueError" in _labelled(
+        output, "a distance below three, at the entry point"
+    )
+    assert "ValueError" in _labelled(output, "zero logical qubits")
+    assert "TypeError" in _labelled(output, "a logical count that is not an integer")
+    # The logical ledger is the caller's, not inferred from the register.
+    assert _labelled(output, "charged for one") == "49"
+    assert _labelled(output, "charged for the register") == "147"
+    assert _labelled(output, "charged for eight") == "392"
+    _assert_premise("logical_resources", output)
+    assert "take away" in output
+
+
+def test_arithmetic_example_sums_and_hands_the_cost_to_the_compiler() -> None:
+    output = _run("arithmetic")
+
+    assert "Reversible addition -- flagquantum.algorithms.arithmetic" in output
+    # The construction's own shape, at the default width and across the sweep: the
+    # per-width row is printed against the closed form the module documents, so a
+    # construction that changed would print two different rows rather than one
+    # agreeing pair.
+    assert _labelled(output, "wires") == "8"
+    assert _labelled(output, "operations") == "25"
+    assert _labelled(output, "ccx") == "6"
+    assert _labelled(output, "cx") == "19"
+    assert _labelled(output, "opcodes present") == "['ccx', 'cx']"
+    assert _labelled(output, "register a") == "wires (0, 1, 2) (most significant first)"
+    assert _labelled(output, "working carry wire") == "6"
+    assert _labelled(output, "carry-out wire") == "7"
+    # The sweep's labels repeat, so the last one printed wins: the per-width table
+    # and the lowered table below it both use `n_bits`.
+    assert (
+        _labelled(output, "operations, measured")
+        == "9     17     25     33     41     65     73"
+    )
+    assert (
+        _labelled(output, "working ancillas")
+        == "1      1      1      1      1      1      1"
+    )
+    # The sum, read out of the runtime's state vector rather than asserted: the
+    # first addend is unchanged, the second holds the sum modulo 2**n, both
+    # ancillas are clean, and the weight is one because the map is a permutation.
+    assert _labelled(output, "1 + 1") == "a=1 b=2 carry=0 carry_out=0 weight=1.000000"
+    assert _labelled(output, "7 + 1") == "a=7 b=0 carry=0 carry_out=1 weight=1.000000"
+    assert _labelled(output, "7 + 7") == "a=7 b=6 carry=0 carry_out=1 weight=1.000000"
+    # Off the ancilla contract the two wires do not behave alike, and both facts
+    # are measured over every input rather than described: a dirty carry-out wire
+    # cannot change the sum, and a dirty carry wire is neither the sum nor the
+    # sum-with-carry-in.
+    assert _labelled(output, "a=1 b=1, carry wire dirty") == "reached (1, 3, 1, 0)"
+    assert (
+        _labelled(output, "a dirty carry-out wire, over every input")
+        == "0 of 64 do not sum, and the top wire is XORed"
+    )
+    assert (
+        _labelled(output, "a dirty carry wire, over every input")
+        == "64 of 64 are neither the sum nor the sum-with-carry-in"
+    )
+    # The Toffoli rule read from the compiler, and the linear cost that follows: an
+    # expansion written into the arithmetic module would print a different
+    # `operation counts` here.
+    assert _labelled(output, "one ccx, operations") == "15"
+    assert (
+        _labelled(output, "one ccx, operation counts")
+        == "{'h': 2, 'cx': 6, 'tdg': 3, 't': 4}"
+    )
+    assert _labelled(output, "one ccx, t_count") == "7"
+    assert (
+        _labelled(output, "t_count") == "14     28     42     56     70    112    126"
+    )
+    assert _labelled(output, "14 n") == _labelled(output, "t_count")
+    assert (
+        _labelled(output, "operations, lowered")
+        == "37     73    109    145    181    289    325"
+    )
+    # The logical figure is a floor, and the surface-code model's own product is
+    # what the rows have to agree with.
+    assert _labelled(output, "distance") == "5"
+    assert _labelled(output, "n_bits=2") == (
+        "t_count=28 physical_qubits=294 cycles=275"
+    )
+    assert _labelled(output, "n_bits=4") == (
+        "t_count=56 physical_qubits=490 cycles=545"
+    )
+    # The conversion bound refuses by name and then yields to the caller's own
+    # bound, so the refusal is a bound rather than a limit of the construction.
+    assert (
+        _labelled(output, "n_bits=10 at the default")
+        == "refused -- BasisConversionError: named-basis decomposition exceeds "
+        "max_added_operations"
+    )
+    assert _labelled(output, "n_bits=10, bound raised to 1024") == "t_count=140"
+    # Both entry points refuse the same widths, and for the same two reasons.
+    for label in ("zero bits", "a negative width"):
+        for entry in ("adder_circuit", "adder_qubits"):
+            assert "ValueError" in _labelled(output, f"{label}, {entry}"), label
+    for label in (
+        "a float width",
+        "a width given as text",
+        "a width given as a truth value",
+    ):
+        for entry in ("adder_circuit", "adder_qubits"):
+            assert "TypeError" in _labelled(output, f"{label}, {entry}"), label
+    _assert_premise("arithmetic", output)
     assert "take away" in output
 
 

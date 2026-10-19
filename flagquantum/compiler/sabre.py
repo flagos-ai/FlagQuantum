@@ -248,7 +248,7 @@ def plan_sabre_swaps(
 
     n_wires = program.n_wires
     if coupling.n_qubits < n_wires:
-        raise ValueError("Coupling map has fewer wires than the circuit.")
+        raise ValueError("Coupling map has fewer qubits than the circuit.")
     placement = _validated_layout(initial_layout, n_wires)
     instructions = program.instructions
     count = len(instructions)
@@ -700,7 +700,7 @@ def plan_sabre_layout(
 
     n_wires = program.n_wires
     if coupling.n_qubits < n_wires:
-        raise ValueError("Coupling map has fewer wires than the circuit.")
+        raise ValueError("Coupling map has fewer qubits than the circuit.")
     if rounds < 0:
         raise ValueError("rounds must be non-negative")
     identity = tuple(range(n_wires))

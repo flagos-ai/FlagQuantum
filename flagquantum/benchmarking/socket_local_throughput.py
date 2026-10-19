@@ -115,6 +115,22 @@ def latency_summary(samples: Sequence[float]) -> dict[str, Any]:
     }
 
 
+def _sched_getaffinity() -> set[int]:
+    """Return the CPUs this process may run on.
+
+    ``os.sched_getaffinity`` is declared by the ``typeshed`` stub only for the
+    platforms whose scheduler provides it, so reading it directly is a static
+    error on the hosts this module is developed on and a runtime error on the
+    hosts it refuses. Reading it through ``getattr`` makes both of those one
+    explicit refusal instead of a platform-dependent attribute.
+    """
+
+    reader = getattr(os, "sched_getaffinity", None)
+    if reader is None:
+        raise RuntimeError("socket-local affinity requires Linux sched_getaffinity")
+    return {int(cpu) for cpu in reader(0)}
+
+
 def _configure_worker(cpu_group: Sequence[int], threads: int) -> tuple[int, ...]:
     if not hasattr(os, "sched_setaffinity"):
         raise RuntimeError("socket-local affinity requires Linux sched_setaffinity")
@@ -161,7 +177,7 @@ def _worker_subprocess_main(payload_text: str) -> int:
                 "worker": worker,
                 "pid": os.getpid(),
                 "taskset_cpus": assigned_cpus,
-                "observed_main_thread_cpus": sorted(os.sched_getaffinity(0)),
+                "observed_main_thread_cpus": sorted(_sched_getaffinity()),
             }
         ),
         flush=True,
@@ -424,7 +440,7 @@ def _validate_matrix(
         split_cpu_groups(cpus, count)
         if total_tasks < count or total_tasks % count:
             raise ValueError("total_tasks must be divisible by every worker count")
-    available = os.sched_getaffinity(0)
+    available = _sched_getaffinity()
     unavailable = sorted(set(cpus) - available)
     if unavailable:
         raise ValueError(f"requested CPUs are outside process affinity: {unavailable}")

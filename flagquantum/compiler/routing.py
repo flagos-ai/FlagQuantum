@@ -1,21 +1,29 @@
-"""Compiler-owned coupling maps and topology-aware SWAP routing."""
+"""Topology-aware SWAP routing over an undirected or ordered coupling map.
+
+The two device types this module routes against are declared next door:
+``flagquantum/compiler/coupling.py`` owns the undirected ``CouplingMap`` and
+``flagquantum/compiler/directed_topology.py`` owns the ordered one. Both are
+re-exported here, because the routing entries are what a consumer asks first and
+a caller holding a routing plan should not have to learn which module defines the
+device the plan names.
+"""
 
 from __future__ import annotations
 
-from collections import OrderedDict, deque
-from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field, replace
-from threading import Lock
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
+from types import MappingProxyType
 from typing import Any
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from .coupling import UNREACHABLE_DISTANCE as UNREACHABLE_DISTANCE
+from .coupling import CouplingMap as CouplingMap
+from .operand_semantics import (
+    _require_multi_qubit_device_local,
+)
 from .ordering_barrier import is_ordering_barrier
+from .routing_cost import _PricedDevice, _topology_cost_model, _TopologyCostModel
 from .sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
-
-# Dense distance-matrix entry for a physical qubit pair with no coupling path.
-# A coupling map is a graph, so most pairs of a production device are far
-# apart but still reachable; this value is reserved for genuine disconnection.
-UNREACHABLE_DISTANCE = -1
 
 # The routing strategies a caller may request. This is the authoritative
 # vocabulary: the `program_compilation` limitations in `capability-maturity.toml`
@@ -32,387 +40,37 @@ ROUTING_STRATEGIES = (
 # The two strategies that plan SWAPs from a search rather than estimating them.
 SABRE_ROUTING_STRATEGIES = ("sabre", "sabre_layout")
 
-# The physical couplings a multi-qubit instruction needs, as operand index pairs.
-# This is the authoritative vocabulary for multi-qubit locality in the Compiler:
-# the pairs are the instruction's real two-qubit interactions, taken from Core's
-# operand order (`ccx` is control1/control2/target and conjugates on the target;
-# `cswap` is control/target1/target2 and exchanges under the control), so the
-# requirement is not that the operands form a chain. The opcodes are Core's
-# arity-three operands, and
-# `tests/team/compiler/test_multi_wire_routing_locality.py` fails when a Core
-# arity of three or more has no entry here.
-_MULTI_QUBIT_OPERAND_PAIRS: dict[str, tuple[tuple[int, int], ...]] = {
-    "ccx": ((0, 2), (1, 2)),
-    "cswap": ((0, 1), (0, 2)),
-}
-
-
-def _breadth_first_distances(
-    adjacency: tuple[tuple[int, ...], ...],
-    source: int,
-) -> tuple[int, ...]:
-    """Return undirected hop counts from one qubit to every qubit."""
-
-    distances = [UNREACHABLE_DISTANCE] * len(adjacency)
-    distances[source] = 0
-    queue: deque[int] = deque((source,))
-    while queue:
-        qubit = queue.popleft()
-        level = distances[qubit] + 1
-        for neighbor in adjacency[qubit]:
-            if distances[neighbor] == UNREACHABLE_DISTANCE:
-                distances[neighbor] = level
-                queue.append(neighbor)
-    return tuple(distances)
-
-
-@dataclass(frozen=True)
-class CouplingMap:
-    """Undirected hardware connectivity used by native routing passes."""
-
-    n_qubits: int
-    edges: tuple[tuple[int, int], ...]
-    _adjacency: tuple[tuple[int, ...], ...] = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    _path_cache: OrderedDict[tuple[int, int], tuple[int, ...]] = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    path_cache_capacity: int = field(default=4096, compare=False, hash=False)
-    _path_cache_lock: Lock = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    _path_cache_hits: int = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    _path_cache_misses: int = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    _path_cache_evictions: int = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    _distance_rows: OrderedDict[int, tuple[int, ...]] = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    _distance_hits: int = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    _distance_misses: int = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-    _distance_evictions: int = field(
-        init=False,
-        repr=False,
-        compare=False,
-        hash=False,
-    )
-
-    def __init__(
-        self,
-        n_qubits: int,
-        edges: Iterable[tuple[int, int]],
-        *,
-        path_cache_capacity: int = 4096,
-    ) -> None:
-        if type(n_qubits) is not int:
-            raise ValueError("Coupling qubit count must be an integer.")
-        if n_qubits <= 0:
-            raise ValueError("Coupling map requires a positive qubit count.")
-        if type(path_cache_capacity) is not int:
-            raise ValueError("Path cache capacity must be an integer.")
-        if path_cache_capacity == 1 or path_cache_capacity < 0:
-            raise ValueError("Path cache capacity must be zero or at least two.")
-        normalized = []
-        seen = set()
-        for left, right in edges:
-            if type(left) is not int or type(right) is not int:
-                raise ValueError("Coupling edge endpoints must be integers.")
-            if left < 0 or right < 0 or left >= n_qubits or right >= n_qubits:
-                raise ValueError("Coupling edge contains a qubit outside the device.")
-            if left == right:
-                continue
-            edge = (min(left, right), max(left, right))
-            if edge not in seen:
-                normalized.append(edge)
-                seen.add(edge)
-        object.__setattr__(self, "n_qubits", int(n_qubits))
-        object.__setattr__(self, "edges", tuple(normalized))
-        adjacency: list[set[int]] = [set() for _ in range(n_qubits)]
-        for left, right in normalized:
-            adjacency[left].add(right)
-            adjacency[right].add(left)
-        object.__setattr__(
-            self,
-            "_adjacency",
-            tuple(tuple(sorted(neighbors)) for neighbors in adjacency),
-        )
-        object.__setattr__(self, "path_cache_capacity", path_cache_capacity)
-        object.__setattr__(self, "_path_cache", OrderedDict())
-        object.__setattr__(self, "_path_cache_lock", Lock())
-        object.__setattr__(self, "_path_cache_hits", 0)
-        object.__setattr__(self, "_path_cache_misses", 0)
-        object.__setattr__(self, "_path_cache_evictions", 0)
-        object.__setattr__(self, "_distance_rows", OrderedDict())
-        object.__setattr__(self, "_distance_hits", 0)
-        object.__setattr__(self, "_distance_misses", 0)
-        object.__setattr__(self, "_distance_evictions", 0)
-
-    @classmethod
-    def line(
-        cls,
-        n_qubits: int,
-        *,
-        path_cache_capacity: int = 4096,
-    ) -> "CouplingMap":
-        if type(n_qubits) is not int:
-            raise ValueError("Coupling qubit count must be an integer.")
-        return cls(
-            n_qubits,
-            ((qubit, qubit + 1) for qubit in range(n_qubits - 1)),
-            path_cache_capacity=path_cache_capacity,
-        )
-
-    @classmethod
-    def ring(
-        cls,
-        n_qubits: int,
-        *,
-        path_cache_capacity: int = 4096,
-    ) -> "CouplingMap":
-        if type(n_qubits) is not int:
-            raise ValueError("Coupling qubit count must be an integer.")
-        edges = [(qubit, qubit + 1) for qubit in range(n_qubits - 1)]
-        if n_qubits > 2:
-            edges.append((n_qubits - 1, 0))
-        return cls(
-            n_qubits,
-            edges,
-            path_cache_capacity=path_cache_capacity,
-        )
-
-    @classmethod
-    def grid(
-        cls,
-        rows: int,
-        cols: int,
-        *,
-        path_cache_capacity: int = 4096,
-    ) -> "CouplingMap":
-        if type(rows) is not int or type(cols) is not int:
-            raise ValueError("Coupling grid dimensions must be integers.")
-        if rows <= 0 or cols <= 0:
-            raise ValueError("Coupling grid dimensions must be positive.")
-        edges = []
-        for row in range(rows):
-            for col in range(cols):
-                qubit = row * cols + col
-                if col + 1 < cols:
-                    edges.append((qubit, qubit + 1))
-                if row + 1 < rows:
-                    edges.append((qubit, qubit + cols))
-        return cls(
-            rows * cols,
-            edges,
-            path_cache_capacity=path_cache_capacity,
-        )
-
-    def _validate_qubit(self, qubit: int) -> int:
-        if type(qubit) is not int:
-            raise ValueError("Coupling qubit index must be an integer.")
-        if qubit < 0 or qubit >= self.n_qubits:
-            raise ValueError(
-                f"Coupling qubit {qubit} is outside [0, {self.n_qubits - 1}]."
-            )
-        return qubit
-
-    def neighbors(self, qubit: int) -> tuple[int, ...]:
-        qubit = self._validate_qubit(qubit)
-        return self._adjacency[qubit]
-
-    def has_edge(self, left: int, right: int) -> bool:
-        left = self._validate_qubit(left)
-        right = self._validate_qubit(right)
-        return right in self._adjacency[left]
-
-    def shortest_path(self, start: int, goal: int) -> tuple[int, ...]:
-        """Return the canonical shortest path between two physical qubits.
-
-        The path is a function of the pair, not of how the pair was asked for.
-        :meth:`distance` reports a hop count, which is unique, but a pair can have
-        two shortest routes of equal length: on a ring the two arcs around it have
-        the same hop count, and a path graph resolves a pair through the only route
-        it has. Breadth-first search returns whichever route its adjacency order
-        reaches first, so expanding from the endpoint that was asked would choose
-        between equal routes by direction, and the mirrored entry cached below
-        would then hand the next caller a route that caller's own search would not
-        have produced. Expanding from the lower-indexed endpoint keeps the two
-        directions exact reverses of each other and makes a reused device inert.
-        """
-
-        start = self._validate_qubit(start)
-        goal = self._validate_qubit(goal)
-        cache_key = (start, goal)
-        with self._path_cache_lock:
-            cached = self._path_cache.get(cache_key)
-            if cached is not None:
-                self._path_cache.move_to_end(cache_key)
-                object.__setattr__(self, "_path_cache_hits", self._path_cache_hits + 1)
-                return cached
-            object.__setattr__(
-                self,
-                "_path_cache_misses",
-                self._path_cache_misses + 1,
-            )
-        if start == goal:
-            identity_path = (start,)
-            self._cache_paths((cache_key, identity_path))
-            return identity_path
-        first, second = (start, goal) if start < goal else (goal, start)
-        parents = {first: -1}
-        queue: deque[int] = deque([first])
-        while queue:
-            qubit = queue.popleft()
-            for neighbor in self.neighbors(qubit):
-                if neighbor in parents:
-                    continue
-                parents[neighbor] = qubit
-                if neighbor == second:
-                    path_nodes = [second]
-                    while path_nodes[-1] != first:
-                        path_nodes.append(parents[path_nodes[-1]])
-                    resolved = tuple(reversed(path_nodes))
-                    forward, backward = (
-                        (resolved, tuple(reversed(resolved)))
-                        if start < goal
-                        else (tuple(reversed(resolved)), resolved)
-                    )
-                    self._cache_paths((cache_key, forward), ((goal, start), backward))
-                    return forward
-                queue.append(neighbor)
-        raise ValueError(f"No coupling path between qubits {start} and {goal}.")
-
-    def _cache_paths(
-        self,
-        *entries: tuple[tuple[int, int], tuple[int, ...]],
-    ) -> None:
-        if self.path_cache_capacity == 0:
-            return
-        with self._path_cache_lock:
-            for key, path in entries:
-                self._path_cache[key] = path
-                self._path_cache.move_to_end(key)
-                while len(self._path_cache) > self.path_cache_capacity:
-                    self._path_cache.popitem(last=False)
-                    object.__setattr__(
-                        self,
-                        "_path_cache_evictions",
-                        self._path_cache_evictions + 1,
-                    )
-
-    def distance(self, left: int, right: int) -> int:
-        """Return the undirected hop count between two physical qubits.
-
-        Raises:
-            ValueError: If either qubit is outside the device or the two qubits
-                are not connected by any coupling path.
-        """
-
-        left = self._validate_qubit(left)
-        right = self._validate_qubit(right)
-        distance = self._distance_row(left)[right]
-        if distance == UNREACHABLE_DISTANCE:
-            raise ValueError(f"No coupling path between qubits {left} and {right}.")
-        return distance
-
-    def distance_matrix(self) -> tuple[tuple[int, ...], ...]:
-        """Return the dense hop-count matrix over every ordered qubit pair.
-
-        Row and column indices are physical qubit indices, so entry
-        ``matrix[left][right]`` is the undirected distance used by
-        :meth:`distance`. Entries equal to :data:`UNREACHABLE_DISTANCE` mean
-        the pair has no coupling path. The matrix is symmetric with a zero
-        diagonal, and building it costs one breadth-first search per qubit.
-        """
-
-        return tuple(self._distance_row(source) for source in range(self.n_qubits))
-
-    def distance_cache_info(self) -> dict[str, int]:
-        """Return bounded-cache diagnostics for the distance index."""
-
-        with self._path_cache_lock:
-            return {
-                "capacity": self.path_cache_capacity,
-                "size": len(self._distance_rows),
-                "hits": self._distance_hits,
-                "misses": self._distance_misses,
-                "evictions": self._distance_evictions,
-            }
-
-    def _distance_row(self, source: int) -> tuple[int, ...]:
-        """Return the cached all-qubit distance row rooted at one qubit."""
-
-        with self._path_cache_lock:
-            cached = self._distance_rows.get(source)
-            if cached is not None:
-                self._distance_rows.move_to_end(source)
-                object.__setattr__(self, "_distance_hits", self._distance_hits + 1)
-                return cached
-            object.__setattr__(self, "_distance_misses", self._distance_misses + 1)
-        row = _breadth_first_distances(self._adjacency, source)
-        if self.path_cache_capacity:
-            with self._path_cache_lock:
-                self._distance_rows[source] = row
-                self._distance_rows.move_to_end(source)
-                while len(self._distance_rows) > self.path_cache_capacity:
-                    self._distance_rows.popitem(last=False)
-                    object.__setattr__(
-                        self, "_distance_evictions", self._distance_evictions + 1
-                    )
-        return row
-
-    def path_cache_info(self) -> dict[str, int]:
-        """Return bounded-cache diagnostics for compiler observability."""
-
-        with self._path_cache_lock:
-            return {
-                "capacity": self.path_cache_capacity,
-                "size": len(self._path_cache),
-                "hits": self._path_cache_hits,
-                "misses": self._path_cache_misses,
-                "evictions": self._path_cache_evictions,
-            }
+# The strategies whose plan the deployment routing contract accepts, which is the
+# candidate set an automatic choice may pick from: `auto` must not hand a caller a
+# program that fail-closed deployment then refuses. `sabre_layout` is the one
+# strategy outside this set, and the reason is structural rather than a ranking: it
+# starts from a layout `plan_sabre_layout` searched for, so its
+# `initial_logical_to_physical` is the identity on only 23 of the 60 programs in
+# `tests/team/compiler/test_routing_conformance.py`, while
+# `flagquantum/deployment/routing_evidence.py` requires the identity because a
+# deployment artifact must state a physical starting assignment a provider can
+# reproduce. It stays a caller-selected strategy and stays priceable, so a caller
+# whose provider accepts a permuted start can still ask for it by name.
+# `flagquantum/deployment/routing_evidence.py` reads this constant, so the
+# accepted set and the selectable set cannot drift apart.
+DEPLOYABLE_ROUTING_STRATEGIES = (
+    "restore_after_each_gate",
+    "persistent_layout",
+    "sabre",
+)
 
 
 @dataclass(frozen=True)
 class RoutingCostEstimate:
-    """Lightweight routing size estimate without materializing instructions."""
+    """Lightweight routing size estimate without materializing instructions.
+
+    ``direction_swap_count`` is the part of ``planned_inserted_swap_count`` an
+    undirected device cannot produce: it counts the hops inserted only because a
+    gate's operands run against the direction its link is declared in. It is zero
+    on an undirected device, where no link has a direction to run against, and
+    ``direction_semantics`` states which of the two devices the estimate was taken
+    against.
+    """
 
     strategy: str
     source_instruction_count: int
@@ -424,6 +82,8 @@ class RoutingCostEstimate:
     pre_restore_logical_to_physical: tuple[int, ...]
     final_logical_to_physical: tuple[int, ...]
     path_cache_delta: dict[str, int]
+    direction_semantics: str = "logical_wire_order_preserved"
+    direction_swap_count: int = 0
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -433,6 +93,8 @@ class RoutingCostEstimate:
             "topology_gate_count": self.topology_gate_count,
             "routed_gate_count": self.routed_gate_count,
             "planned_inserted_swap_count": self.planned_inserted_swap_count,
+            "direction_semantics": self.direction_semantics,
+            "direction_swap_count": self.direction_swap_count,
             "skipped_channel_count": self.skipped_channel_count,
             "pre_restore_logical_to_physical": (self.pre_restore_logical_to_physical),
             "final_logical_to_physical": self.final_logical_to_physical,
@@ -442,95 +104,272 @@ class RoutingCostEstimate:
 
 @dataclass(frozen=True)
 class RoutingStrategySelection:
-    """Auditable strategy choice made before routed IR materialization."""
+    """Auditable strategy choice made from the planning cost of every strategy.
+
+    ``candidates`` holds one priced estimate per name in
+    ``DEPLOYABLE_ROUTING_STRATEGIES``, in that order, so the record states both the
+    choice and what it was chosen over. The set is the deployment contract's, not
+    the whole routing vocabulary, because a choice the contract refuses is not a
+    choice a caller can deploy. It is an immutable view rather than a dict a caller
+    can edit, because the record is written into compile metadata as the evidence
+    of the choice.
+    """
 
     selected_strategy: str
-    restore_after_each_gate: RoutingCostEstimate
-    persistent_layout: RoutingCostEstimate
+    candidates: Mapping[str, RoutingCostEstimate]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "candidates", MappingProxyType(dict(self.candidates)))
 
     def summary(self) -> dict[str, Any]:
         return {
             "schema": "flagquantum_routing_strategy_selection_v1",
             "objective": "minimize_planned_inserted_swaps_then_instructions",
             "selected_strategy": self.selected_strategy,
-            "tie_breaker": "restore_after_each_gate",
+            "tie_breaker": "candidate_order",
             "candidates": {
-                "restore_after_each_gate": (self.restore_after_each_gate.summary()),
-                "persistent_layout": self.persistent_layout.summary(),
+                name: estimate.summary() for name, estimate in self.candidates.items()
             },
         }
 
 
-def estimate_routing_cost(
-    circuit_or_ir: Any,
-    coupling_map: CouplingMap | Iterable[tuple[int, int]],
-    *,
-    strategy: str = "restore_after_each_gate",
-) -> RoutingCostEstimate:
-    """Estimate routing growth without constructing routed instructions."""
+def _is_routable_two_wire_gate(instruction: Instruction) -> bool:
+    """Report whether a routing strategy inserts SWAPs for this instruction's qubits.
 
-    if strategy not in {"restore_after_each_gate", "persistent_layout"}:
-        raise ValueError(
-            "routing cost estimate supports 'restore_after_each_gate' or "
-            "'persistent_layout'; 'sabre' and 'sabre_layout' plan SWAPs instead "
-            "of estimating them"
-        )
-    ir = ensure_circuit_ir(circuit_or_ir)
-    coupling = (
-        coupling_map
-        if isinstance(coupling_map, CouplingMap)
-        else CouplingMap(ir.n_wires, coupling_map)
-    )
-    if coupling.n_qubits < ir.n_wires:
-        raise ValueError("Coupling map has fewer qubits than the circuit.")
+    The SWAP estimate and a planner's placements have to answer this the same way,
+    or the price and the plan disagree about which gates the strategy moved. A
+    channel moves with its qubits and an ordering barrier moves nothing at all, so
+    neither is a gate a strategy prices.
+    """
 
-    cache_before = coupling.path_cache_info()
-    logical_to_physical = list(range(ir.n_wires))
-    physical_to_logical = list(range(ir.n_wires))
+    if is_ordering_barrier(instruction):
+        return False
+    return len(instruction.wires) == 2 and not instruction.metadata.get("is_channel")
+
+
+def _source_routing_counts(
+    ir: CircuitIR,
+    topology: _TopologyCostModel,
+) -> tuple[int, int, int]:
+    """Return the source program's topology, routed, and skipped-channel counts.
+
+    These three describe a program against one device, and every strategy reports
+    them the same way: a two-qubit operation is a topology gate, one the device
+    cannot execute as written is also a routed gate, and a two-qubit channel is
+    neither because routing may not move a channel -- and an ordering barrier is
+    excluded at every width because it is not a gate. On an ordered device "as
+    written" is a claim about the operands, so a CX written against its link's
+    declared direction counts as routed work rather than as a gate the device
+    already carries. Counting them in one place keeps a strategy's routing
+    metadata and its cost estimate from disagreeing about the same program.
+    """
+
     topology_gate_count = 0
     routed_gate_count = 0
-    forward_swap_count = 0
     skipped_channel_count = 0
     for instruction in ir:
-        if len(instruction.wires) != 2 or is_ordering_barrier(instruction):
+        if is_ordering_barrier(instruction) or len(instruction.wires) != 2:
             continue
         if instruction.metadata.get("is_channel"):
             skipped_channel_count += 1
             continue
         topology_gate_count += 1
-        mapped_qubits = tuple(logical_to_physical[qubit] for qubit in instruction.wires)
-        if coupling.has_edge(*mapped_qubits):
-            continue
-        path = coupling.shortest_path(*mapped_qubits)
-        if any(qubit >= ir.n_wires for qubit in path):
-            raise ValueError(
-                "Routing through physical ancilla qubits outside the circuit IR "
-                "is not supported; provide an explicit layout/lowering step."
-            )
-        routed_gate_count += 1
-        gate_swap_count = max(0, len(path) - 2)
-        forward_swap_count += gate_swap_count
-        if strategy == "persistent_layout":
-            for path_index in range(gate_swap_count):
-                left = path[path_index]
-                right = path[path_index + 1]
-                left_logical = physical_to_logical[left]
-                right_logical = physical_to_logical[right]
-                physical_to_logical[left], physical_to_logical[right] = (
-                    right_logical,
-                    left_logical,
-                )
-                logical_to_physical[left_logical] = right
-                logical_to_physical[right_logical] = left
+        if not topology.executes(instruction, instruction.wires):
+            routed_gate_count += 1
+    return topology_gate_count, routed_gate_count, skipped_channel_count
 
+
+def _estimate_swap_plan(
+    ir: CircuitIR,
+    topology: _TopologyCostModel,
+    *,
+    strategy: str,
+) -> tuple[int, tuple[int, ...], int]:
+    """Estimate the SWAPs one estimating strategy inserts, and its mid-plan layout.
+
+    The estimate replays the strategy's layout bookkeeping over the program's qubit
+    pairs instead of emitting instructions, which is what keeps it cheap.
+    ``restore_after_each_gate`` returns to the identity layout after every gate, so
+    it pays each hop twice and ends where it started; ``persistent_layout`` keeps
+    the layout it reached, so it pays each hop once and reports where it finished.
+
+    The third result is the direction cost: the number of extra hops that exist
+    only because the device orders its links, counted on the same placement the
+    router emits -- the last hop of the path for ``restore_after_each_gate``, the
+    post-move qubits for ``persistent_layout``. Those hops are already included in
+    the first result, because an orientation SWAP is a SWAP like any other; the
+    count is returned separately so the record states why the price is higher than
+    the same program on the undirected projection of the same device.
+
+    Returns:
+        ``(planned_inserted_swap_count, pre_restore_logical_to_physical,
+        direction_swap_count)``.
+    """
+
+    logical_to_physical = list(range(ir.n_wires))
+    physical_to_logical = list(range(ir.n_wires))
+
+    def apply_swap(left: int, right: int) -> None:
+        left_logical = physical_to_logical[left]
+        right_logical = physical_to_logical[right]
+        physical_to_logical[left], physical_to_logical[right] = (
+            right_logical,
+            left_logical,
+        )
+        logical_to_physical[left_logical] = right
+        logical_to_physical[right_logical] = left
+
+    forward_swap_count = 0
+    direction_swap_count = 0
+    for instruction in ir:
+        if not _is_routable_two_wire_gate(instruction):
+            continue
+        mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
+        if topology.executes(instruction, mapped_wires):
+            placement = mapped_wires
+        else:
+            path = topology.path(mapped_wires)
+            if any(wire >= ir.n_wires for wire in path):
+                raise ValueError(
+                    "Routing through physical ancilla qubits outside the circuit IR "
+                    "is not supported; provide an explicit layout/lowering step."
+                )
+            gate_swap_count = max(0, len(path) - 2)
+            forward_swap_count += gate_swap_count
+            if strategy == "persistent_layout":
+                for path_index in range(gate_swap_count):
+                    apply_swap(path[path_index], path[path_index + 1])
+                placement = tuple(
+                    logical_to_physical[wire] for wire in instruction.wires
+                )
+            else:
+                placement = (path[-2], path[-1])
+        if topology.needs_orientation_swap(instruction, placement):
+            forward_swap_count += 1
+            direction_swap_count += 1
+            if strategy == "persistent_layout":
+                apply_swap(*placement)
     identity_layout = tuple(range(ir.n_wires))
     pre_restore_layout = (
         tuple(logical_to_physical)
         if strategy == "persistent_layout"
         else identity_layout
     )
-    planned_swaps = 2 * forward_swap_count
-    cache_after = coupling.path_cache_info()
+    return 2 * forward_swap_count, pre_restore_layout, direction_swap_count
+
+
+def _count_sabre_orientation_swaps(
+    ir: CircuitIR,
+    topology: _TopologyCostModel,
+    placements: tuple[tuple[int, ...], ...],
+) -> int:
+    """Count the gates one planned placement leaves on their link the wrong way.
+
+    A planner reports where it places every source instruction, so the count is
+    read off that placement rather than re-derived, and the price of a planned plan
+    describes the plan the caller will get. Each counted gate costs two SWAPs: the
+    materializer wraps it in a SWAP sandwich, so the plan's own layout bookkeeping
+    survives the repair and the rest of the plan stays valid.
+    """
+
+    return sum(
+        1
+        for index, instruction in enumerate(ir)
+        if _is_routable_two_wire_gate(instruction)
+        and topology.needs_orientation_swap(instruction, tuple(placements[index]))
+    )
+
+
+def estimate_routing_cost(
+    circuit_or_ir: Any,
+    coupling_map: _PricedDevice,
+    *,
+    strategy: str = "restore_after_each_gate",
+) -> RoutingCostEstimate:
+    """Estimate one strategy's routing growth without emitting routed instructions.
+
+    Every name in ``ROUTING_STRATEGIES`` is priceable. The two estimating
+    strategies are priced by replaying their layout bookkeeping over the program's
+    qubit pairs; the two SABRE strategies are priced by planning their SWAPs, which
+    is the work ``route_to_topology`` would do anyway, so a planned price is the
+    count the chosen strategy will insert rather than a bound on it. Pricing all
+    four is what lets ``select_routing_strategy`` compare a planner against an
+    estimate.
+
+    A ``DirectedCouplingMap`` costs more than its own undirected projection, and
+    the difference is the whole point: a gate placed on a link whose declared
+    direction is the opposite of its operands needs one extra SWAP across that
+    link, so an ordered device prices into ``planned_inserted_swap_count`` the
+    hops that exist only because the links are ordered. ``direction_swap_count``
+    states how many of those hops that is, so a caller can see the ordering cost
+    rather than infer it from a total. The planners behind ``sabre`` and
+    ``sabre_layout`` are priced on the weak projection and repaired the same way,
+    so every name in the vocabulary is comparable on one quantity.
+
+    Args:
+        circuit_or_ir: The program to price.
+        coupling_map: The device to price it against, as a ``CouplingMap``, a
+            ``DirectedCouplingMap``, an edge sequence, or a cost model this module
+            already built. A model is priced unchanged rather than rebuilt, which
+            is what lets ``select_routing_strategy`` price several strategies
+            against one weak projection and one path cache.
+        strategy: One of ``ROUTING_STRATEGIES``.
+
+    Returns:
+        The planned SWAP count, the expected instruction count, the source counts
+        the same strategy would report in routing metadata, and -- on an ordered
+        device -- how much of that SWAP count the ordering itself forced.
+
+    Raises:
+        TypeError: If ``coupling_map`` is not a device or a cost model.
+        ValueError: If ``strategy`` is not in ``ROUTING_STRATEGIES``, the coupling
+            map has fewer qubits than the circuit, a costed path leaves the
+            device, a planner cannot route the program, or a placed two-qubit
+            opcode has no recorded operand semantics.
+    """
+
+    if strategy not in ROUTING_STRATEGIES:
+        raise ValueError(
+            "routing strategy must be one of "
+            + ", ".join(repr(name) for name in ROUTING_STRATEGIES)
+        )
+    ir = ensure_circuit_ir(circuit_or_ir)
+    topology = _topology_cost_model(coupling_map, ir.n_wires, "estimate_routing_cost")
+    if topology.n_qubits < ir.n_wires:
+        raise ValueError("Coupling map has fewer qubits than the circuit.")
+
+    identity_layout = tuple(range(ir.n_wires))
+    cache_before = topology.path_cache_info()
+    topology_gate_count, routed_gate_count, skipped_channel_count = (
+        _source_routing_counts(ir, topology)
+    )
+    if strategy in SABRE_ROUTING_STRATEGIES:
+        coupling = topology.weak_coupling
+        initial_layout = (
+            plan_sabre_layout(ir, coupling)
+            if strategy == "sabre_layout"
+            else identity_layout
+        )
+        plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
+        direction_swap_count = _count_sabre_orientation_swaps(
+            ir,
+            topology,
+            plan.placements,
+        )
+        # A repaired gate is wrapped in a SWAP sandwich rather than handed a new
+        # layout, because the plan's remaining placements were costed against the
+        # layout the planner chose; the sandwich returns to it.
+        planned_swaps = (
+            len(plan.swaps)
+            + len(plan_restore_swaps(plan, coupling))
+            + 2 * direction_swap_count
+        )
+        pre_restore_layout = plan.final_logical_to_physical
+    else:
+        planned_swaps, pre_restore_layout, direction_swap_count = _estimate_swap_plan(
+            ir, topology, strategy=strategy
+        )
+    cache_after = topology.path_cache_info()
     return RoutingCostEstimate(
         strategy=strategy,
         source_instruction_count=len(ir),
@@ -545,49 +384,57 @@ def estimate_routing_cost(
             key: cache_after[key] - cache_before[key]
             for key in ("hits", "misses", "evictions")
         },
+        direction_semantics=topology.direction_semantics,
+        direction_swap_count=direction_swap_count,
     )
 
 
 def select_routing_strategy(
     circuit_or_ir: Any,
-    coupling_map: CouplingMap | Iterable[tuple[int, int]],
+    coupling_map: _PricedDevice,
 ) -> RoutingStrategySelection:
-    """Select a routing strategy from lightweight cost estimates."""
+    """Select the cheapest routing strategy the deployment contract accepts.
+
+    The candidates are ``DEPLOYABLE_ROUTING_STRATEGIES``, so the automatic choice
+    can reach the ``sabre`` planner while never producing a program deployment
+    refuses. Candidates are ranked by planned inserted SWAPs and then by expected
+    instruction count; ties are broken by candidate order, which keeps the two
+    estimating strategies ahead of the planner so that an equally priced plan is
+    not planned twice.
+
+    Pricing a planner is planning it, so this call does the work
+    ``route_to_topology`` will repeat. A caller who routes once should pass the
+    strategy it wants rather than asking for ``"auto"``.
+
+    A directed device ranks the candidates on the same two quantities, and both
+    of them already include the ordering cost: a plan that has to repair a
+    wrong-way gate pays for that repair in ``planned_inserted_swap_count`` and in
+    ``estimated_instruction_count``, so the ranking compares the cost of routing
+    on the ordered device rather than the cost on its undirected projection.
+    ``direction_swap_count`` states how much of each candidate's price the ordering
+    accounts for, so the choice comes with its reason rather than only its total.
+
+    Raises:
+        TypeError: If ``coupling_map`` is not a ``CouplingMap``, a
+            ``DirectedCouplingMap``, or an edge sequence.
+        ValueError: If a placed two-qubit opcode has no recorded operand semantics,
+            so an ordered device cannot price it.
+    """
 
     ir = ensure_circuit_ir(circuit_or_ir)
-    coupling = (
-        coupling_map
-        if isinstance(coupling_map, CouplingMap)
-        else CouplingMap(ir.n_wires, coupling_map)
+    topology = _topology_cost_model(coupling_map, ir.n_wires, "select_routing_strategy")
+    candidates = {
+        name: estimate_routing_cost(ir, topology, strategy=name)
+        for name in DEPLOYABLE_ROUTING_STRATEGIES
+    }
+    selected = min(
+        DEPLOYABLE_ROUTING_STRATEGIES,
+        key=lambda name: (
+            candidates[name].planned_inserted_swap_count,
+            candidates[name].estimated_instruction_count,
+        ),
     )
-    restore = estimate_routing_cost(
-        ir,
-        coupling,
-        strategy="restore_after_each_gate",
-    )
-    persistent = estimate_routing_cost(
-        ir,
-        coupling,
-        strategy="persistent_layout",
-    )
-    persistent_cost = (
-        persistent.planned_inserted_swap_count,
-        persistent.estimated_instruction_count,
-    )
-    restore_cost = (
-        restore.planned_inserted_swap_count,
-        restore.estimated_instruction_count,
-    )
-    selected = (
-        "persistent_layout"
-        if persistent_cost < restore_cost
-        else "restore_after_each_gate"
-    )
-    return RoutingStrategySelection(
-        selected_strategy=selected,
-        restore_after_each_gate=restore,
-        persistent_layout=persistent,
-    )
+    return RoutingStrategySelection(selected_strategy=selected, candidates=candidates)
 
 
 def _swap_instruction(
@@ -615,11 +462,12 @@ def _swap_instruction(
 def _routing_metadata(
     *,
     ir: CircuitIR,
-    coupling: CouplingMap,
+    topology: _TopologyCostModel,
     strategy: str,
     topology_gate_count: int,
     routed_gate_count: int,
     inserted_swap_count: int,
+    direction_swap_count: int,
     skipped_channel_count: int,
     initial_layout: tuple[int, ...],
     pre_restore_layout: tuple[int, ...],
@@ -630,13 +478,14 @@ def _routing_metadata(
     return {
         "schema": "flagquantum_routing_plan_v1",
         "strategy": strategy,
-        "coupling_n_wires": coupling.n_qubits,
-        "coupling_edges": coupling.edges,
+        "coupling_n_wires": topology.n_qubits,
+        "coupling_edges": topology.edges,
         "initial_logical_to_physical": initial_layout,
         "pre_restore_logical_to_physical": pre_restore_layout,
         "final_logical_to_physical": identity_layout,
         "mapping_restored": True,
-        "direction_semantics": "logical_wire_order_preserved",
+        "direction_semantics": topology.direction_semantics,
+        "direction_swap_count": direction_swap_count,
         "topology_gate_count": topology_gate_count,
         "routed_gate_count": routed_gate_count,
         "inserted_swap_count": inserted_swap_count,
@@ -653,57 +502,6 @@ def _routing_metadata(
             },
         },
     }
-
-
-def _require_multi_qubit_device_local(
-    instruction: Instruction,
-    qubits: tuple[int, ...],
-    has_edge: Callable[[int, int], bool],
-) -> None:
-    """Fail closed unless a multi-qubit instruction is executable on the device.
-
-    No router in this package synthesizes a three-or-more-qubit instruction onto
-    physical couplings, and a routing strategy cannot insert SWAPs for one, so a
-    multi-qubit instruction has to be decomposable where it stands. The required
-    couplings are read from `_MULTI_QUBIT_OPERAND_PAIRS` rather than inferred from
-    the operand order, because the two known multi-qubit instructions do not
-    interact on consecutive operands; an instruction with no entry is refused
-    instead of assumed local. Two-qubit instructions keep their existing
-    SWAP-based handling.
-
-    A barrier is the one multi-qubit instruction this rule does not apply to: it
-    carries no unitary and constrains only the order of the operations around it,
-    so it needs no coupling and cannot be decomposed onto one. The optimizer, the
-    commutation rules, and the schedule legalizer already read it that way, and
-    the router is where a directive was being turned into a device operation.
-    :func:`~flagquantum.compiler.ordering_barrier.is_ordering_barrier` tells the
-    two apart, so an instruction that names the barrier while carrying a matrix
-    is a gate wearing the name and keeps the connectivity requirement below.
-    """
-
-    if len(qubits) < 3:
-        return
-    if is_ordering_barrier(instruction):
-        return
-    required = _MULTI_QUBIT_OPERAND_PAIRS.get(instruction.name)
-    if required is None:
-        raise ValueError(
-            f"multi-qubit instruction {instruction.name!r} has no verified physical "
-            f"connectivity rule: physical qubits {qubits}; decompose multi-qubit "
-            "instructions onto device couplings before routing"
-        )
-    missing = tuple(
-        (qubits[left], qubits[right])
-        for left, right in required
-        if not has_edge(qubits[left], qubits[right])
-    )
-    if missing:
-        raise ValueError(
-            f"multi-qubit instruction {instruction.name!r} requires physical "
-            f"couplings {missing} the device does not carry: physical qubits "
-            f"{qubits}; decompose multi-qubit instructions onto device couplings "
-            "before routing"
-        )
 
 
 def _remap_instruction(
@@ -730,7 +528,7 @@ def _remap_instruction(
 
 def _route_persistent_layout(
     ir: CircuitIR,
-    coupling: CouplingMap,
+    topology: _TopologyCostModel,
     *,
     path_cache_before: dict[str, int],
 ) -> CircuitIR:
@@ -739,9 +537,14 @@ def _route_persistent_layout(
     physical_to_logical = list(range(ir.n_wires))
     routed: list[Instruction] = []
     routing_swaps: list[tuple[int, int, Instruction, int]] = []
-    topology_gate_count = 0
-    routed_gate_count = 0
-    skipped_channel_count = 0
+    direction_swap_count = 0
+    # Counted against the source qubits, like every other strategy and like the
+    # cost estimate: a gate this layout happened to make local is still a gate
+    # the device did not carry, and reporting it as unrouted would make the same
+    # field mean something different per strategy.
+    topology_gate_count, routed_gate_count, skipped_channel_count = (
+        _source_routing_counts(ir, topology)
+    )
 
     def apply_mapping_swap(
         left: int,
@@ -771,12 +574,12 @@ def _route_persistent_layout(
         logical_to_physical[right_logical] = left
 
     for source_index, instruction in enumerate(ir):
-        mapped_qubits = tuple(logical_to_physical[qubit] for qubit in instruction.wires)
+        mapped_wires = tuple(logical_to_physical[wire] for wire in instruction.wires)
         if is_ordering_barrier(instruction):
             routed.append(
                 _remap_instruction(
                     instruction,
-                    mapped_qubits,
+                    mapped_wires,
                     strategy=strategy,
                     source_instruction_index=source_index,
                 )
@@ -784,39 +587,36 @@ def _route_persistent_layout(
             continue
         if len(instruction.wires) != 2:
             _require_multi_qubit_device_local(
-                instruction, mapped_qubits, coupling.has_edge
+                instruction, mapped_wires, topology.weak_edge
             )
             routed.append(
                 _remap_instruction(
                     instruction,
-                    mapped_qubits,
+                    mapped_wires,
                     strategy=strategy,
                     source_instruction_index=source_index,
                 )
             )
             continue
         if instruction.metadata.get("is_channel"):
-            skipped_channel_count += 1
             routed.append(
                 _remap_instruction(
                     instruction,
-                    mapped_qubits,
+                    mapped_wires,
                     strategy=strategy,
                     source_instruction_index=source_index,
                 )
             )
             continue
 
-        topology_gate_count += 1
-        left, right = mapped_qubits
-        if not coupling.has_edge(left, right):
-            path = coupling.shortest_path(left, right)
-            if any(qubit >= ir.n_wires for qubit in path):
+        left, right = mapped_wires
+        if not topology.executes(instruction, mapped_wires):
+            path = topology.path(mapped_wires)
+            if any(wire >= ir.n_wires for wire in path):
                 raise ValueError(
                     "Routing through physical ancilla qubits outside the circuit IR "
                     "is not supported; provide an explicit layout/lowering step."
                 )
-            routed_gate_count += 1
             for path_index in range(len(path) - 2):
                 swap = (
                     path[path_index],
@@ -832,13 +632,32 @@ def _route_persistent_layout(
                     source_instruction_index=source_index,
                 )
                 routing_swaps.append(swap)
-            mapped_qubits = tuple(
-                logical_to_physical[qubit] for qubit in instruction.wires
+            mapped_wires = tuple(
+                logical_to_physical[wire] for wire in instruction.wires
             )
+        # A link whose declared direction is the opposite of these operands needs
+        # one more hop. It is kept in the mapping like every other hop this
+        # strategy takes, so the same final restore returns it and the estimate's
+        # doubled hop count describes the program that is emitted.
+        if topology.needs_orientation_swap(instruction, mapped_wires):
+            apply_mapping_swap(
+                mapped_wires[0],
+                mapped_wires[1],
+                instruction,
+                phase="orientation",
+                source_instruction_index=source_index,
+            )
+            routing_swaps.append(
+                (mapped_wires[0], mapped_wires[1], instruction, source_index)
+            )
+            mapped_wires = tuple(
+                logical_to_physical[wire] for wire in instruction.wires
+            )
+            direction_swap_count += 1
         routed.append(
             _remap_instruction(
                 instruction,
-                mapped_qubits,
+                mapped_wires,
                 strategy=strategy,
                 source_instruction_index=source_index,
             )
@@ -859,23 +678,24 @@ def _route_persistent_layout(
     metadata = dict(ir.metadata)
     metadata["routing"] = _routing_metadata(
         ir=ir,
-        coupling=coupling,
+        topology=topology,
         strategy=strategy,
         topology_gate_count=topology_gate_count,
         routed_gate_count=routed_gate_count,
         inserted_swap_count=2 * len(routing_swaps),
+        direction_swap_count=direction_swap_count,
         skipped_channel_count=skipped_channel_count,
         initial_layout=tuple(range(ir.n_wires)),
         pre_restore_layout=pre_restore_layout,
         path_cache_before=path_cache_before,
-        path_cache_after=coupling.path_cache_info(),
+        path_cache_after=topology.path_cache_info(),
     )
     return replace(ir, instructions=tuple(routed), metadata=metadata)
 
 
 def _route_sabre(
     ir: CircuitIR,
-    coupling: CouplingMap,
+    topology: _TopologyCostModel,
     *,
     strategy: str,
     path_cache_before: dict[str, int],
@@ -893,8 +713,16 @@ def _route_sabre(
     searches for a shorter initial layout; replaying its forward SWAPs in reverse
     would only return that initial layout, so it routes every logical qubit home
     with an explicit restore instead.
+
+    On an ordered device a placed gate whose operands run against its link is
+    wrapped in a SWAP sandwich. The sandwich is layout-neutral, which is what the
+    planner's own placements require: they were costed against one layout, so a
+    repair that moved a qubit would invalidate every placement after it. The
+    planner itself is handed the weak projection, because a SWAP may cross a link
+    in either direction.
     """
 
+    coupling = topology.weak_coupling
     initial_layout = (
         plan_sabre_layout(ir, coupling)
         if strategy == "sabre_layout"
@@ -902,12 +730,14 @@ def _route_sabre(
     )
     plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
     routed: list[Instruction] = []
-    topology_gate_count = 0
-    # Counted against the source qubits, exactly as the shortest-path strategies
-    # do, so the number describes the work the topology forces rather than the
-    # work this layout happened to arrange for free.
-    routed_gate_count = 0
-    skipped_channel_count = 0
+    # Counted against the source qubits rather than the placed ones, exactly as the
+    # shortest-path strategies and the cost estimate count them, so the number
+    # describes the work the topology forces rather than the work this layout
+    # happened to arrange for free.
+    topology_gate_count, routed_gate_count, skipped_channel_count = (
+        _source_routing_counts(ir, topology)
+    )
+    direction_swap_count = 0
     swap_index = 0
     placed_so_far = 0
     for source_index in plan.sequence:
@@ -930,14 +760,14 @@ def _route_sabre(
             swap_index += 1
         placed_so_far += 1
         instruction = ir.instructions[source_index]
-        placed_qubits = plan.placements[source_index]
+        placed_wires = plan.placements[source_index]
         if is_ordering_barrier(instruction):
             # The planner never blocks the front layer on the directive, so no
             # planned SWAP exists to place it and none was inserted for it.
             routed.append(
                 _remap_instruction(
                     instruction,
-                    placed_qubits,
+                    placed_wires,
                     strategy=strategy,
                     source_instruction_index=source_index,
                 )
@@ -945,30 +775,57 @@ def _route_sabre(
             continue
         if len(instruction.wires) != 2 or instruction.metadata.get("is_channel"):
             _require_multi_qubit_device_local(
-                instruction, placed_qubits, coupling.has_edge
+                instruction, placed_wires, topology.weak_edge
             )
-            if instruction.metadata.get("is_channel"):
-                skipped_channel_count += 1
             routed.append(
                 _remap_instruction(
                     instruction,
-                    placed_qubits,
+                    placed_wires,
                     strategy=strategy,
                     source_instruction_index=source_index,
                 )
             )
             continue
-        topology_gate_count += 1
-        if not coupling.has_edge(*instruction.wires):
-            routed_gate_count += 1
+        gate_wires = placed_wires
+        orientation = topology.needs_orientation_swap(instruction, placed_wires)
+        if orientation:
+            routed.append(
+                _swap_instruction(
+                    placed_wires[0],
+                    placed_wires[1],
+                    instruction,
+                    strategy=strategy,
+                    phase="orientation",
+                    source_instruction_index=source_index,
+                )
+            )
+            # The SWAP exchanges the operands' states, so the gate executes
+            # between the two halves of the sandwich with its operands swapped;
+            # the closing SWAP puts both qubits back before the next planned
+            # instruction, which is what keeps the planner's remaining placements
+            # valid. Emitting both halves together would apply the gate on the
+            # restored qubits and silently undo the repair.
+            gate_wires = (placed_wires[1], placed_wires[0])
+            direction_swap_count += 1
         routed.append(
             _remap_instruction(
                 instruction,
-                placed_qubits,
+                gate_wires,
                 strategy=strategy,
                 source_instruction_index=source_index,
             )
         )
+        if orientation:
+            routed.append(
+                _swap_instruction(
+                    placed_wires[0],
+                    placed_wires[1],
+                    instruction,
+                    strategy=strategy,
+                    phase="orientation_restore",
+                    source_instruction_index=source_index,
+                )
+            )
     if swap_index != len(plan.swaps):
         raise RuntimeError("SABRE routing plan did not place every inserted SWAP")
     restore = plan_restore_swaps(plan, coupling)
@@ -986,27 +843,57 @@ def _route_sabre(
     metadata = dict(ir.metadata)
     metadata["routing"] = _routing_metadata(
         ir=ir,
-        coupling=coupling,
+        topology=topology,
         strategy=strategy,
         topology_gate_count=topology_gate_count,
         routed_gate_count=routed_gate_count,
-        inserted_swap_count=len(plan.swaps) + len(restore),
+        inserted_swap_count=len(plan.swaps) + len(restore) + 2 * direction_swap_count,
+        direction_swap_count=direction_swap_count,
         skipped_channel_count=skipped_channel_count,
         initial_layout=initial_layout,
         pre_restore_layout=plan.final_logical_to_physical,
         path_cache_before=path_cache_before,
-        path_cache_after=coupling.path_cache_info(),
+        path_cache_after=topology.path_cache_info(),
     )
     return replace(ir, instructions=tuple(routed), metadata=metadata)
 
 
 def route_to_topology(
     circuit_or_ir: Any,
-    coupling_map: CouplingMap | Iterable[tuple[int, int]],
+    coupling_map: _PricedDevice,
     *,
     strategy: str = "restore_after_each_gate",
 ) -> CircuitIR:
-    """Insert SWAP gates so two-qubit operations respect hardware topology."""
+    """Insert SWAP gates so two-qubit operations respect hardware topology.
+
+    An undirected device is routed as before: a gate is executable wherever its
+    two qubits are linked, so a hop is inserted only to bring the qubits together.
+
+    An ordered device is routed against the direction of its links as well. A gate
+    whose operands run against the direction its link is declared in is not
+    executable where it stands even though the link exists, and the router repairs
+    it with the one instruction that is legal across that link either way: a SWAP
+    between the operands. That repair costs a SWAP and leaves the output layout
+    where the strategy intended, because every strategy here either restores the
+    identity layout or wraps the gate -- the persistent strategies keep the repair
+    in their mapping and undo it with their own final restore, while
+    ``restore_after_each_gate`` sandwiches the gate. Emitting the repair is what
+    keeps ``direction_swap_count`` a price of this router rather than a bill handed
+    to a later pass.
+
+    Args:
+        circuit_or_ir: The program to route.
+        coupling_map: The device to route against, as a ``CouplingMap``, a
+            ``DirectedCouplingMap``, or an edge sequence.
+        strategy: One of ``ROUTING_STRATEGIES``.
+
+    Raises:
+        TypeError: If ``coupling_map`` is none of the three accepted forms.
+        ValueError: If ``strategy`` is not in ``ROUTING_STRATEGIES``, the coupling
+            map has fewer qubits than the circuit, a needed path leaves the device,
+            or a placed two-qubit opcode has no recorded operand semantics on an
+            ordered device.
+    """
 
     if strategy not in ROUTING_STRATEGIES:
         raise ValueError(
@@ -1014,33 +901,30 @@ def route_to_topology(
             + ", ".join(repr(name) for name in ROUTING_STRATEGIES)
         )
     ir = ensure_circuit_ir(circuit_or_ir)
-    coupling = (
-        coupling_map
-        if isinstance(coupling_map, CouplingMap)
-        else CouplingMap(ir.n_wires, coupling_map)
-    )
-    if coupling.n_qubits < ir.n_wires:
+    topology = _topology_cost_model(coupling_map, ir.n_wires, "route_to_topology")
+    if topology.n_qubits < ir.n_wires:
         raise ValueError("Coupling map has fewer qubits than the circuit.")
-    path_cache_before = coupling.path_cache_info()
+    path_cache_before = topology.path_cache_info()
     if strategy == "persistent_layout":
         return _route_persistent_layout(
             ir,
-            coupling,
+            topology,
             path_cache_before=path_cache_before,
         )
     if strategy in SABRE_ROUTING_STRATEGIES:
         return _route_sabre(
             ir,
-            coupling,
+            topology,
             strategy=strategy,
             path_cache_before=path_cache_before,
         )
 
     routed: list[Instruction] = []
-    routed_gate_count = 0
+    topology_gate_count, routed_gate_count, skipped_channel_count = (
+        _source_routing_counts(ir, topology)
+    )
     inserted_swap_count = 0
-    topology_gate_count = 0
-    skipped_channel_count = 0
+    direction_swap_count = 0
     for source_index, instruction in enumerate(ir):
         if is_ordering_barrier(instruction):
             # Nothing executes the directive, so no coupling has to carry it and
@@ -1057,7 +941,7 @@ def route_to_topology(
             continue
         if len(instruction.wires) != 2:
             _require_multi_qubit_device_local(
-                instruction, instruction.wires, coupling.has_edge
+                instruction, instruction.wires, topology.weak_edge
             )
             routed.append(
                 _remap_instruction(
@@ -1069,7 +953,6 @@ def route_to_topology(
             )
             continue
         if instruction.metadata.get("is_channel"):
-            skipped_channel_count += 1
             routed.append(
                 _remap_instruction(
                     instruction,
@@ -1080,9 +963,7 @@ def route_to_topology(
             )
             continue
 
-        topology_gate_count += 1
-        left, right = instruction.wires
-        if coupling.has_edge(left, right):
+        if topology.executes(instruction, instruction.wires):
             routed.append(
                 _remap_instruction(
                     instruction,
@@ -1093,8 +974,8 @@ def route_to_topology(
             )
             continue
 
-        path = coupling.shortest_path(left, right)
-        if any(qubit >= ir.n_wires for qubit in path):
+        path = topology.path(instruction.wires)
+        if any(wire >= ir.n_wires for wire in path):
             raise ValueError(
                 "Routing through physical ancilla qubits outside the circuit IR "
                 "is not supported; provide an explicit layout/lowering step."
@@ -1102,8 +983,10 @@ def route_to_topology(
         forward_swaps = [
             (path[index], path[index + 1]) for index in range(len(path) - 2)
         ]
-        routed_gate_count += 1
-        inserted_swap_count += 2 * len(forward_swaps)
+        placement = (path[-2], path[-1])
+        orientation = topology.needs_orientation_swap(instruction, placement)
+        inserted_swap_count += 2 * (len(forward_swaps) + int(orientation))
+        direction_swap_count += int(orientation)
         for swap_left, swap_right in forward_swaps:
             routed.append(
                 _swap_instruction(
@@ -1115,10 +998,26 @@ def route_to_topology(
                     source_instruction_index=source_index,
                 )
             )
+        if orientation:
+            routed.append(
+                _swap_instruction(
+                    placement[0],
+                    placement[1],
+                    instruction,
+                    strategy=strategy,
+                    phase="orientation",
+                    source_instruction_index=source_index,
+                )
+            )
+            # The SWAP exchanges the two operands' states, so the gate now runs
+            # with its control on ``placement[1]`` and its target on
+            # ``placement[0]`` -- which is the direction the device declares,
+            # since that is exactly what asked for the SWAP.
+            placement = (placement[1], placement[0])
         routed.append(
             Instruction(
                 name=instruction.name,
-                wires=(path[-2], path[-1]),
+                wires=placement,
                 params=instruction.params,
                 matrix=instruction.matrix,
                 metadata=dict(instruction.metadata)
@@ -1130,6 +1029,17 @@ def route_to_topology(
                 },
             )
         )
+        if orientation:
+            routed.append(
+                _swap_instruction(
+                    placement[0],
+                    placement[1],
+                    instruction,
+                    strategy=strategy,
+                    phase="orientation_restore",
+                    source_instruction_index=source_index,
+                )
+            )
         for swap_left, swap_right in reversed(forward_swaps):
             routed.append(
                 _swap_instruction(
@@ -1144,16 +1054,17 @@ def route_to_topology(
     metadata = dict(ir.metadata)
     metadata["routing"] = _routing_metadata(
         ir=ir,
-        coupling=coupling,
+        topology=topology,
         strategy=strategy,
         topology_gate_count=topology_gate_count,
         routed_gate_count=routed_gate_count,
         inserted_swap_count=inserted_swap_count,
+        direction_swap_count=direction_swap_count,
         skipped_channel_count=skipped_channel_count,
         initial_layout=tuple(range(ir.n_wires)),
         pre_restore_layout=tuple(range(ir.n_wires)),
         path_cache_before=path_cache_before,
-        path_cache_after=coupling.path_cache_info(),
+        path_cache_after=topology.path_cache_info(),
     )
     return replace(ir, instructions=tuple(routed), metadata=metadata)
 

@@ -1,8 +1,8 @@
 # Algorithms primitives
 
 Reusable quantum primitives that the algorithm modules share. This layer owns
-the quantum Fourier transform, phase estimation, state preparation, and oracle
-synthesis, and all four of them ship today.
+the quantum Fourier transform, phase estimation, state preparation, oracle
+synthesis, and block encoding, and all five of them ship today.
 
 A primitive is admitted here on three dimensions, and
 `contracts/primitives-admission-contract.toml` is the measured record of all
@@ -11,12 +11,16 @@ three for every export.
 **The consumer fixes the ground.** A primitive is admitted when more than one
 algorithm module needs it or is expected to need it and the expectation is
 confirmed, or when it is a public unit callers use directly: state preparation
-shipped on the public-unit ground, with no consumer inside `flagquantum/` at
-all, and the Fourier transform on the expectation ground, admitted with one
-consumer, phase estimation, and confirmed when amplitude estimation landed. This
-package is not a general-purpose quantum toolkit, and a construction only one
-workflow uses stays in that workflow's module until admitting it is justified,
-whether by a second consumer arriving or by a grounded expectation of one.
+shipped on the public-unit ground, and the Fourier transform on the expectation
+ground, admitted with one consumer, phase estimation, and confirmed when
+amplitude estimation landed. State preparation no longer stands on the
+public-unit ground alone, because `algorithms/data_encoding.py` now calls it for
+its amplitude half, and block encoding was admitted on the public-unit ground
+after the singular-value unit held it privately and the comment recording that
+promotion condition named this module. This package is not a general-purpose
+quantum toolkit, and a construction only one workflow uses stays in that
+workflow's module until admitting it is justified, whether by a second consumer
+arriving or by a grounded expectation of one.
 
 **No consumer anywhere is a defect, not a fourth ground.** The rule was stated
 before it was measured, and the first measurement found one export — the
@@ -53,10 +57,22 @@ existing test that proves it, function by function.
 - `phase_estimation.py`: phase estimation over a controlled unitary, with the
   resolution and the success bound the counting register buys.
 - `state_preparation.py`: a uniform superposition, and an arbitrary state built
-  from a classical amplitude vector by uniformly controlled rotations.
+  from a classical amplitude vector by uniformly controlled rotations. The
+  amplitude half of `algorithms/data_encoding.py` is its first consumer inside
+  `flagquantum/`; that module owns the classical front end (padding and
+  normalisation), and this one owns the preparation ladder.
 - `oracle.py`: the reversible classical building blocks the oracle units are
   composed from -- a multi-controlled X and a bit-string comparator -- and the
   truth-table synthesis of a phase or bit oracle on top of them.
+- `block_encoding.py`: the block-encoding protocol consumers are written
+  against, the spectral encoding that satisfies it, and the qubitization walk
+  step that encoding admits, whose eigenvalues are the arccosines of the encoded
+  matrix's eigenvalues over `alpha`.
+- `linear_combination.py`: a second implementation of the same two protocols, for
+  a Hamiltonian given as a weighted sum of Pauli words rather than as a matrix:
+  the factor is the sum of the coefficient magnitudes, stated from the data, and
+  the coefficients are prepared in an index register rather than read off a dense
+  matrix the construction never forms.
 - `types.py`: the callable protocols the primitives are written against.
 - `__init__.py`: the public primitives surface.
 

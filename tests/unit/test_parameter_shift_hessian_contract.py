@@ -460,13 +460,28 @@ def test_every_recorded_refusal_still_fires(case: str) -> None:
 
 
 def test_the_stabilizer_mode_is_out_of_reach_and_not_a_silent_answer() -> None:
-    """The sixth mode cannot serve an expectation, so it refuses rather than runs."""
+    """The sixth mode cannot hold this route's rotations, so it refuses rather than runs.
+
+    That mode serves ``expectation_ps`` now, so the request kind is no longer what
+    refuses this route. Every opcode the route can differentiate is a rotation, and
+    the stabilizer representation admits Clifford opcodes only and classifies by
+    opcode rather than by angle, so the refusal is the representation's Clifford
+    census, raised while the request is planned. It names the offending gate and
+    says it fails closed instead of approximating; a silent answer would be a
+    second-order Hessian read off a circuit that representation cannot hold.
+    """
 
     build, loss = (
         _GATE._witness(("rz", "rz")),
         _GATE._loss(("rz", "rz"), "stabilizer"),
     )
-    with pytest.raises(CapabilityError, match="samples measurement outcomes"):
+    with pytest.raises(
+        CapabilityError,
+        match=(
+            r"is not a Clifford gate; stabilizer sampling accepts .* and fails "
+            r"closed rather than approximating"
+        ),
+    ):
         ENTRY_POINT(build, _GATE._point(2), loss)
 
 

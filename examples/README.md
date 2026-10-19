@@ -36,10 +36,13 @@ These examples do not use that alias:
   `validate_acceptance.py`, `verify_environment_lock.py`,
   `verify_extracted_bundle.py`, and `verify_transfer_bundle.py`.
 - [`algorithms/`](algorithms/README.md) — `pca.py`, `kmedians.py`,
-  `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py` and
-  `error_mitigation.py`, which import the unit they demonstrate from the
-  subpackage surface because `flagquantum.algorithms.<unit>` carries no
-  root-level `fq.` name.
+  `quantum_kernel.py`, `feature_selection.py`, `qarm.py`, `svd.py`,
+  `error_mitigation.py`, `pec.py`, `cdr.py`, `readout_mitigation.py`,
+  `folding.py`, `variational_solvers.py`, `vqe_solvers.py`,
+  `trotter.py`, `block_encoding.py`
+  and `linear_combination.py`, which
+  import the unit they demonstrate from the subpackage surface because
+  `flagquantum.algorithms.<unit>` carries no root-level `fq.` name.
   [`spsa_optimizer.py`](algorithms/spsa_optimizer.py) is the exception inside
   that directory: it imports its optimizer from the subpackage surface and also
   `import flagquantum as fq`, because the objective it minimizes is a circuit it
@@ -54,9 +57,32 @@ These examples do not use that alias:
   — a third-party execution backend that imports only
   `flagquantum.ecosystem.extensions`, so it demonstrates the published extension
   surface rather than the root alias.
+- [`extensions/reference_target_extension.py`](extensions/reference_target_extension.py)
+  — a third-party target declaration that imports the published extension
+  namespace and the Core capability vocabulary that describes evidence. It builds
+  no circuit, so it needs no root alias either.
+- [`extensions/reference_pass_extension.py`](extensions/reference_pass_extension.py)
+  — a third-party compiler pass. It imports `CircuitIR` and `Instruction` from
+  `flagquantum.core.ir` and its manifest and request types from
+  `flagquantum.ecosystem.extensions`, which is what a pass package outside this
+  repository can reach; the root alias would only give it a second name for the
+  circuit type it is handed.
+  [`extensions/declared_target_execution.py`](extensions/declared_target_execution.py)
+  is the run that follows it: one call takes that declaration and locally executes a
+  circuit the declared device can actually run, so a provider sees the whole path
+  end to end without FlagQuantum changing to accept the device.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
+- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) — it imports
+  the realtime messaging module directly, because the feedback loop it models is
+  a channel between two programs rather than a program to run.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
+- [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
+  subpackage surface, where the detector error model reader and the decoder
+  registry live, and `stim`, because the circuit layer stays Stim's.
+- [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) — it imports
+  the QEC subpackage surface, because the code record built from parity-check
+  matrices lives there and has no root-level `fq.` name.
 
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
@@ -190,13 +216,69 @@ boundaries are listed in the capability catalog.
 | Compare gradient methods and read the one that ran | [Gradient methods](gradient_methods/README.md) | One entry point, reported method |
 | Train with MPS | [`03_mps_training.py`](single_machine_quantum_ai/03_mps_training.py) | Low-entanglement systems |
 | Use a JAX kernel through PyTorch | [`04_jax_kernel_torch_layer.py`](single_machine_quantum_ai/04_jax_kernel_torch_layer.py) | Optional accelerator path |
+| Run a noisy circuit exactly instead of by trajectory | [`density_matrix_execution.py`](density_matrix_execution.py) | Dense exact oracle, 2**n by 2**n state |
 | Inspect sharded statevector ownership | [Distributed statevector](distributed_statevector_topologies/README.md) | One logical statevector across ranks |
 | Inspect rank-owned MPS execution | [Distributed MPS](distributed_mps/README.md) | Development evidence |
 | Train and package a circuit | [`train_parameterized_circuit_then_deploy.py`](train_parameterized_circuit_then_deploy.py) | Deployment bridge |
 | Build an extension | [`extensions/reference_extensions.py`](extensions/reference_extensions.py) | Experimental API |
+| Decode a Stim detector error model here | [`qec/stim_user_migration.py`](qec/stim_user_migration.py) | Experimental QEC surface |
+| State a stabilizer code as matrices | [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) | Experimental QEC surface |
 
 Larger application and research examples are intentionally not presented as
 minimal getting-started paths.
+
+## Emulate a target without submitting
+
+Compile a program for a declared third-party target and run the compiled program
+on this machine before spending anything on a submission:
+
+```bash
+python -m examples.remote.emulate_local_target
+```
+
+The example declares a provider listing, reads what the target's own passes
+changed -- routing, native-gate decompositions, the emitted payload -- and then
+executes the compiled program locally. It contacts no provider and needs no
+credentials. The local device, the precision, and the result are the machine's;
+the qubit capacity, native gate set, and program limits are the profile's
+declaration, and the record keeps those two sources apart.
+
+## Decode a Stim circuit's error model without Stim's decoder
+
+Replace the decoding half of a Stim QEC workflow while keeping Stim for the
+circuit layer (requires the `stim` extra, and the `pymatching` extra for the
+cross-check section):
+
+```bash
+python -m examples.qec.stim_user_migration
+```
+
+The example reads the detector error model Stim wrote, samples it, decodes it
+with this package's matcher, and prints the two readings of Stim's decomposed
+`^` separator side by side with the observable marginal each one implies. It
+runs locally in one process, contacts nothing, and establishes no threshold. The
+route it follows, the four reader refusals, and the tradeoff between the two
+readings are documented in
+[Migrating a Stim workflow](../docs/guides/STIM_USER_MIGRATION.md).
+
+## Declare a code this package does not ship
+
+Three code records ship here. This example takes the other route, writing a code
+down as parity-check matrices, and runs the result end to end:
+
+```bash
+python -m examples.qec.css_code_from_matrices
+```
+
+It states the Steane code as matrices and holds the record it builds against the
+record this package ships, then builds the toric code -- which no record here
+declares -- on two lattices, derives its distance from the matrices rather than
+from a declared logical operator, and runs it through a memory circuit, a
+detector error model, sampling, and the matcher. It prints the matrices that are
+refused beside the ones that are admitted. It runs locally in one process,
+contacts nothing, and establishes no threshold and no scalability claim. The
+record it demonstrates is documented in
+[FlagQuantum QEC](../flagquantum/qec/README.md).
 
 ## Run on remote resources
 

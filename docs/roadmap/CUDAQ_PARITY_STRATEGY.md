@@ -58,9 +58,399 @@ captured on 2026-09-30, is:
 
 | Status | Rows |
 | --- | ---: |
-| `supported` | 9 |
-| `partial` | 39 |
-| `unsupported` | 47 |
+| `supported` | 10 |
+| `partial` | 60 |
+| `unsupported` | 25 |
+
+`local_emulation` moved from `unsupported` to `supported` in wave 6, when
+`flagquantum.remote.emulation.emulate` landed as a target-directed local entry
+point. Its registry entry stays at its own level, which is the point of the
+distinction above: a row closed by implementation does not raise the maturity of
+the capability it names.
+
+`third_party_target_sdk` moved from `unsupported` to `partial` in the same wave,
+because the registration point it describes exists: a third party declares its
+target in an extension manifest and FlagQuantum validates the declaration
+fail-closed and turns it into a capability snapshot. It is deliberately not
+`supported`, because a registered description is not yet a runnable backend, and
+claiming the row closed would hide the remaining work behind an interface that
+does exist.
+
+`realtime_host_api` moved from `unsupported` to `partial` in the same wave, and it
+is the only realtime row that moved. It is also the only row in the domain whose
+`dependency_class` is `B_open_neutral`, so the vendor-neutral half of the realtime
+surface -- a messaging protocol and a device-call abstraction -- is software this
+programme can own and deliver, while the FPGA, the network interface, and every
+timing property are not. The row is deliberately not `supported`: the dispatcher,
+the ring buffer, and the host entry points that launch through them are absent by
+design, and the three `A_nvidia_proprietary` rows beside it stay `unsupported` so
+a protocol that measures nothing cannot be read as a transport.
+
+Four rows moved from `unsupported` to `partial` in wave 6, when the matrix and
+the registry were reconciled against the tree and four modules that already
+existed turned out to have no entry and no row: `fermion_operator_algebra` now
+names [fermion.py](../../flagquantum/observables/fermion.py), whose Jordan-Wigner
+image is the `Observable` the existing execution path measures, with the
+Bravyi-Kitaev, parity, and ternary-tree encodings still absent;
+`boson_operator_algebra` now names
+[boson.py](../../flagquantum/observables/boson.py), whose dense value is a
+reference with no bosonic backend behind it; `chemistry_domain_library` now names
+[chemistry.py](../../flagquantum/algorithms/chemistry.py), which is the ansatz
+half of the row and none of the integral driver; and `resource_estimation` now
+names
+[resource_estimation.py](../../flagquantum/compiler/resource_estimation.py),
+which reports the tally, the schedule depth, and the T family over a
+straight-line sequence and refuses a data-dependent program, so loops and
+functions stay unestimatable exactly as that row always said. All four were
+registered in `capability-maturity.toml` at `development_evidence` in the same
+change, because a row cannot be closed by evidence that no entry carries.
+
+`commutation_aware_rewrite` moved from `unsupported` to `partial` in the same
+wave, and it is the one move that required no new code at all. Its reason said the
+pass was absent and needed the pass manager first; the tree said otherwise.
+[commutation.py](../../flagquantum/compiler/commutation.py) answers whether two
+instructions commute and which instructions form one commuting block on a wire,
+from the operator schemas rather than from a generated table, and
+[commutation_cancellation.py](../../flagquantum/compiler/commutation_cancellation.py)
+consumes that analysis inside the optimizer's fixed-point loop, so
+`cx(0, 1) rz(0) cx(0, 1)` reduces to a bare `rz(0)` -- a reduction the wire-local
+self-inverse merge cannot reach, because the latest writer of wire 0 is the `rz`.
+The row stays `partial` because it is named for CUDA-Q's pass rather than for the
+reduction: CUDA-Q ships a *driver* that searches backward from an anchor operation
+for the nearest endpoint a consumer will accept, so a second rewrite can cross a
+commuting frontier without its author writing the commutation proof. FlagQuantum
+has one consumer hard-coded against the analysis. Recording that as the gap, rather
+than reading the reduction as the pass, is the whole content of this move.
+
+`qir_code_generation` moved from `unsupported` to `partial` in the same wave on the
+same evidence: its reason said FlagQuantum emits OpenQASM and QCIS text only, and
+that was false. [qir.py](../../flagquantum/compiler/qir.py) emits QIR base-profile
+LLVM IR -- the entry point with its `entry_point` attribute, the `__quantum__qis__*`
+calls for the lowered program, the measurement and output-recording runtime calls,
+and the module flags that declare the QIR version and the two dynamic-management
+settings -- and
+[translate.py](../../flagquantum/compiler/translate.py) exposes it as `"qir-2.0"`,
+one of four `TRANSLATION_FORMATS`, so the surface is public and not a private
+helper. QIR is vendor-neutral, which makes this the most valuable row of its class
+to have been closed, and the two vendor-neutral rows it moved ahead of --
+`cpp_kernel_frontend` and `mlir_dialect_stack` -- remain the expensive ones because
+they are toolchain work rather than text emission. The row stays `partial` for the
+half that is absent and it is the half the row is named for: CUDA-Q generates
+*Profile-QIR*, and with both dynamic-management flags `false` this emitter cannot
+express `__quantum__rt__qubit_allocate_array`, `qubit_release_array`, or
+`read_result` at all, so no program it emits allocates a qubit at runtime. The
+adaptive profile, pulse-level generation, and runtime library extension calls are
+absent too, and this is text rather than an object file: no LLVM compilation was
+run and no external QIR validator saw the output, so conformance is the repository's
+own semantic check plus a host C parser accepting the text as LLVM IR syntax.
+
+`classical_data_encoding` moved from `unsupported` to `partial` in the same wave,
+and it is the first move in this document whose old reason was false rather than
+incomplete. That reason said amplitude encoding "needs a normalized
+state-preparation path" and that the only related surface was one data-reuploading
+helper in the simulation domain reachable only as a module attribute; the first
+half was already wrong when it was written, because
+[state_preparation.py](../../flagquantum/algorithms/primitives/state_preparation.py)
+has shipped `arbitrary_state` -- an exact preparation of a classical amplitude
+vector, verified to `1e-8` after one free global phase -- and the second half
+described a private helper rather than the public primitive beside it. What was
+genuinely absent was the classical front end and the angular half, and
+[data_encoding.py](../../flagquantum/algorithms/data_encoding.py) now supplies
+both: `amplitude_encode` pads a feature vector to the next power of two with a
+caller-chosen value, normalises it, and delegates the ladder to `arbitrary_state`
+rather than growing a second preparation implementation, and `angular_encode` with
+its `append_angular_encode` form emit one `rx`/`ry`/`rz` per wire on CUDA-Q's own
+axis names, which is what a data-reuploading map composes from. The row stays
+`partial` because the CUDA-Q contract is broader than the mathematics: CUDA-Q
+returns a data-carrying `State` and re-normalises *after* padding, and its
+`angular_encode` is a kernel-language call the compiler intercepts, while this
+encoder returns a `Circuit`, pads before normalising, and has no kernel front end
+to be called from. Recording that as the gap, instead of reading "an encoder
+exists" as the row, is the whole content of this move.
+
+`classical_control_flow` moved from `unsupported` to `partial` in the same
+wave, and three reasons beside it were corrected in the same change, because the
+`language_and_programming_model` domain was describing a repository that no longer
+existed. [capture.py](../../flagquantum/compiler/_hybrid/capture.py) has been a
+restricted Python AST bridge since before this document was written: it reads one
+selected synchronous function, carries classical values with real def-use through
+`Value`, `Operation`, `Block`, and `Region`, verifies them with an SSA pass that
+fails closed on a use before definition or a duplicate definition, branches on `if`
+both at compile time and on a measurement result, and unrolls `for` over `range`,
+`enumerate`, and a statically ranked tensor under an explicit ceiling while
+carrying outer names through region results. Three
+[QEC](../../flagquantum/qec/sampling.py)
+[entry](../../flagquantum/qec/repetition.py)
+[points](../../flagquantum/qec/dem_construction.py) execute it in production, and
+`while`, `break`, `continue`, and `for-else` are refused with an exact diagnostic.
+So the row's old reason -- classical values "designed but not implemented" -- was
+not incomplete, it was false, and the row is `partial` rather than `supported`
+because the `while` form the baseline names is absent and no public kernel surface
+exposes any of it: the capability is implemented Compiler machinery, not a
+programming model a user can write.
+
+The three reasons corrected in the same change are the ones that rested on the same
+mistake. `python_ast_kernel` said "there is no AST layer", which is the false half
+of the sentence above; it keeps `partial`, because the layer is private Compiler
+machinery exported from neither `flagquantum` nor `flagquantum.compiler`, and its
+reason now says that instead of denying the layer exists.
+`kernel_first_class_functions` stays `unsupported` -- its capability is genuinely
+absent, because the private operation vocabulary has no call or function op and a
+hybrid program is a single-function container, so parameters, composition, and
+nested calls are inexpressible rather than merely unexposed -- but it no longer
+names
+[MULTI_LEVEL_IR_ARCHITECTURE.md](../architecture/MULTI_LEVEL_IR_ARCHITECTURE.md)
+5.2 as the planned home, because that document is now labelled a historical design
+baseline and the level that exists is narrower than the design it describes.
+`type_system_qubit_register_view` stays `unsupported` because a half-stale reason
+is worse than a missing one: `IRType`, a `linear` flag, and verifier-enforced
+linearity of the quantum-effect token do exist, so "its reference-versus-value
+linearity rules are not implemented" was too broad, but the linear subject is the
+effect token rather than a qubit, and nothing models a qubit, a register, or a view
+over one. `runtime_qubit_allocation` was left untouched on purpose: its claim that
+runtime allocation is not implemented is true, and only the name of the document
+describing it would have changed.
+
+The `pauli_tracking_sbe` row is the second reconciliation of this round, and it
+moved on one named refusal disappearing rather than on a family being finished.
+Its reason had already reduced its blocker to a single fact: the stabilizer engine
+declined a noise instruction instead of tracking a frame through it. That refusal
+is gone. A channel whose Kraus operators are a mixture of Pauli unitaries up to a
+global phase is now tracked on as many wires as the channel acts on, so a noisy
+Clifford program is sampled without a dense state, and a channel outside that
+class is still refused rather than sampled as its nearest Pauli approximation. The
+engine names no channel instruction wider than two wires, so a wider frame is
+spelled as a chain of correlated-error instructions, one term per non-identity
+frame, with each weight divided by the probability that the frames before it did
+not fire - a chain term is conditional on no earlier term having fired, which is
+the shape of a Kraus mixture, and emitting the caller's own weights would make
+every frame after the first too rare. The row did not go to `supported`, because
+only half of its name is delivered. The readout stays in the computational basis,
+since a frame is what the engine tracks and the sampled bits are what it reports,
+so a measurement is never expanded in a stabilizer basis; expectation values,
+detection events, and observable flips are absent from this route; and the
+trajectory selection and per-trajectory shot allocation that a stabilizer-basis
+sampler would be paired with belong to the trajectory row and are still open. The
+same change widened the package's public surface by one entry point:
+`survey_stabilizer_program` reports what the sampling route would make of a
+program without executing it, counting gates, resets, recorded measurements and
+noise instructions and collecting one blocker per refused instruction. It reads
+the IR and never imports the engine, so a caller decides between the stabilizer
+regime and a dense one without the optional distribution installed. That is a
+census and not a promise: an empty blocker list says every instruction
+translated, not that the samples are correct.
+
+`clifford_t_synthesis` and `angle_synthesis` moved from `unsupported` to `partial`
+together, and they are the first two rows of the `B_open_neutral` class this
+document had listed as a research expense rather than an integration one. The
+Clifford+T half is exact and is now carried:
+[angle_synthesis.py](../../flagquantum/compiler/angle_synthesis.py) classifies a
+z-rotation by its residue modulo eight when its angle is an exact multiple of
+`pi/4`, and `basis_translation` consults one short word per residue as an
+additional candidate rewrite, so a target publishing only `h`, `s`, `t`, and `cx`
+reaches a rotation it previously refused outright -- the measured failure the row
+was written against. Both rows stay `partial` because the halves named in their
+titles are still absent, and saying which half exists is the whole content of the
+move. Nothing is approximated: the classification is an exact equality, and
+`pi/8`, `pi/3`, and `0.3` all fail closed rather than being answered with a
+rotation nobody asked for. That refusal is deliberate, because the Ross-Selinger
+route an accuracy-directed synthesizer needs runs on exact arithmetic in
+`Z[omega, 1/sqrt(2)]`, a Diophantine norm equation, and integer factorization,
+and the GMP and MPFR dependency this document already records against the row is
+still unadopted. Two properties of the table are worth naming because they are
+what a fault-tolerant consumer reads. Each residue's first word carries the
+minimum `t` count, and the test suite re-derives that claim by enumerating the
+whole vocabulary rather than trusting the table. Each residue also carries a
+fallback word, so a target that publishes `t` but not `tdg` still reaches
+`rz(-pi/4)`; without it `{t, s}` is not a group and misses a residue, which is the
+same class of silent hole the row was written to record. Trainable angles are
+refused by the same check that refuses non-quarter turns, so a rotation never
+leaves the autograd graph by being answered with a constant word.
+
+`qec_stim_user_migration` is the first row in this document closed by a document
+rather than by code, and writing it is what showed that the row's capability is
+not the page it is named after. The route a Stim user takes into this package runs
+from `stim.Circuit.generated` through the detector error model text to
+[the guide](../guides/STIM_USER_MIGRATION.md), and every step of it already
+existed; what was missing was the statement, in one place, of which steps this
+package owns and which stay Stim's. The guide names the boundary rather than
+crossing it -- nothing under `flagquantum/` imports `stim`, so the extra is needed
+only by the half that generates circuits -- and then says what a migrating script
+actually meets. A multi-round circuit's model text carries a `repeat` block that
+[the reader](../../flagquantum/qec/dem.py) refuses by name instead of expanding,
+`stim.DetectorErrorModel.flattened()` is the whole repair, and the three other
+refusals are tabled with theirs. The row stays `partial` for the reason the
+document exists, and the guide states it in the place a reader will hit it: the
+Stim integration this route lands on is itself `partial`, so
+`qec_stim_user_migration` cannot be `supported` while the thing it documents is
+not. The `^` separator is the first half. The default reading states the line as
+written and is not graphlike, so every registered decoder that reads a pair-graph
+refuses it -- 113 of the 219 mechanisms of a distance-3, two-round rotated surface code flip more than two
+detectors -- while the reading a matcher accepts,
+`use_decomp_suggestions=True` followed by `merge_duplicate_mechanisms()`, is
+measurably a different distribution: against stim's own sampler at 200000 shots
+the default reading's observable marginal sits 2.1 standard errors away and the
+graphlike reading's sits 56. Both numbers are in the guide, with the default
+reading named as the model for a threshold or a marginal and the graphlike one as
+the model for a matcher, because a decoded logical error rate at this distance
+does not separate the two routes while the per-shot agreement does -- the in-tree
+matcher and the PyMatching cross-check agree on every shot and belief propagation
+with ordered statistics differs on 1.7 percent of them. The second half is the
+registry: belief propagation with ordered statistics decodes a hyperedge model, and
+the registry now reaches it too -- `decoder_names()` holds the matcher, the
+windowed reading of it, the cross-check and `belief_propagation_osd`, because the
+family contract was narrowed to the decoded syndrome and the pair graph the three
+matching names build moved to a sub-protocol beside it. Naming only the graphlike reading as the migration route would have
+been a silent numerical downgrade of the model the caller handed over, so the
+guide states the tradeoff instead, and the test that keeps it true executes every
+fence in one namespace and compares each print against the transcript quoted
+under it.
+
+`backend_asynchronous_multi_qpu` moved from `unsupported` to `partial` in the
+same wave, on a distinction the row's own reason had blurred. Submitted once,
+observed later, and fanned out to several targets are three separate things, and
+only the third was missing. Every remote path here already returned from `submit`
+without waiting and already carried a per-target stream -- the Quafu and Jiuding
+adapters both hand back a job with its own status, result, cancellation, and
+private receipt -- so what CUDA-Q's asynchronous multi-QPU option adds is not
+asynchrony at all. It is the fan-out: one program, several targets, and streams
+that progress independently.
+[submit_to_targets](../../flagquantum/remote/jobs.py) supplies it. It materializes
+the program to an IR once before contacting anything, hands each target its own
+submission to a thread pool, and reports in the order the caller named the targets
+rather than the order the network answered. A target that refuses the program is
+recorded with its exception type and message against that target while the others
+still submit, and a failed submission is never retried, because an ambiguous
+submission may already have reached a provider.
+
+The row stays `partial`, and the reason is the half CUDA-Q's own option name
+states. This is fan-out, not one partitioned workload: every target runs a full
+copy of the program, no state, shot, or sample crosses targets, and nothing
+combines the independent streams into one estimate. The report therefore declares
+`distribution_semantics = replicated_independent_targets` with
+`scalability_claim_allowed = False` and its blockers, and carries no `world_size`,
+`local_world_size`, `node_count`, or rank ownership -- there is no rank to
+attribute anything to, so the fields rule 5 of the operating manual requires of a
+distributed result have no honest value here and are deliberately absent rather
+than filled with a number that would license the very claim the row refuses. The
+roster is the two targets `submit` accepts rather than a backend-agnostic option,
+and because the remaining options are shared they must suit every target named, so
+the Quafu-only and Jiuding-only options cannot be combined in one call.
+
+`arithmetic_bloqs` moved from `unsupported` to `partial` in the same wave, on a
+distinction the row's own `cudaq` column makes necessary to state rather than
+assume. [arithmetic.py](../../flagquantum/algorithms/arithmetic.py) builds a
+reversible in-place ripple-carry adder: two `n`-bit registers, the sum written
+into the second of them, one working carry wire that the circuit restores, and a
+carry-out wire left holding the carry out of the most significant position. The
+construction is Cuccaro's, and the row is named for Gidney-Ekera. **The row is
+`partial` because those are not the same construction**, and stating that plainly
+is more useful than either claiming the CUDA-Q surface is matched or leaving a
+delivered module with no row at all. Gidney-Ekera is smaller precisely because it
+uncomputes its ancillas by measuring them and feeding the outcomes forward, which
+needs a mid-circuit measurement and a classical feedforward path this repository
+has no costable circuit for: the gap is a missing execution capability rather than
+a missing formula, so it belongs in the row's reason instead of behind an
+interface that would make the two look interchangeable.
+
+The construction is deliberately not costed twice. Its T-count is the compiler's
+own Toffoli rule -- `ccx` lowering to the fifteen-gate `h`, `t`, `tdg`, `cx`
+identity in [basis_translation.py](../../flagquantum/compiler/basis_translation.py),
+reached through `convert_basis` and priced by `estimate_resources`, with
+[logical_resources.py](../../flagquantum/algorithms/logical_resources.py) passing
+that tally through -- so the adder carries no seven-T expansion of its own. That
+is the same rule `logical_resource_estimation` is held to above, and it is what
+keeps the two rows' numbers from being able to disagree. Both addends are quantum
+registers, so there is no classical addend, no `add_constant`, no modular,
+controlled, comparison, multiplier, or modular-exponentiation variant, and no
+carry-in parameter; two wires must enter holding zero, and only inputs meeting
+that contract are promised a sum, because the map is a permutation of the whole
+space and an off-contract input is reversible rather than added. Those absences
+are what a later row extension would close, and they are recorded here rather than
+left to be rediscovered.
+
+The next four rows are the third reconciliation of this round, and they moved
+nothing but their reasons: no status, no priority, no dependency class, and no
+count in this document changed, because in each case the capability had already
+been built and only the sentence describing it was stale. Each was re-derived by
+running the tree rather than by reading it, and each reason now opens by naming
+the clause that was false.
+
+`topology_aware_routing` was the most consequential, because its reason denied the
+existence of the very thing it is named for: "there is no published-quality router
+comparable to a SABRE-class algorithm."
+[sabre.py](../../flagquantum/compiler/sabre.py) is that algorithm, landed in three
+changes before the sentence was written and never reflected in it. It implements
+the heuristic of Li, Ding, and Xie, *Tackling the Qubit Mapping Problem for
+NISQ-Era Quantum Devices*: a front layer of two-wire operations whose predecessors
+have executed, a bounded extended layer of twenty operations, a lookahead term
+decayed by 0.9 and weighted 0.5, a deterministic lexicographic tie-break, and a
+stalled-swap limit of four per wire, together with the layout pass of the same
+paper that searches an initial mapping by routing the program and then the
+reversed program. Both are published names in
+`routing.ROUTING_STRATEGIES` -- `sabre` and `sabre_layout` -- and reachable
+through `route_to_topology`. What the measurement changed is where the gap is. On a
+fixed five-workload set the planner won every case: inserted SWAPs were
+48/98/52/124/310 for `restore_after_each_gate`, 54/134/56/110/434 for
+`persistent_layout`, 22/62/34/54/148 for `sabre`, and 17/48/31/54/109 for
+`sabre_layout`. An automatic selector that could not see the planner spent 310
+SWAPs on the largest case where 109 were needed, because `estimate_routing_cost`
+refuses `sabre` and `sabre_layout` by design -- it prices two named strategies
+rather than running a search -- so `select_routing_strategy` compares only the two
+that estimate and can never choose the two that plan. That is the row's remaining
+half, and it is a decision-layer gap rather than a router gap. The router's own
+limits are stated rather than implied: the cost is hop distance on a graph alone,
+so no error rate, readout fidelity, or gate duration enters it, no bridge-gate
+strategy is expressed, and the coupling map is undirected, which is the
+directional half the row's name promises.
+
+`spin_operator_algebra` overstated its own gap, and the correction is a subtraction
+from the row's claim rather than an addition to the code. Its reason said products,
+sums, and scalars were absent. They are present: `Observable` implements `__add__`,
+`__sub__`, `__mul__`, `__rmul__`, `__neg__`, and `__matmul__`, each returning an
+`Observable` rather than a matrix, so `X(0) + Z(0)`, `2 * X(0)`, `X(0) * 2`,
+`X(0) - Z(0)`, `X(0) @ Y(1)`, and `-X(0)` all work. Four operations are genuinely
+missing -- `commutator`, `anticommutator`, `exponential` with its `exp` spelling,
+and `__pow__` -- and the first three raise `AttributeError` while `X(0) ** 2`
+raises `TypeError`. What makes that a gap rather than a design is the asymmetry
+inside one package: `FermionOperator` and `BosonOperator` both carry `commutator`
+and `anticommutator`, so the fermionic and bosonic algebras are complete while the
+Pauli one is not. The row does not move, and the reason it cannot is rule 8:
+`Observable` is one of the thirty-six Stable Core exports, so every one of the four
+missing operations is an addition to a protected surface, and no approval exists.
+
+`custom_operation_registration` was false in its first two clauses and true in its
+third. There *is* an operation registry and *is* a schema:
+[operator_schema.py](../../flagquantum/core/operator_schema.py) defines
+`OperatorSchema`, `OPERATOR_SCHEMAS` over thirty-five canonical opcodes,
+`OPERATOR_ALIASES`, `ADJOINT_RULES`, and the accessors the circuit layer installs
+its gate methods from. The registry is closed rather than absent, which is a
+different fact: `OPERATOR_SCHEMAS` is a `mappingproxy`, so an item assignment
+raises `TypeError`, and no public callable adds, replaces, or removes a row, so a
+user-defined operation has no arity, no parameter declaration, no inverse rule, and
+no diagonal or adjoint marker. `Circuit.any` carries a raw unitary as a matrix
+instruction, which is a value the IR already admits rather than an operation the
+registry knows, so nothing can ask a custom matrix what its schema is. The third
+clause stands and is the half a reader would not have guessed: no recorded
+statement exists of what a backend does when it cannot serve a user-defined
+operation, so a custom unitary is routed, legalized, and emitted on the same path
+as a registered gate with no declared refusal and no declared fallback.
+
+`execution_entry_points` was half false. `translate` has an equivalent in
+[translate.py](../../flagquantum/compiler/translate.py), and its four accepted
+formats are read from `target_emission.EMISSION_PROFILES` rather than declared a
+second time, so an unaccepted spelling such as `qir:0.1` is refused by name.
+`draw` exists too, in the
+[drawer](../../flagquantum/drawer/__init__.py), and is narrower than the CUDA-Q
+surface rather than absent. `evolve` is the genuinely missing name, and the reason
+it was not built here is recorded in the row rather than left to be rediscovered:
+the integrators behind `flagquantum.lindblad` accept a constant generator with no
+time argument, so a time-dependent schedule is a new contract and not a reuse,
+which is what `API_CHANGE_PROPOSAL_073` asks to change. The four rows share one
+limit worth naming, because it explains why a reader could believe all four were
+absent: none of `draw`, `translate`, or `evolve` is among the thirty-six root
+exports, so each is reachable only by its own module path, and the parity row is
+where that reachability gap surfaces.
 
 **A row is closed by evidence at the maturity its registry entry requires**, never
 by moving a status. `capability-maturity.toml` holds the maturity levels and
@@ -104,17 +494,43 @@ Six are numerical or scale rows and belong to the three owned cores described in
 § 4. The remaining three are realtime control, which § 6 addresses as a
 non-goal for software alone.
 
-The practical consequence is a scheduling one. 12 of the 16 `B_open_neutral` rows
-are `unsupported`, and every one of them is closed by
-integration rather than by research: a detector error model, chemistry and
-algorithm domain libraries, a decoder family, Clifford+T and
-angle synthesis, QIR code generation, and an MLIR dialect stack. That is the
-cheapest capability per unit of effort available to the programme, and § 5
-governs it. The first of the family moved off `unsupported` without new research,
-which is the shape the remaining rows are expected to follow: the stabilizer
-backend landed by adopting the same permissively licensed engine CUDA-Q uses
-behind its own stabilizer target, while the execution route that would make it a
-planner-selectable backend is a separate change.
+The practical consequence is a scheduling one. 3 of the 16 `B_open_neutral` rows
+are `unsupported`, and every one of them is closed by integration rather than by
+research: a C++ front end and an MLIR dialect stack, a chemistry domain library,
+and a QEC dialect. That is the cheapest capability per unit of effort available to the
+programme, and § 5 governs it. The first of the family moved off `unsupported`
+without new research, which is the shape the remaining rows are expected to
+follow: the stabilizer backend landed by adopting the same permissively licensed
+engine CUDA-Q uses behind its own stabilizer target, while the execution route
+that would make it a planner-selectable backend is a separate change. The Trotter
+slice of `algorithm_block_encoding_family` followed the same shape from the other
+direction: it was written here rather than borrowed, because the plan's route -- adapt
+Qualtran -- was ruled out when the repository owner weighed a 27-dependency
+Apache-2.0 package against implementing the mathematics natively.
+
+`logical_resource_estimation` moved the same way and one step further. It was
+written here rather than adapted, so the Qualtran route this section's table lists
+against it is no longer the route that was taken, and the row now names its own
+module as evidence. It moved to `partial` rather than to `supported` because the
+half that landed is the costing half and not the synthesis half: a rotated
+surface-code cost over the compiler's own static estimate, with the gate-level
+tally passed through rather than re-derived so the repository keeps one source of
+truth for what a T-depth means. What is still absent beside it is the
+approximation half of angle synthesis that would let an arbitrary program reach
+it, and the
+distillation, placement, and device model that would turn a patch count into a
+compiled estimate. **The reuse is the part worth carrying forward**: the row moved
+because a vertical path already existed through the compiler's resource estimate,
+and the new unit extended it instead of starting a second one.
+
+`arithmetic_bloqs` is the third of the family to leave `unsupported`, and it left
+the same way: the adder is a construction the compiler's existing Toffoli rule
+already prices, so the row moved without a new dependency, a new engine, or a
+number of its own. It is also the first closure that had to **narrow a row's
+`cudaq` column** before it could be honest -- the row is named for a construction
+this repository does not build -- which is why it is `partial` and why § 2 states
+the distinction rather than leaving it to be inferred. § 4's three owned cores are
+untouched by all three closures.
 
 ## 4. What must be owned
 
@@ -163,7 +579,10 @@ Borrowing a vendor-neutral project is permitted, and is the intended route for t
 documented need, an ownership boundary, a licence and supply-chain review, a
 replacement interface, and an exit plan.
 
-No project below is currently a FlagQuantum dependency. The table records
+No project below is a core dependency; a core install brings PyTorch only. The
+entries already declared as optional extras - `stim`, `pymatching` and `cotengra` -
+are pinned in `dependency-policy.toml`, and that file, not this table, is where a
+declared extra's version range and classified owner live. The table records
 ownership of the **licence check**, not approval to adopt. Licences were read from
 each project's own repository metadata on 2026-09-30; the licence column must be
 re-verified inside the adoption review, because an upstream licence can change and
@@ -175,10 +594,10 @@ because several of these projects ship bundled components under different terms.
 | QIR specification | Community Specification License 1.0 | `qir_code_generation` | A specification licence. Implementing to it is the route; it grants no code. |
 | Stim | Apache-2.0 | `backend_stim_stabilizer`, `qec_stim_integration`, `detector_error_model` | Also recorded as Apache-2.0 in the parity contract. |
 | PyMatching | Apache-2.0 | `qec_decoder_family` | Minimum-weight perfect matching. |
-| Qualtran | Apache-2.0 | `algorithm_block_encoding_family`, `logical_resource_estimation` | Faithful and fault-tolerant algorithm mathematics. |
-| cotengra | Apache-2.0 | contraction-path search for the tensor-network core | Contraction ordering is search, not physics; owning it adds no moat. |
+| Qualtran | Apache-2.0 | `algorithm_block_encoding_family` | Faithful and fault-tolerant algorithm mathematics. `logical_resource_estimation` was withdrawn from this row: it landed natively over the compiler's own resource estimate rather than by adaptation, so the licence check below no longer applies to it. |
+| cotengra | Apache-2.0 | contraction-path search for the tensor-network core | Contraction ordering is search, not physics; owning it adds no moat. **Adopted**: declared as an optional extra and reached only through the sliced tensor-network routes, which report it as the contraction-path source of the plan they export. |
 | quimb | Apache-2.0 | tensor-network reference implementations |  |
-| opt_einsum | MIT | `einsum` path optimisation |  |
+| opt_einsum | MIT | `einsum` path optimisation | **Surveyed, not adopted.** The contraction order and the pair contraction are both owned in `flagquantum/simulation/tensor_network/`, so a second path optimiser would be a second source of truth for one decision. No module imports it. |
 | ITensor | Apache-2.0 | tensor-network reference implementations | C++. |
 | QuEST | MIT | statevector reference semantics |  |
 | PySCF | Apache-2.0 | `chemistry_domain_library` |  |
@@ -279,7 +698,7 @@ sequencing rather than optimism: the `B_open_neutral` rows are closed first
 because they are cheapest, while the cores advance under their own replacement
 tests.
 
-**Breadth is the failure mode.** 47 `unsupported` rows invite a sprint
+**Breadth is the failure mode.** 25 `unsupported` rows invite a sprint
 across many shallow capabilities. Control-sequence clause 1 is the counterweight: a
 round extends a proven vertical path through input, validation, planning,
 execution, result, failure, and evidence. Breadth is earned by completing such a

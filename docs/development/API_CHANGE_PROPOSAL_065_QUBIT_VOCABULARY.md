@@ -107,7 +107,7 @@ other slice is a defect regardless of whether the tests pass.
 
 ## 4. Why `IR_VERSION` does not change
 
-`flagquantum/core/ir.py` pins `IR_VERSION = "1.0"`, and the serialized payload
+`flagquantum/core/ir/__init__.py` pins `IR_VERSION = "1.0"`, and the serialized payload
 uses `n_wires` and `wires` as **keys**:
 
 ```python

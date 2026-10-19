@@ -2,36 +2,58 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence  # noqa: F401
 from dataclasses import dataclass
 from typing import Any
 
 import torch
 
-from ..errors import ExecutionError, ValidationError
-from ..observables import Observable
-from .density_matrix import expand_operator
+from ..errors import ExecutionError, ValidationError  # noqa: F401
+from ..observables import Observable  # noqa: F401
+from .density_matrix import expand_operator  # noqa: F401
+from .lindblad_generator import Liouvillian
+from .lindblad_integrators import (
+    DEFAULT_INTEGRATOR,
+    INTEGRATOR_NAMES,
+    KRYLOV_SCHEMES,
+    SOLVE_RESTART,  # noqa: F401
+    advance_interval,
+    integrator_order,
+    substeps_per_interval,
+)
 
-
-class EvolutionValidationError(ValidationError):
-    """A machine-readable refusal of an invalid evolution request."""
-
-    def __init__(self, code: str, message: str, *, field: str) -> None:
-        super().__init__(message)
-        self.code = code
-        self.field = field
-
-    def to_dict(self) -> dict[str, str]:
-        return {"code": self.code, "field": self.field, "message": str(self)}
-
-
-@dataclass(frozen=True, slots=True)
-class CollapseOperator:
-    """A physical Lindblad collapse operator and its inverse-time rate."""
-
-    operator: object
-    rate: float
-    qubits: tuple[int, ...] = ()
+# Request normalization moved to ``lindblad_request``; the names below stay
+# bound here because callers and the unit suite already reach them through this
+# module path. A ``noqa`` marks a name only that path uses.
+from .lindblad_request import (
+    CollapseOperator,
+    EvolutionValidationError,
+    _as_complex_matrix,  # noqa: F401
+    _descriptor_matrix,  # noqa: F401
+    _descriptor_pauli,  # noqa: F401
+    _error,
+    _hamiltonian_terms,  # noqa: F401
+    _named_operator,  # noqa: F401
+    _normalize_collapse_operators,
+    _normalize_collapse_terms,  # noqa: F401
+    _normalize_hamiltonian,
+    _normalize_initial_state,
+    _normalize_observables,
+    _normalize_times,
+    _observable_matrix,  # noqa: F401
+    _observable_terms,  # noqa: F401
+    _pauli_operator,  # noqa: F401
+    _pauli_term,  # noqa: F401
+    _pauli_term_wires,  # noqa: F401
+    _require_density_matrices,  # noqa: F401
+    _require_gradients_flag,
+    _require_hermitian_terms,  # noqa: F401
+    _resolve_batch_size,
+    _solve_max_iterations,
+    _solve_tolerance,
+    _statevectors_to_density,  # noqa: F401
+)
+from .matrix_free_hamiltonian import PauliSum, PauliSumTerm  # noqa: F401
 
 
 def amplitude_damping(rate: float, qubit: int) -> CollapseOperator:
@@ -59,7 +81,7 @@ class EvolutionResult:
     maximum_trace_drift: float
     population_bounded: bool
     method: str
-    order: int
+    order: int | None
     step_size: float
     precision: str
     population_tolerance: float
@@ -147,10 +169,13 @@ class EvolutionPlan:
     dimension: int
     trajectory_bytes: int
     method: str
-    order: int
+    order: int | None
     step_size: float
     device: str
     precision: str
+    solve_tolerance: float | None = None
+    batch_size: int = 1
+    require_gradients: bool = False
 
     @property
     def n_qubits(self) -> int:
@@ -164,12 +189,15 @@ class EvolutionPlan:
             "n_times": self.n_times,
             "dimension": self.dimension,
             "trajectory_bytes": self.trajectory_bytes,
+            "batch_size": self.batch_size,
             "numerics": {
                 "method": self.method,
                 "order": self.order,
                 "step_size": self.step_size,
                 "device": self.device,
                 "precision": self.precision,
+                "solve_tolerance": self.solve_tolerance,
+                "require_gradients": self.require_gradients,
             },
         }
 
@@ -177,482 +205,6 @@ class EvolutionPlan:
 def _complex_tensor_to_json(value: torch.Tensor) -> list[Any]:
     raw = value.detach().cpu()
     return torch.stack((raw.real, raw.imag), dim=-1).tolist()
-
-
-def _error(code: str, message: str, field: str) -> EvolutionValidationError:
-    return EvolutionValidationError(code, message, field=field)
-
-
-def _as_complex_matrix(
-    value: Any,
-    *,
-    name: str,
-    dim: int,
-    dtype: torch.dtype,
-    device: torch.device,
-) -> torch.Tensor:
-    try:
-        matrix = torch.as_tensor(value, dtype=dtype, device=device)
-    except (TypeError, ValueError, RuntimeError) as exc:
-        raise _error(
-            "invalid_matrix", f"{name} must be a numeric matrix", name
-        ) from exc
-    if matrix.ndim != 2 or tuple(matrix.shape) != (dim, dim):
-        raise _error(
-            "invalid_shape",
-            f"{name} must have shape ({dim}, {dim})",
-            name,
-        )
-    if not bool(torch.isfinite(matrix).all().item()):
-        raise _error("non_finite_value", f"{name} must be finite", name)
-    return matrix
-
-
-def _normalize_times(
-    times: Any, *, device: torch.device, real_dtype: torch.dtype
-) -> torch.Tensor:
-    try:
-        result = torch.as_tensor(times, dtype=real_dtype, device=device)
-    except (TypeError, ValueError, RuntimeError) as exc:
-        raise _error("invalid_time_grid", "times must be numeric", "times") from exc
-    if result.ndim != 1 or result.numel() == 0:
-        raise _error(
-            "invalid_time_grid",
-            "times must be a non-empty one-dimensional grid",
-            "times",
-        )
-    if not bool(torch.isfinite(result).all().item()):
-        raise _error("non_finite_value", "times must be finite", "times")
-    if result.numel() > 1 and not bool((result[1:] > result[:-1]).all().item()):
-        raise _error(
-            "non_monotone_time_grid",
-            "times must be strictly increasing; duplicates are not allowed",
-            "times",
-        )
-    return result
-
-
-def _normalize_initial_state(
-    initial_state: Any,
-    *,
-    dim: int,
-    dtype: torch.dtype,
-    device: torch.device,
-    tolerance: float,
-) -> torch.Tensor:
-    if isinstance(initial_state, str):
-        if len(initial_state) != dim.bit_length() - 1 or set(initial_state) - {
-            "0",
-            "1",
-        }:
-            raise _error(
-                "invalid_initial_state",
-                "initial_state bitstring must contain exactly n_qubits binary digits",
-                "initial_state",
-            )
-        state = torch.zeros(dim, dtype=dtype, device=device)
-        state[int(initial_state, 2)] = 1
-        return torch.outer(state, torch.conj(state))
-    try:
-        state = torch.as_tensor(initial_state, dtype=dtype, device=device)
-    except (TypeError, ValueError, RuntimeError) as exc:
-        raise _error(
-            "invalid_initial_state",
-            "initial_state must be a statevector or density matrix",
-            "initial_state",
-        ) from exc
-    if not bool(torch.isfinite(state).all().item()):
-        raise _error(
-            "non_finite_value", "initial_state must be finite", "initial_state"
-        )
-    if state.ndim == 1 and state.shape[0] == dim:
-        norm = torch.sum(torch.abs(state) ** 2)
-        if abs(float(norm.item()) - 1.0) > tolerance:
-            raise _error(
-                "unnormalized_initial_state",
-                "initial_state statevector must have unit norm",
-                "initial_state",
-            )
-        return torch.outer(state, torch.conj(state))
-    if state.ndim != 2 or tuple(state.shape) != (dim, dim):
-        raise _error(
-            "invalid_shape",
-            f"initial_state must have shape ({dim},) or ({dim}, {dim})",
-            "initial_state",
-        )
-    if not torch.allclose(state, torch.conj(state).T, atol=tolerance, rtol=0.0):
-        raise _error(
-            "non_hermitian_initial_state",
-            "initial_state density matrix must be Hermitian",
-            "initial_state",
-        )
-    trace = torch.trace(state).real
-    if abs(float(trace.item()) - 1.0) > tolerance:
-        raise _error(
-            "unnormalized_initial_state",
-            "initial_state density matrix must have unit trace",
-            "initial_state",
-        )
-    eigenvalues = torch.linalg.eigvalsh(state)
-    if float(torch.min(eigenvalues).item()) < -tolerance:
-        raise _error(
-            "non_positive_initial_state",
-            "initial_state density matrix must be positive semidefinite",
-            "initial_state",
-        )
-    return state
-
-
-def _pauli_operator(
-    pauli: str,
-    qubits: Sequence[int],
-    *,
-    n_qubits: int,
-    dtype: torch.dtype,
-    device: torch.device,
-    field: str,
-) -> torch.Tensor:
-    symbols = pauli.strip().upper()
-    if not symbols or set(symbols) - {"I", "X", "Y", "Z"}:
-        raise _error("unknown_operator", f"unknown Pauli operator {pauli!r}", field)
-    if len(symbols) != len(qubits):
-        raise _error(
-            "invalid_operator",
-            "the Pauli string length must match the number of qubits",
-            field,
-        )
-    matrices = {
-        "I": torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=dtype, device=device),
-        "X": torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=dtype, device=device),
-        "Y": torch.tensor([[0.0, -1j], [1j, 0.0]], dtype=dtype, device=device),
-        "Z": torch.tensor([[1.0, 0.0], [0.0, -1.0]], dtype=dtype, device=device),
-    }
-    local = matrices[symbols[0]]
-    for symbol in symbols[1:]:
-        local = torch.kron(local, matrices[symbol])
-    try:
-        return expand_operator(local, qubits, n_qubits, dtype=dtype, device=device)
-    except (TypeError, ValueError) as exc:
-        raise _error("invalid_operator", str(exc), field) from exc
-
-
-def _descriptor_matrix(
-    descriptor: Mapping[str, Any],
-    *,
-    n_qubits: int,
-    dtype: torch.dtype,
-    device: torch.device,
-    field: str,
-) -> torch.Tensor:
-    pauli = descriptor.get("pauli", descriptor.get("operator"))
-    if not isinstance(pauli, str):
-        raise _error(
-            "invalid_operator", "operator descriptors require a Pauli string", field
-        )
-    raw_qubits = descriptor.get("qubits")
-    qubits = tuple(range(len(pauli))) if raw_qubits is None else tuple(raw_qubits)
-    try:
-        normalized_qubits = tuple(int(qubit) for qubit in qubits)
-    except (TypeError, ValueError) as exc:
-        raise _error(
-            "invalid_operator", "operator qubits must be integers", field
-        ) from exc
-    return _pauli_operator(
-        pauli,
-        normalized_qubits,
-        n_qubits=n_qubits,
-        dtype=dtype,
-        device=device,
-        field=field,
-    )
-
-
-def _normalize_hamiltonian(
-    hamiltonian: Any,
-    *,
-    n_qubits: int,
-    dim: int,
-    dtype: torch.dtype,
-    device: torch.device,
-) -> torch.Tensor:
-    if isinstance(hamiltonian, Observable):
-        return _observable_matrix(
-            hamiltonian,
-            n_qubits=n_qubits,
-            dtype=dtype,
-            device=device,
-            field="hamiltonian",
-        )
-    if (
-        isinstance(hamiltonian, Sequence)
-        and not isinstance(hamiltonian, (str, bytes, torch.Tensor))
-        and hamiltonian
-        and isinstance(hamiltonian[0], Mapping)
-    ):
-        matrix = torch.zeros((dim, dim), dtype=dtype, device=device)
-        for term in hamiltonian:
-            if not isinstance(term, Mapping):
-                raise _error(
-                    "invalid_hamiltonian",
-                    "Hamiltonian terms must all be operator mappings",
-                    "hamiltonian",
-                )
-            try:
-                coefficient = float(term.get("coefficient", 1.0))
-            except (TypeError, ValueError) as exc:
-                raise _error(
-                    "invalid_hamiltonian",
-                    "Hamiltonian coefficients must be finite real numbers",
-                    "hamiltonian",
-                ) from exc
-            if not bool(torch.isfinite(torch.tensor(coefficient)).item()):
-                raise _error(
-                    "invalid_hamiltonian",
-                    "Hamiltonian coefficients must be finite real numbers",
-                    "hamiltonian",
-                )
-            matrix = matrix + coefficient * _descriptor_matrix(
-                term,
-                n_qubits=n_qubits,
-                dtype=dtype,
-                device=device,
-                field="hamiltonian",
-            )
-        return matrix
-    return _as_complex_matrix(
-        hamiltonian,
-        name="hamiltonian",
-        dim=dim,
-        dtype=dtype,
-        device=device,
-    )
-
-
-def _observable_matrix(
-    observable: Observable,
-    *,
-    n_qubits: int,
-    dtype: torch.dtype,
-    device: torch.device,
-    field: str,
-) -> torch.Tensor:
-    dim = 2**n_qubits
-    matrix = torch.zeros((dim, dim), dtype=dtype, device=device)
-    identity = torch.eye(dim, dtype=dtype, device=device)
-    for term in observable.terms:
-        if not term.factors:
-            matrix = matrix + term.coefficient * identity
-            continue
-        qubits = tuple(qubit for qubit, _ in term.factors)
-        pauli = "".join(axis for _, axis in term.factors)
-        matrix = matrix + term.coefficient * _pauli_operator(
-            pauli,
-            qubits,
-            n_qubits=n_qubits,
-            dtype=dtype,
-            device=device,
-            field=field,
-        )
-    return matrix
-
-
-def _named_operator(
-    name: str,
-    qubits: Sequence[int],
-    *,
-    n_qubits: int,
-    dtype: torch.dtype,
-    device: torch.device,
-) -> torch.Tensor:
-    normalized = name.strip().lower().replace("-", "_")
-    if normalized not in {"amplitude_damping", "sigma_minus"}:
-        raise _error(
-            "unknown_collapse_operator",
-            f"unknown collapse operator {name!r}",
-            "collapse_operators",
-        )
-    if len(qubits) != 1:
-        raise _error(
-            "invalid_collapse_operator",
-            f"{normalized} requires exactly one qubit",
-            "collapse_operators",
-        )
-    sigma_minus = torch.tensor([[0.0, 1.0], [0.0, 0.0]], dtype=dtype, device=device)
-    try:
-        return expand_operator(
-            sigma_minus, qubits, n_qubits, dtype=dtype, device=device
-        )
-    except (TypeError, ValueError) as exc:
-        raise _error(
-            "invalid_collapse_operator", str(exc), "collapse_operators"
-        ) from exc
-
-
-def _normalize_collapse_terms(
-    collapse_operators: Sequence[Any] | None,
-    *,
-    n_qubits: int,
-    dim: int,
-    dtype: torch.dtype,
-    device: torch.device,
-) -> tuple[tuple[torch.Tensor, float], ...]:
-    result = []
-    for index, item in enumerate(collapse_operators or ()):
-        operator: Any
-        rate: Any
-        raw_qubits: Any
-        if isinstance(item, CollapseOperator):
-            operator = item.operator
-            rate = item.rate
-            raw_qubits = item.qubits
-        elif isinstance(item, Mapping):
-            operator = item.get("operator", item.get("kind"))
-            rate = item.get("rate")
-            raw_qubits = item.get("qubits", item.get("qubit", (0,)))
-        elif isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
-            if len(item) != 2:
-                raise _error(
-                    "invalid_collapse_operator",
-                    "collapse operator pairs must contain (operator, rate)",
-                    "collapse_operators",
-                )
-            operator, rate = item
-            raw_qubits = (0,)
-        else:
-            raise _error(
-                "invalid_collapse_operator",
-                f"collapse_operators[{index}] must provide operator and rate",
-                "collapse_operators",
-            )
-        try:
-            numeric_rate = float(rate)
-        except (TypeError, ValueError) as exc:
-            raise _error(
-                "invalid_rate",
-                "collapse rates must be finite numbers",
-                "collapse_operators",
-            ) from exc
-        if not torch.isfinite(torch.tensor(numeric_rate)):
-            raise _error(
-                "invalid_rate",
-                "collapse rates must be finite numbers",
-                "collapse_operators",
-            )
-        if numeric_rate < 0.0:
-            raise _error(
-                "negative_rate",
-                "collapse rates must be non-negative",
-                "collapse_operators",
-            )
-        if isinstance(raw_qubits, int):
-            qubits: tuple[int, ...] = (raw_qubits,)
-        else:
-            try:
-                qubits = tuple(int(qubit) for qubit in raw_qubits)
-            except (TypeError, ValueError) as exc:
-                raise _error(
-                    "invalid_collapse_operator",
-                    "collapse operator qubits must be integer indices",
-                    "collapse_operators",
-                ) from exc
-        if isinstance(operator, str):
-            full = _named_operator(
-                operator,
-                qubits,
-                n_qubits=n_qubits,
-                dtype=dtype,
-                device=device,
-            )
-        else:
-            full = _as_complex_matrix(
-                operator,
-                name="collapse_operators",
-                dim=dim,
-                dtype=dtype,
-                device=device,
-            )
-        result.append((full, numeric_rate))
-    return tuple(result)
-
-
-def _normalize_collapse_operators(
-    collapse_operators: Sequence[Any] | None,
-    *,
-    n_qubits: int,
-    dim: int,
-    dtype: torch.dtype,
-    device: torch.device,
-) -> tuple[torch.Tensor, ...]:
-    return tuple(
-        (rate**0.5) * operator
-        for operator, rate in _normalize_collapse_terms(
-            collapse_operators,
-            n_qubits=n_qubits,
-            dim=dim,
-            dtype=dtype,
-            device=device,
-        )
-    )
-
-
-def _normalize_observables(
-    observables: Mapping[str, Any] | Sequence[Any] | None,
-    *,
-    dim: int,
-    dtype: torch.dtype,
-    device: torch.device,
-) -> dict[str, torch.Tensor]:
-    if observables is None:
-        return {}
-    items: Iterable[tuple[Any, Any]]
-    if isinstance(observables, Mapping):
-        named_mapping = True
-        items = observables.items()
-    else:
-        named_mapping = False
-        items = enumerate(observables)
-    result = {}
-    for name, value in items:
-        if isinstance(value, Observable):
-            label = str(name) if named_mapping else f"observable_{name}"
-            matrix = _observable_matrix(
-                value,
-                n_qubits=dim.bit_length() - 1,
-                dtype=dtype,
-                device=device,
-                field="observables",
-            )
-        elif isinstance(value, Mapping):
-            default_label = str(name) if named_mapping else f"observable_{name}"
-            label = str(value.get("name", default_label))
-            matrix = _descriptor_matrix(
-                value,
-                n_qubits=dim.bit_length() - 1,
-                dtype=dtype,
-                device=device,
-                field="observables",
-            )
-        else:
-            label = str(name)
-            matrix = _as_complex_matrix(
-                value,
-                name=f"observables[{label!r}]",
-                dim=dim,
-                dtype=dtype,
-                device=device,
-            )
-        if label in result:
-            raise _error(
-                "duplicate_observable", f"duplicate observable {label!r}", "observables"
-            )
-        if not torch.allclose(matrix, torch.conj(matrix).T, atol=1e-6, rtol=0.0):
-            raise _error(
-                "non_hermitian_observable",
-                f"observable {label!r} must be Hermitian",
-                "observables",
-            )
-        result[label] = matrix
-    return result
 
 
 def plan_density_matrix_evolution(
@@ -666,6 +218,10 @@ def plan_density_matrix_evolution(
     device: torch.device | str = "cpu",
     dtype: torch.dtype = torch.complex128,
     return_density_matrices: bool = False,
+    method: str = DEFAULT_INTEGRATOR,
+    solve_tolerance: float | None = None,
+    batch_size: int | None = None,
+    require_gradients: bool = False,
 ) -> EvolutionPlan:
     """Validate an evolution request and report its deterministic local plan."""
 
@@ -679,6 +235,18 @@ def plan_density_matrix_evolution(
             "dtype must be torch.complex64 or torch.complex128",
             "dtype",
         )
+    if method not in INTEGRATOR_NAMES:
+        raise _error(
+            "unsupported_method",
+            "method must be one of "
+            + ", ".join(repr(name) for name in INTEGRATOR_NAMES)
+            + f", not {method!r}",
+            "method",
+        )
+    resolved_require_gradients = _require_gradients_flag(require_gradients)
+    resolved_solve_tolerance = _solve_tolerance(
+        solve_tolerance, dtype=dtype, method=method
+    )
     resolved_device = torch.device(device)
     if resolved_device.type != "cpu":
         raise _error(
@@ -690,29 +258,27 @@ def plan_density_matrix_evolution(
     tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
     dim = 2**n_qubits
     time_grid = _normalize_times(times, device=resolved_device, real_dtype=real_dtype)
-    h_matrix = _normalize_hamiltonian(
+    _normalize_hamiltonian(
         hamiltonian,
-        n_qubits=n_qubits,
+        n_wires=n_qubits,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
+        tolerance=tolerance,
     )
-    if not torch.allclose(h_matrix, torch.conj(h_matrix).T, atol=tolerance, rtol=0.0):
-        raise _error(
-            "non_hermitian_hamiltonian",
-            "hamiltonian must be Hermitian",
-            "hamiltonian",
-        )
-    _normalize_initial_state(
+    initial_matrices = _normalize_initial_state(
         initial_state,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
         tolerance=tolerance,
     )
+    resolved_batch_size = _resolve_batch_size(
+        batch_size, 1 if initial_matrices.ndim == 2 else int(initial_matrices.shape[0])
+    )
     _normalize_collapse_operators(
         collapse_operators,
-        n_qubits=n_qubits,
+        n_wires=n_qubits,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -721,19 +287,31 @@ def plan_density_matrix_evolution(
     step_size = (
         0.0
         if time_grid.numel() == 1
-        else float((torch.max(time_grid[1:] - time_grid[:-1]) / 2).item())
+        else float(
+            (
+                torch.max(time_grid[1:] - time_grid[:-1])
+                / substeps_per_interval(method)
+            ).item()
+        )
     )
     element_bytes = 8 if dtype == torch.complex64 else 16
     return EvolutionPlan(
         n_wires=n_qubits,
         n_times=int(time_grid.numel()),
         dimension=dim,
-        trajectory_bytes=int(time_grid.numel()) * dim * dim * element_bytes,
-        method="runge-kutta",
-        order=4,
+        trajectory_bytes=(
+            int(time_grid.numel()) * resolved_batch_size * dim * dim * element_bytes
+        ),
+        batch_size=resolved_batch_size,
+        method=method,
+        order=integrator_order(method),
         step_size=step_size,
         device=str(resolved_device),
         precision="complex64" if dtype == torch.complex64 else "complex128",
+        solve_tolerance=(
+            resolved_solve_tolerance if method in KRYLOV_SCHEMES else None
+        ),
+        require_gradients=resolved_require_gradients,
     )
 
 
@@ -748,6 +326,10 @@ def evolve_density_matrix(
     device: torch.device | str = "cpu",
     dtype: torch.dtype = torch.complex128,
     return_density_matrices: bool = False,
+    method: str = DEFAULT_INTEGRATOR,
+    solve_tolerance: float | None = None,
+    batch_size: int | None = None,
+    require_gradients: bool = False,
 ) -> EvolutionResult:
     """Evolve a state on an explicit time grid with the Lindblad equation.
 
@@ -758,9 +340,42 @@ def evolve_density_matrix(
     unit.  The named amplitude-damping operator is ``sqrt(rate) * |0><1|``;
     rates are never interpreted as channel probabilities.
 
-    Two classical fourth-order Runge--Kutta steps are taken between every pair
-    of output times.  Consequently the explicit output grid controls the
-    integration step size and scales with the physical problem.
+    ``method="runge-kutta"`` takes two explicit fourth-order Runge--Kutta steps
+    between every pair of output times.  ``method="crank-nicolson"`` takes two
+    second-order trapezoidal steps that are solved matrix-free, so a stiff
+    generator stays stable at a step where the explicit scheme would diverge;
+    ``solve_tolerance`` sets the relative residual that solve must reach.
+    ``method="krylov-exponential"`` advances each output interval by one
+    matrix-free action of the generator's exponential, which has no step-size
+    error for a time-independent generator, and reports ``order=None`` because
+    its accuracy is set by ``solve_tolerance`` rather than by an order.
+
+    An ``initial_state`` with a leading batch axis evolves every member under
+    the same Hamiltonian, so one backward pass covers the whole batch. The
+    trajectory then reports one population row per time and member. Every step
+    is written with differentiable ``torch`` operations, so the returned
+    populations stay connected to a differentiable ``initial_state`` and
+    Hamiltonian. ``require_gradients`` asserts that connection and raises
+    instead of returning a detached trajectory that still looks correct.
+
+    Args:
+        batch_size: The declared batch axis. ``None`` uses the batch the
+            ``initial_state`` itself carries; a declared batch that disagrees
+            with it is refused.
+        require_gradients: Refuse to return a trajectory that carries no
+            gradient graph. A plan deserialized from JSON cannot supply live
+            tensors, so it fails here instead of silently detaching.
+
+    Examples:
+        >>> import torch
+        >>> from flagquantum.simulation import amplitude_damping, evolve_density_matrix
+        >>> times = torch.linspace(0.0, 1.0, 5)
+        >>> result = evolve_density_matrix(
+        ...     0.0 * torch.eye(2), [[0.0, 0.0], [0.0, 1.0]], 1, times,
+        ...     [amplitude_damping(rate=2.0, qubit=0)], method="crank-nicolson",
+        ... )
+        >>> result.method, result.order
+        ('crank-nicolson', 2)
     """
 
     if isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 1:
@@ -773,6 +388,18 @@ def evolve_density_matrix(
             "dtype must be torch.complex64 or torch.complex128",
             "dtype",
         )
+    if method not in INTEGRATOR_NAMES:
+        raise _error(
+            "unsupported_method",
+            "method must be one of "
+            + ", ".join(repr(name) for name in INTEGRATOR_NAMES)
+            + f", not {method!r}",
+            "method",
+        )
+    resolved_require_gradients = _require_gradients_flag(require_gradients)
+    resolved_solve_tolerance = _solve_tolerance(
+        solve_tolerance, dtype=dtype, method=method
+    )
     resolved_device = torch.device(device)
     if resolved_device.type != "cpu":
         raise _error(
@@ -787,21 +414,14 @@ def evolve_density_matrix(
     dim = 2**n_qubits
 
     time_grid = _normalize_times(times, device=resolved_device, real_dtype=real_dtype)
-    h_matrix = _normalize_hamiltonian(
+    hamiltonian_representation = _normalize_hamiltonian(
         hamiltonian,
-        n_qubits=n_qubits,
+        n_wires=n_qubits,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
+        tolerance=validation_tolerance,
     )
-    if not torch.allclose(
-        h_matrix, torch.conj(h_matrix).T, atol=validation_tolerance, rtol=0.0
-    ):
-        raise _error(
-            "non_hermitian_hamiltonian",
-            "hamiltonian must be Hermitian",
-            "hamiltonian",
-        )
     rho = _normalize_initial_state(
         initial_state,
         dim=dim,
@@ -809,9 +429,13 @@ def evolve_density_matrix(
         device=resolved_device,
         tolerance=validation_tolerance,
     )
+    # A declared batch must agree with the batch the initial state carries. The
+    # resolved value is not needed afterwards, because every later stage reads
+    # the axis off ``rho``; the refusal is the point of the call.
+    _resolve_batch_size(batch_size, 1 if rho.ndim == 2 else int(rho.shape[0]))
     collapse = _normalize_collapse_operators(
         collapse_operators,
-        n_qubits=n_qubits,
+        n_wires=n_qubits,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -819,26 +443,42 @@ def evolve_density_matrix(
     observable_matrices = _normalize_observables(
         observables, dim=dim, dtype=dtype, device=resolved_device
     )
-    collapse_products = tuple(torch.conj(op).T @ op for op in collapse)
-
-    def derivative(state: torch.Tensor) -> torch.Tensor:
-        value = -1j * (h_matrix @ state - state @ h_matrix)
-        for operator, product in zip(collapse, collapse_products, strict=True):
-            value = value + operator @ state @ torch.conj(operator).T
-            value = value - 0.5 * (product @ state + state @ product)
-        return value
+    generator = Liouvillian(hamiltonian_representation, collapse, hilbert_dimension=dim)
 
     states = [rho]
+    residuals = []
     for start, stop in zip(time_grid[:-1], time_grid[1:], strict=True):
-        step = ((stop - start) / 2).to(dtype=real_dtype)
-        for _ in range(2):
-            k1 = derivative(rho)
-            k2 = derivative(rho + step * k1 / 2)
-            k3 = derivative(rho + step * k2 / 2)
-            k4 = derivative(rho + step * k3)
-            rho = rho + step * (k1 + 2 * k2 + 2 * k3 + k4) / 6
+        rho, residual = advance_interval(
+            generator.derivative,
+            rho,
+            stop - start,
+            method=method,
+            solve_tolerance=resolved_solve_tolerance,
+            solve_max_iterations=_solve_max_iterations(dim),
+        )
+        residuals.append(residual)
         states.append(rho)
+    if residuals and max(residuals) > resolved_solve_tolerance:
+        raise _error(
+            "integration_not_converged",
+            "the Krylov step did not reach the requested relative defect: "
+            f"{max(residuals):.3e} > {resolved_solve_tolerance:.3e}",
+            "solve_tolerance",
+        )
     trajectory = torch.stack(states)
+    # The requirement is on the returned trajectory, not on either input: a
+    # caller may parameterize the Hamiltonian and hold a fixed initial state,
+    # or the other way round. Only the trajectory knows whether the graph
+    # survived, and a detached trajectory is indistinguishable by value, so
+    # this is the one place the requirement can be decided.
+    if resolved_require_gradients and not trajectory.requires_grad:
+        raise _error(
+            "gradients_not_available",
+            "require_gradients was requested but the trajectory carries no "
+            "gradient graph; a plan restores its request from JSON, which holds "
+            "detached tensors",
+            "require_gradients",
+        )
     populations = torch.real(torch.diagonal(trajectory, dim1=-2, dim2=-1))
     traces = torch.diagonal(trajectory, dim1=-2, dim2=-1).sum(dim=-1)
     maximum_trace_drift = float(torch.max(torch.abs(traces - 1.0)).item())
@@ -851,13 +491,24 @@ def evolve_density_matrix(
         .item()
     )
     observable_values = {
-        name: torch.real(torch.einsum("tij,ji->t", trajectory, matrix))
+        name: torch.real(
+            torch.einsum(
+                "tij,ji->t" if trajectory.ndim == 3 else "tbij,ji->tb",
+                trajectory,
+                matrix,
+            )
+        )
         for name, matrix in observable_matrices.items()
     }
     step_size = (
         0.0
         if time_grid.numel() == 1
-        else float((torch.max(time_grid[1:] - time_grid[:-1]) / 2).item())
+        else float(
+            (
+                torch.max(time_grid[1:] - time_grid[:-1])
+                / substeps_per_interval(method)
+            ).item()
+        )
     )
     return EvolutionResult(
         times=time_grid,
@@ -866,8 +517,8 @@ def evolve_density_matrix(
         density_matrices=trajectory if return_density_matrices else None,
         maximum_trace_drift=maximum_trace_drift,
         population_bounded=population_bounded,
-        method="runge-kutta",
-        order=4,
+        method=method,
+        order=integrator_order(method),
         step_size=step_size,
         precision="complex64" if dtype == torch.complex64 else "complex128",
         population_tolerance=population_tolerance,

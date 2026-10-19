@@ -73,12 +73,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.compiler.commutation_cancellation as commutation_cancellation
-import flagquantum.compiler.diagonal_before_measure as diagonal_before_measure
-import flagquantum.compiler.inverse_cancellation as inverse_cancellation
-import flagquantum.compiler.one_qubit_optimization as one_qubit_optimization
+import flagquantum.compiler.pass_manager as pass_manager
 import flagquantum.compiler.pipeline as compiler_pipeline
-import flagquantum.compiler.two_qubit_optimization as two_qubit_optimization
 from flagquantum.compiler import optimize
 from flagquantum.compiler.commutation_cancellation import (
     cancel_commuting_self_inverse,
@@ -125,8 +121,8 @@ _DYNAMIC_PASSES: tuple[tuple[str, _Pass], ...] = (
     ("remove_diagonal_gates_before_measure", remove_diagonal_gates_before_measure),
 )
 
-#: The passes `_optimize_to_fixed_point` calls, once per fixed-point round, in the
-#: order it calls them, at the level `optimize` runs when a caller names none.
+#: The passes the fixed-point round runs, once per round, in the order it runs
+#: them, at the level `optimize` runs when a caller names none.
 #: `remove_identity_gates` appears twice on purpose: it runs immediately after the
 #: inversion passes and again after the commutation passes, for the reason the
 #: declaration in `optimization_levels` gives -- the loop now runs a declared
@@ -938,60 +934,59 @@ def test_the_outcome_instrument_can_see_a_removal_that_is_wrong() -> None:
 
 
 class _Recorder:
-    """Record the passes `_optimize_to_fixed_point` actually calls, in order.
+    """Record the passes the fixed-point round actually runs, in order.
 
-    The loop imports its passes inside the function and now runs a sequence it
-    reads from `optimization_levels`, so the declaration is what a test can read
-    and this recorder is what checks that the loop *runs* it. Patching each call
-    site is what makes the two comparable as code against execution rather than
-    prose against code: a name in the table that the loop never resolves, or one
-    the loop resolves in a different order, is invisible to a test that only reads
-    the table.
+    The round is a sequence read from `optimization_levels`, and the loop that runs
+    it resolves each name in a registry it builds from
+    `pipeline.default_pass_registry`. So the interception point is that registry:
+    the recorder wraps every pass it resolves, which is what makes the recording a
+    record of execution rather than of prose. A name in the declaration that the
+    loop never resolves, or one it resolves in a different order, fails here and is
+    invisible to a test that only reads the declaration.
 
-    `remove_zero_state_resets` is patched on `compiler_pipeline`, not on its own module,
-    because the loop's module imports that name at module scope: patching the definition
-    site would leave the loop calling the original object and the recording would silently
-    miss a pass.
+    Patching the definition sites of the passes, which is what this recorder did
+    while the loop called them by module-level name, would now record nothing: the
+    registry captures the function objects once, when the module is imported, so a
+    later rebinding of a module global is a name the loop never reads.
     """
-
-    _TARGETS: tuple[tuple[Any, str], ...] = (
-        (compiler_pipeline, "remove_zero_state_resets"),
-        (diagonal_before_measure, "remove_diagonal_gates_before_measure"),
-        (compiler_pipeline, "remove_identity_gates"),
-        (compiler_pipeline, "merge_self_inverse"),
-        (inverse_cancellation, "merge_inverse_pairs"),
-        (compiler_pipeline, "merge_adjacent_rotations"),
-        (commutation_cancellation, "merge_commuting_rotations"),
-        (commutation_cancellation, "cancel_commuting_self_inverse"),
-        (one_qubit_optimization, "collapse_one_qubit_runs"),
-        (two_qubit_optimization, "collapse_two_qubit_blocks"),
-    )
 
     def __init__(self) -> None:
         self.calls: list[str] = []
-        self._restore: list[tuple[Any, str, Any]] = []
+        self._restore: list[tuple[str, Any]] = []
 
     def __enter__(self) -> _Recorder:
-        for module, name in self._TARGETS:
-            original = getattr(module, name)
-
-            def recorder(
-                ir: CircuitIR,
-                *args: Any,
-                _name: str = name,
-                _original: Any = original,
-                **kwargs: Any,
-            ) -> CircuitIR:
-                self.calls.append(_name)
-                return _original(ir, *args, **kwargs)
-
-            self._restore.append((module, name, original))
-            setattr(module, name, recorder)
+        original = compiler_pipeline.default_pass_registry
+        self._restore.append(("default_pass_registry", original))
+        compiler_pipeline.default_pass_registry = self._recording_registry(original)
         return self
 
+    def _recording_registry(self, original: Any) -> Any:
+        def build() -> Any:
+            return self._wrapped(original())
+
+        return build
+
+    def _wrapped(self, registry: Any) -> Any:
+        passes: dict[str, Any] = {}
+        specs: dict[str, Any] = {}
+        for name in registry.names:
+            function = registry.resolve(name)
+            spec = registry.spec(name)
+            wrapper = self._wrapper(name, function)
+            passes[name] = wrapper
+            specs[name] = pass_manager.PassSpec(wrapper, spec.uses, spec.preserves)
+        return pass_manager.PassRegistry(passes, specs, registry.analyses)
+
+    def _wrapper(self, name: str, original: Any) -> Any:
+        def recorder(program: CircuitIR, *args: Any, **kwargs: Any) -> CircuitIR:
+            self.calls.append(name)
+            return original(program, *args, **kwargs)
+
+        return recorder
+
     def __exit__(self, *_: Any) -> None:
-        for module, name, original in reversed(self._restore):
-            setattr(module, name, original)
+        for name, original in reversed(self._restore):
+            setattr(compiler_pipeline, name, original)
 
 
 def test_the_roster_is_the_round_body_the_pipeline_runs() -> None:
@@ -1021,10 +1016,12 @@ def test_the_roster_is_the_round_body_the_pipeline_runs() -> None:
     repeated = sorted({name for name in _ROUND_BODY if _ROUND_BODY.count(name) > 1})
     assert repeated == ["remove_identity_gates"]
 
-    # The recorder has to watch the same roster, or the composition test below would
-    # confirm an enumeration it never observed.
-    assert {name for _, name in _Recorder._TARGETS} == set(_ROSTER)
-    assert len(_Recorder._TARGETS) == len(_ROSTER)
+    # The recorder wraps every pass the registry the loop builds resolves, so the
+    # registry's names have to be the roster; otherwise the composition test below
+    # would confirm an enumeration it never observed.
+    watched = compiler_pipeline.default_pass_registry().names
+    assert set(watched) == set(_ROSTER)
+    assert len(watched) == len(_ROSTER)
 
 
 def test_optimize_calls_exactly_the_enumerated_round_body() -> None:

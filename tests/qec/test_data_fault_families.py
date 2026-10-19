@@ -242,27 +242,30 @@ def test_a_z_fault_reaches_only_the_checks_that_can_see_it(case: str) -> None:
         assert any(detectors for detectors in later.values())
 
 
-def test_the_sampler_places_each_family_as_one_conjugated_channel() -> None:
-    """The engine has one channel, so the family is stated by what wraps it.
+def test_the_sampler_places_each_family_as_one_channel_of_its_own() -> None:
+    """Each family is placed as one channel, named for the Pauli it faults with.
 
-    The bit flip is placed at the round boundary for every family; the Z and Y
-    families add the conjugation that turns that one draw into the Pauli they
-    name. Nothing else changes, which is asserted by the instruction count: the
-    noiseless program plus exactly the wrappers and the channels. One round is
-    used so that one raised location is one location, and the family's rate is
-    stated through its per-element vector so the location raised is on the wire
-    the assertion names.
+    The channel is read off the family rather than built from it: an X fault is
+    ``bit_flip``, a Z fault is ``phase_flip`` and a Y fault is ``y_flip``, which
+    are the three single-qubit Pauli channels the noise package already carries.
+    Stating the Pauli as the channel's own identity rather than as a conjugation
+    around one shared draw is what keeps a placed fault distinguishable from the
+    readout-basis rotation, which is also emitted as ``h`` on a data qubit.
+    Nothing else changes, which is asserted by the instruction count: the
+    noiseless program plus exactly the one channel. One round is used so that one
+    raised location is one location, and the family's rate is stated through its
+    per-element vector so the location raised is on the wire the assertion names.
     """
 
     memory = build_memory_circuit(RepetitionCode(distance=3), rounds=1)
     plan = _measurement_plan(memory)
-    wrappers = {
-        "data": ("", ""),
-        "phase": ("h", "h"),
-        "both": ("sdg", "s"),
-        "measurement": ("", ""),
+    channel_by_family = {
+        "data": "bit_flip",
+        "phase": "phase_flip",
+        "both": "y_flip",
+        "measurement": "bit_flip",
     }
-    for family, (before, after) in wrappers.items():
+    for family, name in channel_by_family.items():
         if family == "measurement":
             # A measurement mechanism names an ancilla, and one round's first
             # check owns ancilla 3 on this code.
@@ -282,32 +285,24 @@ def test_the_sampler_places_each_family_as_one_conjugated_channel() -> None:
         locations = _noise_locations(memory, plan, PhenomenologicalNoise(**profile))
         assert [location.kind for location in locations] == [family]
         assert locations[0].wire == wire
+        assert locations[0].channel == name
 
         program = _noisy_program(plan, locations)
-        placed = [name for name in (before, "bit_flip", after) if name]
         channels = [
             index
             for index, instruction in enumerate(program.instructions)
-            if instruction.name == "bit_flip"
+            if instruction.name == name
         ]
         assert len(channels) == 1
         channel = channels[0]
-        assert len(program.instructions) == len(plan.program.instructions) + len(placed)
+        assert len(program.instructions) == len(plan.program.instructions) + 1
 
-        # The channel sits at the location's own instruction, with the family's
-        # wrappers around it and nothing else inserted, and it is placed *before*
-        # that instruction rather than after it.
-        first = channel - placed.index("bit_flip")
-        assert [
-            instruction.name
-            for instruction in program.instructions[first : first + len(placed)]
-        ] == placed
-        assert all(
-            instruction.wires == (wire,)
-            for instruction in program.instructions[first : first + len(placed)]
-        )
+        # The channel sits at the location's own instruction and nothing else is
+        # inserted, and it is placed *before* that instruction rather than after
+        # it.
+        assert program.instructions[channel].wires == (wire,)
         assert (
-            program.instructions[first + len(placed)]
+            program.instructions[channel + 1]
             is plan.program.instructions[locations[0].instruction_index]
         )
 

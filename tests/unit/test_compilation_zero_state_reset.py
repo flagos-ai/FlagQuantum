@@ -329,7 +329,14 @@ def test_the_pass_is_idempotent() -> None:
 
 
 def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
-    """The loop reads the declared sequence, and names no pass itself."""
+    """The loop reads the declared sequence, and names no pass itself.
+
+    The fixed-point loop no longer names each pass inline either; it resolves a
+    named sequence through the pass registry. The wiring to check is therefore the
+    declaration the loop reads, and then which registry binding answers for the
+    pass: its name occupies one slot in the registered sequence, so a second
+    binding or a duplicated slot fails here.
+    """
 
     composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
     assert composition.count("remove_zero_state_resets") == 1
@@ -348,6 +355,18 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
 
     assert "optimization_level_stages" in called
     assert "remove_zero_state_resets" not in called
+
+    bound = [
+        name
+        for name, function in pipeline_module.BUILTIN_PASSES.items()
+        if function is remove_zero_state_resets
+    ]
+    assert bound == ["remove_zero_state_resets"]
+    assert pipeline_module.OPTIMIZATION_PIPELINE.count("remove_zero_state_resets") == 1
+    assert (
+        pipeline_module.default_pass_registry().resolve("remove_zero_state_resets")
+        is remove_zero_state_resets
+    )
 
 
 def test_a_removed_reset_leaves_the_statevector_identical() -> None:

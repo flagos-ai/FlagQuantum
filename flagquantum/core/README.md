@@ -13,7 +13,9 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 
 ## Where to start
 
-- `ir.py`: canonical circuit representation, validation, and serialization.
+- `ir/`: canonical circuit representation, validation, and serialization. The
+  public IR is `ir/__init__.py`; the internal level boundary behind it, and the
+  shortest path for changing a level, are in `ir/README.md`.
 - `operator_schema.py`: canonical operation names and schemas.
 - `parameters.py`: symbolic parameters and binding semantics.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.

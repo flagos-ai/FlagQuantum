@@ -7,8 +7,9 @@ import pytest
 from flagquantum.compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from flagquantum.compiler._hybrid.dynamic_lowering import LoweredDynamicProgram
 from flagquantum.qec.circuit import MeasurementRef, MemoryCircuit, build_memory_circuit
-from flagquantum.qec.codes import CodeCheck, RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import CodeCheck, RepetitionCode
 from flagquantum.qec.repetition import _memory_source
+from flagquantum.qec.surface import RotatedSurfaceCode
 from flagquantum.qec.types import ErrorSchedule
 from flagquantum.runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 

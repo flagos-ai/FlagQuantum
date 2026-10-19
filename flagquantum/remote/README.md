@@ -15,8 +15,63 @@ with their owning domains.
   quantum submissions, counts, and provider evidence.
 - [Remote compute](compute/README.md): import `JiudingClient` from
   `flagquantum.remote.compute` for batch jobs and reusable Jiuding workspaces.
+- [Local target emulation](emulation.py): import `emulate` from
+  `flagquantum.remote.emulation` to compile a program for a declared target and
+  run the compiled program here, without submitting anything.
 - [Quafu guide](../../docs/guides/QUAFU_BACKEND.md): compiler, token, and hardware setup.
 - [Jiuding guide](../../docs/guides/JIUDING.md): jobs, workspace execution, and recovery.
+
+## Submit one program to several targets
+
+`flagquantum.remote.jobs.submit_to_targets` takes one program and a sequence of
+targets, submits concurrently, and returns without waiting. Each target gets its
+own `RemoteJob` -- its own status, result, cancel, and receipt -- and the report
+lists the targets in the order the caller named them, not the order the network
+answered. A target that refuses the program is recorded with its exception type
+and message rather than aborting the others, and is never retried; an
+unreadable program is refused before any target is contacted.
+
+This is fan-out, not one partitioned workload: every target runs a full copy of
+the program, and no state, shot, or sample crosses targets. The report therefore
+carries `distribution_semantics="replicated_independent_targets"` and
+`scalability_claim_allowed=False` with its blockers, and carries no `world_size`
+or rank ownership, because there is no rank to attribute anything to. Reaching
+for the same program on several QPUs to compare or to average independent
+streams is what this is for; capacity expansion is not.
+
+Offline evidence is `tests/api_contract/test_remote_job_fanout.py`, which drives
+the fan-out through a transport double. The function is not re-exported from
+`flagquantum.remote`: reach it by module path so it cannot be mistaken for a
+single submission.
+
+## Emulate a target without submitting
+
+`flagquantum.remote.emulation.emulate` takes the same `CloudBackendProfile` an
+adapter would submit against. It builds a `TargetCapabilitySnapshot` from that
+declaration, runs the target's own legalization, routing, emission, and
+conformance passes, executes the compiled program on the local CPU, and returns
+the compilation evidence next to the result. It never contacts a provider and is
+not re-exported from `flagquantum.remote`, so a caller reaches it by module path
+and cannot mistake it for a submission.
+
+The returned record keeps claims that are not the same kind of claim apart:
+
+- the target identity names an emulator, not the device whose profile supplied
+  the facts;
+- the device kind and precision are observed on this machine, while the qubit
+  capacity, native gates, result formats, and limits are the profile's
+  declaration, pinned by a digest of its payload;
+- the noiseless record is the compiled program's own execution. Passing a
+  `noise_model` or a `device_profile` adds a second record that names where its
+  channels came from, the representation the planner chose, and whether the
+  channel evolution is exact.
+
+```bash
+python -m examples.remote.emulate_local_target
+```
+
+Noise is opt-in. Without it the result is exact for the compiled program, which
+is still a simulation of that program and not of the hardware.
 
 Keep classical compute results distinct from the QPU shots/counts contract.
 A provider response must match its submitted program, target, and task; an

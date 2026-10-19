@@ -5,6 +5,11 @@ from .belief_propagation import (
     BeliefPropagationDecoder,
     BeliefPropagationDecodeResult,
 )
+from .bicycle import bivariate_bicycle_code
+from .bposd import (
+    BeliefPropagationOsdDecoder,
+    BeliefPropagationOsdDecodeResult,
+)
 from .chunks import (
     ChunkLayout,
     DemChunk,
@@ -40,6 +45,8 @@ from .codes import (
     code_names,
     get_code,
     register_code,
+    toric_code,
+    triangular_colour_code,
 )
 from .context import (
     DecoderContext,
@@ -57,7 +64,13 @@ from .decoders import (
 )
 from .decoding_graph import DecodingGraph, DecodingGraphEdge
 from .dem import DemError, DemMergeRule, DemSample, DetectorErrorModel
+from .dem_circuit import (
+    circuit_from_detector_error_model,
+    detector_error_model_from_circuit,
+)
 from .dem_construction import CssCodeMatrices, css_code_matrices
+from .floquet import FloquetCode, MeasurementPhase, ring_floquet_code
+from .logical import certify_logical_product, derive_anticommuting_logical_product
 from .matching import MatchingDecodeResult, MinimumWeightMatchingDecoder
 from .noise import (
     PhenomenologicalNoise,
@@ -65,11 +78,17 @@ from .noise import (
     run_repetition_memory_noise_sweep,
 )
 from .pauli import Pauli
+from .qldpc import qldpc_code
+from .reed_muller import reed_muller_code
 from .registry import (
     AUTHORITY_NAME,
     BELIEF_PROPAGATION_NAME,
+    BELIEF_PROPAGATION_OSD_NAME,
     CROSS_CHECK_NAME,
+    SLIDING_WINDOW_NAME,
     DetectorErrorModelDecoder,
+    DetectorErrorModelDecodeResult,
+    GraphlikeDetectorErrorModelDecoder,
     decoder_names,
     get_decoder,
     register_decoder,
@@ -83,10 +102,18 @@ from .sampling import (
 from .sliding_window import (
     SlidingWindowDecoder,
     SlidingWindowDecodeResult,
+    SlidingWindowMatchingDecoder,
     dem_chunks_to_d_sparse,
     dem_chunks_to_o_sparse,
     dem_chunks_to_pcm,
 )
+from .subsystem import (
+    SubsystemCode,
+    tesseract_code,
+    tesseract_column_swap,
+    tesseract_free_cnot_pairs,
+)
+from .surface import ZxxzSurfaceCode
 from .types import (
     Correction,
     DecodeResult,
@@ -103,14 +130,18 @@ from .types import (
 __all__ = (
     "AUTHORITY_NAME",
     "BELIEF_PROPAGATION_NAME",
+    "BELIEF_PROPAGATION_OSD_NAME",
+    "CROSS_CHECK_NAME",
+    "SLIDING_WINDOW_NAME",
     "BeliefPropagationDecodeResult",
     "BeliefPropagationDecoder",
-    "CROSS_CHECK_NAME",
+    "BeliefPropagationOsdDecodeResult",
+    "BeliefPropagationOsdDecoder",
     "ChunkLayout",
     "CodeCheck",
+    "Correction",
     "CssCode",
     "CssCodeMatrices",
-    "Correction",
     "DecodeResult",
     "Decoder",
     "DecoderContext",
@@ -127,16 +158,20 @@ __all__ = (
     "DetectionEvent",
     "Detector",
     "DetectorErrorModel",
+    "DetectorErrorModelDecodeResult",
     "DetectorErrorModelDecoder",
     "DetectorLayout",
     "ErrorEvent",
     "ErrorSchedule",
+    "FloquetCode",
+    "GraphlikeDetectorErrorModelDecoder",
     "LogicalObservable",
     "MatchingDecodeResult",
     "MatchingDependencyError",
     "MeasurementMap",
-    "MeasurementSamples",
+    "MeasurementPhase",
     "MeasurementRef",
+    "MeasurementSamples",
     "MemoryCircuit",
     "MinimumWeightMatchingDecoder",
     "NoiseSweepPoint",
@@ -147,22 +182,28 @@ __all__ = (
     "PhenomenologicalNoise",
     "PyMatchingDecoder",
     "RepetitionCode",
-    "RepetitionNoiseProfile",
     "RepetitionLookupDecoder",
-    "RepetitionStreamingLookupDecoder",
-    "RepetitionTemporalDecoder",
     "RepetitionMemoryResult",
     "RepetitionMemoryShot",
+    "RepetitionNoiseProfile",
+    "RepetitionStreamingLookupDecoder",
+    "RepetitionTemporalDecoder",
     "RotatedSurfaceCode",
     "SeamId",
     "SlidingWindowDecodeResult",
     "SlidingWindowDecoder",
+    "SlidingWindowMatchingDecoder",
     "StabilizerCode",
     "SteaneCode",
-    "SyndromeRound",
     "StreamingDecoder",
+    "SubsystemCode",
+    "SyndromeRound",
+    "ZxxzSurfaceCode",
     "ancilla_bands",
+    "bivariate_bicycle_code",
     "build_memory_circuit",
+    "certify_logical_product",
+    "circuit_from_detector_error_model",
     "code_names",
     "css_code_matrices",
     "decoder_context_from_memory_circuit",
@@ -177,12 +218,22 @@ __all__ = (
     "dem_stitch",
     "dem_stitch_all",
     "dem_stitch_merged",
+    "derive_anticommuting_logical_product",
+    "detector_error_model_from_circuit",
     "get_code",
     "get_decoder",
+    "qldpc_code",
+    "reed_muller_code",
     "register_code",
     "register_decoder",
+    "ring_floquet_code",
     "run_repetition_memory_experiment",
     "run_repetition_memory_noise_sweep",
     "sample_memory_circuit",
     "sample_memory_measurements",
+    "tesseract_code",
+    "tesseract_column_swap",
+    "tesseract_free_cnot_pairs",
+    "toric_code",
+    "triangular_colour_code",
 )

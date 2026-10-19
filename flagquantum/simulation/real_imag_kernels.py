@@ -415,7 +415,16 @@ def complex_einsum_pair(
     *,
     compile_cuda: bool = True,
 ) -> torch.Tensor:
-    """Contract two tensors without placing complex operators in the compiled graph."""
+    """Contract two tensors without placing complex operators in the compiled graph.
+
+    The fused layout BMM runs only for the exact shapes its build declares, on a
+    CUDA device, at ``complex64``, and without a gradient requirement. Everywhere
+    else this returns the explicit `_pair_contraction`, which is native
+    ``torch.einsum`` with a canonical-layout fallback for the ranks einsum
+    refuses; native einsum is the Simulation-owned semantic authority and test
+    oracle rather than a cataloged kernel, so it must stay installable and
+    runnable without Triton, FlagTree, Torch-FL, or a native extension.
+    """
 
     supported_shapes = _FUSED_LAYOUT_BMM_SHAPES_BY_EQUATION.get(equation)
     if supported_shapes is not None and (

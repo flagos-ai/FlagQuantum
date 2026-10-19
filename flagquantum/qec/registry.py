@@ -31,6 +31,25 @@ required together because the three carriers are one documented surface: a name
 that could be built from a model and not from a graph would be a name whose
 accepted sources depend on which name was asked for.
 
+**The pair graph is a sub-protocol, not part of the family.** A detector error
+model decoder answers a syndrome with the logical observables its correction
+flips, and that answer is what every name in this registry is required to
+produce. A *graphlike* decoder says something more: that the model it consumed
+became a weighted pair graph, which the caller can read back and hand in again.
+That is a real contract but it is not the family's, because a mechanism that
+flips three detectors has no pair graph to offer --
+:meth:`~flagquantum.qec.DecodingGraph.from_detector_error_model` refuses it as a
+hyperedge -- and a decoder that answers such a model is exactly the decoder this
+registry exists to make nameable. Promising the graph here would confine the
+registry to the graphlike half and leave the hyperedge decoder reachable only by
+importing its class, which is the thing a name-keyed factory exists to avoid. So
+:class:`DetectorErrorModelDecoder` states the family contract --
+``decode`` returning a record that carries ``observables`` -- and
+:class:`GraphlikeDetectorErrorModelDecoder` states the narrower one, with
+``graph``. The graph route of :func:`get_decoder` is the second contract's only
+consumer: it is offered for a name whose implementation searches a pair graph and
+refused, with the reason, for a name whose implementation has none.
+
 **The optional name is always there; the optional distribution is not.**
 ``PyMatchingDecoder`` is imported and registered whether or not PyMatching is
 installed, because the name is part of this package's surface and not part of the
@@ -48,6 +67,23 @@ in-tree matcher is the authority for a decoded syndrome and the PyMatching
 adapter is the cross-check that keeps that claim independent of the matcher's own
 implementation, so the two are registered side by side and the caller chooses.
 
+**The windowed member is the authority, not a third claim.** ``sliding_window_matching``
+is registered against the decoder that decides a syndrome a band of detectors at a
+time and calls the authority's matcher on each band, so it is the same authority
+read through a window rather than a second opinion about the same syndrome. It is
+registered beside the other two because a call site that already chooses a decoder
+by name -- the reason this factory exists -- is exactly the call site that wants
+the matcher that finishes a history the exact matcher refuses, and choosing it by
+name keeps the caller from having to reach the class directly. The name carries
+one obligation the other two do not: a window narrower than the whole graph
+decides a band rather than the history, so a caller that names it states
+``commit`` and ``window`` when the default band is not the one it wants. Its
+class is the one member this module does not import at module level, because the
+windowed decoder reads a decoder back out of this registry while it decodes, so
+the two modules would import each other; the registration is made by
+:func:`_register_windowed_decoder` the first time a name is asked for, and every
+route into the table goes through it, so the name is present for every caller.
+
 **The source argument carries a model; it does not configure a decoder.** Upstream
 takes ``H_or_dem_text_or_sparse_matrix``, and this factory takes the three forms
 a caller can hold a model in: the model, stim's text for one, and the decoding
@@ -60,11 +96,14 @@ the noise the caller decodes against.
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Callable, Iterable
 from typing import Any, Protocol, TypeVar, runtime_checkable
 
+from ..errors import CapabilityError
 from .adapters import PyMatchingDecoder
 from .belief_propagation import BeliefPropagationDecoder
+from .bposd import BeliefPropagationOsdDecoder
 from .decoding_graph import DecodingGraph
 from .dem import DetectorErrorModel
 from .matching import MinimumWeightMatchingDecoder
@@ -75,40 +114,85 @@ AUTHORITY_NAME = "minimum_weight_matching"
 CROSS_CHECK_NAME = "pymatching"
 #: The name of the in-tree decoder for the models a matcher cannot represent.
 BELIEF_PROPAGATION_NAME = "belief_propagation"
+#: The name of the decoder that answers a model the matcher refuses as a hyperedge.
+BELIEF_PROPAGATION_OSD_NAME = "belief_propagation_osd"
+#: The name of the authority used one band of detectors at a time.
+SLIDING_WINDOW_NAME = "sliding_window_matching"
 
 _DecoderT = TypeVar("_DecoderT", bound="DetectorErrorModelDecoder")
+
+
+@runtime_checkable
+class DetectorErrorModelDecodeResult(Protocol):
+    """What every decode this registry returns carries.
+
+    The family's answer is which logical observables the correction flips, so
+    that is the whole of the shared result contract and the only member stated
+    here. The two implementations this registry holds agree on it and on nothing
+    else: :class:`~flagquantum.qec.MatchingDecodeResult` reports the error edges
+    it selected and :class:`~flagquantum.qec.BeliefPropagationOsdDecodeResult`
+    reports the mechanisms it selected, its convergence and its iteration count,
+    and a caller that names a decoder to reach one of those records reads it off
+    the class it asked for.
+
+    Like the decoder protocols, this is stated as a read-only property because
+    the records are frozen: a protocol that promised a writable ``observables``
+    would be satisfied by no record in this family.
+    """
+
+    @property
+    def observables(self) -> tuple[int, ...]: ...
 
 
 @runtime_checkable
 class DetectorErrorModelDecoder(Protocol):
     """What a decoder this registry hands back carries.
 
-    The protocol states the instance contract, and the instance contract of this
-    family is one member: a caller of :func:`get_decoder` holds a decoder and asks
-    it for ``decode``. The constructors are deliberately not stated here --
-    ``from_detector_error_model`` and ``from_decoding_graph`` are classmethods, so
-    no return type can state them -- and are checked in :func:`register_decoder`
-    instead, where a class that lacks either is refused.
+    The protocol states the instance contract and not the constructor one: a
+    caller of :func:`get_decoder` holds a decoder and asks it for ``decode``.
+    Registration additionally requires the class to carry
+    ``from_detector_error_model``, which is a classmethod and so is not part of
+    the instance contract a return type can state; the two members are checked
+    together in :func:`register_decoder`, where a class that lacks either is
+    refused.
 
-    What ``decode`` *returns* is likewise not stated, because the family does not
-    share one result record and should not pretend to. A matcher's correction is a
-    set of graph edges with a weight, and a belief-propagation decoder's is a set
-    of mechanism indices with the beliefs' convergence; both answer "which
-    mechanisms explain this syndrome, and what do they flip", and a protocol that
-    named either record would refuse the other family for being a different
-    answer rather than a different shape.
-
-    ``graph`` is not part of this contract either. Two of the three carriers build
-    a graph and the text route builds one indirectly, but a decoder whose input is
-    the model as written -- a mechanism touching three detectors is a variable
-    touching three checks -- has no graph to hand back for exactly the models it
-    exists to read, so requiring one would make the protocol untrue of the family
-    it names. A decoder that does build a graph exposes it as a read-only
-    ``graph`` property, which is a fact about that decoder rather than about the
-    family.
+    ``graph`` is not stated here. A decoder whose model has a three-detector
+    mechanism has no pair graph to read back, so a promise made here would be one
+    the hyperedge member could not keep; the narrower
+    :class:`GraphlikeDetectorErrorModelDecoder` states it, and the graph route of
+    :func:`get_decoder` is what reads it. This keeps the family contract to the
+    one answer every member gives: which observables the correction flips.
     """
 
-    def decode(self, detection_events: Iterable[int]) -> Any: ...
+    def decode(
+        self, detection_events: Iterable[int]
+    ) -> DetectorErrorModelDecodeResult: ...
+
+
+@runtime_checkable
+class GraphlikeDetectorErrorModelDecoder(DetectorErrorModelDecoder, Protocol):
+    """A family decoder whose model became a weighted pair graph.
+
+    ``graph`` is stated as a read-only property rather than as an attribute,
+    because the decoders in this family are frozen records: a protocol that
+    promised a writable ``graph`` would not be satisfied by a record whose
+    ``graph`` cannot be reassigned, and a registry that returned one decoder type
+    and refused another for being immutable would be checking a property no
+    caller uses.
+
+    A class satisfies this protocol in one of the two ways this package builds a
+    decoder from a graph: its own ``from_decoding_graph`` classmethod, or ``graph``
+    as a constructor parameter. The first is what a decoder that must read the
+    model behind a graph declares -- a graph states one edge per graphlike
+    mechanism, so it is a narrower statement than the model a hyperedge decoder
+    needs and that decoder reads the graph's edges back as a model. The second is
+    what a decoder that already searches the graph declares, and it is measured
+    here on the class, because a required dataclass field is not a class attribute
+    and ``hasattr`` would answer it wrongly.
+    """
+
+    @property
+    def graph(self) -> DecodingGraph: ...
 
 
 #: The instance contract is what a caller gets back; the value here is the class
@@ -117,7 +201,7 @@ _DECODERS: dict[str, type[DetectorErrorModelDecoder]] = {}
 
 
 def register_decoder(
-    name: str, *, replace: bool = False
+    name: str, *, replace: bool = False, graph_route: bool = True
 ) -> Callable[[type[_DecoderT]], type[_DecoderT]]:
     """Name a detector error model decoder in the registry.
 
@@ -129,6 +213,15 @@ def register_decoder(
             refused by default, because two classes answering to one name is a
             choice the registry cannot make on the caller's behalf and the second
             registration is usually a typo rather than an intent.
+        graph_route: Whether this name is also built from a decoding graph, which
+            is the class-level half of what
+            :class:`GraphlikeDetectorErrorModelDecoder` states as a protocol. It
+            is stated here rather than inferred because a decoder that reads a
+            model as written has no pair graph for exactly the models it exists to
+            answer -- a mechanism touching three detectors is a variable touching
+            three checks -- so a name that carries none is a fact about that
+            decoder rather than a missing member, and the graph route of
+            :func:`get_decoder` refuses such a name by name.
 
     Returns:
         The decorator that registers a class and returns it unchanged, so the
@@ -136,8 +229,9 @@ def register_decoder(
 
     Raises:
         TypeError: The name is not a string, or the registered object does not
-            carry the three members the family shares -- a ``decode`` method and
-            the two constructors the three carriers select.
+            carry the members the family shares -- a ``decode`` method, a
+            ``from_detector_error_model`` constructor, and, unless
+            ``graph_route`` is false, a way to be built from a decoding graph.
         ValueError: The name is empty or carries whitespace, or it is already
             registered and ``replace`` is not set.
     """
@@ -157,15 +251,18 @@ def register_decoder(
     def decorate(candidate: type[_DecoderT]) -> type[_DecoderT]:
         missing = [
             member
-            for member in ("decode", "from_detector_error_model", "from_decoding_graph")
+            for member in ("decode", "from_detector_error_model")
             if not callable(getattr(candidate, member, None))
         ]
+        if graph_route and not _declares_a_graph_carrier(candidate):
+            missing.append("from_decoding_graph")
         if missing:
             raise TypeError(
                 f"{candidate.__name__} cannot be registered as {name!r}: a detector "
                 f"error model decoder needs a decode method, a "
                 f"from_detector_error_model constructor and a from_decoding_graph "
-                f"constructor, and {', '.join(missing)} "
+                f"constructor or a graph constructor parameter, and "
+                f"{', '.join(missing)} "
                 f"{'is' if len(missing) == 1 else 'are'} missing or not callable"
             )
         _DECODERS[name] = candidate
@@ -177,6 +274,7 @@ def register_decoder(
 def decoder_names() -> tuple[str, ...]:
     """Return the registered names, sorted, so a refusal can list them."""
 
+    _register_windowed_decoder()
     return tuple(sorted(_DECODERS))
 
 
@@ -195,11 +293,14 @@ def get_decoder(
         name: A name from :func:`decoder_names`.
         source: The detector error model to decode, stim's text for one, or the
             decoding graph that model defines. A model is lifted through the
-            class's own ``from_detector_error_model``; a graph is passed to the
-            class's own ``from_decoding_graph``, which for a matcher is the graph
-            it already searches and for a decoder that reads the model as written is
-            the lift of the graph's own edges back into a model; text is read
-            through
+            class's own ``from_detector_error_model``; a graph is offered only to a
+            name whose class declares a way to be built from one, which is either
+            its own ``from_decoding_graph`` -- for a decoder that reads the model as
+            written, the lift of the graph's own edges back into a model -- or its
+            ``graph`` constructor parameter, for a decoder that already searches
+            the graph. A name with neither is refused by name, because a decoder
+            that has no pair graph cannot be handed the graph of a model it would
+            not accept; text is read through
             :meth:`DetectorErrorModel.from_stim_text`, so ``options`` must be the
             options that reader takes, and the model it returns is then lifted.
         **options: Forwarded to whichever route the source selects, so a name
@@ -217,7 +318,9 @@ def get_decoder(
             error model stim could have written.
         TypeError: The source is not one of the three carriers.
         CapabilityError: The registered implementation cannot represent this
-            model or graph, with the reason the implementation states.
+            model or graph, with the reason the implementation states, or the
+            source is a graph and the registered class is not one that takes a
+            graph.
         MatchingDependencyError: The registered implementation needs an optional
             distribution that is not installed, with the extra named.
 
@@ -231,6 +334,7 @@ def get_decoder(
         the matrix and the noise together, so the caller lifts it.
     """
 
+    _register_windowed_decoder()
     try:
         factory = _DECODERS[name]
     except KeyError:
@@ -240,7 +344,8 @@ def get_decoder(
         ) from None
     # A registered value is a class, and it is reached through two different
     # constructors: its own ``from_detector_error_model`` for a model or text, and
-    # its own ``from_decoding_graph`` for a graph. The protocol above states the
+    # whichever graph carrier the class declares -- its own ``from_decoding_graph``
+    # or its ``graph`` constructor parameter. The protocols above state the
     # instance a caller receives, because that is what this function returns and
     # what a caller then holds; no one protocol can state class-level signatures
     # without widening it, so the routes call the class through a
@@ -252,7 +357,17 @@ def get_decoder(
             source, **options
         )
     elif isinstance(source, DecodingGraph):
-        decoder = build.from_decoding_graph(source, **options)
+        if callable(getattr(factory, "from_decoding_graph", None)):
+            decoder = build.from_decoding_graph(source, **options)
+        elif _takes_a_graph(factory):
+            decoder = build(graph=source, **options)
+        else:
+            raise CapabilityError(
+                f"{name!r} is registered against {factory.__name__}, which decodes a "
+                "detector error model and searches no pair graph, so it cannot be "
+                "handed a DecodingGraph; ask for it with a model or with stim's text "
+                "for one"
+            )
     elif isinstance(source, str):
         decoder = build.from_detector_error_model(
             DetectorErrorModel.from_stim_text(source, **options)
@@ -265,6 +380,71 @@ def get_decoder(
     return decoder
 
 
+def _declares_a_graph_carrier(factory: type) -> bool:
+    """Whether ``factory`` declares a way to be built from a decoding graph.
+
+    Two declarations count, because this package builds a decoder from a graph
+    two ways: a ``from_decoding_graph`` classmethod for a decoder that must read
+    the model the graph states, and a ``graph`` constructor parameter for a
+    decoder that searches the graph as it stands.
+    """
+
+    if callable(getattr(factory, "from_decoding_graph", None)):
+        return True
+    return _takes_a_graph(factory)
+
+
+def _takes_a_graph(factory: type) -> bool:
+    """Whether ``factory(graph=...)`` is a construction this class declares.
+
+    The graph route's whole dependency is that the class takes the graph as a
+    keyword, so that is what is measured, on the class rather than on an
+    instance: ``hasattr`` on the class cannot answer it, because every decoder
+    here is a frozen dataclass and a field with no default is not a class
+    attribute. A class whose signature cannot be read is reported as not taking
+    one, which keeps the refusal in the graph route rather than turning an
+    unreadable signature into a second kind of failure.
+    """
+
+    try:
+        parameters = inspect.signature(factory).parameters
+    except (TypeError, ValueError):
+        return False
+    return "graph" in parameters
+
+
+def _register_windowed_decoder() -> None:
+    """Register the windowed member the first time a name is asked for.
+
+    The windowed member is a decoder of this package, so it belongs in this table
+    beside the others. It is registered on demand rather than at the end of this
+    module because it is the one member that reads a decoder back out of this
+    registry while it decodes: :mod:`flagquantum.qec.sliding_window` imports
+    :func:`get_decoder` at its own import time, so importing it here at module
+    level would close a cycle that only one of the two import orders survives.
+    Reading the class inside this function keeps the edge one-way, and the first
+    ask for a name is also the first moment both modules are whole.
+
+    A name already in the table is left as it is, so a caller that replaced the
+    registration keeps its replacement.
+    """
+
+    if SLIDING_WINDOW_NAME in _DECODERS:
+        return
+    from .sliding_window import SlidingWindowMatchingDecoder
+
+    register_decoder(SLIDING_WINDOW_NAME)(SlidingWindowMatchingDecoder)
+
+
 register_decoder(AUTHORITY_NAME)(MinimumWeightMatchingDecoder)
 register_decoder(CROSS_CHECK_NAME)(PyMatchingDecoder)
 register_decoder(BELIEF_PROPAGATION_NAME)(BeliefPropagationDecoder)
+# The hyperedge decoder reads the model as written and has no graph carrier by
+# design: a mechanism touching three detectors is a variable touching three
+# checks, so the model it answers is exactly the one no pair graph states. It is
+# registered without one, which is the class-level half of what
+# `GraphlikeDetectorErrorModelDecoder` states as a protocol, and the graph route
+# of `get_decoder` refuses this name by name rather than handing it a graph.
+register_decoder(BELIEF_PROPAGATION_OSD_NAME, graph_route=False)(
+    BeliefPropagationOsdDecoder
+)

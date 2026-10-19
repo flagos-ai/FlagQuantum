@@ -12,14 +12,14 @@ from dataclasses import dataclass, field
 from numbers import Real
 from typing import Any
 
-from ..errors import SerializationError, ValidationError
-from .operator_schema import (
+from ...errors import SerializationError, ValidationError
+from ..operator_schema import (
     OPERATOR_SCHEMAS,
     OperatorSchema,
     canonical_opcode,
     get_operator_schema,
 )
-from .parameters import Parameter, ParameterExpression
+from ..parameters import Parameter, ParameterExpression
 
 IR_VERSION = "1.0"
 
@@ -100,8 +100,8 @@ def _normalize_dtype(value: Any) -> str:
 def _normalize_count(value: Any, *, what: str) -> int:
     """Return a count as an integer, refusing anything that does not denote one.
 
-    ``n_wires`` is a number of qubits and a ``shape`` entry is a dimension, so a value
-    that is not exactly an integer is not a count.  ``int(value)`` accepted ``2.7`` as
+    A circuit width is a number of qubits and a ``shape`` entry is a dimension, so a
+    value that is not exactly an integer is not a count.  ``int(value)`` accepted ``2.7`` as
     ``2``, ``"3"`` as ``3`` and ``True`` as ``1``, which silently rewrote the width of
     the program the caller described and then executed it at that other width.  Only
     values that already denote an integer are accepted, through the interpreter's own

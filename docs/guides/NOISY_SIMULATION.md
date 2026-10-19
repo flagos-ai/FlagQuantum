@@ -233,10 +233,18 @@ print(sampled_sv.standard_error)
 The state layout is
 `[trajectory_batch, circuit_batch, 2**n_qubits]`. Seeded random streams belong
 to global trajectory IDs, so changing `trajectory_batch_size` preserves every
-sampled trajectory. Pauli channels use a state-independent branch fast path;
-amplitude damping uses a branch-state-free specialized kernel, and other Kraus
-channels use batched probability, sampling, application, and normalization.
-Multi-qubit Kraus channels are supported by the generic path.
+sampled trajectory. A channel whose operators are non-negative real scales times
+unitaries is a probability distribution over unitary branches, and the kernel
+reads that classification rather than the channel's opcode: it draws one branch
+per trajectory row against the channel's own weights and applies only the
+branches it drew, which is what makes a sixteen-branch two-qubit channel cost
+the two branches a small ensemble actually selected rather than all sixteen.
+Amplitude damping uses a branch-state-free specialized kernel, and every other
+Kraus channel uses batched probability, sampling, application, and
+normalization. The three routes are counted separately in
+`BatchedStatevectorTrajectoryResult`, so which kernel ran a channel is read from
+the result rather than inferred from its name. Multi-qubit Kraus channels are
+supported by both the branch route and the generic path.
 
 With `mode="auto"`, specifying `trajectories` selects this path when its
 trajectory block satisfies the supplied memory budget. `max_bond` or `cutoff`
@@ -531,12 +539,28 @@ The current built-ins are:
 
 - `bit_flip_channel(probability)`;
 - `phase_flip_channel(probability)`;
+- `y_flip_channel(probability)`;
 - `depolarizing_channel(probability)`;
+- `two_qubit_depolarizing_channel(probability)`;
 - `amplitude_damping_channel(gamma)`;
 - `phase_damping_channel(gamma)`;
 - `reset_error_channel(probability_zero, probability_one=0)`;
 - `thermal_relaxation_channel(t1, t2, duration, excited_population=0)`;
 - `coherent_overrotation_channel(angle, axis="x")`.
+
+Three of those are the three single-qubit Pauli faults, and each is named for the
+basis it flips: `bit_flip_channel` applies `X`, `phase_flip_channel` applies `Z`,
+and `y_flip_channel` applies `Y`. The last is a channel of its own rather than the
+first two composed, because `sqrt(1 - p) I` beside `sqrt(p) Y` is one branch — a Y
+error happens once, not twice — and because the two single-basis faults composed
+would fire independently of each other.
+
+`bit_flip`, `phase_flip`, `depolarizing`, and `amplitude_damping` are also
+registered circuit opcodes, so `circuit.bit_flip(0, 0.01)` and
+`fqn.channel_from_parameters("bit_flip", {"probability": 0.01})` both reach them.
+`y_flip` is a channel rather than an opcode: it is built from the factory and
+attached through a `NoiseModel`, a lowered channel, or a record that places
+channels itself, and it has no `circuit.y_flip(...)` method.
 
 Every `KrausChannel` is validated at construction. Operators must be finite,
 square, equal-sized, act on a power-of-two Hilbert space, and satisfy

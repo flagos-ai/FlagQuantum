@@ -1111,6 +1111,192 @@
       "tolerance_version": "tolerance_v1"
     },
     {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "ccx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "cphase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "crx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "cry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "crz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "cswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "cx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "cy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "cz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "h",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "phase",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "rx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "rxx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "ry",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "ryy",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "rz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "rzz",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "s",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "sdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "swap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "sx",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "sxdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "t",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "tdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "u1",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "u2",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "u3",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "x",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "y",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "z",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
       "backend": "provider",
       "comparison": "round_trip",
       "operator": "ccx",

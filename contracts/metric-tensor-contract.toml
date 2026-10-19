@@ -382,7 +382,7 @@ reason = "the mode serves the density operator on the state accessor, so the del
 mode = "stabilizer"
 refused_by = "fq.run"
 exception = "ValidationError"
-message_phrase = "mode='stabilizer' requires shots or a sampling measurement in the program"
+message_phrase = "mode='stabilizer' requires an expectation or sampling measurement in the program"
 reason = "the mode returns measurement outcomes rather than a state, so there is no state to differentiate"
 
 # A mode the caller names is honoured and refused where it cannot serve a state,
@@ -392,19 +392,19 @@ reason = "the mode returns measurement outcomes rather than a state, so there is
 mode = "statevector"
 refused_by = "fq.run"
 exception = "ValidationError"
-message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+message_phrase = "stable noisy execution supports mode='auto', mode='density_matrix', or mode='stabilizer'"
 
 [[noise_refusal]]
 mode = "mps"
 refused_by = "fq.run"
 exception = "ValidationError"
-message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+message_phrase = "stable noisy execution supports mode='auto', mode='density_matrix', or mode='stabilizer'"
 
 [[noise_refusal]]
 mode = "tensor_network"
 refused_by = "fq.run"
 exception = "ValidationError"
-message_phrase = "stable noisy execution supports mode='auto' or mode='density_matrix'"
+message_phrase = "stable noisy execution supports mode='auto', mode='density_matrix', or mode='stabilizer'"
 
 [verification]
 contract = "tests/unit/test_metric_tensor_contract.py"

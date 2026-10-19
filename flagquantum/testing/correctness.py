@@ -12,6 +12,7 @@ from typing import Any
 from flagquantum.compiler.openqasm import emit_openqasm
 from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
 from flagquantum.compiler.qcis import emit_qcis
+from flagquantum.compiler.qir import emit_qir
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.noise import (
@@ -161,6 +162,10 @@ def execute_certification_case(case: CertificationCase) -> CertificationResult:
             text = emit_qcis(ir)
             passed = bool(text.strip())
             return CertificationResult(case, True, passed, "qcis_serialization")
+        elif case.backend == "qir":
+            text = emit_qir(ir)
+            passed = bool(text.strip())
+            return CertificationResult(case, True, passed, "qir_serialization")
         elif case.backend == "provider":
             package = fqd.create_deployment_package(ir, optimize=False)
             from .remote import InMemoryRemoteTarget

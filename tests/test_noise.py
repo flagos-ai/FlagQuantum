@@ -72,7 +72,26 @@ def test_batched_statevector_trajectory_is_batch_size_invariant():
     assert torch.equal(serial.retained_states, batched.retained_states)
     assert torch.equal(serial.expectation_z, batched.expectation_z)
     assert serial.trajectory_seeds == batched.trajectory_seeds
-    assert batched.pauli_fast_path_events == 37 * circuit.bsz * 2
+    assert batched.unitary_branch_fast_path_events == 37 * circuit.bsz * 2
+
+
+def test_batched_statevector_summary_reports_the_kernel_counters():
+    circuit = fq.Circuit(1).x(0)
+    model = fqn.NoiseModel().add("x", bit_flip_channel(1.0))
+
+    result = run_noisy_statevector(
+        circuit, model, trajectories=4, trajectory_batch_size=2, seed=11
+    )
+
+    summary = result.summary()
+    assert result.unitary_branch_fast_path_events == 4
+    assert summary["unitary_branch_fast_path_events"] == (
+        result.unitary_branch_fast_path_events
+    )
+    assert summary["amplitude_damping_fast_path_events"] == (
+        result.amplitude_damping_fast_path_events
+    )
+    assert summary["generic_kraus_events"] == result.generic_kraus_events
 
 
 def test_batched_statevector_generic_kraus_matches_density_matrix():
@@ -141,7 +160,12 @@ def test_batched_statevector_two_wire_kraus_matches_density_and_batching():
 
     assert torch.equal(serial.retained_states, batched.retained_states)
     assert torch.allclose(batched.expectation_z, exact, atol=0.04)
-    assert batched.generic_kraus_events == 4000
+    # A two-wire channel whose operators are non-negative scales times unitaries
+    # is a mixture, so it takes the branch route rather than the generic one: the
+    # weights it samples against are the channel's own, and nothing had to be
+    # applied to the state to measure them.
+    assert batched.unitary_branch_fast_path_events == 4000
+    assert batched.generic_kraus_events == 0
 
 
 def test_public_run_reports_noisy_statevector_runtime_mode():

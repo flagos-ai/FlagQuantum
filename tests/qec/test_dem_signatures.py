@@ -12,12 +12,13 @@ from flagquantum.qec.circuit import (
     MemoryCircuit,
     build_memory_circuit,
 )
-from flagquantum.qec.codes import CodeCheck, RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.codes import CodeCheck, RepetitionCode
 from flagquantum.qec.dem_construction import (
     _forced_signature,
     _inject_data_flip,
     _inject_measurement_flip,
 )
+from flagquantum.qec.surface import RotatedSurfaceCode
 from flagquantum.runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 
 pytestmark = pytest.mark.integration
@@ -123,7 +124,7 @@ def test_a_surface_code_measurement_flip_on_an_x_type_check_has_no_terminal() ->
     built = _surface()
     x_check = next(check for check in built.code.checks if check.stabilizer.x_qubits)
     source = _inject_measurement_flip(
-        built, round_index=1, ancilla_wire=x_check.ancilla_qubit
+        built, round_index=1, ancilla_qubit=x_check.ancilla_qubit
     )
     detectors, observables = _forced_signature(built, source)
 
@@ -166,7 +167,7 @@ def test_measurement_flip_flips_its_round_and_the_next_round() -> None:
     """A flipped syndrome bit is compared against both of its neighbours."""
 
     built = _built(3)
-    source = _inject_measurement_flip(built, round_index=0, ancilla_wire=3)
+    source = _inject_measurement_flip(built, round_index=0, ancilla_qubit=3)
     detectors, observables = _forced_signature(built, source)
     assert detectors == (0, 2)
     assert observables == ()
@@ -174,7 +175,7 @@ def test_measurement_flip_flips_its_round_and_the_next_round() -> None:
 
 def test_measurement_flip_in_the_last_round_reaches_the_terminal_boundary() -> None:
     built = _built(3)
-    source = _inject_measurement_flip(built, round_index=2, ancilla_wire=3)
+    source = _inject_measurement_flip(built, round_index=2, ancilla_qubit=3)
     detectors, observables = _forced_signature(built, source)
     assert detectors == (4, 6)
     assert observables == ()
@@ -182,7 +183,7 @@ def test_measurement_flip_in_the_last_round_reaches_the_terminal_boundary() -> N
 
 def test_measurement_flip_on_the_last_check() -> None:
     built = _built(3)
-    source = _inject_measurement_flip(built, round_index=0, ancilla_wire=4)
+    source = _inject_measurement_flip(built, round_index=0, ancilla_qubit=4)
     detectors, _ = _forced_signature(built, source)
     assert detectors == (1, 3)
 
@@ -243,7 +244,7 @@ def test_measurement_injection_anchor_must_be_unique() -> None:
         built, source=built.source.replace("        last = qp.measure(wires=3)\n", "")
     )
     with pytest.raises(ValueError, match="measurement"):
-        _inject_measurement_flip(mangled, round_index=0, ancilla_wire=3)
+        _inject_measurement_flip(mangled, round_index=0, ancilla_qubit=3)
 
 
 def test_measurement_injection_refuses_a_repeated_measurement_anchor() -> None:
@@ -255,7 +256,7 @@ def test_measurement_injection_refuses_a_repeated_measurement_anchor() -> None:
         built, source=built.source.replace(anchor, anchor * 2)
     )
     with pytest.raises(ValueError, match="found 2"):
-        _inject_measurement_flip(mangled, round_index=0, ancilla_wire=3)
+        _inject_measurement_flip(mangled, round_index=0, ancilla_qubit=3)
 
 
 def test_injection_rejects_a_round_outside_the_configured_range() -> None:
