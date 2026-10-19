@@ -2354,16 +2354,18 @@ for layers in (1, 2, 3):
     result = run_qaoa(4, edges, torch.full((2 * layers,), 0.1))
     state = qaoa_circuit(4, edges, result.gammas, result.betas).state().reshape(-1)
     mass = (state.abs() ** 2).real
-    print(layers, f"{float(result.energy):.6f}", f"{float(mass.max()):.6f}")
-# 1 -1.473527 0.162757
-# 2 -1.914364 0.237453
-# 3 -2.972456 0.494200
-#   -- both columns are float32 reads of a float32 run, so they are quoted at six
-#      decimals, which is the seven significant figures a float32 carries at these
-#      magnitudes and not the nine an earlier draft printed. The optimizer stops
-#      where the step it can still resolve stops moving it, so the ninth figure was
-#      a property of the summation order: this energy measured -1.473527074 on one
-#      build and -1.473527431 on another, agreeing in every digit quoted here.
+    print(layers, f"{float(result.energy):.3f}", f"{float(mass.max()):.4f}")
+# 1 -1.474 0.1628
+# 2 -1.914 0.2375
+# 3 -2.972 0.4942
+#   -- both columns are float32 reads of a fixed-length descent, so they are
+#      quoted at the precision such a descent repeats at rather than at the nine
+#      decimals an earlier draft printed. The optimizer stops where the step it
+#      can still resolve stops moving it, so the last figures belong to the
+#      summation order: the two-layer energy measured -1.914364219 on one build
+#      and -1.91436553 on another, agreeing on every digit quoted here and not on
+#      the next one. What the three rows claim is the progression towards the
+#      ground energy, and that survives the third decimal.
 
 parameters = torch.zeros(6, requires_grad=True)
 loss = qaoa_loss(4, edges, parameters[:3], parameters[3:], cost)
@@ -2376,14 +2378,16 @@ The first block prints the operator's minimum, the graph's largest cut, and the
 identity between them: the square with one diagonal has five edges and a largest
 cut of four, so `min = 5 - 2 * 4 = -3`, and the enumerated cut sizes and the
 operator's values agree exactly. The second block is the same instance solved at
-three layer counts from one constant start: one layer reaches `-1.473527074` and
-puts `0.162757` of the mass on its most probable bitstring, two reach
-`-1.914364219` at `0.237453`, and three reach `-2.972455502` at `0.494200` against
-an optimum of `-3.0`. **That progression is a fact about this instance and this
-start and not a law**: a finite layer count is an approximation, a larger layer
-count is not guaranteed to be closer in general, and the reported energy is an
-expectation rather than a bound. The third block is the saddle: the gradient at
-a zero start is exactly zero at every parameter, so a zero start cannot move and
+three layer counts from one constant start: one layer stops at `-1.474` and puts
+`0.1628` of the mass on its most probable bitstring, two stop at `-1.914` at
+`0.2375`, and three reach `-2.972` at `0.4942` against an optimum of `-3.0`.
+**That progression is a fact about this instance and this start and not a law**:
+a finite layer count is an approximation, a larger layer count is not guaranteed
+to be closer in general, and the reported energy is an expectation rather than a
+bound. Nor is each energy a determined number: it is where a hundred fixed Adam
+steps happened to stop, so it is quoted to the third decimal, which is the
+precision two builds agree on. The third block is the saddle: the gradient at a
+zero start is exactly zero at every parameter, so a zero start cannot move and
 the objective at it is `0.0`.
 
 **The start is the caller's, and the unit does not choose one.** The uniform

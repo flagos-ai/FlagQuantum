@@ -776,21 +776,19 @@ def test_variational_solvers_example_fits_qaoa_and_shows_the_saddle() -> None:
     assert _labelled(output, "steps taken") == "100"
     # Three layers at this start reach the optimum and the shallower runs do not,
     # and the mass the optimized circuit puts on the two maximum cuts rises with
-    # it. The energies are pinned as the evidence for this instance; the claim the
-    # row carries is the gap column, which falls towards zero without reaching it.
-    # Each energy is a float32 descent's endpoint, so it is compared as a number at
-    # the tolerance such an endpoint repeats at: this run measured -1.473527074 here
-    # and -1.473527431 on the x86 runner, which is a ninth decimal and not the
-    # energy.
+    # it. The energies are the evidence for this instance; the claim the row
+    # carries is the gap column, which falls towards zero without reaching it.
+    # Each energy is where a hundred fixed Adam steps stopped, so it is compared at
+    # the third decimal the example prints: the two-layer run measured -1.914364219
+    # here and -1.91436553 on the x86 runner, agreeing on every digit printed and
+    # not on the next one.
     rows = {layers: _labelled(output, str(layers)).split() for layers in (1, 2, 3)}
     for layers, expected in (
         (1, -1.473527074),
         (2, -1.914364219),
         (3, -2.972455502),
     ):
-        assert float(rows[layers][0]) == pytest.approx(
-            expected, abs=_SINGLE_PRECISION_TOLERANCE
-        )
+        assert float(rows[layers][0]) == pytest.approx(expected, abs=1e-3)
     gaps = [float(rows[layers][1]) for layers in (1, 2, 3)]
     assert gaps == sorted(gaps, reverse=True)
     assert gaps[-1] > 0.0
@@ -799,9 +797,15 @@ def test_variational_solvers_example_fits_qaoa_and_shows_the_saddle() -> None:
     assert masses[-1] > 0.9
     # The cut is decoded from the optimized state rather than read off the
     # energy: the two bitstrings above the threshold are exactly the two maximum
-    # cuts the brute-force spectrum found.
-    assert _labelled(output, "mass at (0, 1, 0, 1)") == "0.494200140238"
-    assert _labelled(output, "mass at (1, 0, 1, 0)") == "0.494200378656"
+    # cuts the brute-force spectrum found. Each mass is read as a number at the
+    # float32 resolution the state carries, and the two are compared against each
+    # other as well, because a symmetric pair is the claim and the shared digit is
+    # not.
+    first = _number(output, "mass at (0, 1, 0, 1)")
+    second = _number(output, "mass at (1, 0, 1, 0)")
+    assert first == pytest.approx(0.4942, abs=_SINGLE_PRECISION_TOLERANCE)
+    assert second == pytest.approx(0.4942, abs=_SINGLE_PRECISION_TOLERANCE)
+    assert first == pytest.approx(second, abs=_SINGLE_PRECISION_TOLERANCE)
     assert _labelled(output, "bitstrings above 0.1") == "[(0, 1, 0, 1), (1, 0, 1, 0)]"
     assert _labelled(output, "those are the largest cuts") == "True"
     # Five refusals, each naming the thing it refused rather than a code.

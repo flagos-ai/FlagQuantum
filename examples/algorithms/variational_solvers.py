@@ -205,8 +205,8 @@ def main() -> None:
         mass = sum(distribution[bits] for bits in ordered[:2])
         report(
             f"  {layers}",
-            f"{float(result.energy):>12.9f}  "
-            f"{float(result.energy) - ground:>9.3e}  {mass:>9.6f}",
+            f"{float(result.energy):>12.3f}  "
+            f"{float(result.energy) - ground:>9.3e}  {mass:>9.4f}",
         )
     print(f"  {'':<{LABEL_WIDTH}}  -- three layers reach the optimum at this start")
     print(f"  {'':<{LABEL_WIDTH}}  and one layer does not, which is a fact about")
@@ -218,7 +218,7 @@ def main() -> None:
     print("the cut is read from the circuit, not from the energy")
     distribution = probabilities(results[LAYERS[-1]])
     for bits in MAXIMUM_CUTS:
-        report(f"  mass at {bits}", f"{distribution[bits]:.12f}")
+        report(f"  mass at {bits}", f"{distribution[bits]:.6f}")
     heavy = sorted(bits for bits, mass in distribution.items() if mass > 0.1)
     report("bitstrings above 0.1", str(heavy))
     report("those are the largest cuts", str(heavy == sorted(best)))
