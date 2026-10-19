@@ -195,7 +195,8 @@ print(plan.dimensions, result.populations.shape)  # (3,), torch.Size([51, 3])
 Subsystem 0 is most significant: for `(2, 3)`, `|spin=1, occupation=0>` is
 flat index 3. A four-level subsystem `(4,)` is distinct from two qubits `(2, 2)`;
 the ordered dimensions enter the sealed plan identity. No padding occurs.
-Non-qubit spaces require full numeric states and operator matrices. Pauli
+Non-qubit spaces require full numeric states and full operator matrices or
+explicitly truncated boson operators as described below. Pauli
 inputs, bitstrings, named qubit collapse operators, and `fq.expectation`'s
 qubit-only observable forms are refused for these spaces. Dense observable
 matrices can be supplied through the existing low-level
@@ -228,6 +229,51 @@ A dense matrix made with the boson algebra is not a photonic backend. Fixed-char
 fusion spaces, time-dependent controls, native qudit circuit operations, and
 GPU/distributed dynamics remain future work under
 [proposal 078](../../docs/development/API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md).
+
+### Consuming existing boson operators
+
+Pass a `BosonOperator` directly as the Hamiltonian or as the operator in an
+existing `(operator, rate)` collapse pair. Explicit `dimensions=` is required,
+even for two-level modes: mode `k` is subsystem `k`, and any untouched subsystem
+is an identity factor. The Simulation boundary calls the existing
+`BosonOperator.to_matrix(dict(enumerate(dimensions)))`; the algebra, normal
+ordering, finite truncation semantics, and `DEFAULT_DENSE_MATRIX_BYTES` ceiling
+are reused. Missing mode dimensions and non-Hermitian Hamiltonians are refused
+before integration.
+
+```python
+import math
+import torch
+import flagquantum.lindblad as fql
+from flagquantum.observables.boson import annihilate, create
+
+hamiltonian = 0.7 * (create(0) * annihilate(1) + create(1) * annihilate(0))
+initial = torch.zeros(9, dtype=torch.complex128)
+initial[4] = 1  # |1, 1>, subsystem 0 most significant.
+result = fql.run(
+    hamiltonian, initial, [0.0, math.pi / (4 * 0.7)],
+    dimensions=(3, 3), method="krylov-exponential",
+)
+print(result.populations[-1, [2, 6]])  # P(0, 2) = P(2, 0) = 0.5
+```
+
+Run `python -m examples.boson_interference` for the same two-mode interference
+with independent loss on each mode, plan serialization, and unconditional output
+probabilities. Three levels per mode contain the complete two-excitation sector;
+two levels cannot represent bunching. Agreement at larger cutoffs checks this
+sector only, not arbitrary driven oscillator convergence.
+
+The low-level `evolve_density_matrix(..., observables={"n": number(0)},
+dimensions=(3,))` input mapping also accepts boson operators. `fq.expectation`
+continues to require its existing qubit observable type. The plan stores the
+same normalized dense matrices as an explicitly materialized request, with the
+same identity and existing schema 1.3/1.4. No new serializer or solver is used.
+Initial-state batches, live initial-state autograd, and initial-density adjoints
+reuse their existing paths. The algebra's coefficients remain numeric constants;
+for a trainable coupling, multiply its materialized matrix by a live tensor as
+in `examples/mixed_dimension_dynamics.py`. Direct symbolic/tensor coefficient
+binding remains a separate M1 gate. This bounded CPU consumer is not a bosonic
+or photonic backend, a Gaussian simulator, or a new circuit operation.
 
 ### Differentiating the initial state without retaining the sweep
 

@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Accept existing boson operators directly in static Lindblad Hamiltonians,
+  collapse pairs, and the low-level observable mapping with explicit finite
+  `dimensions=`. Reuse dense conversion, its memory ceiling, existing plans,
+  solvers, batches, and initial-state gradients. The two-mode interference/loss
+  example is a bounded CPU reference; algebra coefficients remain numeric and
+  `fq.expectation` remains qubit-only.
 - Extend the existing static CPU Lindblad workflow with explicit ordered
   `dimensions=` for finite product spaces. Three-level and spin-mode models
   reuse the existing numerical core, sealed plans, result type, and gradients.

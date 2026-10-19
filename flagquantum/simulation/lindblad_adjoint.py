@@ -200,6 +200,7 @@ def adjoint_gradient(
                 device=resolved_device,
                 tolerance=tolerance,
                 qubit_space=space.is_qubit_space,
+                dimensions=dimensions,
             ),
             _normalize_collapse_operators(
                 collapse_operators,
@@ -208,6 +209,7 @@ def adjoint_gradient(
                 dtype=dtype,
                 device=resolved_device,
                 qubit_space=space.is_qubit_space,
+                dimensions=dimensions,
             ),
             hilbert_dimension=dim,
         )
