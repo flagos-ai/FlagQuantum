@@ -119,7 +119,12 @@ def test_basis_order_matches_existing_boson_matrices(space_factory):
     matrix = annihilate(1).to_matrix({0: 2, 1: 3})
     source = space.basis_index((1, 2))
     destination = space.basis_index((1, 1))
-    assert matrix[destination, source] == pytest.approx(math.sqrt(2))
+    # `.item()` is what makes this comparison approximate at all. A zero-dim
+    # tensor handed to `pytest.approx` is compared through `abs(expected -
+    # actual)` only while NumPy is importable; with NumPy absent -- the state of
+    # the `.[dev]`-only CI lanes -- the comparison falls back to exact equality,
+    # and the element this build computes is one ulp below `math.sqrt(2)`.
+    assert matrix[destination, source].item() == pytest.approx(math.sqrt(2))
     assert torch.count_nonzero(matrix[:, source]) == 1
 
 
