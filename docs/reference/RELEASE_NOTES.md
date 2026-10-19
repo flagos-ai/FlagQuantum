@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Preserve live scalar tensor coefficients in static full-space Hamiltonian
+  term mappings. Numeric matrices and existing boson operators share the same
+  normalization and dynamics path; named values bind with the existing
+  `Parameter.bind` / `ParameterExpression.bind`. Include a PyTorch Adam example.
+  Existing numeric Pauli descriptors remain matrix-free; plan schemas, canonical
+  boson coefficients, and Stable Core are unchanged.
 - Accept existing boson operators directly in static Lindblad Hamiltonians,
   collapse pairs, and the low-level observable mapping with explicit finite
   `dimensions=`. Reuse dense conversion, its memory ceiling, existing plans,
