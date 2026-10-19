@@ -181,6 +181,8 @@ def test_the_circuit_sampler_and_the_model_agree_for_a_matrix_stated_family(
     detectors that compare one round against the next are the ones that see it.
     """
 
+    pytest.importorskip("stim")
+
     memory = build_memory_circuit(_toric(lattice), rounds=rounds)
     assert len(memory.detectors.detectors) == detectors
     model = DetectorErrorModel.from_memory_circuit(memory, noise=_noise())
@@ -218,6 +220,9 @@ def test_the_decoder_acts_only_where_the_distance_leaves_something_to_correct() 
     and the rate falls. Both halves are asserted, because the second on its own
     would not distinguish a decoder that works from one that guesses.
     """
+
+    pytest.importorskip("stim")
+    pytest.importorskip("pymatching")
 
     measured: dict[int, tuple[float, float]] = {}
     for lattice in (2, 3):

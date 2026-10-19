@@ -440,6 +440,8 @@ def test_the_circuit_sampler_and_the_model_agree_on_both_observables(
     are graphlike and the row is about the sampler rather than about a decoder.
     """
 
+    pytest.importorskip("stim")
+
     memory = build_memory_circuit(_torus(linear_size), rounds=rounds)
     noise = _noise(y_fault=False)
     model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
@@ -639,6 +641,8 @@ def test_the_registered_names_agree_on_which_toric_models_they_take() -> None:
     registered on the wrong side of the split.
     """
 
+    pytest.importorskip("pymatching")
+
     memory = build_memory_circuit(_torus(3), rounds=2)
     declared = DetectorErrorModel.from_memory_circuit(
         memory, noise=_noise(y_fault=True)
@@ -760,6 +764,8 @@ def test_the_exact_matcher_bounds_the_syndrome_a_torus_reaches() -> None:
     inside every window. The two remaining names are asserted to refuse nothing, so
     a decoder that refused everything would fail the row rather than pass it.
     """
+
+    pytest.importorskip("pymatching")
 
     model = DetectorErrorModel.from_memory_circuit(
         build_memory_circuit(_torus(3), rounds=_CAP_ROUNDS),

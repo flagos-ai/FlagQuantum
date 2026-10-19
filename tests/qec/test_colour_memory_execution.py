@@ -334,6 +334,8 @@ def test_the_circuit_sampler_and_the_model_agree(
     message.
     """
 
+    pytest.importorskip("stim")
+
     code = triangular_colour_code(distance)
     memory = build_memory_circuit(code, rounds=rounds)
     model = DetectorErrorModel.from_memory_circuit(

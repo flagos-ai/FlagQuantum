@@ -478,6 +478,8 @@ def test_the_circuit_sampler_and_the_model_agree_on_the_observable(
     the wrong column would agree on every detector and fail here.
     """
 
+    pytest.importorskip("stim")
+
     memory = build_memory_circuit(_patch(distance), rounds=rounds)
     noise = _noise(y_fault=False)
     model = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
@@ -618,6 +620,9 @@ def test_matching_barely_moves_the_logical_rate_on_this_patch(distance: int) -> 
     the empty correction for every syndrome -- one that "explains" nothing -- is
     not what produces the ceiling.
     """
+
+    pytest.importorskip("stim")
+    pytest.importorskip("pymatching")
 
     raw, decoded = _decoded_rate(
         _patch(distance), distance=distance, rounds=2, shots=_CONTRAST_SHOTS
