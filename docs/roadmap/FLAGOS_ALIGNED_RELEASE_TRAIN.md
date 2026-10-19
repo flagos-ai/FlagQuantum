@@ -105,8 +105,8 @@ integrators, result, and PyTorch gradient path. The focused acceptance is
 `tests/unit/test_lindblad_mixed_dimensions.py`, including analytic decay and
 initial-density adjoints, basis order, live/JSON gradients, truncation, and
 time-grid convergence. This completes the static finite-product step, not all
-of M1: time dependence, direct boson coefficient binding, and constrained-space
-execution remain separate gates. Proposal 073 must rebase its future plan-schema
+of M1: time dependence and constrained-space execution remain separate gates;
+static operator coefficient binding is described below. Proposal 073 must rebase its future plan-schema
 extension onto this baseline.
 
 The next M1 slice connects existing `BosonOperator` values directly to the
@@ -118,9 +118,18 @@ engine, public export, or plan schema is added. Run
 `tests/unit/test_lindblad_boson_consumer.py`: independent two-photon interference
 and loss laws, basis order and spectator modes, the exact two-excitation cutoff,
 unchanged dense-plan identities, batching, gradients/adjoints, and early refusals.
-This completes a bounded static boson consumer, not direct trainable algebra
-coefficient binding. That binding and proposal 073's time controls remain open;
-review their shared parameter contract before dependent implementation.
+Static operator term lists now carry live scalar coefficients outside the
+unchanged canonical boson algebra. Existing `Parameter.bind` and
+`ParameterExpression.bind` resolve named values; the existing normalization,
+plans, generators, and gradients consume the bound request. No second binder,
+new plan schema, or widened algebra coefficient field is required. Run
+`python -m examples.train_boson_coupling`; acceptance in
+`tests/unit/test_lindblad_operator_coefficients.py` includes two physical models,
+analytic gradients, actual optimizer updates, complex conjugate terms, batching,
+initial-density adjoints, unchanged dense-plan identities, and retained Pauli
+matrix-free execution. This completes the static operator-coefficient consumer,
+not symbolic coefficients inside the algebra. Time-dependent controls still
+require proposal 073 to be reviewed and rebased onto plans 1.3/1.4.
 
 An internal state-space proposal must be tested against both tensor-product
 spaces and an anyon fusion-space example with fixed total charge. Product

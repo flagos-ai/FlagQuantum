@@ -92,6 +92,14 @@ These examples do not use that alias:
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
 
+## Static finite-mode training
+
+Run `python -m examples.train_boson_coupling` to fit a static exchange coupling
+with existing `fq.Parameter.bind`, `fq.ExecutionOptions`, and PyTorch Adam.
+The example supplies boson operators with live scalar coefficients directly to
+the existing Lindblad path and rebuilds the bound request each optimizer step.
+No time-dependent pulse or separate trainer is introduced.
+
 ## Three local basics
 
 Start with three small programs that use only the stable `fq.*` API:

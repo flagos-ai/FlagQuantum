@@ -18,6 +18,7 @@ from typing import Any
 import torch
 
 from ..core.ir.state_space import ProductStateSpace
+from ..core.parameters import value_to_tensor
 from ..errors import ValidationError
 from ..observables import Observable
 from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES, BosonOperator
@@ -523,6 +524,64 @@ def _require_hermitian_terms(
             )
 
 
+def _dense_operator_terms(
+    terms: Sequence[Any],
+    *,
+    dim: int,
+    dtype: torch.dtype,
+    device: torch.device,
+    dimensions: Sequence[int] | None,
+) -> torch.Tensor:
+    """Assemble static full-space terms while preserving coefficient graphs."""
+
+    total: torch.Tensor | None = None
+    for index, term in enumerate(terms):
+        if (
+            not isinstance(term, Mapping)
+            or "operator" not in term
+            or any(key in term for key in ("pauli", "qubit", "qubits"))
+        ):
+            raise _error(
+                "invalid_hamiltonian",
+                "full-space Hamiltonian terms require operator mappings; "
+                "do not mix them with Pauli descriptors or qubit selectors",
+                "hamiltonian",
+            )
+        value = term.get("coefficient", 1.0)
+        field = f"hamiltonian[{index}].coefficient"
+        if isinstance(value, bool) or (
+            isinstance(value, torch.Tensor) and value.dtype == torch.bool
+        ):
+            raise _error(
+                "invalid_coefficient", "coefficients must be numeric scalars", field
+            )
+        try:
+            coefficient = value_to_tensor(value, dtype=dtype, device=device)
+        except (TypeError, ValueError, RuntimeError) as exc:
+            raise _error("invalid_coefficient", str(exc), field) from exc
+        if coefficient.ndim != 0 or not bool(torch.isfinite(coefficient).all().item()):
+            raise _error(
+                "invalid_coefficient",
+                "coefficients must be finite numeric scalars",
+                field,
+            )
+        matrix = _as_complex_matrix(
+            term["operator"],
+            name=f"hamiltonian[{index}].operator",
+            dim=dim,
+            dtype=dtype,
+            device=device,
+            dimensions=dimensions,
+        )
+        scaled = coefficient * matrix
+        total = scaled if total is None else total + scaled
+    if total is None:
+        raise _error(
+            "invalid_hamiltonian", "Hamiltonian terms must not be empty", "hamiltonian"
+        )
+    return total
+
+
 def _normalize_hamiltonian(
     hamiltonian: Any,
     *,
@@ -536,12 +595,22 @@ def _normalize_hamiltonian(
 ) -> PauliSum | torch.Tensor:
     """Validate a Hamiltonian and return what evolution consumes.
 
-    A Pauli sum stays matrix-free; only an opaque dense input is kept as a
-    matrix. Hermiticity is decided here so that planning, execution and plan
-    serialization cannot disagree about whether a request was accepted.
+    A Pauli sum stays matrix-free; full-space matrices and static operator
+    terms use the dense path. Hermiticity is decided here so planning, execution,
+    and plan serialization cannot disagree about whether a request was accepted.
     Boson operators use their existing dense conversion at explicit mode dimensions.
     """
 
+    if (
+        isinstance(hamiltonian, Sequence)
+        and not isinstance(hamiltonian, (str, bytes, torch.Tensor))
+        and hamiltonian
+        and isinstance(hamiltonian[0], Mapping)
+        and not isinstance(hamiltonian[0].get("operator", ""), str)
+    ):
+        hamiltonian = _dense_operator_terms(
+            hamiltonian, dim=dim, dtype=dtype, device=device, dimensions=dimensions
+        )
     terms = _hamiltonian_terms(hamiltonian, n_wires=n_wires)
     if terms is not None:
         _require_qubit_space(qubit_space, "hamiltonian")
