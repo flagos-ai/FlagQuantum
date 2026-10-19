@@ -16,6 +16,7 @@ from typing import Protocol
 import pytest
 import torch
 
+from flagquantum.core.ir.state_space import ProductStateSpace
 from flagquantum.observables.boson import annihilate
 from flagquantum.simulation.lindblad_generator import Liouvillian
 from flagquantum.simulation.lindblad_integrators import (
@@ -74,9 +75,9 @@ class _ProductSpaceFake:
         return index
 
 
-@pytest.fixture
-def space_factory() -> Callable[[tuple[int, ...]], ProductSpace]:
-    return _ProductSpaceFake
+@pytest.fixture(params=(_ProductSpaceFake, ProductStateSpace), ids=("contract-fake", "core"))
+def space_factory(request) -> Callable[[tuple[int, ...]], ProductSpace]:
+    return request.param
 
 
 def test_candidate_preserves_existing_owners_and_public_ir():

@@ -7,6 +7,10 @@ control-flow graph.
 
 ## What this package owns
 
+- `state_space.py`: internal finite tensor-product dimensions and basis indices,
+  with subsystem 0 most significant. This is mathematical data for dynamics,
+  not a new program IR or a widening of CircuitIR's qubit semantics. The
+  approved boundary is [proposal 078](../../../docs/development/API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md).
 - `__init__.py`: the public IR. `CircuitIR` (`kind`
   `flagquantum.circuit_ir`, schema `1.0`), its validation, and its
   `to_dict`/`from_dict`/`to_json`/`from_json` serialization. `IR_VERSION` is
