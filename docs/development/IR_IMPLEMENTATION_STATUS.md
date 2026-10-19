@@ -1,6 +1,7 @@
 # FlagQuantum compiler and IR implementation map
 
-Verified against the publication checkout on 2026-09-11.
+Reviewed against main commit `0f389c9d8f30179557eb14920bbc9e9dd49b1bd0`
+on 2026-10-19 for the M0 baseline.
 
 The current compiler operates on Core-owned `CircuitIR`. The old private
 `flagquantum._compiler` package and its phase-based implementation inventory
@@ -14,6 +15,7 @@ useful rationale, but their phase completion labels do not describe this tree.
 | Public circuit interchange | `flagquantum/core/ir/__init__.py` |
 | Root compile dispatch | `flagquantum/_api.py` |
 | Optimization and circuit compilation | `flagquantum/compiler/pipeline.py` |
+| Named circuit passes, analyses, preservation, and invalidation | `compiler/pass_manager.py`, `compiler/optimization_levels.py` |
 | Native-gate and topology legalization | `compiler/native_gate_legalization.py`, `compiler/topology_legalization.py` |
 | Target requirements and scheduling | `compiler/target_legalization.py`, `compiler/schedule_legalization.py` |
 | Target emission and independent conformance | `compiler/target_emission.py`, `compiler/target_conformance.py` |
@@ -25,6 +27,20 @@ compiler extension. Native target emission produces audited text; it does not
 imply a new public executable-artifact API or hardware certification.
 `fq.run(program)` composes planning and execution. `fq.run(plan)` executes the
 accepted plan without compiling or planning it again.
+
+## Internal Core program boundary
+
+`flagquantum/core/ir/levels.py` owns the internal level vocabulary and conversion
+entry points. The realized exit is `program`, implemented under
+`core/ir/program/`; the declared `quantum` and `target` exits return explicit
+unsupported diagnostics. The public `CircuitIR` remains schema 1.0.
+
+This boundary already provides typed values, verification, and exact bounded
+circuit/program conversion. Reuse it and the existing Compiler pass manager
+when extending common program semantics. Their presence does not establish
+mixed-dimensional state spaces, physical controls, pulse scheduling, or a
+complete multi-level compiler. Do not create a parallel IR hierarchy or pass
+registry for a new physical route.
 
 ## Private structured programs
 

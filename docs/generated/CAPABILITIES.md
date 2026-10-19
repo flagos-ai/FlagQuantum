@@ -698,10 +698,10 @@ Write a channel into a circuit or lower a validated Kraus noise model into FlagQ
 Evolve small Markovian open systems on explicit time grids with physical collapse rates and time-resolved diagnostics.
 
 - **Maturity:** Production supported
-- **Public API:** `flagquantum.lindblad.run`, `flagquantum.lindblad.plan`, `flagquantum.lindblad.LindbladPlan`, `flagquantum.lindblad.amplitude_damping`
+- **Public API:** `flagquantum.lindblad.run`, `flagquantum.lindblad.plan`, `flagquantum.lindblad.LindbladPlan`, `flagquantum.lindblad.amplitude_damping`, `flagquantum.lindblad.adjoint_gradient`
 - **Runtime modes:** `continuous_time_density_matrix`
 - **Hardware:** `cpu`
-- **Gradient support:** `unsupported`
+- **Gradient support:** `discretized_autograd_and_initial_density_matrix_adjoint`
 - **Distribution semantics:** `single_device_fast_path`
 - **Start:** [quick example](../../examples/lindblad_evolution.py)
 - **Documentation:** [guide](../../flagquantum/simulation/README.md)
