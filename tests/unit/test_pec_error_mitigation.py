@@ -722,7 +722,13 @@ def test_a_two_wire_channel_is_inverted_at_the_location_its_gate_occupies() -> N
     )
     assert abs(result.estimate - 1.0) <= _EXACT_TOLERANCE
     assert result.gamma == pytest.approx(1.105633857998, abs=_CLOSED_FORM_TOLERANCE)
-    assert result.sampling_overhead == pytest.approx(1.222426227953, abs=1e-9)
+    # The sampling overhead is gamma squared, so it is compared with the gamma this
+    # run returned rather than with a copy of the digit gamma took on one build;
+    # the two other two-location tests above already read it this way. Pinned as a
+    # literal it carried the same 1e-9 the gamma pin used to, so a value derived
+    # from a quantity with 1e-7 of cross-build spread was compared three orders
+    # tighter than that quantity.
+    assert result.sampling_overhead == pytest.approx(result.gamma**2, rel=1e-12)
 
 
 def test_two_programs_carrying_the_same_channel_are_corrected_the_same_way() -> None:

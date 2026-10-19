@@ -62,6 +62,16 @@ _DOUBLE_TOLERANCE = 1e-12
 #: order; the claim the example is making is that the run reached the optimum.
 _SINGLE_PRECISION_TOLERANCE = 1e-6
 
+#: The tolerance a figure the guide quotes at four decimals is compared at. The
+#: variational-solvers example prints the mass on each maximum cut at six decimals
+#: and the guide quotes it at four, so four decimals is what an assertion on it can
+#: support: the sixth is where a hundred-step float32 descent stops on a given
+#: build. It read 0.494200 here and 0.494201 on the x86 runner, one unit in the
+#: sixth place -- exactly the width of the 1e-6 tolerance this carried, so that
+#: tolerance was the print quantum rather than the claim's, and a one-unit
+#: difference landed on its boundary where the binary representation decides.
+_QUOTED_MASS_TOLERANCE = 1e-4
+
 #: The bound a statevector reading is required to sit under when the claim is that
 #: it is at the arithmetic's floor rather than at a value. The Trotter example
 #: measures each primitive's residual against the dense exponential of the same
@@ -798,14 +808,14 @@ def test_variational_solvers_example_fits_qaoa_and_shows_the_saddle() -> None:
     # The cut is decoded from the optimized state rather than read off the
     # energy: the two bitstrings above the threshold are exactly the two maximum
     # cuts the brute-force spectrum found. Each mass is read as a number at the
-    # float32 resolution the state carries, and the two are compared against each
+    # precision the guide quotes it at, and the two are compared against each
     # other as well, because a symmetric pair is the claim and the shared digit is
     # not.
     first = _number(output, "mass at (0, 1, 0, 1)")
     second = _number(output, "mass at (1, 0, 1, 0)")
-    assert first == pytest.approx(0.4942, abs=_SINGLE_PRECISION_TOLERANCE)
-    assert second == pytest.approx(0.4942, abs=_SINGLE_PRECISION_TOLERANCE)
-    assert first == pytest.approx(second, abs=_SINGLE_PRECISION_TOLERANCE)
+    for mass in (first, second):
+        assert mass == pytest.approx(0.4942, abs=_QUOTED_MASS_TOLERANCE)
+    assert first == pytest.approx(second, abs=_QUOTED_MASS_TOLERANCE)
     assert _labelled(output, "bitstrings above 0.1") == "[(0, 1, 0, 1), (1, 0, 1, 0)]"
     assert _labelled(output, "those are the largest cuts") == "True"
     # Five refusals, each naming the thing it refused rather than a code.
