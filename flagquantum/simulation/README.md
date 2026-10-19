@@ -275,6 +275,36 @@ in `examples/mixed_dimension_dynamics.py`. Direct symbolic/tensor coefficient
 binding remains a separate M1 gate. This bounded CPU consumer is not a bosonic
 or photonic backend, a Gaussian simulator, or a new circuit operation.
 
+### Static operator coefficients
+
+The next compatible M1 input extension uses the existing Hamiltonian term list:
+`[{"operator": full_space_operator, "coefficient": bound_scalar}, ...]`.
+Each operator is a full-space numeric matrix or existing `BosonOperator`; a
+boson operator still requires explicit mode dimensions and the existing byte
+ceiling. The total Hamiltonian, rather than each term separately, must be
+Hermitian. Coefficients are finite numeric scalars or zero-dimensional PyTorch
+tensors; live tensors must retain their graph through normalization and planning.
+
+Bind a named coefficient with the existing `Parameter.bind(values)` or
+`ParameterExpression.bind(values)` before passing the terms. No second binding
+function, parameter registry, or symbolic algebra is introduced. Unbound names,
+non-scalar coefficients, invalid matrices, and non-finite values fail during
+planning. This is a static Hamiltonian; a coefficient vector is not a time grid.
+The existing Pauli descriptor path remains matrix-free and keeps its numeric
+coefficient behavior; this extension does not claim trainable Pauli-sum terms.
+
+The implementation must reuse current dense normalization, sealed plans,
+Liouvillian, integrators, and result/gradient paths. A bound term list and its
+explicitly assembled dense Hamiltonian must seal the same payload and identity.
+Plan schemas stay 1.3 for qubits and 1.4 for non-qubit spaces. JSON restores
+values rather than an autograd graph. No Stable Core export or signature changes,
+and no widening of `BosonTerm.coefficient`, are required. Acceptance must cover
+independent gradients, a real optimizer update, dense/plan equivalence, batching,
+complex conjugate coefficient pairs, and unsupported inputs before integration.
+
+This paragraph records the input boundary before its dependent implementation;
+no time-dependent schedule is authorized by it. Proposal 073 remains unapproved.
+
 ### Differentiating the initial state without retaining the sweep
 
 `fql.adjoint_gradient` returns the gradient of a scalar cost with respect to the
