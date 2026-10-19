@@ -283,9 +283,9 @@ def test_a_two_well_quartic_converges_into_the_nearer_well() -> None:
     assert near.converged is True
     assert far.converged is True
     assert near.value == pytest.approx(0.099366985524, abs=1e-11)
-    assert near.parameters[0] == pytest.approx(0.9872574747, abs=1e-8)
+    assert float(near.parameters[0]) == pytest.approx(0.9872574747, abs=1e-8)
     assert far.value == pytest.approx(global_value, abs=1e-11)
-    assert far.parameters[0] == pytest.approx(global_point, abs=1e-8)
+    assert float(far.parameters[0]) == pytest.approx(global_point, abs=1e-8)
     assert near.value - global_value == pytest.approx(0.199984362162, abs=1e-11)
 
 
@@ -310,11 +310,11 @@ def test_a_non_degenerate_start_on_mckinnon_reaches_the_true_minimum() -> None:
         _mckinnon, simplex[0], simplex=simplex
     )
     assert result.value == pytest.approx(-0.25, abs=1e-9)
-    assert result.parameters[0] == pytest.approx(0.0, abs=1e-9)
+    assert float(result.parameters[0]) == pytest.approx(0.0, abs=1e-9)
     # The second coordinate is the flat one: the simplex spread is 6.6e-13
     # while this coordinate sits 5.2e-9 from the minimizer, because a value
     # this flat does not locate its own argmin any better than that.
-    assert result.parameters[1] == pytest.approx(-0.5, abs=1e-6)
+    assert float(result.parameters[1]) == pytest.approx(-0.5, abs=1e-6)
 
 
 def test_a_pauli_energy_is_minimized_from_three_starts() -> None:

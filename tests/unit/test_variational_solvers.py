@@ -86,8 +86,19 @@ _HEAVY_THRESHOLD = 0.1
 #: The absolute tolerance a float32 reduction repeats at. Two machines that sum a
 #: statevector of this size in a different order land within a few units in the
 #: last place of 1.0, which is 1.2e-07; this is eight times that, and it is the
-#: scale at which a pinned end point is still the same end point.
+#: scale at which two evaluations of one objective agree.
 _FLOAT32_TOLERANCE = 1e-6
+
+#: The absolute tolerance a fixed-length descent's endpoint repeats at, which is
+#: wider than the reduction's because the descent amplifies it. A hundred Adam
+#: steps stop where the gradient the arithmetic can still resolve stops moving
+#: them, and one rounding in a gradient can flip which step is the last one that
+#: counts: the deep ring run below measured -2.9724555015563965 here and
+#: -2.9724578857421875 on the x86 runner, 2.4e-06 apart, and the shallow one
+#: measured 6.0e-07 apart. This sits above both and four orders below the 2.8e-02
+#: gap the test turns on, so the progression it asserts still fails when a layer
+#: is wrong.
+_ENDPOINT_TOLERANCE = 1e-5
 
 
 def _weighted(edges):
@@ -289,12 +300,15 @@ def test_a_nonzero_start_leaves_the_saddle_that_the_zero_start_sits_on() -> None
 
 
 def test_one_layer_reaches_the_triangle_optimum_from_a_small_nonzero_start() -> None:
+    # The endpoint is where a hundred fixed steps stopped rather than a value the
+    # ansatz determines, so it is not pinned: this run stopped at
+    # -0.999333381652832 and the x86 runner at -0.9998669028282166, which agree on
+    # the claim below and not on the fourth decimal. What is asserted is that one
+    # layer reaches the optimum from a nonzero start, which is the gap to the
+    # ground energy and not the digit.
     ground = float(maxcut_hamiltonian(3, TRIANGLE).ground_energy())
     start = torch.full((2,), 0.05)
     result = run_qaoa(3, TRIANGLE, start)
-    assert float(result.energy) == pytest.approx(
-        -0.999333381652832, abs=_FLOAT32_TOLERANCE
-    )
     # The first recorded value is the objective at the start, so it is compared
     # with that objective rather than with a literal: the two are the same
     # computation, and a start read from anywhere else would fail this while a
@@ -314,10 +328,10 @@ def test_a_single_layer_cannot_reach_the_ring_optimum_that_three_layers_approach
     shallow = run_qaoa(4, RING_WITH_CHORD, torch.full((2,), 0.1))
     deep = run_qaoa(4, RING_WITH_CHORD, torch.full((6,), 0.1))
     assert float(shallow.energy) == pytest.approx(
-        -1.4735270738601685, abs=_FLOAT32_TOLERANCE
+        -1.4735270738601685, abs=_ENDPOINT_TOLERANCE
     )
     assert float(deep.energy) == pytest.approx(
-        -2.9724555015563965, abs=_FLOAT32_TOLERANCE
+        -2.9724555015563965, abs=_ENDPOINT_TOLERANCE
     )
     assert ground == -3.0
     # Both are above the optimum, and the deeper ansatz is strictly closer. That

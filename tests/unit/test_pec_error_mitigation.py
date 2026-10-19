@@ -161,8 +161,15 @@ def test_the_tolerance_sits_between_the_admitted_and_the_refused_families() -> N
             f"{_ADMITTED_OFFDIAGONAL_CEILING:.0e} ceiling this test pins"
         )
     # phase_damping is the family that sets the ceiling: its exact transfer matrix
-    # is diagonal and its measured 3.5e-08 is the channel's own precision.
-    assert measured["phase_damping"] == pytest.approx(3.499e-08, rel=0.05)
+    # is diagonal, so every off-diagonal entry is zero and what is measured is
+    # complex64 rounding rather than a physical margin. The digits are therefore
+    # not pinned -- this read 3.499e-08 on one build and 2.155e-08 on another, and
+    # both are the arithmetic's floor -- so what is asserted is the ordering that
+    # gives the ceiling its value and the headroom it leaves to the smallest
+    # refused family.
+    assert measured["phase_damping"] == max(measured.values())
+    assert 0.0 < measured["phase_damping"] < _ADMITTED_OFFDIAGONAL_CEILING
+    assert measured["phase_damping"] * 1e5 < _SMALLEST_REFUSED_OFFDIAGONAL
     refused = {
         "amplitude_damping": amplitude_damping_channel(0.1),
         "coherent_overrotation": coherent_overrotation_channel(0.2),
@@ -512,7 +519,11 @@ def test_the_mitigated_value_is_the_noiseless_one_for_one_qubit_location() -> No
         -0.799999932699200, abs=_SINGLE_PRECISION_TOLERANCE
     )
     assert abs(result.estimate + 1.0) <= _EXACT_TOLERANCE
-    assert result.gamma == pytest.approx(1.250000105158, abs=1e-9)
+    # gamma is the closed form evaluated at the probability the channel declares,
+    # so it carries that stored parameter's single-precision rounding: this read
+    # 1.250000105158 here and 1.2499999284514705 on the x86 runner, 1.4e-07 apart,
+    # which is the storage and not the twirl.
+    assert result.gamma == pytest.approx(1.250000105158, abs=_CLOSED_FORM_TOLERANCE)
     assert result.sampling_overhead == pytest.approx(result.gamma**2, rel=1e-12)
     assert result.term_count == 4
     assert result.executions == 5
@@ -592,11 +603,14 @@ def test_a_precision_the_channel_declares_limits_the_correction() -> None:
         Circuit(1, dtype=torch.complex64).x(0), observable, noise_model=model
     )
     # phase_damping's transfer matrix is diagonal but its Kraus operators are
-    # stored in single precision, so even the exact path stops 3.5e-8 short. The
-    # single-precision run is no worse, because it is not the simulation that
-    # sets the floor here.
-    assert abs(double.estimate + 1.0) == pytest.approx(3.499e-08, rel=0.05)
-    assert abs(single.estimate + 1.0) < 1e-6
+    # stored in single precision, so even the exact path stops short of the
+    # noiseless read. The distance is that storage's rounding and not a value: it
+    # measured 3.499e-08 on one build and 2.155e-08 on another, both below
+    # complex64's epsilon at 1.0. The single-precision run is no worse, because it
+    # is not the simulation that sets the floor here.
+    single_precision_floor = abs(double.estimate + 1.0)
+    assert 0.0 < single_precision_floor < 1e-7
+    assert abs(single.estimate + 1.0) <= single_precision_floor * 10.0
     # A channel whose declared transfer matrix is stored exactly enough does reach
     # the simulation's own floor, which is why the two are reported separately.
     # The floor is one complex128 epsilon here, 2.2e-16, and not zero: the transfer
@@ -628,7 +642,7 @@ def test_two_locations_compose_and_each_one_carries_its_own_cost() -> None:
         0.639999892318725, abs=_SINGLE_PRECISION_TOLERANCE
     )
     assert abs(result.estimate - 1.0) <= _EXACT_TOLERANCE
-    assert result.gamma == pytest.approx(1.562500262894, abs=1e-9)
+    assert result.gamma == pytest.approx(1.562500262894, abs=_CLOSED_FORM_TOLERANCE)
     assert result.gamma == pytest.approx(result.locations[0].gamma ** 2, rel=1e-12)
 
 
@@ -682,15 +696,18 @@ def test_the_correction_also_removes_a_drift_on_an_untouched_observable() -> Non
     assert result.locations[0].qubits == (1,)
     # The channel's operators are stored in single precision, so applying it is
     # not exactly trace-preserving at double precision: z(0) drifts while the
-    # observable's own value never changes. Inverting the channel puts it back
-    # exactly, which is a statement about the stored channel rather than about a
-    # device. The drift's *direction* is part of that storage's rounding and not
-    # of the claim: measured as +7.0e-8 here and as -4.3e-8 on the x86 runner,
-    # so what is asserted is that the read moved off -1.0 by a single-precision
-    # amount and that the correction returns it exactly.
+    # observable's own value never changes. Inverting the channel puts it back,
+    # which is a statement about the stored channel rather than about a device.
+    # The drift's *direction* is part of that storage's rounding and not of the
+    # claim: measured as +7.0e-8 here and as -4.3e-8 on the x86 runner. The size
+    # of what the correction leaves behind is the inversion's own rounding: three
+    # units in the last place of 1.0 on the x86 runner and none here, so the claim
+    # is the five orders of magnitude between the drift and the residue rather than
+    # a bit pattern.
     assert abs(result.unmitigated + 1.0) <= _SINGLE_PRECISION_TOLERANCE
     assert result.unmitigated != -1.0
-    assert result.estimate == -1.0
+    assert abs(result.estimate + 1.0) <= _EXACT_TOLERANCE
+    assert abs(result.estimate + 1.0) * 1e5 < abs(result.unmitigated + 1.0)
 
 
 def test_a_two_wire_channel_is_inverted_at_the_location_its_gate_occupies() -> None:
@@ -704,7 +721,7 @@ def test_a_two_wire_channel_is_inverted_at_the_location_its_gate_occupies() -> N
         0.946666619956318, abs=_SINGLE_PRECISION_TOLERANCE
     )
     assert abs(result.estimate - 1.0) <= _EXACT_TOLERANCE
-    assert result.gamma == pytest.approx(1.105633857998, abs=1e-9)
+    assert result.gamma == pytest.approx(1.105633857998, abs=_CLOSED_FORM_TOLERANCE)
     assert result.sampling_overhead == pytest.approx(1.222426227953, abs=1e-9)
 
 

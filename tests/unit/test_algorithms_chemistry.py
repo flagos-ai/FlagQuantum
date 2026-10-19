@@ -763,7 +763,9 @@ def test_the_excitations_commute_with_the_particle_number_of_the_reference() -> 
             )
         for spin_orbital in (0, 1):
             circuit.x(spin_orbital)
-        probabilities = circuit.probabilities().reshape(-1).real.numpy()
+        # Read through `tolist` rather than `numpy`, because the PyTorch-only
+        # lane installs without NumPy and `.numpy()` refuses to convert there.
+        probabilities = circuit.probabilities().reshape(-1).real.tolist()
         for state, weight in enumerate(probabilities):
             if weight > 1e-12:
                 occupations = sum(

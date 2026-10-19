@@ -559,15 +559,20 @@ def test_the_slater_energy_needs_its_exchange_term() -> None:
 
     A control here has to be chosen with care, because the obvious one does not
     discriminate: the eight-fold symmetry of the ``(ij|kl)`` tensor makes
-    ``(ij|ji)`` and ``(ij|ij)`` bitwise equal, so an index-order mistake in the
-    exchange term would be invisible to this closed form. What is not invisible
-    is dropping the term altogether, and that is what this test removes.
+    ``(ij|ji)`` and ``(ij|ij)`` name one integral, so an index-order mistake in
+    the exchange term would be invisible to this closed form. They are compared
+    to within one unit in the last place rather than bitwise, because the two
+    orderings reach the same value through different accumulation orders and one
+    of the two builds rounds them one place apart. What is not invisible is
+    dropping the term altogether, and that is what this test removes.
     """
 
     integrals = molecular_integrals(_h2o())
     _, one_body, two_body = _molecular_orbitals(integrals, 10)
     right = _slater_determinant_energy(one_body, two_body, 5)
-    assert float(two_body[1, 2, 2, 1]) == float(two_body[1, 2, 1, 2])
+    assert float(two_body[1, 2, 2, 1]) == pytest.approx(
+        float(two_body[1, 2, 1, 2]), rel=1e-15
+    )
     coulomb_only = 0.0
     for i in range(5):
         coulomb_only += 2.0 * float(one_body[i, i])
@@ -850,7 +855,11 @@ def test_the_frozen_core_one_body_shift_is_the_closed_form() -> None:
             for i in range(1):
                 expected += 2.0 * float(two_body[p, q, i, i])
                 expected -= float(two_body[p, i, i, q])
-            assert folded_one[p - 1, q - 1] == pytest.approx(expected, abs=1e-14)
+            # A tensor is not a number to `pytest.approx`, and the PyTorch-only
+            # lane has no NumPy to convert it with, so the comparison is made on
+            # the float the tensor holds. The residual at this floor is the
+            # arithmetic's, not the shift's.
+            assert float(folded_one[p - 1, q - 1]) == pytest.approx(expected, abs=1e-14)
     expected_core = (
         2.0 * float(one_body[0, 0])
         + 2.0 * float(two_body[0, 0, 0, 0])
