@@ -57,6 +57,17 @@ pytestmark = pytest.mark.unit
 # at 0.799999932699200, which is 2.0e-1 away, and omitting the signed weight of a
 # single term moves the single-qubit read by 2.0e-1.
 _EXACT_TOLERANCE = 1e-9
+# The unmitigated reads are measured through channels whose operators are stored
+# in single precision, so they inherit that storage's rounding and not this
+# arithmetic's. The same read measured 0.799999932699200 here and 0.8000000457910614
+# on the x86 runner, 0.639999892318725 and 0.6400000732657003, and
+# 0.946666619956318 and 0.9466667361471612 -- 1.1e-07 to 1.8e-07 apart. A 1e-12
+# pin on any of them records the kernel that rounded the Pauli transfer matrix
+# rather than the twirl, so they are compared at this tolerance instead. It sits
+# five times above the widest measured spread and five orders below the 2.0e-1
+# divergence a wrong rule produces, so the assertions below still fail when the
+# rule is wrong.
+_SINGLE_PRECISION_TOLERANCE = 1e-6
 # The closed forms are evaluated at the probability the channel declares, so the
 # only gap left is the transfer matrix's own arithmetic. The largest measured gap
 # over bit_flip, phase_flip, depolarizing and two_qubit_depolarizing is 1.2e-6 in
@@ -497,7 +508,9 @@ def test_the_mitigated_value_is_the_noiseless_one_for_one_qubit_location() -> No
     result = run_pec(circuit, _z(), noise_model=model, dtype=torch.complex128)
     # The unmitigated read is 1.999999326992e-01 away from where it should be;
     # the mitigated one is exactly on it.
-    assert result.unmitigated == pytest.approx(-0.799999932699200, abs=1e-12)
+    assert result.unmitigated == pytest.approx(
+        -0.799999932699200, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert abs(result.estimate + 1.0) <= _EXACT_TOLERANCE
     assert result.gamma == pytest.approx(1.250000105158, abs=1e-9)
     assert result.sampling_overhead == pytest.approx(result.gamma**2, rel=1e-12)
@@ -611,7 +624,9 @@ def test_two_locations_compose_and_each_one_carries_its_own_cost() -> None:
     assert [location.program_index for location in result.locations] == [1, 3]
     assert result.term_count == 16
     assert result.executions == 17
-    assert result.unmitigated == pytest.approx(0.639999892318725, abs=1e-12)
+    assert result.unmitigated == pytest.approx(
+        0.639999892318725, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert abs(result.estimate - 1.0) <= _EXACT_TOLERANCE
     assert result.gamma == pytest.approx(1.562500262894, abs=1e-9)
     assert result.gamma == pytest.approx(result.locations[0].gamma ** 2, rel=1e-12)
@@ -644,10 +659,14 @@ def test_a_model_naming_one_wire_costs_what_it_declares_and_no_more() -> None:
     assert one.locations[0].qubits == (0,)
     assert one.locations[0].program_index == 1
     assert one.term_count == 4
-    assert one.unmitigated == pytest.approx(0.799999932699200, abs=1e-12)
+    assert one.unmitigated == pytest.approx(
+        0.799999932699200, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert abs(one.estimate - 1.0) <= _EXACT_TOLERANCE
     assert abs(both.estimate - 1.0) <= _EXACT_TOLERANCE
-    assert both.unmitigated == pytest.approx(0.639999892318725, abs=1e-12)
+    assert both.unmitigated == pytest.approx(
+        0.639999892318725, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert both.unmitigated < one.unmitigated
     assert both.gamma == pytest.approx(one.gamma**2, rel=1e-12)
     assert both.term_count == 4 * one.term_count
@@ -662,12 +681,15 @@ def test_the_correction_also_removes_a_drift_on_an_untouched_observable() -> Non
     result = run_pec(circuit, observable, noise_model=model, dtype=torch.complex128)
     assert result.locations[0].qubits == (1,)
     # The channel's operators are stored in single precision, so applying it is
-    # not exactly trace-preserving at double precision: z(0) drifts 7.0e-8 while
-    # the observable's own value never changes. Inverting the channel puts it back
+    # not exactly trace-preserving at double precision: z(0) drifts while the
+    # observable's own value never changes. Inverting the channel puts it back
     # exactly, which is a statement about the stored channel rather than about a
-    # device.
-    assert result.unmitigated == pytest.approx(-1.0, abs=1e-6)
-    assert result.unmitigated > -1.0
+    # device. The drift's *direction* is part of that storage's rounding and not
+    # of the claim: measured as +7.0e-8 here and as -4.3e-8 on the x86 runner,
+    # so what is asserted is that the read moved off -1.0 by a single-precision
+    # amount and that the correction returns it exactly.
+    assert abs(result.unmitigated + 1.0) <= _SINGLE_PRECISION_TOLERANCE
+    assert result.unmitigated != -1.0
     assert result.estimate == -1.0
 
 
@@ -678,7 +700,9 @@ def test_a_two_wire_channel_is_inverted_at_the_location_its_gate_occupies() -> N
     assert result.locations[0].qubits == (0, 1)
     assert result.locations[0].decomposition.n_qubits == 2
     assert result.term_count == 16
-    assert result.unmitigated == pytest.approx(0.946666619956318, abs=1e-12)
+    assert result.unmitigated == pytest.approx(
+        0.946666619956318, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert abs(result.estimate - 1.0) <= _EXACT_TOLERANCE
     assert result.gamma == pytest.approx(1.105633857998, abs=1e-9)
     assert result.sampling_overhead == pytest.approx(1.222426227953, abs=1e-9)
@@ -872,7 +896,12 @@ def test_the_term_cap_admits_five_locations_and_refuses_six() -> None:
     model = NoiseModel().add("x", bit_flip_channel(0.1))
     result = run_pec(five, _z(), noise_model=model, dtype=torch.complex128)
     assert result.term_count == 1024
-    assert result.gamma == pytest.approx(1.250000105158**5, abs=1e-6)
+    # gamma is the product of five per-location factors, so each factor's
+    # single-precision rounding compounds five times. Measured 6.0e-12 from the
+    # closed form here and 2.2e-06 from it on the x86 runner, which is why this
+    # bound is a decade looser than the one-location closed forms and still four
+    # orders below the divergence a dropped location produces.
+    assert result.gamma == pytest.approx(1.250000105158**5, abs=1e-5)
     assert abs(result.estimate + 1.0) <= 1e-6
 
 

@@ -183,14 +183,21 @@ def test_run_vqe_copies_the_caller_s_parameters_and_is_deterministic() -> None:
     assert first.energy.requires_grad is False
 
 
-def test_run_vqe_reports_an_energy_below_the_operator_s_ground_energy() -> None:
-    """Single precision: the measured value, recorded rather than assumed away."""
+def test_run_vqe_lands_on_the_operator_s_ground_energy() -> None:
+    """The run reaches the optimum, to the precision the arithmetic reaches.
+
+    A converged Adam run stops where the gradient it can still resolve stops
+    moving it, and two machines that sum the same statevector in a different
+    order stop at slightly different points: -2.2360680103302002 here and
+    -2.2360682487487793 on the x86 runner, against a ground energy of
+    -2.2360679774997897. That is a gap of 3e-8 to 3e-7 between machines and
+    about 2e-7 from the optimum on both, so pinning either literal records a
+    BLAS kernel rather than the product. The claim under test is that the run
+    reaches the optimum, and the bound below is the distance it has to reach.
+    """
 
     result = run_vqe(_ansatz, _fixed_parameters(), _cost(), steps=600, lr=0.1)
 
-    # The value this repository measured. The point is not the digits but that
-    # the run is *at* the optimum and the difference is the arithmetic's own.
-    assert float(result.energy) == pytest.approx(-2.2360680103302002, abs=1e-9)
     assert abs(float(result.energy) - _GROUND) < 1e-6
 
 
@@ -402,8 +409,14 @@ def test_layerwise_deepening_keeps_the_shallower_optimum_and_pads_with_zeros() -
     assert first_call[3][:4] == tuple(result.stages[1].parameters["quantum"].tolist())
     assert first_call[2][:2] != (0.0, 0.0)
     # A strict inequality on the claim, not a pinned energy: the deepest stage is
-    # at least as good as the shallowest on this instance.
-    assert float(result.energy) <= float(result.stages[0].energy) + 1e-9
+    # at least as good as the shallowest, at the tolerance the optimizer's own
+    # stopping point supports. Both stages run the same 400-step schedule to a
+    # gradient floor, and the floor lands them 5e-7 apart across machines while
+    # both sit within 3e-7 of the optimum -- the inequality is a statement about
+    # the schedule continuing rather than restarting, and a 1e-9 bound would have
+    # made it a statement about reduction order.
+    assert abs(float(result.energy) - _GROUND) < 1e-6
+    assert float(result.energy) <= float(result.stages[0].energy) + 1e-6
 
 
 @pytest.mark.parametrize(

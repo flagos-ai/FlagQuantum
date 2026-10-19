@@ -56,6 +56,16 @@ Z0 = Hamiltonian([HamiltonianTerm(1.0, {0: "z"})])
 Z1 = Hamiltonian([HamiltonianTerm(1.0, {1: "z"})])
 ZX = Hamiltonian([HamiltonianTerm(1.0, {0: "z"}), HamiltonianTerm(1.0, {1: "x"})])
 
+#: The tolerance a noisy expectation measured through a channel repeats at. The
+#: channel factories store their operators in single precision, so a read is
+#: rounded by that storage and not by the complex128 propagator around it: the
+#: same read measured -0.214372680 here and -0.21437270662288932 on the x86
+#: runner, and -0.946666620 against -0.9466667361471612 -- 2.7e-08 to 1.2e-07
+#: apart. A 1e-08 pin records that storage's kernel; this bound is eight times
+#: the widest spread and still far below the 3.0e-02 to 4.0e-02 signals asserted
+#: beside it, so a wrong rule still fails.
+_SINGLE_PRECISION_TOLERANCE = 1e-6
+
 
 def _target(*, first: float = 0.6, second: float | None = None) -> fq.Circuit:
     """Return ``h(0) ry(0, first) [ry(1, second)] cx(0, 1)``."""
@@ -647,7 +657,9 @@ def test_the_mitigation_moves_the_expectation_toward_the_noiseless_value() -> No
     result = run_cdr(circuit, ZX, noise_model=_noise(), dtype=torch.complex128)
     ideal = _ideal(circuit, ZX)
     assert ideal == pytest.approx(-0.254799345, abs=1e-8)
-    assert result.unmitigated == pytest.approx(-0.214372680, abs=1e-8)
+    assert result.unmitigated == pytest.approx(
+        -0.214372680, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert abs(result.unmitigated - ideal) == pytest.approx(4.043e-02, rel=1e-2)
     assert abs(result.estimate - ideal) == pytest.approx(7.523e-03, rel=1e-2)
     assert abs(result.estimate - ideal) < abs(result.unmitigated - ideal)
@@ -696,11 +708,21 @@ def test_the_slope_is_the_reciprocal_of_the_shrinkage_the_model_applied() -> Non
     )
     result = run_cdr(circuit, Z0, noise_model=model, dtype=torch.complex128)
     assert [round(point.ideal, 9) for point in result.fit.points] == [0.0, -1.0]
-    assert result.fit.points[1].noisy == pytest.approx(-0.946666620, abs=1e-8)
-    assert result.fit.slope == pytest.approx(1 / 0.946666620, rel=1e-8)
+    assert result.fit.points[1].noisy == pytest.approx(
+        -0.946666620, abs=_SINGLE_PRECISION_TOLERANCE
+    )
+    # The claim is the relation, not the digit: the slope is the reciprocal of
+    # the shrinkage this run measured. Comparing it with a literal reciprocal
+    # would re-assert the same pinned float in a second place, so it is compared
+    # with the measured point instead and the shrinkage above carries the pin.
+    assert result.fit.slope == pytest.approx(
+        -1.0 / result.fit.points[1].noisy, rel=1e-8
+    )
     assert abs(result.fit.intercept) < 1e-15
     ideal = _ideal(circuit, Z0)
-    assert result.unmitigated == pytest.approx(-0.534528182, abs=1e-8)
+    assert result.unmitigated == pytest.approx(
+        -0.534528182, abs=_SINGLE_PRECISION_TOLERANCE
+    )
     assert abs(result.unmitigated - ideal) == pytest.approx(3.011e-02, rel=1e-2)
     assert abs(result.estimate - ideal) < 1e-14
 
