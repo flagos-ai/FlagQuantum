@@ -166,3 +166,22 @@ It certifies admission, the host-built registered name, `CircuitIR` ownership,
 determinism, and cleanup. `examples/extensions/reference_pass_extension.py` is a
 worked example: a pass that rewrites each `swap` into the three `cx` gates it
 equals.
+
+### The host side, without a manifest
+
+A host that already has a transformation function and does not want a packaged
+extension names it directly. `optimize(..., passes={name: function})` runs it
+after the level's declared stages, inside the same fixed-point loop, and records
+the name under `metadata["admitted_passes"]`; `compile(..., passes=...)` does the
+same at both points it optimizes, so the pass also sees the SWAPs routing
+inserted. A built-in pass name is refused, and so is a mapping handed to `compile`
+alongside `optimize=False`.
+
+A pass that reads an analysis, or that vouches for one, carries a declaration a
+mapping cannot hold. `flagquantum.compiler` exports `PassRegistry`,
+`PassManager`, `default_pass_registry` and `OPTIMIZATION_PIPELINE` for that case,
+so the pass is registered against the same engine the levels run on rather than
+against a private copy: `default_pass_registry().with_analysis(...).with_pass(...,
+uses=...)` then `PassManager(registry).run(program, (*OPTIMIZATION_PIPELINE,
+name))`. `PassManager.analyze(program, name)` answers an analysis as a query
+without running a pass. See `flagquantum/compiler/README.md`.

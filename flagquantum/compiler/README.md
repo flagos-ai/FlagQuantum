@@ -28,7 +28,9 @@ ladder. Use
 `optimize(program)` for target-independent optimization and
 `compile(program, coupling_map=...)` for target-aware compilation. Both take
 `optimization_level=`, which selects how much of the pass library runs and
-defaults to `2`, the level that runs all of it. Use
+defaults to `2`, the level that runs all of it. Both also take `passes=`, which
+admits a transformation this repository does not ship; see
+[Admit a pass of your own](#admit-a-pass-of-your-own). Use
 `synthesize_one_qubit`, `synthesize_two_qubit`, and
 `synthesize_state_preparation` for basis rewriting; they are not stable
 `fq.compiler` exports, so reach them by module path.
@@ -74,11 +76,16 @@ the program into commuting blocks. Those are registered analyses, not module
 globals: each pass declares what it `uses` and what it `preserves`, and the
 manager hands it exactly those facts.
 
-Nothing in this section is a stable public API. `PassRegistry`, `PassManager`
-and `PassSpec` live inside this package so that the optimizer keeps one
-composition authority, and an out-of-tree pass reaches the optimizer through
-`flagquantum.ecosystem.extensions.pass_admission` rather than by editing the
-default pipeline. The names below are for working on Compiler itself.
+The registry and the manager are published under `flagquantum.compiler`, beside
+`optimize` and `compile`: that facade is the expert interface, and it is not the
+root `fq` API, which stays `fq.run`, `fq.plan`, `fq.Circuit`, `fq.Module`. What
+the registry still does not allow is editing the default pipeline from outside --
+`default_pass_registry()` returns a new registry every call, the built-in pass
+names cannot be shadowed, and an out-of-tree pass reaches a compilation through
+the `passes=` argument below or through
+`flagquantum.ecosystem.extensions.pass_admission`. The names below, by contrast,
+are for replacing a fact the built-in passes read while working on Compiler
+itself.
 
 Two properties are enforced before the first pass runs. A name that no analysis
 is registered under is refused where the pass is registered, so a misspelled
@@ -92,6 +99,105 @@ A fact that does depend on the program, such as the commuting-block partition,
 is recomputed from the program the round actually produced, and only when a
 reader that declared it reads it. Replacing one `AnalysisSpec` in the registry
 changes what a pass removes without touching the pass.
+
+## Admit a pass of your own
+
+A transformation this repository does not ship runs inside the same pipeline the
+declared levels use, by name:
+
+```python
+import math
+from dataclasses import replace
+
+import flagquantum as fq
+from flagquantum.compiler import optimize
+from flagquantum.core.ir import Instruction
+
+
+def lower_x(program):
+    # One qubit wide, so the replacement names that qubit directly.
+    return replace(
+        program,
+        instructions=tuple(
+            Instruction("rx", (0,), {"theta": math.pi})
+            if held.name == "x"
+            else held
+            for held in program.instructions
+        ),
+    )
+
+
+program = fq.Circuit(1).h(0).h(0).x(0).to_ir()
+out = optimize(program, optimization_level=1, passes={"acme.lower_x": lower_x})
+print([held.name for held in out.instructions], out.metadata["admitted_passes"])
+# ['rx'] ['acme.lower_x']
+```
+
+The admitted passes run after the level's declared stages, in the order the
+mapping declares them, and they run inside the loop rather than once at the end,
+so a pass that is not idempotent is held to the same fixed-point verdict the
+built-in passes are. `compile` forwards the same mapping to both points it
+optimizes -- before routing and again after it -- so an admitted pass sees the
+SWAPs the router inserted on the second run.
+
+Four refusals, all of them before the first pass runs, all of them with the
+offending name in the message: a name a built-in pass already owns (a level's
+meaning is not up for redefinition), a name bound to something that is not
+callable, an empty name, and a mapping handed to `compile` while
+`optimize=False` (the same call asked for a transformation and asked for nothing
+to run). A pass that returns a non-program, or one that never settles, fails with
+`CompilationError` and names the pass.
+
+`metadata["admitted_passes"]` appears only on a program an admitted pass ran on,
+and `metadata["optimization"]` keeps its single `level` key either way -- so the
+recording of what the level did is not rewritten by what the caller added.
+
+A mapping carries names and functions, not declarations. A pass that reads an
+analysis, or that vouches for one, is registered on the exported registry and run
+by the exported manager, which is the same engine the levels run on:
+
+```python
+from flagquantum.compiler import (
+    OPTIMIZATION_PIPELINE,
+    PassManager,
+    default_pass_registry,
+)
+
+
+def count_opcodes(program):
+    return len({held.name for held in program.instructions})
+
+
+def drop_redundant_hadamards(program, analyses):
+    """The fact is read from `analyses`, not recomputed from scratch."""
+    if analyses["acme.opcode_count"] < 2:
+        return program
+    return optimize(program, optimization_level=2)
+
+
+registry = default_pass_registry().with_analysis("acme.opcode_count", count_opcodes)
+registry = registry.with_pass(
+    "acme.drop_redundant_hadamards",
+    drop_redundant_hadamards,
+    uses=("acme.opcode_count",),
+)
+manager = PassManager(registry)
+program = fq.Circuit(1).h(0).h(0).x(0).to_ir()
+out = manager.run(program, (*OPTIMIZATION_PIPELINE, "acme.drop_redundant_hadamards"))
+print(manager.analyze(program, "acme.opcode_count"), [held.name for held in out.instructions])
+# 2 ['x']
+```
+
+A pass that declares `uses=` is called with the program and a lazily resolved
+mapping, so a fact it never reads is never computed. A pass registered through
+`passes=` instead is called with the program alone, which is the whole of what a
+mapping can declare.
+
+`PassManager.analyze(program, name)` answers the same query without running a
+pass, which is what a caller inspecting a program before choosing a
+transformation needs. Extension passes keep their `extension.` prefix, spelled by
+`extension_pass_name(extension, pass_name)`, so a trace can tell a name this
+repository guarantees from a name a plugin supplied.
 
 ## Reach a Clifford+T basis
 
