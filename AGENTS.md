@@ -251,6 +251,16 @@ These documents are binding design standards.
 
 ## Branches and Path Ownership
 
+Every pull request description must include a runnable, user-facing example
+showing the affected workflow and its expected result. Documentation and internal
+changes must show the existing user workflow they support and explain the impact;
+do not present planned APIs as implemented. Reuse examples already in the
+repository when applicable.
+
+Use `FlagQuantum <liuwei.chem.phys@gmail.com>` as the sole Git author and committer
+identity for contributions. Do not add co-author trailers or other attribution
+identities. Configure this identity in the repository before committing.
+
 Ordinary work is a short-lived branch cut from `main` and merged by pull request;
 `docs/development/INTEGRATION_WORKFLOW.md` declares that flow from measured
 evidence. The linked-worktree layout in `team-ownership.toml` is an optional mode
