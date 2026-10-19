@@ -224,8 +224,16 @@ class BosonOperator:
         >>> commutation = annihilate(0) * create(0) - create(0) * annihilate(0)
         >>> commutation == identity()
         True
-        >>> create(0).to_matrix({0: 3}).diagonal(-1).tolist()
-        [(1+0j), (1.4142135623730951+0j)]
+
+        The matrix of a creation operator on a truncated space has ``sqrt(n + 1)``
+        on the subdiagonal, and that number's last place belongs to the build that
+        computed it: read raw it printed ``1.4142135623730951`` on one machine and
+        ``1.414213562373095`` on another. Rounding to twelve decimals keeps the
+        value and drops the place:
+
+        >>> diagonal = create(0).to_matrix({0: 3}).diagonal(-1).tolist()
+        >>> [round(entry.real, 12) for entry in diagonal]
+        [1.0, 1.414213562373]
     """
 
     terms: tuple[BosonTerm, ...] = ()

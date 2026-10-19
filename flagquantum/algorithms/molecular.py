@@ -740,8 +740,26 @@ def create_molecular_hamiltonian(
         >>> result = create_molecular_hamiltonian(
         ...     [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7414))]
         ... )
-        >>> result.n_orbitals, len(result.hamiltonian.terms)
-        (2, 27)
+        >>> result.n_orbitals
+        2
+        >>> physical = [
+        ...     term
+        ...     for term in result.hamiltonian.terms
+        ...     if abs(float(term.coefficient)) > 1e-12
+        ... ]
+        >>> len(physical)
+        15
+
+        The molecule has two orbitals and a fifteen-term Pauli image, which is the
+        count a reader who knows H2 in STO-3G expects. The stored sum is longer --
+        twenty-seven terms here and thirty-one on one of the builds this was
+        checked on -- because the products that a symmetry cancels reach about
+        1e-17 rather than zero, and how many of them survive is a property of the
+        summation order rather than of the molecule. Twelve here and sixteen there
+        are that residue, which is why the count above is taken over the terms that
+        carry a coefficient and not over the terms that are stored. The smallest
+        physical coefficient is 4.5e-02, so the cut is ten orders of magnitude
+        below the smallest term it keeps and five above the largest it drops.
     """
 
     if not isinstance(multiplicity, int) or isinstance(multiplicity, bool):

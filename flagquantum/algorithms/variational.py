@@ -503,8 +503,14 @@ def run_qaoa(
         >>> result = run_qaoa(3, edges, torch.full((2,), 0.05), steps=100)
         >>> result.layers, result.n_steps
         (1, 100)
-        >>> round(float(result.energy), 4)
-        -0.9993
+        >>> round(float(result.energy), 2)
+        -1.0
+
+        The last figure of that energy is where a hundred fixed steps stopped, so
+        it is quoted at the precision two builds agree on rather than at the
+        fourth decimal: this run stopped at ``-0.999333381652832`` and the x86
+        runner at ``-0.9998669028282166``, both within a thousandth of the cost
+        ``-1.0`` and not within a ten-thousandth of each other.
 
         The zero start stays exactly where it is, which is the documented trap.
         The uniform superposition is an eigenstate of every cost and mixer term,
