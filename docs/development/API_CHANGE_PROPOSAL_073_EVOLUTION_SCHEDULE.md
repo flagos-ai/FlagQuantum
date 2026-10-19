@@ -2,6 +2,13 @@
 
 ## Status
 
+Schema coordination note (2026-10-19): approved
+[proposal 078](API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md) assigns
+Lindblad plan 1.4 to explicit mixed-dimension spaces while preserving qubit
+plans at 1.3. This schedule proposal remains unapproved and unimplemented; its
+proposed 1.4 extension below must be rebased onto that accepted baseline before
+implementation. This note changes no historical measurements or approval status.
+
 **Proposed. No code is written by this proposal and no behaviour changes until
 the repository owner approves it and the acceptance items below are measured.**
 

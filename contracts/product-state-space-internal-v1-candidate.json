@@ -1,0 +1,61 @@
+{
+  "schema": "flagquantum.product_state_space_internal_contract",
+  "version": "0.1",
+  "status": "implementation_authorized",
+  "owner": "core",
+  "approval_basis": "docs/development/API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md",
+  "proposed_module": "flagquantum.core.ir.state_space",
+  "proposed_type": "ProductStateSpace",
+  "conformance": "tests/unit/test_product_state_space_contract.py",
+  "representation": {
+    "dimensions": "nonempty tuple of strictly positive Python integers, excluding booleans",
+    "dimension": "product of dimensions, without qubit padding",
+    "basis_order": "subsystem_0_most_significant",
+    "basis_index": "left-to-right mixed-radix index with every occupation in range",
+    "qubit_compatibility": "every subsystem dimension equals two",
+    "immutable": true
+  },
+  "existing_authorities": {
+    "public_ir": "flagquantum.core.ir.CircuitIR",
+    "public_ir_version": "1.0",
+    "pass_manager": "flagquantum.compiler.pass_manager.PassManager",
+    "request_validation": "flagquantum.simulation.lindblad_request",
+    "generator": "flagquantum.simulation.lindblad_generator.Liouvillian",
+    "operator_algebra": "flagquantum.operators.SuperOperator",
+    "integration": "flagquantum.simulation.lindblad_integrators.advance_interval",
+    "plan": "flagquantum.lindblad.LindbladPlan",
+    "result": "flagquantum.simulation.lindblad.EvolutionResult",
+    "boson_matrices": "flagquantum.observables.boson.BosonOperator.to_matrix"
+  },
+  "implementation_order": [
+    "approve and merge this contract with its test-only fake and conformance tests",
+    "implement the internal Core type behind the same consumer-level tests",
+    "extend existing static CPU dynamics, sealed plans, and gradients",
+    "deliver two physical models through the same existing solver and result path"
+  ],
+  "refusals": [
+    "empty, non-integer, boolean, zero, or negative dimensions",
+    "basis occupations with a wrong arity or an out-of-range value",
+    "a constrained fusion-space descriptor passed as product dimensions",
+    "implicit equivalence of a four-level subsystem and two qubits",
+    "qubit-specific operator descriptors interpreted in a non-qubit space"
+  ],
+  "proposed_api_delta": {
+    "namespace": "flagquantum.lindblad",
+    "entry_points": ["plan", "run", "adjoint_gradient"],
+    "optional_keyword": "dimensions",
+    "default": null,
+    "new_stable_root_exports": [],
+    "existing_qubit_plan_version": "1.3",
+    "mixed_dimension_plan_version": "1.4",
+    "existing_qubit_plan_identity": "unchanged; explicitly all-qubit dimensions normalize to the existing form"
+  },
+  "not_implemented_by_this_contract": [
+    "production mixed-dimension plan or execution entry point",
+    "constrained fusion-space type or anyon operations",
+    "time-dependent generators or coefficient schedules",
+    "new fq.expectation observable forms",
+    "photonic, hardware, GPU, or distributed dynamics backend",
+    "new IR, pass manager, numerical core, or training lifecycle"
+  ]
+}

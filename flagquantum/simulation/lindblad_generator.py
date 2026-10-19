@@ -12,8 +12,9 @@ is ``vec(A rho B) = (A (x) B^T) vec(rho)`` for the row-major vectorization
 ``L (x) conj(L) - (L^dag L (x) I + I (x) (L^dag L)^T) / 2``.
 
 Two facts make this representation worth having without ever paying for it.
-First, ``L`` has ``16**n`` entries, so :meth:`Liouvillian.dense` refuses to
-materialize it above a declared ceiling and :meth:`Liouvillian.derivative`
+First, ``L`` has ``D**4`` entries (``16**n`` for qubits), so
+:meth:`Liouvillian.dense` refuses to materialize it above a declared ceiling and
+:meth:`Liouvillian.derivative`
 applies the same generator through the density form instead -- which is exactly
 the vectorization identity read the other way. Second, the conventional
 properties of a Liouvillian are statements about that matrix, and the unit suite
@@ -92,7 +93,7 @@ class Liouvillian:
 
     @property
     def hilbert_dimension(self) -> int:
-        """Return ``2**n``, the side of the state this generator acts on."""
+        """Return the Hilbert dimension, the side of each density matrix."""
 
         return self._dimension
 
@@ -127,14 +128,15 @@ class Liouvillian:
         return self._adjoint.apply(state)
 
     def dense(self, *, max_bytes: int = DEFAULT_DENSE_GENERATOR_BYTES) -> torch.Tensor:
-        """Return the ``4**n x 4**n`` vectorized generator.
+        """Return the ``D**2 x D**2`` vectorized generator.
 
         The form is refused above ``max_bytes`` rather than allocated, because
-        the entry count is ``(2**n)**4``: the representation is useful for small
-        systems, as an independent reference for the matrix-free action, and as
+        the entry count is ``D**4`` (``D = 2**n`` for qubits): the representation
+        is useful for small systems, as an independent reference for the
+        matrix-free action, and as
         the exact generator of a dense matrix exponential, but it is never a
-        path for production sizes. The default ceiling admits up to ``n = 5``,
-        where the generator is ``1024 x 1024`` and exactly fills 16 MiB, and
+        path for production sizes. For qubits, the default ceiling admits up to
+        ``n = 5``, where the generator is ``1024 x 1024`` and exactly fills 16 MiB, and
         refuses ``n = 6`` and above.
 
         Raises:

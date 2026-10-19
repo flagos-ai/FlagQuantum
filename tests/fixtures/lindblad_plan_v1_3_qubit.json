@@ -1,0 +1,87 @@
+{
+  "decision": {
+    "batch_size": 1,
+    "dimension": 2,
+    "n_times": 2,
+    "n_wires": 1,
+    "numerics": {
+      "device": "cpu",
+      "method": "runge-kutta",
+      "order": 4,
+      "precision": "complex128",
+      "require_gradients": false,
+      "solve_tolerance": null,
+      "step_size": 0.05
+    },
+    "trajectory_bytes": 128
+  },
+  "identity": "3f3cb02046d1c468bb1baa2cca5574eef210449df093b52c5d23e8b5ee15725a",
+  "request": {
+    "collapse_operators": [],
+    "hamiltonian": {
+      "shape": [
+        2,
+        2
+      ],
+      "values": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.5,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.5,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      ]
+    },
+    "initial_density_matrix": {
+      "shape": [
+        2,
+        2
+      ],
+      "values": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0
+          ]
+        ]
+      ]
+    },
+    "n_qubits": 1,
+    "observables": [],
+    "return_density_matrices": false,
+    "times": [
+      0.0,
+      0.1
+    ]
+  },
+  "schema": "flagquantum.lindblad_plan",
+  "version": "1.3"
+}

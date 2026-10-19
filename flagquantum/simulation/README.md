@@ -172,6 +172,63 @@ assert result.plan is restored
 Set `return_density_matrices=True` when the complete density trajectory is
 needed. Otherwise it is omitted from the returned result.
 
+### Finite mixed-dimension spaces
+
+The same Lindblad path accepts explicit ordered subsystem dimensions. For
+example, a three-level leakage model uses a three-component vector directly:
+
+```python
+import torch
+import flagquantum.lindblad as fql
+
+transition = torch.zeros((3, 3), dtype=torch.complex128)
+transition[1, 2] = transition[2, 1] = 0.7
+plan = fql.plan(
+    transition, [0.0, 1.0, 0.0],
+    torch.linspace(0.0, 0.5, 51, dtype=torch.float64),
+    dimensions=(3,),
+)
+result = fql.run(plan)
+print(plan.dimensions, result.populations.shape)  # (3,), torch.Size([51, 3])
+```
+
+Subsystem 0 is most significant: for `(2, 3)`, `|spin=1, occupation=0>` is
+flat index 3. A four-level subsystem `(4,)` is distinct from two qubits `(2, 2)`;
+the ordered dimensions enter the sealed plan identity. No padding occurs.
+Non-qubit spaces require full numeric states and operator matrices. Pauli
+inputs, bitstrings, named qubit collapse operators, and `fq.expectation`'s
+qubit-only observable forms are refused for these spaces. Dense observable
+matrices can be supplied through the existing low-level
+`evolve_density_matrix(..., n_qubits=None, dimensions=..., observables=...)`
+interface. Supplying `n_qubits` together with `dimensions` is legal only when
+every declared subsystem is a qubit and the counts agree.
+
+Run both a three-level leakage model with a coupling gradient and a spin-mode
+exchange model built from the existing boson matrices:
+
+```bash
+python -m examples.mixed_dimension_dynamics
+```
+
+All three integrators, initial-state batching, the existing `EvolutionResult`,
+and initial-density adjoints are reused. Population axes are `(time, D)` or
+`(time, batch, D)`; retained density axes append `(D, D)` instead. A square
+`(D, D)` initial input still means one density matrix. The new non-qubit plans
+use schema 1.4; qubit plans keep their 1.3 payload and identity, including when
+their dimensions are explicitly supplied. `plan.n_qubits` raises
+`CapabilityError` for a non-qubit space; inspect `plan.dimensions` instead.
+Live plans preserve autograd; JSON contains values, so restored plans requesting
+gradients retain the existing `gradients_not_available` refusal at execution.
+
+This slice is static, CPU-only, and finite-dimensional. Fock truncation is an
+explicit modeling approximation, distinct from integration error. The tests
+separate time-grid refinement from truncation in a fixed excitation sector;
+that sector does not establish convergence for an arbitrary oscillator state.
+A dense matrix made with the boson algebra is not a photonic backend. Fixed-charge
+fusion spaces, time-dependent controls, native qudit circuit operations, and
+GPU/distributed dynamics remain future work under
+[proposal 078](../../docs/development/API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md).
+
 ### Differentiating the initial state without retaining the sweep
 
 `fql.adjoint_gradient` returns the gradient of a scalar cost with respect to the

@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 
-from ..errors import ExecutionError, ValidationError  # noqa: F401
+from ..errors import CapabilityError, ExecutionError, ValidationError  # noqa: F401
 from ..observables import Observable  # noqa: F401
 from .density_matrix import expand_operator  # noqa: F401
 from .lindblad_generator import Liouvillian
@@ -49,6 +49,7 @@ from .lindblad_request import (
     _require_gradients_flag,
     _require_hermitian_terms,  # noqa: F401
     _resolve_batch_size,
+    _resolve_state_space,
     _solve_max_iterations,
     _solve_tolerance,
     _statevectors_to_density,  # noqa: F401
@@ -69,7 +70,7 @@ def amplitude_damping(rate: float, qubit: int) -> CollapseOperator:
 class EvolutionResult:
     """A time-resolved density-matrix evolution result.
 
-    ``populations`` has shape ``(len(times), 2**n_qubits)``.  Observable values
+    ``populations`` has shape ``(len(times), dimension)``. Observable values
     have one row per requested time.  Density matrices are retained only when
     ``return_density_matrices=True`` was requested.
     """
@@ -176,15 +177,20 @@ class EvolutionPlan:
     solve_tolerance: float | None = None
     batch_size: int = 1
     require_gradients: bool = False
+    dimensions: tuple[int, ...] | None = None
 
     @property
     def n_qubits(self) -> int:
         """Return the public qubit count; ``n_wires`` remains serialized internally."""
 
+        if self.dimensions is not None and any(dim != 2 for dim in self.dimensions):
+            raise CapabilityError(
+                "this state space is not a qubit register; inspect dimensions"
+            )
         return self.n_wires
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "n_wires": self.n_wires,
             "n_times": self.n_times,
             "dimension": self.dimension,
@@ -200,6 +206,9 @@ class EvolutionPlan:
                 "require_gradients": self.require_gradients,
             },
         }
+        if self.dimensions is not None:
+            payload["dimensions"] = list(self.dimensions)
+        return payload
 
 
 def _complex_tensor_to_json(value: torch.Tensor) -> list[Any]:
@@ -210,7 +219,7 @@ def _complex_tensor_to_json(value: torch.Tensor) -> list[Any]:
 def plan_density_matrix_evolution(
     hamiltonian: Any,
     initial_state: Any,
-    n_qubits: int,
+    n_qubits: int | None,
     times: Any,
     collapse_operators: Sequence[Any] | None = None,
     observables: Mapping[str, Any] | Sequence[Any] | None = None,
@@ -222,13 +231,11 @@ def plan_density_matrix_evolution(
     solve_tolerance: float | None = None,
     batch_size: int | None = None,
     require_gradients: bool = False,
+    dimensions: Sequence[int] | None = None,
 ) -> EvolutionPlan:
     """Validate an evolution request and report its deterministic local plan."""
 
-    if isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 1:
-        raise _error(
-            "invalid_n_qubits", "n_qubits must be a positive integer", "n_qubits"
-        )
+    space = _resolve_state_space(n_qubits, dimensions)
     if dtype not in {torch.complex64, torch.complex128}:
         raise _error(
             "unsupported_dtype",
@@ -256,15 +263,16 @@ def plan_density_matrix_evolution(
         )
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
-    dim = 2**n_qubits
+    dim = space.dimension
     time_grid = _normalize_times(times, device=resolved_device, real_dtype=real_dtype)
     _normalize_hamiltonian(
         hamiltonian,
-        n_wires=n_qubits,
+        n_wires=len(space.dimensions),
         dim=dim,
         dtype=dtype,
         device=resolved_device,
         tolerance=tolerance,
+        qubit_space=space.is_qubit_space,
     )
     initial_matrices = _normalize_initial_state(
         initial_state,
@@ -272,18 +280,26 @@ def plan_density_matrix_evolution(
         dtype=dtype,
         device=resolved_device,
         tolerance=tolerance,
+        qubit_space=space.is_qubit_space,
     )
     resolved_batch_size = _resolve_batch_size(
         batch_size, 1 if initial_matrices.ndim == 2 else int(initial_matrices.shape[0])
     )
     _normalize_collapse_operators(
         collapse_operators,
-        n_wires=n_qubits,
+        n_wires=len(space.dimensions),
         dim=dim,
         dtype=dtype,
         device=resolved_device,
+        qubit_space=space.is_qubit_space,
     )
-    _normalize_observables(observables, dim=dim, dtype=dtype, device=resolved_device)
+    _normalize_observables(
+        observables,
+        dim=dim,
+        dtype=dtype,
+        device=resolved_device,
+        qubit_space=space.is_qubit_space,
+    )
     step_size = (
         0.0
         if time_grid.numel() == 1
@@ -296,7 +312,7 @@ def plan_density_matrix_evolution(
     )
     element_bytes = 8 if dtype == torch.complex64 else 16
     return EvolutionPlan(
-        n_wires=n_qubits,
+        n_wires=len(space.dimensions),
         n_times=int(time_grid.numel()),
         dimension=dim,
         trajectory_bytes=(
@@ -312,13 +328,14 @@ def plan_density_matrix_evolution(
             resolved_solve_tolerance if method in KRYLOV_SCHEMES else None
         ),
         require_gradients=resolved_require_gradients,
+        dimensions=None if space.is_qubit_space else space.dimensions,
     )
 
 
 def evolve_density_matrix(
     hamiltonian: Any,
     initial_state: Any,
-    n_qubits: int,
+    n_qubits: int | None,
     times: Any,
     collapse_operators: Sequence[Any] | None = None,
     observables: Mapping[str, Any] | Sequence[Any] | None = None,
@@ -330,6 +347,7 @@ def evolve_density_matrix(
     solve_tolerance: float | None = None,
     batch_size: int | None = None,
     require_gradients: bool = False,
+    dimensions: Sequence[int] | None = None,
 ) -> EvolutionResult:
     """Evolve a state on an explicit time grid with the Lindblad equation.
 
@@ -359,6 +377,10 @@ def evolve_density_matrix(
     instead of returning a detached trajectory that still looks correct.
 
     Args:
+        dimensions: Ordered finite subsystem dimensions, with subsystem 0 most
+            significant. Pass ``n_qubits=None`` for a non-qubit space and use
+            full numeric states, Hamiltonians, and collapse/observable matrices.
+            Supplying both forms requires ``dimensions == (2,) * n_qubits``.
         batch_size: The declared batch axis. ``None`` uses the batch the
             ``initial_state`` itself carries; a declared batch that disagrees
             with it is refused.
@@ -378,10 +400,7 @@ def evolve_density_matrix(
         ('crank-nicolson', 2)
     """
 
-    if isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 1:
-        raise _error(
-            "invalid_n_qubits", "n_qubits must be a positive integer", "n_qubits"
-        )
+    space = _resolve_state_space(n_qubits, dimensions)
     if dtype not in {torch.complex64, torch.complex128}:
         raise _error(
             "unsupported_dtype",
@@ -411,16 +430,17 @@ def evolve_density_matrix(
     validation_tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
     population_tolerance = 2e-5 if dtype == torch.complex64 else 1e-9
     trace_tolerance = 2e-5 if dtype == torch.complex64 else 1e-9
-    dim = 2**n_qubits
+    dim = space.dimension
 
     time_grid = _normalize_times(times, device=resolved_device, real_dtype=real_dtype)
     hamiltonian_representation = _normalize_hamiltonian(
         hamiltonian,
-        n_wires=n_qubits,
+        n_wires=len(space.dimensions),
         dim=dim,
         dtype=dtype,
         device=resolved_device,
         tolerance=validation_tolerance,
+        qubit_space=space.is_qubit_space,
     )
     rho = _normalize_initial_state(
         initial_state,
@@ -428,6 +448,7 @@ def evolve_density_matrix(
         dtype=dtype,
         device=resolved_device,
         tolerance=validation_tolerance,
+        qubit_space=space.is_qubit_space,
     )
     # A declared batch must agree with the batch the initial state carries. The
     # resolved value is not needed afterwards, because every later stage reads
@@ -435,13 +456,18 @@ def evolve_density_matrix(
     _resolve_batch_size(batch_size, 1 if rho.ndim == 2 else int(rho.shape[0]))
     collapse = _normalize_collapse_operators(
         collapse_operators,
-        n_wires=n_qubits,
+        n_wires=len(space.dimensions),
         dim=dim,
         dtype=dtype,
         device=resolved_device,
+        qubit_space=space.is_qubit_space,
     )
     observable_matrices = _normalize_observables(
-        observables, dim=dim, dtype=dtype, device=resolved_device
+        observables,
+        dim=dim,
+        dtype=dtype,
+        device=resolved_device,
+        qubit_space=space.is_qubit_space,
     )
     generator = Liouvillian(hamiltonian_representation, collapse, hilbert_dimension=dim)
 

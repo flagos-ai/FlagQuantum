@@ -17,14 +17,20 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Extend the existing static CPU Lindblad workflow with explicit ordered
+  `dimensions=` for finite product spaces. Three-level and spin-mode models
+  reuse the existing numerical core, sealed plans, result type, and gradients.
+  Non-qubit plans use schema 1.4; existing qubit plans retain their 1.3 content
+  and identities. CircuitIR 1.0 and Stable Core exports are unchanged. Pauli
+  descriptors remain qubit-only; this is not a photonic or hardware backend.
 - Use compensated summation for contracted Gaussian overlaps and their
   independent closed-form test references. Small contributions survive
   cancellation and the existing integral accuracy and rotation checks pass on
   Python 3.10 through 3.12 without relaxed assertions or a public API change.
 - Correct the Lindblad capability description to include discretized autograd,
   initial-state batching under a shared generator, and the adjoint gradient
-  with respect to the normalized initial density matrix. CPU, static-generator,
-  and qubit-space restrictions remain; this is a description correction, not
+  with respect to the normalized initial density matrix. CPU and static-generator
+  restrictions remain; this is a description correction, not
   a maturity promotion or general pulse-gradient claim.
 
 ## 0.3.1 (release pending)

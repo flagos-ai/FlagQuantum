@@ -17,6 +17,7 @@ from typing import Any
 
 import torch
 
+from ..core.ir.state_space import ProductStateSpace
 from ..errors import ValidationError
 from ..observables import Observable
 from .density_matrix import expand_operator
@@ -47,6 +48,44 @@ class CollapseOperator:
 
 def _error(code: str, message: str, field: str) -> EvolutionValidationError:
     return EvolutionValidationError(code, message, field=field)
+
+
+def _resolve_state_space(
+    n_qubits: int | None, dimensions: Sequence[int] | None
+) -> ProductStateSpace:
+    if n_qubits is not None and (
+        isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 1
+    ):
+        raise _error(
+            "invalid_n_qubits", "n_qubits must be a positive integer", "n_qubits"
+        )
+    if dimensions is None:
+        if n_qubits is None:
+            raise _error(
+                "invalid_n_qubits", "n_qubits must be a positive integer", "n_qubits"
+            )
+        return ProductStateSpace((2,) * n_qubits)
+    try:
+        space = ProductStateSpace(dimensions)
+    except (TypeError, ValueError) as exc:
+        raise _error("invalid_dimensions", str(exc), "dimensions") from exc
+    if n_qubits is not None and space.dimensions != (2,) * n_qubits:
+        raise _error(
+            "conflicting_state_space",
+            "dimensions must equal (2,) * n_qubits when both are supplied",
+            "dimensions",
+        )
+    return space
+
+
+def _require_qubit_space(qubit_space: bool, field: str) -> None:
+    if not qubit_space:
+        raise _error(
+            "qubit_only_input",
+            f"qubit-only {field} input cannot act on a non-qubit state space; "
+            "provide full-space numeric tensors",
+            field,
+        )
 
 
 def _as_complex_matrix(
@@ -152,6 +191,7 @@ def _normalize_initial_state(
     dtype: torch.dtype,
     device: torch.device,
     tolerance: float,
+    qubit_space: bool = True,
 ) -> torch.Tensor:
     """Validate an initial state and return it as one density matrix or a batch.
 
@@ -163,6 +203,7 @@ def _normalize_initial_state(
     """
 
     if isinstance(initial_state, str):
+        _require_qubit_space(qubit_space, "initial_state")
         if len(initial_state) != dim.bit_length() - 1 or set(initial_state) - {
             "0",
             "1",
@@ -469,6 +510,7 @@ def _normalize_hamiltonian(
     dtype: torch.dtype,
     device: torch.device,
     tolerance: float,
+    qubit_space: bool = True,
 ) -> PauliSum | torch.Tensor:
     """Validate a Hamiltonian and return what evolution consumes.
 
@@ -479,6 +521,7 @@ def _normalize_hamiltonian(
 
     terms = _hamiltonian_terms(hamiltonian, n_wires=n_wires)
     if terms is not None:
+        _require_qubit_space(qubit_space, "hamiltonian")
         _require_hermitian_terms(terms, tolerance=tolerance)
         return PauliSum(
             terms,
@@ -579,6 +622,7 @@ def _normalize_collapse_terms(
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
+    qubit_space: bool = True,
 ) -> tuple[tuple[torch.Tensor, float], ...]:
     result = []
     for index, item in enumerate(collapse_operators or ()):
@@ -586,10 +630,14 @@ def _normalize_collapse_terms(
         rate: Any
         raw_qubits: Any
         if isinstance(item, CollapseOperator):
+            if item.qubits:
+                _require_qubit_space(qubit_space, "collapse_operators")
             operator = item.operator
             rate = item.rate
             raw_qubits = item.qubits
         elif isinstance(item, Mapping):
+            if "qubit" in item or "qubits" in item:
+                _require_qubit_space(qubit_space, "collapse_operators")
             operator = item.get("operator", item.get("kind"))
             rate = item.get("rate")
             raw_qubits = item.get("qubits", item.get("qubit", (0,)))
@@ -640,6 +688,7 @@ def _normalize_collapse_terms(
                     "collapse_operators",
                 ) from exc
         if isinstance(operator, str):
+            _require_qubit_space(qubit_space, "collapse_operators")
             full = _named_operator(
                 operator,
                 qubits,
@@ -666,6 +715,7 @@ def _normalize_collapse_operators(
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
+    qubit_space: bool = True,
 ) -> tuple[torch.Tensor, ...]:
     return tuple(
         (rate**0.5) * operator
@@ -675,6 +725,7 @@ def _normalize_collapse_operators(
             dim=dim,
             dtype=dtype,
             device=device,
+            qubit_space=qubit_space,
         )
     )
 
@@ -685,6 +736,7 @@ def _normalize_observables(
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
+    qubit_space: bool = True,
 ) -> dict[str, torch.Tensor]:
     if observables is None:
         return {}
@@ -697,6 +749,8 @@ def _normalize_observables(
         items = enumerate(observables)
     result = {}
     for name, value in items:
+        if isinstance(value, (Observable, Mapping)):
+            _require_qubit_space(qubit_space, "observables")
         if isinstance(value, Observable):
             label = str(name) if named_mapping else f"observable_{name}"
             matrix = _observable_matrix(

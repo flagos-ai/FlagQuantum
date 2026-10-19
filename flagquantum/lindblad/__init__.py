@@ -163,6 +163,7 @@ def run(
     return_density_matrices: bool = False,
     method: str = DEFAULT_INTEGRATOR,
     solve_tolerance: float | None = None,
+    dimensions: Sequence[int] | None = None,
 ) -> EvolutionResult:
     """Run a Lindblad plan or plan and run a request in one call."""
 
@@ -177,6 +178,7 @@ def run(
             or return_density_matrices
             or method != DEFAULT_INTEGRATOR
             or solve_tolerance is not None
+            or dimensions is not None
         ):
             raise TypeError(
                 "a LindbladPlan is closed to initial_state, times, and semantic overrides"
@@ -196,6 +198,7 @@ def run(
             return_density_matrices=return_density_matrices,
             method=method,
             solve_tolerance=solve_tolerance,
+            dimensions=dimensions,
         )
     result = evolve_density_matrix(**execution_plan._execution_request())
     return replace(result, plan=execution_plan)
@@ -213,6 +216,7 @@ def plan(
     return_density_matrices: bool = False,
     method: str = DEFAULT_INTEGRATOR,
     solve_tolerance: float | None = None,
+    dimensions: Sequence[int] | None = None,
 ) -> LindbladPlan:
     """Build a sealed, serializable plan without running it.
 
@@ -225,6 +229,11 @@ def plan(
     and ``options.require_gradients`` requires the trajectory to stay connected
     to the caller's tensors; both are recorded in the plan, so a sealed plan
     states what it will return before it runs.
+
+    ``dimensions`` declares an ordered finite tensor product, with subsystem 0
+    most significant. Non-qubit spaces require full numeric state and operator
+    tensors; Pauli descriptors, bitstrings, and named qubit collapse operators
+    are refused. An explicitly all-qubit space keeps the existing plan form.
 
     Examples:
         >>> import torch
@@ -239,7 +248,11 @@ def plan(
     """
 
     device, dtype, batch_size, require_gradients = _execution_settings(options)
-    resolved_n_qubits = _infer_n_qubits(initial_state) if n_qubits is None else n_qubits
+    resolved_n_qubits = (
+        _infer_n_qubits(initial_state)
+        if n_qubits is None and dimensions is None
+        else n_qubits
+    )
     return build_lindblad_plan(
         hamiltonian,
         initial_state,
@@ -254,6 +267,7 @@ def plan(
         solve_tolerance=solve_tolerance,
         batch_size=batch_size,
         require_gradients=require_gradients,
+        dimensions=dimensions,
     )
 
 
@@ -268,6 +282,7 @@ def adjoint_gradient(
     options: ExecutionOptions | None = None,
     method: str = DEFAULT_INTEGRATOR,
     solve_tolerance: float | None = None,
+    dimensions: Sequence[int] | None = None,
 ) -> torch.Tensor:
     """Return the gradient of ``cost`` with respect to the initial state.
 
@@ -300,7 +315,11 @@ def adjoint_gradient(
         torch.Size([2, 2])
     """
 
-    resolved_n_qubits = _infer_n_qubits(initial_state) if n_qubits is None else n_qubits
+    resolved_n_qubits = (
+        _infer_n_qubits(initial_state)
+        if n_qubits is None and dimensions is None
+        else n_qubits
+    )
     device, dtype, batch_size, require_gradients = _execution_settings(options)
     return _adjoint_gradient(
         hamiltonian,
@@ -315,6 +334,7 @@ def adjoint_gradient(
         solve_tolerance=solve_tolerance,
         batch_size=batch_size,
         require_gradients=require_gradients,
+        dimensions=dimensions,
     )
 
 

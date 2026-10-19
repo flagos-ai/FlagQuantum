@@ -66,7 +66,8 @@ error-correcting code or a provider backend.
 The ordering below is binding for this workstream; durations are planning
 estimates for a four-to-six-person team with physics support, not release dates.
 Milestones advance by evidence, not elapsed time. M0 is a baseline repair and
-documentation change; M1-M4 remain future work until their own checks pass.
+documentation change. The first M1 static finite-product slice is implemented
+below; remaining M1 controls and M2-M4 require their own exit gates.
 
 | Milestone | Estimate | Owning domains | Deliverable and exit gate |
 | --- | --- | --- | --- |
@@ -93,6 +94,20 @@ do not introduce a parallel IR hierarchy, pass manager, or dynamics engine.
 The existing boson algebra is a starting point, not a complete Fock backend.
 Trainable coefficients and live tensor bindings require explicit validation;
 serializing parameter values does not serialize an autograd graph.
+
+The first M1 slice implements approved
+[proposal 078](../development/API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md):
+internal product-space semantics under `core/ir/`, explicit `dimensions=` on
+the existing Lindblad namespace, backward-readable unchanged qubit plans, and
+static non-qubit plan schema 1.4. `examples/mixed_dimension_dynamics.py` runs
+three-level leakage and spin-mode exchange through the same existing generator,
+integrators, result, and PyTorch gradient path. The focused acceptance is
+`tests/unit/test_lindblad_mixed_dimensions.py`, including analytic decay and
+initial-density adjoints, basis order, live/JSON gradients, truncation, and
+time-grid convergence. This completes the static finite-product step, not all
+of M1: time dependence, direct boson coefficient binding, and constrained-space
+execution remain separate gates. Proposal 073 must rebase its future plan-schema
+extension onto this baseline.
 
 An internal state-space proposal must be tested against both tensor-product
 spaces and an anyon fusion-space example with fixed total charge. Product
