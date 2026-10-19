@@ -139,9 +139,12 @@ def test_the_cross_check_fence_needs_the_pymatching_extra():
     assert len(cross_check) == 1
     printed = _assert_matches(fences)[cross_check[0]]
     # The guide's load-bearing claim is that the rate does not separate the two
-    # readings while the per-shot agreement does, so the last line is asserted
-    # against its own numbers rather than only against the transcript.
-    assert printed[-1].split() == ["1.0", "0.983"]
+    # readings while the per-shot agreement does. It prints the two comparisons
+    # rather than the two rates, because a rate at this shot count is Stim's draw:
+    # the same fence reported 0.0375 here and 0.047 on the x86 runner over the same
+    # 2000 shots and the same seed. The comparison is not a draw, so it is what the
+    # transcript quotes and what this asserts.
+    assert printed == ["True", "True"]
 
 
 def _example_values() -> dict[str, str]:

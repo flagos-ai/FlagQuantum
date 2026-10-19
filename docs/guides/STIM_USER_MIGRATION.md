@@ -205,7 +205,6 @@ events, observables = surface.compile_detector_sampler(seed=9).sample(
     shots=2000, separate_observables=True
 )
 syndromes = events.astype(bool)
-answers = observables[:, 0].astype(bool)
 hyperedge_decoder = get_decoder("belief_propagation_osd", combined)
 matcher = get_decoder("minimum_weight_matching", graphlike)
 cross_check = get_decoder("pymatching", graphlike)
@@ -220,22 +219,26 @@ def predicted(decoder):
 matching = predicted(matcher)
 crossed = predicted(cross_check)
 hyperedges = predicted(hyperedge_decoder)
-print(
-    round(float(np.mean(matching != answers)), 4),
-    round(float(np.mean(crossed != answers)), 4),
-)
-# 0.0375 0.0375  -- the rate alone does not separate these routes
-print(float(np.mean(matching == crossed)), float(np.mean(matching == hyperedges)))
-# 1.0 0.983  -- the per-shot agreement does
+print(matching.tolist() == crossed.tolist())
+# True  -- the crossed routes agree on every shot
+print(float(np.mean(matching == crossed)) > float(np.mean(matching == hyperedges)))
+# True  -- and neither agrees with the hyperedge route as often
 ```
 
-At this shot count all three decoders report the same logical error rate to four
-decimals, so a rate comparison cannot choose between the two readings. The
-per-shot agreement can: the in-tree matcher and the PyMatching cross-check pick
-the same logical class on every shot, while belief propagation with ordered
-statistics differs from the matcher on 1.7% of shots. What actually separates the
-readings is the marginal in the table above, which is why a migrated script's
-correctness check belongs on the model and not only on the decoded rate.
+The block prints those two comparisons instead of the two rates, because the rate
+is Stim's draw and the comparison is not. Both readings decode every shot to the
+same logical class, so their rates are equal by construction -- 0.0375 here and
+0.047 on the CI runner over the same 2000 shots and the same seed, a difference of
+nineteen shots and about two standard errors of an estimate at this size -- which
+is exactly why a rate cannot choose between them, and also why quoting it would
+pin the draw rather than the claim.
+
+The per-shot agreement survives both builds: the in-tree matcher and the PyMatching
+cross-check return the same class on every shot, while belief propagation with
+ordered statistics agrees with the matcher on all but about two percent of them
+(34 of the 2000 here). What actually separates the readings is the marginal in the
+table above, which is why a migrated script's correctness check belongs on the
+model and not only on the decoded rate.
 
 ## Going back to Stim
 
