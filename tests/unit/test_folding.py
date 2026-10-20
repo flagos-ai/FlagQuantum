@@ -35,6 +35,7 @@ import flagquantum as fq
 from flagquantum.algorithms import (
     FOLD_NOISE_SCHEMA,
     FOLDING_ASSUMPTIONS,
+    FOLDING_PLACEMENTS,
     FOLDING_SCHEMA,
     FOLDING_STRATEGIES,
     FoldNoiseAmplification,
@@ -566,6 +567,17 @@ def test_the_plan_identity_separates_every_input_that_can_change_the_program() -
         != fold_program(body(), scale_factor=3.0, strategy="circuit").identity
     )
     assert base.identity != fold_program(bell(), scale_factor=3.0).identity
+    # The placement is an input even where a circuit fold refuses it: at one
+    # factor the two rules build one program only when the model is uniform, and
+    # they still carry different identities, because a plan names the rule it
+    # applied rather than only the program it produced.
+    placed = fold_program(
+        body(),
+        scale_factor=3.0,
+        placement="model_weighted",
+        noise_model=model_for(("t",), 0.05),
+    )
+    assert base.identity != placed.identity
     # A different request that realizes the same length is a different record.
     assert (
         fold_program(body(), scale_factor=1.9).identity
@@ -583,6 +595,7 @@ def test_the_plan_serializes_to_the_schema_it_declares_and_back() -> None:
     assert set(record) == {
         "schema",
         "strategy",
+        "placement",
         "requested_scale_factor",
         "scale_factor",
         "body_instructions",
@@ -596,6 +609,7 @@ def test_the_plan_serializes_to_the_schema_it_declares_and_back() -> None:
         body(),
         scale_factor=record["requested_scale_factor"],
         strategy=record["strategy"],
+        placement=record["placement"],
     )
     assert rebuilt.identity == record["identity"]
     assert rebuilt.to_dict() == record
@@ -612,6 +626,7 @@ def test_the_plan_is_frozen_and_rejects_a_record_that_describes_no_fold() -> Non
         key: good[key]
         for key in (
             "strategy",
+            "placement",
             "requested_scale_factor",
             "scale_factor",
             "body_instructions",
@@ -636,6 +651,7 @@ def test_the_plan_is_frozen_and_rejects_a_record_that_describes_no_fold() -> Non
     with pytest.raises(ValueError, match="at or above the one asked for"):
         FoldingPlan(
             strategy=short.strategy,
+            placement=short.placement,
             requested_scale_factor=5.0,
             scale_factor=short.scale_factor,
             body_instructions=short.body_instructions,
@@ -655,6 +671,21 @@ def test_the_plan_is_frozen_and_rejects_a_record_that_describes_no_fold() -> Non
     )
     with pytest.raises(ValueError, match="lengthen"):
         FoldingPlan(**broken)
+    # A circuit fold repeats the whole body, so a record of one that claims a
+    # placement describes a rule the fold did not apply.
+    circuit = fold_program(body(), scale_factor=3.0, strategy="circuit")
+    with pytest.raises(ValueError, match="has no placement to report"):
+        FoldingPlan(
+            strategy=circuit.strategy,
+            placement="model_weighted",
+            requested_scale_factor=circuit.requested_scale_factor,
+            scale_factor=circuit.scale_factor,
+            body_instructions=circuit.body_instructions,
+            folded_instructions=circuit.folded_instructions,
+            added_pairs=circuit.added_pairs,
+            program=circuit.program,
+            identity="x",
+        )
 
 
 # --------------------------------------------------------------------------
@@ -782,7 +813,7 @@ def test_a_folded_run_reports_the_foldings_own_assumptions_not_a_scaling_claim()
         fold="gate",
         dtype=torch.complex128,
     )
-    assert folded.assumptions[-2:] == FOLDING_ASSUMPTIONS
+    assert folded.assumptions[-len(FOLDING_ASSUMPTIONS) :] == FOLDING_ASSUMPTIONS
     assert len(folded.assumptions) == len(FOLDING_ASSUMPTIONS) + 3
     text = " ".join(folded.assumptions)
     assert "length ratio rather than a channel parameter" in text
@@ -1189,6 +1220,7 @@ def test_the_reading_is_frozen_and_rejects_a_record_that_describes_no_fold() -> 
     def made(**overrides: object) -> object:
         fields = {
             "strategy": reading.strategy,
+            "placement": reading.placement,
             "scale_factor": reading.scale_factor,
             "body_locations": reading.body_locations,
             "folded_locations": reading.folded_locations,
@@ -1214,3 +1246,301 @@ def test_the_reading_is_frozen_and_rejects_a_record_that_describes_no_fold() -> 
         made(noise_identity="")
     with pytest.raises(ValueError, match="unsupported folding strategy"):
         made(strategy="random")
+    with pytest.raises(ValueError, match="unsupported folding placement"):
+        made(placement="random")
+
+
+# --------------------------------------------------------------------------
+# Placement: the pair count is the fold's, and where the pairs go is the
+# model's. The two rules realize one scale factor and two different programs.
+# --------------------------------------------------------------------------
+
+
+def test_the_two_placements_realize_one_ratio_and_spend_one_pair_count() -> None:
+    """Placement decides which instructions carry the repeats, never how many there are.
+
+    The pair count is ``_pair_count``'s, which reads the requested factor and the
+    body's length and nothing else, so a placement cannot change the cost of a
+    fold in instructions. It changes the program, and through the program the
+    identity: a caller who stores an identity is storing which rule was applied.
+    """
+
+    model = model_for(("t",), 0.05)
+    for factor in (1.4, 2.2, 3.0):
+        left = fold_program(body(), scale_factor=factor)
+        right = fold_program(
+            body(), scale_factor=factor, placement="model_weighted", noise_model=model
+        )
+        assert left.scale_factor == right.scale_factor
+        assert left.added_pairs == right.added_pairs
+        assert left.body_instructions == right.body_instructions
+        assert left.folded_instructions == right.folded_instructions
+        assert left.placement == "body_order"
+        assert right.placement == "model_weighted"
+        # Same cost, different program, and therefore a different identity.
+        assert left.program.content_hash != right.program.content_hash
+        assert left.identity != right.identity
+        # The folded program is still the requested length, under both rules.
+        assert len(right.program.instructions) == right.folded_instructions
+
+
+def test_body_order_spends_the_pairs_leftmost_and_the_placed_rule_spends_them_first() -> (
+    None
+):
+    """One pair at a factor of 1.4 lands on the body's first instruction or on the noisy one.
+
+    The default rule knows only the body's order, so its single pair goes to
+    ``h``. The placed rule reads the model, which names only ``t``, so its single
+    pair goes to ``t``. Neither is a longer program than the other.
+    """
+
+    model = model_for(("t",), 0.05)
+    left = fold_program(body(), scale_factor=1.4)
+    right = fold_program(
+        body(), scale_factor=1.4, placement="model_weighted", noise_model=model
+    )
+    assert names(left.program) == ["h", "h", "h", "cx", "rz", "ry", "t"]
+    assert names(right.program) == ["h", "cx", "rz", "ry", "t", "tdg", "t"]
+    # The pair that the placed rule added sits on the only instruction the model
+    # names, and the pair the default rule added sits on one it does not.
+    assert names(right.program)[4:6] == ["t", "tdg"]
+    assert "t" not in names(left.program)[:2]
+
+
+def test_a_placed_fold_reaches_noise_the_body_order_rule_cannot() -> None:
+    """The capability, measured: the default fold's curve is exactly flat and the placed one is not.
+
+    The model names only ``t``, which is the body's last instruction. One pair
+    spent on ``h`` adds no noise of the model's, so every abscissa the default
+    rule can reach reads the body's own value and the extrapolation returns the
+    unmitigated measurement unchanged: the fold paid instructions for nothing.
+    The placed pair is spent on ``t``, so the same factor and the same pair count
+    move the observable.
+    """
+
+    model = model_for(("t",), 0.05)
+    factors = (1.0, 1.4, 1.8)
+    plain = run_zne(
+        body(),
+        ZZ,
+        noise_model=model,
+        scale_factors=factors,
+        order=1,
+        fold="gate",
+        dtype=torch.complex128,
+    )
+    placed = run_zne(
+        body(),
+        ZZ,
+        noise_model=model,
+        scale_factors=factors,
+        order=1,
+        fold="gate",
+        fold_placement="model_weighted",
+        dtype=torch.complex128,
+    )
+    # Flat to the dtype's own rounding and not to a tolerance chosen here: the
+    # fold adds instructions that the model applies no channel to, so the density
+    # matrix it propagates is the body's up to the last bit of two contractions
+    # taken in a different order. The spread is measured rather than asserted
+    # away, because a curve that moved by a real amount would break it.
+    spread = max(item.expectation for item in plain.measurements) - min(
+        item.expectation for item in plain.measurements
+    )
+    assert 0.0 <= spread < 64 * float(torch.finfo(torch.float64).eps)
+    assert plain.estimate == pytest.approx(plain.unmitigated, abs=1e-15)
+    assert [item.expectation for item in placed.measurements] == pytest.approx(
+        [0.882059875334, 0.793853847550, 0.714468426569], abs=_EVIDENCE_TOLERANCE
+    )
+    assert placed.estimate != pytest.approx(plain.estimate)
+    # And the reading is what says so, per qubit, before any simulation runs.
+    plain_reading = fold_noise_amplification(
+        body(), fold_program(body(), scale_factor=1.4), model
+    )
+    placed_reading = fold_noise_amplification(
+        body(),
+        fold_program(
+            body(), scale_factor=1.4, placement="model_weighted", noise_model=model
+        ),
+        model,
+    )
+    assert plain_reading.body_locations == placed_reading.body_locations == 1
+    assert plain_reading.folded_locations == 1
+    assert placed_reading.folded_locations == 2
+    assert plain_reading.per_qubit == ((0, 1, 1),)
+    assert placed_reading.per_qubit == ((0, 1, 2),)
+
+
+def test_a_placed_fold_is_not_a_more_accurate_fold() -> None:
+    """What placement buys is reach, and this is the estimate saying it did not buy accuracy.
+
+    One pair on the only noisy instruction doubles that instruction's noise while
+    the abscissa moves by 1.4, so the curve is far from linear in the length ratio
+    it is fitted against and the linear extrapolation overshoots the ideal value
+    further than the flat curve's did. Both estimates are pinned against the ideal,
+    which is measured with an empty model rather than assumed to be one.
+    """
+
+    from flagquantum.runtime.noise_registry import noisy_density_matrix
+
+    ideal = float(
+        ZZ.expectation(
+            noisy_density_matrix(body(), NoiseModel(), dtype=torch.complex128)
+        )
+    )
+    assert ideal == pytest.approx(0.980066577841, abs=_EVIDENCE_TOLERANCE)
+    model = model_for(("t",), 0.05)
+    placed = run_zne(
+        body(),
+        ZZ,
+        noise_model=model,
+        scale_factors=(1.0, 1.4, 1.8),
+        order=1,
+        fold="gate",
+        fold_placement="model_weighted",
+        dtype=torch.complex128,
+    )
+    assert abs(placed.estimate - ideal) > abs(placed.unmitigated - ideal)
+
+
+def test_the_reading_names_the_plan_on_the_qubits_the_noise_landed_on() -> None:
+    """A placed fold's amplification is per qubit, and the rule that placed it is recorded.
+
+    The reading carries the placement because it is the reading that says where
+    the repeats went, and a record that named only the strategy would leave a
+    caller unable to tell a placed reading from a leftmost one.
+    """
+
+    model = NoiseModel()
+    model.add(("t",), bit_flip_channel(0.05))
+    plan = fold_program(
+        body(), scale_factor=2.2, placement="model_weighted", noise_model=model
+    )
+    reading = fold_noise_amplification(body(), plan, model)
+    assert reading.placement == "model_weighted"
+    assert reading.strategy == "gate"
+    # Three pairs, all spent on the one instruction the model names, so the
+    # amplification is the same on every qubit that instruction touches and the
+    # qubits it does not touch are silent rather than counted as one.
+    assert reading.body_locations == 1
+    assert reading.folded_locations == 4
+    assert reading.per_qubit == ((0, 1, 4),)
+    assert reading.amplification == pytest.approx(4.0)
+    assert reading.silent_qubits == (1,)
+    assert reading.to_dict()["schema"] == FOLD_NOISE_SCHEMA
+
+
+def test_a_uniform_model_makes_the_two_rules_build_one_program() -> None:
+    """One location per instruction leaves nothing to reorder, so the rules agree.
+
+    This is why the placed rule is a second placement rather than a second fold:
+    it is the same cycle over a sequence, and the sequence is the body's own when
+    the model declares the same noise everywhere. The identity still separates the
+    two, because it names the rule and not only the program.
+    """
+
+    uniform = NoiseModel()
+    uniform.add(("h", "cx", "rz", "ry", "t"), bit_flip_channel(0.01))
+    left = fold_program(body(), scale_factor=2.2)
+    right = fold_program(
+        body(), scale_factor=2.2, placement="model_weighted", noise_model=uniform
+    )
+    assert left.program.content_hash == right.program.content_hash
+    assert left.identity != right.identity
+
+
+def test_a_placement_with_nowhere_to_go_and_a_circuit_fold_are_refused() -> None:
+    """Every refusal names the rule and the argument that would make it legal."""
+
+    model = model_for(("t",), 0.05)
+    with pytest.raises(ValueError, match="unsupported folding placement"):
+        fold_program(body(), scale_factor=1.4, placement="linear")  # type: ignore[arg-type]
+    with pytest.raises(
+        ValueError, match="cannot honour the .model_weighted. placement"
+    ):
+        fold_program(
+            body(),
+            scale_factor=1.4,
+            strategy="circuit",
+            placement="model_weighted",
+            noise_model=model,
+        )
+    with pytest.raises(ValueError, match="it needs the model to read"):
+        fold_program(body(), scale_factor=1.4, placement="model_weighted")
+    with pytest.raises(ValueError, match="applies a channel to no instruction"):
+        fold_program(
+            body(),
+            scale_factor=1.4,
+            placement="model_weighted",
+            noise_model=NoiseModel(),
+        )
+    # A body the model names nothing at is refused even when the model is not
+    # empty, because the model's rules match none of the body's instructions.
+    with pytest.raises(ValueError, match="applies a channel to no instruction"):
+        fold_program(
+            body(),
+            scale_factor=1.4,
+            placement="model_weighted",
+            noise_model=model_for(("zz",), 0.05),
+        )
+
+
+def test_the_extrapolation_refuses_a_placement_when_it_is_not_folding() -> None:
+    """A placement names where a pair goes, so a scaling run has none to name."""
+
+    model = model_for(("t",), 0.05)
+    with pytest.raises(ValueError, match="it has no pair to place"):
+        run_zne(
+            body(),
+            ZZ,
+            noise_model=model,
+            scale_factors=(1.0, 2.0, 3.0),
+            order=1,
+            fold_placement="model_weighted",
+            dtype=torch.complex128,
+        )
+    with pytest.raises(ValueError, match="unsupported folding placement"):
+        run_zne(
+            body(),
+            ZZ,
+            noise_model=model,
+            scale_factors=(1.0, 2.0, 3.0),
+            order=1,
+            fold="gate",
+            fold_placement="linear",  # type: ignore[arg-type]
+            dtype=torch.complex128,
+        )
+
+
+def test_a_reading_refuses_a_plan_placed_by_a_different_model() -> None:
+    """Placement makes the re-derivation depend on the model, and that is checked.
+
+    The reading re-derives the fold to decide that the plan is this body's. A plan
+    placed by one model and read against another re-derives to a different
+    program -- the pairs sit where the other model's noise is -- so it is refused
+    rather than reported with this model's distribution attached to it.
+    """
+
+    left = model_for(("t",), 0.05)
+    right = model_for(("h",), 0.05)
+    plan = fold_program(
+        body(), scale_factor=2.2, placement="model_weighted", noise_model=left
+    )
+    assert fold_noise_amplification(body(), plan, left).placement == "model_weighted"
+    with pytest.raises(ValueError, match="the plan is not this body's fold"):
+        fold_noise_amplification(body(), plan, right)
+
+
+def test_both_placements_are_listed_in_the_one_vocabulary() -> None:
+    """The values a caller passes are the values a record reports."""
+
+    assert FOLDING_PLACEMENTS == ("body_order", "model_weighted")
+    for placement in FOLDING_PLACEMENTS:
+        plan = fold_program(
+            body(),
+            scale_factor=1.4,
+            placement=placement,
+            noise_model=model_for(("t",), 0.05),
+        )
+        assert plan.placement == placement
+        assert plan.to_dict()["placement"] == placement

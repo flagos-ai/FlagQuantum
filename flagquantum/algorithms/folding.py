@@ -81,6 +81,48 @@ gate fold to 3.0 amplifies qubit 0 by 3.0, leaves qubit 1 silent, and reports fo
 of the five instructions uncovered. The reading names which of those a plan is in,
 per qubit, and reports the instructions the model does not cover rather than
 averaging them away.
+
+**Where the pairs go, which is a second choice beside which fold to use.** The
+pair count is fixed by the requested factor and the body's length, so a fold has
+never had a choice about *how many* pairs it inserts and has always had one about
+*where they land*. :data:`FOLDING_PLACEMENTS` is that choice, and it is the one
+question in this module whose answer is in the noise model rather than in the
+program. ``body_order`` spends the pairs on the body's leading instructions, one
+instruction at a time, which needs no model and is what this unit did before the
+choice existed. ``model_weighted`` spends them on the instructions the model
+declares the most channel applications at, heaviest first and ties broken by body
+order, and an instruction the model does not name receives none of them. Both are
+the same cycle over a different sequence, so they realize one scale factor, insert
+one pair count, and differ in the program, which is why they carry different
+identities.
+
+**What placement buys, measured.** It buys reach, and the case where that matters
+is the one where the default rule cannot reach the noise at all. On the
+five-instruction body ``h``, ``cx``, ``rz``, ``ry``, ``t`` with a model naming only
+``t``, a request of 1.4 is one pair: the default rule spends it on ``h``, which the
+model does not name, so all four of the abscissas it can reach read the body's own
+value to the last bit -- measured as one number, ``0.297856195029``, at every point
+-- and the extrapolation returns the unmitigated measurement unchanged, having paid
+two instructions for no added noise. The placed rule spends the same pair on ``t``,
+the reading goes from one application to two, and the curve moves
+(``0.297856195``, ``0.285941947``, ``0.274504270``, ``0.263524099``). It buys
+reach and not accuracy: at that request the placed estimate is
+``1.9408e-02`` from the noiseless value where the flat curve's is ``1.2411e-02``,
+because one pair on a lone noisy instruction doubles its noise while the abscissa
+moves by 1.4, so the curve is far from linear in the length ratio it is fitted
+against. A placement is therefore a statement about which instructions a fold
+reaches, and never a claim that the resulting estimate is the better one.
+
+**What is still not here, after the choice.** A ``circuit`` fold repeats the whole
+body, so it has no placement to choose and is refused rather than reported with a
+rule it did not apply. Placement reads only the count of channel applications a
+model declares at an instruction, so two models that declare one channel of very
+different strength at different instructions are placed identically; the rule
+orders by how many applications an instruction carries and never by what they are
+worth, and nothing in the model states a per-instruction magnitude in a unit this
+module could compare across channel families. Choosing a placement by a measured
+amplification rather than by a declared count would need a simulate-then-place
+loop, and this unit is a program transform that never simulates.
 """
 
 from __future__ import annotations
@@ -100,6 +142,7 @@ if TYPE_CHECKING:  # pragma: no cover - imported for annotations only
 
 __all__ = (
     "FOLDING_ASSUMPTIONS",
+    "FOLDING_PLACEMENTS",
     "FOLDING_SCHEMA",
     "FOLDING_STRATEGIES",
     "FOLD_NOISE_SCHEMA",
@@ -110,14 +153,26 @@ __all__ = (
 )
 
 FoldingStrategy = Literal["gate", "circuit"]
+FoldingPlacement = Literal["body_order", "model_weighted"]
 
 #: The foldings this unit implements, in the order
 #: :func:`flagquantum.algorithms.run_zne` accepts them. One vocabulary: the value
 #: a caller passes is the value :attr:`FoldingPlan.strategy` reports.
 FOLDING_STRATEGIES: tuple[FoldingStrategy, ...] = ("gate", "circuit")
 
-#: The schema a folded plan's identity is taken under.
-FOLDING_SCHEMA = "flagquantum.folding_plan.v1"
+#: Where a gate fold's added pairs go, in the order the two rules are documented.
+#: ``body_order`` spends them on the body's leading instructions; ``model_weighted``
+#: spends each one where the noise model declares the most channel locations. It is
+#: a separate vocabulary from :data:`FOLDING_STRATEGIES` because the two answer
+#: different questions -- what the fold repeats, and where the repeats go -- and a
+#: circuit fold repeats the whole body, so it has no placement to choose.
+FOLDING_PLACEMENTS: tuple[FoldingPlacement, ...] = ("body_order", "model_weighted")
+
+#: The schema a folded plan's identity is taken under. It names the payload the
+#: identity is a hash of, so it is bumped when that payload changes: it carries the
+#: placement from this version on, and a record written under the previous one
+#: therefore no longer re-derives to its own identity.
+FOLDING_SCHEMA = "flagquantum.folding_plan.v2"
 
 #: What folding adds to the extrapolation's own assumptions. These are premises
 #: about the *scaling* rather than about the curve; the curve's premise is
@@ -137,6 +192,13 @@ FOLDING_ASSUMPTIONS: tuple[str, ...] = (
     "the plan reports; nothing here checks that the model covers the whole body, "
     "and a model that covers part of it is a curve whose slope is not the "
     "factor's.",
+    "A placed fold spends its pairs where the model declares channel locations, "
+    "and that is a premise about the model rather than a measurement of the "
+    "device: the pair count is fixed by the scale factor, so placement changes "
+    "which instructions carry the repeated noise and never how much noise the "
+    "program carries in total. It buys a curve whose per-qubit amplification "
+    "tracks the model's own distribution, and it cannot buy a slope the model "
+    "does not declare.",
 )
 
 
@@ -233,6 +295,7 @@ def _require_unitary(name: str, qubits: tuple[int, ...], matrix: Any) -> None:
 
 def _plan_identity(
     strategy: str,
+    placement: str,
     requested: float,
     realized: float,
     body: int,
@@ -245,6 +308,7 @@ def _plan_identity(
         {
             "schema": FOLDING_SCHEMA,
             "strategy": strategy,
+            "placement": placement,
             "requested_scale_factor": requested,
             "scale_factor": realized,
             "body_instructions": body,
@@ -279,11 +343,16 @@ class FoldingPlan:
         folded_instructions: How many it has after.
         added_pairs: How many ``U^dagger U`` products the fold inserted, which is
             the fold count a cost estimate is a function of.
+        placement: Where a gate fold's added pairs went, one of
+            :data:`FOLDING_PLACEMENTS`. It changes the program and never the two
+            length counts, so two placements at one factor realize one scale
+            factor and differ in their identity rather than in their ratio.
         program: The folded program, as IR. Its declared observables and
             measurements are the body's, unchanged: a fold lengthens a program
             and does not change what is asked of its state.
-        identity: ``sha256`` over the schema, the strategy, both factors, both
-            instruction counts and the folded program's own content hash.
+        identity: ``sha256`` over the schema, the strategy, the placement, both
+            factors, both instruction counts and the folded program's own content
+            hash.
     """
 
     strategy: str
@@ -292,6 +361,7 @@ class FoldingPlan:
     body_instructions: int
     folded_instructions: int
     added_pairs: int
+    placement: str
     program: "CircuitIR"
     identity: str
 
@@ -300,6 +370,17 @@ class FoldingPlan:
             raise ValueError(
                 f"unsupported folding strategy {self.strategy!r}; expected one of "
                 f"{', '.join(FOLDING_STRATEGIES)}"
+            )
+        if self.placement not in FOLDING_PLACEMENTS:
+            raise ValueError(
+                f"unsupported folding placement {self.placement!r}; expected one "
+                f"of {', '.join(FOLDING_PLACEMENTS)}"
+            )
+        if self.placement != "body_order" and self.strategy == "circuit":
+            raise ValueError(
+                "a circuit fold repeats the whole body, so it spends no pair at a "
+                f"place it chose and has no placement to report; {self.placement!r} "
+                "describes where a pair went, and this plan has no such choice"
             )
         requested = _require_scale_factor(self.requested_scale_factor)
         object.__setattr__(self, "requested_scale_factor", requested)
@@ -379,9 +460,48 @@ class FoldingPlan:
             "body_instructions": self.body_instructions,
             "folded_instructions": self.folded_instructions,
             "added_pairs": self.added_pairs,
+            "placement": self.placement,
             "program_identity": self.program_identity,
             "identity": self.identity,
         }
+
+
+def _placement_order(
+    body: tuple[Any, ...],
+    placement: FoldingPlacement,
+    noise_model: Any,
+) -> tuple[int, ...]:
+    """Return the body positions a gate fold spends its pairs on, in spend order.
+
+    The pair count is fixed by the scale factor and by the body's length, so a
+    placement cannot change *how many* pairs there are; it decides which
+    instructions carry them. ``body_order`` returns the body's own order, which
+    spends the pairs on the leading instructions and is what this unit has always
+    done. ``model_weighted`` returns the positions the noise model declares at
+    least one channel location at, heaviest first and ties broken by body order,
+    so the pairs are spent where the model says the noise is and an instruction
+    the model does not name receives none of them.
+
+    The two agree exactly when the model declares one location at each instruction
+    or is absent from the choice, which is why ``body_order`` is the default
+    rather than a separate entry point: it is the same rule over the same order.
+    """
+
+    if placement == "body_order":
+        return tuple(range(len(body)))
+    weights = [
+        sum(len(wires) for _channel, wires in noise_model.channels_for(instruction))
+        for instruction in body
+    ]
+    eligible = [index for index, weight in enumerate(weights) if weight > 0]
+    if not eligible:
+        raise ValueError(
+            "the noise model applies a channel to no instruction of the body, so a "
+            "fold placed by it would add length and no noise at any position; "
+            f"the body has {len(body)} instructions and the model names none of "
+            "them"
+        )
+    return tuple(sorted(eligible, key=lambda index: (-weights[index], index)))
 
 
 def fold_program(
@@ -389,6 +509,8 @@ def fold_program(
     *,
     scale_factor: float,
     strategy: FoldingStrategy = "gate",
+    placement: FoldingPlacement = "body_order",
+    noise_model: Any = None,
 ) -> FoldingPlan:
     """Return ``program`` folded to at least ``scale_factor`` times its length.
 
@@ -400,6 +522,20 @@ def fold_program(
     repeats the whole body, ``U (V U)^m``, so the noise grows uniformly and the
     realized factor is always an odd integer.
 
+    Neither fold chooses where to put its pairs by default, and a gate fold can:
+    ``placement`` is a second question beside ``strategy``, and it is the one whose
+    answer is in the noise model rather than in the program. ``body_order`` spends
+    the pairs on the body's leading instructions, which is a rule about the program
+    and knows nothing about where the noise was declared. ``model_weighted`` spends
+    them on the instructions the model declares the most channel locations at,
+    heaviest first, so a body whose first instruction is silent and whose fourth is
+    noisy is folded at the fourth. The pair count is the same under both, because it
+    is fixed by the scale factor and the body's length; only which instructions
+    carry the repeated noise changes, and that is why the two placements realize one
+    ``scale_factor`` and two different ``identity`` values. A circuit fold repeats
+    the whole body and therefore has no placement to choose, and is refused rather
+    than reported with a rule it did not apply.
+
     Args:
         program: The program to fold, as a
             :class:`~flagquantum.circuit.Circuit` or a
@@ -409,6 +545,15 @@ def fold_program(
             a request rather than a promise: the realized factor is
             :attr:`FoldingPlan.scale_factor` and is at least this one.
         strategy: Which fold to use, one of :data:`FOLDING_STRATEGIES`.
+        placement: Where a ``gate`` fold's added pairs go, one of
+            :data:`FOLDING_PLACEMENTS`. It changes the program and not the pair
+            count, so it changes :attr:`FoldingPlan.identity` and leaves
+            :attr:`FoldingPlan.scale_factor` alone.
+        noise_model: The model whose declared channel locations place the pairs, a
+            :class:`~flagquantum.noise.NoiseModel`. It is required by
+            ``model_weighted`` and unused by ``body_order``, which is the whole
+            difference between the two rules: one reads the model and the other
+            does not.
 
     Returns:
         The plan, carrying the folded program, both factors, the fold count and
@@ -418,9 +563,14 @@ def fold_program(
         TypeError: if ``program`` is neither a circuit nor an IR.
         ValueError: if the scale factor is not a finite number at or above one;
             if the strategy is not one of :data:`FOLDING_STRATEGIES`; if the
-            program declares no instructions; or if a custom operation's matrix
-            is not unitary, since such a program's fold would be a different
-            ideal signal under the same name.
+            placement is not one of :data:`FOLDING_PLACEMENTS`; if a placement is
+            asked of a circuit fold, which repeats the whole body and so has none
+            to choose; if ``model_weighted`` is asked for without a model, or with
+            one that declares a channel at no instruction of the body, because
+            such a fold would add length and no noise; if the program declares no
+            instructions; or if a custom operation's matrix is not unitary, since
+            such a program's fold would be a different ideal signal under the same
+            name.
         CapabilityError: if an instruction has no inverse at all -- a noise
             channel, a mid-circuit measurement or reset, or a classically
             conditioned operation. The refusal names the instruction and the
@@ -432,6 +582,8 @@ def fold_program(
         >>> plan = fold_program(fq.Circuit(1).x(0), scale_factor=3.0)
         >>> plan.body_instructions, plan.folded_instructions, plan.scale_factor
         (1, 3, 3.0)
+        >>> plan.placement
+        'body_order'
     """
 
     from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
@@ -445,6 +597,25 @@ def fold_program(
         raise ValueError(
             f"unsupported folding strategy {strategy!r}; expected one of "
             f"{', '.join(FOLDING_STRATEGIES)}"
+        )
+    if placement not in FOLDING_PLACEMENTS:
+        raise ValueError(
+            f"unsupported folding placement {placement!r}; expected one of "
+            f"{', '.join(FOLDING_PLACEMENTS)}"
+        )
+    if placement != "body_order" and strategy == "circuit":
+        raise ValueError(
+            "a circuit fold repeats the whole body, so it spends no pair at a "
+            f"place it chose and cannot honour the {placement!r} placement; use "
+            "the body_order placement with it, or fold by gate to choose where "
+            "the pairs go"
+        )
+    if placement != "body_order" and noise_model is None:
+        raise ValueError(
+            f"the {placement!r} placement spends a fold's pairs where the noise "
+            "model declares channel locations, so it needs the model to read; "
+            "pass noise_model, or use the body_order placement, which decides by "
+            "the body's own order and needs no model"
         )
     factor = _require_scale_factor(scale_factor)
     body_ir = ensure_circuit_ir(program)
@@ -485,12 +656,16 @@ def fold_program(
             sequence.extend(reversed(inverses))
             sequence.extend(body)
     else:
-        # The pairs are distributed leftmost first, one instruction at a time, so
-        # the folds sit where the body's own early instructions are and the
-        # pattern does not depend on anything but the count.
+        # The pairs are spent one instruction at a time over the placement's order:
+        # body order under the default rule, and heaviest declared noise first
+        # under the placed one. Both are the same cycle over a different sequence,
+        # so the count is the placement's only invariant and it is the same for
+        # both -- which is what lets the two placements differ in program and agree
+        # on scale factor.
+        order = _placement_order(body, placement, noise_model)
         visits = [0] * len(body)
         for position in range(pairs):
-            visits[position % len(body)] += 1
+            visits[order[position % len(order)]] += 1
         for index, instruction in enumerate(body):
             sequence.append(instruction)
             for _ in range(visits[index]):
@@ -515,9 +690,11 @@ def fold_program(
         body_instructions=len(body),
         folded_instructions=len(sequence),
         added_pairs=(len(sequence) - len(body)) // 2,
+        placement=placement,
         program=folded,
         identity=_plan_identity(
             strategy,
+            placement,
             factor,
             realized,
             len(body),
@@ -527,8 +704,11 @@ def fold_program(
     )
 
 
-#: The schema a fold's noise reading is taken under.
-FOLD_NOISE_SCHEMA = "flagquantum.fold_noise_amplification.v1"
+#: The schema a fold's noise reading is taken under. It carries the plan's
+#: placement from this version on, because a reading of a placed fold says where
+#: the repeats landed and a reading that did not name the rule would leave that
+#: unexplained.
+FOLD_NOISE_SCHEMA = "flagquantum.fold_noise_amplification.v2"
 
 
 def _channel_locations(
@@ -602,6 +782,8 @@ class FoldNoiseAmplification:
 
     Attributes:
         strategy: The strategy of the plan this reading was taken over.
+        placement: That plan's placement, so a reading of a placed fold says by
+            which rule the pairs were spent and not only where they landed.
         scale_factor: That plan's realized length ratio, so the reading can be
             compared with the ratio it is not.
         body_locations: Channel applications on the body.
@@ -628,6 +810,7 @@ class FoldNoiseAmplification:
     """
 
     strategy: str
+    placement: str
     scale_factor: float
     body_locations: int
     folded_locations: int
@@ -643,6 +826,11 @@ class FoldNoiseAmplification:
             raise ValueError(
                 f"unsupported folding strategy {self.strategy!r}; expected one of "
                 f"{', '.join(FOLDING_STRATEGIES)}"
+            )
+        if self.placement not in FOLDING_PLACEMENTS:
+            raise ValueError(
+                f"unsupported folding placement {self.placement!r}; expected one "
+                f"of {', '.join(FOLDING_PLACEMENTS)}"
             )
         if self.body_locations < 1:
             raise ValueError(
@@ -808,20 +996,27 @@ def fold_noise_amplification(
         )
     # The plan is checked by re-deriving it rather than by comparing the counts it
     # records: a plan pasted from another body of the same length agrees on every
-    # count and disagrees on the program, and the identity covers the program.
+    # count and disagrees on the program, and the identity covers the program. The
+    # re-derivation is placed the way the plan says it was placed, because a placed
+    # fold is a different program at the same factor and re-deriving it by the
+    # default rule would refuse the plan rather than read it.
     derived = fold_program(
         body_ir,
         scale_factor=plan.requested_scale_factor,
         strategy=plan.strategy,  # type: ignore[arg-type]
+        placement=plan.placement,  # type: ignore[arg-type]
+        noise_model=noise_model,
     )
     if derived.identity != plan.identity:
         raise ValueError(
             "the plan is not this body's fold: re-deriving it at the requested "
             f"scale factor {plan.requested_scale_factor!r} under the "
-            f"{plan.strategy!r} strategy returned identity {derived.identity[:12]} "
-            f"where the plan carries {plan.identity[:12]}. A reading taken over a "
-            "plan built from another program would report that program's noise "
-            "under this one's name."
+            f"{plan.strategy!r} strategy and the {plan.placement!r} placement "
+            f"returned identity {derived.identity[:12]} where the plan carries "
+            f"{plan.identity[:12]}. A reading taken over a plan built from another "
+            "program would report that program's noise under this one's name, and "
+            "one taken over a plan placed by a different rule would report another "
+            "rule's distribution."
         )
 
     body_per_qubit, body_total = _channel_locations(body_ir, noise_model)
@@ -855,6 +1050,7 @@ def fold_noise_amplification(
     )
     return FoldNoiseAmplification(
         strategy=plan.strategy,
+        placement=plan.placement,
         scale_factor=plan.scale_factor,
         body_locations=body_total,
         folded_locations=folded_total,
