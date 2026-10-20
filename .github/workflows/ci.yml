@@ -92,8 +92,7 @@ jobs:
 
   quality:
     needs: prepare-source
-    runs-on: >-
-      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","Linux","X64","a100","jiuding","gpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
     # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     timeout-minutes: 45
     env:
@@ -1102,8 +1101,7 @@ jobs:
 
   distributed-cpu:
     needs: prepare-source
-    runs-on: >-
-      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","Linux","X64","a100","jiuding","gpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ubuntu-latest
     # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     timeout-minutes: 60
     env:

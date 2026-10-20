@@ -277,8 +277,6 @@ def test_pull_requests_only_reach_provisioned_a800_jobs() -> None:
     allowed = {
         ("local-gpu.yml", "one-gpu-local"): "a800-171",
         ("local-gpu.yml", "two-gpu-distributed-required"): "a800-172",
-        ("ci.yml", "quality"): "jiuding",
-        ("ci.yml", "distributed-cpu"): "jiuding",
         ("ci.yml", "cpu-core"): "flagquantum-cpu",
         ("ci.yml", "cpu-core-3-12-tests"): "flagquantum-cpu",
         ("ci.yml", "cpu-runtime"): "flagquantum-cpu",

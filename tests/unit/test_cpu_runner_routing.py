@@ -15,11 +15,9 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github/workflows"
 FIRST_BATCH = {
-    "quality",
     "cpu-core",
     "cpu-core-3-12-tests",
     "cpu-runtime",
-    "distributed-cpu",
 }
 SHARED_ROUTE = (
     "${{ fromJSON((github.event_name == 'push' || "
