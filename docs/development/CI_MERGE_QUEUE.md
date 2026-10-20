@@ -36,8 +36,9 @@ removing or reordering queue entries can require another integration run.
 - Both change-based quality gates use the queue base SHA. A missing or zero
   queue base fails instead of skipping ownership or evidence-retention checks.
 - Workflow concurrency distinguishes queue SHAs. Cancellation stays limited to
-  superseded PR runs. The thirteen job buckets and organisation's runner limit
-  are unchanged; merge-group refs isolate unrelated integration candidates.
+  superseded PR runs. Five GitHub-hosted buckets bound the hosted share; eight
+  A800 CPU runners bound the CPU share. The organisation's hosted runner limit
+  is unchanged; merge-group refs isolate unrelated integration candidates.
 - Existing strict branch protection, required checks with their GitHub Actions
   app binding, administrator enforcement, review policy and force-push/deletion
   restrictions remain. The added ruleset contains the queue rule and only the additive CI complete

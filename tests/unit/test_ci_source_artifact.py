@@ -18,7 +18,14 @@ ROOT = Path(__file__).resolve().parents[2]
     os.name == "nt", reason="A800 source restoration runs in Linux bash"
 )
 @pytest.mark.parametrize(
-    "workflow,job", [("ci.yml", "cpu-runtime"), ("local-gpu.yml", "one-gpu-local")]
+    "workflow,job",
+    [
+        ("ci.yml", "cpu-runtime"),
+        ("ci.yml", "distributed-cpu"),
+        ("ci.yml", "coverage-shard"),
+        ("ci.yml", "dependency-bounds"),
+        ("local-gpu.yml", "one-gpu-local"),
+    ],
 )
 def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     tmp_path: Path, workflow: str, job: str

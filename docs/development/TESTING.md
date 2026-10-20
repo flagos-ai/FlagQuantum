@@ -565,9 +565,9 @@ FlagQuantum install happen once per framework instead of once per version. This
 preserves the certified compatibility matrix while reducing runner cold starts
 and the serial queue behind the `light-b` and `light-c` capacity buckets.
 
-The GitHub-hosted jobs are partitioned across thirteen concurrency buckets per
+The GitHub-hosted jobs are partitioned across five concurrency buckets per
 pull request or pushed branch. The scope is part of every bucket name: it keeps
-one run at thirteen concurrent jobs without forcing a new pull request to wait for
+one run at five concurrent jobs without forcing a new pull request to wait for
 an older pull request's coverage or interpreter lane. The organisation-level
 20-runner pool remains the aggregate admission limit. Superseding a run of the
 same pull request still cancels the older run. Already-merged main revisions
@@ -585,8 +585,9 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
-The CPU core and runtime tiers use four dedicated A800 CPU runners, two per
-host, with 16 xdist workers and work-stealing scheduling. Each runner is limited
+The CPU core, runtime, distributed, coverage and dependency-bound tiers use
+eight dedicated A800 CPU runners, four per host. Core/runtime jobs use 16 xdist
+workers; distributed and coverage jobs use 8. Both use work-stealing scheduling. Each runner is limited
 to 24 logical CPUs and 64 GiB of memory. Each job creates a fresh virtual
 environment, hides GPUs, and sets numerical-library thread counts to one.
 The persistent CPU runners reuse their local pip cache; they do not restore or
@@ -596,9 +597,12 @@ locally; a missing wheel falls back to the official CPU index. Ordinary Python
 dependencies use the Tsinghua PyPI mirror. Dependency consistency and the
 CPU-only Torch build are checked before tests.
 
-Each coverage-shard pytest phase retains exactly two xdist workers with
-work-stealing scheduling on GitHub-hosted runners. These fixed counts prevent a
-runner-image change from silently widening process fan-out. The
+Each coverage-shard pytest phase uses exactly eight xdist workers on A800 CPU
+runners. All eight shards may be queued together; the eight registered CPU
+services bound concurrency across coverage, core/runtime and compatibility jobs. The seven dependency-bound variants run at most three
+concurrently, each in a fresh environment with its declared CPU Torch version.
+JAX is explicitly restricted to its CPU backend. These fixed
+counts prevent a runner-image change from silently widening process fan-out. The
 eight coverage shards use checked-in duration hints from a cited CI run and a
 deterministic least-loaded assignment, then merge raw data before applying the
 unchanged coverage policy; their union is the former selection, not a reduced
@@ -755,8 +759,9 @@ pattern list does not name. Every self-hosted job here that does not pass
 `tests/unit/test_shared_runner_checkout_policy.py` holds both halves of that
 rule.
 
-Pull requests are authorized to use five explicitly provisioned job definitions:
-`cpu-core`, `cpu-core-3-12-tests`, and `cpu-runtime` on `flagquantum-cpu`, plus
+Pull requests are authorized to use eight explicitly provisioned job definitions:
+`cpu-core`, `cpu-core-3-12-tests`, `cpu-runtime`, `distributed-cpu`,
+`coverage-shard` and `dependency-bounds` on `flagquantum-cpu`, plus
 `one-gpu-local` on `a800-171` and `two-gpu-distributed-required` on `a800-172`.
 The CPU services have separate work directories and resource limits; the GPU
 jobs retain their accelerator queue and watchdogs. The machines remain shared,
