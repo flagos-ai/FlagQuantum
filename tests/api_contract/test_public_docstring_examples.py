@@ -52,7 +52,7 @@ from flagquantum.algorithms.variational import (
     maxcut_hamiltonian,
     run_qaoa,
 )
-from flagquantum.compiler import Layout, optimize
+from flagquantum.compiler import Layout, LinkErrorRates, optimize
 from flagquantum.compiler.openqasm_import import (
     import_openqasm,
     import_openqasm_to_ir,
@@ -200,6 +200,7 @@ ENTRIES = (
     Hamiltonian,
     HartreeFockSolution,
     Layout,
+    LinkErrorRates,
     MeasurementPhase,
     MolecularGeometry,
     MolecularHamiltonian,

@@ -201,6 +201,23 @@ The example targets a five-qubit line, checks every emitted two-qubit operation
 against that connectivity, verifies logical-qubit restoration, and executes the
 compiled IR against the original result.
 
+Route onto a device by what its links cost rather than by how far apart they are:
+
+```bash
+python -m examples.weighted_routing
+```
+
+A `CouplingMap` says which qubits a device couples, so the router can only count
+hops. `LinkErrorRates` is the same couplings with the measured two-qubit error of
+each link, which makes the cheapest route and the cleanest route different
+questions: here both routes between two qubits are two hops and both insert the
+same two SWAPs, and only the calibration separates them -- 0.003 expected link
+faults against the 0.04 the hop-count route would have paid. The example prints
+both programs, the equal SWAP counts, the fault total before and after routing,
+and the refusal a planner that never reads the calibration receives. A calibrated
+device also changes which strategies are ranked, so the automatic choice is a
+choice between fault totals.
+
 ## Start in one minute
 
 From an editable development installation:

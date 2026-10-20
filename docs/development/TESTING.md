@@ -485,8 +485,16 @@ preflight must not be presented as runtime or scalability certification.
 
 ## CI Policy
 
+The existing CI and pre-commit workflows also accept main-targeted
+`merge_group.checks_requested` events. Queue revisions use the complete
+integration selection, including the older-Python smoke/unit suites and slow
+coverage cases, with the same checks, matrices and thresholds. Ownership and
+evidence-retention gates compare against merge_group.base_sha and refuse a
+missing queue base. See [the staged merge-queue rollout](CI_MERGE_QUEUE.md);
+workflow support does not itself enable the repository setting.
+
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty jobs:
+The checked-in `ci.yml` defines twenty-one jobs:
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
@@ -539,7 +547,11 @@ The checked-in `ci.yml` defines twenty jobs:
 - `coverage`: the required aggregation gate, which combines all raw coverage
   data files before enforcing the floors in `contracts/coverage-policy.toml`
   with `tools/check_coverage.py`;
-- `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM.
+- `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM;
+- `ci-complete`: the additive CI complete gate, which requires every other CI
+  job to succeed, including optional SDK matrices, wheel builds and supply-chain
+  checks. Queue admission must retain this gate and the original eight required
+  checks; no failed, cancelled, missing or skipped dependency counts as success.
 
 Each two-version ecosystem compatibility job reuses one runner for its minimum
 and latest SDK checks. The versions still execute in separate Python and pytest
@@ -553,7 +565,8 @@ pull request or pushed branch. The scope is part of every bucket name: it keeps
 one run at sixteen concurrent jobs without forcing a new pull request to wait for
 an older pull request's coverage or interpreter lane. The organisation-level
 20-runner pool remains the aggregate admission limit. Superseding a run of the
-same branch still cancels the older run.
+same pull request still cancels the older run. Already-merged main revisions
+and distinct merge-group revisions retain their own workflow run.
 
 Optional integration jobs name the test files they own and retain the marker
 selector inside that file set. This prevents an unrelated module-level

@@ -9,6 +9,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+    types: [checks_requested]
+    branches: [main]
 
 # flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
 # jobs, and this workflow fans out beyond the share one repository should hold.
@@ -40,7 +43,8 @@ on:
 # keeps only the newest waiting job and cancels the ones behind it, which would
 # report nothing at all for the job that was dropped.
 concurrency:
-  group: flagquantum-ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}
+  # Queue revisions have their own SHA; never cancel another integration tree.
+  group: flagquantum-ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || github.event.merge_group.head_sha || 'pr' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -118,18 +122,28 @@ jobs:
       # question rather than a defect.
       - name: Require every changed path to have an owner
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            if [ "$EVENT_NAME" = merge_group ]; then
+              echo "merge group requires a base revision" >&2
+              exit 1
+            fi
             echo "no base revision is available for this event; skipping"
             exit 0
           fi
           python tools/check_team_scope.py --require-classified --base "$BASE_SHA"
       - name: Require retention metadata for new benchmark evidence
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            if [ "$EVENT_NAME" = merge_group ]; then
+              echo "merge group requires a base revision" >&2
+              exit 1
+            fi
             echo "no base revision is available for this event; skipping"
             exit 0
           fi
@@ -328,7 +342,7 @@ jobs:
         env:
           PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
         run: python -m pytest -m smoke -q
-      - name: Run complete smoke and unit tests after merge
+      - name: Run complete smoke and unit tests on integration revisions
         if: github.event_name != 'pull_request'
         env:
           PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
@@ -916,7 +930,7 @@ jobs:
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
-      - name: Run complete maintained-runtime tests with coverage after merge
+      - name: Run complete maintained-runtime tests with coverage on integration revisions
         if: github.event_name != 'pull_request'
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
@@ -1002,3 +1016,49 @@ jobs:
         with:
           name: sbom-${{ github.sha }}
           path: sbom.cdx.json
+
+  ci-complete:
+    name: CI complete
+    needs:
+      - quality
+      - cpu-core
+      - cpu-core-3-12-tests
+      - cpu-runtime
+      - cpu-core-3-12
+      - jax-optional
+      - azure-optional
+      - triton-optional
+      - qiskit-optional
+      - cirq-optional
+      - braket-optional
+      - cudaq-optional
+      - pennylane-optional
+      - dependency-bounds
+      - package
+      - release-wheel-platform
+      - distributed-cpu
+      - coverage-shard
+      - coverage
+      - supply-chain
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      queue: max
+    steps:
+      - name: Require every CI job to succeed before queue admission
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json
+          import os
+          import sys
+
+          results = json.loads(os.environ["NEEDS_JSON"])
+          failed = {name: job["result"] for name, job in results.items() if job["result"] != "success"}
+          if not results or failed:
+              print("CI did not complete successfully:", failed or "no job results", file=sys.stderr)
+              sys.exit(1)
+          print("All", len(results), "CI jobs succeeded")
+          PYTHON
