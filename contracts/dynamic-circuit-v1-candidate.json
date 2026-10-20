@@ -11,7 +11,15 @@
   "approval": {
     "approved_by": "API owner via explicit user directive",
     "approved_at": "2026-09-01",
-    "approved_scope": "DynamicCircuit construction contract only"
+    "approved_scope": "DynamicCircuit construction contract only",
+    "approved_extensions": [
+      {
+        "extension": "DynamicCircuit.conditional(any_of=...)",
+        "approved_by": "API owner via explicit user directive",
+        "approved_at": "2026-10-20",
+        "approved_scope": "one additive keyword-only parameter with a default, stating a disjunction of classical condition clauses; no existing parameter, default, or metadata spelling changes"
+      }
+    ]
   },
   "stable_extension": {
     "namespace": "flagquantum.dynamic",
@@ -26,7 +34,7 @@
     "DynamicCircuit": "(n_qubits: 'int | None' = None, *, n_wires: 'int | None' = None, nqubits: 'int | None' = None, bsz: 'int' = 1, device: 'torch.device | str | None' = None, dtype: 'torch.dtype | None' = None, inputs: 'torch.Tensor | None' = None, config: 'RuntimeConfig | None' = None) -> 'None'",
     "DynamicCircuit.measure": "(self, qubit: 'int', *, classical_bit: 'int | None' = None) -> 'DynamicCircuit'",
     "DynamicCircuit.reset": "(self, qubit: 'int') -> 'DynamicCircuit'",
-    "DynamicCircuit.conditional": "(self, name: 'str', qubits: 'Iterable[int] | int', *, classical_bit: 'int | None' = None, equals: 'int' = 1, conditions: 'Mapping[int, int] | None' = None, params: 'Mapping[str, Any] | None' = None, matrix: 'Any | None' = None) -> 'DynamicCircuit'",
+    "DynamicCircuit.conditional": "(self, name: 'str', qubits: 'Iterable[int] | int', *, classical_bit: 'int | None' = None, equals: 'int' = 1, conditions: 'Mapping[int, int] | None' = None, any_of: 'Iterable[Mapping[int, int]] | None' = None, params: 'Mapping[str, Any] | None' = None, matrix: 'Any | None' = None) -> 'DynamicCircuit'",
     "DynamicCircuit.state": "(self, *, refresh: 'bool' = False) -> 'torch.Tensor'"
   },
   "construction_semantics": {
@@ -41,7 +49,10 @@
     "reset_semantics": "measure and prepare computational zero",
     "builder_methods_are_chainable": true,
     "static_gate_set": "inherits frozen Circuit operator schema",
-    "dense_state_execution_for_dynamic_instructions": false
+    "dense_state_execution_for_dynamic_instructions": false,
+    "disjunctive_conditions": "condition_clauses, a disjunction of conjunctions, each clause a conjunction in ascending classical-bit order, at least two clauses, distinct and minimal",
+    "condition_spellings_are_exclusive": "classical_bit, conditions, and any_of are alternatives; stating more than one is refused rather than resolved by a precedence rule",
+    "conditioned_opcodes": "one opcode with an operator schema or an explicit matrix; measure and reset project a qubit and write or discard a classical outcome, so they are refused as conditional targets by name"
   },
   "error_contract": {
     "invalid_wire_or_condition": "ValidationError",

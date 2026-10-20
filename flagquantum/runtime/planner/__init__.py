@@ -12,6 +12,7 @@ from ...compiler import lower_noise_model as lower_noise_model
 from ...compiler import schedule_layers as schedule_layers
 from ...core.ir import CircuitIR, MeasurementNode
 from ...errors import CapabilityError, ValidationError
+from ..dynamic._conditions import instruction_is_dynamic
 from ..execution_plan import (
     CircuitAnalysis,
     EvolutionSemantics,
@@ -791,8 +792,7 @@ def _validated_plan_program(
                 "noise_model must be a flagquantum.noise.NoiseModel or None"
             )
     if any(
-        instruction.metadata.get("is_dynamic") or instruction.metadata.get("conditions")
-        for instruction in source_ir.instructions
+        instruction_is_dynamic(instruction) for instruction in source_ir.instructions
     ):
         raise CapabilityError(
             "fq.run does not execute dynamic trajectories; use "

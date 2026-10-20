@@ -158,7 +158,8 @@ def _validate_program(program: Any) -> CircuitIR:
         )
     for instruction in ir.instructions:
         if instruction.name in {"measure", "reset"} or any(
-            key in instruction.metadata for key in ("condition", "conditions")
+            key in instruction.metadata
+            for key in ("condition", "condition_clauses", "conditions")
         ):
             raise QiskitAerExecutionError(
                 "the Aer bridge does not support dynamic circuit instructions"
