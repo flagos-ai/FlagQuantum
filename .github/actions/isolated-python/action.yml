@@ -13,3 +13,13 @@ runs:
         echo "PYTHONPATH=" >> "$GITHUB_ENV"
         echo "PYTHONHOME=" >> "$GITHUB_ENV"
         echo "PYTHONNOUSERSITE=1" >> "$GITHUB_ENV"
+        # Foreign framework libraries can override a fresh wheel's own RPATH.
+        library_path=""
+        IFS=':' read -r -a library_dirs <<< "${LD_LIBRARY_PATH:-}"
+        for directory in "${library_dirs[@]}"; do
+          case "$directory" in
+            */site-packages/*|*/dist-packages/*|"") ;;
+            *) library_path="${library_path:+$library_path:}$directory" ;;
+          esac
+        done
+        echo "LD_LIBRARY_PATH=$library_path" >> "$GITHUB_ENV"

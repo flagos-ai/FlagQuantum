@@ -79,6 +79,11 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         RUNNER_TEMP=str(tmp_path),
         PYTHONPATH=str(host_packages),
         PYTHONHOME="/unavailable-host-python",
+        LD_LIBRARY_PATH=(
+            "/usr/local/lib/python3.12/dist-packages/torch/lib:"
+            "/opt/venv/lib/python3.12/site-packages/torch_tensorrt/lib:"
+            "/opt/selected-python/lib:/usr/local/cuda/compat/lib:"
+        ),
         FQ_BASE_ENV="/unverified-preinstalled-stack",
         ACTIONS_RUNNER_HOOK_JOB_STARTED="/unavailable-hook",
         PATH=str(Path(sys.executable).parent) + os.pathsep + base_env["PATH"],
@@ -91,6 +96,9 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         subprocess.run(["bash", "-eu", "-c", script], env=env, check=True, timeout=45)
         exported = dict(
             line.split("=", 1) for line in env_file.read_text().splitlines()
+        )
+        assert exported["LD_LIBRARY_PATH"] == (
+            "/opt/selected-python/lib:/usr/local/cuda/compat/lib"
         )
         venv = Path(exported["VIRTUAL_ENV"])
         environments.append(venv)

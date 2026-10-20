@@ -9,7 +9,9 @@ CI targets that complete label set; either runner can accept a job.
 
 The earlier local migration targeted `flagquantum-a100-cpu` and described
 sixteen dedicated CPU registrations. That label and those registrations were
-absent from the refreshed settings. They are not prerequisites of this change.
+absent during the initial settings inspection. Later API checks found the
+dedicated registrations partially online. They remain separate from the shared
+Jiuding runners and are not prerequisites of this change.
 The existing local GPU workflow retains its original hardware gates.
 
 ## First migration batch
@@ -30,7 +32,10 @@ Required check names, test commands, and hosted capacity buckets are unchanged.
 No `pull_request_target` trigger executes fork code on a shared machine.
 
 Each Python job creates a fresh venv without system site packages or inherited
-Python search paths. Test jobs install CPU PyTorch. CUDA devices are hidden and
+Python search paths. Native library paths inside inherited Python package
+directories are also removed so a host Torch library cannot override the CPU
+wheel. Test jobs install CPU PyTorch and the declared setuptools/wheel build
+tooling before installing the project. CUDA devices are hidden and
 numerical library threads are limited to two. These settings do not impose host
 resource isolation or prevent other repositories from competing for the same
 machines. The two registrations do not prove two independent hosts or a CPU
