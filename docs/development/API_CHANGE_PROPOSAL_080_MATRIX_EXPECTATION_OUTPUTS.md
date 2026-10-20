@@ -8,7 +8,7 @@ The inspected baseline is main `4488cc5a17abb631ebc1c4d46d698bb0c408aa1e` on
 2026-10-20. Proposals 073/078/079 already authorize their implemented dynamics
 contracts; they do not authorize this change to the protected output boundary.
 
-Approve or revise these four decisions together:
+Approve or revise these five decisions together:
 
 1. Widen the existing expectation factory and OutputRequest field to accept a
    full-space dense torch.Tensor, retaining the existing Pauli Observable form.
@@ -18,6 +18,8 @@ Approve or revise these four decisions together:
    reuse the existing numeric plan formats and result accessors.
 4. Refuse collisions between explicit and generated Lindblad output names,
    instead of silently overwriting a requested output.
+5. Define tensor-request equality by the tensor's object identity, preserving
+   existing Pauli equality and hashes and avoiding tensor-valued comparisons.
 
 Document review or merge does not approve implementation. The API owner must
 explicitly approve this contract before production signatures, behavior or
@@ -166,6 +168,28 @@ input merely because batch_size=1, or introduce an operator-batch axis. The exis
 `expectations` tuple preserves request order, and `expectation(index_or_name)`
 selects the same trajectory. No result field or serialized result shape changes.
 
+### Request equality and hashing
+
+The existing frozen dataclass comparison cannot simply compare two independent
+tensor fields: tensor equality returns an array, which can raise an ambiguous
+boolean RuntimeError. For the new matrix form, two OutputRequests compare equal
+only when they have the same concrete request class, matching other fields and
+the **same tensor object**. A clone with equal entries is a different live
+input and compares unequal. A matrix and a Pauli observable compare unequal.
+Comparison must return a scalar boolean without reading tensor values,
+synchronizing devices or affecting autograd. Retain existing same-class
+comparison and field-value equality for all old Pauli/None requests.
+
+Keep hashability. For matrix requests, hash the existing field tuple with the
+matrix's object identity in the observable position; for old requests, retain
+the exact existing field-tuple hash. Mutating matrix entries does not change
+the descriptor's hash. This is live-input identity, not numeric plan equality:
+two separately allocated matrices with equal entries and the same names may
+produce equal numeric plan identities while their requests compare unequal.
+No new public identity field, serialized key or hashing registry is added.
+
+### Effective output names
+
 For Lindblad requests, resolve every effective name first: use the explicit name
 unchanged, otherwise `expectation_{index}` with the existing zero-based request
 index. If any final keys collide, raise the existing EvolutionValidationError
@@ -293,6 +317,7 @@ observables retain separate roadmap gates.
 | Same model, same shared path | Qutrit projector versus sin(gT)^2; spin-mode observable versus an independent trace; existing three-integrator coverage |
 | Complex and non-product coordinates | Hermitian matrix with imaginary off-diagonal entries; consistent matrix/state/basis permutation preserves the expectation; mismatched permutation is detected by the reference |
 | Results and batching | T and declared B axes, B=1, multiple output names/order and accessors; no output overwritten |
+| Request comparison | Scalar equality and matching hashes for the same tensor object; unequal clones and Pauli/matrix pairs; distinct request classes and old Pauli hashes retain existing behavior; no device synchronization or tensor-value comparison |
 | Gradients and training | Static and scheduled Hamiltonian derivatives, initial-state gradients, matrix-entry derivatives through a Hermitian parameterization, finite differences and an optimizer loss decrease |
 | Value ownership | Source matrix mutation after planning leaves numeric replay and live values consistent; live gradients still reach the original parameters |
 | Exact-plan and replay | Live/JSON numeric agreement, closed-plan override refusal, matrix/name/order identity sensitivity and fixed old payloads |
