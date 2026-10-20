@@ -712,7 +712,7 @@ jobs:
   jax-optional:
     needs: prepare-source
     runs-on: ubuntu-latest
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -729,7 +729,7 @@ jobs:
   azure-optional:
     needs: prepare-source
     runs-on: ubuntu-latest
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -760,7 +760,7 @@ jobs:
   triton-optional:
     needs: prepare-source
     runs-on: ubuntu-latest
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -778,7 +778,7 @@ jobs:
   qiskit-optional:
     needs: prepare-source
     runs-on: ubuntu-latest
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -821,7 +821,7 @@ jobs:
   cirq-optional:
     needs: prepare-source
     runs-on: ubuntu-latest
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -900,7 +900,7 @@ jobs:
   pennylane-optional:
     needs: prepare-source
     runs-on: ubuntu-latest
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -927,7 +927,7 @@ jobs:
   dependency-bounds:
     needs: prepare-source
     runs-on: ubuntu-latest
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
@@ -978,7 +978,7 @@ jobs:
     # which is still the default compiler on a maintained Linux LTS release.
     runs-on: ubuntu-22.04
     timeout-minutes: 30
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -1130,7 +1130,10 @@ jobs:
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
-      - run: python tools/ci_tier.py pr-distributed
+      - name: Run both complete distributed CPU contract selections
+        env:
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
+        run: python tools/ci_tier.py pr-distributed
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         uses: actions/upload-artifact@v4
@@ -1224,7 +1227,7 @@ jobs:
   supply-chain:
     needs: prepare-source
     runs-on: ubuntu-latest
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max

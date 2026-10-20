@@ -109,8 +109,8 @@ bicycle code instance (84.27 s), and the QEC alignment mutation check (77.20 s).
 This baseline includes failures; it is timing evidence, not a passing gate.
 Source: https://github.com/flagos-ai/FlagQuantum/actions/runs/39421153835/job/118622882940
 
-Every CI first-batch Python job uploads its measured resources and, where pytest
-runs with xdist, JUnit timing XML in a seven-day `cpu-report-*` artifact even
+Every CI first-batch Python job uploads its measured resources and, for core/runtime pytest
+selections, JUnit timing XML in a seven-day `cpu-report-*` artifact even
 when tests fail. Compare pytest execution separately from package setup and
 runner queue time. The required-check aggregator and fork routing stay intact.
 
@@ -121,3 +121,8 @@ service therefore retains sixteen workers. A smaller actual quota reduces that
 number. Fork and merge-group CPU jobs use Ubuntu with at most two workers and
 o shared-host package index. A800 source artifacts and verified local wheel
 caches are retained unchanged.
+
+The complete `pr-distributed` tier keeps both original selections
+(`distributed_cpu`, then `benchmark_contract or release_gate`) and applies the
+shared worker budget to both. Its two phase-specific slow-test summaries remain
+in the Actions log; core/runtime jobs additionally retain JUnit XML.
