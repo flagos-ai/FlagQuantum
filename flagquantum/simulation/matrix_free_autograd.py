@@ -8,7 +8,7 @@ action using their existing matrix-free solver. No numerical method lives here.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, cast
+from typing import Any
 
 import torch
 
@@ -64,4 +64,8 @@ def closed_subspace_gradient(
     """Preserve forward bits while adding the missing residual sensitivity."""
     if not torch.is_grad_enabled() or not residual.requires_grad:
         return value
-    return cast(torch.Tensor, _ClosedSubspaceGradient.apply(value, residual, adjoint))
+    apply: Callable[
+        [torch.Tensor, torch.Tensor, Callable[[torch.Tensor], torch.Tensor]],
+        torch.Tensor,
+    ] = _ClosedSubspaceGradient.apply
+    return apply(value, residual, adjoint)

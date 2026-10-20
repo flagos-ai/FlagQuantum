@@ -336,7 +336,7 @@ was verified at source commit
   Python 3.10 / Torch 2.13, Python 3.11 / Torch 2.14.1, and Python 3.12 / Torch 2.13.
 - Full smoke/unit tier: 13,461 passed, 175 skipped on Python 3.10 / Torch 2.13.
 - Full integration tier: 1,703 passed, 127 skipped on Python 3.12 / Torch 2.13.
-- Strict mypy passed for 771 source files; Black, Ruff, API/IR and repository
+- Mypy under repository defaults passed for 771 source files; Black, Ruff, API/IR and repository
   architecture, dependency, capability, documentation, parity, language and
   ownership checks passed. The PR example output matched its expected text;
   `python -m examples.train_piecewise_drive` completed 80 Adam updates and
@@ -349,6 +349,16 @@ failure; it reproduces on unchanged baseline
 `df2f308de855e2101a13a53c1afde604cc7126f0` with that interpreter. No QEC code or
 assertion is changed here. The acceptance integration run uses Python 3.12,
 matching the existing runtime lane. Remote CI remains a separate merge gate.
+
+The first remote CI run rejected the call to PyTorch's untyped `Function.apply`
+in `matrix_free_autograd.py`. The original local mypy invocation used repository
+defaults, so reporting it as strict validation was incorrect. The follow-up gives
+that existing autograd boundary its exact callable signature, following the
+existing JAX bridge pattern, without changing numerical execution. The exact CI
+command, `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`,
+then passed for 771 source files with mypy 2.4.0 and Torch 2.13; all 125 focused
+closed-subspace, piecewise-control and contract cases passed. Remote dependency
+floor and quality results remain separate acceptance evidence.
 
 ## Closed-subspace sensitivity found during implementation
 
