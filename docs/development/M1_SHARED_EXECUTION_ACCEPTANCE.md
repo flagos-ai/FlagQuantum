@@ -87,9 +87,12 @@ python -m pytest -q \
 ```
 
 This selection includes the existing refusal, compatibility and replacement
-assertions. No tolerance or assertion was changed for this review. Complete
-default/integration and repository-policy gates still apply to the review PR;
-the focused selection is not a substitute for them.
+assertions. No tolerance or assertion was changed for this review. The complete
+local default tier also passed: **13,786 passed, 175 skipped** in 632.42 seconds
+on Python 3.10. Strict mypy passed for 772 source files and all 11 repository
+policy, documentation and API checks passed. The focused selection is not a
+substitute for those gates or the review PR's complete remote CI/integration
+workflows.
 
 On the reference main revision, all **41 check runs** succeeded. The complete
 [CI workflow](https://github.com/flagos-ai/FlagQuantum/actions/runs/39439204798),
@@ -168,6 +171,13 @@ The lower-level Lindblad observable normalization already accepts full-space
 Hermitian matrices with shape, finiteness and Hermiticity validation. This is
 the arithmetic to reuse. A qubit Pauli decomposition or padding would lose the
 non-product semantics just established by M1.
+
+The output-name contract also needs a refusal decision. Currently, an explicit
+name `expectation_1` followed by an unnamed expectation at index 1 produces the
+same dictionary key and retains only the latter output. Duplicate explicit
+names are already refused, but generated-name collisions are not. The M2
+contract must make this observed loss explicit and decide its behavior before
+changing validation; this review does not silently change existing exceptions.
 
 The next bounded M2 deliverable should therefore be a reviewed contract for
 full-space expectation requests through the existing output boundary. It must
