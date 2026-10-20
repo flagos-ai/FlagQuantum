@@ -27,6 +27,7 @@ from .pass_manager import (
 )
 from .routing import (
     CouplingMap,
+    LinkErrorRates,
     record_post_routing_optimization,
     route_to_topology,
     select_routing_strategy,
@@ -588,7 +589,11 @@ def compile(
     circuit_or_ir: Any,
     *,
     coupling_map: (
-        CouplingMap | DirectedCouplingMap | Iterable[tuple[int, int]] | None
+        CouplingMap
+        | DirectedCouplingMap
+        | LinkErrorRates
+        | Iterable[tuple[int, int]]
+        | None
     ) = None,
     routing_strategy: str = "restore_after_each_gate",
     optimize: bool = True,
@@ -597,6 +602,11 @@ def compile(
     passes: Mapping[str, PassBinding] | None = None,
 ) -> CircuitIR:
     """Compile a circuit with optional topology routing and optimization.
+
+    `coupling_map` states the device. A `CouplingMap` says which qubits a device
+    couples and can therefore be routed by hop count only; a `LinkErrorRates` says
+    that and what each coupling costs to use, so the route choice, the price the
+    estimate reports, and the routing metadata all read the calibration.
 
     `optimization_level` is forwarded to `optimize` at both points this function
     optimizes -- before routing and again after it, because routing inserts SWAPs
@@ -634,7 +644,9 @@ def compile(
         # it.
         coupling = (
             coupling_map
-            if isinstance(coupling_map, (CouplingMap, DirectedCouplingMap))
+            if isinstance(
+                coupling_map, (CouplingMap, DirectedCouplingMap, LinkErrorRates)
+            )
             else CouplingMap(ir.n_wires, coupling_map)
         )
         strategy_selection = None
@@ -660,6 +672,7 @@ def compile(
 __all__ = [
     "BUILTIN_PASSES",
     "CouplingMap",
+    "LinkErrorRates",
     "compile",
     "default_pass_registry",
     "optimize",
