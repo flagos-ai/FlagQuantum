@@ -107,8 +107,12 @@ def gmres(
             columns = index + 1
             iterations += 1
             columns_target = target[: columns + 1].unsqueeze(1)
+            # The small Hessenberg system lives on CPU. Pivoted QR can vary
+            # between identical LAPACK calls, breaking serialized replay.
+            # Rank-aware SVD avoids that pivot path without assuming full rank
+            # at Krylov breakdown; it never materializes the physical operator.
             approximation = torch.linalg.lstsq(
-                hessenberg[: columns + 1, :columns], columns_target
+                hessenberg[: columns + 1, :columns], columns_target, driver="gelsd"
             ).solution
             estimate = float(
                 torch.linalg.vector_norm(
