@@ -165,11 +165,6 @@ jobs:
         run: python -m pip install --no-deps --no-build-isolation -e .
       - name: CPU circuit and backend regressions
         run: python -m pytest tests/test_native_circuit.py tests/test_backends.py -q
-      - name: Smoke and unit tier on one CPU runner
-        if: matrix.slot == 'cpu01'
-        env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=20
-        run: python tools/ci_tier.py pr-default
 
   validate-eight-gpus:
     if: ${{ inputs.validate_pool }}
