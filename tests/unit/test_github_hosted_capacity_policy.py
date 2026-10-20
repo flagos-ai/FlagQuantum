@@ -276,6 +276,12 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
             "flagquantum-cpu",
         ]
         assert definition["timeout-minutes"] == 30
+        setup_python = next(
+            step
+            for step in _steps("ci.yml", job)
+            if step.get("uses") == "actions/setup-python@v5"
+        )
+        assert "cache" not in setup_python["with"]
         assert definition["needs"] == "prepare-source"
         download = next(
             step

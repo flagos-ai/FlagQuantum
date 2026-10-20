@@ -589,6 +589,8 @@ The CPU core and runtime tiers use four dedicated A800 CPU runners, two per
 host, with 16 xdist workers and work-stealing scheduling. Each runner is limited
 to 24 logical CPUs and 64 GiB of memory. Each job creates a fresh virtual
 environment, hides GPUs, and sets numerical-library thread counts to one.
+The persistent CPU runners reuse their local pip cache; they do not restore or
+upload the shared multi-gigabyte cache through `actions/setup-python`.
 Official Python distributions and verified CPU-only PyTorch wheels are cached
 locally; a missing wheel falls back to the official CPU index. Ordinary Python
 dependencies use the Tsinghua PyPI mirror. Dependency consistency and the

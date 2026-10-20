@@ -389,10 +389,10 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      # Persistent A800 hosts already retain pip downloads locally.
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
       - name: Create an isolated environment for this job
         run: |
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
@@ -516,10 +516,10 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      # Persistent A800 hosts already retain pip downloads locally.
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - name: Create an isolated environment for this job
         run: |
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
@@ -611,10 +611,10 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      # Persistent A800 hosts already retain pip downloads locally.
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - name: Create an isolated environment for this job
         run: |
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
