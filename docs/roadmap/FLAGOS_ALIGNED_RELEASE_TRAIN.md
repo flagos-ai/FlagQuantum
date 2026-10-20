@@ -171,11 +171,12 @@ introduced. Run `python -m examples.constrained_basis_reference` for photon-sect
 gradients and a declared fixed-charge Ising convention with retained labels.
 
 `tests/unit/test_explicit_basis_contract.py` runs fake/Core and encoded/labelled
-replacement consumers. `tests/unit/test_constrained_basis_reference.py` retains
+replacement consumers, including scheduled batches and a real optimizer update.
+`tests/unit/test_constrained_basis_reference.py` retains
 independent product-space physical references and the leakage projection
 counterexample. `tests/unit/test_lindblad_explicit_basis.py` adds strict plan
 replay/refusals, backward compatibility, a vacuum-plus-one-photon loss model,
-control gradients, batches, optimizer and independent discrete-adjoint checks.
+control gradients and independent discrete-adjoint checks.
 Default Krylov graph conditioning limits remain disclosed; labels do not certify
 orthonormality, charges, fusion trees or invariance. This completes the labelled
 matrix-space implementation slice subject to repository/CI acceptance, and does
