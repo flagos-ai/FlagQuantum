@@ -28,3 +28,6 @@ runs:
         else
           echo "PIP_INDEX_URL=https://pypi.org/simple" >> "$GITHUB_ENV"
         fi
+    - name: Measure CPU and memory limits and select pytest workers
+      shell: bash
+      run: python -I tools/ci_cpu_budget.py

@@ -300,6 +300,13 @@ jobs:
         run: python tools/check_repository_hygiene.py
       - name: Lazy import budget
         run: python tools/check_import_time.py
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cpu-core:
     runs-on: >-
@@ -340,12 +347,12 @@ jobs:
       - name: Run pull-request compatibility smoke tests
         if: github.event_name == 'pull_request'
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
         run: python -m pytest -m smoke -q
       - name: Run complete smoke and unit tests on integration revisions
         if: github.event_name != 'pull_request'
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
         run: python tools/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
@@ -382,6 +389,13 @@ jobs:
           for name in ('cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
       - name: Prove core import does not load JAX
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cpu-core-3-12-tests:
     runs-on: >-
@@ -414,7 +428,7 @@ jobs:
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Run smoke and unit tests with bounded workers
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
         run: python tools/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
@@ -427,6 +441,13 @@ jobs:
           for name in ('cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
       - name: Prove core import does not load JAX
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cpu-runtime:
     runs-on: >-
@@ -459,12 +480,19 @@ jobs:
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Run integration tests with bounded workers
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
         run: python tools/ci_tier.py pr-runtime
       - name: Prove native distributed runtime does not require JAX
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
       - name: Run the launched distributed tests under a real launcher
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cpu-core-3-12:
     name: cpu-core (3.12)
@@ -897,6 +925,13 @@ jobs:
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python tools/ci_tier.py pr-distributed
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   coverage-shard:
     runs-on: ubuntu-latest

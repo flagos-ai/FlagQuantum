@@ -64,7 +64,7 @@ def test_first_batch_uses_verified_labels_only_for_trusted_events(
                     "./.github/actions/isolated-python"
                 )
     triggers = document.get("on") or document.get(True, {})
-    assert set(triggers) == {"push", "pull_request"}
+    assert set(triggers) == {"push", "pull_request", "merge_group"}
     if workflow == "ci.yml":
         for name, job in document["jobs"].items():
             if name not in expected and name not in {

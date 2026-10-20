@@ -96,3 +96,27 @@ their existing assertions that NumPy, JAX, and external quantum frameworks are
 absent. Configuration checks alone do not prove setup-python downloads, compiler
 availability, network access, or host policy. Only a completed Actions run verifies
 those conditions.
+
+## CPU budgets and timing evidence
+
+`tools/ci_cpu_budget.py` records affinity, every visible ancestor cgroup v1/v2
+CPU quota, the memory limit, hostname, and load average before package installs.
+The effective CPU count is the smaller of affinity and quota. Trusted shared
+jobs allow at most eight pytest workers, half of the effective CPU budget, and
+one worker per 4 GiB of total host/cgroup memory. This reserves half the resources
+for the other runner registration; it is a conservative scheduling budget, not
+an enforced resource partition. Both registrations can share one host. Each
+worker uses one numerical-library thread. Hosted fork and merge-group jobs
+retain at most two workers. No marker or test selection is removed.
+
+The preceding two-worker run at `bc6115c28` selected 13,901 tests and took
+1,871.11 seconds in pytest. Its slowest calls were the legacy API source scan
+(110.76 s), a distance-five ZXXZ code enumeration (107.99 s), the published
+bicycle code instance (84.27 s), and the QEC alignment mutation check (77.20 s).
+This baseline includes failures; it is timing evidence, not a passing gate.
+Source: https://github.com/flagos-ai/FlagQuantum/actions/runs/39421153835/job/118622882940
+
+Every first-batch Python job uploads its measured resources and, where pytest
+runs with xdist, JUnit timing XML in a seven-day `cpu-report-*` artifact even
+when tests fail. Compare pytest execution separately from package setup and
+runner queue time. The required-check aggregator and fork routing stay intact.

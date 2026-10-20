@@ -279,7 +279,15 @@ def test_cpu_pytest_tiers_use_two_bounded_work_stealing_workers() -> None:
     for step in tier_steps:
         env = step.get("env")
         assert isinstance(env, dict)
-        assert env.get("PYTEST_ADDOPTS") == BOUNDED_PYTEST_ADDOPTS
+        assert env.get("PYTEST_ADDOPTS") == (
+            "-n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 "
+            "--junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml"
+        )
+    # Forks still use at most two workers; the probe caps shared-host budgets.
+    from tools.ci_cpu_budget import GIB, select_workers
+
+    assert select_workers(64, 128 * GIB, shared=False) == 2
+    assert select_workers(64, 128 * GIB, shared=True) == 8
 
 
 def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
