@@ -34,6 +34,7 @@ NUMBER_WORDS = {
     "eighteen": 18,
     "nineteen": 19,
     "twenty": 20,
+    "twenty-one": 21,
 }
 
 
@@ -238,7 +239,7 @@ def test_testing_manual_names_every_job_ci_defines() -> None:
     # The sentence states a count as well as a list, and the count is the other
     # half of what went stale here: it read "five primary CPU jobs" while the
     # list under it named six and the file defined eleven.
-    stated = re.search(r"`ci\.yml` defines (\w+) jobs", text)
+    stated = re.search(r"`ci\.yml` defines ([\w-]+) jobs", text)
     assert stated, "the manual should say how many jobs ci.yml defines"
     assert stated.group(1) in NUMBER_WORDS, f"unrecognized number {stated.group(1)!r}"
     assert NUMBER_WORDS[stated.group(1)] == len(jobs), (
