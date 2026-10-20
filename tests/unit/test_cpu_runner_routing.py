@@ -148,10 +148,15 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
 
 @pytest.mark.parametrize(
     ("runner_environment", "mirror_failure"),
-    [("self-hosted", False), ("self-hosted", True), ("github-hosted", False)],
+    [
+        ("self-hosted", "none"),
+        ("self-hosted", "error"),
+        ("self-hosted", "timeout"),
+        ("github-hosted", "none"),
+    ],
 )
 def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
-    tmp_path: Path, runner_environment: str, mirror_failure: bool
+    tmp_path: Path, runner_environment: str, mirror_failure: str
 ) -> None:
     action = yaml.safe_load(
         (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
@@ -160,40 +165,57 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     fake_python = tmp_path / "python"
     fake_python.write_text(
         f"#!{sys.executable}\n"
-        "import json, os, sys\n"
+        "import json, os, pathlib, sys\n"
         "with open(os.environ['PIP_CALL_LOG'], 'a') as stream:\n"
         "    stream.write(json.dumps(sys.argv[1:]) + '\\n')\n"
-        "if '--find-links' in sys.argv and os.environ['MIRROR_FAILURE'] == '1':\n"
-        "    raise SystemExit(1)\n"
+        "if 'download' in sys.argv:\n"
+        "    if os.environ['MIRROR_FAILURE'] == 'error':\n"
+        "        raise SystemExit(1)\n"
+        "    destination = pathlib.Path(sys.argv[sys.argv.index('--dest') + 1])\n"
+        "    (destination / 'torch-2.13.0+cpu.whl').touch()\n"
     )
     fake_python.chmod(0o755)
+    fake_timeout = tmp_path / "timeout"
+    fake_timeout.write_text(
+        "#!/bin/bash\n"
+        'test "$1" = --kill-after=10s && test "$2" = 180s || exit 2\n'
+        'if [ "$MIRROR_FAILURE" = timeout ]; then exit 124; fi\n'
+        "shift 2\n"
+        'exec "$@"\n'
+    )
+    fake_timeout.chmod(0o755)
     subprocess.run(
         ["bash", "-eu", "-c", action["runs"]["steps"][0]["run"]],
         env={
             **os.environ,
             "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
             "PIP_CALL_LOG": str(log),
-            "MIRROR_FAILURE": str(int(mirror_failure)),
+            "MIRROR_FAILURE": mirror_failure,
             "RUNNER_ENVIRONMENT": runner_environment,
+            "RUNNER_TEMP": str(tmp_path),
         },
         check=True,
         timeout=15,
     )
     commands = [json.loads(line) for line in log.read_text().splitlines()]
-    installs = [
-        command for command in commands if command[:3] == ["-m", "pip", "install"]
-    ]
-    assert all("torch>=2.13,<2.14" in command for command in installs)
+    pip_calls = [command for command in commands if command[:2] == ["-m", "pip"]]
     official = "https://download.pytorch.org/whl/cpu"
     mirror = "https://mirrors.aliyun.com/pytorch-wheels/cpu/"
-    if runner_environment == "self-hosted":
-        assert mirror in installs[0]
-        assert "--no-index" in installs[0] and "--no-deps" in installs[0]
-        assert len(installs) == 2
-        assert (official in installs[1]) == mirror_failure
+    if runner_environment == "self-hosted" and mirror_failure != "timeout":
+        assert mirror in pip_calls[0]
+        assert "--no-index" in pip_calls[0] and "--no-deps" in pip_calls[0]
+        assert pip_calls[0][2] == "download"
+    if runner_environment == "self-hosted" and mirror_failure == "none":
+        assert len(pip_calls) == 3
+        assert official not in str(pip_calls)
+        assert "--no-deps" in pip_calls[1]
+        assert pip_calls[2] == ["-m", "pip", "install", "torch>=2.13,<2.14"]
     else:
-        assert len(installs) == 1
-        assert official in installs[0]
-        assert all(mirror not in command for command in installs)
+        assert official in pip_calls[-1]
+        assert "torch>=2.13,<2.14" in pip_calls[-1]
+    if runner_environment == "github-hosted":
+        assert len(pip_calls) == 1
+        assert mirror not in str(pip_calls)
     assert commands[-1][0] == "-c"
     assert "torch.version.cuda is None" in commands[-1][1]
+    assert not list(tmp_path.glob("fq-cpu-wheel.*"))

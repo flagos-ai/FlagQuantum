@@ -44,9 +44,11 @@ quota, and jobs can queue when both runners are busy.
 ## Package mirrors
 
 Self-hosted jobs use the TUNA PyPI mirror. CPU PyTorch wheels are selected
-separately from the Aliyun CPU wheel directory with `--no-index --no-deps`;
+separately from the Aliyun CPU wheel directory with `--no-index --no-deps`.
+The mirror download has a 180-second budget and uses a job-owned temporary
+directory, so a timeout leaves no partially installed Torch package;
 ordinary dependencies are then resolved through the job's PyPI mirror. This
-keeps CUDA wheels out of candidate selection. If the mirror attempt fails,
+keeps CUDA wheels out of candidate selection. If the mirror attempt fails or times out,
 the action retries the official CPU index and reports the fallback in the log.
 An import check requires a CPU-only Torch build after installation.
 

@@ -8,9 +8,13 @@ runs:
         if [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
           # Select Torch only from the CPU directory, then resolve its ordinary
           # dependencies through the job's PyPI mirror without upgrading Torch.
-          if python -m pip install --no-index --no-deps \
+          wheel_directory="$(mktemp -d "$RUNNER_TEMP/fq-cpu-wheel.XXXXXX")"
+          trap 'rm -rf "$wheel_directory"' EXIT
+          if TMPDIR="$wheel_directory" timeout --kill-after=10s 180s python -m pip download \
+            --only-binary=:all: --no-index --no-deps \
             --find-links https://mirrors.aliyun.com/pytorch-wheels/cpu/ \
-            'torch>=2.13,<2.14' && \
+            --dest "$wheel_directory" 'torch>=2.13,<2.14' && \
+            python -m pip install --no-deps "$wheel_directory"/*.whl && \
             python -m pip install 'torch>=2.13,<2.14'; then
             echo "CPU PyTorch installed through the domestic mirror"
           else
