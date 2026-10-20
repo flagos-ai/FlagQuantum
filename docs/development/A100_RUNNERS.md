@@ -23,9 +23,9 @@ gh run list --repo flagos-ai/FlagQuantum --workflow local-gpu.yml --limit 5
 
 Expected results are sixteen successful CPU validation jobs, each pinned to a
 different runner, and one successful eight-GPU validation job. CPU validation
-checks the non-root identity, eight logical CPUs in the affinity mask, denied
-access to GPU devices and protected file contents, then runs the existing native circuit
-and backend regressions. GPU validation exercises all eight devices and runs the
+checks the non-root identity, eight logical CPUs in the affinity mask, a CPU-only
+PyTorch environment, and denied access to other private runner directories, then
+runs the existing native circuit and backend regressions. GPU validation exercises all eight devices and runs the
 existing eight-rank NCCL sharded forward and gradient differentials against dense
 references. These are correctness checks, not a scalability performance claim.
 
@@ -72,8 +72,8 @@ this pool or use `pull_request_target` to execute a fork checkout. A platform
 instance recreation requires restoring the deployment and restarting its
 watchdog; process supervision does not preserve a deleted container.
 
-The node's HTTPS Git route is unreliable. Runner Git redirects only this
-repository's HTTPS URL to GitHub's official `ssh.github.com:443` endpoint.
+The node's HTTPS Git route is unreliable. Runner Git redirects this repository's HTTPS URL
+and the public pre-commit hooks dependency URL to GitHub's official `ssh.github.com:443` endpoint.
 Host keys come from GitHub's official metadata API and strict host verification
 is enabled. A repository-only, read-only deploy key is stored under
 `tools/git-ssh`, readable only by root and the dedicated runner group. Revoke it
