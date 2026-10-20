@@ -203,12 +203,12 @@ No new public API in this proposal. The affected surface is the promotion of an
 existing candidate:
 
 ```python
-import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
 
-circuit = fq.DynamicCircuit(3)
+circuit = DynamicCircuit(3)
 circuit.h(0)
 circuit.measure(0)
-circuit.cx(0, 1)          # executed only when the measurement result is 1
+circuit.conditional("x", 1, classical_bit=0)
 ```
 
 The promotion criteria for `DynamicCircuit` are:

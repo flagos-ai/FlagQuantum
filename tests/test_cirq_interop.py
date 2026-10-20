@@ -128,6 +128,21 @@ def test_cirq_execution_unsupported_requests_fail_before_simulation() -> None:
                 (Instruction("x", (0,), metadata={"conditions": ((0, 1),)}),),
             )
         )
+    # A disjunction is conditioned too, and reading only the conjunctive key would
+    # have let this bridge apply the gate unconditionally.
+    with pytest.raises(CirqSimulatorExecutionError, match="dynamic circuit"):
+        run(
+            CircuitIR(
+                1,
+                (
+                    Instruction(
+                        "x",
+                        (0,),
+                        metadata={"condition_clauses": (((0, 1),), ((0, 0),))},
+                    ),
+                ),
+            )
+        )
     with pytest.raises(CirqSimulatorExecutionError, match="does not support autograd"):
         run(Circuit(1).rx(0, torch.tensor(0.2, requires_grad=True)))
     with pytest.raises(CirqSimulatorExecutionError, match="options.backend"):

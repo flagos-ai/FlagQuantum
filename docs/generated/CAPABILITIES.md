@@ -1670,7 +1670,7 @@ Execute a FlagQuantum circuit explicitly on local Qiskit Aer while preserving Fl
 
 ### Dynamic circuits and backend assessment
 
-Execute dynamic circuits locally, including a bounded bit-flip/readout-noise profile, and assess whether a backend can support their required features.
+Execute dynamic circuits locally, including a disjunction of classical condition clauses and a bounded bit-flip/readout-noise profile, and assess whether a backend can support their required features.
 
 - **Maturity:** Experimental
 - **Public API:** `flagquantum.dynamic.DynamicCircuit`, `flagquantum.experimental.dynamic.assess_dynamic_backend`, `flagquantum.experimental.dynamic.run_dynamic`
@@ -1680,7 +1680,7 @@ Execute dynamic circuits locally, including a bounded bit-flip/readout-noise pro
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../docs/reference/API.md)
 - **Documentation:** [guide](../../docs/reference/API.md)
-- **Known boundary:** DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Local dynamic noise is limited to one-qubit bit-flip channels after matching executed gates and independent readout confusion on explicit measurements and final sampling. Other Kraus channels, correlated readout, device-profile timing noise, noisy gradients, and provider-noise execution fail closed. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used.
+- **Known boundary:** DynamicCircuit construction is candidate-stable pending API-owner approval; dynamic execution and backend assessment remain experimental. Local dynamic noise is limited to one-qubit bit-flip channels after matching executed gates and independent readout confusion on explicit measurements and final sampling. Other Kraus channels, correlated readout, device-profile timing noise, noisy gradients, and provider-noise execution fail closed. A condition is a conjunction of classical-bit tests or a disjunction of at least two such conjunctions, stated with classical_bit, conditions, or any_of; a conditioned measure or reset is refused by name because those operations project a qubit rather than apply a matrix. OpenQASM 3 export writes the disjunction, while the one-bit Braket IQM and Qiskit condition paths refuse it. Routing, deployment packaging, dialect export and provider integration are internal workflows rather than public experimental APIs. Provider-neutral conformance passes locally and on Qiskit Aer, but no real IQM QPU task was used.
 
 ### Extension SDK
 

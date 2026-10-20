@@ -29,7 +29,7 @@ on:
 # commit and allowed to finish. The cost is a queued matrix per push to `main`
 # rather than a dropped one, and that is the trade this file makes knowingly.
 #
-# CPU smoke/unit and runtime suites use four dedicated A800 CPU runners,
+# CPU core/runtime, coverage and dependency suites share eight A800 CPU runners,
 # with up to 16 quota-aware pytest workers per job and a separate virtual environment per run.
 # Fork CPU jobs fall back to Ubuntu with two workers. All Ubuntu fallbacks
 # share sixteen GitHub-hosted buckets: three core Python versions, runtime,
@@ -925,12 +925,21 @@ jobs:
 
   dependency-bounds:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 30
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      CUDA_VISIBLE_DEVICES: ""
+      PIP_INDEX_URL: ${{ runner.environment == 'self-hosted' && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
     strategy:
+      fail-fast: false
+      max-parallel: 3
       matrix:
         include:
           - python: "3.10"
@@ -948,13 +957,72 @@ jobs:
           - python: "3.12"
             torch: "torch>=2.14,<2.15"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
+        with:
+          digest-mismatch: error
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      # Persistent A800 hosts already retain pip downloads locally.
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
+      - name: Create an isolated environment for this job
+        run: |
+          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
+      - run: python -m pip install --upgrade pip setuptools wheel
+      - name: Install the CPU PyTorch wheel from the local cache or official index
+        run: |
+          if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels '${{ matrix.torch }}'; then
+            python -m pip install --no-deps '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Install PyTorch dependencies from the Python package mirror
+        run: python -m pip install '${{ matrix.torch }}'
       - run: python -m pip install pytest
       - run: python -m pip install --no-build-isolation -e . --no-deps
+      - name: Verify dependency consistency and the CPU-only PyTorch build
+        run: |
+          python -m pip check
+          python -c "import torch; assert torch.version.cuda is None"
       - run: python -m pytest tests/smoke tests/test_native_circuit.py -q
       # The declared development floor is a claim about this repository's own
       # toolchain, so it is installed and run rather than trusted. Only the 3.12
@@ -1106,6 +1174,7 @@ jobs:
     timeout-minutes: 60
     env:
       CUDA_VISIBLE_DEVICES: ""
+      JAX_PLATFORMS: cpu
       OMP_NUM_THREADS: "2"
       MKL_NUM_THREADS: "2"
       OPENBLAS_NUM_THREADS: "2"
@@ -1121,6 +1190,8 @@ jobs:
             git config --local --unset core.sparseCheckout || true
           fi
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -1128,6 +1199,11 @@ jobs:
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
+      - name: Verify dependency consistency and CPU frameworks
+        run: |
+          python -m pip check
+          python -c "import torch; assert torch.version.cuda is None"
+          python -c "import jax; assert jax.default_backend() == 'cpu'"
       - name: Run both complete distributed CPU contract selections
         env:
           PYTEST_ADDOPTS: -vv -n ${{ env.FQ_DISTRIBUTED_WORKERS }} --dist=worksteal --durations=50
@@ -1149,25 +1225,93 @@ jobs:
 
   coverage-shard:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # Eight of the thirteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 30
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
       queue: max
     strategy:
       fail-fast: false
+      # The eight registered services bound total CPU concurrency.
+      max-parallel: 8
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
     env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      CUDA_VISIBLE_DEVICES: ""
+      JAX_PLATFORMS: cpu
+      PIP_INDEX_URL: ${{ runner.environment == 'self-hosted' && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
+        with:
+          digest-mismatch: error
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      # Persistent A800 hosts already retain pip downloads locally.
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - name: Create an isolated environment for this job
+        run: |
+          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
+      - run: python -m pip install --upgrade pip setuptools wheel
+      - name: Install the CPU PyTorch wheel from the local cache or official index
+        run: |
+          if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
+            python -m pip install --no-deps "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - name: Install PyTorch dependencies from the Python package mirror
+        run: python -m pip install "torch>=2.13,<2.14"
       - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
+      - name: Verify dependency consistency and the CPU-only PyTorch build
+        run: |
+          python -m pip check
+          python -c "import torch; assert torch.version.cuda is None"
+          python -c "import jax; assert jax.default_backend() == 'cpu'"
       - name: Run maintained-runtime tests with coverage on pull requests
         if: github.event_name == 'pull_request'
         # The two full P5 trajectory conformance tests already run in the
@@ -1175,7 +1319,7 @@ jobs:
         # instrumented minutes here; pushes to main still measure them below.
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
-          -n 2 --dist=worksteal --durations=50
+          -n ${{ runner.environment == 'self-hosted' && 8 || 2 }} --dist=worksteal --durations=50
           -p tools.pytest_shard
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
@@ -1184,7 +1328,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
-          -n 2 --dist=worksteal --durations=50
+          -n ${{ runner.environment == 'self-hosted' && 8 || 2 }} --dist=worksteal --durations=50
           -p tools.pytest_shard
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum

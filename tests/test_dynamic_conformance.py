@@ -34,6 +34,26 @@ def test_feature_assessment_is_provider_neutral_and_fail_closed() -> None:
     assert fqdc.BRAKET_IQM_DYNAMIC_FEATURES.returns_mid_circuit_measurements is False
 
 
+def test_declared_disjunctive_feature_matches_what_each_path_accepts() -> None:
+    circuit = DynamicCircuit(2)
+    circuit.measure(0, classical_bit=0)
+    circuit.measure(1, classical_bit=1)
+    circuit.conditional("x", 1, any_of=({0: 1}, {1: 1}))
+
+    # The local trajectory path declares the feature, so assessment has to agree
+    # with the constructor that can now express it; the one-bit provider paths
+    # declare its absence, so they have to report the blocker rather than the
+    # narrower condition-width one.
+    local = fqdc.assess_dynamic_features(circuit, fqdc.LOCAL_TRAJECTORY_FEATURES)
+    aer = fqdc.assess_dynamic_features(circuit, fqdc.QISKIT_AER_DYNAMIC_FEATURES)
+    iqm = fqdc.assess_dynamic_features(circuit, fqdc.BRAKET_IQM_DYNAMIC_FEATURES)
+
+    assert local.compatible
+    assert fqdc.LOCAL_TRAJECTORY_FEATURES.supports_disjunctive_conditions is True
+    assert "disjunctive_conditions_unsupported" in aer.blockers
+    assert "disjunctive_conditions_unsupported" in iqm.blockers
+
+
 def test_feature_assessment_rejects_classical_read_before_measurement() -> None:
     circuit = DynamicCircuit(1)
     circuit.conditional("x", 0, classical_bit=0)

@@ -30,6 +30,12 @@ def test_dynamic_circuit_is_frozen_without_freezing_execution() -> None:
     assert candidate["rules"]["whole_api_freeze_implied"] is False
     assert candidate["approval"]["approved_at"] == "2026-09-01"
     assert candidate["result_boundary"]["native_result_candidate_stable"] is False
+    # The one signature this contract gained after the freeze was approved by the
+    # API owner, and the record names the parameter rather than only a date.
+    (extension,) = candidate["approval"]["approved_extensions"]
+    assert extension["extension"] == "DynamicCircuit.conditional(any_of=...)"
+    assert extension["approved_at"] == "2026-10-20"
+    assert "additive keyword-only parameter" in extension["approved_scope"]
 
 
 def test_dynamic_namespace_matches_candidate_exactly() -> None:
@@ -83,6 +89,21 @@ def test_dynamic_builder_uses_stable_error_categories() -> None:
         fqd.DynamicCircuit(1).measure(0).state()
     with pytest.raises(fqe.CapabilityError):
         fqd.DynamicCircuit(1).conditional("x", 0, classical_bit=0).state()
+
+
+def test_disjunctive_condition_survives_the_ir_round_trip() -> None:
+    circuit = fqd.DynamicCircuit(2).measure(0, classical_bit=0)
+    circuit.conditional("x", 1, any_of=({0: 1}, {1: 1}))
+
+    restored = fq.CircuitIR.from_json(circuit.to_ir().to_json())
+
+    assert restored.instructions[1].metadata["condition_clauses"] == (
+        ((0, 1),),
+        ((1, 1),),
+    )
+    assert "conditions" not in restored.instructions[1].metadata
+    rebuilt = fqd.DynamicCircuit.from_ir(restored)
+    assert rebuilt.to_ir().instructions == restored.instructions
 
 
 def test_native_dynamic_result_remains_experimental() -> None:

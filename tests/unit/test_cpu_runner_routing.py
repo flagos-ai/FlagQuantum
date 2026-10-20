@@ -18,6 +18,8 @@ FIRST_BATCH = {
     "cpu-core",
     "cpu-core-3-12-tests",
     "cpu-runtime",
+    "coverage-shard",
+    "dependency-bounds",
 }
 SHARED_ROUTE = (
     "${{ fromJSON((github.event_name == 'push' || "
@@ -52,6 +54,8 @@ def test_first_batch_uses_verified_labels_only_for_trusted_events(
             "cpu-core",
             "cpu-core-3-12-tests",
             "cpu-runtime",
+            "coverage-shard",
+            "dependency-bounds",
         }
         assert job["runs-on"] == (DEDICATED_ROUTE if dedicated else SHARED_ROUTE)
         assert job["env"]["CUDA_VISIBLE_DEVICES"] == ""

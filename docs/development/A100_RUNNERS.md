@@ -5,6 +5,7 @@
 | Jobs | Trusted same-repository PRs and main pushes | Fork PRs and merge groups |
 | --- | --- | --- |
 | Python 3.10/3.11 core, full Python 3.12 unit, runtime integration | Existing dedicated `flagquantum-cpu` A800 services | GitHub-hosted Ubuntu |
+| Coverage and dependency bounds | Existing dedicated `flagquantum-cpu` A800 services | GitHub-hosted Ubuntu |
 | Quality, distributed CPU, required-check aggregator | GitHub-hosted Ubuntu | GitHub-hosted Ubuntu |
 | Pre-commit source hygiene | Shared `a100-jiuding-0` or `a100-jiuding-1` | GitHub-hosted Ubuntu |
 
@@ -65,6 +66,11 @@ hosted backend rather than holding a concurrency bucket in the shared queue.
 Hosted comparison: https://github.com/flagos-ai/FlagQuantum/actions/runs/39429575465/job/118651666421
 
 ## Environment and coverage
+
+Coverage and dependency-bound jobs retain main's A800 migration with the same
+trusted-event allowlist and hosted fallback. Coverage uses eight workers on
+A800 and two on hosted runners, while the full seven-version dependency matrix
+retains its three-job parallel limit.
 
 The A800 services retain main's verified source artifacts, isolated per-job
 venvs, and local CPU-only PyTorch wheel cache. Shared source-hygiene and hosted

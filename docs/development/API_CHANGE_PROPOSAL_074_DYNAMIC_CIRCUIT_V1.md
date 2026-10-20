@@ -174,6 +174,16 @@ compiler produces (`flagquantum/compiler/_hybrid/dynamic_lowering.py:428`). The
 refusal at `_conditions.py:11` is a bare `ValueError`, not a member of the stable
 error hierarchy in `flagquantum/errors.py`.
 
+**Superseded in part, 2026-10-20.** This section measures the tree before
+`DynamicCircuit.conditional` gained `any_of`. The disjunctive spelling is public
+now, so the last sentence no longer describes the tree: the clauses are validated
+by `validate_condition_clauses` and `validate_disjunctive_clauses` in
+`flagquantum/runtime/dynamic/_conditions.py`, both raising the stable
+`ValidationError`, the builder and the hybrid session share those two helpers
+rather than each checking its own copy, and `instruction_conditions` no longer
+refuses the disjunctive key -- it names the paths that evaluate a disjunction
+instead of reporting that none exists.
+
 ### 6. The planner refuses dynamic programs wholesale, before it can diagnose them
 
 **Measured.** The refusing function is `_validated_plan_program` at
@@ -204,6 +214,22 @@ planner-side diagnosis of a malformed or ill-ordered condition is reachable
 through `fq.plan`. `fq.run` produces the same `CapabilityError`, and
 `DynamicCircuit.state` refuses with `CapabilityError` from
 `flagquantum/runtime/dynamic/circuit.py:90`.
+
+**Superseded in part, 2026-10-20.** The first observation was a defect and is
+fixed: the guard now calls `instruction_is_dynamic(instruction)` from
+`flagquantum/runtime/dynamic/_conditions.py`, which reads every condition
+spelling, so a program carrying `condition_clauses` reaches the same
+`CapabilityError` as one carrying `conditions`. The second observation stands.
+
+Two measurements bound how much the defect was worth, and both matter to a reader
+deciding whether to trust the fix. Every program the public builder produces
+carries a `measure`, a `measure` carries `is_dynamic: True`, and the guard's first
+term therefore caught those programs through the measurement rather than through
+the condition -- so the defect was reachable from IR, as in a hand-built
+`CircuitIR` or one read from a file, and not from `DynamicCircuit`. And the
+guard's position still means a condition that no measurement defines is refused as
+"fq.run does not execute dynamic trajectories" rather than as a def-use violation,
+which is the second observation and is unchanged.
 
 ### 7. The condition/measurement def-use rule is enforced, at shot time, with an untyped error
 

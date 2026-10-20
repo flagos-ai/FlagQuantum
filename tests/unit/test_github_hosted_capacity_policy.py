@@ -8,7 +8,7 @@ queues every other repository in the organisation behind it.
 The ceiling is expressed the way GitHub expresses it. A concurrency group
 admits one job at a time, so the number of distinct groups one workflow run
 uses *is* the number of GitHub-hosted runners that run can hold at once.
-`ci.yml` and `pre-commit.yaml` partition their jobs across the thirteen scoped
+`ci.yml` and `pre-commit.yaml` partition their jobs across the sixteen scoped
 buckets below, and this module holds that partition still. The pull-request or
 branch scope prevents an unrelated older run from serializing a newer run;
 the organisation's 20-runner pool remains the aggregate ceiling.
@@ -61,8 +61,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # Workflows whose GitHub-hosted jobs share the bounded runner pool.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these thirteen scoped names are a
-# ceiling of thirteen concurrent GitHub-hosted runners for one run.
+# One concurrency group admits one job, so these sixteen scoped names are a
+# ceiling of sixteen concurrent GitHub-hosted runners for one run.
 #
 # The scope is the pull request number where there is one and the branch name
 # otherwise, so an unrelated branch's older run cannot serialize a newer one.
@@ -175,10 +175,8 @@ def test_the_scan_finds_the_github_hosted_jobs_it_is_meant_to_police() -> None:
     assert {
         "ci.yml:quality",
         "ci.yml:cpu-core-3-12",
-        "ci.yml:coverage-shard",
         "ci.yml:coverage",
         "ci.yml:package",
-        "ci.yml:distributed-cpu",
         "pre-commit.yaml:pre-commit",
     } <= found
 
@@ -338,6 +336,53 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     assert select_workers(24, 64 * GIB, shared=False, dedicated=True) == 2
 
 
+@pytest.mark.parametrize("job", ["distributed-cpu", "coverage-shard"])
+def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> None:
+    definition = _document("ci.yml")["jobs"][job]
+    assert definition["needs"] == "prepare-source"
+    assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
+    for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+        assert definition["env"][variable] == ("2" if job == "distributed-cpu" else "1")
+    steps = _steps("ci.yml", job)
+    commands = "\n".join(str(step.get("run", "")) for step in steps)
+    assert "python -m pip check" in commands
+    assert "torch.version.cuda is None" in commands
+    assert "jax.default_backend() == 'cpu'" in commands
+    if job == "coverage-shard":
+        assert (
+            definition["runs-on"] == _document("ci.yml")["jobs"]["cpu-core"]["runs-on"]
+        )
+        assert definition["timeout-minutes"] == 30
+        assert definition["strategy"]["max-parallel"] == 8
+        assert "python -m venv" in commands
+    else:
+        assert definition["runs-on"] == "ubuntu-latest"
+        assert definition["timeout-minutes"] == 60
+        assert any(
+            step.get("uses") == "./.github/actions/isolated-python" for step in steps
+        )
+        assert "unset RANK WORLD_SIZE" in commands
+        assert "python tools/ci_tier.py pr-distributed" in commands
+
+
+def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> None:
+    definition = _document("ci.yml")["jobs"]["dependency-bounds"]
+    assert definition["strategy"]["fail-fast"] is False
+    assert len(definition["strategy"]["matrix"]["include"]) == 7
+    assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
+    steps = _steps("ci.yml", "dependency-bounds")
+    commands = "\n".join(str(step.get("run", "")) for step in steps)
+    assert "torch.version.cuda is None" in commands
+    assert "python -m pytest tests/smoke tests/test_native_circuit.py -q" in commands
+    assert "--print-floor" in commands
+    assert "mypy --strict" in commands
+    assert definition["runs-on"] == _document("ci.yml")["jobs"]["cpu-core"]["runs-on"]
+    assert definition["strategy"]["max-parallel"] == 3
+    assert "python -m venv" in commands
+    assert "--no-index --no-deps --find-links" in commands
+    assert "'${{ matrix.torch }}'" in commands
+
+
 def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
     document = _document("ci.yml")
     jobs = document.get("jobs")
@@ -417,7 +462,11 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
     assert len(steps) == 2
     for step in steps:
         command = str(step.get("run", ""))
-        for token in ("-n 2", "--dist=worksteal", "--durations=50"):
+        for token in (
+            "-n ${{ runner.environment == 'self-hosted' && 8 || 2 }}",
+            "--dist=worksteal",
+            "--durations=50",
+        ):
             assert token in command
         for token in (
             "-p tools.pytest_shard",
@@ -442,7 +491,7 @@ def test_pull_request_coverage_deduplicates_full_slow_conformance() -> None:
 
 
 def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
-    shard = _github_hosted_jobs("ci.yml")["coverage-shard"]
+    shard = _document("ci.yml")["jobs"]["coverage-shard"]
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
     assert strategy.get("matrix") == {"shard": list(range(8))}

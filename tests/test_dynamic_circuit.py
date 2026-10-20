@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import math
+import subprocess
+import sys
+import textwrap
 from dataclasses import replace
 
 import pytest
@@ -9,7 +13,7 @@ import flagquantum as fq
 import flagquantum.deployment as deployment
 import flagquantum.errors as fqe
 from flagquantum.compiler import CouplingMap
-from flagquantum.core.ir import Instruction
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import (
@@ -47,6 +51,64 @@ def test_reset_returns_measured_qubit_to_zero() -> None:
 
     assert torch.count_nonzero(result.samples) == 0
     assert result.classical_bits.shape == (32, 0)
+
+
+def test_repeated_measurement_and_reset_on_one_qubit_have_defined_semantics() -> None:
+    circuit = DynamicCircuit(1)
+    circuit.h(0)
+    circuit.measure(0, classical_bit=0)
+    circuit.measure(0, classical_bit=1)
+    circuit.reset(0)
+    circuit.measure(0, classical_bit=2)
+
+    result = fq.experimental.dynamic.run_dynamic(circuit, shots=64, seed=19)
+
+    assert torch.equal(result.classical_bits[:, 0], result.classical_bits[:, 1])
+    assert torch.count_nonzero(result.classical_bits[:, 2]) == 0
+    assert torch.count_nonzero(result.samples) == 0
+
+
+def test_seeded_dynamic_execution_is_reproducible_across_processes() -> None:
+    source = """
+        import json
+
+        import flagquantum as fq
+        from flagquantum.dynamic import DynamicCircuit
+
+        circuit = DynamicCircuit(2)
+        circuit.h(0)
+        circuit.measure(0, classical_bit=0)
+        circuit.conditional("x", 1, classical_bit=0)
+        result = fq.experimental.dynamic.run_dynamic(circuit, shots=64, seed=23)
+        print(json.dumps({
+            "classical": result.classical_bits.tolist(),
+            "samples": result.samples.tolist(),
+        }, sort_keys=True))
+        """
+    program = textwrap.dedent(source)
+
+    outputs = tuple(
+        subprocess.run(
+            [sys.executable, "-c", program],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        for _ in range(2)
+    )
+
+    assert outputs[0] == outputs[1]
+
+
+def test_local_dynamic_feedback_example_is_executable() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "examples.local.dynamic_feedback"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "local_statevector_trajectory" in completed.stdout
 
 
 def test_dynamic_execution_rejects_unmeasured_classical_reads_and_gradients() -> None:
@@ -94,20 +156,118 @@ def test_dynamic_ir_round_trip_and_qasm3_export() -> None:
     assert "if (c[1] == true) { x q[1]; }" in qasm
 
 
-def test_qasm3_export_fails_closed_on_private_dnf_conditions() -> None:
+def test_disjunctive_condition_runs_the_gate_on_either_conjunction() -> None:
+    circuit = (
+        DynamicCircuit(3, dtype=torch.complex128)
+        .ry(0, theta=0.7)
+        .ry(1, theta=1.1)
+        .measure(0, classical_bit=0)
+        .measure(1, classical_bit=1)
+        .conditional("x", 2, any_of=({0: 1}, {1: 1}))
+    )
+
+    # The two clauses are a disjunction, so the gate runs when either readout is
+    # one. A conjunction would run on the intersection instead, and the exact
+    # density matrix separates the two answers.
+    populations = circuit.density_matrix()[0].diagonal().real
+    ran = float(sum(populations[index] for index in (1, 3, 5, 7)))
+    either = 1.0 - math.cos(0.35) ** 2 * math.cos(0.55) ** 2
+    assert ran == pytest.approx(either, abs=1e-12)
+
+    result = fq.experimental.dynamic.run_dynamic(circuit, shots=20_000, seed=3)
+    ran_shots = int(result.final_samples[:, 2].sum())
+    assert abs(ran_shots / 20_000 - either) < 0.02
+
+
+def test_planner_refuses_every_condition_spelling_with_one_message() -> None:
+    conjunction = DynamicCircuit(2)
+    conjunction.measure(0, classical_bit=0)
+    conjunction.conditional("x", 1, classical_bit=0)
+
+    disjunctive = DynamicCircuit(2)
+    disjunctive.measure(0, classical_bit=0)
+    disjunctive.measure(1, classical_bit=1)
+    disjunctive.conditional("x", 1, any_of=({0: 1}, {1: 1}))
+
+    # Every program the builder produces carries a measurement, and a measurement
+    # carries is_dynamic, so the two above reach the guard through that key as
+    # well. This one reaches it through the condition key alone: a program read
+    # from IR need not have been built here, and a measurement is what would
+    # otherwise be covering for the condition.
+    from_ir = CircuitIR(
+        2,
+        (
+            Instruction("h", (0,)),
+            Instruction(
+                "x", (1,), metadata={"condition_clauses": (((0, 1),), ((1, 0),))}
+            ),
+        ),
+    )
+
+    messages = []
+    for program in (conjunction, disjunctive, from_ir):
+        with pytest.raises(fqe.CapabilityError, match="run_dynamic") as caught:
+            fq.plan(program)
+        messages.append(str(caught.value))
+
+    # One guard reads every condition spelling, so the three spellings get one
+    # explanation rather than one per spelling.
+    assert len(set(messages)) == 1
+
+
+def test_qasm3_export_writes_a_disjunction_of_conjunctions() -> None:
     circuit = DynamicCircuit(3)
     circuit.measure(0, classical_bit=0)
     circuit.measure(1, classical_bit=1)
-    circuit._append_dynamic(
-        Instruction(
-            "x",
-            (2,),
-            metadata={"condition_clauses": (((0, 1),), ((1, 1),))},
-        )
-    )
+    conjunction = DynamicCircuit(3)
+    conjunction.measure(0, classical_bit=0)
+    conjunction.measure(1, classical_bit=1)
+    conjunction.conditional("x", 2, conditions={0: 1, 1: 1})
 
-    with pytest.raises(ValueError, match="DNF-aware execution path"):
-        export_dynamic_qasm3(circuit)
+    disjunctive = export_dynamic_qasm3(
+        circuit.conditional("x", 2, any_of=({0: 1}, {1: 1}))
+    )
+    conjunctive = export_dynamic_qasm3(conjunction)
+
+    assert "if ((c[0] == true) || (c[1] == true)) { x q[2]; }" in disjunctive
+    # One clause keeps the exact text it had, so adding the disjunctive spelling
+    # did not rewrite the conjunctive export.
+    assert "if (c[0] == true && c[1] == true) { x q[2]; }" in conjunctive
+
+
+def test_disjunctive_condition_requires_canonical_distinct_minimal_clauses() -> None:
+    circuit = DynamicCircuit(2)
+    circuit.measure(0, classical_bit=0)
+    circuit.measure(1, classical_bit=1)
+
+    with pytest.raises(fqe.ValidationError, match="at least two clauses"):
+        circuit.conditional("x", 1, any_of=({0: 1},))
+    with pytest.raises(fqe.ValidationError, match="canonical, distinct, and minimal"):
+        circuit.conditional("x", 1, any_of=({0: 1}, {0: 1}))
+    # The second clause contains the first, so no trajectory reaches it alone.
+    with pytest.raises(fqe.ValidationError, match="canonical, distinct, and minimal"):
+        circuit.conditional("x", 1, any_of=({0: 1}, {0: 1, 1: 0}))
+    with pytest.raises(fqe.ValidationError, match="binary values"):
+        circuit.conditional("x", 1, any_of=({0: 1}, {1: 2}))
+    with pytest.raises(fqe.ValidationError, match="at least one bit"):
+        circuit.conditional("x", 1, any_of=({0: 1}, {}))
+    with pytest.raises(fqe.ValidationError, match="any_of replaces"):
+        circuit.conditional("x", 1, classical_bit=0, any_of=({0: 1}, {1: 1}))
+    with pytest.raises(fqe.ValidationError, match="one mapping per clause"):
+        circuit.conditional("x", 1, any_of=[(0, 1), (1, 1)])  # type: ignore[list-item]
+
+
+def test_conditional_append_refuses_a_measure_or_reset_by_name() -> None:
+    circuit = DynamicCircuit(2).measure(0, classical_bit=0)
+
+    with pytest.raises(
+        fqe.ValidationError, match="conditional reset is not constructible"
+    ):
+        circuit.conditional("reset", 1, classical_bit=0)
+    with pytest.raises(
+        fqe.ValidationError, match="conditional measure is not constructible"
+    ):
+        circuit.conditional("measure", 1, classical_bit=0)
 
 
 def test_dynamic_execution_supports_batched_initial_states() -> None:

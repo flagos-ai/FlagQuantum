@@ -280,6 +280,8 @@ def test_pull_requests_only_reach_provisioned_a800_jobs() -> None:
         ("ci.yml", "cpu-core"): "flagquantum-cpu",
         ("ci.yml", "cpu-core-3-12-tests"): "flagquantum-cpu",
         ("ci.yml", "cpu-runtime"): "flagquantum-cpu",
+        ("ci.yml", "coverage-shard"): "flagquantum-cpu",
+        ("ci.yml", "dependency-bounds"): "flagquantum-cpu",
     }
     found = set()
     for name, (path, reaching) in sorted(_untrusted_workflow_jobs().items()):

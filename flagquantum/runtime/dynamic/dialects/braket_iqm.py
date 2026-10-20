@@ -7,7 +7,9 @@ from typing import Any
 import torch
 
 from ....core.ir import Instruction
-from .._conditions import instruction_conditions as _instruction_conditions
+from .._conditions import (
+    instruction_condition_clauses as _instruction_condition_clauses,
+)
 from ..circuit import DynamicCircuit
 
 
@@ -115,7 +117,12 @@ def export_braket_iqm_dynamic_qasm3(
     body: list[str] = []
 
     for instruction in circuit._instructions:
-        conditions = _instruction_conditions(instruction)
+        # An IQM feed-forward key names one measured bit, so a condition is either
+        # one conjunction of one bit or it cannot be lowered to a control key.
+        clauses = _instruction_condition_clauses(instruction)
+        if len(clauses) > 1:
+            raise ValueError("braket_iqm_disjunctive_conditions_are_unsupported")
+        conditions = clauses[0] if clauses else ()
         if instruction.name == "measure":
             if conditions:
                 raise ValueError("braket_iqm_conditional_measurement_is_unsupported")
