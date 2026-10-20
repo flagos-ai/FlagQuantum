@@ -308,6 +308,31 @@ routing decision in `compiled_ir.metadata["routing"]`. It does not select or
 invoke an execution backend. Run the complete example with
 `python -m examples.target_aware_compilation`.
 
+A `CouplingMap` states which qubit pairs a device couples, so the route the
+compiler takes is the shortest one and its price is a SWAP count. A device that
+has been calibrated states something more, and `LinkErrorRates` is how a caller
+hands that over: the same couplings with one measured two-qubit error probability
+per link.
+
+```python
+device = compiler.LinkErrorRates(
+    compiler.CouplingMap.line(circuit.n_qubits),
+    {(0, 1): 0.02, (1, 2): 0.001},
+)
+compiled_ir = compiler.compile(circuit, coupling_map=device)
+faults = compiled_ir.metadata["routing"]["expected_link_faults"]
+```
+
+The route is then the one with the fewest expected fault events rather than the
+fewest hops, so a longer route over clean links can be chosen, and both
+`compile(..., coupling_map=...)` and `route_to_topology(...)` accept the
+calibrated device. `expected_link_faults` reports what the emitted program pays
+and is `None` on a device that states only its couplings, so a caller who passes a
+`CouplingMap` gets the plan it got before. A strategy that chooses its routes by
+hop count cannot read a calibration, so naming `sabre` or `sabre_layout` for a
+calibrated device is refused rather than silently answered without it. Run the
+complete example with `python -m examples.weighted_routing`.
+
 ## Train with PyTorch
 
 Execution and training are intentionally separate. A complete trainable program

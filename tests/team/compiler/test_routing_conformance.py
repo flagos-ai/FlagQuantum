@@ -407,6 +407,17 @@ def _schema_failures(router: _Router) -> list[str]:
                 )
         if routing.get("schema") != "flagquantum_routing_plan_v1":
             failures.append(f"{case.label}: schema {routing.get('schema')!r}")
+        # The fault total is the one plan quantity that is not a count, so it is
+        # checked separately: every device in the matrix declares only its
+        # couplings, and a plan over such a device must say the program was not
+        # priced in faults rather than report a faultless program.
+        if "expected_link_faults" not in routing:
+            failures.append(f"{case.label}: routing metadata has no fault total")
+        elif routing["expected_link_faults"] is not None:
+            failures.append(
+                f"{case.label}: an uncalibrated device reported "
+                f"{routing['expected_link_faults']!r} link faults"
+            )
         if routing.get("strategy") != case.strategy:
             failures.append(
                 f"{case.label}: strategy echoed as {routing.get('strategy')!r}"
@@ -1086,6 +1097,10 @@ def _replacement_router(
         # ordering swap. The key is stated because the plan schema now carries it:
         # a router that reads an ordered device has to count its repairs here.
         "direction_swap_count": 0,
+        # The replacement routes on the couplings alone, so it has no per-link
+        # error to sum and says so. A router that read a calibration would report
+        # the fault total of the program it emitted here instead of None.
+        "expected_link_faults": None,
         "topology_gate_count": topology_gate_count,
         "routed_gate_count": topology_gate_count,
         "inserted_swap_count": inserted_swap_count,
