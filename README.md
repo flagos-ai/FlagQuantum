@@ -4,7 +4,7 @@
 <p><strong>Quantum computing, built for learning.</strong></p>
 <p>A PyTorch-first framework for differentiable quantum computing and quantum AI.</p>
 
-[Qubit ordering](#qubit-ordering-qubit-0-is-the-most-significant-bit) · [Quick start](#install-and-train-your-first-quantum-model) · [Documentation](docs/README.md) · [Examples](examples/README.md)
+[Qubit ordering](#qubit-ordering-qubit-0-is-the-most-significant-bit) · [Quick start](#install-and-train-your-first-quantum-model) · [Documentation](docs/README.md) · [Wiki](https://github.com/flagos-ai/FlagQuantum/wiki) · [Examples](examples/README.md)
 
 </div>
 
@@ -199,6 +199,27 @@ research goals.
 [Distributed statevector](examples/distributed_statevector_topologies/README.md) ·
 [Distributed MPS](examples/distributed_mps/README.md) ·
 [ARCHITECTURE.md](ARCHITECTURE.md)
+
+## Documentation and Wiki
+
+Start with the [Wiki home](https://github.com/flagos-ai/FlagQuantum/wiki) or browse the
+[Wiki Directory](https://github.com/flagos-ai/FlagQuantum/wiki/Wiki-Directory) for the
+full learning path. Find a guide by topic:
+
+| Topic | Wiki guides |
+| --- | --- |
+| Get started and understand the basics | [Installation and Compatibility](https://github.com/flagos-ai/FlagQuantum/wiki/Installation-and-Compatibility) · [Quick Start](https://github.com/flagos-ai/FlagQuantum/wiki/Quick-Start) · [Core Concepts](https://github.com/flagos-ai/FlagQuantum/wiki/Core-Concepts) · [Qubit Ordering and Result Conventions](https://github.com/flagos-ai/FlagQuantum/wiki/Qubit-Ordering-and-Result-Conventions) |
+| Build circuits and train models | [Building and Simulating Circuits](https://github.com/flagos-ai/FlagQuantum/wiki/Building-and-Simulating-Circuits) · [Training Parameterized Circuits](https://github.com/flagos-ai/FlagQuantum/wiki/Training-Parameterized-Circuits) · [Hybrid Classical-Quantum Models](https://github.com/flagos-ai/FlagQuantum/wiki/Hybrid-Classical-Quantum-Models) |
+| Choose simulation and compute resources | [Choosing a Simulation Method](https://github.com/flagos-ai/FlagQuantum/wiki/Choosing-a-Simulation-Method) · [Accelerator Setup](https://github.com/flagos-ai/FlagQuantum/wiki/Accelerator-Setup) · [Distributed Simulation and Training](https://github.com/flagos-ai/FlagQuantum/wiki/Distributed-Simulation-and-Training) |
+| Compile circuits and model noise | [Circuit Compilation and Interoperability](https://github.com/flagos-ai/FlagQuantum/wiki/Circuit-Compilation-and-Interoperability) · [Noise and Open-System Simulation](https://github.com/flagos-ai/FlagQuantum/wiki/Noise-and-Open-System-Simulation) |
+| Explore QEC, cloud execution, and device models | [Quantum Error Correction Experiments](https://github.com/flagos-ai/FlagQuantum/wiki/Quantum-Error-Correction-Experiments) · [Cloud and Quantum Hardware Execution](https://github.com/flagos-ai/FlagQuantum/wiki/Cloud-and-Quantum-Hardware-Execution) · [QPU Digital Twins](https://github.com/flagos-ai/FlagQuantum/wiki/QPU-Digital-Twins) |
+| Reproduce results, troubleshoot, and contribute | [Reproducibility and Benchmarks](https://github.com/flagos-ai/FlagQuantum/wiki/Reproducibility-and-Benchmarks) · [Troubleshooting and FAQ](https://github.com/flagos-ai/FlagQuantum/wiki/Troubleshooting-and-FAQ) · [Development and Contribution Guide](https://github.com/flagos-ai/FlagQuantum/wiki/Development-and-Contribution-Guide) · [Documentation Guide](https://github.com/flagos-ai/FlagQuantum/wiki/Documentation-Guide) |
+
+The Wiki guides currently target **FlagQuantum 0.3.1** and state their verification
+scope. For versioned API contracts, executable examples, and support boundaries,
+use the [repository documentation](docs/README.md), [examples](examples/README.md),
+and [capability catalog](docs/generated/CAPABILITIES.md) matching your installed
+release; `main` can describe newer development.
 
 <!-- BEGIN GENERATED CAPABILITY_SUMMARY -->
 Support varies by execution path. See the [capability catalog](docs/generated/CAPABILITIES.md) for maturity and limitations.
