@@ -1,52 +1,76 @@
 # Continuous-Time Lindblad Evolution
 
-This domain is the plan-and-run facade for Markovian open-system evolution. It
-owns request validation, the sealed `LindbladPlan`, option interpretation, and
-the result envelope. It does not own the numerics: the density-matrix
-integrator is `flagquantum/simulation/lindblad.py`, which Simulation owns.
+This domain translates public requests, interprets ExecutionOptions, and owns
+sealed LindbladPlan serialization. Simulation owns numeric input validation,
+Liouvillian, all three integrators, the shared trajectory and initial-density
+adjoint. Core owns parameters and mathematical basis semantics.
 
-`plan` seals a request without running it. `run` accepts either a sealed plan or
-the same arguments and returns an `EvolutionResult` whose `plan` field carries
-the sealed request. A sealed plan is closed to semantic overrides, so a caller
-cannot change a Hamiltonian, a collapse operator, or the time grid after the
-plan has been reviewed.
+Public entries are plan, run, LindbladPlan, CollapseOperator, EvolutionResult,
+amplitude_damping and adjoint_gradient. No distributed setup is needed for this
+CPU path. A sealed plan is closed to semantic overrides; rebuild live plans after
+optimizer updates. JSON retains values, not an autograd graph.
 
-Public entries are `plan`, `run`, `LindbladPlan`, `CollapseOperator`,
-`EvolutionResult`, and `amplitude_damping`. The domain depends on Core error and
-observable types, `ExecutionOptions`, and the Simulation integrator; `_plan.py`
-adds only `hashlib` and `json` for the plan identity.
+## Declare the state coordinates
+
+Use dimensions=(2, 3) for an ordered finite tensor product. Subsystem 0 is most
+significant. Qubit plans retain schema 1.3, non-qubit static product plans use 1.4,
+and piecewise product controls use 1.5.
+
+Use basis_labels for an ordered orthonormal basis without a tensor factorization:
 
 ```python
+import torch
 import flagquantum.lindblad as fql
 
-# A 0.5 * X drive on one qubit, damped from |1> once per unit time.
-result = fql.run(
-    [{"operator": "X", "qubits": [0], "coefficient": 0.5}],
-    "1",
-    [0.0, 1.0, 2.0],
-    collapse_operators=[fql.amplitude_damping(rate=1.0, qubit=0)],
+labels = ((0, 1), (1, 0))
+exchange = torch.tensor([[0., 1.], [1., 0.]], dtype=torch.complex128)
+p = fql.plan(
+    0.7 * exchange, [1., 0.], [0., 0.5], basis_labels=labels,
+    method="krylov-exponential",
 )
-print(result.populations)
+r = fql.run(p)
+assert p.basis_labels is not None
+print(f"Transfer: {r.populations[-1, p.basis_labels.index((1, 0))].item():.8f}")
 ```
 
-Three boundaries are enforced rather than documented, and a change that widens
-one of them is a capability change, not a refactor:
+Expected: `Transfer: 0.11757891`.
 
-- Execution is CPU-only. A non-CPU `device` is rejected with
-  `unsupported_device` instead of being moved to a backend.
-- The Hamiltonian is a dense `dim x dim` matrix built once from an `Observable`,
-  a sequence of operator-mapping terms, or a matrix. It is not a callable, so an
-  arbitrary time-dependent generator is unsupported.
-- The integrator is explicit fixed-step fourth-order Runge--Kutta, taking two
-  steps between each pair of output times. The output grid therefore sets the
-  integration step size and the accuracy, and there is no adaptive tolerance.
+Labelled plans use schema 1.6 for static and piecewise requests. Their decision
+has a null n_wires field and no product dimensions. plan.n_qubits and plan.dimensions
+raise CapabilityError with guidance to inspect basis_labels. Labels cannot be
+combined with dimensions or n_qubits. A two-state labelled basis remains
+non-product; label arity never determines a wire count.
 
-Gradients are unsupported, and independent requests are not batched: one call
-evolves one state on one grid. Reference the capability registry entry
-`continuous_time_lindblad` before describing a support boundary in user-facing
-text.
+The caller owns orthonormality, physical constraints, charge conventions and any
+projection. Check the full generator preserves a proposed reduced space, including
+collapse effects. Retain explicit loss states when a jump leaves a sector.
+Literal labels do not define an anyon model, native braid or fusion measurement.
 
-For a typical change, edit the request validation or the result envelope and
-verify against `tests/unit/test_lindblad_evolution.py`; a change to the
-integrator itself belongs to `flagquantum/simulation/` and its own tests. Run
-`examples/lindblad_evolution.py` for the shortest end-to-end path.
+## Reuse the numerical and training path
+
+- Select runge-kutta, crank-nicolson or krylov-exponential. Local Krylov targets
+  are not global population or autograd-error bounds.
+- Full numeric state/operator matrices use product or explicit bases. Pauli
+  descriptors, bitstrings, named qubit collapse operators and local qubit
+  selectors require a qubit register. Direct BosonOperator conversion requires
+  explicit product dimensions; a labelled model supplies validated matrices.
+- parameter_values supplies one complete Core scalar binding per output interval
+  on fixed full-space terms. Initial-state batches share that control sequence.
+  Callable/interpolated controls and time-dependent collapse rates are unsupported.
+- Populations have axes (time, D) or (time, batch, D). A square (D, D) input is one
+  density matrix; use rank-three density matrices to disambiguate square batches.
+- Live tensors retain PyTorch graphs. Use run for control gradients and
+  adjoint_gradient for a cotangent of the normalized initial density. Krylov
+  autograd conditioning limits also apply to labelled models. The adjoint's
+  discrete-map reference and autograd parity are tested separately.
+
+Run `python -m examples.constrained_basis_reference` for a photon-sector gradient
+and a model-owned Ising convention with retained plan labels. The example's final
+line is `Plan retains declared basis labels: True`. This is matrix-space
+execution, not a hardware or native anyon-program claim.
+
+For a change, run test_explicit_basis_contract.py (fake/Core and encoded/labelled
+replacement), test_lindblad_explicit_basis.py (public refusals, plan replay,
+physical loss, gradients and adjoints), and the existing Lindblad suites in
+`tests/unit/`. Broaden with the repository testing tiers. The authoritative
+support boundary is continuous_time_lindblad in capability-maturity.toml.

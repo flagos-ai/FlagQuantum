@@ -18,7 +18,7 @@ from typing import Any
 
 import torch
 
-from ..core.ir.state_space import ProductStateSpace
+from ..core.ir.state_space import ExplicitBasisSpace, ProductStateSpace
 from ..core.parameters import (
     Parameter,
     bind_parameter_value,
@@ -59,8 +59,21 @@ def _error(code: str, message: str, field: str) -> EvolutionValidationError:
 
 
 def _resolve_state_space(
-    n_qubits: int | None, dimensions: Sequence[int] | None
-) -> ProductStateSpace:
+    n_qubits: int | None,
+    dimensions: Sequence[int] | None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
+) -> ProductStateSpace | ExplicitBasisSpace:
+    if basis_labels is not None:
+        if n_qubits is not None or dimensions is not None:
+            raise _error(
+                "conflicting_state_space",
+                "basis_labels cannot be combined with dimensions or n_qubits",
+                "basis_labels",
+            )
+        try:
+            return ExplicitBasisSpace(basis_labels)
+        except (TypeError, ValueError) as exc:
+            raise _error("invalid_basis_labels", str(exc), "basis_labels") from exc
     if n_qubits is not None and (
         isinstance(n_qubits, bool) or not isinstance(n_qubits, int) or n_qubits < 1
     ):
@@ -459,7 +472,7 @@ def _pauli_term(
 
 
 def _hamiltonian_terms(
-    hamiltonian: Any, *, n_wires: int
+    hamiltonian: Any, *, n_wires: int | None
 ) -> tuple[PauliSumTerm, ...] | None:
     """Describe a Pauli-sum Hamiltonian, or ``None`` for an opaque matrix.
 
@@ -471,8 +484,11 @@ def _hamiltonian_terms(
     """
 
     if isinstance(hamiltonian, PauliSum):
+        _require_qubit_space(n_wires is not None, "hamiltonian")
         return hamiltonian.terms
     if isinstance(hamiltonian, Observable):
+        _require_qubit_space(n_wires is not None, "hamiltonian")
+        assert n_wires is not None
         return _observable_terms(hamiltonian, n_wires=n_wires, field="hamiltonian")
     if (
         isinstance(hamiltonian, Sequence)
@@ -480,6 +496,8 @@ def _hamiltonian_terms(
         and hamiltonian
         and isinstance(hamiltonian[0], Mapping)
     ):
+        _require_qubit_space(n_wires is not None, "hamiltonian")
+        assert n_wires is not None
         terms = []
         for term in hamiltonian:
             if not isinstance(term, Mapping):
@@ -606,7 +624,7 @@ def _dense_operator_terms(
 def _normalize_hamiltonian(
     hamiltonian: Any,
     *,
-    n_wires: int,
+    n_wires: int | None,
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
@@ -635,6 +653,7 @@ def _normalize_hamiltonian(
     terms = _hamiltonian_terms(hamiltonian, n_wires=n_wires)
     if terms is not None:
         _require_qubit_space(qubit_space, "hamiltonian")
+        assert n_wires is not None
         _require_hermitian_terms(terms, tolerance=tolerance)
         return PauliSum(
             terms,
@@ -732,7 +751,7 @@ def _named_operator(
 def _normalize_collapse_terms(
     collapse_operators: Sequence[Any] | None,
     *,
-    n_wires: int,
+    n_wires: int | None,
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
@@ -804,6 +823,7 @@ def _normalize_collapse_terms(
                 ) from exc
         if isinstance(operator, str):
             _require_qubit_space(qubit_space, "collapse_operators")
+            assert n_wires is not None
             full = _named_operator(
                 operator,
                 qubits,
@@ -827,7 +847,7 @@ def _normalize_collapse_terms(
 def _normalize_collapse_operators(
     collapse_operators: Sequence[Any] | None,
     *,
-    n_wires: int,
+    n_wires: int | None,
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
@@ -956,7 +976,7 @@ def _normalize_hamiltonians(
     time_grid: torch.Tensor,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None,
     *,
-    n_subsystems: int,
+    n_subsystems: int | None,
     dim: int,
     dtype: torch.dtype,
     device: torch.device,
@@ -970,6 +990,22 @@ def _normalize_hamiltonians(
     Bound matrices are private plan replay data. Symbolic bindings are consumed
     through Core once; no expression representation survives in a sealed plan.
     """
+
+    if n_subsystems is None and (
+        isinstance(hamiltonian, (Observable, PauliSum))
+        or (
+            isinstance(hamiltonian, Sequence)
+            and any(
+                isinstance(term, Mapping)
+                and (
+                    isinstance(term.get("operator"), str)
+                    or any(key in term for key in ("pauli", "qubit", "qubits"))
+                )
+                for term in hamiltonian
+            )
+        )
+    ):
+        _require_qubit_space(False, "hamiltonian")
 
     def normalize(value: Any) -> PauliSum | torch.Tensor:
         return _normalize_hamiltonian(

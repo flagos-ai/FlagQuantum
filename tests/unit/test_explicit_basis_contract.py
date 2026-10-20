@@ -10,6 +10,7 @@ import json
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import FrozenInstanceError, dataclass
+from functools import partial
 from pathlib import Path
 from typing import Protocol
 
@@ -18,6 +19,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
+from flagquantum.core.ir.state_space import ExplicitBasisSpace
 from flagquantum.simulation.lindblad import EvolutionResult
 
 pytestmark = pytest.mark.unit
@@ -89,10 +91,11 @@ BasisFactory = Callable[..., Basis]
 EvolutionRunner = Callable[..., EvolutionResult]
 
 
-@pytest.fixture
-def basis_factory() -> BasisFactory:
-    # Replacement adds the Core factory here; consumer assertions stay unchanged.
-    return _ExplicitBasisFake
+@pytest.fixture(
+    params=(_ExplicitBasisFake, ExplicitBasisSpace), ids=("contract-fake", "core")
+)
+def basis_factory(request: pytest.FixtureRequest) -> BasisFactory:
+    return request.param
 
 
 def _encoded_product_run_fake(
@@ -118,10 +121,15 @@ def _encoded_product_run_fake(
     )
 
 
-@pytest.fixture
-def run_evolution() -> EvolutionRunner:
-    # Replacement adds the real labelled run here, never another solver.
-    return _encoded_product_run_fake
+@pytest.fixture(
+    params=(
+        _encoded_product_run_fake,
+        partial(fql.run, return_density_matrices=True, method="krylov-exponential"),
+    ),
+    ids=("encoded-product-fake", "public-labelled-run"),
+)
+def run_evolution(request: pytest.FixtureRequest) -> EvolutionRunner:
+    return request.param
 
 
 def test_candidate_extends_existing_baseline_without_a_parallel_owner() -> None:

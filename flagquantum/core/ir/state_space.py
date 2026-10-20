@@ -1,4 +1,4 @@
-"""Finite tensor-product basis semantics shared by existing execution paths.
+"""Finite product and explicit-basis semantics shared by execution paths.
 
 This is internal mathematical data, not a program IR or a physical-system model.
 CircuitIR 1.0 continues to describe qubit circuits only.
@@ -44,3 +44,51 @@ class ProductStateSpace:
                 raise ValueError("occupation is outside the subsystem basis")
             index = index * dimension + occupation
         return index
+
+
+def _basis_label(value: Sequence[int | str]) -> tuple[int | str, ...]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise TypeError("a basis label must be an ordered sequence")
+    label = tuple(value)
+    if not label or any(
+        type(atom) not in (int, str) or (type(atom) is str and not atom)
+        for atom in label
+    ):
+        raise ValueError(
+            "basis labels require nonempty rows of integer or string atoms"
+        )
+    return label
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class ExplicitBasisSpace:
+    """Ordered identifiers for a finite orthonormal, non-factorized basis.
+
+    The caller owns the physical model and orthonormal-basis convention. Labels
+    identify coordinates; they do not certify charge sectors or fusion rules.
+    """
+
+    labels: tuple[tuple[int | str, ...], ...]
+
+    def __init__(self, labels: Sequence[Sequence[int | str]]) -> None:
+        if not isinstance(labels, Sequence) or isinstance(labels, (str, bytes)):
+            raise TypeError("basis labels must be an ordered sequence")
+        rows = tuple(_basis_label(row) for row in labels)
+        if not rows or len({len(row) for row in rows}) != 1:
+            raise ValueError("basis labels must be nonempty and have a common arity")
+        if len(set(rows)) != len(rows):
+            raise ValueError("basis labels must be unique")
+        object.__setattr__(self, "labels", rows)
+
+    @property
+    def dimension(self) -> int:
+        return len(self.labels)
+
+    @property
+    def is_qubit_space(self) -> bool:
+        return False
+
+    def basis_index(self, label: Sequence[int | str]) -> int:
+        """Return the index of an exact label without inferring an embedding."""
+
+        return self.labels.index(_basis_label(label))

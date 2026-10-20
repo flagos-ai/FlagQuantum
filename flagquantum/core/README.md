@@ -17,8 +17,9 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   public IR is `ir/__init__.py`; the internal level boundary behind it, and the
   shortest path for changing a level, are in `ir/README.md`.
 - `operator_schema.py`: canonical operation names and schemas.
-- `ir/state_space.py`: internal finite product-space dimensions and basis order
-  shared by dynamics; no public circuit or root export is added.
+- `ir/state_space.py`: internal finite product dimensions and ordered explicit
+  basis labels shared by dynamics. Explicit labels do not infer tensor factors
+  or certify physical sectors; no circuit or root export is added.
 - `parameters.py`: symbolic parameters and binding semantics.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.

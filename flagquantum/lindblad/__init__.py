@@ -167,6 +167,7 @@ def run(
     solve_tolerance: float | None = None,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
 ) -> EvolutionResult:
     """Run a sealed plan or a request, optionally binding one mapping per interval."""
 
@@ -183,6 +184,7 @@ def run(
             or solve_tolerance is not None
             or dimensions is not None
             or parameter_values is not None
+            or basis_labels is not None
         ):
             raise TypeError(
                 "a LindbladPlan is closed to initial_state, times, and semantic overrides"
@@ -204,6 +206,7 @@ def run(
             solve_tolerance=solve_tolerance,
             dimensions=dimensions,
             parameter_values=parameter_values,
+            basis_labels=basis_labels,
         )
     request = execution_plan._execution_request()
     execute = (
@@ -229,6 +232,7 @@ def plan(
     solve_tolerance: float | None = None,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
 ) -> LindbladPlan:
     """Build a sealed, serializable plan without running it.
 
@@ -246,6 +250,10 @@ def plan(
     most significant. Non-qubit spaces require full numeric state and operator
     tensors; Pauli descriptors, bitstrings, and named qubit collapse operators
     are refused. An explicitly all-qubit space keeps the existing plan form.
+
+    ``basis_labels`` instead declares ordered, non-factorized matrix coordinates.
+    It cannot be combined with dimensions or n_qubits. The caller owns the
+    physical model and must provide full-space numeric states and operators.
 
     ``parameter_values`` binds scalar coefficient parameters once per interval
     of ``times``. Operators and collapse rates stay fixed; time boundaries cannot
@@ -266,7 +274,7 @@ def plan(
     device, dtype, batch_size, require_gradients = _execution_settings(options)
     resolved_n_qubits = (
         _infer_n_qubits(initial_state)
-        if n_qubits is None and dimensions is None
+        if n_qubits is None and dimensions is None and basis_labels is None
         else n_qubits
     )
     return build_lindblad_plan(
@@ -285,6 +293,7 @@ def plan(
         require_gradients=require_gradients,
         dimensions=dimensions,
         parameter_values=parameter_values,
+        basis_labels=basis_labels,
     )
 
 
@@ -301,15 +310,16 @@ def adjoint_gradient(
     solve_tolerance: float | None = None,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
 ) -> torch.Tensor:
     """Return the gradient of ``cost`` with respect to the initial state.
 
     ``cost`` reads the whole trajectory -- one density matrix per time, stacked
     along a leading axis -- and returns a scalar. The gradient is propagated by
     the adjoint method, so the forward sweep records no graph and the reverse
-    pass holds the trajectory instead of it; the value returned is the exact
-    transpose of the same discretized scheme ``run`` would have applied, and it
-    is the cotangent of the normalized initial density matrix rather than of
+    pass holds the trajectory instead of it; the value returned is the adjoint
+    of the same discretized map, subject to the shared Krylov numerical limits.
+    It is the cotangent of the normalized initial density matrix rather than of
     ``initial_state`` as written.
 
     There is no ``outputs`` argument here: the cost is the readout, so naming a
@@ -335,7 +345,7 @@ def adjoint_gradient(
 
     resolved_n_qubits = (
         _infer_n_qubits(initial_state)
-        if n_qubits is None and dimensions is None
+        if n_qubits is None and dimensions is None and basis_labels is None
         else n_qubits
     )
     device, dtype, batch_size, require_gradients = _execution_settings(options)
@@ -354,6 +364,7 @@ def adjoint_gradient(
         require_gradients=require_gradients,
         dimensions=dimensions,
         parameter_values=parameter_values,
+        basis_labels=basis_labels,
     )
 
 

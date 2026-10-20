@@ -1,6 +1,6 @@
-"""Current-API numerical witnesses for the proposed labelled-basis contract.
+"""Independent encoded-product references and the labelled user workflow.
 
-These tests do not implement or certify constrained-space plan semantics.
+Numerical models and their physical conventions remain caller-owned.
 """
 
 from __future__ import annotations
@@ -154,5 +154,5 @@ def test_reference_example_reports_current_api_limits(
         "Control derivative: 1.00000000\n"
         "Fusion-channel probability: 0.50000000\n"
         "Braid relation verified: True\n"
-        "Constrained metadata in existing plans: False\n"
+        "Plan retains declared basis labels: True\n"
     )
