@@ -26,6 +26,7 @@ from flagquantum.algorithms.chemistry_integrals import (
     molecular_integrals,
 )
 from flagquantum.algorithms.cobyla import CobylaOptimizer
+from flagquantum.algorithms.core import Hamiltonian
 from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
@@ -41,6 +42,7 @@ from flagquantum.algorithms.molecular import (
     create_molecular_hamiltonian,
 )
 from flagquantum.algorithms.nelder_mead import NelderMeadOptimizer
+from flagquantum.algorithms.solvers import Ansatz, VQESolver, vqe_objective
 from flagquantum.algorithms.spsa import SPSAOptimizer
 from flagquantum.algorithms.trotter import (
     pauli_exponential_circuit,
@@ -182,6 +184,7 @@ pytestmark = pytest.mark.unit
 # density matrix and entanglement-entropy reads, whose examples show the two
 # figures a caller takes from one run rather than a second execution.
 ENTRIES = (
+    Ansatz,
     adder_circuit,
     adder_qubits,
     adjoint_gradient,
@@ -194,6 +197,7 @@ ENTRIES = (
     CssCodeMatrices,
     FermionOperator,
     FloquetCode,
+    Hamiltonian,
     HartreeFockSolution,
     Layout,
     MeasurementPhase,
@@ -204,6 +208,7 @@ ENTRIES = (
     SuperOperator,
     SPSAOptimizer,
     SubsystemCode,
+    VQESolver,
     boson_position,
     bivariate_bicycle_code,
     build_memory_circuit,
@@ -263,6 +268,7 @@ ENTRIES = (
     uccsd_ansatz,
     uccsd_excitations,
     uccsd_factors,
+    vqe_objective,
 )
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]

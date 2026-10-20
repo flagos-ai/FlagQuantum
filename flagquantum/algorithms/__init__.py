@@ -22,6 +22,7 @@ from . import qarm as qarm
 from . import quantum_kernel as quantum_kernel
 from . import qubo as qubo
 from . import readout_mitigation as readout_mitigation
+from . import solvers as solvers
 from . import spsa as spsa
 from . import svd as svd
 from . import trotter as trotter
@@ -169,6 +170,11 @@ from .readout_mitigation import (
     run_readout_mitigation,
     run_readout_mitigation_counts,
 )
+from .solvers import (
+    Ansatz,
+    VQESolver,
+    vqe_objective,
+)
 from .spsa import (
     SPSA_ASSUMPTIONS,
     SPSA_LIMITATIONS,
@@ -193,6 +199,7 @@ __all__ = [
     "AdaptVQEIteration",
     "AdaptVQEResult",
     "AdderQubits",
+    "Ansatz",
     "ATOMIC_NUMBERS",
     "AtomicOrbital",
     "BASIS_SETS",
@@ -258,6 +265,7 @@ __all__ = [
     "TROTTER_ORDERS",
     "UCCSDExcitations",
     "VQEResult",
+    "VQESolver",
     "ZneMeasurement",
     "ZneResult",
     "adder_circuit",
@@ -329,6 +337,7 @@ __all__ = [
     "scale_noise_model",
     "second_quantized_hamiltonian",
     "single_excitation",
+    "solvers",
     "spsa",
     "surface_code_qubits_per_logical",
     "svd",
@@ -340,5 +349,6 @@ __all__ = [
     "uccsd_factors",
     "variational",
     "vqe_loss",
+    "vqe_objective",
     "zz_chain_hamiltonian",
 ]
