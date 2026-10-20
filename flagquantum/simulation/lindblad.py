@@ -8,6 +8,7 @@ from typing import Any
 
 import torch
 
+from ..core.parameters import Parameter
 from ..errors import CapabilityError, ExecutionError, ValidationError  # noqa: F401
 from ..observables import Observable  # noqa: F401
 from .density_matrix import expand_operator  # noqa: F401
@@ -36,7 +37,8 @@ from .lindblad_request import (
     _named_operator,  # noqa: F401
     _normalize_collapse_operators,
     _normalize_collapse_terms,  # noqa: F401
-    _normalize_hamiltonian,
+    _normalize_hamiltonian,  # noqa: F401
+    _normalize_hamiltonians,
     _normalize_initial_state,
     _normalize_observables,
     _normalize_times,
@@ -178,6 +180,8 @@ class EvolutionPlan:
     batch_size: int = 1
     require_gradients: bool = False
     dimensions: tuple[int, ...] | None = None
+    time_dependence: str | None = None
+    n_intervals: int | None = None
 
     @property
     def n_qubits(self) -> int:
@@ -190,7 +194,7 @@ class EvolutionPlan:
         return self.n_wires
 
     def to_dict(self) -> dict[str, Any]:
-        payload = {
+        payload: dict[str, Any] = {
             "n_wires": self.n_wires,
             "n_times": self.n_times,
             "dimension": self.dimension,
@@ -208,6 +212,9 @@ class EvolutionPlan:
         }
         if self.dimensions is not None:
             payload["dimensions"] = list(self.dimensions)
+        if self.time_dependence is not None:
+            payload["numerics"]["time_dependence"] = self.time_dependence
+            payload["numerics"]["n_intervals"] = self.n_intervals
         return payload
 
 
@@ -232,8 +239,48 @@ def plan_density_matrix_evolution(
     batch_size: int | None = None,
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
 ) -> EvolutionPlan:
     """Validate an evolution request and report its deterministic local plan."""
+
+    return _plan_density_matrix_evolution(
+        hamiltonian,
+        initial_state,
+        n_qubits,
+        times,
+        collapse_operators,
+        observables,
+        device=device,
+        dtype=dtype,
+        return_density_matrices=return_density_matrices,
+        method=method,
+        solve_tolerance=solve_tolerance,
+        batch_size=batch_size,
+        require_gradients=require_gradients,
+        dimensions=dimensions,
+        parameter_values=parameter_values,
+    )
+
+
+def _plan_density_matrix_evolution(
+    hamiltonian: Any,
+    initial_state: Any,
+    n_qubits: int | None,
+    times: Any,
+    collapse_operators: Sequence[Any] | None = None,
+    observables: Mapping[str, Any] | Sequence[Any] | None = None,
+    *,
+    device: torch.device | str = "cpu",
+    dtype: torch.dtype = torch.complex128,
+    return_density_matrices: bool = False,
+    method: str = DEFAULT_INTEGRATOR,
+    solve_tolerance: float | None = None,
+    batch_size: int | None = None,
+    require_gradients: bool = False,
+    dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    bound_hamiltonians: Sequence[torch.Tensor] | None = None,
+) -> EvolutionPlan:
 
     space = _resolve_state_space(n_qubits, dimensions)
     if dtype not in {torch.complex64, torch.complex128}:
@@ -264,10 +311,18 @@ def plan_density_matrix_evolution(
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
     dim = space.dimension
-    time_grid = _normalize_times(times, device=resolved_device, real_dtype=real_dtype)
-    _normalize_hamiltonian(
+    time_grid = _normalize_times(
+        times,
+        device=resolved_device,
+        real_dtype=real_dtype,
+        allow_gradients=parameter_values is None and bound_hamiltonians is None,
+    )
+    _normalize_hamiltonians(
         hamiltonian,
-        n_wires=len(space.dimensions),
+        time_grid,
+        parameter_values,
+        bound_hamiltonians=bound_hamiltonians,
+        n_subsystems=len(space.dimensions),
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -332,6 +387,16 @@ def plan_density_matrix_evolution(
         ),
         require_gradients=resolved_require_gradients,
         dimensions=None if space.is_qubit_space else space.dimensions,
+        time_dependence=(
+            "piecewise_constant"
+            if parameter_values is not None or bound_hamiltonians is not None
+            else None
+        ),
+        n_intervals=(
+            int(time_grid.numel()) - 1
+            if parameter_values is not None or bound_hamiltonians is not None
+            else None
+        ),
     )
 
 
@@ -351,6 +416,7 @@ def evolve_density_matrix(
     batch_size: int | None = None,
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
 ) -> EvolutionResult:
     """Evolve a state on an explicit time grid with the Lindblad equation.
 
@@ -383,6 +449,9 @@ def evolve_density_matrix(
     instead of returning a detached trajectory that still looks correct.
 
     Args:
+        parameter_values: One complete Core parameter mapping per interval of
+            ``times`` for fixed full-space operator terms. Omit for static
+            Hamiltonians. Time boundaries cannot require gradients.
         dimensions: Ordered finite subsystem dimensions, with subsystem 0 most
             significant. Pass ``n_qubits=None`` for a non-qubit space and use
             full numeric states, Hamiltonians, and collapse/observable matrices.
@@ -405,6 +474,45 @@ def evolve_density_matrix(
         >>> result.method, result.order
         ('crank-nicolson', 2)
     """
+
+    return _evolve_density_matrix(
+        hamiltonian,
+        initial_state,
+        n_qubits,
+        times,
+        collapse_operators,
+        observables,
+        device=device,
+        dtype=dtype,
+        return_density_matrices=return_density_matrices,
+        method=method,
+        solve_tolerance=solve_tolerance,
+        batch_size=batch_size,
+        require_gradients=require_gradients,
+        dimensions=dimensions,
+        parameter_values=parameter_values,
+    )
+
+
+def _evolve_density_matrix(
+    hamiltonian: Any,
+    initial_state: Any,
+    n_qubits: int | None,
+    times: Any,
+    collapse_operators: Sequence[Any] | None = None,
+    observables: Mapping[str, Any] | Sequence[Any] | None = None,
+    *,
+    device: torch.device | str = "cpu",
+    dtype: torch.dtype = torch.complex128,
+    return_density_matrices: bool = False,
+    method: str = DEFAULT_INTEGRATOR,
+    solve_tolerance: float | None = None,
+    batch_size: int | None = None,
+    require_gradients: bool = False,
+    dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    bound_hamiltonians: Sequence[torch.Tensor] | None = None,
+) -> EvolutionResult:
 
     space = _resolve_state_space(n_qubits, dimensions)
     if dtype not in {torch.complex64, torch.complex128}:
@@ -438,10 +546,18 @@ def evolve_density_matrix(
     trace_tolerance = 2e-5 if dtype == torch.complex64 else 1e-9
     dim = space.dimension
 
-    time_grid = _normalize_times(times, device=resolved_device, real_dtype=real_dtype)
-    hamiltonian_representation = _normalize_hamiltonian(
+    time_grid = _normalize_times(
+        times,
+        device=resolved_device,
+        real_dtype=real_dtype,
+        allow_gradients=parameter_values is None and bound_hamiltonians is None,
+    )
+    hamiltonians = _normalize_hamiltonians(
         hamiltonian,
-        n_wires=len(space.dimensions),
+        time_grid,
+        parameter_values,
+        bound_hamiltonians=bound_hamiltonians,
+        n_subsystems=len(space.dimensions),
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -478,11 +594,17 @@ def evolve_density_matrix(
         qubit_space=space.is_qubit_space,
         dimensions=dimensions,
     )
-    generator = Liouvillian(hamiltonian_representation, collapse, hilbert_dimension=dim)
+    generator = Liouvillian(hamiltonians[0], collapse, hilbert_dimension=dim)
 
     states = [rho]
     residuals = []
-    for start, stop in zip(time_grid[:-1], time_grid[1:], strict=True):
+    for index, (start, stop) in enumerate(
+        zip(time_grid[:-1], time_grid[1:], strict=True)
+    ):
+        if index and len(hamiltonians) > 1:
+            generator = Liouvillian(
+                hamiltonians[index], collapse, hilbert_dimension=dim
+            )
         rho, residual = advance_interval(
             generator.derivative,
             rho,

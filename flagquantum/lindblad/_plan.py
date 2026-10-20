@@ -11,9 +11,11 @@ from typing import Any, cast
 import torch
 
 from ..core.ir.state_space import ProductStateSpace
+from ..core.parameters import Parameter
 from ..errors import SerializationError
 from ..simulation.lindblad import (
     EvolutionPlan,
+    _plan_density_matrix_evolution,
     plan_density_matrix_evolution,
 )
 from ..simulation.lindblad_integrators import DEFAULT_INTEGRATOR
@@ -22,7 +24,7 @@ from ..simulation.lindblad_integrators import DEFAULT_INTEGRATOR
 # never relies on `lindblad` re-exporting a name it does not define.
 from ..simulation.lindblad_request import (
     _normalize_collapse_terms,
-    _normalize_hamiltonian,
+    _normalize_hamiltonians,
     _normalize_initial_state,
     _normalize_observables,
     _normalize_times,
@@ -40,6 +42,14 @@ _SCHEMA = "flagquantum.lindblad_plan"
 _VERSION = "1.3"
 # Only non-qubit spaces use 1.4. Existing qubit payloads and identities stay 1.3.
 _PRODUCT_SPACE_VERSION = "1.4"
+_PIECEWISE_VERSION = "1.5"
+_SCHEDULED_FIELDS = {
+    "hamiltonians",
+    "parameter_values",
+    "time_dependence",
+    "n_intervals",
+    "bound_hamiltonians",
+}
 
 
 def _request_hamiltonian_matrix(
@@ -148,6 +158,8 @@ def _summary(payload: Mapping[str, Any]) -> EvolutionPlan:
             batch_size=batch_size,
             require_gradients=require_gradients,
             dimensions=dimensions,
+            time_dependence=numerics.get("time_dependence"),
+            n_intervals=numerics.get("n_intervals"),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise SerializationError("invalid Lindblad plan decision") from exc
@@ -190,8 +202,20 @@ class LindbladPlan:
         if checked.get("schema") != _SCHEMA:
             raise SerializationError("invalid Lindblad plan schema")
         version = checked.get("version")
-        if version not in (_VERSION, _PRODUCT_SPACE_VERSION):
+        if version not in (_VERSION, _PRODUCT_SPACE_VERSION, _PIECEWISE_VERSION):
             raise SerializationError("unsupported Lindblad plan version")
+        if version == _PIECEWISE_VERSION and set(checked) != {
+            "schema",
+            "version",
+            "request",
+            "decision",
+            "identity",
+        }:
+            raise SerializationError("unknown scheduled plan fields")
+        if version != _PIECEWISE_VERSION and _SCHEDULED_FIELDS.intersection(checked):
+            raise SerializationError(
+                "scheduled fields require Lindblad plan version 1.5"
+            )
         supplied_identity = checked.get("identity")
         if not isinstance(supplied_identity, str) or supplied_identity != _identity(
             checked
@@ -204,7 +228,7 @@ class LindbladPlan:
         if not isinstance(request, Mapping) or not isinstance(decision, Mapping):
             raise SerializationError("Lindblad plan requires request and decision maps")
         decoded = _decode_request(request, decision, version=str(version))
-        recomputed = plan_density_matrix_evolution(**decoded)
+        recomputed = _plan_density_matrix_evolution(**decoded)
         if recomputed.to_dict() != dict(decision):
             raise SerializationError(
                 "Lindblad plan decision does not match its request"
@@ -318,6 +342,7 @@ def build_lindblad_plan(
     batch_size: int | None = None,
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
 ) -> LindbladPlan:
     summary = plan_density_matrix_evolution(
         hamiltonian,
@@ -334,6 +359,7 @@ def build_lindblad_plan(
         batch_size=batch_size,
         require_gradients=require_gradients,
         dimensions=dimensions,
+        parameter_values=parameter_values,
     )
     resolved_device = torch.device(device)
     dimension = summary.dimension
@@ -344,9 +370,11 @@ def build_lindblad_plan(
     time_grid = _normalize_times(
         times, device=resolved_device, real_dtype=real_dtype
     ).detach()
-    hamiltonian_representation = _normalize_hamiltonian(
+    hamiltonians = _normalize_hamiltonians(
         hamiltonian,
-        n_wires=summary.n_wires,
+        time_grid,
+        parameter_values,
+        n_subsystems=summary.n_wires,
         dim=dimension,
         dtype=dtype,
         device=resolved_device,
@@ -381,9 +409,6 @@ def build_lindblad_plan(
     )
     request = {
         "n_qubits": canonical_n_qubits,
-        "hamiltonian": _complex_tensor_payload(
-            _request_hamiltonian_matrix(hamiltonian_representation)
-        ),
         "initial_density_matrix": _complex_tensor_payload(density_matrix),
         "times": time_grid.to(device="cpu", dtype=torch.float64).tolist(),
         "collapse_operators": [
@@ -396,9 +421,22 @@ def build_lindblad_plan(
         ],
         "return_density_matrices": return_density_matrices,
     }
+    if parameter_values is None:
+        request["hamiltonian"] = _complex_tensor_payload(
+            _request_hamiltonian_matrix(hamiltonians[0])
+        )
+    else:
+        request["hamiltonians"] = [
+            _complex_tensor_payload(_request_hamiltonian_matrix(value))
+            for value in hamiltonians
+        ]
     payload: dict[str, Any] = {
         "schema": _SCHEMA,
-        "version": _VERSION if qubit_space else _PRODUCT_SPACE_VERSION,
+        "version": (
+            _PIECEWISE_VERSION
+            if parameter_values is not None
+            else _VERSION if qubit_space else _PRODUCT_SPACE_VERSION
+        ),
         "request": request,
         "decision": summary.to_dict(),
     }
@@ -410,7 +448,7 @@ def build_lindblad_plan(
     # tensors as the caller passed them. It is what makes execution keep the
     # matrix-free Hamiltonian and the autograd graph.
     live: dict[str, Any] = {
-        "hamiltonian": hamiltonian_representation,
+        "hamiltonian": hamiltonians[0] if parameter_values is None else None,
         "initial_state": density_matrix,
         "n_qubits": canonical_n_qubits,
         "times": time_grid,
@@ -426,6 +464,8 @@ def build_lindblad_plan(
     }
     if summary.dimensions is not None:
         live["dimensions"] = summary.dimensions
+    if parameter_values is not None:
+        live["bound_hamiltonians"] = hamiltonians
     return replace(validated, _live_request=live)
 
 
@@ -433,6 +473,41 @@ def _decode_request(
     request: Mapping[str, Any], decision: Mapping[str, Any], *, version: str = _VERSION
 ) -> dict[str, Any]:
     summary = _summary(decision)
+    scheduled = version == _PIECEWISE_VERSION
+    if scheduled:
+        if any(
+            type(decision.get(key)) is not int
+            for key in (
+                "n_wires",
+                "n_times",
+                "dimension",
+                "trajectory_bytes",
+                "batch_size",
+            )
+        ):
+            raise SerializationError("scheduled decision counts must be integers")
+        allowed = {
+            "n_qubits",
+            "hamiltonians",
+            "initial_density_matrix",
+            "times",
+            "collapse_operators",
+            "observables",
+            "return_density_matrices",
+        }
+        if summary.dimensions is not None:
+            allowed.add("dimensions")
+        if set(request) != allowed:
+            raise SerializationError("invalid scheduled request fields")
+        numerics = decision["numerics"]
+        if (
+            not isinstance(numerics, Mapping)
+            or numerics.get("time_dependence") != "piecewise_constant"
+            or type(numerics.get("n_intervals")) is not int
+        ):
+            raise SerializationError("invalid scheduled numerics")
+    elif _SCHEDULED_FIELDS.intersection(request):
+        raise SerializationError("scheduled fields require Lindblad plan version 1.5")
     dtype = {
         "complex64": torch.complex64,
         "complex128": torch.complex128,
@@ -451,9 +526,17 @@ def _decode_request(
             f"missing Lindblad plan field {exc.args[0]!r}"
         ) from exc
     dimensions = None
-    if version == _VERSION:
+    if version == _VERSION or (scheduled and summary.dimensions is None):
         if "dimensions" in request or "dimensions" in decision:
-            raise SerializationError("dimensions require Lindblad plan version 1.4")
+            raise SerializationError(
+                "qubit plans cannot carry product dimensions"
+                if scheduled
+                else "dimensions require Lindblad plan version 1.4"
+            )
+        if scheduled and (type(raw_n_qubits) is not int or raw_n_qubits < 1):
+            raise SerializationError(
+                "scheduled qubit plans require a positive n_qubits"
+            )
     else:
         raw_dimensions = request.get("dimensions")
         if not isinstance(raw_dimensions, list):
@@ -473,6 +556,13 @@ def _decode_request(
         raise SerializationError("return_density_matrices must be a boolean")
     if not isinstance(raw_collapse, list) or not isinstance(raw_observables, list):
         raise SerializationError("collapse_operators and observables must be lists")
+    if scheduled:
+        for item in raw_collapse:
+            if not isinstance(item, Mapping) or set(item) != {"operator", "rate"}:
+                raise SerializationError("invalid scheduled collapse fields")
+        for item in raw_observables:
+            if not isinstance(item, Mapping) or set(item) != {"operator", "name"}:
+                raise SerializationError("invalid scheduled observable fields")
     collapse_operators = []
     for index, item in enumerate(raw_collapse):
         if not isinstance(item, Mapping):
@@ -505,9 +595,13 @@ def _decode_request(
         observables[name] = _complex_tensor(
             item.get("operator"), dtype=dtype, field=f"observables[{index}].operator"
         )
-    decoded = {
-        "hamiltonian": _complex_tensor(
-            request.get("hamiltonian"), dtype=dtype, field="hamiltonian"
+    decoded: dict[str, Any] = {
+        "hamiltonian": (
+            None
+            if scheduled
+            else _complex_tensor(
+                request.get("hamiltonian"), dtype=dtype, field="hamiltonian"
+            )
         ),
         "initial_state": _complex_tensor(
             request.get("initial_density_matrix"),
@@ -528,6 +622,28 @@ def _decode_request(
     }
     if dimensions is not None:
         decoded["dimensions"] = dimensions
+    if scheduled:
+        raw_hamiltonians = request["hamiltonians"]
+        if (
+            not isinstance(times, list)
+            or not isinstance(raw_hamiltonians, list)
+            or len(times) < 2
+            or len(raw_hamiltonians) != len(times) - 1
+        ):
+            raise SerializationError("one Hamiltonian is required per interval")
+        if summary.n_intervals != len(raw_hamiltonians):
+            raise SerializationError("scheduled interval count does not match decision")
+        tensor_payloads = [request.get("initial_density_matrix"), *raw_hamiltonians]
+        tensor_payloads += [item["operator"] for item in raw_collapse + raw_observables]
+        if any(
+            not isinstance(item, Mapping) or set(item) != {"shape", "values"}
+            for item in tensor_payloads
+        ):
+            raise SerializationError("invalid scheduled tensor fields")
+        decoded["bound_hamiltonians"] = tuple(
+            _complex_tensor(value, dtype=dtype, field=f"hamiltonians[{index}]")
+            for index, value in enumerate(raw_hamiltonians)
+        )
     return decoded
 
 

@@ -6,8 +6,10 @@
 explicitly approved proposal 073, requested merging #643, and authorized M1 time
 control implementation in the working session. #643 merged as
 `41cbf7433f37cd3edb697f6326f249d13ad62693` after all 36 checks and both full
-workflows passed. Approval authorizes this contract, not an implementation or
-capability claim. This revision updates
+workflows passed. The approval and replaceable static-composition test fake landed in #645 as
+`df2f308de855e2101a13a53c1afde604cc7126f0`, after all 36 checks and both full
+workflows succeeded. The implementation is now under review; approval alone
+is not a capability claim. This revision updates
 the contract against M1's static mixed-dimension and operator-coefficient work
 (PRs [639](https://github.com/flagos-ai/FlagQuantum/pull/639),
 [640](https://github.com/flagos-ai/FlagQuantum/pull/640), and
@@ -67,7 +69,7 @@ The independent reference uses row-major vectorization and
 `Lk=-i*(Hk kron I - I kron Hk.T) + gamma*(C kron C.conj()
 - (A kron I + I kron A.T)/2)`.
 Its final density is `reshape(exp(L1*0.2) @ exp(L0*0.1) @ flatten(rho0))`.
-This formula uses no package generator, SuperOperator, or integrator. The future
+This formula uses no package generator, SuperOperator, or integrator. The scheduled
 fixed template can contain both X01 and X12, with bindings selecting one term on
 each interval; no time-dependent operator leaf is needed.
 
@@ -90,9 +92,9 @@ solver/test. The scheduled implementation must separately budget and verify
 global numerical error, including the projected matrix-exponential arithmetic;
 local defect acceptance alone cannot close that gate.
 
-## Proposed user code
+## User code
 
-**Proposed API; this block is not executable until approved implementation.**
+**Executable through the approved implementation under review.**
 Only scalar coefficients are symbolic. Numerical PauliSumTerm and canonical
 BosonTerm fields are not widened to contain expressions.
 
@@ -288,46 +290,117 @@ trainer, dependency, or Stable Core root export is authorized.
 Approval and implementation evidence are separate gates:
 
 - [x] Owner approves the input, versioning, gradient, and method decisions above.
-- [ ] Contract-first change and conformance fake exercise the existing Simulation
+- [x] Contract-first change and conformance fake exercise the existing Simulation
       input/plan boundary, followed by the real implementation with unchanged
       consumer assertions. Do not create a second contract registry.
-- [ ] One public call reproduces the nonuniform qutrit reference and analytic
+- [x] One public call reproduces the nonuniform qutrit reference and analytic
       per-interval gradients above at complex128; complex64 has a separately
       precision-justified bound. Validate boson exchange through the same path.
-- [ ] The noncommuting two-pulse witness distinguishes reversed intervals;
+- [x] The noncommuting two-pulse witness distinguishes reversed intervals;
       compare a dissipative case against an independently vectorized
       `torch.matrix_exp` reference, not package Liouvillian or integrator code.
-- [ ] RK/CN converge under refinement that repeats bindings while preserving
+- [x] RK/CN converge under refinement that repeats bindings while preserving
       each physical control segment. Check exponential/implicit residual limits
       and a real non-convergence refusal. Quantify the exponential numerical floor
       against an independent reference; never relax existing accuracy tests.
-- [ ] Compare constant-binding schedules to existing static evolution, while
+- [x] Compare constant-binding schedules to existing static evolution, while
       checking their intentionally distinct serialized control model.
-- [ ] Compare live coefficient gradients to analytic and finite-difference
+- [x] Compare live coefficient gradients to analytic and finite-difference
       references; reuse a tensor across intervals; perform an actual optimizer
       update. Verify exact live/JSON behavior and missing-graph refusal.
-- [ ] Compare initial-density adjoints with autograd for a noncommuting,
+- [x] Compare initial-density adjoints with autograd for a noncommuting,
       dissipative schedule and costs reading several output times, including
       an initial-state batch. Confirm the sweep does not retain a control graph.
-- [ ] Verify all early refusals, per-interval Hermiticity, endpoint/binding counts,
+- [x] Verify all early refusals, per-interval Hermiticity, endpoint/binding counts,
       arbitrary time origin, no ignored entries, and no implicit batch/control
       axes. Each guard needs a counterexample that fails when it is removed.
-- [ ] Preserve the checked-in 1.3 fixture and measured 1.4 identities/trajectories.
+- [x] Preserve the checked-in 1.3 fixture and measured 1.4 identities/trajectories.
       Round-trip 1.5 and reject forged counts, order, dimensions, metadata,
       unknown semantic fields, and scheduled data disguised as static payloads.
-- [ ] Check ordered-generator identity changes and equal-physical-request identity
+- [x] Check ordered-generator identity changes and equal-physical-request identity
       equivalence; closed plans refuse later binding overrides.
-- [ ] Prove static consumers still use the current integrators and numeric Pauli
+- [x] Prove static consumers still use the current integrators and numeric Pauli
       fast path; code review finds no duplicate integration or parameter engine.
-- [ ] Run supported-Python focused regressions, pr-default and pr-runtime tiers,
+- [x] Run supported-Python focused regressions, pr-default and pr-runtime tiers,
       typing/style and repository/API checks. Record revision, counts, numerical
       errors, and unsupported scope; update existing capability/parity sources
       and generated views only after implementation evidence exists.
 
-## Runnable reference using today's static API
+## Implementation verification
 
-This block runs now and demonstrates the intended interval arithmetic. It is
-not an implementation of `parameter_values` and does not certify the gates above.
+The implementation in [PR 647](https://github.com/flagos-ai/FlagQuantum/pull/647)
+was verified at source commit
+`2ef01320419e922a46edda28ada5048ba7f5bb74`:
+
+- 431 focused Lindblad/conformance/closed-subspace cases passed on each of
+  Python 3.10 / Torch 2.13, Python 3.11 / Torch 2.14.1, and Python 3.12 / Torch 2.13.
+- Full smoke/unit tier: 13,461 passed, 175 skipped on Python 3.10 / Torch 2.13.
+- Full integration tier: 1,703 passed, 127 skipped on Python 3.12 / Torch 2.13.
+- Mypy under repository defaults passed for 771 source files; Black, Ruff, API/IR and repository
+  architecture, dependency, capability, documentation, parity, language and
+  ownership checks passed. The PR example output matched its expected text;
+  `python -m examples.train_piecewise_drive` completed 80 Adam updates and
+  printed `Training reduced loss: True`.
+
+The full tiers require local loopback communication. Restricted-sandbox attempts
+hit socket/Gloo refusals and are not counted as passes. A supplemental Python
+3.10 integration run also exposed an existing QEC mixed-check refusal-message
+failure; it reproduces on unchanged baseline
+`df2f308de855e2101a13a53c1afde604cc7126f0` with that interpreter. No QEC code or
+assertion is changed here. The acceptance integration run uses Python 3.12,
+matching the existing runtime lane. Remote CI remains a separate merge gate.
+
+The first remote CI run rejected the call to PyTorch's untyped `Function.apply`
+in `matrix_free_autograd.py`. The original local mypy invocation used repository
+defaults, so reporting it as strict validation was incorrect. The follow-up gives
+that existing autograd boundary its exact callable signature, following the
+existing JAX bridge pattern, without changing numerical execution. The exact CI
+command, `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`,
+then passed for 771 source files with mypy 2.4.0 and Torch 2.13; all 125 focused
+closed-subspace, piecewise-control and contract cases passed. Remote dependency
+floor and quality results remain separate acceptance evidence.
+
+After synchronizing main, coverage shard 0 on `6291f61771` exposed an invalid
+cross-invocation bitwise comparison in the closure test: separate complex64
+GMRES least-squares calls returned an imaginary cancellation remainder of
+`-1.4964e-17` and zero. The follow-up snapshots each kernel result immediately
+before its gradient correction and compares the correction output against that
+same invocation byte for byte, in both graph modes. The test also compares both forward modes and the independent dense value
+numerically; independent dense derivative oracles and their original tolerance
+budgets remain unchanged. No production kernel or
+solver tolerance changes for this test repair.
+
+## Closed-subspace sensitivity found during implementation
+
+An inactive first drive, followed by an active one, exposed an existing static
+kernel issue: the Arnoldi/GMRES forward space closed exactly, but perturbing
+that drive leaves the closed space. Static composition reproduces it, so a
+schedule-layer workaround would leave the shared numerical bug in place.
+For `H_k=g_k*X/2`, `g=(0,1)`, `times=(0,.1,.3)`, and initial `|0>`, the
+pre-fix first-control gradients were `0.004962655704877462` (CN) and `0`
+(exponential). The corrected derivatives are `0.009925311409754924` and
+`0.00993346653975306`, matching the discretized finite difference; the latter
+also equals `.05*sin(.2)`. These new observations do not rewrite the earlier
+recorded experiments or their status.
+
+The owning matrix-free kernels now apply a first-order residual-sensitivity
+correction at exact closure, preserving forward value bits. GMRES reuses GMRES
+on the adjoint action. The exponential reuses its existing action on a block
+operator with an `n+m` vector; it forms no dense vectorized generator. The
+small private autograd glue has these two concrete consumers and owns no solver,
+IR or parameter semantics. Independent complex64/complex128 dense derivative
+oracles, zero-input and insufficient-backward-budget witnesses are in
+`tests/unit/test_matrix_free_closed_subspace_gradients.py`. The static and
+scheduled conformance consumers both include the inactive-drive regression.
+Only first-order reverse-mode closure corrections are certified; higher-order
+requests explicitly fail. Existing non-closed Krylov/autograd conditioning
+limits remain disclosed, rather than being claimed repaired by this change.
+
+## Runnable composition reference using the static API
+
+This block demonstrates the independent static-composition reference retained
+by the contract-fake tests. The production scheduled path uses one shared
+trajectory loop rather than these repeated public calls.
 
 ```python
 import torch

@@ -22,6 +22,8 @@ from collections.abc import Callable
 
 import torch
 
+from .matrix_free_autograd import closed_subspace_gradient, linear_adjoint
+
 __all__ = ("exponential_action",)
 
 _COEFFICIENT_DTYPE = torch.complex128
@@ -64,7 +66,31 @@ def exponential_action(
     norm_tensor = torch.linalg.vector_norm(vector)
     norm = float(norm_tensor.detach())
     if norm == 0.0:
-        return torch.zeros_like(vector), 0.0
+
+        def adjoint_correction(gradient: torch.Tensor) -> torch.Tensor:
+            adjoint = linear_adjoint(apply, gradient)
+            correction, relative = exponential_action(
+                adjoint,
+                scale,
+                gradient,
+                tolerance=tolerance,
+                max_iterations=max_iterations,
+                restart=restart,
+            )
+            if relative > tolerance:
+                raise RuntimeError(
+                    "the zero-input exponential adjoint did not converge"
+                )
+            return correction
+
+        return (
+            closed_subspace_gradient(
+                torch.zeros_like(vector),
+                vector,
+                adjoint_correction,
+            ),
+            0.0,
+        )
     window = min(restart, max_iterations)
     if window < 1:
         return vector.clone(), float("inf")
@@ -72,6 +98,7 @@ def exponential_action(
     hessenberg = torch.zeros((window + 1, window), dtype=_COEFFICIENT_DTYPE)
     coefficients = torch.zeros(1, dtype=_COEFFICIENT_DTYPE)
     relative = float("inf")
+    closed = False
     for index in range(window):
         # Arnoldi step: apply the scaled operator and orthogonalise the result
         # against the basis built so far. The subdiagonal entry is the measured
@@ -83,7 +110,12 @@ def exponential_action(
             candidate = candidate - projection * basis[row]
         next_norm_tensor = torch.linalg.vector_norm(candidate)
         next_norm = float(next_norm_tensor.detach())
-        hessenberg[index + 1, index] = next_norm_tensor
+        # The full basis has no exterior component. Do not retain a singular
+        # zero-norm Hessian in the unused subdiagonal after that exact closure.
+        complete = next_norm == 0.0 and index + 1 == vector.numel()
+        hessenberg[index + 1, index] = (
+            next_norm_tensor.detach() if complete else next_norm_tensor
+        )
         # exp(H_m) e_1 is the exponential of the projected generator applied to
         # the projected starting vector; it is the only exponential computed.
         coefficients = torch.linalg.matrix_exp(hessenberg[: index + 1, : index + 1])[
@@ -92,6 +124,7 @@ def exponential_action(
         if next_norm == 0.0:
             # The Krylov space closed on the operator: the advance is exact.
             relative = 0.0
+            closed = True
             break
         relative = (
             next_norm
@@ -107,4 +140,66 @@ def exponential_action(
             for row, coefficient in enumerate(coefficients)
         ]
     ).sum(dim=0)
+    if closed and len(coefficients) < vector.numel():
+        result = _closed_exponential_gradient(
+            apply,
+            scale,
+            result,
+            candidate,
+            hessenberg[: len(coefficients), : len(coefficients)].detach(),
+            norm,
+            tolerance=tolerance,
+            max_iterations=max_iterations,
+            restart=restart,
+        )
     return result, relative
+
+
+def _closed_exponential_gradient(
+    apply: Callable[[torch.Tensor], torch.Tensor],
+    scale: float,
+    result: torch.Tensor,
+    residual: torch.Tensor,
+    projected: torch.Tensor,
+    norm: float,
+    *,
+    tolerance: float,
+    max_iterations: int,
+    restart: int,
+) -> torch.Tensor:
+    # Arnoldi's missing first variation is
+    # |v| integral exp((1-s) A) d residual [exp(s H)][-1, 0] ds.
+    # Its adjoint is the top block of one existing exponential action on
+    # [[A^dag, gradient e_last^T], [0, conj(H)]], starting from [0, e_first].
+    # The augmented vector has n+m entries, never an n-by-n dense generator.
+    def adjoint_correction(gradient: torch.Tensor) -> torch.Tensor:
+        adjoint = linear_adjoint(apply, gradient)
+        size = gradient.numel()
+        small = projected.to(gradient.dtype).conj()
+        initial = gradient.new_zeros(size + small.shape[0])
+        initial[size] = 1
+
+        def augmented(vector: torch.Tensor) -> torch.Tensor:
+            top, bottom = vector[:size], vector[size:]
+            return torch.cat(
+                (
+                    scale * adjoint(top) + gradient * bottom[-1],
+                    small @ bottom,
+                )
+            )
+
+        correction, relative = exponential_action(
+            augmented,
+            1.0,
+            initial,
+            tolerance=tolerance,
+            max_iterations=max_iterations,
+            restart=restart,
+        )
+        if relative > tolerance:
+            raise RuntimeError(
+                "the closed-subspace exponential adjoint did not converge"
+            )
+        return norm * correction[:size]
+
+    return closed_subspace_gradient(result, residual, adjoint_correction)

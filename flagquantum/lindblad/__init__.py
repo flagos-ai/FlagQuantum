@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from typing import Any
 
 import torch
 
+from ..core.parameters import Parameter
 from ..errors import CapabilityError
 from ..observables import OutputRequest
 from ..runtime.options import ExecutionOptions
@@ -16,6 +17,7 @@ from ..simulation.lindblad import (
     CollapseOperator,
     EvolutionResult,
     EvolutionValidationError,
+    _evolve_density_matrix,
     evolve_density_matrix,
 )
 from ..simulation.lindblad import (
@@ -164,8 +166,9 @@ def run(
     method: str = DEFAULT_INTEGRATOR,
     solve_tolerance: float | None = None,
     dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
 ) -> EvolutionResult:
-    """Run a Lindblad plan or plan and run a request in one call."""
+    """Run a sealed plan or a request, optionally binding one mapping per interval."""
 
     if isinstance(hamiltonian_or_plan, LindbladPlan):
         if (
@@ -179,6 +182,7 @@ def run(
             or method != DEFAULT_INTEGRATOR
             or solve_tolerance is not None
             or dimensions is not None
+            or parameter_values is not None
         ):
             raise TypeError(
                 "a LindbladPlan is closed to initial_state, times, and semantic overrides"
@@ -199,8 +203,15 @@ def run(
             method=method,
             solve_tolerance=solve_tolerance,
             dimensions=dimensions,
+            parameter_values=parameter_values,
         )
-    result = evolve_density_matrix(**execution_plan._execution_request())
+    request = execution_plan._execution_request()
+    execute = (
+        _evolve_density_matrix
+        if "bound_hamiltonians" in request
+        else evolve_density_matrix
+    )
+    result = execute(**request)
     return replace(result, plan=execution_plan)
 
 
@@ -217,6 +228,7 @@ def plan(
     method: str = DEFAULT_INTEGRATOR,
     solve_tolerance: float | None = None,
     dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
 ) -> LindbladPlan:
     """Build a sealed, serializable plan without running it.
 
@@ -234,6 +246,10 @@ def plan(
     most significant. Non-qubit spaces require full numeric state and operator
     tensors; Pauli descriptors, bitstrings, and named qubit collapse operators
     are refused. An explicitly all-qubit space keeps the existing plan form.
+
+    ``parameter_values`` binds scalar coefficient parameters once per interval
+    of ``times``. Operators and collapse rates stay fixed; time boundaries cannot
+    require gradients. Rebuild plans after optimizer updates.
 
     Examples:
         >>> import torch
@@ -268,6 +284,7 @@ def plan(
         batch_size=batch_size,
         require_gradients=require_gradients,
         dimensions=dimensions,
+        parameter_values=parameter_values,
     )
 
 
@@ -283,6 +300,7 @@ def adjoint_gradient(
     method: str = DEFAULT_INTEGRATOR,
     solve_tolerance: float | None = None,
     dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
 ) -> torch.Tensor:
     """Return the gradient of ``cost`` with respect to the initial state.
 
@@ -335,6 +353,7 @@ def adjoint_gradient(
         batch_size=batch_size,
         require_gradients=require_gradients,
         dimensions=dimensions,
+        parameter_values=parameter_values,
     )
 
 
