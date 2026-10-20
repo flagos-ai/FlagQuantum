@@ -173,8 +173,10 @@ def main() -> int:
     if "two-gpu-distributed-required:" not in gpu:
         raise SystemExit("required two-GPU workflow job missing")
     trigger = gpu.split("jobs:", 1)[0]
-    if "workflow_dispatch:" not in trigger or "pull_request" in trigger:
-        raise SystemExit("GPU workflow must be manually dispatched")
+    events = yaml.safe_load(trigger)
+    declared = events.get("on", events.get(True, {}))
+    if set(declared) != {"push", "pull_request", "workflow_dispatch"}:
+        raise SystemExit("GPU workflow must run on pushes, pull requests and dispatch")
     print(
         f"validated {len(checks)} externally configured required checks "
         f"against {len(_produced_checks(root))} checks the workflows produce"

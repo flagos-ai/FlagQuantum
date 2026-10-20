@@ -7,10 +7,8 @@ a threshold the code passes gets reported as a regression. These rules are about
 the workflow's own job graph, which the workflow fully controls, rather than
 about the containers a neighbour happens to be running, which it does not.
 
-The last rule in this module is a different species and guards the same hosts: a
-pull request must not be able to reach a self-hosted runner at all. Today no
-workflow that a pull request can trigger asks for one, but that is a property of
-how the files happen to be written rather than anything the repository enforces.
+Pull requests may reach the explicitly provisioned A800 CPU and GPU jobs.
+Other self-hosted hardware remains available only through its existing triggers.
 """
 
 from __future__ import annotations
@@ -136,7 +134,7 @@ def _triggers(path: Path) -> frozenset[str]:
 
 
 def _is_self_hosted(job: dict[str, object]) -> bool:
-    return "self-hosted" in {label.lower() for label in _runs_on(job)}
+    return any("self-hosted" in label.lower() for label in _runs_on(job))
 
 
 def _accelerator_jobs() -> dict[str, tuple[Path, dict[str, object]]]:
@@ -275,30 +273,26 @@ def test_every_workflow_event_is_attributed() -> None:
     )
 
 
-def test_a_pull_request_cannot_reach_a_self_hosted_runner() -> None:
-    # The self-hosted runners are root shells on hosts that other people share,
-    # and one of them lives in a public repository. GitHub's own guidance is to
-    # keep self-hosted runners away from public repositories for exactly this
-    # reason, and this repository made that choice: every workflow a pull
-    # request can trigger asks for GitHub-hosted runners.
-    #
-    # That choice was a property of how the files happened to be written. The
-    # repository has no runner group to enforce it -- a runner group is an
-    # organization-level feature, and both runners are registered at the
-    # repository level -- so this rule is what keeps the next `runs-on` line
-    # from opening the hosts to whoever opens a pull request.
-    offenders: list[str] = []
+def test_pull_requests_only_reach_provisioned_a800_jobs() -> None:
+    allowed = {
+        ("local-gpu.yml", "one-gpu-local"): "a800-171",
+        ("local-gpu.yml", "two-gpu-distributed-required"): "a800-172",
+        ("ci.yml", "quality"): "jiuding",
+        ("ci.yml", "distributed-cpu"): "jiuding",
+        ("ci.yml", "cpu-core"): "flagquantum-cpu",
+        ("ci.yml", "cpu-core-3-12-tests"): "flagquantum-cpu",
+        ("ci.yml", "cpu-runtime"): "flagquantum-cpu",
+    }
+    found = set()
     for name, (path, reaching) in sorted(_untrusted_workflow_jobs().items()):
         for job, definition in _jobs(path).items():
             if _is_self_hosted(definition):
-                offenders.append(
-                    f"{name}:{job} runs on a self-hosted runner and "
-                    f"{name} is reachable by {sorted(reaching)}"
-                )
-    assert not offenders, (
-        "a pull request must not be able to run code on a self-hosted "
-        "runner:\n" + "\n".join(offenders)
-    )
+                key = (name, job)
+                assert key in allowed, f"unexpected self-hosted PR job: {key}"
+                assert reaching == frozenset({"pull_request"})
+                assert allowed[key] in " ".join(_runs_on(definition))
+                found.add(key)
+    assert found == set(allowed)
 
 
 def test_the_untrusted_scan_finds_the_workflows_it_is_meant_to_police() -> None:
@@ -306,10 +300,8 @@ def test_the_untrusted_scan_finds_the_workflows_it_is_meant_to_police() -> None:
     # came back empty would pass the rule while checking nothing.
     found = set(_untrusted_workflow_jobs())
 
-    assert {"ci.yml", "publish-dev-container.yml"} <= found
-    assert (
-        not {"local-gpu.yml", "flagos-reference.yml", "scheduled-hardware.yml"} & found
-    )
+    assert {"ci.yml", "publish-dev-container.yml", "local-gpu.yml"} <= found
+    assert not {"flagos-reference.yml", "scheduled-hardware.yml"} & found
 
 
 def test_the_self_hosted_detector_recognises_a_known_self_hosted_job() -> None:

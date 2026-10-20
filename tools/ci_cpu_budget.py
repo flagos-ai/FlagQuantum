@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import os
@@ -80,14 +81,18 @@ def read_limits(directories: dict[str, list[Path]]) -> tuple[list[float], list[i
     return cpu, memory
 
 
-def select_workers(cpu: float, memory: int, shared: bool) -> int:
+def select_workers(
+    cpu: float, memory: int, shared: bool, dedicated: bool = False
+) -> int:
     """Share a host between two registrations; bound memory and fan-out too."""
     if not shared:
         return max(1, min(2, math.floor(cpu)))
+    if dedicated:
+        return max(1, min(16, math.floor(cpu), memory // (2 * GIB)))
     return max(1, min(8, math.floor(cpu / 2), memory // (2 * 2 * GIB)))
 
 
-def main() -> None:
+def main(*, dedicated: bool = False) -> None:
     affinity = (
         sorted(os.sched_getaffinity(0))
         if hasattr(os, "sched_getaffinity")
@@ -101,7 +106,7 @@ def main() -> None:
     physical_memory = int(os.sysconf("SC_PAGE_SIZE")) * int(os.sysconf("SC_PHYS_PAGES"))
     cpu = min([float(len(affinity)), *quotas])
     memory = min([physical_memory, *memory_limits])
-    workers = select_workers(cpu, memory, shared)
+    workers = select_workers(cpu, memory, shared, dedicated)
     report = {
         "runner": os.environ.get("RUNNER_NAME"),
         "hostname": os.uname().nodename,
@@ -115,7 +120,8 @@ def main() -> None:
         "load_average": os.getloadavg(),
         "workers": workers,
         "threads_per_worker": 1 if shared else 2,
-        "shared_registrations_budgeted": 2 if shared else 1,
+        "shared_registrations_budgeted": 2 if shared and not dedicated else 1,
+        "dedicated_service": dedicated,
     }
     report_directory = Path(
         tempfile.mkdtemp(prefix="fq-ci-report-", dir=os.environ.get("RUNNER_TEMP"))
@@ -141,4 +147,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dedicated", action="store_true")
+    main(dedicated=parser.parse_args().dedicated)

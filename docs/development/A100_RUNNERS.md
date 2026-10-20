@@ -16,16 +16,10 @@ The existing local GPU workflow retains its original hardware gates.
 
 ## First migration batch
 
-The following jobs use the shared runners on main pushes and same-repository
-pull requests:
-
-- `quality`
-- `cpu-core` (Python 3.10 and 3.11)
-- `cpu-core-3-12-tests`
-- `cpu-runtime`
-- `cpu-core-3-12` (the existing required-check aggregator)
-- `distributed-cpu`
-- `pre-commit`
+`quality`, `distributed-cpu`, and `pre-commit` use the shared Jiuding runners
+on main pushes and same-repository pull requests. The core Python and runtime
+jobs retain the dedicated A800 CPU fast path merged in #654. The Python 3.12
+required-check aggregator runs on GitHub-hosted Ubuntu.
 
 Fork pull requests use `ubuntu-latest`. Other jobs retain their existing runners.
 Required check names, test commands, and hosted capacity buckets are unchanged.
@@ -36,16 +30,15 @@ Python search paths. Native library paths inside inherited Python package
 directories are also removed so a host Torch library cannot override the CPU
 wheel. Test jobs install CPU PyTorch and the declared setuptools/wheel build
 tooling before installing the project. CUDA devices are hidden and
-numerical library threads are limited to two. These settings do not impose host
+numerical library threads are limited to one on shared hosts. These settings do not impose host
 resource isolation or prevent other repositories from competing for the same
 machines. The two registrations do not prove two independent hosts or a CPU
 quota, and jobs can queue when both runners are busy.
 
-The first cold run spent about sixteen minutes preparing the interpreter,
-framework, and editable package before the full unit suite. The full unit,
-runtime integration, and distributed CPU jobs therefore have a sixty-minute
-budget; shorter first-batch jobs retain forty-five minutes. A queued job does
-not consume its execution budget.
+The original Jiuding full-unit run spent about sixteen minutes preparing the
+interpreter and package before testing. Core and runtime jobs now retain the
+A800 thirty-minute budget; distributed CPU has sixty minutes and shorter shared
+jobs forty-five. Queue time does not consume the execution budget.
 
 Shared jobs disable setup-python's remote pip-cache upload: the persistent host
 already retains its downloads, and its global pip cache can include several
@@ -116,7 +109,15 @@ bicycle code instance (84.27 s), and the QEC alignment mutation check (77.20 s).
 This baseline includes failures; it is timing evidence, not a passing gate.
 Source: https://github.com/flagos-ai/FlagQuantum/actions/runs/39421153835/job/118622882940
 
-Every first-batch Python job uploads its measured resources and, where pytest
+Every CI first-batch Python job uploads its measured resources and, where pytest
 runs with xdist, JUnit timing XML in a seven-day `cpu-report-*` artifact even
 when tests fail. Compare pytest execution separately from package setup and
 runner queue time. The required-check aggregator and fork routing stay intact.
+
+The dedicated A800 services pass `--dedicated` to the same resource probe. Their
+worker budget uses the service's own measured cgroup quota rather than halving
+it again: at most sixteen workers and one per 2 GiB. The declared 24 CPU / 64 GiB
+service therefore retains sixteen workers. A smaller actual quota reduces that
+number. Fork and merge-group CPU jobs use Ubuntu with at most two workers and
+o shared-host package index. A800 source artifacts and verified local wheel
+caches are retained unchanged.

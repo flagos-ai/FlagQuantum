@@ -19,7 +19,6 @@ FIRST_BATCH = {
     "cpu-core",
     "cpu-core-3-12-tests",
     "cpu-runtime",
-    "cpu-core-3-12",
     "distributed-cpu",
 }
 SHARED_ROUTE = (
@@ -28,6 +27,11 @@ SHARED_ROUTE = (
     "github.event.pull_request.head.repo.full_name == github.repository)) "
     '&& \'["self-hosted","Linux","X64","a100","jiuding","gpu"]\' '
     "|| '[\"ubuntu-latest\"]') }}"
+)
+
+DEDICATED_ROUTE = SHARED_ROUTE.replace(
+    '["self-hosted","Linux","X64","a100","jiuding","gpu"]',
+    '["self-hosted","linux","x64","flagquantum-cpu"]',
 )
 
 
@@ -46,23 +50,29 @@ def test_first_batch_uses_verified_labels_only_for_trusted_events(
     for name in routed:
         job = document["jobs"][name]
         # Explicit event allowlist: a missing PR payload cannot authorize a runner.
-        assert job["runs-on"] == SHARED_ROUTE
+        dedicated = workflow == "ci.yml" and name in {
+            "cpu-core",
+            "cpu-core-3-12-tests",
+            "cpu-runtime",
+        }
+        assert job["runs-on"] == (DEDICATED_ROUTE if dedicated else SHARED_ROUTE)
         assert job["env"]["CUDA_VISIBLE_DEVICES"] == ""
         expected_timeout = (
             60
             if name in {"cpu-core-3-12-tests", "cpu-runtime", "distributed-cpu"}
             else 45
         )
-        assert job["timeout-minutes"] == expected_timeout
+        assert job["timeout-minutes"] == (30 if dedicated else expected_timeout)
         for index, step in enumerate(job["steps"]):
             if str(step.get("uses", "")).startswith("actions/setup-python@"):
                 if "cache" in step.get("with", {}):
                     assert step["with"]["cache"] == (
                         "${{ runner.environment == 'github-hosted' && 'pip' || '' }}"
                     )
-                assert job["steps"][index + 1]["uses"] == (
-                    "./.github/actions/isolated-python"
-                )
+                if not dedicated:
+                    assert job["steps"][index + 1]["uses"] == (
+                        "./.github/actions/isolated-python"
+                    )
     triggers = document.get("on") or document.get(True, {})
     assert set(triggers) == {"push", "pull_request", "merge_group"}
     if workflow == "ci.yml":

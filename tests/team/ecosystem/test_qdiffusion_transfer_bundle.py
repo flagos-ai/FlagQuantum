@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import tarfile
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,9 @@ pytestmark = pytest.mark.unit
 
 
 def test_bundle_builder_retains_archive_snapshots_through_host_verification(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     roots = [tmp_path / name for name in ("flagquantum", "plugin", "community")]
     for root in roots:
@@ -54,6 +57,7 @@ def test_bundle_builder_retains_archive_snapshots_through_host_verification(
             archive = next(manifest_path.parent.glob("*.tar.gz"))
             archive.write_bytes(archive.read_bytes())
             archive.chmod(0o600)
+            advance_file_mtime(archive)
         return {"safe_to_extract": True}
 
     monkeypatch.setattr(build_module, "verify_transfer_bundle", verify_then_replace)

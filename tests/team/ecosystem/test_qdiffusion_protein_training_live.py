@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -324,7 +325,9 @@ def test_training_output_rejects_foreign_owned_artifact(
 
 @pytest.mark.parametrize("mutated_input", ("dataset", "source_archive"))
 def test_training_seed_rejects_frozen_asset_change_during_workflow(
-    tmp_path: Path, mutated_input: str
+    tmp_path: Path,
+    mutated_input: str,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     dataset = tmp_path / "dataset.fasta"
     dataset.write_text(">p1\nACDE\n", encoding="utf-8")
@@ -363,6 +366,7 @@ def test_training_seed_rejects_frozen_asset_change_during_workflow(
     def mutate_asset() -> None:
         if mutated_input == "dataset":
             dataset.write_text(">p1\nXXXX\n", encoding="utf-8")
+            advance_file_mtime(dataset)
         else:
             source_archive.write_bytes(b"changed archive")
         (workflow.default_outputs_root() / "run").mkdir()
@@ -504,7 +508,9 @@ def test_workflow_artifact_identities_reject_symlink(tmp_path: Path) -> None:
 
 
 def test_training_output_capture_rechecks_checkpoint_after_artifacts(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     checkpoint = tmp_path / "checkpoints" / "best_epoch_2.pt"
     checkpoint.parent.mkdir()
@@ -528,6 +534,7 @@ def test_training_output_capture_rechecks_checkpoint_after_artifacts(
     def capture_then_replace(run_directory: Path):
         result = real_capture(run_directory)
         checkpoint.write_bytes(b"trained")
+        advance_file_mtime(checkpoint)
         return result
 
     monkeypatch.setattr(
@@ -540,6 +547,7 @@ def test_training_output_capture_rechecks_checkpoint_after_artifacts(
 
 def test_training_output_snapshots_survive_until_record_publication(
     tmp_path: Path,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     checkpoint = tmp_path / "checkpoints" / "best_epoch_2.pt"
     checkpoint.parent.mkdir()
@@ -561,6 +569,7 @@ def test_training_output_snapshots_survive_until_record_publication(
 
     _, _, _, snapshots = _capture_training_output_snapshots(tmp_path)
     checkpoint.write_bytes(b"trained")
+    advance_file_mtime(checkpoint)
 
     with pytest.raises(ValueError, match="changed after identity capture"):
         revalidate_training_output_snapshots(snapshots)
