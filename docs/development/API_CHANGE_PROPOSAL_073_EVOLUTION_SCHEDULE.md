@@ -8,8 +8,13 @@ control implementation in the working session. #643 merged as
 `41cbf7433f37cd3edb697f6326f249d13ad62693` after all 36 checks and both full
 workflows passed. The approval and replaceable static-composition test fake landed in #645 as
 `df2f308de855e2101a13a53c1afde604cc7126f0`, after all 36 checks and both full
-workflows succeeded. The implementation is now under review; approval alone
-is not a capability claim. This revision updates
+workflows succeeded. The implementation merged in
+[#647](https://github.com/flagos-ai/FlagQuantum/pull/647) as
+`4f9d5a6c010b4b351579bfe1e95053ba58aa09b6`: latest head
+`731516171435320a969df898727b100e4d9c6c3b` passed all 36 checks and both
+complete CI/pre-commit workflows before merging on 2026-10-20. Approval alone
+is not a capability claim; the bounded implementation evidence is recorded below.
+This revision updates
 the contract against M1's static mixed-dimension and operator-coefficient work
 (PRs [639](https://github.com/flagos-ai/FlagQuantum/pull/639),
 [640](https://github.com/flagos-ai/FlagQuantum/pull/640), and

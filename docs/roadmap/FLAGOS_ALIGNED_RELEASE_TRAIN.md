@@ -148,7 +148,28 @@ integrators. It adds no Schedule class, route package or numerical engine. This
 closes the piecewise-constant control slice; arbitrary callables/interpolation,
 time-dependent collapse, time-boundary gradients and hardware pulses remain
 unsupported. Local Krylov defects and global numerical error have separate
-acceptance bounds.
+acceptance bounds. Implementation [#647](https://github.com/flagos-ai/FlagQuantum/pull/647)
+merged as `4f9d5a6c010b4b351579bfe1e95053ba58aa09b6` after all 36 checks
+and both full workflows succeeded on its latest head.
+
+The next bounded M1 review is
+[proposal 079](../development/API_CHANGE_PROPOSAL_079_EXPLICIT_BASIS_SPACES.md):
+ordered explicit bases for constrained matrix spaces, consumed by the existing
+Lindblad path. **The contract is proposed, not approved or implemented.** It
+reviews a small internal value beside ProductStateSpace, `basis_labels=` on
+existing entries and labelled-only plan 1.6; product plans 1.3/1.4/1.5 remain
+unchanged. It adds no state-space registry, solver, namespace or physical-model
+builder. Run `python -m examples.constrained_basis_reference` for a current-API
+numerical reference: an invariant one-photon sector and a declared fixed-charge
+Ising fusion convention share the current solver, result and gradient path.
+The example still executes encoded qubits and records no constrained metadata.
+`tests/unit/test_constrained_basis_reference.py` checks full/reduced agreement,
+analytic gradients, basis-order covariance, a leakage-erasing projection
+counterexample, and independent braid/unitary/density references. These tests
+establish feasibility, not the proposed API. Contract approval, replaceable
+integration conformance, real implementation, strict replay/refusal/compatibility
+checks and repository gates are separate acceptance steps. A basis list alone
+does not close the M3 native anyon-program gate.
 
 An internal state-space proposal must be tested against both tensor-product
 spaces and an anyon fusion-space example with fixed total charge. Product
