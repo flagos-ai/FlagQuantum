@@ -360,6 +360,16 @@ then passed for 771 source files with mypy 2.4.0 and Torch 2.13; all 125 focused
 closed-subspace, piecewise-control and contract cases passed. Remote dependency
 floor and quality results remain separate acceptance evidence.
 
+After synchronizing main, coverage shard 0 on `6291f61771` exposed an invalid
+cross-invocation bitwise comparison in the closure test: separate complex64
+GMRES least-squares calls returned an imaginary cancellation remainder of
+`-1.4964e-17` and zero. The follow-up snapshots each kernel result immediately
+before its gradient correction and compares the correction output against that
+same invocation byte for byte, in both graph modes. The test also compares both forward modes and the independent dense value
+numerically; independent dense derivative oracles and their original tolerance
+budgets remain unchanged. No production kernel or
+solver tolerance changes for this test repair.
+
 ## Closed-subspace sensitivity found during implementation
 
 An inactive first drive, followed by an active one, exposed an existing static

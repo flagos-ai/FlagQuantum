@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import pytest
 import torch
 
+import flagquantum.simulation.matrix_free_exponential as exponential_kernel
+import flagquantum.simulation.matrix_free_linear_solve as solve_kernel
 from flagquantum.simulation.matrix_free_exponential import exponential_action
 from flagquantum.simulation.matrix_free_linear_solve import gmres
 
@@ -14,7 +18,9 @@ pytestmark = pytest.mark.unit
 @pytest.mark.parametrize("method", ["solve", "exponential"])
 @pytest.mark.parametrize("dimension", [1, 2])
 @pytest.mark.parametrize("precision", ["complex64", "complex128"])
-def test_closed_subspace_derivatives_match_dense_torch(method, dimension, precision):
+def test_closed_subspace_derivatives_match_dense_torch(
+    method: str, dimension: int, precision: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
     dtype = getattr(torch, precision)
     tolerance = 1e-5 if precision == "complex64" else 1e-12
     base = torch.tensor(
@@ -30,7 +36,21 @@ def test_closed_subspace_derivatives_match_dense_torch(method, dimension, precis
     vector.requires_grad_()
     matrix = base + parameter * perturbation
 
-    def run():
+    kernel = solve_kernel if method == "solve" else exponential_kernel
+    correction = kernel.closed_subspace_gradient
+    before_correction: list[torch.Tensor] = []
+
+    def record_correction(
+        value: torch.Tensor,
+        residual: torch.Tensor,
+        adjoint: Callable[[torch.Tensor], torch.Tensor],
+    ) -> torch.Tensor:
+        before_correction.append(value.detach().clone())
+        return correction(value, residual, adjoint)
+
+    monkeypatch.setattr(kernel, "closed_subspace_gradient", record_correction)
+
+    def run() -> torch.Tensor:
         if method == "solve":
             return gmres(
                 lambda value: matrix @ value,
@@ -49,9 +69,20 @@ def test_closed_subspace_derivatives_match_dense_torch(method, dimension, precis
         )[0]
 
     result = run()
+    assert len(before_correction) == 1
+    # Compare the correction's input and output from the same solve. Separate
+    # LAPACK least-squares invocations can differ in cancellation roundoff.
+    assert torch.equal(
+        result.detach().view(torch.uint8), before_correction[0].view(torch.uint8)
+    )
     with torch.no_grad():
         unchanged = run()
-    assert torch.equal(result.detach().view(torch.uint8), unchanged.view(torch.uint8))
+    assert len(before_correction) == 2
+    assert torch.equal(
+        unchanged.view(torch.uint8), before_correction[1].view(torch.uint8)
+    )
+    accuracy = 2e-6 if precision == "complex64" else 1e-11
+    torch.testing.assert_close(result.detach(), unchanged, atol=accuracy, rtol=0)
     cost = result[1].real + 0.3 * result[2].imag
     actual = torch.autograd.grad(cost, (parameter, vector))
     reference_matrix = base + parameter * perturbation
@@ -59,6 +90,9 @@ def test_closed_subspace_derivatives_match_dense_torch(method, dimension, precis
         torch.linalg.solve(reference_matrix, vector)
         if method == "solve"
         else torch.matrix_exp(0.3 * reference_matrix) @ vector
+    )
+    torch.testing.assert_close(
+        result.detach(), reference.detach(), atol=accuracy, rtol=0
     )
     expected = torch.autograd.grad(
         reference[1].real + 0.3 * reference[2].imag, (parameter, vector)
