@@ -62,9 +62,8 @@ jobs:
     if: ${{ !inputs.validate_pool }}
     needs: prepare-source
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-171]
-    # This job benchmarks device 0 and the two-GPU job beside it holds devices 0
-    # and 1, so on one host they measure each other. The group is the one the
-    # scheduled lane also joins, because those jobs measure the same devices.
+    # The multi-node lane uses both A800 hosts. Keep their local and scheduled
+    # jobs in one group until that lane can reserve both hosts independently.
     concurrency:
       group: flagquantum-accelerator
       queue: max
@@ -282,7 +281,7 @@ jobs:
     if: ${{ inputs.validate_pool }}
     runs-on: [self-hosted, linux, x64, gpu, flagquantum-a100]
     concurrency:
-      group: flagquantum-accelerator
+      group: flagquantum-accelerator-a100
       queue: max
     timeout-minutes: 30
     env:

@@ -24,9 +24,8 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github" / "workflows"
 
-# The one group every accelerator job joins. A shared name is the point: the
-# group is repository-wide, so the scheduled lane and the manual gate serialize
-# against each other and not merely against themselves.
+# The multi-node lane uses both A800 hosts, so their jobs still share a group.
+# The A100 validation host is independent and must not wait for the A800 pair.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
 
 TRUSTED_CPU_ROUTE = (
@@ -182,25 +181,35 @@ def test_the_scan_finds_the_accelerator_jobs_it_is_meant_to_police() -> None:
     } <= found
 
 
-def test_every_accelerator_job_joins_the_serializing_group() -> None:
+def test_accelerator_jobs_serialize_only_with_their_shared_hosts() -> None:
     offenders: list[str] = []
     for key, (path, job) in sorted(_accelerator_jobs().items()):
         concurrency = job.get("concurrency")
         if not isinstance(concurrency, dict):
             offenders.append(f"{key} declares no concurrency block")
             continue
-        if concurrency.get("group") != ACCELERATOR_GROUP:
+        labels = set(_runs_on(job))
+        expected = (
+            f"{ACCELERATOR_GROUP}-a100"
+            if "flagquantum-a100" in labels
+            else ACCELERATOR_GROUP
+        )
+        if key.startswith("scheduled-hardware.yml:"):
+            # A generic GPU selector could choose the independent A100 host
+            # while holding only the A800 lock, defeating device exclusion.
+            assert "a800-172" in labels or "multinode" in labels
+        if concurrency.get("group") != expected:
             offenders.append(
                 f"{key} joins group {concurrency.get('group')!r} "
-                f"instead of {ACCELERATOR_GROUP!r}"
+                f"instead of {expected!r}"
             )
         # The default keeps one waiting job and drops it when another arrives,
         # which would report nothing at all for the lane that was dropped.
         if concurrency.get("queue") != "max":
             offenders.append(f"{key} does not set `queue: max`")
     assert not offenders, (
-        "accelerator jobs must share one concurrency group so that no two of "
-        "them measure the same devices at the same time:\n" + "\n".join(offenders)
+        "jobs using the same hosts must share a concurrency group, while "
+        "independent hosts must not block each other:\n" + "\n".join(offenders)
     )
 
 

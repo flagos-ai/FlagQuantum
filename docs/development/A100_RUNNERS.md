@@ -13,6 +13,12 @@ Linux wheel-container builds, and container publishing retain their existing
 runners. Existing required check names and hosted-fallback capacity buckets are
 unchanged.
 
+Trusted A100 CPU jobs use a distinct concurrency group for each workflow run,
+job and matrix index. The sixteen provisioned runners bound parallelism;
+`light-a/b/c` buckets apply only to hosted fallback. In particular, the seven
+dependency-bound matrix legs can run together instead of queuing behind one
+another while CPU runners are idle.
+
 ## Validate the deployed pool
 
 Run this existing manually dispatched workflow against the revision to validate:
@@ -32,7 +38,10 @@ existing eight-rank NCCL sharded forward and gradient differentials against dens
 references. These are correctness checks, not a scalability performance claim.
 
 Without `validate_pool=true`, the workflow retains its existing one- and two-GPU
-gates. GPU jobs share the `flagquantum-accelerator` concurrency group.
+gates. A100 validation uses `flagquantum-accelerator-a100` and can run alongside
+A800 GPU work. A800 local and scheduled jobs retain `flagquantum-accelerator`
+because the multi-node lane occupies both A800 hosts. Scheduled single-host jobs
+are pinned to A800-172 so they cannot use the A100 host under the A800 lock.
 
 ## Host operation
 

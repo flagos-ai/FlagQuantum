@@ -11,8 +11,9 @@ on:
 
 # Same two constraints as CI -- cancel a superseded run of the same pull request,
 # never a superseded run of `main`, and hold the job to one of the
-# pull-request-scoped buckets that bound one run's share of the organisation's
-# GitHub-hosted pool. See the capacity note and the cancellation note in ci.yml.
+# pull-request-scoped buckets for hosted fallback. Trusted A100 work gets a
+# distinct group per run and job instead. See the capacity and cancellation
+# notes in ci.yml.
 concurrency:
   group: flagquantum-precommit-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || github.event.merge_group.head_sha || 'pr' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -21,7 +22,7 @@ jobs:
   pre-commit:
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
 
     steps:

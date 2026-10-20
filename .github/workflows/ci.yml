@@ -32,9 +32,10 @@ on:
 # CPU smoke/unit and runtime suites retain the dedicated A800 CPU runners.
 # Other trusted Ubuntu checks use the A100 CPU pool, with hosted fork fallback.
 # A800 jobs use 16 pytest workers and a separate virtual environment per run.
-# The remaining Ubuntu jobs share thirteen GitHub-hosted buckets: the 3.12
-# source preparation/summary, eight coverage shards, distributed, and light-a/b/c. Their PR/branch
-# scope prevents unrelated runs from serializing behind each other.
+# Hosted fallback jobs share thirteen scoped concurrency buckets. A100 CPU
+# jobs instead include run ID, job ID and matrix index in their groups, so the
+# provisioned runner count bounds concurrency without serializing unrelated
+# checks or matrix legs behind the hosted light-a/b/c buckets.
 #
 # `queue: max` is what makes a bucket a cap instead of a drop: the default
 # keeps only the newest waiting job and cancels the ones behind it, which would
@@ -92,9 +93,8 @@ jobs:
   quality:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-quality-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
       # The evidence provenance gates below ask whether each recorded source
@@ -655,7 +655,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cpu-core-3-12-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
       - name: Require Python 3.12 unit and runtime suites to pass
@@ -666,9 +666,8 @@ jobs:
   jax-optional:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-jax-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -690,9 +689,8 @@ jobs:
   azure-optional:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-azure-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.32.3 1.32.*"
@@ -728,9 +726,8 @@ jobs:
   triton-optional:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-triton-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -753,9 +750,8 @@ jobs:
   qiskit-optional:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
       OPTIONAL_VERSIONS: "2.0.* 2.5.*"
@@ -803,9 +799,8 @@ jobs:
   cirq-optional:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.6.1 1.7.0"
@@ -838,7 +833,7 @@ jobs:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.117.0 1.127.1"
@@ -871,7 +866,7 @@ jobs:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cudaq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"
@@ -903,9 +898,8 @@ jobs:
   pennylane-optional:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pennylane-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.44.1 0.45.1"
@@ -937,9 +931,8 @@ jobs:
   dependency-bounds:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     strategy:
       matrix:
@@ -1121,9 +1114,8 @@ jobs:
   distributed-cpu:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-distributed
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-distributed-cpu-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-distributed
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -1145,9 +1137,8 @@ jobs:
   coverage-shard:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # Eight of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
       queue: max
     strategy:
       fail-fast: false
@@ -1201,10 +1192,8 @@ jobs:
     needs: coverage-shard
     if: ${{ always() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # Reuse shard zero's bucket after it finishes. Aggregation is serial
-    # metadata work, so it needs no tenth runner slot.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-0
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-0
       queue: max
     steps:
       - name: Require every coverage shard to pass
@@ -1241,9 +1230,8 @@ jobs:
   supply-chain:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-supply-chain-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     permissions:
       contents: read
@@ -1311,7 +1299,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-ci-complete-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
       - name: Require every CI job to succeed before queue admission

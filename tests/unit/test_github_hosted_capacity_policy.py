@@ -135,6 +135,16 @@ def _groups(job: dict[str, object]) -> set[str]:
     group = concurrency.get("group")
     if not isinstance(group, str):
         return set()
+    # Evaluate the hosted fallback of the trusted-pool selector. Its A100 arm
+    # has independent groups and does not consume the hosted capacity budget.
+    group = re.sub(
+        r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
+        r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
+        r"&& format\('a100-cpu-\{0\}-[a-z0-9-]+-\{1\}', "
+        r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
+        "gh",
+        group,
+    )
     reference = _MATRIX_REFERENCE.search(group)
     if reference is None:
         return {group}
