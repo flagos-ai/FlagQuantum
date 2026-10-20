@@ -107,7 +107,8 @@ initial-density adjoints, basis order, live/JSON gradients, truncation, and
 time-grid convergence. This completes the static finite-product step, not all
 of M1: time dependence and constrained-space execution remain separate gates;
 static operator coefficient binding is described below. Proposal 073 now states
-its separate temporal contract against this baseline and remains proposed.
+its separate temporal contract against this baseline; the owner approved it on
+2026-10-20. Numerical implementation and capability evidence remain open.
 
 The next M1 slice connects existing `BosonOperator` values directly to the
 same static CPU dynamics input normalization. Explicit `dimensions=` supplies
@@ -130,12 +131,14 @@ initial-density adjoints, unchanged dense-plan identities, and retained Pauli
 matrix-free execution. This completes the static operator-coefficient consumer,
 not symbolic coefficients inside the algebra. The next M1 time-control contract
 is the updated [proposal 073](../development/API_CHANGE_PROPOSAL_073_EVOLUTION_SCHEDULE.md).
-It proposes one binding per interval, existing full-space operator terms and Core
+It specifies one binding per interval, existing full-space operator terms and Core
 parameter binding, all three current integrators, and scheduled-only plan 1.5
 while preserving static 1.3/1.4 plans. Live gradients, initial-density adjoints,
-exact replay, early refusals, and independent numerical checks are review gates.
-The proposal remains unapproved and unimplemented; this roadmap update grants
-neither implementation approval nor a time-dependent capability claim.
+exact replay, early refusals, and independent numerical checks are implementation
+gates. The owner approved the contract on 2026-10-20. The contract-first
+`tests/unit/test_piecewise_control_contract.py` uses a test-only static-composition
+fake; the scheduled implementation must pass the same consumer assertions.
+Approval and this test reference do not establish a time-dependent capability.
 
 An internal state-space proposal must be tested against both tensor-product
 spaces and an anyon fusion-space example with fixed total charge. Product
