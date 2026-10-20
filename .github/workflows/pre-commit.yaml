@@ -16,12 +16,19 @@ concurrency:
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
 
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v5
         with:
           lfs: true
@@ -31,6 +38,7 @@ jobs:
         with:
           python-version: "3.12"
 
+      - uses: ./.github/actions/isolated-python
       - name: Install source-hygiene tooling
         run: python -m pip install pre-commit
 

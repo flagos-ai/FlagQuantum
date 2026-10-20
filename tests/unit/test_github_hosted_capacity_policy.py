@@ -111,7 +111,11 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
     found: dict[str, dict[str, object]] = {}
     for name, job in jobs.items():
         assert isinstance(job, dict), f"{workflow}:{name}: not a job mapping"
-        if job.get("runs-on") in GITHUB_HOSTED_UBUNTU_RUNNERS:
+        runner = job.get("runs-on")
+        if runner in GITHUB_HOSTED_UBUNTU_RUNNERS or (
+            isinstance(runner, str)
+            and "'flagquantum-a100-cpu' || 'ubuntu-latest'" in runner
+        ):
             found[name] = job
     return found
 
