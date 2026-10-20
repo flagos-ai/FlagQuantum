@@ -40,7 +40,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  prepare-cpu-source:
+  prepare-source:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -53,14 +53,14 @@ jobs:
       - name: Pack the exact commit and its complete tree for the A800 runners
         run: |
           set -o pipefail
-          mkdir -p "$RUNNER_TEMP/cpu-source"
+          mkdir -p "$RUNNER_TEMP/ci-source"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git rev-parse HEAD > "$RUNNER_TEMP/cpu-source/source.sha"
-          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/cpu-source/source.pack"
+          git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
       - uses: actions/upload-artifact@v4
         with:
-          name: cpu-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/cpu-source/
+          name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source/
           retention-days: 1
           compression-level: 0
 
@@ -293,7 +293,7 @@ jobs:
         run: python tools/check_import_time.py
 
   cpu-core:
-    needs: prepare-cpu-source
+    needs: prepare-source
     runs-on: [self-hosted, linux, x64, flagquantum-cpu]
     timeout-minutes: 30
     env:
@@ -311,22 +311,22 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: cpu-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/cpu-source
+          name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
         run: |
-          sha="$(cat "$RUNNER_TEMP/cpu-source/source.sha")"
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
-          else
+          if [ ! -d .git ]; then
             git init .
           fi
-          git index-pack --stdin < "$RUNNER_TEMP/cpu-source/source.pack"
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           printf '%s\n' "$sha" >> .git/shallow
           sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
@@ -390,7 +390,7 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
 
   cpu-core-3-12-tests:
-    needs: prepare-cpu-source
+    needs: prepare-source
     runs-on: [self-hosted, linux, x64, flagquantum-cpu]
     timeout-minutes: 30
     env:
@@ -404,22 +404,22 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: cpu-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/cpu-source
+          name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
         run: |
-          sha="$(cat "$RUNNER_TEMP/cpu-source/source.sha")"
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
-          else
+          if [ ! -d .git ]; then
             git init .
           fi
-          git index-pack --stdin < "$RUNNER_TEMP/cpu-source/source.pack"
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           printf '%s\n' "$sha" >> .git/shallow
           sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
@@ -451,7 +451,7 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
 
   cpu-runtime:
-    needs: prepare-cpu-source
+    needs: prepare-source
     runs-on: [self-hosted, linux, x64, flagquantum-cpu]
     timeout-minutes: 30
     env:
@@ -465,22 +465,22 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: cpu-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/cpu-source
+          name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
         run: |
-          sha="$(cat "$RUNNER_TEMP/cpu-source/source.sha")"
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
-          else
+          if [ ! -d .git ]; then
             git init .
           fi
-          git index-pack --stdin < "$RUNNER_TEMP/cpu-source/source.pack"
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           printf '%s\n' "$sha" >> .git/shallow
           sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"

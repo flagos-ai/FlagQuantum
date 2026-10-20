@@ -268,7 +268,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
             "flagquantum-cpu",
         ]
         assert definition["timeout-minutes"] == 30
-        assert definition["needs"] == "prepare-cpu-source"
+        assert definition["needs"] == "prepare-source"
         download = next(
             step
             for step in _steps("ci.yml", job)
@@ -276,7 +276,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         )
         assert (
             download["with"]["name"]
-            == "cpu-source-${{ github.run_id }}-${{ github.run_attempt }}"
+            == "ci-source-${{ github.run_id }}-${{ github.run_attempt }}"
         )
         assert not any(
             step.get("uses", "").startswith("actions/checkout@")
