@@ -419,7 +419,20 @@ def main() -> None:
     report(
         "solver ansatz", f"{solver.ansatz.name}, {solver.ansatz.parameter_count} angles"
     )
-    report("solver operator terms", str(len(solver.operator.terms)))
+    # The operator's term count is quoted over the terms that carry a coefficient,
+    # not over the terms that are stored: the products a symmetry cancels reach
+    # about 1e-17 rather than zero, so how many of those survive is a property of
+    # the summation order rather than of the molecule, and the stored count moves
+    # between builds. The two numbers are reported together so the difference is
+    # visible rather than hidden behind a cut.
+    physical_terms = [
+        term for term in solver.operator.terms if abs(float(term.coefficient)) > 1e-12
+    ]
+    report("solver operator terms", str(len(physical_terms)))
+    report(
+        "solver stored sum longer",
+        str(len(solver.operator.terms) > len(physical_terms)),
+    )
     report("solver steps", str(solver.steps))
     descent = solver.run(torch.zeros(solver.ansatz.parameter_count))
     report("solver energy", f"{float(descent.energy):.17g}")

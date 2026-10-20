@@ -971,7 +971,14 @@ def test_vqe_solvers_example_runs_four_entry_points_on_one_instance() -> None:
     # reaches is compared here with the molecule's own FCI value rather than with
     # another run's: what is asserted is that the two agree, not how they got there.
     assert _labelled(output, "solver ansatz") == "uccsd, 3 angles"
-    assert _labelled(output, "solver operator terms") == "27"
+    # The operator's term count is the count over the terms that carry a
+    # coefficient, which is a property of the molecule: fifteen for H2 in this
+    # basis. The stored sum is longer by the products a symmetry cancels, and how
+    # many of those survive is a property of this build's summation order, so the
+    # second assertion is that the cut *is* doing something rather than how many
+    # terms it dropped -- a digit there would pin one build's arithmetic.
+    assert _labelled(output, "solver operator terms") == "15"
+    assert _labelled(output, "solver stored sum longer") == "True"
     assert _labelled(output, "solver steps") == "200"
     solver_energy = _number(output, "solver energy")
     fci_energy = float(_labelled(output, "solver fci energy"))
