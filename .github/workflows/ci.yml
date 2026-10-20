@@ -50,6 +50,8 @@ jobs:
       queue: max
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 16
       - name: Pack the exact commit and its complete tree for the A800 runners
         run: |
           set -o pipefail
@@ -57,6 +59,19 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
+          mkdir -p "$RUNNER_TEMP/ci-source-incremental"
+          cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
+          base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
+          {
+            git rev-parse HEAD
+            git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
+          } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source-incremental/
+          retention-days: 1
+          compression-level: 0
       - uses: actions/upload-artifact@v4
         with:
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
@@ -301,6 +316,7 @@ jobs:
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
+      PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
     concurrency:
       group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
       queue: max
@@ -310,6 +326,28 @@ jobs:
         python-version: ["3.10", "3.11"]
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
@@ -399,11 +437,34 @@ jobs:
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
+      PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
     concurrency:
       group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
@@ -461,11 +522,34 @@ jobs:
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
+      PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
     concurrency:
       group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-runtime
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}

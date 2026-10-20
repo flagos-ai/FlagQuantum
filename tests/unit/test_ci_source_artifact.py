@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -26,7 +27,14 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     pack = next(
         step["run"] for step in jobs["prepare-source"]["steps"] if "run" in step
     )
-    restore = next(step["run"] for step in jobs[job]["steps"] if "run" in step)
+    restore = next(
+        step["run"]
+        for step in jobs[job]["steps"]
+        if step.get("name") == "Restore and verify this run's exact source commit"
+    )
+    probe = next(
+        step["run"] for step in jobs[job]["steps"] if step.get("id") == "source-cache"
+    )
     source = tmp_path / "source"
     target = tmp_path / "target"
     temporary = tmp_path / "temporary"
@@ -67,6 +75,7 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     git("config", "user.name", "FlagQuantum")
     git("config", "user.email", "liuwei.chem.phys@gmail.com")
     (source / "tracked.txt").write_text("parent\n")
+    (source / "unchanged.txt").write_text("cached baseline\n")
     git("add", ".")
     git("commit", "-m", "parent")
     parent = git("rev-parse", "HEAD")
@@ -78,6 +87,16 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     sha = git("rev-parse", "HEAD")
     environment["GITHUB_SHA"] = sha
     shell(pack, source)
+    full_pack = (temporary / "ci-source/source.pack").read_bytes()
+    output = temporary / "outputs"
+    environment["GITHUB_OUTPUT"] = str(output)
+    shutil.copyfile(
+        temporary / "ci-source-incremental/source.pack",
+        temporary / "ci-source/source.pack",
+    )
+    shell(probe, target)
+    assert output.read_text().splitlines()[-1] == "complete=false"
+    (temporary / "ci-source/source.pack").write_bytes(full_pack)
 
     for attempt in range(2):
         if attempt:
@@ -85,9 +104,16 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
             (target / "tracked.txt").write_text("dirty\n")
             (target / "leftover.txt").write_text("stale\n")
         shell(restore, target)
+        shutil.copyfile(
+            temporary / "ci-source-incremental/source.pack",
+            temporary / "ci-source/source.pack",
+        )
+        shell(probe, target)
+        assert output.read_text().splitlines()[-1] == "complete=true"
         assert git("rev-parse", "HEAD", cwd=target) == sha
         assert git("status", "--porcelain", cwd=target) == ""
         assert (target / "tracked.txt").read_text() == "current\n"
+        assert (target / "unchanged.txt").read_text() == "cached baseline\n"
         assert (target / "binary.dat").read_bytes() == bytes(range(256))
         assert (target / "link").is_symlink()
         assert not (target / "leftover.txt").exists()
