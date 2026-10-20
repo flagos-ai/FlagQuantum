@@ -36,8 +36,10 @@ gates. GPU jobs share the `flagquantum-accelerator` concurrency group.
 
 The deployment lives in `/opt/flagquantum-runners`. Each runner uses a separate
 Unix account, private home, workspace, temporary directory, and tool cache.
-Root-owned framework environments are shared read-only. A pre-job hook rebuilds
-the writable Python environment for every job. Private account directories use
+Root-owned framework environments provide the package seeds. A pre-job hook
+creates a private writable Python environment and copies its framework packages,
+using reflinks where supported. Both package files and distribution metadata
+belong to the job, so upgrades and dependency audits see one installed version. Private account directories use
 Unix permissions to protect runner credentials and workspaces from other runner
 accounts. CPU jobs use a CPU-only PyTorch build and an empty
 `CUDA_VISIBLE_DEVICES`; this is an execution policy for trusted jobs, not device

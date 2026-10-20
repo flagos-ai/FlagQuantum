@@ -293,7 +293,9 @@ def test_environment_lock_binds_wheel_metadata_and_digest_to_one_snapshot(
     original = wheel.read_bytes()
 
     def inventory_after_replacement() -> dict[str, tuple[str, str]]:
+        before = wheel.stat()
         wheel.write_bytes(original)
+        os.utime(wheel, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000))
         return {"example": ("1.0", "a" * 64)}
 
     monkeypatch.setattr(

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import tarfile
 from pathlib import Path
 
@@ -52,8 +53,12 @@ def test_bundle_builder_retains_archive_snapshots_through_host_verification(
         calls += 1
         if calls == 1:
             archive = next(manifest_path.parent.glob("*.tar.gz"))
+            before = archive.stat()
             archive.write_bytes(archive.read_bytes())
             archive.chmod(0o600)
+            os.utime(
+                archive, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000)
+            )
         return {"safe_to_extract": True}
 
     monkeypatch.setattr(build_module, "verify_transfer_bundle", verify_then_replace)

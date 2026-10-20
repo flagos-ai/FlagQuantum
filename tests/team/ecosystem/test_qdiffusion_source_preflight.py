@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -319,7 +320,9 @@ def test_runtime_source_root_rejects_change_during_stable_hash(
 
     def mutate_after_hash(stream):
         digest = real_hash(stream)
+        before = source.stat()
         source.write_text("VALUE = 2\n", encoding="utf-8")
+        os.utime(source, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000))
         return digest
 
     monkeypatch.setattr(source_tree_module, "_stream_sha256", mutate_after_hash)
