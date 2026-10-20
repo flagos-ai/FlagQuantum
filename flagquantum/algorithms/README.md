@@ -153,9 +153,18 @@ executed by `tests/test_algorithm_examples.py`.
   circuit fold reaches only `1 + 2m`, so a request of `1.4` on a five-instruction
   body is met by `3.0` in fifteen instructions, while a gate fold meets `1.4`
   exactly in seven and meets `2.2` exactly in eleven where the circuit strategy's
-  next reachable ratio costs it fifteen. A gate fold spends its pairs leftmost
-  first, so a readout blind to where they land reads a flat curve over a program
-  whose noise genuinely grew, and the unit reports the length ratio rather than a
+  next reachable ratio costs it fifteen. A gate fold's pairs go where its
+  `placement` puts them, and that is the one question in the unit whose answer is
+  in the noise model: the default `body_order` spends them on the body's leading
+  instructions and reads no model, while `model_weighted` spends them on the
+  instructions the model declares the most channel applications at. Both realize
+  one ratio and insert one pair count, so a placement changes the program and the
+  plan's identity and not what the fold costs; a `circuit` fold has no placement
+  to choose and is refused one. The choice buys reach rather than accuracy — a
+  model naming only the body's last instruction leaves the default rule's curve
+  flat, because the pair it spends is on an instruction the model does not name —
+  and a readout blind to where the pairs land reads a flat curve over a program
+  whose noise genuinely grew. The unit reports the length ratio rather than a
   noise strength: the conversion between the two is the part it does not estimate.
   A program carrying a noise channel, an empty program, a non-unitary custom
   instruction, a factor below one, and two requests that realize one length are

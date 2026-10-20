@@ -78,7 +78,13 @@ What they show:
   requested factor printed beside the ratio each strategy actually realized, the
   instructions each spent to reach it, the amplitude gap that shows the fold is
   an identity rather than an approximation, and the pair's own location shown to
-  decide which observables can see the noise the fold added.
+  decide which observables can see the noise the fold added. A second model names
+  one instruction of the five, and both placements are folded against it at one
+  request: the default rule's curve is printed as one number at every abscissa,
+  because its pair lands on an instruction the model does not name, while the
+  placed rule's curve moves — and the placed estimate is printed as the farther
+  one from the noiseless value, so what a placement buys is shown to be reach
+  rather than accuracy.
 - [`variational_solvers.py`](variational_solvers.py): a weighted MaxCut
   instance solved by QAOA at three layer counts from one constant start, with the
   cost operator checked against the cut spectrum enumerated in Python, the
