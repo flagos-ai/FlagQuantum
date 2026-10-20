@@ -1,7 +1,13 @@
 name: Local GPU Gate
 
 on:
+  push:
+    branches: ['**']
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   one-gpu-local:

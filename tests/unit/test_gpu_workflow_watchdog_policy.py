@@ -133,13 +133,15 @@ def test_a_job_named_by_an_expression_is_refused(tmp_path):
         _produced_checks(tmp_path)
 
 
-def test_manual_gpu_workflows_fail_closed_and_bound_long_commands():
+def test_automatic_gpu_workflows_fail_closed_and_bound_long_commands():
     root = Path(__file__).resolve().parents[2]
     local = (root / ".github/workflows/local-gpu.yml").read_text()
     scheduled = (root / ".github/workflows/scheduled-hardware.yml").read_text()
     trigger = local.split("jobs:", 1)[0]
     assert "workflow_dispatch:" in trigger
-    assert "pull_request" not in trigger
+    events = yaml.safe_load(trigger)[True]
+    assert set(events) == {"push", "pull_request", "workflow_dispatch"}
+    assert events["push"]["branches"] == ["**"]
     assert local.count("run_with_watchdog.py") >= 10
     assert scheduled.count("run_with_watchdog.py") >= 8
     scale_lane = scheduled.split("local-scale-scheduled:", 1)[1]

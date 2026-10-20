@@ -26,15 +26,11 @@ on:
 # commit and allowed to finish. The cost is a queued matrix per push to `main`
 # rather than a dropped one, and that is the trade this file makes knowingly.
 #
-# Every job below then joins one of sixteen named buckets scoped to this pull
-# request or pushed branch -- `cpucore-3.1x`, `runtime`, eight `coverage`
-# shards, `distributed`, and
-# `light-a`/`b`/`c`. The scope is essential: repository-global buckets made an
-# unrelated pull request wait behind every older run in the same bucket, so a
-# healthy 15-minute matrix regularly took an hour to report. A concurrency
-# group admits one job at a time, so the sixteen bucket suffixes remain the
-# per-run ceiling while the organisation's 20-runner pool remains the aggregate
-# ceiling across repositories and pull requests.
+# CPU smoke/unit and runtime suites use four dedicated A800 CPU runners,
+# with 16 pytest workers per job and a separate virtual environment per run.
+# The remaining Ubuntu jobs share thirteen GitHub-hosted buckets: the 3.12
+# summary, eight coverage shards, distributed, and light-a/b/c. Their PR/branch
+# scope prevents unrelated runs from serializing behind each other.
 #
 # `queue: max` is what makes a bucket a cap instead of a drop: the default
 # keeps only the newest waiting job and cancels the ones behind it, which would
@@ -46,7 +42,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -273,22 +269,38 @@ jobs:
         run: python tools/check_import_time.py
 
   cpu-core:
-    runs-on: ubuntu-latest
-    # Two of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: [self-hosted, linux, x64, flagquantum-cpu]
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      CUDA_VISIBLE_DEVICES: ""
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
+      group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11"]
     steps:
+      - name: Clear sparse state left in the runner checkout
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: python -m pip install --upgrade pip
+      - name: Create an isolated environment for this job
+        run: |
+          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
+      - run: python -m pip install --upgrade pip setuptools wheel
       - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Compile the package on the supported interpreter
@@ -296,12 +308,12 @@ jobs:
       - name: Run pull-request compatibility smoke tests
         if: github.event_name == 'pull_request'
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
         run: python -m pytest -m smoke -q
       - name: Run complete smoke and unit tests after merge
         if: github.event_name != 'pull_request'
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
         run: python tools/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
@@ -340,22 +352,39 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
 
   cpu-core-3-12-tests:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, flagquantum-cpu]
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      CUDA_VISIBLE_DEVICES: ""
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
+      - name: Clear sparse state left in the runner checkout
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install --upgrade pip
+      - name: Create an isolated environment for this job
+        run: |
+          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
+      - run: python -m pip install --upgrade pip setuptools wheel
       - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Run smoke and unit tests with bounded workers
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
         run: python tools/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
@@ -370,22 +399,39 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
 
   cpu-runtime:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, flagquantum-cpu]
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      CUDA_VISIBLE_DEVICES: ""
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-runtime
+      group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-runtime
       queue: max
     steps:
+      - name: Clear sparse state left in the runner checkout
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install --upgrade pip
+      - name: Create an isolated environment for this job
+        run: |
+          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
+      - run: python -m pip install --upgrade pip setuptools wheel
       - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Run integration tests with bounded workers
         env:
-          PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
         run: python tools/ci_tier.py pr-runtime
       - name: Prove native distributed runtime does not require JAX
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
@@ -408,7 +454,7 @@ jobs:
 
   jax-optional:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -424,7 +470,7 @@ jobs:
 
   azure-optional:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -454,7 +500,7 @@ jobs:
 
   triton-optional:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -471,7 +517,7 @@ jobs:
 
   qiskit-optional:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -513,7 +559,7 @@ jobs:
 
   cirq-optional:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -589,7 +635,7 @@ jobs:
 
   pennylane-optional:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
@@ -615,7 +661,7 @@ jobs:
 
   dependency-bounds:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
@@ -665,7 +711,7 @@ jobs:
     # which is still the default compiler on a maintained Linux LTS release.
     runs-on: ubuntu-22.04
     timeout-minutes: 30
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -788,7 +834,7 @@ jobs:
 
   distributed-cpu:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-distributed
       queue: max
@@ -803,7 +849,7 @@ jobs:
 
   coverage-shard:
     runs-on: ubuntu-latest
-    # Eight of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # Eight of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
       queue: max
@@ -884,7 +930,7 @@ jobs:
 
   supply-chain:
     runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
