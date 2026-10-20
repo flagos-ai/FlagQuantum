@@ -93,6 +93,11 @@ These examples do not use that alias:
   exact route for a mid-circuit measurement is reached through
   `DynamicCircuit.density_matrix()` and `fq.run` still refuses a dynamic program
   by name.
+- [`dynamic_disjunctive_condition.py`](dynamic_disjunctive_condition.py) — it
+  imports `flagquantum.dynamic` and `flagquantum.experimental.dynamic`, because a
+  disjunctive condition is a `DynamicCircuit.conditional` keyword, and the two
+  public readers of it are the exact route through
+  `DynamicCircuit.density_matrix()` and `run_dynamic`.
 
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
@@ -105,20 +110,24 @@ The example supplies boson operators with live scalar coefficients directly to
 the existing Lindblad path and rebuilds the bound request each optimizer step.
 No time-dependent pulse or separate trainer is introduced.
 
-## Three local basics
+## Local basics
 
-Start with three small programs that use only the stable `fq.*` API:
+Start with these small local workflows. The first three use only the stable
+`fq.*` API; the dynamic example uses the candidate and experimental surfaces
+named below:
 
 ```bash
 python -m examples.local.simulate
 python -m examples.local.measure
 python -m examples.local.train
+python -m examples.local.dynamic_feedback
 ```
 
-They cover local statevector simulation, exact and sampled measurements, and
-PyTorch-native training without credentials, remote resources, or optional
-backends. See the [annotated local guide](../docs/guides/LOCAL_WORKFLOWS.md)
-before moving to configurable research examples.
+They cover local statevector simulation, exact and sampled measurements,
+PyTorch-native training, and experimental local dynamic feedback without
+credentials, remote resources, or optional backends. See the
+[annotated local guide](../docs/guides/LOCAL_WORKFLOWS.md) before moving to
+configurable research examples.
 
 To inspect the local QBoson Kaiwu matrix boundary without installing the Kaiwu
 SDK or submitting a remote task, run:
@@ -253,6 +262,7 @@ boundaries are listed in the capability catalog.
 | Use a JAX kernel through PyTorch | [`04_jax_kernel_torch_layer.py`](single_machine_quantum_ai/04_jax_kernel_torch_layer.py) | Optional accelerator path |
 | Run a noisy circuit exactly instead of by trajectory | [`density_matrix_execution.py`](density_matrix_execution.py) | Dense exact oracle, 2**n by 2**n state |
 | Measure mid-circuit and keep the exact mixture | [`dynamic_density_matrix.py`](dynamic_density_matrix.py) | Dynamic subpackage surface, one branch per read bit |
+| Fire a gate on either of two readouts | [`dynamic_disjunctive_condition.py`](dynamic_disjunctive_condition.py) | Dynamic subpackage surface, disjunction of condition clauses |
 | Inspect sharded statevector ownership | [Distributed statevector](distributed_statevector_topologies/README.md) | One logical statevector across ranks |
 | Inspect rank-owned MPS execution | [Distributed MPS](distributed_mps/README.md) | Development evidence |
 | Train and package a circuit | [`train_parameterized_circuit_then_deploy.py`](train_parameterized_circuit_then_deploy.py) | Deployment bridge |

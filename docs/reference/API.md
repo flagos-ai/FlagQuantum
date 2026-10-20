@@ -808,6 +808,35 @@ result = fq.experimental.dynamic.run_dynamic(circuit, shots=128, seed=7)
 stable_result = result.to_execution_result()
 ```
 
+A condition is either one conjunction of classical-bit tests, stated with
+`classical_bit` or `conditions`, or a disjunction of at least two conjunctions,
+stated with `any_of`. The three spellings are alternatives: stating more than one
+is refused rather than resolved by a precedence rule, and a disjunction whose
+clauses are repeated or contain one another is refused because no trajectory
+reaches the unreachable clause. The clauses are the general form, so the gate can
+run on any boolean function of the measured bits:
+
+```python
+either = (
+    DynamicCircuit(3)
+    .ry(0, theta=0.7)
+    .ry(1, theta=1.1)
+    .measure(0, classical_bit=0)
+    .measure(1, classical_bit=1)
+    .conditional("x", 2, any_of=({0: 1}, {1: 1}))
+)
+```
+
+The OpenQASM 3 export writes one `&&` chain for one clause and an `||` chain of
+them for several, and the local trajectory path, `DynamicCircuit.density_matrix`,
+and the OpenQASM 3 export all evaluate the same disjunction. The one-bit provider
+condition forms are narrower and refuse it by name: the Braket IQM lowering raises
+`braket_iqm_disjunctive_conditions_are_unsupported` and the Qiskit export reports
+`unsupported_disjunctive_condition` rather than emitting the gate unconditionally.
+A conditioned `measure` or `reset` is refused as well, because those operations
+project a qubit and write or discard a classical outcome rather than apply a
+matrix.
+
 `DynamicCircuit` and its CircuitIR encoding are candidate-stable pending API
 owner approval. `run_dynamic` and backend assessment remain experimental;
 routing, dialect export, deployment and provider adapters are internal. Stable

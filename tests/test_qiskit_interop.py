@@ -101,6 +101,31 @@ def test_barrier_requires_explicit_lossy_conversion_and_reports_skip() -> None:
     assert tuple(item.name for item in result.ir.instructions) == ("h", "x")
 
 
+def test_a_disjunctive_condition_is_reported_not_exported_unconditional() -> None:
+    from flagquantum.dynamic import DynamicCircuit
+
+    circuit = DynamicCircuit(2)
+    circuit.measure(0, classical_bit=0)
+    circuit.measure(1, classical_bit=1)
+    circuit.conditional("x", 1, any_of=({0: 1}, {1: 1}))
+
+    # Reading only the conjunctive key would report this gate as unconditional and
+    # emit it that way, which is a different program that runs without complaint.
+    with pytest.raises(QiskitConversionError) as captured:
+        export_qiskit(circuit)
+
+    assert "unsupported_disjunctive_condition" in {
+        issue.code for issue in captured.value.report.issues
+    }
+    result = export_qiskit(circuit, allow_lossy=True)
+    assert "unsupported_disjunctive_condition" in {
+        issue.code for issue in result.report.issues
+    }
+    # The gate is left out rather than emitted unconditionally: a partial export
+    # that names its omission is the alternative to a wrong program.
+    assert result.circuit.count_ops().get("x", 0) == 0
+
+
 def test_qiskit_control_flow_fails_closed() -> None:
     circuit = QuantumCircuit(1, 1)
     with circuit.if_test((circuit.clbits[0], True)):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -331,6 +332,7 @@ def test_portability_producer_rejects_non_cuda_request_before_pass(
 
 def test_portability_replay_rejects_checkpoint_change_during_weight_load(
     tmp_path: Path,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     checkpoint = tmp_path / "trained.pt"
     checkpoint.write_bytes(b"trained")
@@ -341,6 +343,7 @@ def test_portability_replay_rejects_checkpoint_change_during_weight_load(
     def mutate_checkpoint(*args: object) -> None:
         del args
         checkpoint.write_bytes(b"changed")
+        advance_file_mtime(checkpoint)
 
     runtime = SimpleNamespace(
         load_trained_energy_weights=mutate_checkpoint,

@@ -18,7 +18,11 @@ ROOT = Path(__file__).resolve().parents[2]
     os.name == "nt", reason="A800 source restoration runs in Linux bash"
 )
 @pytest.mark.parametrize(
-    "workflow,job", [("ci.yml", "cpu-runtime"), ("local-gpu.yml", "one-gpu-local")]
+    "workflow,job",
+    [
+        ("ci.yml", "cpu-runtime"),
+        ("local-gpu.yml", "one-gpu-local"),
+    ],
 )
 def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     tmp_path: Path, workflow: str, job: str
@@ -134,3 +138,14 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     (temporary / "ci-source/source.sha").write_text(parent + "\n")
     assert shell(restore, target, check=False).returncode != 0
     assert git("rev-parse", "HEAD", cwd=target) == sha
+
+
+@pytest.mark.parametrize(
+    "job", ["distributed-cpu", "coverage-shard", "dependency-bounds"]
+)
+def test_checkout_jobs_use_the_exact_workflow_revision(job: str) -> None:
+    jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    checkout = next(
+        step for step in jobs[job]["steps"] if step.get("uses") == "actions/checkout@v4"
+    )
+    assert checkout["with"]["ref"] == "${{ github.sha }}"

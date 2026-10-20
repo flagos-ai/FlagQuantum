@@ -585,21 +585,16 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
-The CPU core and runtime tiers use four dedicated A800 CPU runners, two per
-host, with 16 xdist workers and work-stealing scheduling. Each runner is limited
-to 24 logical CPUs and 64 GiB of memory. Each job creates a fresh virtual
-environment, hides GPUs, and sets numerical-library thread counts to one.
-The persistent CPU runners reuse their local pip cache; they do not restore or
-upload the shared multi-gigabyte cache through `actions/setup-python`.
-Official Python distributions and verified CPU-only PyTorch wheels are cached
-locally; a missing wheel falls back to the official CPU index. Ordinary Python
-dependencies use the Tsinghua PyPI mirror. Dependency consistency and the
-CPU-only Torch build are checked before tests.
-
-Each coverage-shard pytest phase retains exactly two xdist workers with
-work-stealing scheduling on GitHub-hosted runners. These fixed counts prevent a
-runner-image change from silently widening process fan-out. The
-eight coverage shards use checked-in duration hints from a cited CI run and a
+The CPU core and runtime tiers use the dedicated A800 CPU runners with 16
+xdist workers and isolated per-job environments. Trusted quality, optional SDK,
+distributed CPU, coverage, dependency-bound and pre-commit jobs use the A100
+CPU pool; fork pull requests use GitHub-hosted Ubuntu. See
+[A100 runner operation](A100_RUNNERS.md) for pool isolation and validation.
+Coverage uses two work-stealing workers on both A100 and hosted runners.
+The seven dependency-bound variants retain their declared Python and CPU Torch
+versions and may run concurrently on separate A100 registrations. CPU jobs
+hide GPUs and verify dependency consistency and CPU-only framework selection.
+The eight coverage shards use checked-in duration hints from a cited CI run and a
 deterministic least-loaded assignment, then merge raw data before applying the
 unchanged coverage policy; their union is the former selection, not a reduced
 test set. Unmeasured tests receive a small default weight, so new tests remain
@@ -755,8 +750,8 @@ pattern list does not name. Every self-hosted job here that does not pass
 `tests/unit/test_shared_runner_checkout_policy.py` holds both halves of that
 rule.
 
-Pull requests are authorized to use five explicitly provisioned job definitions:
-`cpu-core`, `cpu-core-3-12-tests`, and `cpu-runtime` on `flagquantum-cpu`, plus
+Pull requests retain five explicitly provisioned A800 job definitions:
+`cpu-core`, `cpu-core-3-12-tests` and `cpu-runtime` on `flagquantum-cpu`, plus
 `one-gpu-local` on `a800-171` and `two-gpu-distributed-required` on `a800-172`.
 The CPU services have separate work directories and resource limits; the GPU
 jobs retain their accelerator queue and watchdogs. The machines remain shared,

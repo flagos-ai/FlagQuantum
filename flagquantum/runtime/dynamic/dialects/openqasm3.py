@@ -2,8 +2,12 @@
 
 from typing import Any
 
-from .._conditions import classical_width as _classical_width
-from .._conditions import instruction_conditions as _instruction_conditions
+from .._conditions import (
+    classical_width as _classical_width,
+)
+from .._conditions import (
+    instruction_condition_clauses as _instruction_condition_clauses,
+)
 from ..circuit import DynamicCircuit
 
 
@@ -35,11 +39,22 @@ def export_dynamic_qasm3(circuit: DynamicCircuit) -> str:
                     + ")"
                 )
             statement = f"{instruction.name}{params} {wire_text};"
-        conditions = _instruction_conditions(instruction)
-        if conditions:
-            expression = " && ".join(
-                f"c[{bit}] == {'true' if value else 'false'}"
-                for bit, value in conditions
+        clauses = _instruction_condition_clauses(instruction)
+        if clauses:
+            # Each clause is one conjunction and the program fires on any of them.
+            # A single clause is written bare so that the one-conjunction export
+            # stays exactly the text it was before a disjunction was expressible.
+            texts = [
+                " && ".join(
+                    f"c[{bit}] == {'true' if value else 'false'}"
+                    for bit, value in clause
+                )
+                for clause in clauses
+            ]
+            expression = (
+                texts[0]
+                if len(texts) == 1
+                else " || ".join(f"({text})" for text in texts)
             )
             statement = f"if ({expression}) {{ {statement} }}"
         lines.append(statement)

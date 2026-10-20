@@ -91,6 +91,7 @@ BUCKETS = frozenset(
 )
 
 CEILING = 13
+TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
@@ -182,10 +183,8 @@ def test_the_scan_finds_the_github_hosted_jobs_it_is_meant_to_police() -> None:
     assert {
         "ci.yml:quality",
         "ci.yml:cpu-core-3-12",
-        "ci.yml:coverage-shard",
         "ci.yml:coverage",
         "ci.yml:package",
-        "ci.yml:distributed-cpu",
         "pre-commit.yaml:pre-commit",
     } <= found
 
@@ -336,6 +335,50 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         assert env.get("PYTEST_ADDOPTS") == BOUNDED_PYTEST_ADDOPTS
 
 
+@pytest.mark.parametrize("job", ["distributed-cpu", "coverage-shard"])
+def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> None:
+    definition = _document("ci.yml")["jobs"][job]
+    assert definition["needs"] == "prepare-source"
+    assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
+    for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+        assert definition["env"][variable] == "1"
+    steps = _steps("ci.yml", job)
+    commands = "\n".join(str(step.get("run", "")) for step in steps)
+    assert "python -m pip check" in commands
+    assert "torch.version.cuda is None" in commands
+    assert "jax.default_backend() == 'cpu'" in commands
+    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
+    assert definition["timeout-minutes"] == 30
+    assert any(
+        step.get("uses") == "./.github/actions/isolated-python" for step in steps
+    )
+    if job == "coverage-shard":
+        assert definition["strategy"]["matrix"]["shard"] == list(range(8))
+    else:
+        assert "python tools/ci_tier.py pr-distributed" in commands
+
+
+def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> None:
+    definition = _document("ci.yml")["jobs"]["dependency-bounds"]
+    assert definition["strategy"]["fail-fast"] is False
+    assert len(definition["strategy"]["matrix"]["include"]) == 7
+    assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
+    steps = _steps("ci.yml", "dependency-bounds")
+    commands = "\n".join(str(step.get("run", "")) for step in steps)
+    assert "torch.version.cuda is None" in commands
+    assert "python -m pytest tests/smoke tests/test_native_circuit.py -q" in commands
+    assert "--print-floor" in commands
+    assert "mypy --strict" in commands
+    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
+    assert definition["strategy"]["max-parallel"] == 7
+    isolated = next(
+        step
+        for step in steps
+        if step.get("uses") == "./.github/actions/isolated-python"
+    )
+    assert isolated["with"]["torch-spec"] == "${{ matrix.torch }}"
+
+
 def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
     document = _document("ci.yml")
     jobs = document.get("jobs")
@@ -440,7 +483,7 @@ def test_pull_request_coverage_deduplicates_full_slow_conformance() -> None:
 
 
 def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
-    shard = _github_hosted_jobs("ci.yml")["coverage-shard"]
+    shard = _document("ci.yml")["jobs"]["coverage-shard"]
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
     assert strategy.get("matrix") == {"shard": list(range(8))}

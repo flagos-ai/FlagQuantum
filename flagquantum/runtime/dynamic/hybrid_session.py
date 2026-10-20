@@ -11,7 +11,11 @@ import torch
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ...core.parameters import is_parameterized_value
 from ...noise import NoiseModel
-from ._conditions import instruction_condition_clauses
+from ._conditions import (
+    instruction_condition_clauses,
+    validate_condition_clauses,
+    validate_disjunctive_clauses,
+)
 from ._feedback import DynamicFeedbackPlan
 from .circuit import DynamicCircuit
 from .execution import run_dynamic
@@ -73,27 +77,10 @@ def _validated_condition_clauses(
     clauses: tuple[tuple[tuple[int, int], ...], ...] = instruction_condition_clauses(
         instruction
     )
-    if any(
-        bit < 0 or expected not in {0, 1}
-        for clause in clauses
-        for bit, expected in clause
-    ) or any(len({bit for bit, _ in clause}) != len(clause) for clause in clauses):
-        raise ValueError(
-            "classical condition clauses require unique bits and binary values"
-        )
-    if any(tuple(sorted(clause)) != clause for clause in clauses):
-        raise ValueError("classical condition clauses must be canonically ordered")
-    if "condition_clauses" in instruction.metadata and (
-        len(clauses) < 2
-        or tuple(sorted(clauses, key=lambda item: (len(item), item))) != clauses
-        or len(set(clauses)) != len(clauses)
-        or any(
-            set(left).issubset(right)
-            for clause_index, left in enumerate(clauses)
-            for right in clauses[clause_index + 1 :]
-        )
-    ):
-        raise ValueError("condition_clauses must be canonical, distinct, and minimal")
+    if "condition_clauses" in instruction.metadata:
+        validate_disjunctive_clauses(clauses)
+    else:
+        validate_condition_clauses(clauses)
     if any(bit not in measured for clause in clauses for bit, _ in clause):
         raise ValueError(
             f"instruction {instruction_index} reads a classical bit before measurement"
