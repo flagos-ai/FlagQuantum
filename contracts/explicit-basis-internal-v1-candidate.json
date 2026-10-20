@@ -1,0 +1,72 @@
+{
+  "schema": "flagquantum.explicit_basis_internal_contract",
+  "version": "0.1",
+  "status": "implementation_authorized",
+  "owner": "core",
+  "approval_basis": "docs/development/API_CHANGE_PROPOSAL_079_EXPLICIT_BASIS_SPACES.md",
+  "extends_contract": "contracts/product-state-space-internal-v1-candidate.json",
+  "proposed_module": "flagquantum.core.ir.state_space",
+  "proposed_type": "ExplicitBasisSpace",
+  "conformance": "tests/unit/test_explicit_basis_contract.py",
+  "representation": {
+    "labels": "nonempty ordered immutable tuples of common-arity nonempty rows; exact builtin int or nonempty str atoms",
+    "dimension": "label count; never a qubit or tensor-factor count",
+    "basis_order": "caller order without sorting, coercion or inferred physical equivalence",
+    "basis_index": "exact validated label lookup; no inferred embedding",
+    "qubit_compatibility": false,
+    "immutable": true,
+    "physical_model_owner": "caller; labels alone do not validate charges, fusion trees, invariant sectors or orthonormality"
+  },
+  "existing_execution_boundary": "flagquantum.lindblad.plan/run; current Core binding, Simulation validation, Liouvillian, all three integrators and EvolutionResult retain their responsibilities",
+  "proposed_api_delta": {
+    "entry_points": [
+      "flagquantum.lindblad.plan",
+      "flagquantum.lindblad.run",
+      "flagquantum.lindblad.adjoint_gradient",
+      "flagquantum.simulation.plan_density_matrix_evolution",
+      "flagquantum.simulation.evolve_density_matrix",
+      "flagquantum.simulation.lindblad_adjoint.adjoint_gradient"
+    ],
+    "optional_keyword": "basis_labels",
+    "default": null,
+    "mutually_exclusive": [
+      "dimensions",
+      "n_qubits"
+    ],
+    "new_stable_root_exports": [],
+    "labelled_plan_version": "1.6",
+    "unchanged_existing_versions": [
+      "1.3",
+      "1.4",
+      "1.5"
+    ],
+    "labelled_decision_n_wires": null,
+    "labelled_product_dimensions": "absent",
+    "basis_authority": "request.basis_labels; decision copy derived and exactly revalidated",
+    "labelled_qubit_accessors": "CapabilityError; no fabricated wire count",
+    "result_payload": "unchanged; retain plan JSON to interpret stored results"
+  },
+  "refusals": [
+    "empty, malformed, duplicate or inconsistent-arity labels",
+    "boolean, float, tensor, subclass or arbitrary-object atoms",
+    "unordered inputs, generators, string/bytes rows",
+    "product or qubit declarations combined with labels",
+    "Pauli descriptors, qubit bitstrings or local selectors on labelled requests",
+    "direct BosonOperator conversion without explicit product dimensions",
+    "known malformed or inconsistent version 1.6 metadata before interval integration"
+  ],
+  "implementation_order": [
+    "land the approved integration candidate, test-only fake and unchanged consumer assertions",
+    "replace the Core factory and existing resolver after the integration baseline merges",
+    "replace the encoded numerical fake with the existing public labelled run boundary",
+    "verify plan replay/refusals, unchanged identities, all three methods, batches, initial-density adjoints and actual optimizer updates before capability promotion"
+  ],
+  "baseline_evidence_scope": "test-only ordered-basis semantics and encoded current-API numerical consumers; no labelled production plan or public entry point",
+  "not_implemented_by_this_contract": [
+    "production ExplicitBasisSpace or basis_labels keyword",
+    "plan 1.6 writer/reader or protected API snapshot delta",
+    "physical-sector invariance checks or automatic projection",
+    "native anyon, braid or fusion-measurement program",
+    "new package, registry, binder, solver, integrator or numerical trajectory loop"
+  ]
+}
