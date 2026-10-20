@@ -25,8 +25,6 @@ runs:
         echo "LD_LIBRARY_PATH=$library_path" >> "$GITHUB_ENV"
         if [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
           echo "PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple" >> "$GITHUB_ENV"
-          echo "FQ_CPU_TORCH_INDEX=https://mirror.sjtu.edu.cn/pytorch-wheels/cpu/" >> "$GITHUB_ENV"
         else
           echo "PIP_INDEX_URL=https://pypi.org/simple" >> "$GITHUB_ENV"
-          echo "FQ_CPU_TORCH_INDEX=https://download.pytorch.org/whl/cpu" >> "$GITHUB_ENV"
         fi

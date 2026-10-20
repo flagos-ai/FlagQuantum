@@ -1,0 +1,25 @@
+name: Install CPU PyTorch
+description: Use a domestic CPU wheel mirror with an official CPU index fallback
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        if [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
+          # Select Torch only from the CPU directory, then resolve its ordinary
+          # dependencies through the job's PyPI mirror without upgrading Torch.
+          if python -m pip install --no-index --no-deps \
+            --find-links https://mirrors.aliyun.com/pytorch-wheels/cpu/ \
+            'torch>=2.13,<2.14' && \
+            python -m pip install 'torch>=2.13,<2.14'; then
+            echo "CPU PyTorch installed through the domestic mirror"
+          else
+            echo "::warning::CPU mirror installation failed; retrying the official CPU index"
+            python -m pip install 'torch>=2.13,<2.14' \
+              --index-url https://download.pytorch.org/whl/cpu
+          fi
+        else
+          python -m pip install 'torch>=2.13,<2.14' \
+            --index-url https://download.pytorch.org/whl/cpu
+        fi
+        python -c "import torch; assert torch.version.cuda is None, torch.version.cuda; assert '+cpu' in torch.__version__, torch.__version__; print('CPU PyTorch:', torch.__version__)"

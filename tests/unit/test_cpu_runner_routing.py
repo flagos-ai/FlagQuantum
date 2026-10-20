@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -107,14 +108,8 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
             assert (
                 exported["PIP_INDEX_URL"] == "https://pypi.tuna.tsinghua.edu.cn/simple"
             )
-            assert exported["FQ_CPU_TORCH_INDEX"] == (
-                "https://mirror.sjtu.edu.cn/pytorch-wheels/cpu/"
-            )
         else:
             assert exported["PIP_INDEX_URL"] == "https://pypi.org/simple"
-            assert exported["FQ_CPU_TORCH_INDEX"] == (
-                "https://download.pytorch.org/whl/cpu"
-            )
         assert exported["LD_LIBRARY_PATH"] == (
             "/opt/selected-python/lib:/usr/local/cuda/compat/lib"
         )
@@ -149,3 +144,56 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
     assert checkouts
     assert "filter=lfs" not in (ROOT / ".gitattributes").read_text()
     assert all(not step.get("with", {}).get("lfs", False) for step in checkouts)
+
+
+@pytest.mark.parametrize(
+    ("runner_environment", "mirror_failure"),
+    [("self-hosted", False), ("self-hosted", True), ("github-hosted", False)],
+)
+def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
+    tmp_path: Path, runner_environment: str, mirror_failure: bool
+) -> None:
+    action = yaml.safe_load(
+        (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
+    )
+    log = tmp_path / "pip-calls.jsonl"
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\n"
+        "with open(os.environ['PIP_CALL_LOG'], 'a') as stream:\n"
+        "    stream.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+        "if '--find-links' in sys.argv and os.environ['MIRROR_FAILURE'] == '1':\n"
+        "    raise SystemExit(1)\n"
+    )
+    fake_python.chmod(0o755)
+    subprocess.run(
+        ["bash", "-eu", "-c", action["runs"]["steps"][0]["run"]],
+        env={
+            **os.environ,
+            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+            "PIP_CALL_LOG": str(log),
+            "MIRROR_FAILURE": str(int(mirror_failure)),
+            "RUNNER_ENVIRONMENT": runner_environment,
+        },
+        check=True,
+        timeout=15,
+    )
+    commands = [json.loads(line) for line in log.read_text().splitlines()]
+    installs = [
+        command for command in commands if command[:3] == ["-m", "pip", "install"]
+    ]
+    assert all("torch>=2.13,<2.14" in command for command in installs)
+    official = "https://download.pytorch.org/whl/cpu"
+    mirror = "https://mirrors.aliyun.com/pytorch-wheels/cpu/"
+    if runner_environment == "self-hosted":
+        assert mirror in installs[0]
+        assert "--no-index" in installs[0] and "--no-deps" in installs[0]
+        assert len(installs) == 2
+        assert (official in installs[1]) == mirror_failure
+    else:
+        assert len(installs) == 1
+        assert official in installs[0]
+        assert all(mirror not in command for command in installs)
+    assert commands[-1][0] == "-c"
+    assert "torch.version.cuda is None" in commands[-1][1]

@@ -43,17 +43,24 @@ quota, and jobs can queue when both runners are busy.
 
 ## Package mirrors
 
-Self-hosted jobs use the TUNA PyPI mirror and the SJTU CPU PyTorch index.
+Self-hosted jobs use the TUNA PyPI mirror. CPU PyTorch wheels are selected
+separately from the Aliyun CPU wheel directory with `--no-index --no-deps`;
+ordinary dependencies are then resolved through the job's PyPI mirror. This
+keeps CUDA wheels out of candidate selection. If the mirror attempt fails,
+the action retries the official CPU index and reports the fallback in the log.
+An import check requires a CPU-only Torch build after installation.
+
 GitHub-hosted fork jobs retain the official PyPI and CPU PyTorch indexes.
 The mirror settings are scoped to the job; no host pip configuration is changed.
-PyTorch stays on a CPU-only index rather than mixing CPU and CUDA candidates
-from multiple indexes. On 2026-10-20, the CPython 3.10, 3.11, and 3.12 Linux x64
-Torch 2.13.0+cpu wheel hashes in the SJTU index matched the official index, and
-the CPython 3.12 wheel endpoint returned the expected binary file.
+
+The SJTU CPU index had matching official wheel hashes during local inspection,
+but the shared host's outbound proxy rejected its CONNECT requests with HTTP
+500 during CI. The production route therefore uses the Aliyun wheel directory
+with the official CPU fallback instead.
 
 Mirror references:
 
-- https://mirrors.sjtug.sjtu.edu.cn/docs/pytorch-wheels
+- https://developer.aliyun.com/mirror/pytorch-wheels
 - https://mirrors.tuna.tsinghua.edu.cn/help/pypi/
 
 ## Validation
