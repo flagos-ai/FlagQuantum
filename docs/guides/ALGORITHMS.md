@@ -1828,6 +1828,101 @@ that applies a channel to no instruction of the body is refused rather than read
 zero. A caller who reads the realized factor as a measured error strength has substituted the
 device's behaviour for the model's, which is the misreading this boundary exists to prevent.
 
+**Where the pairs go is a second choice, and it is the model's rather than the program's.**
+The pair count is fixed by the requested factor and the body's length, so a fold has never had a
+choice about *how many* pairs it inserts and has always had one about *where they land*.
+`FOLDING_PLACEMENTS` names two rules and `fold_program(..., placement=..., noise_model=...)`
+takes one; `run_zne(..., fold="gate", fold_placement=...)` passes it through, and the model it
+already holds is the one the placed rule reads. `body_order` is the default and spends the pairs
+on the body's leading instructions, one instruction at a time, reading no model at all.
+`model_weighted` spends them on the instructions the model declares the most channel
+applications at, heaviest first with ties broken by body order, and an instruction the model
+names nowhere receives none. Both are one cycle over a different sequence, so they realize one
+scale factor and insert one pair count, and they differ in the program — which is why a plan and
+a reading both carry the placement, and why two placements of one request carry two identities.
+A `circuit` fold repeats the whole body and so has no placement to choose: it is **refused**
+rather than reported with a rule it did not apply.
+
+```python
+import torch
+
+from flagquantum.algorithms import (
+    FOLDING_PLACEMENTS,
+    Hamiltonian,
+    HamiltonianTerm,
+    fold_noise_amplification,
+    fold_program,
+    run_zne,
+)
+from flagquantum.circuit import Circuit
+from flagquantum.core.ir import ensure_circuit_ir
+from flagquantum.noise import NoiseModel, depolarizing_channel
+
+body = Circuit(2).h(0).cx(0, 1).rz(0, 0.4).ry(1, 0.6).t(0)
+observable = Hamiltonian([HamiltonianTerm(1.0, "xx", (0, 1))])
+# A model naming one of the five instructions, which is the case the default
+# placement cannot reach: its pair goes to the body's first instruction.
+silent = NoiseModel().add(("t",), depolarizing_channel(0.03, dtype=torch.complex128))
+
+for placement in FOLDING_PLACEMENTS:
+    plan = fold_program(body, scale_factor=1.4, placement=placement, noise_model=silent)
+    reading = fold_noise_amplification(body, plan, silent)
+    print(
+        placement,
+        f"pairs={plan.added_pairs}",
+        f"ratio={plan.scale_factor:.2f}",
+        f"applications={reading.folded_locations}",
+        " ".join(i.name for i in ensure_circuit_ir(plan.program).instructions),
+    )
+# body_order pairs=1 ratio=1.40 applications=1 h h h cx rz ry t
+# model_weighted pairs=1 ratio=1.40 applications=2 h cx rz ry t tdg t
+#   -- one request, one pair count, one realized ratio, and two programs: the
+#      default rule spends the pair on the leading h, which the model does not
+#      name, and the placed rule spends it on the t, which is all the model names.
+
+for placement in FOLDING_PLACEMENTS:
+    result = run_zne(
+        body,
+        observable,
+        noise_model=silent,
+        scale_factors=(1.0, 1.4, 1.8, 2.2),
+        order=2,
+        fold="gate",
+        fold_placement=placement,
+        dtype=torch.complex128,
+    )
+    print(
+        placement,
+        " ".join(f"{measurement.expectation:.9f}" for measurement in result.measurements),
+    )
+# body_order 0.297856195 0.297856195 0.297856195 0.297856195
+# model_weighted 0.297856195 0.285941947 0.274504270 0.263524099
+#   -- the default rule's curve is one number, because none of the instructions
+#      it repeats carries a channel of this model; the placed rule's curve moves,
+#      because the instruction it repeats does.
+```
+
+The first block is the choice itself: one request of `1.4` is one pair, both rules insert it,
+both realize `1.40`, and the two programs differ in which instruction carries the repeat — `h`
+under the default rule and `t` under the placed one. The second block is what that is worth. The
+default rule's four abscissas are one number, `0.297856195`, because it repeated an instruction
+this model applies no channel to: the fold paid two instructions and added no noise, and the
+extrapolation returns the unmitigated measurement unchanged. The placed rule's curve moves,
+because the instruction it repeats carries the channel. **What the choice buys is reach, and not
+accuracy:** at this request the placed estimate is `1.9408e-02` from the noiseless value where
+the flat curve's is `1.2411e-02`, because one pair on a lone noisy instruction doubles that
+instruction's noise while the abscissa moves by `1.4`, so the curve is far from linear in the
+length ratio it is fitted against. A placement is a statement about which instructions a fold
+reaches and never a claim that the resulting estimate is the better one.
+
+**The rule reads counts, and there is no per-instruction strength to read.** `model_weighted`
+orders by how many channel applications a model declares at an instruction and never by what
+they are worth, so two models declaring one channel each of very different strength at
+different instructions are placed identically. Nothing in a model states a per-instruction
+magnitude in a unit comparable across channel families, so a placement chosen by measured
+amplification would need a simulate-then-place loop, and this unit is a program transform that
+never simulates. That is the residual, and it is a different one from the pair count's.
+
 **Not here:** any channel-parameter scaling, which
 is `error_mitigation.py`'s unit and is refused together with a fold because the two are
 different units of scale; any fold of a program carrying a noise channel, a non-unitary
@@ -1836,9 +1931,10 @@ instruction, or nothing to fold; any strategy beyond the two named; and any requ
 request two factors that realize the same length either, because repeated abscissas make the
 extrapolation's linear system singular. No demonstration here is a performance, scaling or
 hardware claim: the whole path is single-process CPU statevector simulation on programs the
-caller supplies, and the noise it amplifies is the one the caller's model declares. The reading
-above reports where a fold's repeats landed; it does not move them, so a noise-model-aware
-placement of the added pairs is not here either.
+caller supplies, and the noise it amplifies is the one the caller's model declares. A circuit
+fold has no placement to choose and is refused one, and a placement is refused when there is no
+fold for it to place — `run_zne` refuses `fold_placement` without `fold`, because a run that
+scales the model has no pair to spend.
 
 ## SPSA optimization
 

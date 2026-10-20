@@ -110,6 +110,7 @@ from .error_mitigation import (
 from .folding import (
     FOLD_NOISE_SCHEMA,
     FOLDING_ASSUMPTIONS,
+    FOLDING_PLACEMENTS,
     FOLDING_SCHEMA,
     FOLDING_STRATEGIES,
     FoldingPlan,
@@ -218,6 +219,7 @@ __all__ = [
     "ExtrapolationFit",
     "FOLD_NOISE_SCHEMA",
     "FOLDING_ASSUMPTIONS",
+    "FOLDING_PLACEMENTS",
     "FOLDING_SCHEMA",
     "FOLDING_STRATEGIES",
     "FoldNoiseAmplification",

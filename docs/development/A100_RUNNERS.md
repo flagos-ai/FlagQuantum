@@ -5,8 +5,10 @@ The dedicated A100 node serves this repository with sixteen CPU runners named
 `fq-a100-gpu08`. The CPU pool has the `flagquantum-a100-cpu` label. The GPU runner
 has `gpu`, `flagquantum-local`, `flagquantum-a100`, and `a100-8gpu` labels.
 
-Ordinary CPU CI and pre-commit jobs use the CPU pool for pushes and same-repository
-pull requests. Fork pull requests use GitHub-hosted runners. macOS, Windows,
+CPU coverage, quality, optional-dependency and pre-commit jobs use the A100 pool
+for pushes and same-repository pull requests, with GitHub-hosted fallback for fork
+pull requests. The existing A800 CPU compatibility, smoke/unit and runtime jobs
+retain their own source-artifact transport and runner configuration. macOS, Windows,
 Linux wheel-container builds, and container publishing retain their existing
 runners. Existing required check names and hosted-fallback capacity buckets are
 unchanged.

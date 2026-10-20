@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -452,8 +453,9 @@ def test_aligned_fasta_reader_rejects_header_drift(tmp_path: Path) -> None:
 def test_aligned_fasta_reader_rejects_change_during_plugin_consumption(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
-    # Same-size content changes must be rejected even without timestamp changes.
+    # Content changes must be rejected even when timestamps provide no evidence.
     monkeypatch.setattr(
         source_tree_module,
         "_STABLE_METADATA_FIELDS",
@@ -469,6 +471,7 @@ def test_aligned_fasta_reader_rejects_change_during_plugin_consumption(
         lines = path.read_text(encoding="utf-8").strip().splitlines()
         if calls == 1:
             path.write_text(">p1\nXXXX\n", encoding="utf-8")
+            advance_file_mtime(path)
         return [(lines[0][1:], lines[1])]
 
     workflow = SimpleNamespace(

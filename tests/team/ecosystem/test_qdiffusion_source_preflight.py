@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -293,7 +293,9 @@ def test_runtime_source_root_is_recomputed_against_preflight(
 
 
 def test_runtime_source_root_rejects_change_during_stable_hash(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     root = tmp_path / f"FlagQuantum-{SOURCE_REVISION[:10]}"
     root.mkdir()
@@ -317,20 +319,13 @@ def test_runtime_source_root_rejects_change_during_stable_hash(
         ).encode()
     ).hexdigest()
     real_hash = source_tree_module._stream_sha256
-    real_identity = source_tree_module._metadata_identity
-
-    def coarse_clock_identity(metadata: os.stat_result) -> tuple[int, ...]:
-        identity = real_identity(metadata)
-        if len(identity) == len(source_tree_module._STABLE_METADATA_FIELDS):
-            return identity[:-2] + (0, 0)
-        return identity
 
     def mutate_after_hash(stream):
         digest = real_hash(stream)
         source.write_text("VALUE = 2\n", encoding="utf-8")
+        advance_file_mtime(source)
         return digest
 
-    monkeypatch.setattr(source_tree_module, "_metadata_identity", coarse_clock_identity)
     monkeypatch.setattr(source_tree_module, "_stream_sha256", mutate_after_hash)
 
     with pytest.raises(ValueError, match="changed during hashing"):

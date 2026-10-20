@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -242,7 +242,9 @@ def test_distribution_content_digest_collapses_duplicate_record_path(
 
 
 def test_distribution_content_digest_rechecks_complete_file_set(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     first = tmp_path / "package" / "first.py"
     first.parent.mkdir()
@@ -266,13 +268,8 @@ def test_distribution_content_digest_rechecks_complete_file_set(
         snapshot = real_capture(path, label=label)
         calls += 1
         if calls == 2:
-            before = first.stat()
             first.write_bytes(first.read_bytes())
-            # Make the identity change observable even within one filesystem tick.
-            os.utime(
-                first,
-                ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000),
-            )
+            advance_file_mtime(first)
         return snapshot
 
     monkeypatch.setattr(verify_module, "capture_regular_file", capture_then_replace)
@@ -282,7 +279,9 @@ def test_distribution_content_digest_rechecks_complete_file_set(
 
 
 def test_environment_lock_binds_wheel_metadata_and_digest_to_one_snapshot(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     wheel = tmp_path / "example-1.0-py3-none-any.whl"
     with zipfile.ZipFile(wheel, "w") as archive:
@@ -293,9 +292,8 @@ def test_environment_lock_binds_wheel_metadata_and_digest_to_one_snapshot(
     original = wheel.read_bytes()
 
     def inventory_after_replacement() -> dict[str, tuple[str, str]]:
-        before = wheel.stat()
         wheel.write_bytes(original)
-        os.utime(wheel, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000))
+        advance_file_mtime(wheel)
         return {"example": ("1.0", "a" * 64)}
 
     monkeypatch.setattr(

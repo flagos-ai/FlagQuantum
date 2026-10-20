@@ -72,7 +72,9 @@ from ..noise import (
 from .core import Hamiltonian
 from .folding import (
     FOLDING_ASSUMPTIONS,
+    FOLDING_PLACEMENTS,
     FOLDING_STRATEGIES,
+    FoldingPlacement,
     FoldingStrategy,
     fold_program,
 )
@@ -712,6 +714,7 @@ def run_zne(
     extrapolation: ExtrapolationMethod = "polynomial_least_squares",
     scaling: Callable[[NoiseModel, float], NoiseModel] = scale_noise_model,
     fold: FoldingStrategy | None = None,
+    fold_placement: FoldingPlacement = "body_order",
     device: torch.device | str = "cpu",
     dtype: torch.dtype | None = None,
 ) -> ZneResult:
@@ -750,6 +753,14 @@ def run_zne(
             where it is and repeats instructions, so the noise grows because the
             program is longer. It is a different unit of scale from ``scaling``
             and the two are refused together.
+        fold_placement: Where a ``gate`` fold's pairs go, one of
+            :data:`flagquantum.algorithms.FOLDING_PLACEMENTS`. The model is
+            already here, so this run is the one place the placed rule costs
+            nothing to use: the pairs can be spent at the instructions
+            ``noise_model`` declares rather than on the body's leading ones. The
+            realized scale factors are the same under both rules, so the abscissas
+            the fit receives do not depend on this argument and only the programs
+            do.
         device: The device the density simulation runs on.
         dtype: The density simulation's complex dtype. The default is the runtime
             configuration's, which is single precision; the extrapolation's own
@@ -782,6 +793,17 @@ def run_zne(
             f"unsupported folding strategy {fold!r}; expected one of "
             f"{', '.join(FOLDING_STRATEGIES)}, or None to scale the noise model"
         )
+    if fold_placement not in FOLDING_PLACEMENTS:
+        raise ValueError(
+            f"unsupported folding placement {fold_placement!r}; expected one of "
+            f"{', '.join(FOLDING_PLACEMENTS)}"
+        )
+    if fold is None and fold_placement != "body_order":
+        raise ValueError(
+            f"the {fold_placement!r} placement says where a fold spends its pairs, "
+            "and this run scales the noise model instead of folding the program, "
+            "so it has no pair to place; pass fold= to fold, or drop the placement"
+        )
     if not isinstance(noise_model, NoiseModel):
         raise TypeError("zero-noise extrapolation needs the noise model to scale")
     if fold is not None and scaling is not scale_noise_model:
@@ -807,7 +829,13 @@ def run_zne(
         if fold is None:
             points.append((circuit, scaling(noise_model, factor), factor))
         else:
-            plan = fold_program(circuit, scale_factor=factor, strategy=fold)
+            plan = fold_program(
+                circuit,
+                scale_factor=factor,
+                strategy=fold,
+                placement=fold_placement,
+                noise_model=noise_model,
+            )
             points.append((plan.program, noise_model, plan.scale_factor))
     # A fold can only reach a length in steps of two instructions, so two
     # requests can realize one abscissa. The fit's own linear system would be

@@ -776,11 +776,65 @@ def test_folding_example_lengthens_by_an_identity_and_shows_what_it_cost() -> No
         # The residual is the diagnostic the estimate is read against, so it is
         # printed beside it and has to be a real number here rather than absent.
         assert 0.0 < residual < against
-    # Four refusals, each naming the thing it refused rather than a code.
+    # The placement section: one request, one pair, two rules, and a model that
+    # names one of the five instructions. The pair count and the realized ratio
+    # are the same under both, so what differs is where the pair went and through
+    # it the program -- asserted as text, because the gate list is the claim.
+    for placement in ("body_order", "model_weighted"):
+        row = _labelled(output, f"place {placement}").split()
+        assert (row[0], row[1], row[2], row[3], row[4]) == (
+            "1.40",
+            "1.40",
+            "5",
+            "7",
+            "1",
+        )
+    assert _labelled(output, "body_order program") == "h h h cx rz ry t"
+    assert _labelled(output, "model_weighted program") == "h cx rz ry t tdg t"
+    # An application count on the body of one, moved by the placed rule and not by
+    # the default one: that is the whole claim, and it is read off the reading
+    # rather than inferred from the program.
+    default_applications = _labelled(output, "body_order applications")
+    placed_applications = _labelled(output, "model_weighted applications")
+    assert default_applications.replace("->", " ").split() == ["1", "1", "(x1.0000)"]
+    assert placed_applications.replace("->", " ").split() == ["1", "2", "(x2.0000)"]
+    # The default rule's four points are one number and the placed rule's are
+    # four. The flatness is the failure mode the section exists to show, and the
+    # strict equality is what makes it a failure mode rather than a wobble.
+    default_points = [
+        float(value) for value in _labelled(output, "body_order curve").split()
+    ]
+    placed_points = [
+        float(value) for value in _labelled(output, "model_weighted curve").split()
+    ]
+    assert len(set(default_points)) == 1
+    assert placed_points == sorted(placed_points, reverse=True)
+    assert len(set(placed_points)) == 4
+    # And the placed estimate is not the closer one. If it ever becomes so, this
+    # assertion is what says the section stopped reporting what it measured.
+    noiseless_value = float(_labelled(output, "noiseless value"))
+    default_distance = float(
+        _labelled(output, "body_order estimate").split(",")[1].split()[0]
+    )
+    placed_distance = float(
+        _labelled(output, "model_weighted estimate").split(",")[1].split()[0]
+    )
+    assert default_distance < placed_distance
+    default_estimate = float(_labelled(output, "body_order estimate").split(",")[0])
+    # The printed distance is the estimate's own distance from the noiseless
+    # value, in whichever direction it fell, so it is compared as a magnitude.
+    assert abs(default_estimate - noiseless_value) == pytest.approx(
+        default_distance, abs=1e-6
+    )
+    # Six refusals, each naming the thing it refused rather than a code.
     assert "different units of scale" in _labelled(output, "fold with scaling")
     assert "below one" in _labelled(output, "factor below one")
     assert "realize the same one more than once" in _labelled(
         output, "two requests, one length"
+    )
+    assert "it has no pair to place" in _labelled(output, "placement without a fold")
+    assert "cannot honour the 'model_weighted' placement" in _labelled(
+        output, "placement of a circuit fold"
     )
     assert "no unitary inverse" in _labelled(output, "a channel in the body")
     _assert_premise("folding", output)

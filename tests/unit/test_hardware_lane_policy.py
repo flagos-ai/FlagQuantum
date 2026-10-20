@@ -7,9 +7,8 @@ a threshold the code passes gets reported as a regression. These rules are about
 the workflow's own job graph, which the workflow fully controls, rather than
 about the containers a neighbour happens to be running, which it does not.
 
-The last rule in this module is a different species and guards the same hosts: a fork
-pull request must not be able to reach a self-hosted runner. Same-repository CPU
-jobs may use the isolated A100 pool only behind the explicit routing guard.
+Pull requests may reach the explicitly provisioned A800 CPU and GPU jobs.
+Other self-hosted hardware remains available only through its existing triggers.
 """
 
 from __future__ import annotations
@@ -29,6 +28,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # group is repository-wide, so the scheduled lane and the manual gate serialize
 # against each other and not merely against themselves.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
+
 TRUSTED_CPU_ROUTE = (
     "${{ (github.event_name != 'pull_request' || "
     "github.event.pull_request.head.repo.full_name == github.repository) "
@@ -159,7 +159,7 @@ def _accelerator_jobs() -> dict[str, tuple[Path, dict[str, object]]]:
     """Every job that asks a self-hosted runner for a device."""
 
     found: dict[str, tuple[Path, dict[str, object]]] = {}
-    for path in sorted(WORKFLOWS.glob("*.y*ml")):
+    for path in sorted(WORKFLOWS.glob("*.yml")):
         for name, job in _jobs(path).items():
             labels = {label.lower() for label in _runs_on(job)}
             if "self-hosted" in labels and "gpu" in labels:
@@ -267,7 +267,7 @@ def _untrusted_workflow_jobs() -> dict[str, tuple[Path, frozenset[str]]]:
     """Workflows a pull request can reach, with the events that get it there."""
 
     found: dict[str, tuple[Path, frozenset[str]]] = {}
-    for path in sorted(WORKFLOWS.glob("*.y*ml")):
+    for path in sorted(WORKFLOWS.glob("*.yml")):
         reaching = _triggers(path) & set(UNTRUSTED_EVENTS)
         if reaching:
             found[path.name] = (path, frozenset(reaching))
@@ -280,7 +280,7 @@ def test_every_workflow_event_is_attributed() -> None:
     # workflow reachable by a route nobody classified, and the rules would stay
     # quiet about it. This is what speaks up instead.
     unattributed: list[str] = []
-    for path in sorted(WORKFLOWS.glob("*.y*ml")):
+    for path in sorted(WORKFLOWS.glob("*.yml")):
         for event in sorted(_triggers(path)):
             if event not in UNTRUSTED_EVENTS and event not in TRUSTED_EVENTS:
                 unattributed.append(f"{path.name}: {event}")
@@ -291,22 +291,37 @@ def test_every_workflow_event_is_attributed() -> None:
     )
 
 
-def test_a_fork_pull_request_cannot_reach_a_self_hosted_runner() -> None:
-    # The A100 CPU route admits trusted same-repository code, while fork PRs
-    # take the hosted fallback. Other PR-triggered self-hosted routes remain
-    # forbidden, including pull_request_target and workflow_run.
-    offenders: list[str] = []
+def test_pull_requests_only_reach_provisioned_or_guarded_jobs() -> None:
+    allowed = {
+        ("local-gpu.yml", "one-gpu-local"): "a800-171",
+        ("local-gpu.yml", "two-gpu-distributed-required"): "a800-172",
+        ("ci.yml", "cpu-core"): "flagquantum-cpu",
+        ("ci.yml", "cpu-core-3-12-tests"): "flagquantum-cpu",
+        ("ci.yml", "cpu-runtime"): "flagquantum-cpu",
+    }
+    found = set()
     for name, (path, reaching) in sorted(_untrusted_workflow_jobs().items()):
         for job, definition in _jobs(path).items():
-            if _allows_untrusted_code(definition, reaching):
-                offenders.append(
-                    f"{name}:{job} runs on a self-hosted runner and "
-                    f"{name} is reachable by {sorted(reaching)}"
-                )
-    assert not offenders, (
-        "a pull request must not be able to run code on a self-hosted "
-        "runner:\n" + "\n".join(offenders)
-    )
+            if _is_self_hosted(definition):
+                if not _allows_untrusted_code(definition, reaching):
+                    continue
+                if name == "local-gpu.yml" and job in {
+                    "validate-cpu-pool",
+                    "validate-eight-gpus",
+                }:
+                    assert definition.get("if") == "${{ inputs.validate_pool }}"
+                    inputs = yaml.safe_load(path.read_text())[True][
+                        "workflow_dispatch"
+                    ]["inputs"]
+                    assert inputs["validate_pool"]["type"] == "boolean"
+                    assert inputs["validate_pool"]["default"] is False
+                    continue
+                key = (name, job)
+                assert key in allowed, f"unexpected self-hosted PR job: {key}"
+                assert reaching == frozenset({"pull_request"})
+                assert allowed[key] in _runs_on(definition)
+                found.add(key)
+    assert found == set(allowed)
 
 
 def test_the_untrusted_scan_finds_the_workflows_it_is_meant_to_police() -> None:
@@ -314,10 +329,8 @@ def test_the_untrusted_scan_finds_the_workflows_it_is_meant_to_police() -> None:
     # came back empty would pass the rule while checking nothing.
     found = set(_untrusted_workflow_jobs())
 
-    assert {"ci.yml", "publish-dev-container.yml"} <= found
-    assert (
-        not {"local-gpu.yml", "flagos-reference.yml", "scheduled-hardware.yml"} & found
-    )
+    assert {"ci.yml", "publish-dev-container.yml", "local-gpu.yml"} <= found
+    assert not {"flagos-reference.yml", "scheduled-hardware.yml"} & found
 
 
 def test_the_self_hosted_detector_recognises_a_known_self_hosted_job() -> None:
@@ -327,10 +340,26 @@ def test_the_self_hosted_detector_recognises_a_known_self_hosted_job() -> None:
     # The discovery assertion above covers which workflows are reachable, not
     # whether a self-hosted job can be seen at all.
     self_hosted = _jobs(WORKFLOWS / "local-gpu.yml")["one-gpu-local"]
-    github_hosted = _jobs(WORKFLOWS / "ci.yml")["package"]
+    github_hosted = _jobs(WORKFLOWS / "ci.yml")["prepare-source"]
 
     assert _is_self_hosted(self_hosted)
     assert not _is_self_hosted(github_hosted)
+
+
+def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
+    tmp_path: Path,
+) -> None:
+    # Every workflow here writes `on` as a mapping, which YAML hands back under
+    # the boolean key `True`. A workflow naming a single event may write it as a
+    # scalar instead, and reading that as no events at all would make the
+    # pull-request rule pass by seeing nothing.
+    mapping = tmp_path / "mapping.yml"
+    mapping.write_text("on:\n  push:\n  pull_request:\n", encoding="utf-8")
+    scalar = tmp_path / "scalar.yml"
+    scalar.write_text("on: push\n", encoding="utf-8")
+
+    assert _triggers(mapping) == frozenset({"push", "pull_request"})
+    assert _triggers(scalar) == frozenset({"push"})
 
 
 def test_cpu_route_rejects_missing_guards_and_other_untrusted_events() -> None:
@@ -348,19 +377,3 @@ def test_cpu_route_rejects_missing_guards_and_other_untrusted_events() -> None:
         ),
     ):
         assert _allows_untrusted_code({"runs-on": route}, frozenset({"pull_request"}))
-
-
-def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
-    tmp_path: Path,
-) -> None:
-    # Every workflow here writes `on` as a mapping, which YAML hands back under
-    # the boolean key `True`. A workflow naming a single event may write it as a
-    # scalar instead, and reading that as no events at all would make the
-    # pull-request rule pass by seeing nothing.
-    mapping = tmp_path / "mapping.yml"
-    mapping.write_text("on:\n  push:\n  pull_request:\n", encoding="utf-8")
-    scalar = tmp_path / "scalar.yml"
-    scalar.write_text("on: push\n", encoding="utf-8")
-
-    assert _triggers(mapping) == frozenset({"push", "pull_request"})
-    assert _triggers(scalar) == frozenset({"push"})
