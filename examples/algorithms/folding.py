@@ -61,6 +61,7 @@ from typing import Any
 import torch
 
 from flagquantum.algorithms import (
+    FOLDING_PLACEMENTS,
     Hamiltonian,
     HamiltonianTerm,
     fold_noise_amplification,
@@ -289,6 +290,76 @@ def main() -> None:
     print(f"  {'':<{LABEL_WIDTH}}  carries the ``t``, reaches 2.75")
     print()
 
+    print("where a pair goes is a choice, and the model is what decides it")
+    #: A second model, naming one instruction where the first named all five.
+    partial = NoiseModel().add(
+        ("t",), depolarizing_channel(DEPOLARIZING_PROBABILITY, dtype=DTYPE)
+    )
+    report("model names", "t only, so four of the five instructions carry no noise")
+    placed = {
+        placement: fold_program(
+            circuit,
+            scale_factor=REQUESTED,
+            placement=placement,
+            noise_model=partial,
+        )
+        for placement in FOLDING_PLACEMENTS
+    }
+    report("placement", "requested  realized  body  folded  added")
+    for placement, plan in placed.items():
+        report(
+            f"  place {placement}",
+            f"{plan.requested_scale_factor:>8.2f}  {plan.scale_factor:>8.2f}  "
+            f"{plan.body_instructions:>4}  {plan.folded_instructions:>6}  "
+            f"{plan.added_pairs:>5}",
+        )
+    for placement, plan in placed.items():
+        report(
+            f"{placement} program",
+            " ".join(i.name for i in ensure_circuit_ir(plan.program).instructions),
+        )
+    for placement, plan in placed.items():
+        reading = fold_noise_amplification(circuit, plan, partial)
+        report(
+            f"{placement} applications",
+            f"{reading.body_locations} -> {reading.folded_locations}"
+            f"  (x{reading.amplification:.4f})",
+        )
+    for placement in FOLDING_PLACEMENTS:
+        result = run_zne(
+            circuit,
+            observable,
+            noise_model=partial,
+            scale_factors=GATE_SCALE_FACTORS,
+            order=2,
+            fold="gate",
+            fold_placement=placement,
+            dtype=DTYPE,
+        )
+        report(
+            f"{placement} curve",
+            "  ".join(f"{m.expectation:.9f}" for m in result.measurements),
+        )
+        report(
+            f"{placement} estimate",
+            f"{result.estimate:.12f}, {abs(result.estimate - noiseless):.4e} "
+            f"from the noiseless value",
+        )
+    print(f"  {'':<{LABEL_WIDTH}}  -- the two rules realize one ratio and one pair")
+    print(f"  {'':<{LABEL_WIDTH}}  count, because both are fixed by the request and")
+    print(f"  {'':<{LABEL_WIDTH}}  the body's length. What they do not share is where")
+    print(f"  {'':<{LABEL_WIDTH}}  the pair goes. The default rule knows the body's")
+    print(f"  {'':<{LABEL_WIDTH}}  order and nothing else, so its pair lands on the")
+    print(f"  {'':<{LABEL_WIDTH}}  first ``h``, which this model does not name: the")
+    print(f"  {'':<{LABEL_WIDTH}}  curve is flat to the last bit and the extrapolation")
+    print(f"  {'':<{LABEL_WIDTH}}  returns the unmitigated point, having paid two")
+    print(f"  {'':<{LABEL_WIDTH}}  instructions for no added noise at all. The placed")
+    print(f"  {'':<{LABEL_WIDTH}}  rule reads the model and spends the pair on the")
+    print(f"  {'':<{LABEL_WIDTH}}  ``t``, so the same cost moves the observable. The")
+    print(f"  {'':<{LABEL_WIDTH}}  placed estimate is not the closer one, and that is")
+    print(f"  {'':<{LABEL_WIDTH}}  the point: placement buys reach, not accuracy")
+    print()
+
     print("measured curves, one per strategy, at the abscissas each can reach")
     results = {
         "gate": run_zne(
@@ -385,6 +456,28 @@ def main() -> None:
         ),
     )
     refuse(
+        "placement without a fold",
+        lambda: run_zne(
+            circuit,
+            observable,
+            noise_model=noise,
+            scale_factors=GATE_SCALE_FACTORS,
+            order=2,
+            fold_placement="model_weighted",
+            dtype=DTYPE,
+        ),
+    )
+    refuse(
+        "placement of a circuit fold",
+        lambda: fold_program(
+            circuit,
+            scale_factor=REQUESTED,
+            strategy="circuit",
+            placement="model_weighted",
+            noise_model=noise,
+        ),
+    )
+    refuse(
         "a channel in the body",
         lambda: fold_program(
             Circuit(1).x(0).depolarizing(0, DEPOLARIZING_PROBABILITY).x(0),
@@ -408,7 +501,15 @@ def main() -> None:
     print("  curve above is a statement about the observable rather than about the")
     print("  noise. The ratio a plan reports is a length, not a strength: ask")
     print("  fold_noise_amplification for the strength, and ask it per qubit,")
-    print("  because a gate fold's pairs land on a subset of the qubits.")
+    print("  because a gate fold's pairs land on a subset of the qubits. Where")
+    print("  those pairs go is a second choice, and it is the model's rather than")
+    print("  the program's: the default rule spends them on the body's leading")
+    print("  instructions and can miss every instruction the model names, while the")
+    print("  placed rule spends them where the noise was declared. Neither reaches")
+    print("  a strength the model does not declare, and neither is the more")
+    print("  accurate estimate -- a pair on one loud instruction amplifies that")
+    print("  instruction far past the length ratio, so the placed curve is the")
+    print("  steeper one and not the better-fitted one.")
 
 
 if __name__ == "__main__":
