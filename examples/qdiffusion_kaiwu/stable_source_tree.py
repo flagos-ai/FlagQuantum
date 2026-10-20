@@ -75,10 +75,9 @@ def _hash_stable_file(
             os.O_RDONLY | no_follow | getattr(os, "O_CLOEXEC", 0),
         )
         opened = os.fstat(descriptor)
-        if not stat.S_ISREG(opened.st_mode) or (opened.st_dev, opened.st_ino) != (
-            metadata.st_dev,
-            metadata.st_ino,
-        ):
+        if not stat.S_ISREG(opened.st_mode) or _metadata_identity(
+            opened
+        ) != _metadata_identity(metadata):
             raise ValueError(f"{label} file changed before hashing: {target.name}")
         if max_bytes is not None and opened.st_size > max_bytes:
             raise ValueError(f"{label} exceeds the size bound")
@@ -110,7 +109,7 @@ def _hash_stable_file(
 
 
 def revalidate_regular_file(snapshot: RegularFileSnapshot, *, label: str) -> None:
-    """Require one visible file and its parent to retain captured identities."""
+    """Require the captured file identities and content to remain unchanged."""
 
     try:
         parent = snapshot.parent.lstat()
@@ -123,6 +122,20 @@ def revalidate_regular_file(snapshot: RegularFileSnapshot, *, label: str) -> Non
         or _metadata_identity(parent) != snapshot.parent_identity
         or snapshot.path.is_symlink()
         or not stat.S_ISREG(visible.st_mode)
+        or _metadata_identity(visible) != snapshot.identity
+    ):
+        raise ValueError(f"{label} changed after identity capture")
+    try:
+        digest = _hash_stable_file(
+            snapshot.path, visible, label=label, expected_bytes=snapshot.size
+        )
+        parent = snapshot.parent.lstat()
+        visible = snapshot.path.lstat()
+    except (OSError, ValueError):
+        raise ValueError(f"{label} changed after identity capture") from None
+    if (
+        digest != snapshot.sha256
+        or _metadata_identity(parent) != snapshot.parent_identity
         or _metadata_identity(visible) != snapshot.identity
     ):
         raise ValueError(f"{label} changed after identity capture")

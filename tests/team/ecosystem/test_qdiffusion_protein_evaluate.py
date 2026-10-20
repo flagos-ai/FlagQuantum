@@ -13,6 +13,7 @@ import torch
 
 from examples.qdiffusion_kaiwu import provider_reconciliation as reconciliation
 from examples.qdiffusion_kaiwu import qdiffusion_protein_evaluate as evaluation_module
+from examples.qdiffusion_kaiwu import stable_source_tree as source_tree_module
 from examples.qdiffusion_kaiwu.qdiffusion_protein_evaluate import (
     _invalid_sequence_count,
     _load_training_record,
@@ -450,7 +451,14 @@ def test_aligned_fasta_reader_rejects_header_drift(tmp_path: Path) -> None:
 
 def test_aligned_fasta_reader_rejects_change_during_plugin_consumption(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Same-size content changes must be rejected even without timestamp changes.
+    monkeypatch.setattr(
+        source_tree_module,
+        "_STABLE_METADATA_FIELDS",
+        source_tree_module._STABLE_METADATA_FIELDS[:-2],
+    )
     record, _ = _training_artifacts(tmp_path)
     paths = _verified_training_paths(tmp_path, record)
     calls = 0

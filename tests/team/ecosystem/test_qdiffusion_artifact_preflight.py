@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -347,7 +348,11 @@ def test_artifact_snapshot_rejects_same_digest_rewrite_after_preflight(
     snapshots = capture_artifact_snapshots(paths, preflight)
     original = paths["dataset"].read_bytes()
 
+    before = paths["dataset"].stat()
     paths["dataset"].write_bytes(original)
+    os.utime(
+        paths["dataset"], ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000)
+    )
 
     with pytest.raises(ValueError, match="changed after identity capture"):
         revalidate_artifact_snapshots(snapshots)
@@ -362,7 +367,12 @@ def test_preflight_returns_the_exact_snapshots_used_for_published_record(
 
     def write_then_replace(path: Path, value: object) -> None:
         real_write(path, value)
+        before = paths["dataset"].stat()
         paths["dataset"].write_bytes(original)
+        os.utime(
+            paths["dataset"],
+            ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000),
+        )
 
     monkeypatch.setattr(
         preflight_module, "write_private_json_exclusive", write_then_replace
@@ -384,7 +394,11 @@ def test_preflight_retains_the_exact_source_archive_snapshot(
 
     def write_then_replace(path: Path, value: object) -> None:
         real_write(path, value)
+        before = source_path.stat()
         source_path.write_bytes(source_bytes)
+        os.utime(
+            source_path, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000)
+        )
 
     monkeypatch.setattr(
         preflight_module, "write_private_json_exclusive", write_then_replace

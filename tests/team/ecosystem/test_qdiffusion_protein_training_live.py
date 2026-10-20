@@ -527,7 +527,11 @@ def test_training_output_capture_rechecks_checkpoint_after_artifacts(
 
     def capture_then_replace(run_directory: Path):
         result = real_capture(run_directory)
+        before = checkpoint.stat()
         checkpoint.write_bytes(b"trained")
+        os.utime(
+            checkpoint, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000)
+        )
         return result
 
     monkeypatch.setattr(
@@ -560,7 +564,9 @@ def test_training_output_snapshots_survive_until_record_publication(
         path.chmod(0o600)
 
     _, _, _, snapshots = _capture_training_output_snapshots(tmp_path)
+    before = checkpoint.stat()
     checkpoint.write_bytes(b"trained")
+    os.utime(checkpoint, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000))
 
     with pytest.raises(ValueError, match="changed after identity capture"):
         revalidate_training_output_snapshots(snapshots)
