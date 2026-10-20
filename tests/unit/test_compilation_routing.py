@@ -73,6 +73,10 @@ def test_reverse_direction_and_multiple_routed_gates_preserve_state() -> None:
         "mapping_restored": True,
         "direction_semantics": "logical_wire_order_preserved",
         "direction_swap_count": 0,
+        # A device that declares only its couplings states no per-link error, so
+        # the plan reports that it was not priced in faults rather than reporting a
+        # faultless program.
+        "expected_link_faults": None,
         "topology_gate_count": 2,
         "routed_gate_count": 2,
         "inserted_swap_count": 6,
