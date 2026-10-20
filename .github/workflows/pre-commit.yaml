@@ -36,9 +36,8 @@ jobs:
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
           fi
+      # The repository has no LFS filters; shared runners need only Git.
       - uses: actions/checkout@v5
-        with:
-          lfs: true
 
       - name: Set up Python
         uses: actions/setup-python@v6

@@ -111,3 +111,15 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
             timeout=10,
         )
     assert environments[0] != environments[1]
+
+
+def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
+    document = yaml.safe_load((WORKFLOWS / "pre-commit.yaml").read_text())
+    checkouts = [
+        step
+        for step in document["jobs"]["pre-commit"]["steps"]
+        if str(step.get("uses", "")).startswith("actions/checkout@")
+    ]
+    assert checkouts
+    assert "filter=lfs" not in (ROOT / ".gitattributes").read_text()
+    assert all(not step.get("with", {}).get("lfs", False) for step in checkouts)
