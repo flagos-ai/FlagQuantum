@@ -8,7 +8,7 @@ queues every other repository in the organisation behind it.
 The ceiling is expressed the way GitHub expresses it. A concurrency group
 admits one job at a time, so the number of distinct groups one workflow run
 uses *is* the number of GitHub-hosted runners that run can hold at once.
-`ci.yml` and `pre-commit.yaml` partition their jobs across the sixteen scoped
+`ci.yml` and `pre-commit.yaml` partition their jobs across the thirteen scoped
 buckets below, and this module holds that partition still. The pull-request or
 branch scope prevents an unrelated older run from serializing a newer run;
 the organisation's 20-runner pool remains the aggregate ceiling.
@@ -58,11 +58,11 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github" / "workflows"
 
-# The per-push workflows: every job in them runs on a GitHub-hosted runner.
+# Workflows whose GitHub-hosted jobs share the bounded runner pool.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these sixteen scoped names are a
-# ceiling of sixteen concurrent GitHub-hosted runners for one run.
+# One concurrency group admits one job, so these thirteen scoped names are a
+# ceiling of thirteen concurrent GitHub-hosted runners for one run.
 #
 # The scope is the pull request number where there is one and the branch name
 # otherwise, so an unrelated branch's older run cannot serialize a newer one.
@@ -74,8 +74,6 @@ BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 RUN_SCOPE = "${{ github.event.pull_request.number || github.ref_name }}"
 BUCKETS = frozenset(
     {
-        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.10",
-        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.11",
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-0",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-1",
@@ -86,15 +84,14 @@ BUCKETS = frozenset(
         f"flagquantum-gh-{RUN_SCOPE}-coverage-6",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-7",
         f"flagquantum-gh-{RUN_SCOPE}-distributed",
-        f"flagquantum-gh-{RUN_SCOPE}-runtime",
         f"flagquantum-gh-{RUN_SCOPE}-light-a",
         f"flagquantum-gh-{RUN_SCOPE}-light-b",
         f"flagquantum-gh-{RUN_SCOPE}-light-c",
     }
 )
 
-CEILING = 16
-BOUNDED_PYTEST_ADDOPTS = "-n 2 --dist=worksteal --durations=50"
+CEILING = 13
+BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
 _MATRIX_REFERENCE = re.compile(r"\$\{\{\s*matrix\.([A-Za-z0-9_-]+)\s*\}\}")
@@ -114,7 +111,10 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
     found: dict[str, dict[str, object]] = {}
     for name, job in jobs.items():
         assert isinstance(job, dict), f"{workflow}:{name}: not a job mapping"
-        if job.get("runs-on") in GITHUB_HOSTED_UBUNTU_RUNNERS:
+        if (
+            isinstance(job.get("runs-on"), str)
+            and job["runs-on"] in GITHUB_HOSTED_UBUNTU_RUNNERS
+        ):
             found[name] = job
     return found
 
@@ -157,7 +157,7 @@ def _bucketed_jobs() -> dict[str, dict[str, object]]:
 
 
 def _steps(workflow: str, job_name: str) -> list[dict[str, object]]:
-    job = _github_hosted_jobs(workflow)[job_name]
+    job = _document(workflow)["jobs"][job_name]
     steps = job.get("steps")
     assert isinstance(steps, list), f"{workflow}:{job_name}: no steps"
     assert all(isinstance(step, dict) for step in steps)
@@ -171,9 +171,6 @@ def test_the_scan_finds_the_github_hosted_jobs_it_is_meant_to_police() -> None:
 
     assert {
         "ci.yml:quality",
-        "ci.yml:cpu-core",
-        "ci.yml:cpu-core-3-12-tests",
-        "ci.yml:cpu-runtime",
         "ci.yml:cpu-core-3-12",
         "ci.yml:coverage-shard",
         "ci.yml:coverage",
@@ -263,9 +260,59 @@ def test_a_superseded_pull_request_run_is_cancelled_and_a_main_push_is_not() -> 
     )
 
 
-def test_cpu_pytest_tiers_use_two_bounded_work_stealing_workers() -> None:
+def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
+    assert [
+        name
+        for name, definition in _document("ci.yml")["jobs"].items()
+        if not definition.get("needs")
+    ] == ["prepare-source"]
     tier_steps = []
     for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
+        definition = _document("ci.yml")["jobs"][job]
+        assert definition["runs-on"] == [
+            "self-hosted",
+            "linux",
+            "x64",
+            "flagquantum-cpu",
+        ]
+        assert definition["timeout-minutes"] == 30
+        setup_python = next(
+            step
+            for step in _steps("ci.yml", job)
+            if step.get("uses") == "actions/setup-python@v5"
+        )
+        assert "cache" not in setup_python["with"]
+        assert definition["needs"] == "prepare-source"
+        download = next(
+            step
+            for step in _steps("ci.yml", job)
+            if step.get("uses") == "actions/download-artifact@v8.0.2" and step.get("if")
+        )
+        assert download["with"]["digest-mismatch"] == "error"
+        assert (
+            download["with"]["name"]
+            == "ci-source-${{ needs.prepare-source.outputs.artifact-key }}"
+        )
+        assert not any(
+            step.get("uses", "").startswith("actions/checkout@")
+            for step in _steps("ci.yml", job)
+        )
+        assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
+        assert definition["env"]["OMP_NUM_THREADS"] == "1"
+        assert definition["env"]["PIP_INDEX_URL"] == (
+            "https://pypi.tuna.tsinghua.edu.cn/simple"
+        )
+        commands = "\n".join(str(step.get("run", "")) for step in _steps("ci.yml", job))
+        assert "assert torch.version.cuda is None" in commands
+        assert "python -m pip check" in commands
+        assert commands.index('python -m pip install "torch>=2.13,<2.14"') < (
+            commands.index("python -m pip install --no-build-isolation")
+        )
+        assert 'python -m venv "${RUNNER_TEMP}/venv-' in commands
+        assert '>> "$GITHUB_PATH"' in commands
+        assert 'test "$sha" = "$GITHUB_SHA"' in commands
+        assert 'git checkout --force --detach "$sha"' in commands
+        assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in commands
         tier_steps.extend(
             step
             for step in _steps("ci.yml", job)

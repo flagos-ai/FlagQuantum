@@ -1,11 +1,61 @@
 name: Local GPU Gate
 
 on:
+  push:
+    branches: ['**']
+  pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
+  prepare-source:
+    outputs:
+      artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 16
+      - name: Pack the exact commit and its complete tree for the A800 runners
+        id: pack-source
+        run: |
+          set -o pipefail
+          echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ci-source"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
+          mkdir -p "$RUNNER_TEMP/ci-source-incremental"
+          cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
+          base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
+          {
+            git rev-parse HEAD
+            git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
+          } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source-incremental/
+          retention-days: 1
+          compression-level: 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-source/
+          retention-days: 1
+          compression-level: 0
+
   one-gpu-local:
-    runs-on: [self-hosted, linux, gpu, flagquantum-local]
+    needs: prepare-source
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-171]
     # This job benchmarks device 0 and the two-GPU job beside it holds devices 0
     # and 1, so on one host they measure each other. The group is the one the
     # scheduled lane also joins, because those jobs measure the same devices.
@@ -14,18 +64,50 @@ jobs:
       queue: max
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8.0.2
         with:
-          sparse-checkout: |
-            flagquantum
-            tests
-            tools
-            benchmarks/continuous_performance.py
-            pyproject.toml
-            pytest.ini
-            README.md
-            LICENSE
-          sparse-checkout-cone-mode: false
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
+        with:
+          digest-mismatch: error
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - name: Install FlagQuantum without replacing the runner's framework stack
         run: |
           python -c "import pytest, torch"
@@ -50,28 +132,61 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: one-gpu-${{ github.sha }}
+          name: one-gpu-${{ github.sha }}-${{ github.run_attempt }}
           path: hardware-run/
 
   two-gpu-distributed-required:
-    runs-on: [self-hosted, linux, gpu, flagquantum-local]
+    needs: prepare-source
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
       group: flagquantum-accelerator
       queue: max
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8.0.2
         with:
-          sparse-checkout: |
-            flagquantum
-            tests
-            tools
-            benchmarks/continuous_performance.py
-            pyproject.toml
-            pytest.ini
-            README.md
-            LICENSE
-          sparse-checkout-cone-mode: false
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
+        with:
+          digest-mismatch: error
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - name: Install FlagQuantum without replacing the runner's framework stack
         run: |
           python -c "import pytest, torch"
@@ -86,7 +201,7 @@ jobs:
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase train --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-train -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_training_runtime.py --backend nccl --checkpoint-dir hardware-run/training-checkpoint --mode train 2>&1 | tee hardware-run/two-gpu-statevector-training.log
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-correctness -- torchrun --standalone --nproc-per-node=2 tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/two-gpu-correctness.log
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase semantic-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-semantics -- python -m pytest tests/distributed/test_mps_reverse.py::test_explicit_rank_owned_mps_reverse_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-torch.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-mps-backward -- python -m pytest tests/distributed/test_mps_accelerator_backward_evidence.py -q -rs 2>&1 | tee hardware-run/two-gpu-jax.log
+          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-mps-backward -- python -m pytest tests/distributed/test_mps_accelerator_backward_evidence.py -q -rs -s 2>&1 | tee hardware-run/two-gpu-jax.log
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-mps-forward -- python -m pytest tests/distributed/test_mps_forward.py::test_rank_owned_mps_forward_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-mps-forward.log
           CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 50 --output hardware-run/two-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/two-gpu-performance.json
@@ -102,5 +217,5 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: two-gpu-required-${{ github.sha }}
+          name: two-gpu-required-${{ github.sha }}-${{ github.run_attempt }}
           path: hardware-run/

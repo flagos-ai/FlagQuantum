@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -341,6 +342,7 @@ def test_preflight_binds_dataset_profile_to_hashed_file_snapshot(
 
 def test_artifact_snapshot_rejects_same_digest_rewrite_after_preflight(
     tmp_path: Path,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     config_path, paths = _fixture(tmp_path)
     preflight = preflight_artifacts(config_path, paths, tmp_path / "preflight.json")
@@ -348,13 +350,16 @@ def test_artifact_snapshot_rejects_same_digest_rewrite_after_preflight(
     original = paths["dataset"].read_bytes()
 
     paths["dataset"].write_bytes(original)
+    advance_file_mtime(paths["dataset"])
 
     with pytest.raises(ValueError, match="changed after identity capture"):
         revalidate_artifact_snapshots(snapshots)
 
 
 def test_preflight_returns_the_exact_snapshots_used_for_published_record(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     config_path, paths = _fixture(tmp_path)
     real_write = preflight_module.write_private_json_exclusive
@@ -363,6 +368,7 @@ def test_preflight_returns_the_exact_snapshots_used_for_published_record(
     def write_then_replace(path: Path, value: object) -> None:
         real_write(path, value)
         paths["dataset"].write_bytes(original)
+        advance_file_mtime(paths["dataset"])
 
     monkeypatch.setattr(
         preflight_module, "write_private_json_exclusive", write_then_replace
@@ -375,7 +381,9 @@ def test_preflight_returns_the_exact_snapshots_used_for_published_record(
 
 
 def test_preflight_retains_the_exact_source_archive_snapshot(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advance_file_mtime: Callable[[Path], None],
 ) -> None:
     config_path, paths = _fixture(tmp_path)
     source_path = _dataset_source_archive(paths)
@@ -385,6 +393,7 @@ def test_preflight_retains_the_exact_source_archive_snapshot(
     def write_then_replace(path: Path, value: object) -> None:
         real_write(path, value)
         source_path.write_bytes(source_bytes)
+        advance_file_mtime(source_path)
 
     monkeypatch.setattr(
         preflight_module, "write_private_json_exclusive", write_then_replace

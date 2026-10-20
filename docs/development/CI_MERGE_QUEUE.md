@@ -24,7 +24,7 @@ removing or reordering queue entries can require another integration run.
   optional SDK checks and distributed proofs remain. The required names stay
   quality, cpu-core (3.10), cpu-core (3.11), cpu-core (3.12), package,
   distributed-cpu, coverage and pre-commit.
-- The additive CI complete job waits for all twenty existing CI jobs, requiring
+- The additive CI complete job waits for all twenty-one other CI jobs, requiring
   success from each, and reuses a light-a bucket. The staged ruleset adds it as
   a GitHub-Actions-bound requirement beside the original eight. Native queue
   merging must not turn the prior full-workflow acceptance into eight checks
@@ -36,7 +36,7 @@ removing or reordering queue entries can require another integration run.
 - Both change-based quality gates use the queue base SHA. A missing or zero
   queue base fails instead of skipping ownership or evidence-retention checks.
 - Workflow concurrency distinguishes queue SHAs. Cancellation stays limited to
-  superseded PR runs. The sixteen job buckets and organisation's runner limit
+  superseded PR runs. The thirteen job buckets and organisation's runner limit
   are unchanged; merge-group refs isolate unrelated integration candidates.
 - Existing strict branch protection, required checks with their GitHub Actions
   app binding, administrator enforcement, review policy and force-push/deletion
