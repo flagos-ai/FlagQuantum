@@ -44,7 +44,10 @@ Six invariants:
 
 from __future__ import annotations
 
+import json
+import os
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -490,3 +493,201 @@ def test_the_release_matrix_leaves_capacity_for_other_repositories() -> None:
 
     assert wheel_parallelism == 4
     assert wheel_parallelism + 1 <= 5  # one concurrent sdist build
+
+
+@pytest.mark.parametrize("workflow", BUCKETED_WORKFLOWS)
+def test_required_workflows_validate_main_merge_groups(workflow: str) -> None:
+    document = _document(workflow)
+    # PyYAML's YAML 1.1 loader reads the unquoted Actions key `on` as True.
+    events = document.get("on", document.get(True))
+    assert isinstance(events, dict)
+    assert events["merge_group"] == {
+        "types": ["checks_requested"],
+        "branches": ["main"],
+    }
+    assert events["pull_request"] == {"branches": ["main"]}
+    assert events["push"] == {"branches": ["main"]}
+    concurrency = document["concurrency"]
+    assert "github.event.merge_group.head_sha" in concurrency["group"]
+    assert concurrency["cancel-in-progress"] == (
+        "${{ github.event_name == 'pull_request' }}"
+    )
+
+
+@pytest.mark.parametrize(
+    "step_name,tool,extra",
+    [
+        (
+            "Require every changed path to have an owner",
+            "tools/check_team_scope.py",
+            ["--require-classified"],
+        ),
+        (
+            "Require retention metadata for new benchmark evidence",
+            "tools/check_evidence_retention.py",
+            [],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "event,base,expected_code",
+    [
+        ("merge_group", "a" * 40, 0),
+        ("merge_group", "", 1),
+        ("merge_group", "0" * 40, 1),
+        ("pull_request", "a" * 40, 0),
+        ("push", "a" * 40, 0),
+        ("push", "0" * 40, 0),
+    ],
+)
+def test_change_gates_use_the_queue_base_and_refuse_a_missing_queue_base(
+    tmp_path: Path,
+    step_name: str,
+    tool: str,
+    extra: list[str],
+    event: str,
+    base: str,
+    expected_code: int,
+) -> None:
+    step = next(s for s in _steps("ci.yml", "quality") if s.get("name") == step_name)
+    assert step["env"]["BASE_SHA"] == (
+        "${{ github.event.merge_group.base_sha || "
+        "github.event.pull_request.base.sha || github.event.before }}"
+    )
+    assert step["env"]["EVENT_NAME"] == "${{ github.event_name }}"
+    executable = tmp_path / "python"
+    executable.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$FQ_CI_ARGS"\n')
+    executable.chmod(0o755)
+    calls = tmp_path / "calls"
+    completed = subprocess.run(
+        ["/bin/bash", "-eu", "-c", step["run"]],
+        env={
+            **os.environ,
+            "PATH": str(tmp_path) + os.pathsep + os.environ.get("PATH", ""),
+            "BASE_SHA": base,
+            "EVENT_NAME": event,
+            "FQ_CI_ARGS": str(calls),
+        },
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    assert completed.returncode == expected_code, completed.stderr
+    if base and base != "0" * 40:
+        assert calls.read_text().splitlines() == [tool, *extra, "--base", base]
+    else:
+        assert not calls.exists()
+
+
+def test_queue_uses_full_integration_suites_and_preserves_required_check_names() -> (
+    None
+):
+    jobs = _document("ci.yml")["jobs"]
+    assert all(job.get("if") in (None, "${{ always() }}") for job in jobs.values())
+    core_steps = _steps("ci.yml", "cpu-core")
+    full = next(
+        s for s in core_steps if s.get("run") == "python tools/ci_tier.py pr-default"
+    )
+    assert full["if"] == "github.event_name != 'pull_request'"
+    coverage = next(
+        s
+        for s in _steps("ci.yml", "coverage-shard")
+        if s.get("if") == "github.event_name != 'pull_request'"
+    )
+    assert "and not slow" not in coverage["run"]
+    contexts = {job.get("name", key) for key, job in jobs.items()}
+    contexts |= {f"cpu-core ({version})" for version in ("3.10", "3.11")}
+    contexts.add("pre-commit")
+    assert {
+        "quality",
+        "cpu-core (3.10)",
+        "cpu-core (3.11)",
+        "cpu-core (3.12)",
+        "package",
+        "distributed-cpu",
+        "coverage",
+        "pre-commit",
+    } <= contexts
+
+
+def test_queue_rollout_is_disabled_and_adds_no_bypass_or_replacement_gate() -> None:
+    config = json.loads((ROOT / "ci/merge-queue-main.json").read_text())
+    assert config["enforcement"] == "disabled"
+    assert config["target"] == "branch"
+    assert config["conditions"] == {
+        "ref_name": {"include": ["refs/heads/main"], "exclude": []}
+    }
+    assert config["bypass_actors"] == []
+    queue, status = config["rules"]
+    assert queue["type"] == "merge_queue"
+    parameters = queue["parameters"]
+    assert parameters["grouping_strategy"] == "ALLGREEN"
+    assert parameters["merge_method"] == "MERGE"
+    assert parameters["max_entries_to_build"] == 1
+    assert parameters["min_entries_to_merge"] == parameters["max_entries_to_merge"] == 1
+    assert parameters["check_response_timeout_minutes"] == 120
+    assert status == {
+        "type": "required_status_checks",
+        "parameters": {
+            "required_status_checks": [
+                {"context": "CI complete", "integration_id": 15368}
+            ],
+            "strict_required_status_checks_policy": True,
+        },
+    }
+
+
+@pytest.mark.parametrize("result", ["success", "failure", "cancelled", "skipped"])
+@pytest.mark.parametrize(
+    "upstream", ["cpu-core-3-12-tests", "cpu-runtime", "coverage-shard"]
+)
+def test_integration_aggregation_never_accepts_an_unsuccessful_suite(
+    result: str, upstream: str
+) -> None:
+    job = "coverage" if upstream == "coverage-shard" else "cpu-core-3-12"
+    command = _steps("ci.yml", job)[0]["run"]
+    for name in ("cpu-core-3-12-tests", "cpu-runtime", "coverage-shard"):
+        command = command.replace(
+            "${{ needs." + name + ".result }}",
+            result if name == upstream else "success",
+        )
+    completed = subprocess.run(
+        ["/bin/bash", "-eu", "-c", command],
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert (completed.returncode == 0) == (result == "success")
+
+
+@pytest.mark.parametrize("result", ["success", "failure", "cancelled", "skipped"])
+def test_queue_waits_for_every_existing_ci_job(result: str) -> None:
+    jobs = _document("ci.yml")["jobs"]
+    complete = jobs["ci-complete"]
+    assert complete["name"] == "CI complete"
+    assert complete["if"] == "${{ always() }}"
+    assert set(complete["needs"]) == set(jobs) - {"ci-complete"}
+    step = complete["steps"][0]
+    assert step["env"]["NEEDS_JSON"] == "${{ toJSON(needs) }}"
+    # Real shell execution catches failures in any optional, matrix or package
+    # dependency instead of merely finding a success token in the YAML.
+    for changed in complete["needs"]:
+        outcomes = {name: {"result": "success"} for name in complete["needs"]}
+        outcomes[changed]["result"] = result
+        completed = subprocess.run(
+            ["/bin/bash", "-eu", "-c", step["run"]],
+            env={**os.environ, "NEEDS_JSON": json.dumps(outcomes)},
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+        assert (completed.returncode == 0) == (result == "success"), changed
+    completed = subprocess.run(
+        ["/bin/bash", "-eu", "-c", step["run"]],
+        env={**os.environ, "NEEDS_JSON": "{}"},
+        capture_output=True,
+        timeout=10,
+        check=False,
+    )
+    assert completed.returncode != 0

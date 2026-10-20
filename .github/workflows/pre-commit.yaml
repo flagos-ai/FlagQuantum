@@ -5,13 +5,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+    types: [checks_requested]
+    branches: [main]
 
 # Same two constraints as CI -- cancel a superseded run of the same pull request,
 # never a superseded run of `main`, and hold the job to one of the
 # pull-request-scoped buckets that bound one run's share of the organisation's
 # GitHub-hosted pool. See the capacity note and the cancellation note in ci.yml.
 concurrency:
-  group: flagquantum-precommit-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}
+  group: flagquantum-precommit-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || github.event.merge_group.head_sha || 'pr' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
