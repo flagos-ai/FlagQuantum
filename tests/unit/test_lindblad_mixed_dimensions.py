@@ -101,6 +101,37 @@ def test_qutrit_public_workflow_and_serialized_plan_match_analytic_rabi(method):
         fql.run(plan, dimensions=(3,))
 
 
+@pytest.mark.parametrize("threads", [1, 10])
+def test_crank_nicolson_repeated_json_replay_is_bitwise_identical(
+    threads: int,
+) -> None:
+    plan = fql.plan(
+        _transition(),
+        [0.0, 1.0, 0.0],
+        TIMES,
+        dimensions=(3,),
+        method="crank-nicolson",
+        return_density_matrices=True,
+    )
+    previous_threads = torch.get_num_threads()
+    try:
+        torch.set_num_threads(threads)
+        reference = fql.run(plan)
+        for _ in range(8):
+            replay = fql.run(fql.LindbladPlan.from_json(plan.to_json()))
+            assert torch.equal(replay.populations, reference.populations)
+            assert torch.equal(replay.density_matrices, reference.density_matrices)
+            assert replay.maximum_trace_drift < 1e-12
+    finally:
+        torch.set_num_threads(previous_threads)
+    assert torch.allclose(
+        reference.populations[:, 2],
+        torch.sin(0.7 * TIMES) ** 2,
+        atol=1e-6,
+        rtol=0,
+    )
+
+
 @pytest.mark.parametrize("method", fql.INTEGRATOR_NAMES)
 @pytest.mark.integration
 def test_spin_mode_reuses_solver_with_dense_observables_and_basis_order(method):
