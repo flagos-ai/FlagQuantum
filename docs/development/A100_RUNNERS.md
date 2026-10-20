@@ -72,12 +72,14 @@ this pool or use `pull_request_target` to execute a fork checkout. A platform
 instance recreation requires restoring the deployment and restarting its
 watchdog; process supervision does not preserve a deleted container.
 
-The node's platform DNS intermittently routes `github.com` to an unreachable
-address. A runner-local Git build supports `http.curloptResolve`; the launcher
-provides tested alternate GitHub addresses while retaining hostname and TLS
-certificate verification. The operator should refresh these addresses when the
-network route changes. System Git and system hostname resolution are not part
-of this runner-specific workaround.
+The node's HTTPS Git route is unreliable. Runner Git redirects only this
+repository's HTTPS URL to GitHub's official `ssh.github.com:443` endpoint.
+Host keys come from GitHub's official metadata API and strict host verification
+is enabled. A repository-only, read-only deploy key is stored under
+`tools/git-ssh`, readable only by root and the dedicated runner group. Revoke it
+in repository Settings → Deploy keys using the title
+`FlagQuantum A100 runner pool (read only)` when retiring the pool. System Git,
+system SSH configuration, and system hostname resolution remain unchanged.
 
 First checkouts are seeded from a root-owned repository object cache readable
 only by the dedicated runner group. The Git remote remains GitHub, and checkout
