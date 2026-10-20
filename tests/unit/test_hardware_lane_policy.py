@@ -275,8 +275,8 @@ def test_every_workflow_event_is_attributed() -> None:
 
 def test_pull_requests_only_reach_provisioned_a800_jobs() -> None:
     allowed = {
-        ("local-gpu.yml", "one-gpu-local"): "flagquantum-local",
-        ("local-gpu.yml", "two-gpu-distributed-required"): "flagquantum-local",
+        ("local-gpu.yml", "one-gpu-local"): "a800-171",
+        ("local-gpu.yml", "two-gpu-distributed-required"): "a800-172",
         ("ci.yml", "cpu-core"): "flagquantum-cpu",
         ("ci.yml", "cpu-core-3-12-tests"): "flagquantum-cpu",
         ("ci.yml", "cpu-runtime"): "flagquantum-cpu",

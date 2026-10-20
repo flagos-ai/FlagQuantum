@@ -36,7 +36,7 @@ jobs:
 
   one-gpu-local:
     needs: prepare-source
-    runs-on: [self-hosted, linux, gpu, flagquantum-local]
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-171]
     # This job benchmarks device 0 and the two-GPU job beside it holds devices 0
     # and 1, so on one host they measure each other. The group is the one the
     # scheduled lane also joins, because those jobs measure the same devices.
@@ -95,7 +95,7 @@ jobs:
 
   two-gpu-distributed-required:
     needs: prepare-source
-    runs-on: [self-hosted, linux, gpu, flagquantum-local]
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
       group: flagquantum-accelerator
       queue: max
