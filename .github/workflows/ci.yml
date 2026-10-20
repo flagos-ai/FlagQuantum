@@ -117,7 +117,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip setuptools wheel
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
@@ -683,7 +682,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
@@ -710,7 +708,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - name: Install the declared Azure extra
@@ -747,7 +744,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev,cuda]'
@@ -775,7 +771,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
@@ -826,7 +821,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
@@ -860,7 +854,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
@@ -894,7 +887,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
@@ -929,7 +921,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
@@ -1176,7 +1167,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
@@ -1230,7 +1220,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install 'pytest-cov>=4.0.0,<8'
       - uses: actions/download-artifact@v4
@@ -1270,7 +1259,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip setuptools wheel
       - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"

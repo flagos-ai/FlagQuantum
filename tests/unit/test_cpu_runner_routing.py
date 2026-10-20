@@ -28,6 +28,7 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
         steps = job["steps"]
         for index, step in enumerate(steps):
             if str(step.get("uses", "")).startswith("actions/setup-python@"):
+                assert "cache" not in step.get("with", {})
                 assert steps[index + 1].get("uses") == (
                     "./.github/actions/isolated-python"
                 )
