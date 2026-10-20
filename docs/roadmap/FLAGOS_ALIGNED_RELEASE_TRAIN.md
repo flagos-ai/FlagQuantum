@@ -106,8 +106,8 @@ integrators, result, and PyTorch gradient path. The focused acceptance is
 initial-density adjoints, basis order, live/JSON gradients, truncation, and
 time-grid convergence. This completes the static finite-product step, not all
 of M1: time dependence and constrained-space execution remain separate gates;
-static operator coefficient binding is described below. Proposal 073 must rebase its future plan-schema
-extension onto this baseline.
+static operator coefficient binding is described below. Proposal 073 now states
+its separate temporal contract against this baseline and remains proposed.
 
 The next M1 slice connects existing `BosonOperator` values directly to the
 same static CPU dynamics input normalization. Explicit `dimensions=` supplies
@@ -128,8 +128,14 @@ new plan schema, or widened algebra coefficient field is required. Run
 analytic gradients, actual optimizer updates, complex conjugate terms, batching,
 initial-density adjoints, unchanged dense-plan identities, and retained Pauli
 matrix-free execution. This completes the static operator-coefficient consumer,
-not symbolic coefficients inside the algebra. Time-dependent controls still
-require proposal 073 to be reviewed and rebased onto plans 1.3/1.4.
+not symbolic coefficients inside the algebra. The next M1 time-control contract
+is the updated [proposal 073](../development/API_CHANGE_PROPOSAL_073_EVOLUTION_SCHEDULE.md).
+It proposes one binding per interval, existing full-space operator terms and Core
+parameter binding, all three current integrators, and scheduled-only plan 1.5
+while preserving static 1.3/1.4 plans. Live gradients, initial-density adjoints,
+exact replay, early refusals, and independent numerical checks are review gates.
+The proposal remains unapproved and unimplemented; this roadmap update grants
+neither implementation approval nor a time-dependent capability claim.
 
 An internal state-space proposal must be tested against both tensor-product
 spaces and an anyon fusion-space example with fixed total charge. Product
