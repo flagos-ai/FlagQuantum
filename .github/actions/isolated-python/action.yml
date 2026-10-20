@@ -1,13 +1,25 @@
 name: Isolated Python environment
 description: Keep job dependencies out of the persistent Python tool cache
+inputs:
+  torch-spec:
+    description: CPU PyTorch requirement to seed from the verified local wheel cache
+    default: "torch>=2.13,<2.14"
 runs:
   using: composite
   steps:
     - shell: bash
+      env:
+        FQ_TORCH_SPEC: ${{ inputs.torch-spec }}
       run: |
         if [ -n "${FQ_BASE_ENV:-}" ]; then
           FQ_JOB_PYTHON="$(command -v python)" FQ_JOB_VENV="$RUNNER_TEMP/fq-python" bash "$ACTIONS_RUNNER_HOOK_JOB_STARTED"
           echo "FQ_TORCH_CPU_INDEX_URL=https://mirror.sjtu.edu.cn/pytorch-wheels/cpu" >> "$GITHUB_ENV"
+          if [ "${FQ_RUNNER_KIND:-}" = cpu ] && [ -d /opt/flagquantum-runners/tools/public-wheels ]; then
+            if ! "$RUNNER_TEMP/fq-python/bin/python" -m pip install --no-index --no-deps \
+              --find-links /opt/flagquantum-runners/tools/public-wheels "$FQ_TORCH_SPEC"; then
+              echo "No matching cached CPU wheel; the next installation step will use its configured index."
+            fi
+          fi
         else
           python -m venv --clear "$RUNNER_TEMP/fq-python"
           echo "$RUNNER_TEMP/fq-python/bin" >> "$GITHUB_PATH"

@@ -59,7 +59,8 @@ isolation against hostile code.
 CPU affinity sets are disjoint: each CPU runner gets four physical cores and
 their SMT siblings. The GPU runner gets sixteen different physical cores and
 their SMT siblings. The process pool therefore uses 160 logical CPUs within the
-container's 180-CPU quota. Thread defaults limit nested numerical libraries.
+container's 180-CPU quota. CPU jobs default to two numerical-library threads
+so two pytest workers fit the four physical cores assigned to one runner.
 
 The container has no writable cgroup delegation or usable systemd. Supervisor
 restarts exited listeners and terminates their process groups on stop. A separate
@@ -105,3 +106,12 @@ official PyTorch CPU index. Official setup-python 3.10.22, 3.11.17 and 3.12.15
 runtimes are cached read-only after verification against GitHub asset SHA256
 values; large bootstrap downloads may use a public release accelerator with
 that same mandatory digest check.
+
+Verified public wheels are cached read-only under `tools/public-wheels`. CPU
+PyTorch and CUDA-Q SDK dependencies are seeded explicitly with `--no-index` and
+`--no-deps` into each private job environment; the normal installation steps
+then resolve their dependencies. This avoids relying on pip to prefer a local
+`--find-links` candidate over the same version on a remote index. Missing cache
+entries retain the configured index fallback. CPU PyTorch wheels are checked
+against the official PyTorch index hashes; CUDA-Q wheels use official PyPI
+SHA256 values. Runner accounts cannot modify the public cache.

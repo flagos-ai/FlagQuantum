@@ -87,3 +87,14 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
                     assert group not in groups, f"Unrelated CPU work shares {group}"
                     groups.add(group)
     assert len(groups) > 32, "Exercise more jobs than the 16-runner CPU pool"
+
+
+def test_dependency_matrix_seeds_its_requested_torch_version() -> None:
+    document = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())
+    steps = document["jobs"]["dependency-bounds"]["steps"]
+    isolated = next(
+        step
+        for step in steps
+        if step.get("uses") == "./.github/actions/isolated-python"
+    )
+    assert isolated["with"]["torch-spec"] == "${{ matrix.torch }}"

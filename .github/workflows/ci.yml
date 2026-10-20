@@ -889,6 +889,29 @@ jobs:
         run: |
           set -euxo pipefail
           for version in ${OPTIONAL_VERSIONS}; do
+            cache=/opt/flagquantum-runners/tools/public-wheels
+            if [ "${FQ_RUNNER_KIND:-}" = cpu ] && [ -d "$cache" ]; then
+              if python -m pip install --no-index --no-deps --find-links "$cache" "cuda-quantum-cu12==${version}"; then
+                mapfile -t cached_dependencies < <(python - <<'PYTHON'
+          from importlib.metadata import requires
+          from packaging.requirements import Requirement
+
+          cached_prefixes = (
+              "nvidia-", "custatevec-", "cutensornet-", "cudensitymat-", "cupy-"
+          )
+          for value in requires("cuda-quantum-cu12") or []:
+              requirement = Requirement(value)
+              if requirement.name.startswith(cached_prefixes) and (
+                  requirement.marker is None or requirement.marker.evaluate()
+              ):
+                  print(requirement)
+          PYTHON
+                )
+                if ! python -m pip install --no-index --no-deps --find-links "$cache" "${cached_dependencies[@]}"; then
+                  echo "CUDA-Q dependency cache incomplete; normal installation will resolve dependencies."
+                fi
+              fi
+            fi
             python -m pip install --upgrade "cudaq==${version}"
             python tools/check_cudaq_export_contract.py --verify-sdk
             python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
@@ -964,6 +987,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - uses: ./.github/actions/isolated-python
+        with:
+          torch-spec: ${{ matrix.torch }}
       - run: python -m pip install '${{ matrix.torch }}' --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install pytest
       - run: python -m pip install --no-build-isolation -e . --no-deps
