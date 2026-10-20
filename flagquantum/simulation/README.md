@@ -225,10 +225,67 @@ This slice is static, CPU-only, and finite-dimensional. Fock truncation is an
 explicit modeling approximation, distinct from integration error. The tests
 separate time-grid refinement from truncation in a fixed excitation sector;
 that sector does not establish convergence for an arbitrary oscillator state.
-A dense matrix made with the boson algebra is not a photonic backend. Fixed-charge
-fusion spaces, continuously varying controls, native qudit circuit operations, and
-GPU/distributed dynamics remain future work under
+A dense matrix made with the boson algebra is not a photonic backend. Native
+fusion models, continuously varying controls, native qudit circuit operations,
+and GPU/distributed dynamics remain future work under
 [proposal 078](../../docs/development/API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md).
+
+### Ordered explicit bases
+
+The same plan/run and numerical core accept basis_labels instead of dimensions.
+Labels name an ordered finite orthonormal matrix basis; they do not imply tensor
+factors, even at dimensions two or four. The caller owns physical sectors,
+embeddings and basis conventions. The internal ExplicitBasisSpace value lives
+beside ProductStateSpace in Core and adds no program IR, registry or solver.
+
+```python
+import torch
+import flagquantum.lindblad as fql
+
+labels = ((0, 1), (1, 0))
+exchange = torch.tensor([[0., 1.], [1., 0.]], dtype=torch.complex128)
+p = fql.plan(0.7 * exchange, [1., 0.], [0., 0.5], basis_labels=labels,
+             method="krylov-exponential")
+r = fql.run(p)
+assert p.basis_labels is not None
+print(f"Transfer: {r.populations[-1, p.basis_labels.index((1, 0))].item():.8f}")
+```
+
+Expected: `Transfer: 0.11757891`. Run
+`python -m examples.constrained_basis_reference` for a gradient and a declared
+Ising convention through the same existing numerical path.
+
+basis_labels is mutually exclusive with explicit dimensions or n_qubits.
+Qubit-only inputs remain refused. Direct boson operators need product dimensions;
+a labelled model explicitly materializes and validates its reduced matrices.
+The existing low-level observables mapping accepts full numeric matrices;
+fq.expectation remains qubit-only.
+
+Labelled static and scheduled plans use 1.6, retain request labels and an exactly
+revalidated decision copy, and report n_wires=None without product dimensions.
+plan.n_qubits and plan.dimensions raise CapabilityError for this path; inspect
+plan.basis_labels and plan.dimension. Existing 1.3/1.4/1.5 requests, identities,
+fields and numerical trajectories are preserved. JSON stores numerical values
+and ordered labels; gradient-required restored plans refuse the missing graph.
+EvolutionResult and its population/density/batch axes are unchanged. Retain the
+plan JSON alongside a stored result dictionary to interpret its matrix axes.
+
+The new tests independently compare a vacuum-plus-one-photon model with its
+ambient two-mode space, retaining loss states. They also check all three
+methods, label permutations, control gradients, batches, optimizer updates,
+strict replay/refusals and initial-density adjoints. A sector projection must be
+validated against the full generator, including dissipative terms, rather than
+silently dropping leakage. No native fusion rules or braiding API is implied.
+
+A default two-state dissipative example also reproduces the old Krylov graph
+conditioning limit on both product and labelled inputs: complex128 autograd
+versus a dense discrete-map reference differs by about 7.15e-9 (CN) or 3.82e-8
+(exponential), while the initial-density adjoint matches that reference below
+5e-16. Complex64 CN's graph difference is about 4.49e-5 on the same fixture.
+These measurements are not portable accuracy guarantees. The test retains the
+original independent-adjoint budgets, 1e-9 and 2e-5, and checks graph parity
+against the existing product path separately. No numerical kernel or tolerance
+was changed to certify a stronger autograd bound.
 
 ### Consuming existing boson operators
 

@@ -12,8 +12,12 @@ step after piecewise-constant controls. It preserves CircuitIR
 1.0 and all accepted behavior of current product-space requests. It proposes an
 explicit labelled-basis path on the existing Lindblad API and a new plan format
 for that path only. Approval does not itself establish public support.
-No public constrained-space support follows from this document or its numerical
-reference. Existing plans 1.3/1.4/1.5 remain byte-identical.
+The contract-first baseline merged in #651 as
+`22b70b654eb973e7c59f39a13a993be50e91b8a2`, after latest head
+`5bf29a83aedc4b3e76442ee3eef2459f0d4a88c3` passed all 36 checks and both
+complete workflows. The bounded production replacement now implements the
+approved matrix-space path described below; its integration review remains a
+separate gate. Existing plans 1.3/1.4/1.5 remain byte-identical.
 
 A researcher working in a fixed-number sector or a fixed-charge fusion basis
 needs a stable association between matrix axes and allowed basis labels. Equal
@@ -46,7 +50,7 @@ No new package, numerical engine, dispatcher, parameter language, training loop,
 representation registry or base-class hierarchy is proposed. Production Core
 continues to depend only on the standard library for this value.
 
-## Proposed existing-API extension
+## Approved existing-API extension
 
 Append optional keyword-only `basis_labels=None` after `parameter_values` on the
 same six entries extended by proposal 073: `flagquantum.lindblad.plan`, `run`,
@@ -70,16 +74,21 @@ The model may explicitly construct a bounded ambient boson matrix using the
 existing API and validate its projection before supplying a reduced matrix.
 There is no automatic projection or silent removal of leakage.
 
-The proposed spelling below is **proposed, not implemented**:
+The approved spelling is implemented on the existing namespace:
 
 ```python
-# Approved API, executable only after implementation.
+import torch
+import flagquantum.lindblad as fql
+
 labels = (("1", "sigma", "1"), ("psi", "sigma", "1"))
-plan = fql.plan(H_in_this_basis, [1., 0.], [0., 1.], basis_labels=labels)
+h = torch.pi / 4 * torch.tensor([[0., 1.], [1., 0.]], dtype=torch.complex128)
+plan = fql.plan(h, [1., 0.], [0., 1.], basis_labels=labels,
+                method="krylov-exponential")
 result = fql.run(plan)
 assert plan.basis_labels is not None
 index = plan.basis_labels.index(("psi", "sigma", "1"))
 probability = result.populations[-1, index]
+print(f"Probability: {probability.item():.8f}")  # Probability: 0.50000000
 ```
 
 The user keeps their model's fusion convention and total-charge meaning; the
@@ -111,16 +120,20 @@ initial-state batches and control intervals; no label-batch axis or dynamic basi
 change is inferred. The returned mathematical request has an explicit basis,
 not a certificate that its matrices preserve a declared physical charge.
 
-## Proposed internal contract
+## Approved internal contract
 
-Add `ExplicitBasisSpace` beside `ProductStateSpace` in the existing internal
-`flagquantum.core.ir.state_space` module, after this contract is approved and its
-fake/conformance baseline lands. The existing state-space resolver consumes it;
-no new registry is added. This is a proposed spelling, not an import users can execute today:
+The implementation adds `ExplicitBasisSpace` beside `ProductStateSpace` in the
+existing internal `flagquantum.core.ir.state_space` module after the approved
+fake/conformance baseline merged. The existing resolver consumes it; no new
+registry is added. This is internal mathematical data:
 
 ```python
-# Proposed internal API only; not available in the current package.
-ExplicitBasisSpace(labels: Sequence[Sequence[int | str]])
+# Internal API; no new root or circuit export.
+from flagquantum.core.ir.state_space import ExplicitBasisSpace
+
+space = ExplicitBasisSpace(((0, 1), (1, 0)))
+assert space.dimension == 2 and not space.is_qubit_space
+assert space.basis_index((1, 0)) == 1
 # .labels -> tuple[tuple[int | str, ...], ...]
 # .dimension -> int
 # .is_qubit_space -> False
@@ -168,7 +181,7 @@ The second witness uses `("1", "sigma", "1")` and `("psi", "sigma", "1")`
 for four Ising sigma charges with total charge 1 in a left-associated fusion tree.
 The model must separately retain the anyon types, total charge, tree, fusion
 rules and F/R convention. Core validates label structure, not that physics.
-The convention follows [Nayak et al., section II.A, equation (50), and Appendix A.1](https://arxiv.org/abs/0707.1889):
+The convention follows [Nayak et al., section II.A and equation (50)](https://arxiv.org/abs/0707.1889):
 `F=[[1,1],[1,-1]]/sqrt(2)`, `R=diag(exp(-i*pi/8),exp(3i*pi/8))`, and
 `B2=F.conj().T @ R @ F`. The reference checks unitarity, braid consistency and
 fusion-channel probabilities within this declared convention.
@@ -241,7 +254,7 @@ One-excitation transfer: 0.50000000
 Control derivative: 1.00000000
 Fusion-channel probability: 0.50000000
 Braid relation verified: True
-Constrained metadata in existing plans: False
+Plan retains declared basis labels: True
 ```
 
 The first example builds an exact invariant subspace of a four-dimensional
@@ -256,8 +269,10 @@ or explicit loss states must be retained; Hamiltonian invariance alone is not
 sufficient. This reference includes no collapse operators.
 
 The second supplies a two-by-two Hamiltonian whose exponential realizes B2 as a
-numerical witness. Current `dimensions=(2,)` plans describe an encoded qubit,
-not a fusion space, and do not retain the caller's fusion labels or sector.
+numerical witness. It now uses basis_labels and retains those literal labels
+through plan 1.6. The caller still owns the fusion tree and physical sector.
+The independent encoded `dimensions=(2,)` reference remains in the tests; it
+continues to describe a product qubit with no basis-label metadata.
 Density results cannot certify an overall unitary phase. Direct matrix checks
 of the declared F/R convention are separate from that density-matrix comparison.
 No native braid instruction, fusion measurement, decoder, microscopic Majorana
@@ -267,14 +282,16 @@ model or universal gate-set claim follows.
 
 Against the post-#647 baseline `4f9d5a6c010b4b351579bfe1e95053ba58aa09b6`,
 the five current-API reference tests pass on Python 3.10, 3.11 and 3.12 with
-CPU Torch complex128. The runnable example produces the exact output above.
+CPU Torch complex128. At that pre-implementation revision, the runnable example printed
+`Constrained metadata in existing plans: False`; the updated workflow above
+uses the implemented labelled path and prints retained labels instead.
 The tests compare full and reduced densities within `1e-11`, the analytic
 control derivative within `1e-10`, and the declared F/R matrices and their
 logarithm witness within `1e-14`. These are precision budgets for these small
 references, not global solver guarantees or evidence of the proposed API.
 The actual CI strict command
 `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`
-passes all 772 existing source files; production source is unchanged.
+passed all 772 unchanged production source files at that reference revision.
 
 ## Replaceable integration baseline
 
@@ -295,8 +312,9 @@ in `test_constrained_basis_reference.py`. Core replacement changes only the
 basis fixture; Simulation replacement adds the real labelled public runner to
 the same numerical fixture, preserving consumer assertions. JSON/metadata and
 public refusal conformance are additional implementation gates, not guarantees
-provided by the encoded fake. Merge this baseline before dependent production
-changes, following the repository's contract-first sequence.
+provided by the encoded fake. This baseline merged before production changes,
+following the repository's contract-first sequence. The Core and public labelled
+factories now run alongside the fakes without changing consumer assertions.
 
 The first test draft exposed a finite-grid CN derivative error of approximately
 `1.02445e-6` at step 0.01 against a `1e-6` budget. The accepted reference refines
@@ -308,6 +326,53 @@ observation. All 32 baseline cases pass; the combined 106-case selection with
 existing product, piecewise-control and physical-reference consumers passes on
 Python 3.10, 3.11 and 3.12. These are test-fake and existing-engine results, not
 production labelled-plan acceptance.
+
+## Production replacement and numerical evidence
+
+The existing request resolver now consumes the immutable Core basis value.
+Numeric normalization, parameter binding, Liouvillian, all three interval
+methods, the trajectory loop, EvolutionResult and the reverse initial-density
+sweep retain their existing owners. No numerical kernel, binder, registry,
+projection engine, physical-model builder or root export is added.
+
+The six approved entries append basis_labels. The sealed plan writer/reader
+uses 1.6 only for labelled requests, including piecewise controls; labels are
+copied into the canonical request and derived decision, without a wire count or
+product dimensions. The same live and numeric-replay routes preserve tensor
+graphs and refuse graph-less gradient execution respectively. Rehashed malformed
+labels, counts, unknown fields, semantic conflicts and disguised old-version
+labels are rejected. Consistent relabelling with a new hash is a new mathematical
+request, not proof of an unchanged physical model.
+
+`test_lindblad_explicit_basis.py` adds a vacuum-plus-one-photon loss reference,
+checked against the ambient two-mode model and analytic survival, transfer and
+coupling derivatives. It checks invariance of H, each jump and each C-dagger-C
+block before projection. Omitting the vacuum would lose real probability.
+At 50, 100 and 200 intervals over time 0.5, the CN population errors are about
+1.207e-6, 3.017e-7 and 7.543e-8; control-gradient errors are 5.282e-6, 1.321e-6
+and 3.302e-7. The accepted 200-interval reference meets the original 1e-6 budget;
+no threshold or integrator was changed.
+
+The new two-state initial-density test first compared adjoints directly to
+Krylov autograd at 1e-9 (complex128) and 2e-5 (complex64). That assertion failed
+on both labelled and unchanged product inputs. An independent dense discrete-map
+reference isolates the issue: in the static fixture the adjoint differs below
+5e-16 in complex128, while default CN and exponential autograd differ by about
+7.150e-9 and 3.825e-8. Complex64 CN's graph/reference gap is about 4.488e-5.
+Tightening solve_tolerance does not remove that conditioning effect. Acceptance
+therefore keeps the original adjoint budgets against the independent reference
+and separately checks labelled/product autograd parity, at 1e-12 or 1e-7.
+The failed shared-graph comparison is not recorded as passed or used to claim
+an improved numerical kernel. The existing conditioning limits remain explicit.
+
+All 690 focused dynamics, contract and physical-reference cases pass on Python
+3.10, 3.11 and 3.12. Twelve pre-implementation static/scheduled qubit and mixed
+product requests retain identical full JSON, identities and RK trajectory bytes
+in complex64/complex128. Existing qubit fixtures and old conformance assertions
+are retained. Four committed 1.4/1.5 golden payloads were captured from the
+pre-implementation producer, independently of the new writer. Full
+default/runtime repository tiers and remote CI remain the
+integration gates; these local observations are not release certification.
 
 ## Approval, implementation and acceptance sequence
 

@@ -10,9 +10,9 @@ from typing import Any, cast
 
 import torch
 
-from ..core.ir.state_space import ProductStateSpace
+from ..core.ir.state_space import ExplicitBasisSpace, ProductStateSpace
 from ..core.parameters import Parameter
-from ..errors import SerializationError
+from ..errors import CapabilityError, SerializationError
 from ..simulation.lindblad import (
     EvolutionPlan,
     _plan_density_matrix_evolution,
@@ -43,6 +43,7 @@ _VERSION = "1.3"
 # Only non-qubit spaces use 1.4. Existing qubit payloads and identities stay 1.3.
 _PRODUCT_SPACE_VERSION = "1.4"
 _PIECEWISE_VERSION = "1.5"
+_EXPLICIT_BASIS_VERSION = "1.6"
 _SCHEDULED_FIELDS = {
     "hamiltonians",
     "parameter_values",
@@ -103,6 +104,15 @@ def _complex_tensor(payload: object, *, dtype: torch.dtype, field: str) -> torch
     return tensor
 
 
+def _serialized_basis_labels(value: object) -> tuple[tuple[int | str, ...], ...]:
+    if not isinstance(value, list) or any(not isinstance(row, list) for row in value):
+        raise SerializationError("basis_labels must be a list of label lists")
+    try:
+        return ExplicitBasisSpace(value).labels
+    except (TypeError, ValueError) as exc:
+        raise SerializationError("invalid basis_labels") from exc
+
+
 def _summary(payload: Mapping[str, Any]) -> EvolutionPlan:
     """Rebuild the decision record from a serialized payload.
 
@@ -141,9 +151,20 @@ def _summary(payload: Mapping[str, Any]) -> EvolutionPlan:
             dimensions = ProductStateSpace(raw_dimensions).dimensions
         except (TypeError, ValueError) as exc:
             raise SerializationError("invalid decision.dimensions") from exc
+    basis_labels = None
+    if "basis_labels" in payload:
+        basis_labels = _serialized_basis_labels(payload["basis_labels"])
+        if (
+            "n_wires" not in payload
+            or payload["n_wires"] is not None
+            or "dimensions" in payload
+        ):
+            raise SerializationError(
+                "an explicit basis has no wires or product dimensions"
+            )
     try:
         return EvolutionPlan(
-            n_wires=int(payload["n_wires"]),
+            n_wires=None if basis_labels is not None else int(payload["n_wires"]),
             n_times=int(payload["n_times"]),
             dimension=int(payload["dimension"]),
             trajectory_bytes=int(payload["trajectory_bytes"]),
@@ -160,6 +181,7 @@ def _summary(payload: Mapping[str, Any]) -> EvolutionPlan:
             dimensions=dimensions,
             time_dependence=numerics.get("time_dependence"),
             n_intervals=numerics.get("n_intervals"),
+            basis_labels=basis_labels,
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise SerializationError("invalid Lindblad plan decision") from exc
@@ -202,23 +224,50 @@ class LindbladPlan:
         if checked.get("schema") != _SCHEMA:
             raise SerializationError("invalid Lindblad plan schema")
         version = checked.get("version")
-        if version not in (_VERSION, _PRODUCT_SPACE_VERSION, _PIECEWISE_VERSION):
+        if version not in (
+            _VERSION,
+            _PRODUCT_SPACE_VERSION,
+            _PIECEWISE_VERSION,
+            _EXPLICIT_BASIS_VERSION,
+        ):
             raise SerializationError("unsupported Lindblad plan version")
-        if version == _PIECEWISE_VERSION and set(checked) != {
+        if version in (_PIECEWISE_VERSION, _EXPLICIT_BASIS_VERSION) and set(
+            checked
+        ) != {
             "schema",
             "version",
             "request",
             "decision",
             "identity",
         }:
-            raise SerializationError("unknown scheduled plan fields")
-        if version != _PIECEWISE_VERSION and _SCHEDULED_FIELDS.intersection(checked):
+            raise SerializationError(
+                "unknown explicit-basis plan fields"
+                if version == _EXPLICIT_BASIS_VERSION
+                else "unknown scheduled plan fields"
+            )
+        if version not in (
+            _PIECEWISE_VERSION,
+            _EXPLICIT_BASIS_VERSION,
+        ) and _SCHEDULED_FIELDS.intersection(checked):
             raise SerializationError(
                 "scheduled fields require Lindblad plan version 1.5"
             )
         supplied_identity = checked.get("identity")
-        if not isinstance(supplied_identity, str) or supplied_identity != _identity(
-            checked
+        if not isinstance(supplied_identity, str):
+            raise SerializationError(
+                "Lindblad plan identity does not match its content"
+            )
+        try:
+            computed_identity = _identity(checked)
+        except (TypeError, ValueError) as exc:
+            if version == _EXPLICIT_BASIS_VERSION:
+                raise SerializationError(
+                    "invalid explicit-basis plan encoding"
+                ) from exc
+            raise
+        if (
+            not isinstance(supplied_identity, str)
+            or supplied_identity != computed_identity
         ):
             raise SerializationError(
                 "Lindblad plan identity does not match its content"
@@ -227,6 +276,10 @@ class LindbladPlan:
         decision = checked.get("decision")
         if not isinstance(request, Mapping) or not isinstance(decision, Mapping):
             raise SerializationError("Lindblad plan requires request and decision maps")
+        if version != _EXPLICIT_BASIS_VERSION and any(
+            "basis_labels" in part for part in (checked, request, decision)
+        ):
+            raise SerializationError("basis_labels require Lindblad plan version 1.6")
         decoded = _decode_request(request, decision, version=str(version))
         recomputed = _plan_density_matrix_evolution(**decoded)
         if recomputed.to_dict() != dict(decision):
@@ -257,7 +310,18 @@ class LindbladPlan:
     def dimensions(self) -> tuple[int, ...]:
         """Return ordered subsystem sizes; subsystem 0 is most significant."""
         decision = self._decision
+        if decision.basis_labels is not None:
+            raise CapabilityError(
+                "this basis has no tensor factors; inspect basis_labels"
+            )
+        assert decision.n_wires is not None
         return decision.dimensions or (2,) * decision.n_wires
+
+    @property
+    def basis_labels(self) -> tuple[tuple[int | str, ...], ...] | None:
+        """Return the declared basis coordinates, or None for product plans."""
+
+        return self._decision.basis_labels
 
     @property
     def n_times(self) -> int:
@@ -343,6 +407,7 @@ def build_lindblad_plan(
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
 ) -> LindbladPlan:
     summary = plan_density_matrix_evolution(
         hamiltonian,
@@ -360,10 +425,11 @@ def build_lindblad_plan(
         require_gradients=require_gradients,
         dimensions=dimensions,
         parameter_values=parameter_values,
+        basis_labels=basis_labels,
     )
     resolved_device = torch.device(device)
     dimension = summary.dimension
-    qubit_space = summary.dimensions is None
+    qubit_space = summary.dimensions is None and summary.basis_labels is None
     canonical_n_qubits = summary.n_wires if qubit_space else None
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
@@ -433,15 +499,21 @@ def build_lindblad_plan(
     payload: dict[str, Any] = {
         "schema": _SCHEMA,
         "version": (
-            _PIECEWISE_VERSION
-            if parameter_values is not None
-            else _VERSION if qubit_space else _PRODUCT_SPACE_VERSION
+            _EXPLICIT_BASIS_VERSION
+            if summary.basis_labels is not None
+            else (
+                _PIECEWISE_VERSION
+                if parameter_values is not None
+                else _VERSION if qubit_space else _PRODUCT_SPACE_VERSION
+            )
         ),
         "request": request,
         "decision": summary.to_dict(),
     }
     if summary.dimensions is not None:
         request["dimensions"] = list(summary.dimensions)
+    if summary.basis_labels is not None:
+        request["basis_labels"] = [list(label) for label in summary.basis_labels]
     payload["identity"] = _identity(payload)
     validated = LindbladPlan.from_dict(payload)
     # The live request is the same one the payload describes, holding the
@@ -464,6 +536,8 @@ def build_lindblad_plan(
     }
     if summary.dimensions is not None:
         live["dimensions"] = summary.dimensions
+    if summary.basis_labels is not None:
+        live["basis_labels"] = summary.basis_labels
     if parameter_values is not None:
         live["bound_hamiltonians"] = hamiltonians
     return replace(validated, _live_request=live)
@@ -472,23 +546,26 @@ def build_lindblad_plan(
 def _decode_request(
     request: Mapping[str, Any], decision: Mapping[str, Any], *, version: str = _VERSION
 ) -> dict[str, Any]:
+    labelled = version == _EXPLICIT_BASIS_VERSION
+    if not labelled and ("basis_labels" in request or "basis_labels" in decision):
+        raise SerializationError("basis_labels require Lindblad plan version 1.6")
     summary = _summary(decision)
-    scheduled = version == _PIECEWISE_VERSION
-    if scheduled:
-        if any(
-            type(decision.get(key)) is not int
-            for key in (
-                "n_wires",
-                "n_times",
-                "dimension",
-                "trajectory_bytes",
-                "batch_size",
+    scheduled = version == _PIECEWISE_VERSION or (
+        labelled and summary.time_dependence is not None
+    )
+    if scheduled or labelled:
+        counts = ["n_times", "dimension", "trajectory_bytes", "batch_size"]
+        if not labelled:
+            counts.append("n_wires")
+        if any(type(decision.get(key)) is not int for key in counts):
+            raise SerializationError(
+                "explicit-basis decision counts must be integers"
+                if labelled
+                else "scheduled decision counts must be integers"
             )
-        ):
-            raise SerializationError("scheduled decision counts must be integers")
         allowed = {
             "n_qubits",
-            "hamiltonians",
+            "hamiltonians" if scheduled else "hamiltonian",
             "initial_density_matrix",
             "times",
             "collapse_operators",
@@ -497,8 +574,15 @@ def _decode_request(
         }
         if summary.dimensions is not None:
             allowed.add("dimensions")
+        if labelled:
+            allowed.add("basis_labels")
         if set(request) != allowed:
-            raise SerializationError("invalid scheduled request fields")
+            raise SerializationError(
+                "invalid explicit-basis request fields"
+                if labelled
+                else "invalid scheduled request fields"
+            )
+    if scheduled:
         numerics = decision["numerics"]
         if (
             not isinstance(numerics, Mapping)
@@ -516,6 +600,8 @@ def _decode_request(
         raise SerializationError("unsupported Lindblad plan precision")
     try:
         raw_n_qubits = request["n_qubits"]
+        if labelled and raw_n_qubits is not None:
+            raise SerializationError("an explicit basis requires null n_qubits")
         n_qubits = None if raw_n_qubits is None else int(raw_n_qubits)
         times = request["times"]
         return_density_matrices = request["return_density_matrices"]
@@ -526,7 +612,14 @@ def _decode_request(
             f"missing Lindblad plan field {exc.args[0]!r}"
         ) from exc
     dimensions = None
-    if version == _VERSION or (scheduled and summary.dimensions is None):
+    basis_labels = None
+    if labelled:
+        if "dimensions" in request or "dimensions" in decision:
+            raise SerializationError("an explicit basis has no product dimensions")
+        basis_labels = _serialized_basis_labels(request.get("basis_labels"))
+        if summary.basis_labels != basis_labels:
+            raise SerializationError("decision basis_labels do not match the request")
+    elif version == _VERSION or (scheduled and summary.dimensions is None):
         if "dimensions" in request or "dimensions" in decision:
             raise SerializationError(
                 "qubit plans cannot carry product dimensions"
@@ -556,13 +649,21 @@ def _decode_request(
         raise SerializationError("return_density_matrices must be a boolean")
     if not isinstance(raw_collapse, list) or not isinstance(raw_observables, list):
         raise SerializationError("collapse_operators and observables must be lists")
-    if scheduled:
+    if scheduled or labelled:
         for item in raw_collapse:
             if not isinstance(item, Mapping) or set(item) != {"operator", "rate"}:
-                raise SerializationError("invalid scheduled collapse fields")
+                raise SerializationError(
+                    "invalid explicit-basis collapse fields"
+                    if labelled
+                    else "invalid scheduled collapse fields"
+                )
         for item in raw_observables:
             if not isinstance(item, Mapping) or set(item) != {"operator", "name"}:
-                raise SerializationError("invalid scheduled observable fields")
+                raise SerializationError(
+                    "invalid explicit-basis observable fields"
+                    if labelled
+                    else "invalid scheduled observable fields"
+                )
     collapse_operators = []
     for index, item in enumerate(raw_collapse):
         if not isinstance(item, Mapping):
@@ -622,6 +723,8 @@ def _decode_request(
     }
     if dimensions is not None:
         decoded["dimensions"] = dimensions
+    if basis_labels is not None:
+        decoded["basis_labels"] = basis_labels
     if scheduled:
         raw_hamiltonians = request["hamiltonians"]
         if (
@@ -644,6 +747,17 @@ def _decode_request(
             _complex_tensor(value, dtype=dtype, field=f"hamiltonians[{index}]")
             for index, value in enumerate(raw_hamiltonians)
         )
+    elif labelled:
+        tensor_payloads = [
+            request.get("initial_density_matrix"),
+            request.get("hamiltonian"),
+        ]
+        tensor_payloads += [item["operator"] for item in raw_collapse + raw_observables]
+        if any(
+            not isinstance(item, Mapping) or set(item) != {"shape", "values"}
+            for item in tensor_payloads
+        ):
+            raise SerializationError("invalid explicit-basis tensor fields")
     return decoded
 
 
