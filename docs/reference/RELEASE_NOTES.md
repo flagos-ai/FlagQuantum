@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add ordered basis_labels to the existing CPU Lindblad plan/run and
+  initial-density adjoint entries for non-factorized matrix coordinates.
+  Static and piecewise labelled requests use plan 1.6 with retained literal
+  labels and no qubit count; 1.3/1.4/1.5 payloads and identities remain unchanged.
+  Existing Core parameters, Liouvillian, integrators, results and PyTorch paths
+  are reused. Direct boson conversion still requires product dimensions, and
+  labels alone do not certify a physical sector or implement native braiding.
+
 - Preserve live scalar tensor coefficients in static full-space Hamiltonian
   term mappings. Numeric matrices and existing boson operators share the same
   normalization and dynamics path; named values bind with the existing

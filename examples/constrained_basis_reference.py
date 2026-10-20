@@ -1,8 +1,7 @@
-"""Numerical feasibility reference; it does not add constrained-space execution.
+"""Labelled-basis evolution using existing operator, plan and gradient APIs.
 
-Run this file against the existing FlagQuantum checkout. Reduced matrix axes
-are interpreted here by the caller; present Lindblad plans retain only their
-encoded product-space interpretation, not number-sector or fusion metadata.
+The caller validates each reduced model and owns its physical interpretation.
+Plans retain ordered literal basis labels, not certified number/fusion rules.
 Ising conventions: Nayak et al., arXiv:0707.1889, section II.A and equation (50).
 """
 
@@ -33,17 +32,18 @@ def main() -> None:
         theta * reduced,
         [1.0, 0.0],
         [0.0, 1.0],
-        dimensions=(2,),
+        basis_labels=labels,
         method="krylov-exponential",
         options=fq.ExecutionOptions(require_gradients=True),
     )
-    probability = result.populations[-1, 1]
+    probability = result.populations[-1, labels.index((1, 0))]
     (gradient,) = torch.autograd.grad(probability, theta)
     print(f"One-excitation transfer: {probability.item():.8f}")
     print(f"Control derivative: {gradient.item():.8f}")
 
     # Caller-owned fusion convention: four sigma anyons, total 1, left tree,
     # paths (1, sigma, 1), (psi, sigma, 1). No anyon model is created by fql.
+    fusion_labels = (("1", "sigma", "1"), ("psi", "sigma", "1"))
     change_basis = torch.tensor([[1.0, 1.0], [1.0, -1.0]], dtype=dtype) / math.sqrt(2)
     r = torch.diag(torch.exp(torch.tensor([-1j, 3j], dtype=dtype) * math.pi / 8))
     exchange = change_basis.mH @ r @ change_basis
@@ -53,7 +53,7 @@ def main() -> None:
         h,
         [1.0, 0.0],
         [0.0, 1.0],
-        dimensions=(2,),
+        basis_labels=fusion_labels,
         method="krylov-exponential",
         return_density_matrices=True,
     )
@@ -66,9 +66,9 @@ def main() -> None:
     braid_error = torch.max(torch.abs(r @ exchange @ r - exchange @ r @ exchange))
     print(f"Fusion-channel probability: {encoded.populations[-1, 1].item():.8f}")
     print(f"Braid relation verified: {bool(braid_error < 1e-12)}")
-    has_labels = "basis_labels" in fusion_plan.to_dict()["request"]
-    assert not has_labels
-    print("Constrained metadata in existing plans:", has_labels)
+    has_labels = fusion_plan.basis_labels == fusion_labels
+    assert has_labels
+    print("Plan retains declared basis labels:", has_labels)
 
 
 if __name__ == "__main__":
