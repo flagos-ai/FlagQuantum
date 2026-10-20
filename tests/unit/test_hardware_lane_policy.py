@@ -7,10 +7,9 @@ a threshold the code passes gets reported as a regression. These rules are about
 the workflow's own job graph, which the workflow fully controls, rather than
 about the containers a neighbour happens to be running, which it does not.
 
-The last rule in this module is a different species and guards the same hosts: a
-pull request must not be able to reach a self-hosted runner at all. Today no
-workflow that a pull request can trigger asks for one, but that is a property of
-how the files happen to be written rather than anything the repository enforces.
+The last rule in this module is a different species and guards the same hosts: a fork
+pull request must not be able to reach a self-hosted runner. Same-repository CPU
+jobs may use the isolated A100 pool only behind the explicit routing guard.
 """
 
 from __future__ import annotations
@@ -30,6 +29,11 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # group is repository-wide, so the scheduled lane and the manual gate serialize
 # against each other and not merely against themselves.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
+TRUSTED_CPU_ROUTE = (
+    "${{ (github.event_name != 'pull_request' || "
+    "github.event.pull_request.head.repo.full_name == github.repository) "
+    "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
+)
 
 # The files that ask a host for its device state. They cannot share the
 # constant: every tool here is a self-contained script, and a script under
@@ -136,14 +140,26 @@ def _triggers(path: Path) -> frozenset[str]:
 
 
 def _is_self_hosted(job: dict[str, object]) -> bool:
-    return "self-hosted" in {label.lower() for label in _runs_on(job)}
+    labels = {label.lower() for label in _runs_on(job)}
+    return "self-hosted" in labels or any(
+        "flagquantum-a100-cpu" in label for label in labels
+    )
+
+
+def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> bool:
+    if not _is_self_hosted(job):
+        return False
+    return not (
+        reaching == frozenset({"pull_request"})
+        and job.get("runs-on") == TRUSTED_CPU_ROUTE
+    )
 
 
 def _accelerator_jobs() -> dict[str, tuple[Path, dict[str, object]]]:
     """Every job that asks a self-hosted runner for a device."""
 
     found: dict[str, tuple[Path, dict[str, object]]] = {}
-    for path in sorted(WORKFLOWS.glob("*.yml")):
+    for path in sorted(WORKFLOWS.glob("*.y*ml")):
         for name, job in _jobs(path).items():
             labels = {label.lower() for label in _runs_on(job)}
             if "self-hosted" in labels and "gpu" in labels:
@@ -251,7 +267,7 @@ def _untrusted_workflow_jobs() -> dict[str, tuple[Path, frozenset[str]]]:
     """Workflows a pull request can reach, with the events that get it there."""
 
     found: dict[str, tuple[Path, frozenset[str]]] = {}
-    for path in sorted(WORKFLOWS.glob("*.yml")):
+    for path in sorted(WORKFLOWS.glob("*.y*ml")):
         reaching = _triggers(path) & set(UNTRUSTED_EVENTS)
         if reaching:
             found[path.name] = (path, frozenset(reaching))
@@ -264,7 +280,7 @@ def test_every_workflow_event_is_attributed() -> None:
     # workflow reachable by a route nobody classified, and the rules would stay
     # quiet about it. This is what speaks up instead.
     unattributed: list[str] = []
-    for path in sorted(WORKFLOWS.glob("*.yml")):
+    for path in sorted(WORKFLOWS.glob("*.y*ml")):
         for event in sorted(_triggers(path)):
             if event not in UNTRUSTED_EVENTS and event not in TRUSTED_EVENTS:
                 unattributed.append(f"{path.name}: {event}")
@@ -275,22 +291,14 @@ def test_every_workflow_event_is_attributed() -> None:
     )
 
 
-def test_a_pull_request_cannot_reach_a_self_hosted_runner() -> None:
-    # The self-hosted runners are root shells on hosts that other people share,
-    # and one of them lives in a public repository. GitHub's own guidance is to
-    # keep self-hosted runners away from public repositories for exactly this
-    # reason, and this repository made that choice: every workflow a pull
-    # request can trigger asks for GitHub-hosted runners.
-    #
-    # That choice was a property of how the files happened to be written. The
-    # repository has no runner group to enforce it -- a runner group is an
-    # organization-level feature, and both runners are registered at the
-    # repository level -- so this rule is what keeps the next `runs-on` line
-    # from opening the hosts to whoever opens a pull request.
+def test_a_fork_pull_request_cannot_reach_a_self_hosted_runner() -> None:
+    # The A100 CPU route admits trusted same-repository code, while fork PRs
+    # take the hosted fallback. Other PR-triggered self-hosted routes remain
+    # forbidden, including pull_request_target and workflow_run.
     offenders: list[str] = []
     for name, (path, reaching) in sorted(_untrusted_workflow_jobs().items()):
         for job, definition in _jobs(path).items():
-            if _is_self_hosted(definition):
+            if _allows_untrusted_code(definition, reaching):
                 offenders.append(
                     f"{name}:{job} runs on a self-hosted runner and "
                     f"{name} is reachable by {sorted(reaching)}"
@@ -319,10 +327,27 @@ def test_the_self_hosted_detector_recognises_a_known_self_hosted_job() -> None:
     # The discovery assertion above covers which workflows are reachable, not
     # whether a self-hosted job can be seen at all.
     self_hosted = _jobs(WORKFLOWS / "local-gpu.yml")["one-gpu-local"]
-    github_hosted = _jobs(WORKFLOWS / "ci.yml")["coverage"]
+    github_hosted = _jobs(WORKFLOWS / "ci.yml")["package"]
 
     assert _is_self_hosted(self_hosted)
     assert not _is_self_hosted(github_hosted)
+
+
+def test_cpu_route_rejects_missing_guards_and_other_untrusted_events() -> None:
+    guarded = {"runs-on": TRUSTED_CPU_ROUTE}
+    assert _is_self_hosted(guarded)
+    assert not _allows_untrusted_code(guarded, frozenset({"pull_request"}))
+    for event in ("pull_request_target", "workflow_run"):
+        assert _allows_untrusted_code(guarded, frozenset({event}))
+    for route in (
+        "flagquantum-a100-cpu",
+        "${{ 'flagquantum-a100-cpu' }}",
+        TRUSTED_CPU_ROUTE.replace(
+            "github.event.pull_request.head.repo.full_name == github.repository",
+            "true",
+        ),
+    ):
+        assert _allows_untrusted_code({"runs-on": route}, frozenset({"pull_request"}))
 
 
 def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(

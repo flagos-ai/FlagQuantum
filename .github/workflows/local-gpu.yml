@@ -134,7 +134,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Verify account, CPU allocation, and GPU exclusion
+      - name: Verify account, CPU allocation, and CPU-only environment
         run: |
           python - <<'PYCODE'
           import os
@@ -143,9 +143,14 @@ jobs:
           assert os.geteuid() != 0
           assert len(os.sched_getaffinity(0)) == 8
           assert torch.cuda.device_count() == 0
-          private_files = ['/dev/nvidia0', '/opt/flagquantum-runners/protected-canary.txt']
-          for directory in ['/etc/token', '/etc/accesskey']:
-              private_files.extend(str(p) for p in Path(directory).iterdir() if p.is_file())
+          assert torch.version.cuda is None
+          status = Path('/proc/self/status').read_text()
+          assert 'CapEff:\t0000000000000000' in status
+          assert 'NoNewPrivs:\t1' in status
+          own_slot = os.environ['FQ_RUNNER_NAME']
+          other_slot = 'cpu02' if own_slot != 'cpu02' else 'cpu01'
+          private_files = ['/root', '/opt/flagquantum-runners/admin',
+                           '/opt/flagquantum-runners/homes/' + other_slot]
           for path in private_files:
               try:
                   fd = os.open(path, os.O_RDONLY)

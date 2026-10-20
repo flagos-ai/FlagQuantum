@@ -37,9 +37,11 @@ gates. GPU jobs share the `flagquantum-accelerator` concurrency group.
 The deployment lives in `/opt/flagquantum-runners`. Each runner uses a separate
 Unix account, private home, workspace, temporary directory, and tool cache.
 Root-owned framework environments are shared read-only. A pre-job hook rebuilds
-the writable Python environment for every job. Landlock denies filesystem access
-outside the runner's allowlist; CPU runners cannot open NVIDIA devices. Reading
-file contents from personal/project or platform credential mounts is denied.
+the writable Python environment for every job. Private account directories use
+Unix permissions to protect runner credentials and workspaces from other runner
+accounts. CPU jobs use a CPU-only PyTorch build and an empty
+`CUDA_VISIBLE_DEVICES`; this is an execution policy for trusted jobs, not device
+isolation against hostile code.
 
 CPU affinity sets are disjoint: each CPU runner gets four physical cores and
 their SMT siblings. The GPU runner gets sixteen different physical cores and
@@ -60,12 +62,19 @@ repository runner token; the host does not need a long-lived GitHub PAT. Runner
 application files are root-owned and automatic updates are disabled, so the
 operator must install supported runner releases within GitHub's update window.
 
-This is a shared-kernel environment. CPU affinity is not a cgroup quota, memory
-limits are shared, and Landlock ABI 1 does not isolate network traffic, hide
-directory metadata, or provide all newer filesystem protections. The listener
-requires enumeration of its ancestors up to `/`, so directory names can remain
-visible even though file contents are denied. Treat same-repository workflow changes as
-trusted executable code. Never route arbitrary fork code to this pool or use
-`pull_request_target` to execute a fork checkout. A platform instance recreation
-requires restoring the deployment and restarting its watchdog; process supervision
-does not preserve a deleted container.
+This is a shared-kernel environment. CPU affinity is not a cgroup quota and
+memory limits are shared. The platform does not permit container mount isolation.
+Landlock ABI 1 was excluded because it prevents cross-directory renames needed by
+editable Python installations. Jobs can read ordinary world-readable host files,
+access the network, and change their own environment. Treat same-repository
+workflow changes as trusted executable code. Never route arbitrary fork code to
+this pool or use `pull_request_target` to execute a fork checkout. A platform
+instance recreation requires restoring the deployment and restarting its
+watchdog; process supervision does not preserve a deleted container.
+
+The node's platform DNS intermittently routes `github.com` to an unreachable
+address. A runner-local Git build supports `http.curloptResolve`; the launcher
+provides tested alternate GitHub addresses while retaining hostname and TLS
+certificate verification. The operator should refresh these addresses when the
+network route changes. System Git and system hostname resolution are not part
+of this runner-specific workaround.
