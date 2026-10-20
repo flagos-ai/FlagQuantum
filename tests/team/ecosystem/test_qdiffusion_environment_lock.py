@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import zipfile
 from pathlib import Path
 
@@ -265,7 +266,13 @@ def test_distribution_content_digest_rechecks_complete_file_set(
         snapshot = real_capture(path, label=label)
         calls += 1
         if calls == 2:
+            before = first.stat()
             first.write_bytes(first.read_bytes())
+            # Make the identity change observable even within one filesystem tick.
+            os.utime(
+                first,
+                ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000),
+            )
         return snapshot
 
     monkeypatch.setattr(verify_module, "capture_regular_file", capture_then_replace)
