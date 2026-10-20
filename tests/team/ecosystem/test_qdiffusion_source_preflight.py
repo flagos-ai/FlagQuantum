@@ -317,14 +317,20 @@ def test_runtime_source_root_rejects_change_during_stable_hash(
         ).encode()
     ).hexdigest()
     real_hash = source_tree_module._stream_sha256
+    real_identity = source_tree_module._metadata_identity
+
+    def coarse_clock_identity(metadata: os.stat_result) -> tuple[int, ...]:
+        identity = real_identity(metadata)
+        if len(identity) == len(source_tree_module._STABLE_METADATA_FIELDS):
+            return identity[:-2] + (0, 0)
+        return identity
 
     def mutate_after_hash(stream):
         digest = real_hash(stream)
-        before = source.stat()
         source.write_text("VALUE = 2\n", encoding="utf-8")
-        os.utime(source, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000_000))
         return digest
 
+    monkeypatch.setattr(source_tree_module, "_metadata_identity", coarse_clock_identity)
     monkeypatch.setattr(source_tree_module, "_stream_sha256", mutate_after_hash)
 
     with pytest.raises(ValueError, match="changed during hashing"):

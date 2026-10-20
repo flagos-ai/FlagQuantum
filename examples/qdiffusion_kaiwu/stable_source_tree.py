@@ -75,9 +75,9 @@ def _hash_stable_file(
             os.O_RDONLY | no_follow | getattr(os, "O_CLOEXEC", 0),
         )
         opened = os.fstat(descriptor)
-        if (
-            not stat.S_ISREG(opened.st_mode)
-            or (opened.st_dev, opened.st_ino) != (metadata.st_dev, metadata.st_ino)
+        if not stat.S_ISREG(opened.st_mode) or (opened.st_dev, opened.st_ino) != (
+            metadata.st_dev,
+            metadata.st_ino,
         ):
             raise ValueError(f"{label} file changed before hashing: {target.name}")
         if max_bytes is not None and opened.st_size > max_bytes:
@@ -86,16 +86,24 @@ def _hash_stable_file(
             raise ValueError(f"{label} size differs from the expected value")
         with os.fdopen(descriptor, "rb", closefd=False) as stream:
             digest = _stream_sha256(stream)
+        # Metadata can remain identical for same-size writes within one clock
+        # tick. A fresh read buffer must also confirm the captured content.
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        with os.fdopen(descriptor, "rb", closefd=False) as stream:
+            confirmed_digest = _stream_sha256(stream)
         after = os.fstat(descriptor)
         visible = target.lstat()
         if (
-            _metadata_identity(after) != _metadata_identity(opened)
+            confirmed_digest != digest
+            or _metadata_identity(after) != _metadata_identity(opened)
             or _metadata_identity(visible) != _metadata_identity(opened)
         ):
             raise ValueError(f"{label} file changed during hashing: {target.name}")
         return digest
     except OSError:
-        raise ValueError(f"{label} file changed during hashing: {target.name}") from None
+        raise ValueError(
+            f"{label} file changed during hashing: {target.name}"
+        ) from None
     finally:
         if descriptor is not None:
             os.close(descriptor)
@@ -235,7 +243,9 @@ def capture_regular_tree(
     try:
         root_metadata = root.lstat()
     except OSError:
-        raise ValueError(f"{label} root must be a regular, non-symlink directory") from None
+        raise ValueError(
+            f"{label} root must be a regular, non-symlink directory"
+        ) from None
     if root.is_symlink() or not stat.S_ISDIR(root_metadata.st_mode):
         raise ValueError(f"{label} root must be a regular, non-symlink directory")
     files: set[str] = set()
@@ -253,9 +263,7 @@ def capture_regular_tree(
                 directories.add(relative)
             elif stat.S_ISREG(metadata.st_mode):
                 files.add(relative)
-                recorded_path = (
-                    f"{path_prefix}/{relative}" if path_prefix else relative
-                )
+                recorded_path = f"{path_prefix}/{relative}" if path_prefix else relative
                 verified_files.append(
                     {
                         "path": recorded_path,
