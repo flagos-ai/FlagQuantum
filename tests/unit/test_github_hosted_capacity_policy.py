@@ -337,7 +337,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
     if job == "coverage-shard":
-        assert definition["strategy"]["max-parallel"] == 4
+        assert definition["strategy"]["max-parallel"] == 8
     else:
         tier = next(
             step

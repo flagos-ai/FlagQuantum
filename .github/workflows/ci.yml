@@ -1209,8 +1209,8 @@ jobs:
       queue: max
     strategy:
       fail-fast: false
-      # Leave capacity for the core/runtime suites on the eight-runner pool.
-      max-parallel: 4
+      # The eight registered services bound total CPU concurrency.
+      max-parallel: 8
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
     env:

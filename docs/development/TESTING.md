@@ -598,8 +598,8 @@ dependencies use the Tsinghua PyPI mirror. Dependency consistency and the
 CPU-only Torch build are checked before tests.
 
 Each coverage-shard pytest phase uses exactly eight xdist workers on A800 CPU
-runners. At most four coverage shards run concurrently, leaving room for the
-core/runtime suites. The seven dependency-bound variants run at most three
+runners. All eight shards may be queued together; the eight registered CPU
+services bound concurrency across coverage, core/runtime and compatibility jobs. The seven dependency-bound variants run at most three
 concurrently, each in a fresh environment with its declared CPU Torch version.
 JAX is explicitly restricted to its CPU backend. These fixed
 counts prevent a runner-image change from silently widening process fan-out. The
