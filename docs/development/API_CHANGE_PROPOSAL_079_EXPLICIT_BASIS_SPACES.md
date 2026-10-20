@@ -2,11 +2,16 @@
 
 ## Status and user outcome
 
-**Proposed; not approved for production implementation.** This is the next bounded
-M1 representation review after piecewise-constant controls. It preserves CircuitIR
+**Approved for implementation by the repository owner on 2026-10-20.** The
+owner explicitly approved proposal 079 and authorized merging #649 after all CI
+succeeded, then implementing M1 explicit-basis spaces. #649 merged as
+`9dd910d98db96c3c1f4c8e38eb723a40ef5cc8eb` after latest head
+`5bbe485b818d16215f7d4a4841d317d232a0f087` passed all 36 checks and both
+complete CI/pre-commit workflows. This is the next bounded M1 representation
+step after piecewise-constant controls. It preserves CircuitIR
 1.0 and all accepted behavior of current product-space requests. It proposes an
 explicit labelled-basis path on the existing Lindblad API and a new plan format
-for that path only; these changes require owner approval before implementation.
+for that path only. Approval does not itself establish public support.
 No public constrained-space support follows from this document or its numerical
 reference. Existing plans 1.3/1.4/1.5 remain byte-identical.
 
@@ -68,7 +73,7 @@ There is no automatic projection or silent removal of leakage.
 The proposed spelling below is **proposed, not implemented**:
 
 ```python
-# Future API, executable only after approval and implementation.
+# Approved API, executable only after implementation.
 labels = (("1", "sigma", "1"), ("psi", "sigma", "1"))
 plan = fql.plan(H_in_this_basis, [1., 0.], [0., 1.], basis_labels=labels)
 result = fql.run(plan)
@@ -271,12 +276,46 @@ The actual CI strict command
 `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`
 passes all 772 existing source files; production source is unchanged.
 
+## Replaceable integration baseline
+
+`contracts/explicit-basis-internal-v1-candidate.json` extends the existing
+product-space candidate rather than duplicating its authorities. The baseline
+in `tests/unit/test_explicit_basis_contract.py` supplies a test-only immutable
+basis fake and an encoded-product plan/run fake. The latter only translates the
+basis count to the current product input and calls existing public plan/run;
+it owns no binder, generator, solver, trajectory or result type. It does not
+retain labels in a public plan and is not a plan 1.6 implementation.
+
+The consumer assertions cover literal coordinate order, defensive immutability,
+invalid and subclass identifiers, no inferred tensor factors at dimensions one,
+two or four, fixed-number transfer/gradients with all three methods, declared
+Ising fusion-channel densities, basis permutations, scheduled state batches and
+an actual SGD update. The existing physical projection counterexample remains
+in `test_constrained_basis_reference.py`. Core replacement changes only the
+basis fixture; Simulation replacement adds the real labelled public runner to
+the same numerical fixture, preserving consumer assertions. JSON/metadata and
+public refusal conformance are additional implementation gates, not guarantees
+provided by the encoded fake. Merge this baseline before dependent production
+changes, following the repository's contract-first sequence.
+
+The first test draft exposed a finite-grid CN derivative error of approximately
+`1.02445e-6` at step 0.01 against a `1e-6` budget. The accepted reference refines
+the step to 0.005 without changing the error budget. Its two-state initial batch
+uses explicit rank-three density matrices: a square rank-two array retains the
+existing single-density interpretation, even with options.batch_size specified.
+No solver, input interpretation or existing assertion was changed for either
+observation. All 32 baseline cases pass; the combined 106-case selection with
+existing product, piecewise-control and physical-reference consumers passes on
+Python 3.10, 3.11 and 3.12. These are test-fake and existing-engine results, not
+production labelled-plan acceptance.
+
 ## Approval, implementation and acceptance sequence
 
-1. **Contract decision.** Review the internal name/structure rules, appended
-   basis_labels keyword, plan 1.6, optional metadata, nullable n_wires meaning,
-   product-space compatibility and explicit domain limits. The owner must
-   approve these changes before dependent implementation.
+1. **Contract decision: approved on 2026-10-20.** The approved scope is the
+   internal name/structure rules, appended basis_labels keyword, plan 1.6,
+   optional metadata, nullable n_wires meaning, product-space compatibility
+   and explicit domain limits. No additional implementation approval is needed
+   for this bounded contract.
 2. **Integration baseline after approval.** Add a narrow versioned candidate,
    a test-only fake and conformance consumers through existing plan/run, following
    proposals 078 and 073. Preserve the old product/fusion refusal test and existing
