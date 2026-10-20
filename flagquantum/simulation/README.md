@@ -29,6 +29,7 @@ python -m pytest tests/test_mps.py -q
 python -m pytest tests/test_tensor_network.py -q
 python -m pytest tests/test_noise.py -q
 python -m pytest tests/unit/test_density_matrix_execution_capability.py -q
+python -m pytest tests/unit/test_dynamic_density_matrix.py -q
 python -m pytest tests/team/simulation/test_stabilizer_engine.py -q
 ```
 
@@ -80,10 +81,11 @@ wire 0 of two wires is that gate tensored with the identity on the right, not th
 identity on the left. `mode="density_matrix"` selects the route and `mode="auto"`
 selects it exactly when the program carries a channel instruction;
 `mode="statevector"` and `mode="mps"` refuse such a program by name instead of
-approximating it. `Circuit.density_matrix()` reads a channel-free program off its
-statevector as an outer product and routes a channel-carrying program through
-`density_matrix_from_ir`, because an outer product is rank one and cannot be the
-mixed state a channel produces.
+approximating it. `Circuit.density_matrix()` reads a program with neither a
+channel nor a dynamic instruction off its statevector as an outer product and
+routes any other program through `density_matrix_from_ir`, because an outer
+product is rank one and cannot be the mixed state a channel or an unread
+measurement produces.
 
 The engine is device-generic `torch`: it takes the operands' own device and
 precision, and asks the kernel catalog once per product whether a fused batched
@@ -92,18 +94,37 @@ precision the catalog does not declare, the reference `torch.bmm` route runs and
 the route taken is counted rather than assumed. The density matrix is not
 sharded; no rank partitions it. `memory_limit_bytes` is recorded into the noisy
 plan and is not enforced on this route, so a dense state larger than a declared
-limit still executes. The circuit IR carries no mid-circuit measurement, reset,
-or classically conditioned instruction, so this route cannot express them;
-mid-circuit measurement is reached through `flagquantum.dynamic.DynamicCircuit`
-on a statevector trajectory instead.
+limit still executes.
+
+A dynamic program — a mid-circuit measurement, a reset, or a classically
+conditioned instruction — executes here too, and executes exactly. The route
+keeps one dense density matrix per classical record. A measurement whose
+recorded bit no instruction reads is the non-selective channel
+`P0 . P0 + P1 . P1`, so it dephases in place and costs no second branch; a
+measurement somebody reads splits the branch in two, one per outcome, and the
+outcome is written into that branch's record. A condition is a gate on exactly
+the branches its clause selects, and a `reset` is the trace-preserving channel
+`{P0, P1 X}`, which returns the wire to `|0>` without inventing a record. The
+returned matrix is the sum of the branches, which is what a reader who never sees
+the classical register holds, and its trace is one. A branch whose trace is
+exactly zero cannot occur and is dropped rather than carried as a zero.
+
+This is the exact answer `fq.experimental.dynamic.run_dynamic(..., shots=...)` is
+a sampled estimate of. It is reached through `DynamicCircuit.density_matrix()`;
+`fq.run` and `DynamicCircuit.state()` still refuse a dynamic program by name,
+because one state is not the mixture a dynamic program produces and substituting
+one branch for the sum would be a silent answer.
 
 The route carries an exact autograd graph. `d<Z(0)>/dtheta` for `RY(theta)` on
 `|0>` is `-sin(theta)`: `complex128` reproduces it exactly and the default
 `complex64` lands about `1e-8` away. `examples/density_matrix_execution.py` is
-the ten-minute path through all of the above.
+the ten-minute path through the gate and channel part of the above, and
+`examples/dynamic_density_matrix.py` is the ten-minute path through the dynamic
+part.
 
 ```bash
 python -m examples.density_matrix_execution
+python -m examples.dynamic_density_matrix
 ```
 
 ## Continuous-time open-system evolution

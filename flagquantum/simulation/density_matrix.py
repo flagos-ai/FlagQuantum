@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 
-from ..core.ir import CircuitIR
+from ..core.ir import CircuitIR, Instruction
 from ..core.runtime_config import get_runtime_config
 from ..kernels.catalog import KERNEL_DEVICES
 from ..noise import KrausChannel
@@ -62,13 +62,21 @@ def density_matrix(circuit_or_state: Any) -> torch.Tensor:
     rather than read off a statevector: the outer product of a statevector is
     rank one, so it cannot represent the mixed state a channel produces, and the
     statevector route refuses a channel instead of approximating it. A program
-    without one keeps the cheaper outer-product route.
+    that carries a mid-circuit measurement, a reset, or a classically
+    conditioned instruction is executed the same way, for the same reason and by
+    the same route: reading one outcome of a measurement is a rank-one
+    statevector, and the state after a measurement that nobody conditioned on is
+    the mixture over both outcomes. A program carrying neither keeps the cheaper
+    outer-product route.
     """
 
     to_ir = getattr(circuit_or_state, "to_ir", None)
     if to_ir is not None:
         ir = to_ir()
-        if any(item.metadata.get("is_channel") for item in ir):
+        if any(
+            item.metadata.get("is_channel") or _is_dynamic_instruction(item)
+            for item in ir
+        ):
             return density_matrix_from_ir(circuit_or_state)
     state = (
         circuit_or_state.state()
@@ -90,6 +98,221 @@ def _bits_to_index(bits: Sequence[int]) -> int:
     for bit in bits:
         value = (value << 1) | int(bit)
     return value
+
+
+def _projector(outcome: int, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+    """Return one outcome projector of a projective measurement on one qubit."""
+
+    zero = ((1.0, 0.0), (0.0, 0.0))
+    one = ((0.0, 0.0), (0.0, 1.0))
+    return torch.tensor(
+        zero if outcome == 0 else one, dtype=dtype, device=device
+    ).reshape(1, 2, 2)
+
+
+def _condition_clauses(
+    instruction: Instruction,
+) -> tuple[tuple[tuple[int, int], ...], ...]:
+    """Return the classical conditions of one instruction as disjunctive clauses.
+
+    The flag lives in the instruction metadata, which is the IR's own vocabulary
+    and the single source of truth for it: ``conditions`` is one conjunction and
+    ``condition_clauses`` is a disjunction of them. Declaring both is refused
+    rather than resolved by a precedence rule, because the two spellings disagree
+    about what the program means.
+    """
+
+    metadata = instruction.metadata
+    if "conditions" in metadata and "condition_clauses" in metadata:
+        raise ValueError(
+            "instruction cannot define both conditions and condition_clauses"
+        )
+    if "condition_clauses" in metadata:
+        try:
+            return tuple(
+                tuple((int(bit), int(value)) for bit, value in clause)
+                for clause in metadata["condition_clauses"]
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "condition_clauses must contain integer bit/value pairs"
+            ) from exc
+    conditions = metadata.get("conditions")
+    if not conditions:
+        return ()
+    return (tuple((int(bit), int(value)) for bit, value in conditions),)
+
+
+def _is_dynamic_instruction(instruction: Instruction) -> bool:
+    """Whether one instruction needs a classical register to be interpreted."""
+
+    metadata = instruction.metadata
+    return bool(
+        metadata.get("is_dynamic")
+        or metadata.get("conditions")
+        or metadata.get("condition_clauses")
+    )
+
+
+def _channel_operators(
+    instruction: Instruction,
+) -> KrausChannel | Sequence[torch.Tensor]:
+    """Return the Kraus operators a channel instruction carries.
+
+    A channel instruction with no operators is refused by name here rather than
+    reaching ``tuple(None)``, which surfaces as a ``TypeError`` naming neither the
+    instruction nor the repair. An IR assembled by hand can say ``is_channel``
+    without carrying a matrix, so this is a reachable shape rather than a guard
+    against a mistake only this module can make.
+    """
+
+    operators = instruction.matrix
+    if isinstance(operators, KrausChannel):
+        return operators
+    if operators is None:
+        raise ValueError(
+            f"channel instruction {instruction.name!r} carries no Kraus operators"
+        )
+    return tuple(operators)
+
+
+def _read_classical_bits(ir: CircuitIR) -> frozenset[int]:
+    """Return every classical bit some instruction conditions on."""
+
+    return frozenset(
+        bit
+        for instruction in ir
+        for clause in _condition_clauses(instruction)
+        for bit, _value in clause
+    )
+
+
+def _execute_density(ir: CircuitIR, rho: torch.Tensor) -> torch.Tensor:
+    """Execute ``ir`` on ``rho``, keeping one density matrix per classical record.
+
+    A unitary acts on every branch the same way and a channel is already a
+    mixture, so neither reads the register. A mid-circuit measurement does: an
+    outcome nobody conditions on dephases the state by the non-selective channel,
+    which is one density matrix, while an outcome some instruction reads splits
+    the branch into both outcomes and records which one it was. The final state
+    is the sum of the branches, weighted by the probability each one carried,
+    because that is exactly the mixture a reader who never sees the register
+    holds.
+
+    A branch whose trace is exactly zero cannot happen, so it is dropped: it
+    contributes nothing to the sum and keeping it would double the branch count
+    at every dead outcome. The cut is exact rather than a threshold, so no
+    probability is discarded.
+    """
+
+    tracked = _read_classical_bits(ir)
+    if tracked and rho.shape[0] > 1:
+        # Two batch rows that measure the same qubit can record different bits, so
+        # a shared ensemble would have to split the batch axis and glue it back.
+        # One row at a time keeps the rows independent and the record per row.
+        return torch.cat(
+            [
+                _execute_density_ensemble(ir, rho[row : row + 1], tracked)
+                for row in range(rho.shape[0])
+            ],
+            dim=0,
+        )
+    return _execute_density_ensemble(ir, rho, tracked)
+
+
+def _execute_density_ensemble(
+    ir: CircuitIR,
+    rho: torch.Tensor,
+    tracked: frozenset[int],
+) -> torch.Tensor:
+    n_wires = ir.n_wires
+    dtype = rho.dtype
+    device = rho.device
+    ensemble: list[tuple[torch.Tensor, dict[int, int]]] = [(rho, {})]
+    for instruction in ir:
+        metadata = instruction.metadata
+        clauses = _condition_clauses(instruction)
+        if metadata.get("is_dynamic") and instruction.name == "measure":
+            bit = int(metadata.get("classical_bit", instruction.wires[0]))
+            if bit not in tracked:
+                both = (_projector(0, dtype, device), _projector(1, dtype, device))
+                ensemble = [
+                    (
+                        apply_kraus_density(item, both, instruction.wires, n_wires),
+                        record,
+                    )
+                    for item, record in ensemble
+                ]
+                continue
+            spread: list[tuple[torch.Tensor, dict[int, int]]] = []
+            for item, record in ensemble:
+                for outcome in (0, 1):
+                    selected = apply_kraus_density(
+                        item,
+                        (_projector(outcome, dtype, device),),
+                        instruction.wires,
+                        n_wires,
+                    )
+                    if float(selected.diagonal(dim1=-2, dim2=-1).sum().real) == 0.0:
+                        continue
+                    spread.append((selected, {**record, bit: outcome}))
+            ensemble = spread
+            continue
+        if metadata.get("is_dynamic") and instruction.name == "reset":
+            # Returning the qubit to |0> without saying which outcome it was is
+            # the channel P0 . P0 + X P1 . P1 X, so one matrix covers both.
+            flip = torch.tensor(
+                ((0.0, 1.0), (0.0, 0.0)), dtype=dtype, device=device
+            ).reshape(1, 2, 2)
+            reset = (_projector(0, dtype, device), flip)
+            ensemble = [
+                (apply_kraus_density(item, reset, instruction.wires, n_wires), record)
+                for item, record in ensemble
+            ]
+            continue
+        if clauses:
+            for _item, record in ensemble:
+                for bit in {bit for clause in clauses for bit, _value in clause}:
+                    if bit not in record:
+                        raise ValueError(
+                            f"classical bit {bit} was read before measurement"
+                        )
+            matrix = gate_matrix(
+                instruction, bsz=rho.shape[0], device=device, dtype=dtype
+            )
+            ensemble = [
+                (
+                    (
+                        apply_unitary_density(item, matrix, instruction.wires, n_wires),
+                        record,
+                    )
+                    if any(
+                        all(record.get(b) == v for b, v in clause) for clause in clauses
+                    )
+                    else (item, record)
+                )
+                for item, record in ensemble
+            ]
+            continue
+        if metadata.get("is_channel"):
+            operators = _channel_operators(instruction)
+            ensemble = [
+                (
+                    apply_kraus_density(item, operators, instruction.wires, n_wires),
+                    record,
+                )
+                for item, record in ensemble
+            ]
+            continue
+        matrix = gate_matrix(instruction, bsz=rho.shape[0], device=device, dtype=dtype)
+        ensemble = [
+            (apply_unitary_density(item, matrix, instruction.wires, n_wires), record)
+            for item, record in ensemble
+        ]
+    total = ensemble[0][0]
+    for item, _record in ensemble[1:]:
+        total = total + item
+    return total
 
 
 def _validate_qubits(qubits: Sequence[int], n_qubits: int) -> tuple[int, ...]:
@@ -241,23 +464,7 @@ def density_matrix_from_ir(
         raise TypeError("density_matrix_from_ir expects a Circuit or CircuitIR.")
 
     rho = density_matrix(state)
-    for instruction in ir:
-        if instruction.metadata.get("is_channel"):
-            rho = apply_kraus_density(
-                rho,
-                instruction.matrix,
-                instruction.wires,
-                ir.n_wires,
-            )
-            continue
-        matrix = gate_matrix(
-            instruction,
-            bsz=rho.shape[0],
-            device=rho.device,
-            dtype=rho.dtype,
-        )
-        rho = apply_unitary_density(rho, matrix, instruction.wires, ir.n_wires)
-    return rho
+    return _execute_density(ir, rho)
 
 
 def reduced_density_matrix(
