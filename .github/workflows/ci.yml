@@ -40,6 +40,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Prepare source before fan-out so the first hosted slot also unlocks A800 jobs.
   prepare-source:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -80,6 +81,7 @@ jobs:
           compression-level: 0
 
   quality:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -606,6 +608,7 @@ jobs:
           && test '${{ needs.cpu-runtime.result }}' = success
 
   jax-optional:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -622,6 +625,7 @@ jobs:
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
 
   azure-optional:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -652,6 +656,7 @@ jobs:
           done
 
   triton-optional:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -669,6 +674,7 @@ jobs:
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
 
   qiskit-optional:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -711,6 +717,7 @@ jobs:
           done
 
   cirq-optional:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -737,6 +744,7 @@ jobs:
           done
 
   braket-optional:
+    needs: prepare-source
     runs-on: ubuntu-latest
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
@@ -762,6 +770,7 @@ jobs:
           done
 
   cudaq-optional:
+    needs: prepare-source
     runs-on: ubuntu-latest
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
@@ -787,6 +796,7 @@ jobs:
           done
 
   pennylane-optional:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -813,6 +823,7 @@ jobs:
           done
 
   dependency-bounds:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -860,6 +871,7 @@ jobs:
           mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
 
   package:
+    needs: prepare-source
     # Ubuntu 22.04 keeps the distributable native extension honest on GCC 11,
     # which is still the default compiler on a maintained Linux LTS release.
     runs-on: ubuntu-22.04
@@ -947,6 +959,7 @@ jobs:
           path: dist/
 
   release-wheel-platform:
+    needs: prepare-source
     # Linux is exercised by `package`; these are the two native toolchains that
     # cannot be represented by an Ubuntu source build.  Keeping the exact
     # cibuildwheel route in pull-request CI prevents a release tag from being
@@ -986,6 +999,7 @@ jobs:
           path: wheelhouse/
 
   distributed-cpu:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -1001,6 +1015,7 @@ jobs:
       - run: python tools/ci_tier.py pr-distributed
 
   coverage-shard:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # Eight of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:
@@ -1082,6 +1097,7 @@ jobs:
           path: coverage.xml
 
   supply-chain:
+    needs: prepare-source
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
     concurrency:

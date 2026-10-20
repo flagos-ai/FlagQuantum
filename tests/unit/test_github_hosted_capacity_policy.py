@@ -258,6 +258,11 @@ def test_a_superseded_pull_request_run_is_cancelled_and_a_main_push_is_not() -> 
 
 
 def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
+    assert [
+        name
+        for name, definition in _document("ci.yml")["jobs"].items()
+        if not definition.get("needs")
+    ] == ["prepare-source"]
     tier_steps = []
     for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
         definition = _document("ci.yml")["jobs"][job]
