@@ -1016,6 +1016,48 @@ placement travels the same undirected graph whichever device describes it.
 holds those readings, including a test that fails if the automatic selection
 becomes an alias of one candidate or quietly widens its scope.
 
+Everything above prices a route in SWAPs, because a `CouplingMap` states which
+qubit pairs a device couples and says nothing about how well it couples them. So
+the cheapest route and the cleanest route are the same route, and a hop count is
+the only price there is. [routing_cost.py](routing_cost.py) `LinkErrorRates` is the
+same couplings with one measured two-qubit error probability per link, and it is
+what makes those two questions different questions. Each link carries an
+independent error `e` in `[0, 1)` and a route costs the sum of the `e` of the links
+it uses; a sum of probabilities is the expected number of fault events rather than
+the probability of any one of them, which is what makes it additive along a route
+and comparable between routes of different lengths. Correlated and gate-dependent
+error is not expressible: one link carries one number, whatever runs on it. The
+record refuses rather than defaults, because a link priced at nothing looks like a
+free route -- a missing rate and a rate on a coupling the device does not declare
+are both errors that name the link -- and it refuses a `DirectedCouplingMap`,
+whose wrong-way repair is priced in SWAPs and would be left unpriced by one number
+per link.
+
+A calibrated device changes three things a caller can see. `route_to_topology` and
+`estimate_routing_cost` take it where they took a `CouplingMap`, and the route
+between two qubits becomes the lowest-error path rather than the shortest one, so a
+longer route over clean links can win: on a four-qubit line with one chord, both
+routes between two qubits are two hops and both insert two SWAPs, and the
+calibration is the only thing that prefers one of them. `RoutingCostEstimate`
+grows `expected_link_faults` -- `None` on an uncalibrated device, so an existing
+caller's plan is unchanged -- and `RoutingStrategySelection.summary()` reports the
+objective it actually ranked on, `minimize_expected_link_faults_then_planned_inserted_swaps_then_instructions`
+when calibrated. And the automatic selection narrows its candidate set to the
+strategies that read the rate, `restore_after_each_gate` and `persistent_layout`:
+`sabre` and `sabre_layout` search for their own placements through
+`plan_sabre_swaps`, which takes no per-link weight, so pairing either with a
+calibration is refused by name rather than left to route by hop count and report a
+price the calibration had no part in. The one arithmetic detail worth stating is
+that route costs are compared at the precision a calibration carries: two routes
+over the same rates in mirror order sum to values one unit in the last place apart,
+so the comparison is quantized before it decides anything, and a genuine tie falls
+to the hop count and then to the qubit sequence, exactly as the uncalibrated device
+already breaks it.
+[test_routing_link_error_weights.py](../../tests/team/compiler/test_routing_link_error_weights.py)
+holds these claims, including that the estimate is the plan, that the reported
+fault total is the total the emitted program pays, and that the ranking picks the
+cheaper program on a workload where a SWAP count ties.
+
 Routing moves two-qubit operations onto device edges by inserting SWAPs. No
 strategy here synthesizes an operation that touches three or more qubits, so such
 an operation is carried through unchanged, and only when the device already

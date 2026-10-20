@@ -121,6 +121,24 @@ def test_a_zero_argument_retains_its_linear_input_derivative(method):
     torch.testing.assert_close(actual, expected, atol=1e-11, rtol=0)
 
 
+def test_rank_deficient_krylov_solve_reports_the_unresolved_residual() -> None:
+    matrix = torch.diag(torch.tensor([1.0, 0.0], dtype=torch.complex128))
+    rhs = torch.ones(2, dtype=torch.complex128)
+    result, relative = gmres(
+        lambda value: matrix @ value,
+        rhs,
+        tolerance=1e-12,
+        max_iterations=2,
+        restart=2,
+    )
+    assert torch.isfinite(result).all()
+    measured = torch.linalg.vector_norm(rhs - matrix @ result)
+    measured = measured / torch.linalg.vector_norm(rhs)
+    assert relative == float(measured)
+    assert relative >= 1 / 2**0.5 - 1e-12
+    torch.testing.assert_close(result[0], rhs[0], atol=1e-12, rtol=0)
+
+
 def test_closed_subspace_correction_does_not_claim_higher_order_derivatives():
     parameter = torch.tensor(0.0, dtype=torch.float64, requires_grad=True)
     matrix = torch.eye(2, dtype=torch.complex128) + parameter * torch.tensor(

@@ -25,6 +25,7 @@ from .pass_manager import (
 )
 from .pipeline import (
     CouplingMap,
+    LinkErrorRates,
     compile,
     default_pass_registry,
     optimize,
@@ -37,6 +38,7 @@ from .translate import TRANSLATION_FORMATS, translate
 __all__ = (
     "CouplingMap",
     "ESTIMATE_BASIS",
+    "LinkErrorRates",
     "Layout",
     "OPTIMIZATION_PIPELINE",
     "RESERVED_PASS_NAMES",
