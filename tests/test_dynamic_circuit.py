@@ -68,7 +68,7 @@ def test_repeated_measurement_and_reset_on_one_qubit_have_defined_semantics() ->
 
 
 def test_seeded_dynamic_execution_is_reproducible_across_processes() -> None:
-    program = textwrap.dedent("""
+    source = """
         import json
 
         import flagquantum as fq
@@ -83,7 +83,8 @@ def test_seeded_dynamic_execution_is_reproducible_across_processes() -> None:
             "classical": result.classical_bits.tolist(),
             "samples": result.samples.tolist(),
         }, sort_keys=True))
-        """)
+        """
+    program = textwrap.dedent(source)
 
     outputs = tuple(
         subprocess.run(
