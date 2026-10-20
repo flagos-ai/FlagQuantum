@@ -108,7 +108,8 @@ time-grid convergence. This completes the static finite-product step, not all
 of M1: time dependence and constrained-space execution remain separate gates;
 static operator coefficient binding is described below. Proposal 073 now states
 its separate temporal contract against this baseline; the owner approved it on
-2026-10-20. Numerical implementation and capability evidence remain open.
+2026-10-20. The bounded piecewise implementation is described below; continuously varying
+controls and constrained-space execution remain separate gates.
 
 The next M1 slice connects existing `BosonOperator` values directly to the
 same static CPU dynamics input normalization. Explicit `dimensions=` supplies
@@ -136,9 +137,18 @@ parameter binding, all three current integrators, and scheduled-only plan 1.5
 while preserving static 1.3/1.4 plans. Live gradients, initial-density adjoints,
 exact replay, early refusals, and independent numerical checks are implementation
 gates. The owner approved the contract on 2026-10-20. The contract-first
-`tests/unit/test_piecewise_control_contract.py` uses a test-only static-composition
-fake; the scheduled implementation must pass the same consumer assertions.
-Approval and this test reference do not establish a time-dependent capability.
+`tests/unit/test_piecewise_control_contract.py` now runs unchanged physical
+assertions against both a static-composition fake and the real scheduled public
+entry point. `tests/unit/test_lindblad_piecewise_controls.py` checks numerical
+references, gradients and actual optimizer updates, reverse adjoints, early
+refusals, plan 1.5 replay and unchanged static identities. Run
+`python -m examples.train_piecewise_drive` for the user workflow. The implementation
+reuses one trajectory loop and the existing Core binder, Liouvillian and three
+integrators. It adds no Schedule class, route package or numerical engine. This
+closes the piecewise-constant control slice; arbitrary callables/interpolation,
+time-dependent collapse, time-boundary gradients and hardware pulses remain
+unsupported. Local Krylov defects and global numerical error have separate
+acceptance bounds.
 
 An internal state-space proposal must be tested against both tensor-product
 spaces and an anyon fusion-space example with fixed total charge. Product

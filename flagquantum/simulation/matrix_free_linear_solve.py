@@ -12,6 +12,8 @@ from collections.abc import Callable
 
 import torch
 
+from .matrix_free_autograd import closed_subspace_gradient, linear_adjoint
+
 __all__ = ("gmres",)
 
 _COEFFICIENT_DTYPE = torch.complex128
@@ -50,7 +52,17 @@ def gmres(
     solution = torch.zeros_like(rhs)
     rhs_norm = float(torch.linalg.vector_norm(rhs).detach())
     if rhs_norm == 0.0:
-        return solution, 0.0
+        return (
+            _closed_solve_gradient(
+                apply,
+                solution,
+                rhs,
+                tolerance=tolerance,
+                max_iterations=max_iterations,
+                restart=restart,
+            ),
+            0.0,
+        )
     residual = rhs
     # The norm that scales the returned solution stays a tensor. Reading it into
     # a Python float would detach the magnitude of the right-hand side from the
@@ -62,6 +74,7 @@ def gmres(
     residual_norm = float(residual_norm_tensor.detach())
     relative = 1.0
     iterations = 0
+    closed = False
     while relative > tolerance:
         # One Krylov window: the restart length, clipped by whatever part of the
         # caller's iteration budget is left. A spent budget ends the solve and
@@ -84,7 +97,13 @@ def gmres(
                 candidate = candidate - projection * basis[row]
             next_norm_tensor = torch.linalg.vector_norm(candidate)
             next_norm = float(next_norm_tensor.detach())
-            hessenberg[index + 1, index] = next_norm_tensor
+            # A complete basis has no exterior direction. Recording the norm
+            # of its exactly zero residual would introduce an undefined norm
+            # Hessian through a structurally unused entry.
+            complete = next_norm == 0.0 and index + 1 == rhs.numel()
+            hessenberg[index + 1, index] = (
+                next_norm_tensor.detach() if complete else next_norm_tensor
+            )
             columns = index + 1
             iterations += 1
             columns_target = target[: columns + 1].unsqueeze(1)
@@ -98,6 +117,7 @@ def gmres(
             )
             coefficients = approximation
             if estimate <= tolerance * rhs_norm or next_norm == 0.0:
+                closed = next_norm == 0.0 and columns < rhs.numel()
                 break
             basis.append(candidate / next_norm_tensor)
         for index in range(columns):
@@ -105,4 +125,41 @@ def gmres(
         residual = rhs - apply(solution)
         residual_norm = float(torch.linalg.vector_norm(residual).detach())
         relative = residual_norm / rhs_norm
+    if closed and relative <= tolerance:
+        solution = _closed_solve_gradient(
+            apply,
+            solution,
+            residual,
+            tolerance=tolerance,
+            max_iterations=max_iterations,
+            restart=restart,
+        )
     return solution, relative
+
+
+def _closed_solve_gradient(
+    apply: Callable[[torch.Tensor], torch.Tensor],
+    solution: torch.Tensor,
+    residual: torch.Tensor,
+    *,
+    tolerance: float,
+    max_iterations: int,
+    restart: int,
+) -> torch.Tensor:
+    # d x = d x_old + A^-1 d(b - A x_old). This cancels the truncated
+    # subspace derivative and recovers implicit differentiation, including
+    # directions outside the closed forward Krylov space.
+    def adjoint_correction(gradient: torch.Tensor) -> torch.Tensor:
+        adjoint = linear_adjoint(apply, gradient)
+        correction, relative = gmres(
+            adjoint,
+            gradient,
+            tolerance=tolerance,
+            max_iterations=max_iterations,
+            restart=restart,
+        )
+        if relative > tolerance:
+            raise RuntimeError("the closed-subspace adjoint solve did not converge")
+        return correction
+
+    return closed_subspace_gradient(solution, residual, adjoint_correction)

@@ -39,11 +39,12 @@ What the adjoint buys is memory, and that is the only claim made for it.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 import torch
 
+from ..core.parameters import Parameter
 from .lindblad import (
     EvolutionValidationError,
     evolve_density_matrix,
@@ -55,7 +56,7 @@ from .lindblad_integrators import DEFAULT_INTEGRATOR, advance_interval
 # never relies on `lindblad` re-exporting a name it does not define.
 from .lindblad_request import (
     _normalize_collapse_operators,
-    _normalize_hamiltonian,
+    _normalize_hamiltonians,
     _resolve_state_space,
     _solve_max_iterations,
     _solve_tolerance,
@@ -80,6 +81,7 @@ def adjoint_gradient(
     batch_size: int | None = None,
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
 ) -> torch.Tensor:
     """Return ``d cost / d rho(t_0)`` for the normalized initial density matrix.
 
@@ -158,6 +160,7 @@ def adjoint_gradient(
             solve_tolerance=solve_tolerance,
             batch_size=batch_size,
             dimensions=dimensions,
+            parameter_values=parameter_values,
         )
     trajectory = forward.density_matrices
     if trajectory is None:  # pragma: no cover - asked for above
@@ -191,28 +194,28 @@ def adjoint_gradient(
     # route hold nothing in that case exactly as it holds nothing when the
     # Hamiltonian is a constant.
     with torch.no_grad():
-        generator = Liouvillian(
-            _normalize_hamiltonian(
-                hamiltonian,
-                n_wires=len(space.dimensions),
-                dim=dim,
-                dtype=dtype,
-                device=resolved_device,
-                tolerance=tolerance,
-                qubit_space=space.is_qubit_space,
-                dimensions=dimensions,
-            ),
-            _normalize_collapse_operators(
-                collapse_operators,
-                n_wires=len(space.dimensions),
-                dim=dim,
-                dtype=dtype,
-                device=resolved_device,
-                qubit_space=space.is_qubit_space,
-                dimensions=dimensions,
-            ),
-            hilbert_dimension=dim,
+        hamiltonians = _normalize_hamiltonians(
+            hamiltonian,
+            forward.times,
+            parameter_values,
+            n_subsystems=len(space.dimensions),
+            dim=dim,
+            dtype=dtype,
+            device=resolved_device,
+            tolerance=tolerance,
+            qubit_space=space.is_qubit_space,
+            dimensions=dimensions,
         )
+        collapse = _normalize_collapse_operators(
+            collapse_operators,
+            n_wires=len(space.dimensions),
+            dim=dim,
+            dtype=dtype,
+            device=resolved_device,
+            qubit_space=space.is_qubit_space,
+            dimensions=dimensions,
+        )
+        generator = Liouvillian(hamiltonians[-1], collapse, hilbert_dimension=dim)
     resolved_tolerance = _solve_tolerance(solve_tolerance, dtype=dtype, method=method)
     max_iterations = _solve_max_iterations(dim)
     grid = forward.times
@@ -225,6 +228,10 @@ def adjoint_gradient(
     with torch.no_grad():
         cotangent = seeds[-1]
         for index in range(len(rows) - 1, 0, -1):
+            if len(hamiltonians) > 1:
+                generator = Liouvillian(
+                    hamiltonians[index - 1], collapse, hilbert_dimension=dim
+                )
             # The same scheme over the same positive interval, applied to the
             # adjoint generator: the interval is walked backwards while the
             # propagator of each interval is the one the forward sweep applied.

@@ -13,12 +13,18 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from numbers import Number
 from typing import Any
 
 import torch
 
 from ..core.ir.state_space import ProductStateSpace
-from ..core.parameters import value_to_tensor
+from ..core.parameters import (
+    Parameter,
+    bind_parameter_value,
+    parameter_names_in_value,
+    value_to_tensor,
+)
 from ..errors import ValidationError
 from ..observables import Observable
 from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES, BosonOperator
@@ -183,8 +189,23 @@ def _solve_max_iterations(dimension: int) -> int:
 
 
 def _normalize_times(
-    times: Any, *, device: torch.device, real_dtype: torch.dtype
+    times: Any,
+    *,
+    device: torch.device,
+    real_dtype: torch.dtype,
+    allow_gradients: bool = True,
 ) -> torch.Tensor:
+    # as_tensor of a list of scalar tensors would discard their graph. Decide
+    # the scheduled-time refusal before that conversion, for both input forms.
+    leaves = times if isinstance(times, Sequence) else (times,)
+    if not allow_gradients and any(
+        isinstance(value, torch.Tensor) and value.requires_grad for value in leaves
+    ):
+        raise _error(
+            "unsupported_time_gradient",
+            "scheduled time boundaries cannot require gradients",
+            "times",
+        )
     try:
         result = torch.as_tensor(times, dtype=real_dtype, device=device)
     except (TypeError, ValueError, RuntimeError) as exc:
@@ -928,3 +949,175 @@ def _require_gradients_flag(value: Any) -> bool:
             "require_gradients",
         )
     return value
+
+
+def _normalize_hamiltonians(
+    hamiltonian: Any,
+    time_grid: torch.Tensor,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None,
+    *,
+    n_subsystems: int,
+    dim: int,
+    dtype: torch.dtype,
+    device: torch.device,
+    tolerance: float,
+    qubit_space: bool = True,
+    dimensions: Sequence[int] | None = None,
+    bound_hamiltonians: Sequence[torch.Tensor] | None = None,
+) -> tuple[PauliSum | torch.Tensor, ...]:
+    """Normalize the static generator or all declared interval generators.
+
+    Bound matrices are private plan replay data. Symbolic bindings are consumed
+    through Core once; no expression representation survives in a sealed plan.
+    """
+
+    def normalize(value: Any) -> PauliSum | torch.Tensor:
+        return _normalize_hamiltonian(
+            value,
+            n_wires=n_subsystems,
+            dim=dim,
+            dtype=dtype,
+            device=device,
+            tolerance=tolerance,
+            qubit_space=qubit_space,
+            dimensions=dimensions,
+        )
+
+    if parameter_values is None and bound_hamiltonians is None:
+        return (normalize(hamiltonian),)
+    if time_grid.requires_grad:
+        raise _error(
+            "unsupported_time_gradient",
+            "scheduled time boundaries cannot require gradients",
+            "times",
+        )
+    n_intervals = time_grid.numel() - 1
+    if n_intervals < 1:
+        raise _error(
+            "invalid_parameter_values",
+            "scheduled evolution requires at least two times",
+            "parameter_values",
+        )
+    if bound_hamiltonians is not None:
+        if parameter_values is not None or len(bound_hamiltonians) != n_intervals:
+            raise _error(
+                "invalid_parameter_values",
+                "one bound Hamiltonian is required per interval",
+                "hamiltonians",
+            )
+        return tuple(normalize(value) for value in bound_hamiltonians)
+    if (
+        not isinstance(parameter_values, Sequence)
+        or isinstance(parameter_values, (str, bytes))
+        or len(parameter_values) != n_intervals
+    ):
+        raise _error(
+            "invalid_parameter_values",
+            "parameter_values must contain one mapping per interval",
+            "parameter_values",
+        )
+    if (
+        not isinstance(hamiltonian, Sequence)
+        or isinstance(hamiltonian, (str, bytes, torch.Tensor))
+        or not hamiltonian
+        or any(
+            not isinstance(term, Mapping)
+            or "operator" not in term
+            or isinstance(term["operator"], str)
+            or callable(term["operator"])
+            or parameter_names_in_value(term["operator"])
+            or any(key in term for key in ("pauli", "qubit", "qubits"))
+            for term in hamiltonian
+        )
+    ):
+        raise _error(
+            "unsupported_time_dependence",
+            "scheduled Hamiltonians require fixed full-space operator terms",
+            "hamiltonian",
+        )
+    names = set(
+        parameter_names_in_value([term.get("coefficient", 1.0) for term in hamiltonian])
+    )
+    if not names:
+        raise _error(
+            "invalid_parameter_values",
+            "scheduled coefficients must contain named parameters",
+            "parameter_values",
+        )
+    # Fixed leaves, especially boson ladders, need only one bounded conversion
+    # per request normalization, regardless of the number of control intervals.
+    operators = [
+        _as_complex_matrix(
+            term["operator"],
+            name=f"hamiltonian[{index}].operator",
+            dim=dim,
+            dtype=dtype,
+            device=device,
+            dimensions=dimensions,
+        )
+        for index, term in enumerate(hamiltonian)
+    ]
+    matrices = []
+    for interval, mapping in enumerate(parameter_values):
+        field = f"parameter_values[{interval}]"
+        if not isinstance(mapping, Mapping):
+            raise _error(
+                "invalid_parameter_binding", "each interval requires a mapping", field
+            )
+        values: dict[str, Any] = {}
+        for key, value in mapping.items():
+            name = key.name if isinstance(key, Parameter) else key
+            if not isinstance(name, str) or not name or name in values:
+                raise _error(
+                    "invalid_parameter_binding",
+                    f"invalid or duplicate normalized parameter name {name!r}",
+                    field,
+                )
+            value_field = f"{field}[{name!r}]"
+            if (
+                not isinstance(value, (Number, torch.Tensor))
+                or isinstance(value, bool)
+                or (isinstance(value, torch.Tensor) and value.dtype == torch.bool)
+            ):
+                raise _error(
+                    "invalid_coefficient",
+                    "bindings must be numeric scalars",
+                    value_field,
+                )
+            try:
+                tensor = value_to_tensor(value, dtype=dtype, device=device)
+            except (TypeError, ValueError, RuntimeError, OverflowError) as exc:
+                raise _error("invalid_coefficient", str(exc), value_field) from exc
+            if tensor.ndim != 0 or not bool(torch.isfinite(tensor).all().item()):
+                raise _error(
+                    "invalid_coefficient",
+                    "bindings must be finite scalars",
+                    value_field,
+                )
+            values[name] = value
+        if set(values) != names:
+            raise _error(
+                "invalid_parameter_binding",
+                f"missing parameters {sorted(names - set(values))}; "
+                f"unused parameters {sorted(set(values) - names)}",
+                field,
+            )
+        try:
+            terms = [
+                dict(
+                    term,
+                    operator=operator,
+                    coefficient=bind_parameter_value(
+                        term.get("coefficient", 1.0), values
+                    ),
+                )
+                for term, operator in zip(hamiltonian, operators, strict=True)
+            ]
+            matrices.append(normalize(terms))
+        except EvolutionValidationError as exc:
+            raise _error(
+                exc.code, f"interval {interval}: {exc}", f"{field}.{exc.field}"
+            ) from exc
+        except (TypeError, ValueError, RuntimeError, OverflowError) as exc:
+            raise _error("invalid_coefficient", str(exc), field) from exc
+    return tuple(matrices)

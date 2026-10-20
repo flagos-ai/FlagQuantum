@@ -226,7 +226,7 @@ explicit modeling approximation, distinct from integration error. The tests
 separate time-grid refinement from truncation in a fixed excitation sector;
 that sector does not establish convergence for an arbitrary oscillator state.
 A dense matrix made with the boson algebra is not a photonic backend. Fixed-charge
-fusion spaces, time-dependent controls, native qudit circuit operations, and
+fusion spaces, continuously varying controls, native qudit circuit operations, and
 GPU/distributed dynamics remain future work under
 [proposal 078](../../docs/development/API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md).
 
@@ -327,7 +327,75 @@ using the same binding, plan/run, and autograd path. The algebra's canonical
 coefficients stay numeric; trainable values belong to the existing Hamiltonian
 request entries. Rebuild the bound terms and plan after each optimizer step.
 A live plan keeps its current tensor graph, rather than acting as a reusable
-optimizer closure. Proposal 073's time-dependent schedule remains unapproved.
+optimizer closure.
+
+### Piecewise-constant controls on the same dynamics path
+
+Approved [proposal 073](../../docs/development/API_CHANGE_PROPOSAL_073_EVOLUTION_SCHEDULE.md)
+adds `parameter_values=` to the existing plan, run and initial-density-adjoint
+entry points. Supply one complete parameter mapping per interval of `times`.
+Each operator stays fixed; Core binds its scalar coefficient on
+`[times[k], times[k+1])`. Every initial-state batch member shares those controls.
+All three integrators use the same trajectory loop and frozen interval generator.
+
+```python
+import torch
+import flagquantum as fq
+import flagquantum.lindblad as fql
+
+drive = fq.Parameter("drive")
+omega = torch.tensor([1., 3., 7.], dtype=torch.float64, requires_grad=True)
+transition = torch.zeros((3, 3), dtype=torch.complex128)
+transition[1, 2] = transition[2, 1] = 1
+plan = fql.plan(
+    [{"operator": transition, "coefficient": .5 * drive}],
+    [0., 1., 0.], [0., .1, .3, .35], dimensions=(3,),
+    parameter_values=[{"drive": value} for value in omega.unbind()],
+    method="krylov-exponential",
+    options=fq.ExecutionOptions(require_gradients=True),
+)
+result = fql.run(plan)
+(gradient,) = torch.autograd.grad(result.populations[-1, 2], omega)
+print(f"Final level-2 probability: {result.populations[-1, 2].item():.8f}")
+print([round(value, 8) for value in gradient.tolist()])
+# Final level-2 probability: 0.25121448
+# [0.04337116, 0.08674232, 0.02168558]
+```
+
+Run `python -m examples.train_piecewise_drive` for an actual optimizer update.
+Rebind and rebuild after each update. Scheduled plans use version 1.5 and store
+ordered numerical Hamiltonians; static qubit 1.3 and finite-product 1.4 plans
+keep their contents and identities. JSON stores values rather than graphs, so
+restored plans requesting gradients fail at execution as before.
+
+The control grid is also the output grid and must have at least two times.
+Missing, unused, duplicate-normalized or non-scalar bindings are refused before
+integration, and every total Hamiltonian must be Hermitian. Bind conjugate pairs
+explicitly for complex coefficients. The initial-density adjoint reverses the
+matching generators and keeps no control graph; it does not return control
+gradients. Use autograd through `run` for those derivatives.
+
+Fixed dense/BosonOperator terms are supported. Callable/interpolated controls,
+scheduled Pauli descriptors, time-dependent collapse rates, differentiable time
+boundaries, moving atoms and hardware pulses are outside this contract. Fock
+truncation and time-grid approximation errors are separate. Krylov's local
+defect target is not a global state-error guarantee; the refinement test budgets
+the projected-exponential numerical floor independently. Interval matrices cost
+an additional `N*D*D*element_bytes`; `trajectory_bytes` counts density history only.
+
+Exactly closed Krylov spaces need sensitivity in directions absent from their
+forward basis. This includes a zero drive before a later nonzero pulse. GMRES
+uses its own adjoint solve for the residual correction; the exponential uses
+its own action on an augmented vector of size `n+m`, with a Torch VJP of the
+existing linear action. Forward value bits are preserved. These closure
+corrections support first-order reverse-mode differentiation; requesting higher
+orders raises rather than returning an uncertified Hessian. Their backward
+solve can also fail if the same Krylov budget cannot reach its tolerance.
+The independently measured non-closed solve/gradient conditioning limits above
+remain applicable. `tests/unit/test_matrix_free_closed_subspace_gradients.py`
+compares the corrections to dense Torch derivatives without changing the
+existing solver regressions.
+
 
 ### Differentiating the initial state without retaining the sweep
 

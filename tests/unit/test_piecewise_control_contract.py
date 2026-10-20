@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import replace
+from functools import partial
 
 import pytest
 import torch
@@ -47,7 +48,10 @@ def _static_composition_fake(
     )
 
 
-@pytest.fixture(params=[_static_composition_fake], ids=["static-composition-fake"])
+@pytest.fixture(
+    params=[_static_composition_fake, partial(fql.run, return_density_matrices=True)],
+    ids=["static-composition-fake", "public-scheduled-run"],
+)
 def run_evolution(request):
     return request.param
 
@@ -155,3 +159,31 @@ def test_batch_and_shared_control_accumulate_one_gradient(run_evolution):
     assert result.populations.shape == (3, 2, 3)
     (gradient,) = torch.autograd.grad(result.populations[-1, 0, 2], omega)
     assert gradient.item() == pytest.approx(0.15 * math.sin(0.3), abs=1e-10)
+
+
+@pytest.mark.parametrize("method", fql.INTEGRATOR_NAMES)
+def test_an_inactive_interval_keeps_its_nonzero_later_control_sensitivity(
+    run_evolution, method
+):
+    values = torch.tensor([0.0, 1.0], dtype=torch.float64, requires_grad=True)
+    operator = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex128)
+    terms = [{"operator": operator, "coefficient": 0.5 * fq.Parameter("g")}]
+
+    def probability(controls):
+        return run_evolution(
+            terms,
+            "0",
+            [0.0, 0.1, 0.3],
+            method=method,
+            parameter_values=[{"g": value} for value in controls.unbind()],
+        ).populations[-1, 1]
+
+    (gradient,) = torch.autograd.grad(probability(values), values)
+    for index in range(2):
+        delta = torch.zeros_like(values)
+        delta[index] = 1e-5
+        difference = (
+            probability(values.detach() + delta) - probability(values.detach() - delta)
+        ) / 2e-5
+        torch.testing.assert_close(gradient[index], difference, atol=2e-9, rtol=0)
+    assert gradient[0].item() > 0.009
