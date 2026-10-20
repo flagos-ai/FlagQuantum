@@ -250,6 +250,37 @@ executed by `tests/test_algorithm_examples.py`.
   refused by name. Demonstration scale: weighted MaxCut instances of three to
   five edges on three to four qubits, fitted on the CPU statevector path, with
   sampling, decoding and cut ranking left to the caller.
+- `solvers.py`: the same variational problem held as one value — `Ansatz` binds a
+  circuit builder to the parameter count it accepts, `VQESolver` binds an
+  operator, an ansatz and an optimizer factory into one problem, and
+  `vqe_objective` hands that problem's energy to an optimizer whose convention is
+  `minimize(objective, start)`. **Nothing here re-implements the arithmetic beside
+  it**: `VQESolver.run` is `run_vqe`, `VQESolver.objective` is `vqe_loss`, and
+  `Ansatz.uccsd` and `Ansatz.hardware_efficient` are `uccsd_ansatz` and
+  `hardware_efficient_ansatz` together with their own parameter counts, so the
+  four gradient-descent entry points in `core.py` remain the only descent loops
+  and the three gradient-free optimizers remain the only trust-region and simplex
+  loops. What this module decides is which pieces belong to one problem, and it
+  decides that once rather than once per call site — the closure that binds an
+  operator to an ansatz is also where the two drift apart, because nothing in
+  either one names the other. **The parameter count is a field rather than a
+  question asked of the builder**: a builder is a function of one angle vector and
+  cannot say how many angles it needs without being called, so the count and the
+  circuit are kept consistent at construction. **There is no name-to-factory
+  table**, deliberately — a table would be a second place that knows how many
+  angles an ansatz takes — so an ansatz this package does not ship is supplied by
+  constructing `Ansatz` directly. A builder that returns something other than a
+  `Circuit` is refused by name, because an expectation reads a bare tensor as a
+  statevector or as a density matrix by its shape rather than on the caller's word.
+  `Hamiltonian.from_observable` in `core.py` is the conversion that lets a mapped
+  molecule's `Observable` reach these loops at all, and
+  `VQESolver.for_molecule` is the constructor that takes the electron count and
+  the operator from one object so the two cannot be chosen independently. Its
+  focused unit is `tests/unit/test_algorithms_solvers.py`, where the two reuse
+  claims are asserted bitwise rather than approximately — a tolerance would pass
+  just as well if this module had grown its own optimizer — and it is exercised as
+  the last section of
+  [`examples/algorithms/vqe_solvers.py`](../../examples/algorithms/vqe_solvers.py).
 - `trotter.py`: time evolution by a product formula — a weighted Pauli sum
   becomes an ordinary `Circuit` whose unitary approximates `exp(-i * time * H)`,
   with the exact circuit for one Pauli word's exponential underneath it, as a

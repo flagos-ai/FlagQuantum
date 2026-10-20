@@ -189,6 +189,15 @@ units carries a root-level `fq.` name.
   speedup but an agreement: one checked edge list reaches both the circuit that
   rotates by it and the operator it is scored against, which the primitives
   beside it left to the caller. See the section below.
+- **`solvers.py` carries no advantage premise, and on purpose: it is a surface and
+  not an algorithm.** The claim it makes is a structural one that a test can
+  falsify — the solver's descent and the core loop return the same tensor bitwise,
+  and the hand-off objective and `vqe_loss` return the same tensor bitwise — so
+  what it adds is one place where an operator, an ansatz and an optimizer are
+  bound together, and a way to hand that problem's energy to the constrained and
+  simplex optimizers the autograd entry points cannot carry. It improves no
+  quantity, changes no arithmetic, and states no speedup; the two premises above
+  remain the whole of what the variational family rests on. See the section below.
 - **SPSA carries no advantage premise either, and what it offers is a cost.**
   `spsa.py` is not an algorithm with a speedup to state: it is an optimizer, and
   the quantity it improves is the number of objective evaluations per step, which
@@ -2523,17 +2532,155 @@ collapsed, which is downstream of a comparison the build's arithmetic can flip, 
 it moved between 121 and 718 across small starts on one machine while the energy it
 reached stayed within 4e-07 of `-1.0`.
 
-**Not here:** a cost Hamiltonian for a general QUBO or Ising instance; any
-constraint, penalty or slack term; the constrained derivative-free handling COBYLA
-gives CUDA-Q's VQE path; adaptive or multi-angle QAOA variants; a warm start from
-a classical heuristic; a multi-start or basin-hopping wrapper; and any shots,
-hardware or sampled path — including on the gradient-free route, which reaches
-the same exact objective and therefore carries no shot noise either. The VQE
-entry points themselves stay where they were, in
+**Not here:** a cost Hamiltonian for a general QUBO or Ising instance, which is
+[qubo.py](../../flagquantum/algorithms/qubo.py)'s job rather than this module's,
+and `qubo_to_ising` is the conversion that reaches it; an adaptive QAOA that grows
+a mixer or a cost layer from a pool the way `run_adapt_vqe` grows an ansatz; any
+constraint, penalty or slack term, because a constraint reaches the constrained
+optimizer as a feasible region and not as a term in the operator; a warm start
+from a classical heuristic; a multi-start or basin-hopping wrapper; and any
+shots, hardware or sampled path — including on the gradient-free route, which
+reaches the same exact objective and therefore carries no shot noise either.
+Multi-angle QAOA is not on that list because it is the only shape `run_qaoa`
+accepts: one gamma and one beta per layer, as one flat vector of `2 * layers`
+values. The VQE entry points themselves stay where they were, in
 [core.py](../../flagquantum/algorithms/core.py); this module is the QAOA half of
 the family and it neither wraps nor replaces them. No demonstration here is a
 performance, scaling or hardware claim: the whole path is single-process CPU
 statevector simulation on instances of three to five edges.
+
+## One variational problem held as one value
+
+`solvers.py` adds a surface and no arithmetic. Everything above takes the operator
+as an argument at each call and the ansatz as a closure the caller writes at that
+call site, which means the same three lines joining a molecule's operator to a
+UCCSD builder are re-written by every caller — the ground-state service inside
+this repository already writes them once. `Ansatz` binds a circuit builder to the
+parameter count that builder accepts, `VQESolver` binds an operator, an ansatz and
+an optimizer factory into one problem, and `vqe_objective` returns that problem's
+energy as one plain callable. `VQESolver.run` is `run_vqe` and `VQESolver.objective`
+is `vqe_loss`, and both facts are asserted **bitwise** in the tests rather than
+approximately: a tolerance would pass just as well if this module had grown its own
+optimizer, and the whole claim being made is that it did not.
+
+**The parameter count is a field, and that is what lets a caller's own builder
+through.** A builder is a function of one angle vector and cannot say how many
+angles it needs without being called, so the count is supplied beside it.
+`Ansatz.uccsd` and `Ansatz.hardware_efficient` derive it from
+`uccsd_excitations(...).parameter_count` and `hardware_efficient_parameter_count`,
+so the declared count and the circuit cannot disagree about the excitation set or
+the rotation set. **There is deliberately no name-to-factory table.** A registry
+would be a second place that knows how many angles an ansatz takes, and the row
+this unit closes asked for pluggability rather than for a table; what pluggability
+means here is that an ansatz nobody ships is constructed directly, with no
+registration step and therefore no registry entry that can disagree with the
+builder. A builder that returns something other than a `Circuit` is refused by
+name, because an expectation reads a bare tensor as a statevector or as a density
+matrix by its shape rather than on the caller's word.
+
+`Hamiltonian.from_observable` is the conversion that makes a molecule reachable at
+all: `flagquantum.observables.Observable` is what a circuit *requests* and
+`flagquantum.algorithms.core.Hamiltonian` is what these loops *evaluate*, and the
+two are different types with different term shapes. The conversion is total,
+including the constant shift a Jordan-Wigner mapping adds, which lands as a term
+with no factors rather than as a separate offset field. `VQESolver.for_molecule`
+then takes the electron count and the operator from the one object that holds
+both, so the ansatz's space and the operator's space cannot be chosen
+independently, and there is no `n_electrons` argument to get wrong.
+
+```python
+import torch
+
+from flagquantum.algorithms import (
+    Ansatz,
+    CobylaOptimizer,
+    NelderMeadOptimizer,
+    VQESolver,
+    run_vqe,
+)
+from flagquantum.algorithms.molecular import create_molecular_hamiltonian
+from flagquantum.circuit import Circuit
+
+molecule = create_molecular_hamiltonian(
+    [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7414))]
+)
+solver = VQESolver.for_molecule(molecule, dtype=torch.complex128, steps=200, lr=0.1)
+start = torch.zeros(solver.ansatz.parameter_count)
+descent = solver.run(start)
+replay = run_vqe(solver.ansatz, start, solver.operator, steps=200, lr=0.1)
+print(
+    solver.ansatz.name,
+    solver.ansatz.parameter_count,
+    torch.equal(descent.energy, replay.energy),
+)
+# uccsd 3 True
+print(
+    float(descent.energy) < molecule.hf_energy,
+    abs(float(descent.energy) - molecule.fci_energy) < 1e-6,
+)
+# True True
+
+
+def custom(angles):
+    return (
+        Circuit(2, dtype=torch.complex128)
+        .gate("ry", 0, theta=angles[0])
+        .gate("cx", (0, 1))
+        .gate("ry", 1, theta=angles[1])
+        .gate("ry", 0, theta=angles[2])
+    )
+
+
+ansatz = Ansatz(name="ry_cx_ry", parameter_count=3, builder=custom)
+print(ansatz.name, ansatz.parameter_count, type(ansatz(torch.zeros(3))).__name__)
+# ry_cx_ry 3 Circuit
+simplex = NelderMeadOptimizer(maxiter=200)
+simplex_result = simplex.minimize(solver.objective(), start)
+print(round(float(simplex_result.value), 6), simplex.evaluations > 3)
+# -1.13727 True
+capped = CobylaOptimizer(rhobeg=0.5, rhoend=1e-8).minimize(
+    solver.objective(), start, constraints=[lambda angles: 0.1 - angles[2]]
+)
+print(
+    capped.feasible,
+    round(float(capped.value), 6),
+    round(float(capped.value) - float(descent.energy), 4),
+    round(float(capped.parameters[2]), 6),
+)
+# True -1.130847 0.0064 0.1
+```
+
+H2 at 0.7414 Å in four spin orbitals, so `uccsd` builds three angles. The first
+block is the identity: the solver's run and the core loop it delegates to return
+the same tensor, not merely the same energy to a tolerance. The second reads the
+descent against the values the molecule itself computed — below Hartree-Fock, and
+within `1e-6` of the FCI energy the molecule carries — so the assertion is a
+distance to a reference rather than a self-report. The third constructs an ansatz
+this package does not ship, with no registration, and the call returns a `Circuit`.
+
+**The constrained optimizer is the reason the hand-off exists.** The update inside
+`run_vqe` is autograd-based and `optimizer_factory` is a `torch.optim` optimizer,
+so neither `NelderMeadOptimizer` nor `CobylaOptimizer` fits in that slot — the same
+reason `maxcut_objective` exists for the QAOA half. Both consume
+`VQESolver.objective()` as a plain callable, and the last block is what a
+constraint looks like when it is a feasible region rather than a penalty term: the
+cap is `0.1` on the doubly-excited angle, the run reports `feasible=True` with that
+angle at exactly the cap, and its energy sits `0.0064` above the unconstrained run.
+Reporting only the flag would make a penalty look like a constraint; reporting only
+the energy would hide that the answer is a constrained optimum and not the ground
+state. The simplex's evaluation count is asserted as an inequality for the reason
+the QAOA half's is not quoted: it is downstream of comparisons this build's
+arithmetic can flip.
+
+**Not here:** a penalty, slack or equality-constraint term, because a constraint is
+a feasible region handed to the constrained optimizer and not a term in the
+operator; an adaptive QAOA that grows a mixer or a cost layer from a pool; a warm
+start taken from a classical heuristic inside an entry point rather than supplied
+by the caller; a name-to-factory ansatz registry, deliberately; and any shots,
+hardware, sampled or accelerator path. The chemistry section fixes one geometry,
+one basis set and the default active space, so freezing a core or selecting a
+window is not exercised, and it is a demonstration: three angles on four spin
+orbitals is not a scaling, accuracy or hardware claim.
 
 ## Time evolution by a product formula
 

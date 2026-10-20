@@ -965,6 +965,38 @@ def test_vqe_solvers_example_runs_four_entry_points_on_one_instance() -> None:
     assert "the operator at pool index 0 adds no dependence" in _labelled(
         output, "run_adapt_vqe, non-rotational pool"
     )
+    # The solver object binds the same problem the four entry points above take as
+    # arguments. Its ansatz's angle count comes from the molecule's own electron
+    # and spin-orbital counts, and the descent it runs is run_vqe, so the energy it
+    # reaches is compared here with the molecule's own FCI value rather than with
+    # another run's: what is asserted is that the two agree, not how they got there.
+    assert _labelled(output, "solver ansatz") == "uccsd, 3 angles"
+    # The operator's term count is the count over the terms that carry a
+    # coefficient, which is a property of the molecule: fifteen for H2 in this
+    # basis. The stored sum is longer by the products a symmetry cancels, and how
+    # many of those survive is a property of this build's summation order, so the
+    # second assertion is that the cut *is* doing something rather than how many
+    # terms it dropped -- a digit there would pin one build's arithmetic.
+    assert _labelled(output, "solver operator terms") == "15"
+    assert _labelled(output, "solver stored sum longer") == "True"
+    assert _labelled(output, "solver steps") == "200"
+    solver_energy = _number(output, "solver energy")
+    fci_energy = float(_labelled(output, "solver fci energy"))
+    assert abs(solver_energy - fci_energy) < 1e-6
+    # The hand-off objective is consumed by two optimizers with no adapter. The
+    # simplex assertion is an inequality against the Hartree-Fock energy the
+    # molecule computed, so it does not depend on how many evaluations this build's
+    # simplex spends.
+    assert _labelled(output, "simplex below hartree-fock") == "True"
+    assert int(_labelled(output, "simplex evaluations")) > 3
+    # A cap on one angle leaves a feasible answer, reported with the violation it
+    # ended on and with its energy above the unconstrained one. Reporting only the
+    # first would make a penalty look like a constraint.
+    assert _labelled(output, "capped feasible") == "True"
+    assert float(_labelled(output, "capped largest violation")) == 0.0
+    assert float(_labelled(output, "capped angle")) == pytest.approx(0.1, abs=1e-6)
+    assert _labelled(output, "capped above solver") == "True"
+    assert float(_labelled(output, "capped energy")) > solver_energy
     _assert_premise("vqe_solvers", output)
     assert "does not do" in output
 

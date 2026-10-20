@@ -18,6 +18,7 @@ import torch
 
 from ..circuit import Circuit
 from ..core.runtime_config import get_runtime_config
+from ..observables import Observable
 from ..simulation.mps.state import MPSState
 from ..simulation.pauli import (
     infer_n_qubits_from_dense_state,
@@ -176,6 +177,75 @@ class Hamiltonian:
         self.terms = tuple(terms)
         if not self.terms:
             raise ValueError("Hamiltonian requires at least one term.")
+
+    @classmethod
+    def from_observable(cls, observable: Observable) -> "Hamiltonian":
+        """Return an :class:`~flagquantum.observables.Observable` as this type.
+
+        The two types describe the same object -- a real linear combination of
+        Pauli products -- and they are not interchangeable because they answer
+        different questions.  An ``Observable`` is what a circuit run *requests*:
+        it belongs to ``fq.expectation(observable)`` and travels with a
+        :class:`~flagquantum.observables.OutputRequest` into ``fq.run``.  This type
+        is what the loops in this module *evaluate*: it takes a circuit, an MPS
+        state, a statevector or a density matrix directly, and it can differentiate
+        the result by ``adjoint`` as well as by autograd.  So the conversion runs
+        in one direction only, into the richer evaluating form, and a caller who
+        already holds an ``Observable`` -- from
+        :func:`~flagquantum.algorithms.molecular.create_molecular_hamiltonian`, from
+        :func:`~flagquantum.observables.jordan_wigner`, or from Pauli arithmetic
+        like ``0.5 * (fq.X(0) @ fq.X(1))`` -- needs it to reach
+        :func:`run_vqe`, :func:`run_adapt_vqe` and :func:`vqe_objective` at all.
+
+        Nothing is approximated and no term is dropped: every coefficient and every
+        Pauli factor is carried across, including the identity term a mapped
+        electronic Hamiltonian uses for its constant shift, which lands here as a
+        term with no factors rather than as a separate offset field.
+
+        Args:
+            observable: The Pauli sum to convert.
+
+        Returns:
+            The same Pauli sum in the form this module's loops evaluate.
+
+        Raises:
+            TypeError: If ``observable`` is not an
+                :class:`~flagquantum.observables.Observable`.
+
+        Examples:
+            A mapped molecule's operator reaches the VQE objective, and the
+            energy at the ansatz's zero angles -- where UCCSD prepares the
+            Hartree-Fock determinant exactly -- is the Hartree-Fock energy of the
+            same molecule.  The two come from different arithmetic, an integral
+            engine against a circuit simulation, so the agreement is a check
+            rather than a tautology:
+
+            >>> from flagquantum.algorithms.chemistry import uccsd_ansatz
+            >>> from flagquantum.algorithms.molecular import create_molecular_hamiltonian
+            >>> molecule = create_molecular_hamiltonian(
+            ...     [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7414))]
+            ... )
+            >>> operator = Hamiltonian.from_observable(molecule.hamiltonian)
+            >>> builder = lambda angles: uccsd_ansatz(
+            ...     4, 2, angles, dtype=torch.complex128
+            ... )
+            >>> reference = float(vqe_loss(builder, torch.zeros(3), operator))
+            >>> abs(reference - molecule.hf_energy) < 1e-12
+            True
+        """
+
+        if not isinstance(observable, Observable):
+            raise TypeError(
+                "Hamiltonian.from_observable takes a flagquantum Observables "
+                f"value and received {type(observable).__name__}"
+            )
+        return cls(
+            HamiltonianTerm(
+                term.coefficient,
+                {int(qubit): name for qubit, name in term.factors},
+            )
+            for term in observable.terms
+        )
 
     @property
     def n_terms(self) -> int:
