@@ -5,10 +5,11 @@ runs:
   steps:
     - shell: bash
       run: |
-        if [ -n "${FQ_BASE_ENV:-}" ]; then
-          FQ_JOB_PYTHON="$(command -v python)" FQ_JOB_VENV="$RUNNER_TEMP/fq-python" bash "$ACTIONS_RUNNER_HOOK_JOB_STARTED"
-        else
-          python -m venv --clear "$RUNNER_TEMP/fq-python"
-          echo "$RUNNER_TEMP/fq-python/bin" >> "$GITHUB_PATH"
-          echo "VIRTUAL_ENV=$RUNNER_TEMP/fq-python" >> "$GITHUB_ENV"
-        fi
+        unset PYTHONPATH PYTHONHOME
+        job_venv="$(mktemp -d "$RUNNER_TEMP/fq-python.XXXXXX")"
+        python -m venv "$job_venv"
+        echo "$job_venv/bin" >> "$GITHUB_PATH"
+        echo "VIRTUAL_ENV=$job_venv" >> "$GITHUB_ENV"
+        echo "PYTHONPATH=" >> "$GITHUB_ENV"
+        echo "PYTHONHOME=" >> "$GITHUB_ENV"
+        echo "PYTHONNOUSERSITE=1" >> "$GITHUB_ENV"

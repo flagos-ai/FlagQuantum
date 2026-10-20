@@ -80,9 +80,11 @@ def _self_hosted_jobs() -> dict[str, tuple[Path, dict[str, object]]]:
     """Every job that checks a repository out onto a runner we own."""
 
     found: dict[str, tuple[Path, dict[str, object]]] = {}
-    for path in sorted(WORKFLOWS.glob("*.yml")):
+    for path in sorted(WORKFLOWS.iterdir()):
+        if path.suffix not in {".yml", ".yaml"}:
+            continue
         for name, job in _jobs(path).items():
-            if "self-hosted" in {label.lower() for label in _labels(job)}:
+            if any("self-hosted" in label.lower() for label in _labels(job)):
                 found[f"{path.name}:{name}"] = (path, job)
     return found
 

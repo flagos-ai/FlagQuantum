@@ -1,71 +1,59 @@
-# A100 runner pool
+# Shared A100 CPU CI
 
-The dedicated A100 node serves this repository with sixteen CPU runners named
-`fq-a100-cpu01` through `fq-a100-cpu16`, and one GPU runner named
-`fq-a100-gpu08`. The CPU pool has the `flagquantum-a100-cpu` label. The GPU runner
-has `gpu`, `flagquantum-local`, `flagquantum-a100`, and `a100-8gpu` labels.
+## Verified runner labels
 
-Ordinary CPU CI and pre-commit jobs use the CPU pool for pushes and same-repository
-pull requests. Fork pull requests use GitHub-hosted runners. macOS, Windows,
-Linux wheel-container builds, and container publishing retain their existing
-runners. Existing required check names and hosted-fallback capacity buckets are
-unchanged.
+On 2026-10-20, the refreshed repository runner settings listed
+`a100-jiuding-0` and `a100-jiuding-1` as Idle in the organization Default group.
+Both expose `self-hosted`, `Linux`, `X64`, `a100`, `jiuding`, and `gpu`.
+CI targets that complete label set; either runner can accept a job.
 
-## Validate the deployed pool
+The earlier local migration targeted `flagquantum-a100-cpu` and described
+sixteen dedicated CPU registrations. That label and those registrations were
+absent from the refreshed settings. They are not prerequisites of this change.
+The existing local GPU workflow retains its original hardware gates.
 
-Run this existing manually dispatched workflow against the revision to validate:
+## First migration batch
 
-```bash
-gh workflow run local-gpu.yml --repo flagos-ai/FlagQuantum \
-  --ref main -f validate_pool=true
-gh run list --repo flagos-ai/FlagQuantum --workflow local-gpu.yml --limit 5
-```
+The following jobs use the shared runners on main pushes and same-repository
+pull requests:
 
-Expected results are sixteen successful CPU validation jobs, each pinned to a
-different runner, and one successful eight-GPU validation job. CPU validation
-checks the non-root identity, eight logical CPUs in the affinity mask, denied
-access to GPU devices and protected file contents, then runs the existing native circuit
-and backend regressions. GPU validation exercises all eight devices and runs the
-existing eight-rank NCCL sharded forward and gradient differentials against dense
-references. These are correctness checks, not a scalability performance claim.
+- `quality`
+- `cpu-core` (Python 3.10 and 3.11)
+- `cpu-core-3-12-tests`
+- `cpu-runtime`
+- `cpu-core-3-12` (the existing required-check aggregator)
+- `distributed-cpu`
+- `pre-commit`
 
-Without `validate_pool=true`, the workflow retains its existing one- and two-GPU
-gates. GPU jobs share the `flagquantum-accelerator` concurrency group.
+Fork pull requests use `ubuntu-latest`. Other jobs retain their existing runners.
+Required check names, test commands, and hosted capacity buckets are unchanged.
+No `pull_request_target` trigger executes fork code on a shared machine.
 
-## Host operation
+Each Python job creates a fresh venv without system site packages or inherited
+Python search paths. Test jobs install CPU PyTorch. CUDA devices are hidden and
+numerical library threads are limited to two. These settings do not impose host
+resource isolation or prevent other repositories from competing for the same
+machines. The two registrations do not prove two independent hosts or a CPU
+quota, and jobs can queue when both runners are busy.
 
-The deployment lives in `/opt/flagquantum-runners`. Each runner uses a separate
-Unix account, private home, workspace, temporary directory, and tool cache.
-Root-owned framework environments are shared read-only. A pre-job hook rebuilds
-the writable Python environment for every job. Landlock denies filesystem access
-outside the runner's allowlist; CPU runners cannot open NVIDIA devices. Reading
-file contents from personal/project or platform credential mounts is denied.
+## Validation
 
-CPU affinity sets are disjoint: each CPU runner gets four physical cores and
-their SMT siblings. The GPU runner gets sixteen different physical cores and
-their SMT siblings. The process pool therefore uses 160 logical CPUs within the
-container's 180-CPU quota. Thread defaults limit nested numerical libraries.
-
-The container has no writable cgroup delegation or usable systemd. Supervisor
-restarts exited listeners and terminates their process groups on stop. A separate
-watchdog restarts Supervisor. Root can inspect the pool with:
+Local configuration checks:
 
 ```bash
-/opt/flagquantum-runners/envs/admin/bin/supervisorctl \
-  -c /opt/flagquantum-runners/admin/supervisord.conf status
+python -m pytest tests/unit/test_cpu_runner_routing.py \
+  tests/unit/test_github_hosted_capacity_policy.py \
+  tests/unit/test_shared_runner_checkout_policy.py -q
+python tools/validate_required_checks.py
 ```
 
-Logs rotate under `/opt/flagquantum-runners/logs`. Registration uses a temporary
-repository runner token; the host does not need a long-lived GitHub PAT. Runner
-application files are root-owned and automatic updates are disabled, so the
-operator must install supported runner releases within GitHub's update window.
+The isolation test executes the composite action twice, verifies distinct venvs,
+and checks that an inherited host-only module cannot be imported.
 
-This is a shared-kernel environment. CPU affinity is not a cgroup quota, memory
-limits are shared, and Landlock ABI 1 does not isolate network traffic, hide
-directory metadata, or provide all newer filesystem protections. The listener
-requires enumeration of its ancestors up to `/`, so directory names can remain
-visible even though file contents are denied. Treat same-repository workflow changes as
-trusted executable code. Never route arbitrary fork code to this pool or use
-`pull_request_target` to execute a fork checkout. A platform instance recreation
-requires restoring the deployment and restarting its watchdog; process supervision
-does not preserve a deleted container.
+After publishing this branch, open a same-repository pull request and inspect the
+runner assigned to a first-batch job: it must be one of the two Jiuding runners.
+The same job on a fork PR must use GitHub-hosted Ubuntu. Core jobs must pass
+their existing assertions that NumPy, JAX, and external quantum frameworks are
+absent. Configuration checks alone do not prove setup-python downloads, compiler
+availability, network access, or host policy. Only a completed Actions run verifies
+those conditions.
