@@ -316,11 +316,17 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          OMP_NUM_THREADS: "2"
+          MKL_NUM_THREADS: "2"
+          OPENBLAS_NUM_THREADS: "2"
         run: python -m pytest -m smoke -q
       - name: Run complete smoke and unit tests after merge
         if: github.event_name != 'pull_request'
         env:
           PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          OMP_NUM_THREADS: "2"
+          MKL_NUM_THREADS: "2"
+          OPENBLAS_NUM_THREADS: "2"
         run: python tools/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
@@ -383,6 +389,9 @@ jobs:
       - name: Run smoke and unit tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          OMP_NUM_THREADS: "2"
+          MKL_NUM_THREADS: "2"
+          OPENBLAS_NUM_THREADS: "2"
         run: python tools/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
@@ -421,6 +430,9 @@ jobs:
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n 2 --dist=worksteal --durations=50
+          OMP_NUM_THREADS: "2"
+          MKL_NUM_THREADS: "2"
+          OPENBLAS_NUM_THREADS: "2"
         run: python tools/ci_tier.py pr-runtime
       - name: Prove native distributed runtime does not require JAX
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
