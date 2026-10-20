@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import subprocess
+import sys
+import textwrap
 from dataclasses import replace
 
 import pytest
@@ -47,6 +50,63 @@ def test_reset_returns_measured_qubit_to_zero() -> None:
 
     assert torch.count_nonzero(result.samples) == 0
     assert result.classical_bits.shape == (32, 0)
+
+
+def test_repeated_measurement_and_reset_on_one_qubit_have_defined_semantics() -> None:
+    circuit = DynamicCircuit(1)
+    circuit.h(0)
+    circuit.measure(0, classical_bit=0)
+    circuit.measure(0, classical_bit=1)
+    circuit.reset(0)
+    circuit.measure(0, classical_bit=2)
+
+    result = fq.experimental.dynamic.run_dynamic(circuit, shots=64, seed=19)
+
+    assert torch.equal(result.classical_bits[:, 0], result.classical_bits[:, 1])
+    assert torch.count_nonzero(result.classical_bits[:, 2]) == 0
+    assert torch.count_nonzero(result.samples) == 0
+
+
+def test_seeded_dynamic_execution_is_reproducible_across_processes() -> None:
+    program = textwrap.dedent("""
+        import json
+
+        import flagquantum as fq
+        from flagquantum.dynamic import DynamicCircuit
+
+        circuit = DynamicCircuit(2)
+        circuit.h(0)
+        circuit.measure(0, classical_bit=0)
+        circuit.conditional("x", 1, classical_bit=0)
+        result = fq.experimental.dynamic.run_dynamic(circuit, shots=64, seed=23)
+        print(json.dumps({
+            "classical": result.classical_bits.tolist(),
+            "samples": result.samples.tolist(),
+        }, sort_keys=True))
+        """)
+
+    outputs = tuple(
+        subprocess.run(
+            [sys.executable, "-c", program],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        for _ in range(2)
+    )
+
+    assert outputs[0] == outputs[1]
+
+
+def test_local_dynamic_feedback_example_is_executable() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "examples.local.dynamic_feedback"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "local_statevector_trajectory" in completed.stdout
 
 
 def test_dynamic_execution_rejects_unmeasured_classical_reads_and_gradients() -> None:
