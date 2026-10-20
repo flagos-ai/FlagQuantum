@@ -16,11 +16,16 @@ def _workflow(path: str) -> dict[str, object]:
 
 
 def _run_commands(job: dict[str, object]) -> list[str]:
-    return [
-        str(step.get("run", ""))
-        for step in job["steps"]
-        if isinstance(step, dict) and "run" in step
-    ]
+    commands = []
+    for step in job["steps"]:
+        if not isinstance(step, dict):
+            continue
+        if "run" in step:
+            commands.append(str(step["run"]))
+        elif step.get("uses") == "./.github/actions/install-cpu-torch":
+            action = _workflow(".github/actions/install-cpu-torch/action.yml")
+            commands.extend(_run_commands(action["runs"]))
+    return commands
 
 
 def test_readme_avoids_implicit_accelerator_resolution() -> None:
@@ -52,6 +57,15 @@ def test_ci_editable_installs_reuse_the_cpu_torch_environment() -> None:
 
         assert all("--no-build-isolation" in command for command in editable), name
         assert any(CPU_TORCH_INDEX in command for command in commands), name
+        cpu_install = next(
+            index
+            for index, command in enumerate(commands)
+            if CPU_TORCH_INDEX in command
+        )
+        project_install = next(
+            index for index, command in enumerate(commands) if " -e " in command
+        )
+        assert cpu_install < project_install, name
 
 
 def test_ci_measures_a_bounded_cold_cpu_install() -> None:

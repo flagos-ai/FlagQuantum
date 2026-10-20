@@ -78,7 +78,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
+          cache: ${{ runner.environment == 'github-hosted' && 'pip' || '' }}
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
@@ -316,7 +316,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
+          cache: ${{ runner.environment == 'github-hosted' && 'pip' || '' }}
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
@@ -372,7 +372,7 @@ jobs:
   cpu-core-3-12-tests:
     runs-on: >-
       ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","Linux","X64","a100","jiuding","gpu"]' || '["ubuntu-latest"]') }}
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       CUDA_VISIBLE_DEVICES: ""
       OMP_NUM_THREADS: "2"
@@ -393,7 +393,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
+          cache: ${{ runner.environment == 'github-hosted' && 'pip' || '' }}
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
@@ -417,7 +417,7 @@ jobs:
   cpu-runtime:
     runs-on: >-
       ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","Linux","X64","a100","jiuding","gpu"]' || '["ubuntu-latest"]') }}
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       CUDA_VISIBLE_DEVICES: ""
       OMP_NUM_THREADS: "2"
@@ -438,7 +438,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
+          cache: ${{ runner.environment == 'github-hosted' && 'pip' || '' }}
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
@@ -857,7 +857,7 @@ jobs:
     runs-on: >-
       ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","Linux","X64","a100","jiuding","gpu"]' || '["ubuntu-latest"]') }}
     # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       CUDA_VISIBLE_DEVICES: ""
       OMP_NUM_THREADS: "2"

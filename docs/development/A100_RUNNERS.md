@@ -41,6 +41,16 @@ resource isolation or prevent other repositories from competing for the same
 machines. The two registrations do not prove two independent hosts or a CPU
 quota, and jobs can queue when both runners are busy.
 
+The first cold run spent about sixteen minutes preparing the interpreter,
+framework, and editable package before the full unit suite. The full unit,
+runtime integration, and distributed CPU jobs therefore have a sixty-minute
+budget; shorter first-batch jobs retain forty-five minutes. A queued job does
+not consume its execution budget.
+
+Shared jobs disable setup-python's remote pip-cache upload: the persistent host
+already retains its downloads, and its global pip cache can include several
+GB of unrelated packages. Fork jobs retain the GitHub-hosted pip cache.
+
 ## Package mirrors
 
 Self-hosted jobs use the TUNA PyPI mirror. CPU PyTorch wheels are selected

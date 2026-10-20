@@ -48,9 +48,18 @@ def test_first_batch_uses_verified_labels_only_for_trusted_events(
         # Explicit event allowlist: a missing PR payload cannot authorize a runner.
         assert job["runs-on"] == SHARED_ROUTE
         assert job["env"]["CUDA_VISIBLE_DEVICES"] == ""
-        assert job["timeout-minutes"] == 45
+        expected_timeout = (
+            60
+            if name in {"cpu-core-3-12-tests", "cpu-runtime", "distributed-cpu"}
+            else 45
+        )
+        assert job["timeout-minutes"] == expected_timeout
         for index, step in enumerate(job["steps"]):
             if str(step.get("uses", "")).startswith("actions/setup-python@"):
+                if "cache" in step.get("with", {}):
+                    assert step["with"]["cache"] == (
+                        "${{ runner.environment == 'github-hosted' && 'pip' || '' }}"
+                    )
                 assert job["steps"][index + 1]["uses"] == (
                     "./.github/actions/isolated-python"
                 )
@@ -76,6 +85,16 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
     host_packages.mkdir()
     (host_packages / "fq_host_only.py").write_text("HOST_PACKAGE = True\n")
     base_env = os.environ.copy()
+    runtime_library_path = os.pathsep.join(
+        [
+            entry
+            for entry in base_env.get("LD_LIBRARY_PATH", "").split(os.pathsep)
+            if entry
+            and "/site-packages/" not in entry
+            and "/dist-packages/" not in entry
+        ]
+        + ["/opt/selected-python/lib", "/usr/local/cuda/compat/lib"]
+    )
     base_env.update(
         RUNNER_TEMP=str(tmp_path),
         PYTHONPATH=str(host_packages),
@@ -83,7 +102,8 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         LD_LIBRARY_PATH=(
             "/usr/local/lib/python3.12/dist-packages/torch/lib:"
             "/opt/venv/lib/python3.12/site-packages/torch_tensorrt/lib:"
-            "/opt/selected-python/lib:/usr/local/cuda/compat/lib:"
+            + runtime_library_path
+            + ":"
         ),
         FQ_BASE_ENV="/unverified-preinstalled-stack",
         ACTIONS_RUNNER_HOOK_JOB_STARTED="/unavailable-hook",
@@ -110,9 +130,7 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
             )
         else:
             assert exported["PIP_INDEX_URL"] == "https://pypi.org/simple"
-        assert exported["LD_LIBRARY_PATH"] == (
-            "/opt/selected-python/lib:/usr/local/cuda/compat/lib"
-        )
+        assert exported["LD_LIBRARY_PATH"] == runtime_library_path
         venv = Path(exported["VIRTUAL_ENV"])
         environments.append(venv)
         assert path_file.read_text().strip() == str(venv / "bin")
