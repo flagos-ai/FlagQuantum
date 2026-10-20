@@ -88,6 +88,11 @@ These examples do not use that alias:
 - [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) — it imports
   the QEC subpackage surface, because the code record built from parity-check
   matrices lives there and has no root-level `fq.` name.
+- [`dynamic_density_matrix.py`](dynamic_density_matrix.py) — it imports
+  `flagquantum.dynamic` and `flagquantum.simulation.density_matrix`, because the
+  exact route for a mid-circuit measurement is reached through
+  `DynamicCircuit.density_matrix()` and `fq.run` still refuses a dynamic program
+  by name.
 
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
@@ -230,6 +235,7 @@ boundaries are listed in the capability catalog.
 | Train with MPS | [`03_mps_training.py`](single_machine_quantum_ai/03_mps_training.py) | Low-entanglement systems |
 | Use a JAX kernel through PyTorch | [`04_jax_kernel_torch_layer.py`](single_machine_quantum_ai/04_jax_kernel_torch_layer.py) | Optional accelerator path |
 | Run a noisy circuit exactly instead of by trajectory | [`density_matrix_execution.py`](density_matrix_execution.py) | Dense exact oracle, 2**n by 2**n state |
+| Measure mid-circuit and keep the exact mixture | [`dynamic_density_matrix.py`](dynamic_density_matrix.py) | Dynamic subpackage surface, one branch per read bit |
 | Inspect sharded statevector ownership | [Distributed statevector](distributed_statevector_topologies/README.md) | One logical statevector across ranks |
 | Inspect rank-owned MPS execution | [Distributed MPS](distributed_mps/README.md) | Development evidence |
 | Train and package a circuit | [`train_parameterized_circuit_then_deploy.py`](train_parameterized_circuit_then_deploy.py) | Deployment bridge |

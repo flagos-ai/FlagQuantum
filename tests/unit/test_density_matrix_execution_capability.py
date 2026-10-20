@@ -578,9 +578,10 @@ def test_the_parity_row_no_longer_says_the_capability_is_unregistered() -> None:
     reason = _parity_rows()[PARITY_ROW]["reason"]
     assert "no capability-maturity.toml entry" not in reason
     assert CAPABILITY in reason
-    # The row is partial because the route cannot express a mid-circuit
-    # measurement, not because the engine is absent.
+    # The row is partial because the path takes no accelerator and because the
+    # exact answer is a sum over branches, not because the engine is absent.
     assert "mid-circuit measurement" in reason
+    assert "no accelerator" in reason
 
 
 def test_the_parity_baseline_gap_claims_no_measurement_it_did_not_take() -> None:
