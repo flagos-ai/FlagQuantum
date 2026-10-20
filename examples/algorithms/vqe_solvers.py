@@ -34,8 +34,19 @@ expectation at a finite step count, so the last digits are the arithmetic's own.
 The instance is a two-qubit transverse-field Ising model, `ZZ - X0 - X1`, whose
 ground energy is `-sqrt(5)` and is computed here from the operator rather than
 quoted. It is small enough that the exact screening gradients and the pool's
-limits are visible in one run, and it is a model rather than a molecule: no
-chemistry, no basis set, and no hardware is involved anywhere below.
+limits are visible in one run, and it is a model rather than a molecule: the four
+entry points above involve no chemistry, no basis set, and no hardware.
+
+The last section changes the shape rather than the subject. `flagquantum.algorithms.solvers`
+binds one problem -- an operator, an ansatz, and an optimizer -- into a single
+value, so the closure that joins an operator to an ansatz is written once instead
+of at every call site. It runs on H2 in a four-spin-orbital space rather than on
+the model, because the constructor that binds those pieces takes the electron
+count and the operator from the same molecule object; and it then hands that one
+problem's energy to the two optimizers the autograd entry points cannot stand in
+for, the simplex and the constrained trust region. The constrained run caps one
+angle below what the exact ground state wants, so its answer is a feasible point
+whose excess over FCI is the price of the cap.
 
 Run it with:
 
@@ -49,7 +60,10 @@ from typing import Any
 import torch
 
 from flagquantum.algorithms import (
+    CobylaOptimizer,
     Hamiltonian,
+    NelderMeadOptimizer,
+    VQESolver,
     hardware_efficient_ansatz,
     hardware_efficient_parameter_count,
     pauli_term,
@@ -58,6 +72,7 @@ from flagquantum.algorithms import (
     run_layerwise_vqe,
     run_vqe,
 )
+from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 from flagquantum.algorithms.optimization import OptimizationStage
 from flagquantum.circuit import Circuit
 
@@ -169,7 +184,9 @@ def main() -> None:
     print(f"  {'':<{LABEL_WIDTH}}  can act, and from a stationary point of the pool")
     print(f"  {'':<{LABEL_WIDTH}}  every screened gradient is exactly zero, so the")
     print(f"  {'':<{LABEL_WIDTH}}  same pool selects nothing and the loop cannot tell")
-    print(f"  {'':<{LABEL_WIDTH}}  the state's stationarity from a direction that would")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  the state's stationarity from a direction that would"
+    )
     print(f"  {'':<{LABEL_WIDTH}}  not help; `converged` reports why the loop stopped")
     print(f"  {'':<{LABEL_WIDTH}}  rather than how close the energy came, so an")
     print(f"  {'':<{LABEL_WIDTH}}  exhausted pool and an out-of-budget run are read")
@@ -198,14 +215,20 @@ def main() -> None:
     report("energy above ground", f"{float(fixed.energy) - ground:.6g}")
     report("steps taken", fixed.n_steps)
     print(f"  {'':<{LABEL_WIDTH}}  -- the sign above is negative: the descent landed")
-    print(f"  {'':<{LABEL_WIDTH}}  {abs(float(fixed.energy) - ground):.2e} below the exact")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  {abs(float(fixed.energy) - ground):.2e} below the exact"
+    )
     print(f"  {'':<{LABEL_WIDTH}}  ground energy rather than violating a bound. Every")
     print(f"  {'':<{LABEL_WIDTH}}  energy here is a float32 statevector expectation,")
-    print(f"  {'':<{LABEL_WIDTH}}  and the operator's own value is the double-precision")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  and the operator's own value is the double-precision"
+    )
     print(f"  {'':<{LABEL_WIDTH}}  one printed under inputs")
     report("history length", len(fixed.history))
     report("caller tensor unchanged", torch.equal(start, before))
-    report("two runs agree bit for bit", torch.equal(fixed.parameters, again.parameters))
+    report(
+        "two runs agree bit for bit", torch.equal(fixed.parameters, again.parameters)
+    )
     print(f"  {'':<{LABEL_WIDTH}}  -- the start is copied before anything is updated,")
     print(f"  {'':<{LABEL_WIDTH}}  so the caller's tensor is an input rather than a")
     print(f"  {'':<{LABEL_WIDTH}}  scratch buffer, and the descent is deterministic")
@@ -320,7 +343,9 @@ def main() -> None:
     print(f"  {'':<{LABEL_WIDTH}}  not how close the energy came")
     print()
 
-    print(f"run_layerwise_vqe: deepen through {DEPTHS} keeping the optimized coordinates")
+    print(
+        f"run_layerwise_vqe: deepen through {DEPTHS} keeping the optimized coordinates"
+    )
     layerwise = run_layerwise_vqe(
         layerwise_ansatz,
         layerwise_parameter_count,
@@ -386,23 +411,86 @@ def main() -> None:
     print(f"  {'':<{LABEL_WIDTH}}  the check is made here and both are named")
     print()
 
+    print("solvers: one problem as one value, and the optimizers it hands off to")
+    molecule = create_molecular_hamiltonian(
+        [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7414))]
+    )
+    solver = VQESolver.for_molecule(molecule, dtype=torch.complex128, steps=200, lr=0.1)
+    report(
+        "solver ansatz", f"{solver.ansatz.name}, {solver.ansatz.parameter_count} angles"
+    )
+    report("solver operator terms", str(len(solver.operator.terms)))
+    report("solver steps", str(solver.steps))
+    descent = solver.run(torch.zeros(solver.ansatz.parameter_count))
+    report("solver energy", f"{float(descent.energy):.17g}")
+    report("solver fci energy", f"{molecule.fci_energy:.17g}")
+    report("solver above fci", f"{float(descent.energy) - molecule.fci_energy:.3e}")
+    # The objective is the same callable under two conventions: the descent above
+    # consumed it through autograd, and the simplex below consumes it as a plain
+    # scalar function that it evaluates several hundred times per point.
+    simplex = NelderMeadOptimizer(maxiter=200)
+    simplex_result = simplex.minimize(
+        solver.objective(), torch.zeros(solver.ansatz.parameter_count)
+    )
+    report("simplex energy", f"{float(simplex_result.value):.17g}")
+    report("simplex evaluations", str(simplex.evaluations))
+    report(
+        "simplex below hartree-fock",
+        str(float(simplex_result.value) < molecule.hf_energy),
+    )
+    # The constrained member of the family is the one that has no autograd twin:
+    # a cap on one angle is not a term in the operator, so the answer is a
+    # feasible point that is worse than the unconstrained one and both halves are
+    # reported rather than the constraint being folded into a penalty.
+    capped = CobylaOptimizer(rhobeg=0.5, rhoend=1e-8).minimize(
+        solver.objective(),
+        torch.zeros(solver.ansatz.parameter_count),
+        constraints=[lambda angles: 0.1 - angles[2]],
+    )
+    report("capped feasible", str(capped.feasible))
+    report("capped largest violation", f"{capped.residual:.1e}")
+    report("capped angle", f"{float(capped.parameters[2]):.6f}")
+    report("capped energy", f"{float(capped.value):.17g}")
+    report("capped above solver", str(float(capped.value) > float(descent.energy)))
+    print(f"  {'':<{LABEL_WIDTH}}  -- the cap is 0.1 on the doubly-excited angle, and")
+    print(f"  {'':<{LABEL_WIDTH}}  the exact ground state needs more than that, so the")
+    print(f"  {'':<{LABEL_WIDTH}}  feasible optimum sits above the FCI energy by the")
+    print(f"  {'':<{LABEL_WIDTH}}  price of the constraint rather than by a tolerance")
+    print()
+
     print("what this example does not do")
     print(f"  {'':<{LABEL_WIDTH}}  -- no shots: every energy above is an exact")
     print(f"  {'':<{LABEL_WIDTH}}  statevector expectation, so no sampling error and")
     print(f"  {'':<{LABEL_WIDTH}}  no shot-budget tradeoff appears anywhere")
-    print(f"  {'':<{LABEL_WIDTH}}  -- no chemistry: the operator is a model, and no")
-    print(f"  {'':<{LABEL_WIDTH}}  basis set, molecular integral, or active-space")
-    print(f"  {'':<{LABEL_WIDTH}}  selection is involved")
-    print(f"  {'':<{LABEL_WIDTH}}  -- no accuracy or scaling claim: the one instance")
-    print(f"  {'':<{LABEL_WIDTH}}  is two qubits, and a deeper ansatz reaching a")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  -- no basis-set or active-space choice: the molecule"
+    )
+    print(f"  {'':<{LABEL_WIDTH}}  section runs the default integral engine on one")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  geometry, so freezing a core or selecting a window is"
+    )
+    print(
+        f"  {'':<{LABEL_WIDTH}}  not exercised, and the four entry points above still"
+    )
+    print(f"  {'':<{LABEL_WIDTH}}  run on the model operator rather than on a molecule")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  -- no accuracy or scaling claim: the largest instance"
+    )
+    print(
+        f"  {'':<{LABEL_WIDTH}}  is four spin orbitals, and a deeper ansatz reaching a"
+    )
     print(f"  {'':<{LABEL_WIDTH}}  lower energy here is a fact about this instance")
-    print(f"  {'':<{LABEL_WIDTH}}  -- no derivative-free optimizer: the pool and the")
-    print(f"  {'':<{LABEL_WIDTH}}  ansatz are fitted by autograd or parameter shift")
-    print(f"  {'':<{LABEL_WIDTH}}  through one of the staged methods, so neither the")
-    print(f"  {'':<{LABEL_WIDTH}}  SPSA nor the Nelder-Mead unit is reached here, and")
-    print(f"  {'':<{LABEL_WIDTH}}  neither is the constrained one, which would need a")
-    print(f"  {'':<{LABEL_WIDTH}}  constraint this instance does not have; there is also")
-    print(f"  {'':<{LABEL_WIDTH}}  no penalty term and no warm start")
+    print(f"  {'':<{LABEL_WIDTH}}  -- no penalty term, no slack variable, and no warm")
+    print(f"  {'':<{LABEL_WIDTH}}  start: the constrained run above expresses its")
+    print(f"  {'':<{LABEL_WIDTH}}  constraint as a feasible region and starts from the")
+    print(f"  {'':<{LABEL_WIDTH}}  reference angles, so a penalty formulation, a slack")
+    print(f"  {'':<{LABEL_WIDTH}}  variable for an equality, and a start taken from a")
+    print(f"  {'':<{LABEL_WIDTH}}  classical heuristic are all caller-side work")
+    print(f"  {'':<{LABEL_WIDTH}}  -- no adaptive QAOA: the QAOA unit fits per-layer")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  angles, but the operator pool ADAPT-VQE grows from has"
+    )
+    print(f"  {'':<{LABEL_WIDTH}}  no QAOA counterpart here")
 
 
 if __name__ == "__main__":
