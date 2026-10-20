@@ -595,7 +595,10 @@ Fork and merge-group jobs fall back to GitHub-hosted Ubuntu with at most two
 workers and official package indexes. Shared Jiuding quality, distributed, and
 source-hygiene tasks retain their separate pool; its adaptive worker budget
 reserves half the visible resources for the other registration, with a cap of
-eight. CI retains resource JSON and pytest JUnit timing reports for seven days.
+eight. The distributed CPU tier instead caps at two launcher workers on shared
+hosts (one on hosted fallbacks), budgeting eight child ranks per launcher and
+clearing inherited platform rank topology. Its original two marker selections
+and individual deadlines remain unchanged. CI retains resource JSON and pytest JUnit timing reports for seven days.
 The persistent CPU runners reuse their local pip cache; they do not restore or
 upload the shared multi-gigabyte cache through `actions/setup-python`.
 Official Python distributions and verified CPU-only PyTorch wheels are cached

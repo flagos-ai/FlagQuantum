@@ -716,11 +716,14 @@ def test_shared_distributed_tier_uses_the_measured_worker_budget() -> None:
     tier = next(
         step
         for step in steps
-        if step.get("run") == "python tools/ci_tier.py pr-distributed"
+        if "python tools/ci_tier.py pr-distributed" in step.get("run", "")
     )
     assert tier["env"]["PYTEST_ADDOPTS"] == (
-        "-n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50"
+        "-vv -n ${{ env.FQ_DISTRIBUTED_WORKERS }} --dist=worksteal --durations=50"
     )
     from tools.ci_cpu_budget import GIB, select_workers
 
     assert select_workers(31, 125 * GIB, shared=True) == 8
+    from tools.ci_cpu_budget import select_distributed_workers
+
+    assert select_distributed_workers(31, 125 * GIB, shared=True) == 2

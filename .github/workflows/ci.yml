@@ -1132,8 +1132,15 @@ jobs:
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - name: Run both complete distributed CPU contract selections
         env:
-          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
-        run: python tools/ci_tier.py pr-distributed
+          PYTEST_ADDOPTS: -vv -n ${{ env.FQ_DISTRIBUTED_WORKERS }} --dist=worksteal --durations=50
+        run: |
+          # The shared platform may set RANK=0 for its own one-process job.
+          # Only an explicit torchrun child may define the tested rank topology.
+          unset RANK WORLD_SIZE LOCAL_RANK LOCAL_WORLD_SIZE MASTER_ADDR MASTER_PORT GROUP_RANK NODE_RANK
+          python tools/ci_tier.py pr-distributed
+      - name: Verify the JAX rank-local gradient contract under two actual ranks
+        timeout-minutes: 10
+        run: torchrun --standalone --nproc-per-node=2 -m pytest tests/distributed/test_hybrid_jax_runtime.py -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         uses: actions/upload-artifact@v4

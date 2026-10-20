@@ -92,6 +92,15 @@ def select_workers(
     return max(1, min(8, math.floor(cpu / 2), memory // (2 * 2 * GIB)))
 
 
+def select_distributed_workers(cpu: float, memory: int, shared: bool) -> int:
+    """Budget up to eight child ranks per launcher, with at most two launchers."""
+    if not shared:
+        return 1
+    return max(
+        1, min(2, math.floor(math.ceil(cpu / 2) / 8), memory // (2 * 8 * 2 * GIB))
+    )
+
+
 def main(*, dedicated: bool = False) -> None:
     affinity = (
         sorted(os.sched_getaffinity(0))
@@ -107,6 +116,7 @@ def main(*, dedicated: bool = False) -> None:
     cpu = min([float(len(affinity)), *quotas])
     memory = min([physical_memory, *memory_limits])
     workers = select_workers(cpu, memory, shared, dedicated)
+    distributed_workers = select_distributed_workers(cpu, memory, shared)
     report = {
         "runner": os.environ.get("RUNNER_NAME"),
         "hostname": os.uname().nodename,
@@ -119,9 +129,15 @@ def main(*, dedicated: bool = False) -> None:
         },
         "load_average": os.getloadavg(),
         "workers": workers,
+        "distributed_workers": distributed_workers,
         "threads_per_worker": 1 if shared else 2,
         "shared_registrations_budgeted": 2 if shared and not dedicated else 1,
         "dedicated_service": dedicated,
+        "inherited_rank_environment": {
+            key: os.environ[key]
+            for key in ["RANK", "WORLD_SIZE", "LOCAL_RANK", "LOCAL_WORLD_SIZE"]
+            if key in os.environ
+        },
     }
     report_directory = Path(
         tempfile.mkdtemp(prefix="fq-ci-report-", dir=os.environ.get("RUNNER_TEMP"))
@@ -132,7 +148,8 @@ def main(*, dedicated: bool = False) -> None:
     if "GITHUB_ENV" in os.environ:
         with Path(os.environ["GITHUB_ENV"]).open("a") as stream:
             stream.write(
-                f"FQ_PYTEST_WORKERS={workers}\nFQ_CI_REPORT_DIR={report_directory}\n"
+                f"FQ_PYTEST_WORKERS={workers}\nFQ_DISTRIBUTED_WORKERS={distributed_workers}\n"
+                f"FQ_CI_REPORT_DIR={report_directory}\n"
             )
             if shared:
                 for name in [

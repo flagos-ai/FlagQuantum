@@ -126,3 +126,19 @@ The complete `pr-distributed` tier keeps both original selections
 (`distributed_cpu`, then `benchmark_contract or release_gate`) and applies the
 shared worker budget to both. Its two phase-specific slow-test summaries remain
 in the Actions log; core/runtime jobs additionally retain JUnit XML.
+
+Ordinary worker budgets do not apply unchanged to subprocess launcher tests.
+An eight-worker Jiuding experiment completed its first phase in 857.97 seconds
+but failed with inherited-rank/port conflicts and launcher timeouts. It was
+rejected. `pr-distributed` instead budgets eight child ranks per launcher and
+uses at most two pytest workers on shared hosts, one on hosted fallbacks. Both
+original marker selections and all test deadlines remain unchanged. The shell
+clears platform-inherited rank and rendezvous variables before pytest; actual
+`torchrun` subprocesses define their own topology. The separate two-rank A800
+launched lane remains intact. Verbose distributed logs identify individual
+completed cases rather than buffering a long partial line of dots.
+
+The JAX-dependent launched gradient contract also runs explicitly under two
+ranks in the JAX-installed distributed job. Clearing an unrelated platform
+`RANK=0` therefore restores the ordinary collection semantics while preserving
+and strengthening real launched coverage. It is not a marker exclusion.

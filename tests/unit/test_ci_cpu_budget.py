@@ -131,3 +131,18 @@ def test_probe_uses_affinity_quota_memory_and_exports_report(
     assert report["workers"] == 4  # The smaller memory budget wins.
     assert "FQ_PYTEST_WORKERS=4\n" in env.read_text()
     assert "OMP_NUM_THREADS=1\n" in env.read_text()
+
+
+@pytest.mark.parametrize(
+    ("cpus", "memory_gib", "shared", "expected"),
+    [(31, 125, True, 2), (8, 125, True, 1), (31, 16, True, 1), (24, 64, False, 1)],
+)
+def test_launcher_budget_accounts_for_nested_eight_rank_processes(
+    cpus: float,
+    memory_gib: int,
+    shared: bool,
+    expected: int,
+) -> None:
+    from tools.ci_cpu_budget import select_distributed_workers
+
+    assert select_distributed_workers(cpus, memory_gib * GIB, shared) == expected

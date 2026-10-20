@@ -247,3 +247,69 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     assert commands[-1][0] == "-c"
     assert "torch.version.cuda is None" in commands[-1][1]
     assert not list(tmp_path.glob("fq-cpu-wheel.*"))
+
+
+def test_shared_tier_clears_platform_ranks_without_changing_test_selection(
+    tmp_path: Path,
+) -> None:
+    workflow = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())
+    command = next(
+        step["run"]
+        for step in workflow["jobs"]["distributed-cpu"]["steps"]
+        if "python tools/ci_tier.py pr-distributed" in str(step.get("run", ""))
+    )
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    output = tmp_path / "result.json"
+    interpreter = bindir / "python"
+    interpreter.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\n"
+        "with open(os.environ['FQ_RANK_TEST_RESULT'], 'w') as stream:\n"
+        "    json.dump({'args': sys.argv[1:], 'env': dict(os.environ)}, stream)\n"
+    )
+    interpreter.chmod(0o755)
+    inherited = {
+        "RANK": "0",
+        "WORLD_SIZE": "1",
+        "LOCAL_RANK": "0",
+        "LOCAL_WORLD_SIZE": "1",
+        "GROUP_RANK": "0",
+        "NODE_RANK": "0",
+        "MASTER_ADDR": "127.0.0.1",
+        "MASTER_PORT": "29500",
+    }
+    environment = {
+        **os.environ,
+        **inherited,
+        "PATH": str(bindir) + os.pathsep + os.environ["PATH"],
+        "FQ_RANK_TEST_RESULT": str(output),
+    }
+    subprocess.run(["bash", "-ec", command], env=environment, check=True, timeout=20)
+    result = json.loads(output.read_text())
+    assert result["args"] == ["tools/ci_tier.py", "pr-distributed"]
+    assert not (set(inherited) & set(result["env"]))
+    assert environment["RANK"] == "0"
+    # Launched coverage still runs under two real ranks on the A800 runtime job.
+    runtime = workflow["jobs"]["cpu-runtime"]["steps"]
+    assert any(
+        step.get("run")
+        == "torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q"
+        for step in runtime
+    )
+
+
+def test_jax_launcher_coverage_uses_actual_two_rank_topology() -> None:
+    document = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())
+    steps = document["jobs"]["distributed-cpu"]["steps"]
+    launched = next(
+        step
+        for step in steps
+        if "test_hybrid_jax_runtime.py" in str(step.get("run", ""))
+    )
+    assert launched["run"] == (
+        "torchrun --standalone --nproc-per-node=2 -m pytest "
+        "tests/distributed/test_hybrid_jax_runtime.py -q"
+    )
+    assert launched["timeout-minutes"] == 10
+    assert "PYTEST_ADDOPTS" not in launched.get("env", {})
