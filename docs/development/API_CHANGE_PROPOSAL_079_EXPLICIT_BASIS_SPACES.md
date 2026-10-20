@@ -373,6 +373,12 @@ are retained. Four committed 1.4/1.5 golden payloads were captured from the
 pre-implementation producer, independently of the new writer. Full
 default/runtime repository tiers and remote CI remain the
 integration gates; these local observations are not release certification.
+The first full default run reported 13,693 passes, 175 skips and three
+vocabulary-gate failures: two READMEs described a serialized field using
+pseudo-keyword syntax. Their prose now describes a null field; no vocabulary
+contract, exemption or assertion was changed. That failed run is retained as
+negative evidence and the corrected tree requires a successful full rerun.
+Runtime integration passed 1,703 cases with 127 skips on Python 3.12.
 
 ## Approval, implementation and acceptance sequence
 

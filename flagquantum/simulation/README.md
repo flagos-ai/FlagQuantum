@@ -262,7 +262,7 @@ The existing low-level observables mapping accepts full numeric matrices;
 fq.expectation remains qubit-only.
 
 Labelled static and scheduled plans use 1.6, retain request labels and an exactly
-revalidated decision copy, and report n_wires=None without product dimensions.
+revalidated decision copy, and report a null n_wires field without product dimensions.
 plan.n_qubits and plan.dimensions raise CapabilityError for this path; inspect
 plan.basis_labels and plan.dimension. Existing 1.3/1.4/1.5 requests, identities,
 fields and numerical trajectories are preserved. JSON stores numerical values

@@ -36,7 +36,7 @@ print(f"Transfer: {r.populations[-1, p.basis_labels.index((1, 0))].item():.8f}")
 Expected: `Transfer: 0.11757891`.
 
 Labelled plans use schema 1.6 for static and piecewise requests. Their decision
-has n_wires=None and no product dimensions. plan.n_qubits and plan.dimensions
+has a null n_wires field and no product dimensions. plan.n_qubits and plan.dimensions
 raise CapabilityError with guidance to inspect basis_labels. Labels cannot be
 combined with dimensions or n_qubits. A two-state labelled basis remains
 non-product; label arity never determines a wire count.
