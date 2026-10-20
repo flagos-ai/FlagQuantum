@@ -41,6 +41,21 @@ resource isolation or prevent other repositories from competing for the same
 machines. The two registrations do not prove two independent hosts or a CPU
 quota, and jobs can queue when both runners are busy.
 
+## Package mirrors
+
+Self-hosted jobs use the TUNA PyPI mirror and the SJTU CPU PyTorch index.
+GitHub-hosted fork jobs retain the official PyPI and CPU PyTorch indexes.
+The mirror settings are scoped to the job; no host pip configuration is changed.
+PyTorch stays on a CPU-only index rather than mixing CPU and CUDA candidates
+from multiple indexes. On 2026-10-20, the CPython 3.10, 3.11, and 3.12 Linux x64
+Torch 2.13.0+cpu wheel hashes in the SJTU index matched the official index, and
+the CPython 3.12 wheel endpoint returned the expected binary file.
+
+Mirror references:
+
+- https://mirrors.sjtug.sjtu.edu.cn/docs/pytorch-wheels
+- https://mirrors.tuna.tsinghua.edu.cn/help/pypi/
+
 ## Validation
 
 Local configuration checks:

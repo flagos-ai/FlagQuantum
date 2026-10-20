@@ -92,11 +92,29 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
     for attempt in range(2):
         path_file = tmp_path / f"path-{attempt}"
         env_file = tmp_path / f"env-{attempt}"
-        env = {**base_env, "GITHUB_PATH": str(path_file), "GITHUB_ENV": str(env_file)}
+        runner_environment = "self-hosted" if attempt == 0 else "github-hosted"
+        env = {
+            **base_env,
+            "GITHUB_PATH": str(path_file),
+            "GITHUB_ENV": str(env_file),
+            "RUNNER_ENVIRONMENT": runner_environment,
+        }
         subprocess.run(["bash", "-eu", "-c", script], env=env, check=True, timeout=45)
         exported = dict(
             line.split("=", 1) for line in env_file.read_text().splitlines()
         )
+        if runner_environment == "self-hosted":
+            assert (
+                exported["PIP_INDEX_URL"] == "https://pypi.tuna.tsinghua.edu.cn/simple"
+            )
+            assert exported["FQ_CPU_TORCH_INDEX"] == (
+                "https://mirror.sjtu.edu.cn/pytorch-wheels/cpu/"
+            )
+        else:
+            assert exported["PIP_INDEX_URL"] == "https://pypi.org/simple"
+            assert exported["FQ_CPU_TORCH_INDEX"] == (
+                "https://download.pytorch.org/whl/cpu"
+            )
         assert exported["LD_LIBRARY_PATH"] == (
             "/opt/selected-python/lib:/usr/local/cuda/compat/lib"
         )
