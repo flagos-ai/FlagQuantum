@@ -486,7 +486,12 @@ preflight must not be presented as runtime or scalability certification.
 ## CI Policy
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty jobs:
+The checked-in `ci.yml` defines twenty-one jobs:
+
+- `prepare-source`: package the exact commit and complete tree, plus a smaller
+  incremental Git pack, before the test jobs fan out. A800 jobs verify the
+  commit and every required tree object, reuse their existing Git objects, and
+  download the complete pack when the cache is incomplete;
 
 - `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
   strict type check of the whole package and of the CI tooling, plus
@@ -548,12 +553,12 @@ FlagQuantum install happen once per framework instead of once per version. This
 preserves the certified compatibility matrix while reducing runner cold starts
 and the serial queue behind the `light-b` and `light-c` capacity buckets.
 
-The GitHub-hosted jobs are partitioned across sixteen concurrency buckets per
+The GitHub-hosted jobs are partitioned across thirteen concurrency buckets per
 pull request or pushed branch. The scope is part of every bucket name: it keeps
-one run at sixteen concurrent jobs without forcing a new pull request to wait for
+one run at thirteen concurrent jobs without forcing a new pull request to wait for
 an older pull request's coverage or interpreter lane. The organisation-level
 20-runner pool remains the aggregate admission limit. Superseding a run of the
-same branch still cancels the older run.
+same pull request cancels the older run; each push to `main` finishes independently.
 
 Optional integration jobs name the test files they own and retain the marker
 selector inside that file set. This prevents an unrelated module-level
@@ -567,9 +572,18 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
-Each CPU core and coverage-shard pytest phase uses exactly two xdist workers
-with work-stealing scheduling. The fixed count shortens the critical path
-without letting a runner-image CPU change silently widen process fan-out. The
+The CPU core and runtime tiers use four dedicated A800 CPU runners, two per
+host, with 16 xdist workers and work-stealing scheduling. Each runner is limited
+to 24 logical CPUs and 64 GiB of memory. Each job creates a fresh virtual
+environment, hides GPUs, and sets numerical-library thread counts to one.
+Official Python distributions and verified CPU-only PyTorch wheels are cached
+locally; a missing wheel falls back to the official CPU index. Ordinary Python
+dependencies use the Tsinghua PyPI mirror. Dependency consistency and the
+CPU-only Torch build are checked before tests.
+
+Each coverage-shard pytest phase retains exactly two xdist workers with
+work-stealing scheduling on GitHub-hosted runners. These fixed counts prevent a
+runner-image change from silently widening process fan-out. The
 eight coverage shards use checked-in duration hints from a cited CI run and a
 deterministic least-loaded assignment, then merge raw data before applying the
 unchanged coverage policy; their union is the former selection, not a reduced
@@ -692,14 +706,13 @@ multi-node evidence plus benchmark audit and release payload validation.
 CPU distributed tests are not scalability evidence and must not be used as release-grade scalability evidence.
 ### Local GPU gates
 
-`.github/workflows/local-gpu.yml` is `workflow_dispatch`-only: it has no path
-filter and no schedule, so it runs when someone starts it. Its one-GPU behavior
-job and two-GPU correctness/autograd job both require the `flagquantum-local`
-self-hosted label, together with `local-scale-scheduled` and
-`crossover-scheduled` in `scheduled-hardware.yml`. Two runners carry that label
-as of 2026-09-18, one on `jp-a800-171` and one on `jp-a800-172`; confirm with
-`gh api repos/flagos-ai/FlagQuantum/actions/runners`, because a statement about
-what is registered is only true of the moment it was written.
+`.github/workflows/local-gpu.yml` runs on every branch push, pull request, and
+manual dispatch, without path filters. Its one-GPU behavior job requires
+`a800-171`, and its two-GPU correctness/autograd job requires `a800-172`, in
+addition to `self-hosted`, `linux`, `gpu`, and `flagquantum-local`. Both consume
+their run's verified source artifact and restore the complete tree. Confirm
+current registrations with
+`gh api repos/flagos-ai/FlagQuantum/actions/runners`.
 
 Both hosts are shared with other people's workloads, and a runner label says
 `gpu` rather than how many devices its host has. Every job that requests a
@@ -727,21 +740,18 @@ pattern list does not name. Every self-hosted job here that does not pass
 `tests/unit/test_shared_runner_checkout_policy.py` holds both halves of that
 rule.
 
-**A pull request must not be able to reach a self-hosted runner.** The runners
-are root shells on hosts that other people share, and one of them serves a
-public repository, which is the combination GitHub's own guidance warns about.
-No workflow a pull request can trigger asks for a self-hosted runner today —
-`ci.yml`, `cd.yml`, and `publish-dev-container.yml` all run on GitHub-hosted
-runners, and the three that need a device are `workflow_dispatch` or `schedule`.
+Pull requests are authorized to use five explicitly provisioned job definitions:
+`cpu-core`, `cpu-core-3-12-tests`, and `cpu-runtime` on `flagquantum-cpu`, plus
+`one-gpu-local` on `a800-171` and `two-gpu-distributed-required` on `a800-172`.
+The CPU services have separate work directories and resource limits; the GPU
+jobs retain their accelerator queue and watchdogs. The machines remain shared,
+so serialization and correctness evidence do not establish uncontended benchmark
+conditions.
 
-That was a property of how the files happened to be written rather than anything
-the repository enforced, and there is no runner group to enforce it: a runner
-group is an organization-level feature, while both runners here are registered
-at the repository level. `tests/unit/test_hardware_lane_policy.py` therefore
-holds the rule directly, by failing when a `pull_request`, `pull_request_target`,
-or `workflow_run` triggered workflow names a self-hosted runner. `workflow_run`
-counts because it fires in response to a workflow a pull request did trigger, so
-it reaches whatever runner it asks for.
+`tests/unit/test_hardware_lane_policy.py` enforces this exact job and label
+allowlist. It rejects additional self-hosted PR jobs and any self-hosted path
+through `pull_request_target` or `workflow_run`. The remaining CI jobs retain
+GitHub-hosted runners.
 
 Serializing our own lanes does not make a host private. A benchmark records the
 device state it found before its first allocation, and

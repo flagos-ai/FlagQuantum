@@ -294,6 +294,8 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
             "https://pypi.tuna.tsinghua.edu.cn/simple"
         )
         commands = "\n".join(str(step.get("run", "")) for step in _steps("ci.yml", job))
+        assert "assert torch.version.cuda is None" in commands
+        assert "python -m pip check" in commands
         assert 'python -m venv "${RUNNER_TEMP}/venv-' in commands
         assert '>> "$GITHUB_PATH"' in commands
         assert 'test "$sha" = "$GITHUB_SHA"' in commands

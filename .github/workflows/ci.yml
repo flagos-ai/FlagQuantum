@@ -380,8 +380,16 @@ jobs:
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
       - run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - name: Install the CPU PyTorch wheel from the local cache or official index
+        run: |
+          if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
+            python -m pip install --no-deps "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          fi
       - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Verify dependency consistency and the CPU-only PyTorch build
+        run: |
+          python -m pip check
+          python -c "import torch; assert torch.version.cuda is None"
       - name: Compile the package on the supported interpreter
         run: python -m compileall -q flagquantum
       - name: Run pull-request compatibility smoke tests
@@ -497,8 +505,16 @@ jobs:
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
       - run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - name: Install the CPU PyTorch wheel from the local cache or official index
+        run: |
+          if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
+            python -m pip install --no-deps "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          fi
       - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Verify dependency consistency and the CPU-only PyTorch build
+        run: |
+          python -m pip check
+          python -c "import torch; assert torch.version.cuda is None"
       - name: Run smoke and unit tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
@@ -582,8 +598,16 @@ jobs:
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
       - run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - name: Install the CPU PyTorch wheel from the local cache or official index
+        run: |
+          if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
+            python -m pip install --no-deps "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          fi
       - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Verify dependency consistency and the CPU-only PyTorch build
+        run: |
+          python -m pip check
+          python -c "import torch; assert torch.version.cuda is None"
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
