@@ -59,6 +59,7 @@ from flagquantum.compiler.openqasm_import import (
 )
 from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.compiler.translate import translate
+from flagquantum.dynamic import DynamicCircuit
 from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.extensions.target_sdk import target_capability_snapshot
 from flagquantum.ecosystem.pennylane import run as run_pennylane
@@ -195,6 +196,7 @@ ENTRIES = (
     CobylaOptimizer,
     CssCode,
     CssCodeMatrices,
+    DynamicCircuit.conditional,
     FermionOperator,
     FloquetCode,
     Hamiltonian,

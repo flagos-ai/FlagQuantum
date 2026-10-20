@@ -91,6 +91,17 @@ If a later step concludes that a promotion requires a public surface change — 
 new method, a condition expression, or a result field — that change is proposed
 separately and is not covered by this proposal.
 
+One of the three examples above has since happened, and it did not come from a
+promotion step. `DynamicCircuit.conditional` gained an `any_of` keyword on
+2026-10-20 so that a disjunction of classical condition clauses has a public
+spelling, which is a condition expression in the sense of the sentence above. It
+was taken as the separate change that sentence asks for, under explicit API-owner
+approval, and the additive, defaulted, keyword-only scope is recorded in
+`contracts/dynamic-circuit-v1-candidate.json` under
+`approval.approved_extensions`. Nothing else here moves: the namespace label, the
+promotion criteria below, and the experimental status of `run_dynamic` are
+unchanged, and this proposal remains **Proposed**.
+
 ## Compatibility
 
 Before promotion, the surface is candidate-stable and `contracts/dynamic-circuit-v1-candidate.json`

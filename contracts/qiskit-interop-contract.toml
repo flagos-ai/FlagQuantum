@@ -50,6 +50,7 @@ issue_codes = [
     "register_layout_flattened",
     "unsupported_condition_value",
     "unsupported_control_flow",
+    "unsupported_disjunctive_condition",
     "unsupported_multi_bit_condition",
     "unsupported_operation",
     "unsupported_parameter_expression",

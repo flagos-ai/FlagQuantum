@@ -545,12 +545,42 @@ def _qiskit_parameter(
     raise TypeError(f"unsupported FlagQuantum parameter value {value!r}")
 
 
+def _instruction_condition_clauses(
+    instruction: Instruction,
+) -> tuple[tuple[tuple[int, int], ...], ...]:
+    """Read every condition spelling this export has to recognise.
+
+    ``flagquantum.ecosystem`` has to stay importable without
+    ``flagquantum.runtime``, which is what the Qiskit namespace boundary test pins,
+    and the one reader of the condition spellings lives in the dynamic runtime. The
+    import is therefore deferred to an instruction that carries a condition, so
+    converting a program with none never loads that runtime.
+    """
+
+    if (
+        "conditions" not in instruction.metadata
+        and "condition_clauses" not in instruction.metadata
+    ):
+        return ()
+    from ...runtime.dynamic._conditions import (
+        instruction_condition_clauses as _read,
+    )
+
+    return _read(instruction)
+
+
 def _condition_pairs(instruction: Instruction) -> tuple[tuple[int, int], ...]:
-    if "conditions" in instruction.metadata:
-        return tuple(
-            (int(bit), int(value)) for bit, value in instruction.metadata["conditions"]
-        )
-    return ()
+    """Return the one conjunction this export can state, or none.
+
+    Qiskit's one-bit conditional is a single bit test, so a disjunction of clauses
+    is not a condition this export can write down. Reading only the ``conditions``
+    key would report such an instruction as unconditional and emit the gate
+    unconditionally, which is a different program that runs without complaint, so
+    the clauses are read here and the caller reports the ones it cannot state.
+    """
+
+    clauses = _instruction_condition_clauses(instruction)
+    return clauses[0] if clauses else ()
 
 
 def export_qiskit(program: Any, *, allow_lossy: bool = False) -> QiskitExportResult:
@@ -567,8 +597,9 @@ def export_qiskit(program: Any, *, allow_lossy: bool = False) -> QiskitExportRes
     for instruction in ir.instructions:
         if instruction.name == "measure":
             width = max(width, int(instruction.metadata["classical_bit"]) + 1)
-        for bit, _expected in _condition_pairs(instruction):
-            width = max(width, bit + 1)
+        for clause in _instruction_condition_clauses(instruction):
+            for bit, _expected in clause:
+                width = max(width, bit + 1)
     circuit_name = interop_metadata.get("circuit_name")
     circuit = quantum_circuit_type(
         ir.n_wires,
@@ -675,7 +706,19 @@ def export_qiskit(program: Any, *, allow_lossy: bool = False) -> QiskitExportRes
         return True
 
     for index, instruction in enumerate(ir.instructions):
-        conditions = _condition_pairs(instruction)
+        clauses = _instruction_condition_clauses(instruction)
+        if len(clauses) > 1:
+            issues.append(
+                QiskitConversionIssue(
+                    "unsupported_disjunctive_condition",
+                    "Qiskit export currently supports one classical condition bit.",
+                    "error",
+                    index,
+                    instruction.name,
+                )
+            )
+            continue
+        conditions = clauses[0] if clauses else ()
         if not conditions:
             apply(instruction, index)
             continue
