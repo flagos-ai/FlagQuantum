@@ -285,7 +285,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         assert download["with"]["digest-mismatch"] == "error"
         assert (
             download["with"]["name"]
-            == "ci-source-${{ github.run_id }}-${{ github.run_attempt }}"
+            == "ci-source-${{ needs.prepare-source.outputs.artifact-key }}"
         )
         assert not any(
             step.get("uses", "").startswith("actions/checkout@")

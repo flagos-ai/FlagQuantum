@@ -86,10 +86,23 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     git("commit", "-m", "current")
     sha = git("rev-parse", "HEAD")
     environment["GITHUB_SHA"] = sha
-    shell(pack, source)
-    full_pack = (temporary / "ci-source/source.pack").read_bytes()
     output = temporary / "outputs"
-    environment["GITHUB_OUTPUT"] = str(output)
+    environment.update(
+        GITHUB_RUN_ID="123", GITHUB_RUN_ATTEMPT="1", GITHUB_OUTPUT=str(output)
+    )
+    shell(pack, source)
+    assert output.read_text().strip() == "artifact-key=123-1"
+    # A failed consumer can rerun without rerunning the successful producer.
+    environment["GITHUB_RUN_ATTEMPT"] = "2"
+    artifact_key = jobs["prepare-source"]["outputs"]["artifact-key"]
+    assert artifact_key == "${{ steps.pack-source.outputs.artifact-key }}"
+    for step in jobs[job]["steps"]:
+        if step.get("uses", "").startswith("actions/download-artifact@"):
+            assert (
+                "${{ needs.prepare-source.outputs.artifact-key }}"
+                in step["with"]["name"]
+            )
+    full_pack = (temporary / "ci-source/source.pack").read_bytes()
     shutil.copyfile(
         temporary / "ci-source-incremental/source.pack",
         temporary / "ci-source/source.pack",

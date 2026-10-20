@@ -46,6 +46,8 @@ concurrency:
 jobs:
   # Prepare source before fan-out so the first hosted slot also unlocks A800 jobs.
   prepare-source:
+    outputs:
+      artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -58,8 +60,10 @@ jobs:
         with:
           fetch-depth: 16
       - name: Pack the exact commit and its complete tree for the A800 runners
+        id: pack-source
         run: |
           set -o pipefail
+          echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/ci-source"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
@@ -344,7 +348,7 @@ jobs:
       - uses: actions/download-artifact@v8.0.2
         with:
           digest-mismatch: error
-          name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
@@ -366,7 +370,7 @@ jobs:
         if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
-          name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
         run: |
@@ -471,7 +475,7 @@ jobs:
       - uses: actions/download-artifact@v8.0.2
         with:
           digest-mismatch: error
-          name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
@@ -493,7 +497,7 @@ jobs:
         if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
-          name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
         run: |
@@ -566,7 +570,7 @@ jobs:
       - uses: actions/download-artifact@v8.0.2
         with:
           digest-mismatch: error
-          name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
@@ -588,7 +592,7 @@ jobs:
         if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
-          name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
         run: |
