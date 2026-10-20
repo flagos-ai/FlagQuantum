@@ -2,7 +2,12 @@
 
 ## Status and review scope
 
-**Proposed for owner review. Not approved or implemented.** This revision updates
+**Approved for implementation by the repository owner on 2026-10-20.** The owner
+explicitly approved proposal 073, requested merging #643, and authorized M1 time
+control implementation in the working session. #643 merged as
+`41cbf7433f37cd3edb697f6326f249d13ad62693` after all 36 checks and both full
+workflows passed. Approval authorizes this contract, not an implementation or
+capability claim. This revision updates
 the contract against M1's static mixed-dimension and operator-coefficient work
 (PRs [639](https://github.com/flagos-ai/FlagQuantum/pull/639),
 [640](https://github.com/flagos-ai/FlagQuantum/pull/640), and
@@ -14,7 +19,8 @@ The decisions to review are: one binding per output interval; reuse of existing
 full-space operator terms and parameter binding; all three current integrators;
 a scheduled-only plan version 1.5 with unchanged static 1.3/1.4 compatibility;
 live coefficient gradients and initial-density adjoints; and the acceptance
-checks below. Implementation starts only after the owner approves this contract.
+checks below. Implementation must pass the acceptance gates before being claimed
+as available.
 
 ## User outcome and measured reuse
 
@@ -279,9 +285,9 @@ trainer, dependency, or Stable Core root export is authorized.
 
 ## Acceptance before claiming the feature implemented
 
-Approval and implementation evidence are separate gates. All items remain open:
+Approval and implementation evidence are separate gates:
 
-- [ ] Owner approves the input, versioning, gradient, and method decisions above.
+- [x] Owner approves the input, versioning, gradient, and method decisions above.
 - [ ] Contract-first change and conformance fake exercise the existing Simulation
       input/plan boundary, followed by the real implementation with unchanged
       consumer assertions. Do not create a second contract registry.
