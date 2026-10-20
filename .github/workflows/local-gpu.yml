@@ -45,8 +45,9 @@ jobs:
       queue: max
     timeout-minutes: 20
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8.0.2
         with:
+          digest-mismatch: error
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
@@ -101,8 +102,9 @@ jobs:
       queue: max
     timeout-minutes: 30
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8.0.2
         with:
+          digest-mismatch: error
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
