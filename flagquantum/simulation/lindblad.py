@@ -8,6 +8,7 @@ from typing import Any
 
 import torch
 
+from ..core.ir.state_space import ExplicitBasisSpace, ProductStateSpace
 from ..core.parameters import Parameter
 from ..errors import CapabilityError, ExecutionError, ValidationError  # noqa: F401
 from ..observables import Observable  # noqa: F401
@@ -93,7 +94,7 @@ class EvolutionResult:
 
     @property
     def probabilities(self) -> torch.Tensor:
-        """Return the time-resolved computational-basis probabilities."""
+        """Return the time-resolved probabilities in the declared basis order."""
 
         return self.populations
 
@@ -167,7 +168,7 @@ class EvolutionResult:
 class EvolutionPlan:
     """Validated resource and numerical-method plan for an evolution request."""
 
-    n_wires: int
+    n_wires: int | None
     n_times: int
     dimension: int
     trajectory_bytes: int
@@ -182,11 +183,14 @@ class EvolutionPlan:
     dimensions: tuple[int, ...] | None = None
     time_dependence: str | None = None
     n_intervals: int | None = None
+    basis_labels: tuple[tuple[int | str, ...], ...] | None = None
 
     @property
     def n_qubits(self) -> int:
         """Return the public qubit count; ``n_wires`` remains serialized internally."""
 
+        if self.basis_labels is not None or self.n_wires is None:
+            raise CapabilityError("this basis has no qubit count; inspect basis_labels")
         if self.dimensions is not None and any(dim != 2 for dim in self.dimensions):
             raise CapabilityError(
                 "this state space is not a qubit register; inspect dimensions"
@@ -212,6 +216,8 @@ class EvolutionPlan:
         }
         if self.dimensions is not None:
             payload["dimensions"] = list(self.dimensions)
+        if self.basis_labels is not None:
+            payload["basis_labels"] = [list(label) for label in self.basis_labels]
         if self.time_dependence is not None:
             payload["numerics"]["time_dependence"] = self.time_dependence
             payload["numerics"]["n_intervals"] = self.n_intervals
@@ -240,6 +246,7 @@ def plan_density_matrix_evolution(
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
 ) -> EvolutionPlan:
     """Validate an evolution request and report its deterministic local plan."""
 
@@ -259,6 +266,7 @@ def plan_density_matrix_evolution(
         require_gradients=require_gradients,
         dimensions=dimensions,
         parameter_values=parameter_values,
+        basis_labels=basis_labels,
     )
 
 
@@ -279,10 +287,14 @@ def _plan_density_matrix_evolution(
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
     bound_hamiltonians: Sequence[torch.Tensor] | None = None,
 ) -> EvolutionPlan:
 
-    space = _resolve_state_space(n_qubits, dimensions)
+    space = _resolve_state_space(n_qubits, dimensions, basis_labels)
+    n_subsystems = (
+        len(space.dimensions) if isinstance(space, ProductStateSpace) else None
+    )
     if dtype not in {torch.complex64, torch.complex128}:
         raise _error(
             "unsupported_dtype",
@@ -322,7 +334,7 @@ def _plan_density_matrix_evolution(
         time_grid,
         parameter_values,
         bound_hamiltonians=bound_hamiltonians,
-        n_subsystems=len(space.dimensions),
+        n_subsystems=n_subsystems,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -343,7 +355,7 @@ def _plan_density_matrix_evolution(
     )
     _normalize_collapse_operators(
         collapse_operators,
-        n_wires=len(space.dimensions),
+        n_wires=n_subsystems,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -370,7 +382,7 @@ def _plan_density_matrix_evolution(
     )
     element_bytes = 8 if dtype == torch.complex64 else 16
     return EvolutionPlan(
-        n_wires=len(space.dimensions),
+        n_wires=n_subsystems,
         n_times=int(time_grid.numel()),
         dimension=dim,
         trajectory_bytes=(
@@ -386,7 +398,12 @@ def _plan_density_matrix_evolution(
             resolved_solve_tolerance if method in KRYLOV_SCHEMES else None
         ),
         require_gradients=resolved_require_gradients,
-        dimensions=None if space.is_qubit_space else space.dimensions,
+        dimensions=(
+            space.dimensions
+            if isinstance(space, ProductStateSpace) and not space.is_qubit_space
+            else None
+        ),
+        basis_labels=space.labels if isinstance(space, ExplicitBasisSpace) else None,
         time_dependence=(
             "piecewise_constant"
             if parameter_values is not None or bound_hamiltonians is not None
@@ -417,6 +434,7 @@ def evolve_density_matrix(
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
 ) -> EvolutionResult:
     """Evolve a state on an explicit time grid with the Lindblad equation.
 
@@ -449,6 +467,9 @@ def evolve_density_matrix(
     instead of returning a detached trajectory that still looks correct.
 
     Args:
+        basis_labels: Ordered non-factorized matrix coordinates, exclusive with
+            dimensions and n_qubits. Literal labels do not certify a physical
+            sector, tensor product, embedding or fusion convention.
         parameter_values: One complete Core parameter mapping per interval of
             ``times`` for fixed full-space operator terms. Omit for static
             Hamiltonians. Time boundaries cannot require gradients.
@@ -491,6 +512,7 @@ def evolve_density_matrix(
         require_gradients=require_gradients,
         dimensions=dimensions,
         parameter_values=parameter_values,
+        basis_labels=basis_labels,
     )
 
 
@@ -511,10 +533,14 @@ def _evolve_density_matrix(
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
     bound_hamiltonians: Sequence[torch.Tensor] | None = None,
 ) -> EvolutionResult:
 
-    space = _resolve_state_space(n_qubits, dimensions)
+    space = _resolve_state_space(n_qubits, dimensions, basis_labels)
+    n_subsystems = (
+        len(space.dimensions) if isinstance(space, ProductStateSpace) else None
+    )
     if dtype not in {torch.complex64, torch.complex128}:
         raise _error(
             "unsupported_dtype",
@@ -557,7 +583,7 @@ def _evolve_density_matrix(
         time_grid,
         parameter_values,
         bound_hamiltonians=bound_hamiltonians,
-        n_subsystems=len(space.dimensions),
+        n_subsystems=n_subsystems,
         dim=dim,
         dtype=dtype,
         device=resolved_device,
@@ -579,7 +605,7 @@ def _evolve_density_matrix(
     _resolve_batch_size(batch_size, 1 if rho.ndim == 2 else int(rho.shape[0]))
     collapse = _normalize_collapse_operators(
         collapse_operators,
-        n_wires=len(space.dimensions),
+        n_wires=n_subsystems,
         dim=dim,
         dtype=dtype,
         device=resolved_device,

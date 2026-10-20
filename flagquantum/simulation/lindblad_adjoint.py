@@ -19,20 +19,19 @@ through the Hilbert--Schmidt adjoint that
 reverse pass holds is the trajectory the forward pass already returned -- one
 density matrix per output time -- instead of the forward graph.
 
-The two routes differentiate the same discretized trajectory, so neither is an
-independent reference for the other: they must agree on the step, and a
-disagreement is a defect in one of them rather than a better derivative. They do
-agree, and for a reason worth writing down rather than measuring alone. One
+In exact arithmetic the two routes describe the same discretized linear map;
+neither is an independent reference for the other. One
 output interval of a linear scheme is a function of the generator by itself --
 ``f(step * L)`` for a polynomial ``f`` in the explicit case, a rational ``f``
 whose numerator and denominator are functions of the same matrix in the implicit
 case, and the exponential in the third -- so its transpose is ``f(step * L^dag)``,
-which is exactly what the same scheme computes when it is given ``L^dag``. The
-adjoint pass is therefore the exact transpose of the forward scheme and not a
-second scheme of the same order. The remaining error is the one the forward pass
-already carries: an Arnoldi window's defect, or a matrix-free solve that stopped
-short, and both are governed by the same ``solve_tolerance`` and fail closed as
-``integration_not_converged`` here exactly as they do forward.
+which is what the same scheme computes when given ``L^dag``. A finite-precision
+Krylov basis has additional conditioning sensitivity under autograd: a local
+forward residual does not bound that derivative error. Compare initial-state
+cotangents against an independent dense discrete map for small references, and
+check autograd parity separately. The shared numerical limitations apply to both
+product and explicit-basis requests. A Krylov step that misses its local target
+still fails closed as ``integration_not_converged`` in either sweep.
 
 What the adjoint buys is memory, and that is the only claim made for it.
 """
@@ -44,6 +43,7 @@ from typing import Any
 
 import torch
 
+from ..core.ir.state_space import ProductStateSpace
 from ..core.parameters import Parameter
 from .lindblad import (
     EvolutionValidationError,
@@ -82,6 +82,7 @@ def adjoint_gradient(
     require_gradients: bool = False,
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
 ) -> torch.Tensor:
     """Return ``d cost / d rho(t_0)`` for the normalized initial density matrix.
 
@@ -138,7 +139,10 @@ def adjoint_gradient(
             field="cost",
         )
     resolved_device = torch.device(device)
-    space = _resolve_state_space(n_qubits, dimensions)
+    space = _resolve_state_space(n_qubits, dimensions, basis_labels)
+    n_subsystems = (
+        len(space.dimensions) if isinstance(space, ProductStateSpace) else None
+    )
     dim = space.dimension
     tolerance = 1e-5 if dtype == torch.complex64 else 1e-10
     # The forward sweep reuses the engine, so every input is validated once and
@@ -161,6 +165,7 @@ def adjoint_gradient(
             batch_size=batch_size,
             dimensions=dimensions,
             parameter_values=parameter_values,
+            basis_labels=basis_labels,
         )
     trajectory = forward.density_matrices
     if trajectory is None:  # pragma: no cover - asked for above
@@ -198,7 +203,7 @@ def adjoint_gradient(
             hamiltonian,
             forward.times,
             parameter_values,
-            n_subsystems=len(space.dimensions),
+            n_subsystems=n_subsystems,
             dim=dim,
             dtype=dtype,
             device=resolved_device,
@@ -208,7 +213,7 @@ def adjoint_gradient(
         )
         collapse = _normalize_collapse_operators(
             collapse_operators,
-            n_wires=len(space.dimensions),
+            n_wires=n_subsystems,
             dim=dim,
             dtype=dtype,
             device=resolved_device,
