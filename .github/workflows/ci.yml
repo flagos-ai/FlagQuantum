@@ -29,7 +29,7 @@ on:
 # CPU smoke/unit and runtime suites use four dedicated A800 CPU runners,
 # with 16 pytest workers per job and a separate virtual environment per run.
 # The remaining Ubuntu jobs share thirteen GitHub-hosted buckets: the 3.12
-# summary, eight coverage shards, distributed, and light-a/b/c. Their PR/branch
+# source preparation/summary, eight coverage shards, distributed, and light-a/b/c. Their PR/branch
 # scope prevents unrelated runs from serializing behind each other.
 #
 # `queue: max` is what makes a bucket a cap instead of a drop: the default
@@ -40,6 +40,30 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  prepare-cpu-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pack the exact commit and its complete tree for the A800 runners
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/cpu-source"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git rev-parse HEAD > "$RUNNER_TEMP/cpu-source/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/cpu-source/source.pack"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cpu-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cpu-source/
+          retention-days: 1
+          compression-level: 0
+
   quality:
     runs-on: ubuntu-latest
     # One of the thirteen GitHub-hosted buckets -- see the capacity note above.
@@ -269,6 +293,7 @@ jobs:
         run: python tools/check_import_time.py
 
   cpu-core:
+    needs: prepare-cpu-source
     runs-on: [self-hosted, linux, x64, flagquantum-cpu]
     timeout-minutes: 30
     env:
@@ -284,14 +309,27 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11"]
     steps:
-      - name: Clear sparse state left in the runner checkout
+      - uses: actions/download-artifact@v4
+        with:
+          name: cpu-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cpu-source
+      - name: Restore and verify this run's exact source commit
         run: |
+          sha="$(cat "$RUNNER_TEMP/cpu-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
           if [ -d .git ]; then
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+          else
+            git init .
           fi
-      - uses: actions/checkout@v4
+          git index-pack --stdin < "$RUNNER_TEMP/cpu-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -352,6 +390,7 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
 
   cpu-core-3-12-tests:
+    needs: prepare-cpu-source
     runs-on: [self-hosted, linux, x64, flagquantum-cpu]
     timeout-minutes: 30
     env:
@@ -363,14 +402,27 @@ jobs:
       group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
-      - name: Clear sparse state left in the runner checkout
+      - uses: actions/download-artifact@v4
+        with:
+          name: cpu-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cpu-source
+      - name: Restore and verify this run's exact source commit
         run: |
+          sha="$(cat "$RUNNER_TEMP/cpu-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
           if [ -d .git ]; then
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+          else
+            git init .
           fi
-      - uses: actions/checkout@v4
+          git index-pack --stdin < "$RUNNER_TEMP/cpu-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -399,6 +451,7 @@ jobs:
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
 
   cpu-runtime:
+    needs: prepare-cpu-source
     runs-on: [self-hosted, linux, x64, flagquantum-cpu]
     timeout-minutes: 30
     env:
@@ -410,14 +463,27 @@ jobs:
       group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-runtime
       queue: max
     steps:
-      - name: Clear sparse state left in the runner checkout
+      - uses: actions/download-artifact@v4
+        with:
+          name: cpu-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cpu-source
+      - name: Restore and verify this run's exact source commit
         run: |
+          sha="$(cat "$RUNNER_TEMP/cpu-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
           if [ -d .git ]; then
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+          else
+            git init .
           fi
-      - uses: actions/checkout@v4
+          git index-pack --stdin < "$RUNNER_TEMP/cpu-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

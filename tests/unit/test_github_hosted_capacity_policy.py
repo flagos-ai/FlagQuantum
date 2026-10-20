@@ -268,11 +268,28 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
             "flagquantum-cpu",
         ]
         assert definition["timeout-minutes"] == 30
+        assert definition["needs"] == "prepare-cpu-source"
+        download = next(
+            step
+            for step in _steps("ci.yml", job)
+            if step.get("uses") == "actions/download-artifact@v4"
+        )
+        assert (
+            download["with"]["name"]
+            == "cpu-source-${{ github.run_id }}-${{ github.run_attempt }}"
+        )
+        assert not any(
+            step.get("uses", "").startswith("actions/checkout@")
+            for step in _steps("ci.yml", job)
+        )
         assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
         assert definition["env"]["OMP_NUM_THREADS"] == "1"
         commands = "\n".join(str(step.get("run", "")) for step in _steps("ci.yml", job))
         assert 'python -m venv "${RUNNER_TEMP}/venv-' in commands
         assert '>> "$GITHUB_PATH"' in commands
+        assert 'test "$sha" = "$GITHUB_SHA"' in commands
+        assert 'git checkout --force --detach "$sha"' in commands
+        assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in commands
         tier_steps.extend(
             step
             for step in _steps("ci.yml", job)
