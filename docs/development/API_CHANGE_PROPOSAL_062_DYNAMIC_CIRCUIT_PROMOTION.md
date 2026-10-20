@@ -75,12 +75,12 @@ version. Two coexisting dynamic-circuit contracts is not an acceptable end state
 No change is requested by this proposal. The surface under assessment is:
 
 ```python
-import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
 
-circuit = fq.DynamicCircuit(3)
+circuit = DynamicCircuit(3)
 circuit.h(0)
 circuit.measure(0)
-circuit.cx(0, 1)          # executed only when the measurement result is 1
+circuit.conditional("x", 1, classical_bit=0)
 ```
 
 The namespace already exists and is candidate-stable. Promotion changes the
