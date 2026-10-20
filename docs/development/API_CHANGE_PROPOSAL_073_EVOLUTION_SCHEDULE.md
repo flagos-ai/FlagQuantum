@@ -321,10 +321,34 @@ Approval and implementation evidence are separate gates:
       equivalence; closed plans refuse later binding overrides.
 - [x] Prove static consumers still use the current integrators and numeric Pauli
       fast path; code review finds no duplicate integration or parameter engine.
-- [ ] Run supported-Python focused regressions, pr-default and pr-runtime tiers,
+- [x] Run supported-Python focused regressions, pr-default and pr-runtime tiers,
       typing/style and repository/API checks. Record revision, counts, numerical
       errors, and unsupported scope; update existing capability/parity sources
       and generated views only after implementation evidence exists.
+
+## Implementation verification
+
+The implementation in [PR 647](https://github.com/flagos-ai/FlagQuantum/pull/647)
+was verified at source commit
+`2ef01320419e922a46edda28ada5048ba7f5bb74`:
+
+- 431 focused Lindblad/conformance/closed-subspace cases passed on each of
+  Python 3.10 / Torch 2.13, Python 3.11 / Torch 2.14.1, and Python 3.12 / Torch 2.13.
+- Full smoke/unit tier: 13,461 passed, 175 skipped on Python 3.10 / Torch 2.13.
+- Full integration tier: 1,703 passed, 127 skipped on Python 3.12 / Torch 2.13.
+- Strict mypy passed for 771 source files; Black, Ruff, API/IR and repository
+  architecture, dependency, capability, documentation, parity, language and
+  ownership checks passed. The PR example output matched its expected text;
+  `python -m examples.train_piecewise_drive` completed 80 Adam updates and
+  printed `Training reduced loss: True`.
+
+The full tiers require local loopback communication. Restricted-sandbox attempts
+hit socket/Gloo refusals and are not counted as passes. A supplemental Python
+3.10 integration run also exposed an existing QEC mixed-check refusal-message
+failure; it reproduces on unchanged baseline
+`df2f308de855e2101a13a53c1afde604cc7126f0` with that interpreter. No QEC code or
+assertion is changed here. The acceptance integration run uses Python 3.12,
+matching the existing runtime lane. Remote CI remains a separate merge gate.
 
 ## Closed-subspace sensitivity found during implementation
 
