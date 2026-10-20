@@ -7,6 +7,7 @@ runs:
       run: |
         if [ -n "${FQ_BASE_ENV:-}" ]; then
           FQ_JOB_PYTHON="$(command -v python)" FQ_JOB_VENV="$RUNNER_TEMP/fq-python" bash "$ACTIONS_RUNNER_HOOK_JOB_STARTED"
+          echo "FQ_TORCH_CPU_INDEX_URL=https://mirror.sjtu.edu.cn/pytorch-wheels/cpu" >> "$GITHUB_ENV"
         else
           python -m venv --clear "$RUNNER_TEMP/fq-python"
           echo "$RUNNER_TEMP/fq-python/bin" >> "$GITHUB_PATH"

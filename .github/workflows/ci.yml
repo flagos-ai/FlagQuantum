@@ -77,7 +77,7 @@ jobs:
           cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: English repository content
         run: python tools/check_repository_language.py
@@ -308,7 +308,7 @@ jobs:
           cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Compile the package on the supported interpreter
         run: python -m compileall -q flagquantum
@@ -378,7 +378,7 @@ jobs:
           cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Run smoke and unit tests with bounded workers
         env:
@@ -416,7 +416,7 @@ jobs:
           cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Run integration tests with bounded workers
         env:
@@ -461,7 +461,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
 
@@ -487,7 +487,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - name: Install the declared Azure extra
         run: python -m pip install --no-build-isolation -e '.[dev,azure]'
       - name: Verify the certified QDK Azure versions and the offline provider suite
@@ -523,7 +523,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev,cuda]'
       - name: Run the Triton kernels that do not need a device
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
@@ -550,7 +550,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Qiskit and Aer versions
         run: |
@@ -600,7 +600,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Cirq Core versions
         run: |
@@ -633,7 +633,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Amazon Braket SDK versions
         run: |
@@ -666,7 +666,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified CUDA-Q versions
         run: |
@@ -700,7 +700,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified PennyLane versions
         run: |
@@ -748,7 +748,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install '${{ matrix.torch }}' --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install pytest
       - run: python -m pip install --no-build-isolation -e . --no-deps
       - run: python -m pytest tests/smoke tests/test_native_circuit.py -q
@@ -785,7 +785,7 @@ jobs:
       # Reproducible artifacts are compiled against PyTorch's 2.10 Stable ABI.
       # The cold-install steps below validate the resulting artifacts against
       # the declared runtime range, including preinstalled vendor baselines.
-      - run: python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.10,<2.11" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - name: Reproducible wheel and sdist builds
         run: |
           SOURCE_DATE_EPOCH=1767225600 python -m build --no-isolation --outdir dist-a
@@ -801,7 +801,7 @@ jobs:
           python -m venv /tmp/fq-torch-compat
           /tmp/fq-torch-compat/bin/python -m pip install packaging
           for version in 2.10 2.11 2.12; do
-            /tmp/fq-torch-compat/bin/python -m pip install "torch==${version}.*" --index-url https://download.pytorch.org/whl/cpu
+            /tmp/fq-torch-compat/bin/python -m pip install "torch==${version}.*" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
             /tmp/fq-torch-compat/bin/python -m pip install dist/*.whl
             (
               cd /tmp
@@ -824,7 +824,7 @@ jobs:
         run: |
           python -m venv /tmp/fq-wheel
           install_started=$SECONDS
-          /tmp/fq-wheel/bin/python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          /tmp/fq-wheel/bin/python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
           /tmp/fq-wheel/bin/python -m pip install dist/*.whl
           install_elapsed=$((SECONDS - install_started))
           echo "Cold Linux CPU wheel install: ${install_elapsed}s" >> "$GITHUB_STEP_SUMMARY"
@@ -841,7 +841,7 @@ jobs:
         run: |
           python -m venv /tmp/fq-sdist
           /tmp/fq-sdist/bin/python -m pip install setuptools wheel
-          /tmp/fq-sdist/bin/python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+          /tmp/fq-sdist/bin/python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
           /tmp/fq-sdist/bin/python -m pip install --no-build-isolation dist/*.tar.gz
           pushd /tmp
           /tmp/fq-sdist/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
@@ -912,7 +912,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python tools/ci_tier.py pr-distributed
 
@@ -942,7 +942,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
       - name: Run maintained-runtime tests with coverage on pull requests
         if: github.event_name == 'pull_request'
@@ -1036,7 +1036,7 @@ jobs:
           cache: pip
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - name: Install project and security tooling
         run: >-
           python -m pip install --no-build-isolation -e '.[dev]'

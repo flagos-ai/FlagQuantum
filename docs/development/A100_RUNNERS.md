@@ -85,3 +85,10 @@ First checkouts are seeded from a root-owned repository object cache readable
 only by the dedicated runner group. The Git remote remains GitHub, and checkout
 still verifies the requested commit. Keep the cache objects while any workspace
 uses them as Git alternates; do not prune or remove the cache underneath jobs.
+
+The pool uses the Aliyun PyPI mirror for ordinary dependencies and the SJTU
+`pytorch-wheels/cpu` mirror for CPU-only PyTorch wheels. Hosted jobs retain the
+official PyTorch CPU index. Official setup-python 3.10.22, 3.11.17 and 3.12.15
+runtimes are cached read-only after verification against GitHub asset SHA256
+values; large bootstrap downloads may use a public release accelerator with
+that same mandatory digest check.
