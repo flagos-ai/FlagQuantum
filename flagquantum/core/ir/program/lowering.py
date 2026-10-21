@@ -26,6 +26,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from ...classical_control import (
+    CLASSICAL_CONTROL_KEYS,
+    is_classical_control_instruction,
+)
 from .. import CircuitIR, IRSerializationError, IRValidationError
 from ..diagnostics import LEVEL_PROGRAM, PUBLIC_LEVEL, LevelDiagnostic, _diagnostic
 from .model import (
@@ -75,10 +79,14 @@ class _BlockBuilder:
 def classify_public_circuit(program: Any) -> LevelConversion:
     """Classify one public input against the level boundary.
 
-    Static `CircuitIR` values enter exactly. A dynamic instruction, or one
-    carrying declared conditions, is refused with diagnostics because the internal
+    Static `CircuitIR` values enter exactly. An instruction that carries any
+    classical-control metadata is refused with diagnostics, because the internal
     levels would need a measurement def-use graph the public schema does not carry.
-    Anything else is invalid input.
+    The keys that count are `CLASSICAL_CONTROL_KEYS`, read from
+    `flagquantum.core.classical_control` rather than listed again here: the two
+    keys this function used to name itself were a second source of truth, and the
+    disjunctive `condition_clauses` spelling arrived without them and entered as
+    exact. Anything else is invalid input.
     """
     if not isinstance(program, CircuitIR):
         return LevelConversion(
@@ -104,15 +112,19 @@ def classify_public_circuit(program: Any) -> LevelConversion:
                     ),
                 ),
             )
-        if instruction.metadata.get("conditions"):
+        if is_classical_control_instruction(instruction):
+            declared = [
+                key for key in CLASSICAL_CONTROL_KEYS if key in instruction.metadata
+            ]
             return LevelConversion(
                 state=UNSUPPORTED_WITH_DIAGNOSTICS,
                 level=PUBLIC_LEVEL,
                 diagnostics=(
                     _diagnostic(
                         "level.conditional_instruction",
-                        f"instruction {index} ({instruction.name!r}) declares conditions "
-                        "that the public schema does not resolve",
+                        f"instruction {index} ({instruction.name!r}) declares "
+                        f"{' and '.join(declared)} that the public schema does not "
+                        "resolve",
                     ),
                 ),
             )

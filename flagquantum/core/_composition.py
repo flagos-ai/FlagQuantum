@@ -34,6 +34,7 @@ and what any executor runs are the same instructions.
 from __future__ import annotations
 
 from ..errors import CapabilityError
+from .classical_control import is_classical_control_instruction
 from .controlled import controlled_instructions
 from .ir import Instruction
 from .operator_schema import get_operator_schema, inverse_operator, power_operator
@@ -58,7 +59,7 @@ def inverted_instruction(instruction: Instruction) -> Instruction:
         reason = "it is a noise channel, which has no unitary inverse"
     elif instruction.metadata.get("is_dynamic"):
         reason = "it is a dynamic operation, which has no fixed inverse"
-    elif instruction.metadata.get("conditions"):
+    elif is_classical_control_instruction(instruction):
         reason = "it is classically conditioned, which has no fixed inverse"
 
     if reason is None:
@@ -188,7 +189,7 @@ def controlled_instruction(
         reason = "it is a noise channel, which has no controlled form"
     elif instruction.metadata.get("is_dynamic"):
         reason = "it is a dynamic operation, which has no controlled form"
-    elif instruction.metadata.get("conditions"):
+    elif is_classical_control_instruction(instruction):
         reason = "it is classically conditioned, which has no controlled form"
     elif getattr(instruction.matrix, "tensor", instruction.matrix) is not None:
         reason = "it carries its own matrix, which no opcode describes controlling"

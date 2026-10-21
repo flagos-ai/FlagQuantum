@@ -236,6 +236,32 @@ guard's position still means a condition that no measurement defines is refused 
 "fq.run does not execute dynamic trajectories" rather than as a def-use violation,
 which is the second observation and is unchanged.
 
+**Corrected, 2026-10-21: the same defect had a second live site, and it did not
+have the measurement to mask it.** `classify_public_circuit` in
+`flagquantum/core/ir/program/lowering.py` named `is_dynamic` and `conditions` and
+not `condition_clauses`, so a hand-built `CircuitIR` carrying only a disjunction
+was reported as `supported_exact` with a canonical payload:
+
+```console
+>>> from flagquantum.core.ir import Instruction, CircuitIR
+>>> circuit = CircuitIR(2, (Instruction("x", (1,), metadata={"condition_clauses": (((0, 0),), ((1, 0),))}),))
+>>> classify_public_circuit(circuit).state
+'supported_exact'
+>>> round_trip(circuit).canonical_payload is not None
+True
+```
+
+There is no measurement here that would have caught it: the object was not routed
+through the planner guard that this note's fix repaired, and a caller reaching the
+level boundary directly got a payload byte-identical to the one it supplied, so no
+downstream reader could tell the program carried a condition at all. The fix reads
+`is_classical_control_instruction` and `CLASSICAL_CONTROL_KEYS` from
+`flagquantum/core/classical_control.py` -- the authority Decision 4 establishes --
+so the classifier can no longer fall behind a new key, and the diagnostic now names
+the key it found (`declares condition_clauses`). The two keys the classifier named
+itself were a second source of truth, which is the defect; the missing third key
+was its symptom.
+
 ### 7. The condition/measurement def-use rule is enforced, at shot time, with an untyped error
 
 **Measured.** A condition on a classical bit that no measurement produced is

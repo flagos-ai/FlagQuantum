@@ -148,6 +148,115 @@ def test_conditional_instruction_is_refused():
     assert _codes(conversion) == {"level.conditional_instruction"}
 
 
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"is_dynamic": True},
+        {"classical_bit": 0},
+        {"conditions": ((0, 1),)},
+        {"condition_clauses": (((0, 0),), ((1, 0),))},
+        {"conditions": ((0, 1),), "condition_clauses": (((0, 0),), ((1, 0),))},
+    ],
+)
+def test_every_classical_control_key_is_refused_at_the_boundary(metadata):
+    """Each classical-control spelling this tree can produce is refused.
+
+    The classifier reads `CLASSICAL_CONTROL_KEYS` instead of naming keys of its
+    own, and this case list is written out rather than derived from that tuple on
+    purpose: a derived list would follow the authority into a new key and assert
+    nothing about the boundary. The last case is the one that used to pass --
+    `condition_clauses` carried alone entered as `supported_exact`, because the
+    classifier checked `conditions` and the two keys are spelled differently.
+    """
+    circuit = CircuitIR(
+        n_wires=2,
+        instructions=(Instruction("x", (1,), metadata=metadata),),
+    )
+
+    conversion = level_boundary.classify_public_circuit(circuit)
+
+    assert conversion.state == level_boundary.UNSUPPORTED_WITH_DIAGNOSTICS
+    assert conversion.canonical_payload is None
+    expected = (
+        {"level.dynamic_instruction"}
+        if "is_dynamic" in metadata
+        else {"level.conditional_instruction"}
+    )
+    assert _codes(conversion) == expected
+
+
+def test_no_key_the_metadata_authority_declares_is_silently_accepted():
+    """Every classical-control key the authority declares leaves the boundary.
+
+    Derived from `CLASSICAL_CONTROL_KEYS` rather than from a list written here, so
+    a key added to the authority is covered the day it is added. A classifier that
+    reintroduces its own list fails for the key it forgot, which is exactly how
+    `condition_clauses` entered as exact.
+    """
+    from flagquantum.core.classical_control import CLASSICAL_CONTROL_KEYS
+
+    plain = CircuitIR(n_wires=2, instructions=(Instruction("x", (1,)),))
+    assert level_boundary.classify_public_circuit(plain).state == (
+        level_boundary.SUPPORTED_EXACT
+    )
+
+    for key in CLASSICAL_CONTROL_KEYS:
+        value = True if key == "is_dynamic" else ()
+        circuit = CircuitIR(
+            n_wires=2,
+            instructions=(Instruction("x", (1,), metadata={key: value}),),
+        )
+
+        conversion = level_boundary.classify_public_circuit(circuit)
+
+        assert conversion.state != level_boundary.SUPPORTED_EXACT, key
+        assert conversion.canonical_payload is None, key
+
+
+def test_the_conditional_diagnostic_names_the_key_it_refused():
+    """The message states which key was found, so a reader can act on it."""
+    circuit = CircuitIR(
+        n_wires=2,
+        instructions=(
+            Instruction(
+                "x", (1,), metadata={"condition_clauses": (((0, 0),), ((1, 0),))}
+            ),
+        ),
+    )
+
+    diagnostics = level_boundary.classify_public_circuit(circuit).diagnostics
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0].message == (
+        "instruction 0 ('x') declares condition_clauses that the public schema "
+        "does not resolve"
+    )
+
+
+def test_a_disjunction_does_not_round_trip_as_exact():
+    """The round trip refuses the disjunction rather than reporting it exact.
+
+    Measured before the fix as `supported_exact` with a canonical payload, which
+    is the fail-open this case pins: the payload handed back was byte-identical to
+    one the caller had already written, so nothing downstream could tell the
+    program had a condition at all.
+    """
+    circuit = CircuitIR(
+        n_wires=2,
+        instructions=(
+            Instruction(
+                "x", (1,), metadata={"condition_clauses": (((0, 0),), ((1, 0),))}
+            ),
+        ),
+    )
+
+    conversion = level_boundary.round_trip(circuit)
+
+    assert conversion.state == level_boundary.UNSUPPORTED_WITH_DIAGNOSTICS
+    assert _codes(conversion) == {"level.conditional_instruction"}
+    assert conversion.canonical_payload is None
+
+
 def test_a_non_circuit_input_is_invalid():
     conversion = level_boundary.classify_public_circuit(("h", 0))
     assert conversion.state == level_boundary.INVALID_INPUT
