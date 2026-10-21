@@ -36,6 +36,10 @@ TRUSTED_CPU_ROUTE = (
     "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
 )
 
+PORTABLE_CPU_ROUTE = TRUSTED_CPU_ROUTE.replace(
+    "flagquantum-a100-cpu", "flagquantum-cpu-general"
+)
+
 # The files that ask a host for its device state. They cannot share the
 # constant: every tool here is a self-contained script, and a script under
 # `tools/` cannot import a sibling module. The copies therefore have to be held
@@ -143,7 +147,11 @@ def _triggers(path: Path) -> frozenset[str]:
 def _is_self_hosted(job: dict[str, object]) -> bool:
     labels = {label.lower() for label in _runs_on(job)}
     return any("self-hosted" in label for label in labels) or any(
-        "flagquantum-a100-cpu" in label for label in labels
+        any(
+            pool in label
+            for pool in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+        )
+        for label in labels
     )
 
 
@@ -152,7 +160,8 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
         return False
     return not (
         reaching == frozenset({"pull_request"})
-        and job.get("runs-on") in (TRUSTED_CPU_ROUTE, A800_CPU_ROUTE)
+        and job.get("runs-on")
+        in (TRUSTED_CPU_ROUTE, PORTABLE_CPU_ROUTE, A800_CPU_ROUTE)
     )
 
 

@@ -15,7 +15,10 @@ def test_self_hosted_jobs_have_no_matrix_parallelism_limit() -> None:
     for path in sorted(WORKFLOWS.glob("*y*ml")):
         for name, job in yaml.safe_load(path.read_text())["jobs"].items():
             route = str(job.get("runs-on", ""))
-            if "self-hosted" not in route and "flagquantum-a100-cpu" not in route:
+            if "self-hosted" not in route and not any(
+                label in route
+                for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+            ):
                 continue
             found.append((path.name, name))
             assert "max-parallel" not in job.get("strategy", {}), (path.name, name)
@@ -38,7 +41,10 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
                     "&& github.event.pull_request.head.repo.full_name == github.repository)"
                 )
                 prefix = "self-hosted"
-            elif "'flagquantum-a100-cpu'" in route:
+            elif any(
+                label in route
+                for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+            ):
                 guard = (
                     "github.event_name != 'pull_request' || "
                     "github.event.pull_request.head.repo.full_name == github.repository"

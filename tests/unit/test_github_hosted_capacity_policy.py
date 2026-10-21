@@ -94,7 +94,7 @@ BUCKETS = frozenset(
 )
 
 CEILING = 16
-TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
+TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}"
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
