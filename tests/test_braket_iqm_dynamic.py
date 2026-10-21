@@ -5,6 +5,7 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.deployment as deployment
+import flagquantum.errors as fqe
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import (
@@ -72,10 +73,6 @@ def test_braket_iqm_reuses_latest_unique_feedback_key() -> None:
     ("build", "blocker"),
     (
         (
-            lambda: DynamicCircuit(2).conditional("x", 1, classical_bit=0),
-            "feedback_bit_was_read_before_measurement",
-        ),
-        (
             lambda: (
                 DynamicCircuit(2)
                 .measure(0, classical_bit=0)
@@ -97,6 +94,11 @@ def test_braket_iqm_assessment_rejects_unsupported_feedback(build, blocker) -> N
     report = fq.experimental.dynamic.assess_dynamic_backend(build(), _iqm_backend())
     assert not report.compatible
     assert any(blocker in item for item in report.blockers)
+
+
+def test_braket_iqm_builder_rejects_feedback_before_measurement() -> None:
+    with pytest.raises(fqe.ValidationError, match="read before measurement"):
+        DynamicCircuit(2).conditional("x", 1, classical_bit=0)
 
 
 def test_braket_iqm_rejects_cross_group_and_multiple_controllers() -> None:

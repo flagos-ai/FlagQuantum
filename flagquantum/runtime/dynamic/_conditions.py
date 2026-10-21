@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ...core.classical_control import (
+    is_classical_control_instruction,
+    validate_classical_control,
+)
 from ...core.ir import Instruction
 from ...errors import ValidationError
 
@@ -121,23 +125,14 @@ def instruction_is_dynamic(instruction: Instruction) -> bool:
     a malformed condition, which the parser refuses a layer later.
     """
 
-    metadata = instruction.metadata
-    return bool(
-        metadata.get("is_dynamic")
-        or metadata.get("condition_clauses")
-        or metadata.get("conditions")
-    )
+    return is_classical_control_instruction(instruction)
 
 
 def classical_width(circuit: DynamicCircuit) -> int:
-    width = 0
-    for instruction in circuit._instructions:
-        if instruction.name == "measure":
-            width = max(width, int(instruction.metadata["classical_bit"]) + 1)
-        for clause in instruction_condition_clauses(instruction):
-            for bit, _value in clause:
-                width = max(width, bit + 1)
-    return width
+    return validate_classical_control(
+        circuit._instructions,
+        n_qubits=circuit.n_qubits,
+    )
 
 
 __all__ = (

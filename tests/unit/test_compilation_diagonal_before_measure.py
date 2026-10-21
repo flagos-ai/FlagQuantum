@@ -604,7 +604,13 @@ def test_random_programs_agree_with_the_runtime_shot_for_shot() -> None:
             else:
                 # A condition must read a bit that has already been written, or the
                 # runtime refuses the program before the pass is ever reached.
-                instructions.append(_measure(wire, 0, conditions=((written[0], 1),)))
+                instructions.append(
+                    Instruction(
+                        "h",
+                        (wire,),
+                        metadata={"conditions": ((written[0], 1),)},
+                    )
+                )
 
         source = CircuitIR(width, tuple(instructions))
         after = optimize(source)

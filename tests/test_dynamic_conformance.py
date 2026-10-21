@@ -4,6 +4,7 @@ import torch
 import flagquantum as fq
 import flagquantum.ecosystem.qiskit as fqq
 import flagquantum.runtime.dynamic.conformance as fqdc
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
 
 pytestmark = pytest.mark.integration
@@ -55,8 +56,12 @@ def test_declared_disjunctive_feature_matches_what_each_path_accepts() -> None:
 
 
 def test_feature_assessment_rejects_classical_read_before_measurement() -> None:
-    circuit = DynamicCircuit(1)
-    circuit.conditional("x", 0, classical_bit=0)
+    circuit = DynamicCircuit.from_ir(
+        CircuitIR(
+            1,
+            (Instruction("x", (0,), metadata={"conditions": ((0, 1),)}),),
+        )
+    )
     report = fqdc.assess_dynamic_features(circuit, fqdc.QISKIT_AER_DYNAMIC_FEATURES)
     assert report.blockers == ("classical_bit_read_before_measurement",)
 

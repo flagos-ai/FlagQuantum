@@ -111,10 +111,35 @@ def test_local_dynamic_feedback_example_is_executable() -> None:
     assert "local_statevector_trajectory" in completed.stdout
 
 
+def test_local_dynamic_validation_example_is_executable() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "examples.local.dynamic_validation"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "build-time validation: classical bit 0 was read before measurement" in (
+        completed.stdout
+    )
+    assert "distributed boundary: dynamic_conditional_execution_unsupported" in (
+        completed.stdout
+    )
+
+
 def test_dynamic_execution_rejects_unmeasured_classical_reads_and_gradients() -> None:
-    unread = DynamicCircuit(1)
-    unread.conditional("x", 0, classical_bit=0)
-    with pytest.raises(RuntimeError, match="read before measurement"):
+    with pytest.raises(fqe.ValidationError, match="read before measurement"):
+        DynamicCircuit(1).conditional("x", 0, classical_bit=0)
+
+    # A circuit loaded from IR did not pass through the builder, so execution
+    # repeats the same validation before allocating trajectories.
+    unread = DynamicCircuit.from_ir(
+        CircuitIR(
+            1,
+            (Instruction("x", (0,), metadata={"conditions": ((0, 1),)}),),
+        )
+    )
+    with pytest.raises(fqe.ValidationError, match="read before measurement"):
         fq.experimental.dynamic.run_dynamic(unread, shots=1, seed=1)
     with pytest.raises(fqe.CapabilityError, match="run_dynamic"):
         fq.run(unread)

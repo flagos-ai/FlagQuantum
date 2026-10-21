@@ -9,6 +9,7 @@ python -m examples.local.simulate
 python -m examples.local.measure
 python -m examples.local.train
 python -m examples.local.dynamic_feedback
+python -m examples.local.dynamic_validation
 ```
 
 - `simulate.py` builds a Bell circuit and checks its statevector.
@@ -17,6 +18,9 @@ python -m examples.local.dynamic_feedback
 - `dynamic_feedback.py` uses the candidate-stable `DynamicCircuit` builder and
   experimental local executor for mid-circuit measurement, conditional feedback,
   reset, and projection to the canonical execution result.
+- `dynamic_validation.py` shows the supported local execution path, build-time
+  def-use validation, and the explicit refusal of dynamic feedback on the
+  distributed statevector path.
 
 After these pass, use the
 [single-machine quantum AI examples](../single_machine_quantum_ai/README.md)
