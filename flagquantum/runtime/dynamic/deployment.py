@@ -65,7 +65,7 @@ def _dynamic_program_ir_blockers(circuit: DynamicCircuit) -> tuple[str, ...]:
 def assess_dynamic_backend(
     circuit: DynamicCircuit, backend: Any
 ) -> DynamicBackendCompatibility:
-    blockers = []
+    blockers: list[str] = []
     program_ir_blockers = _dynamic_program_ir_blockers(circuit)
     blockers.extend(program_ir_blockers)
     raw_capacity = getattr(backend, "n_qubits", None)
