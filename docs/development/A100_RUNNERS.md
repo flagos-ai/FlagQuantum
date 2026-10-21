@@ -136,10 +136,71 @@ values; large bootstrap downloads may use a public release accelerator with
 that same mandatory digest check.
 
 Verified public wheels are cached read-only under `tools/public-wheels`. CPU
-PyTorch and CUDA-Q SDK dependencies are seeded explicitly with `--no-index` and
-`--no-deps` into each private job environment; the normal installation steps
-then resolve their dependencies. This avoids relying on pip to prefer a local
-`--find-links` candidate over the same version on a remote index. Missing cache
-entries retain the configured index fallback. CPU PyTorch wheels are checked
-against the official PyTorch index hashes; CUDA-Q wheels use official PyPI
-SHA256 values. Runner accounts cannot modify the public cache.
+PyTorch retains its explicit local seeding and configured index fallback. The
+CUDA-Q job recognizes an available self-hosted public cache using
+`RUNNER_ENVIRONMENT`, rather than relying on an optional `FQ_RUNNER_KIND` value.
+Runner accounts do not modify that public cache.
+
+### CUDA-Q complete wheel cache
+
+The existing CUDA-Q lane still verifies **both 0.15.1 and 0.16.0.post1** with
+its contract checker, all export/conformance tests and lazy-import check. It
+now fixes `cuda-quantum-cu13` explicitly, matching the binary flavor observed
+in the previous CPU-only installation. A constraint refuses the other binary
+flavors rather than mixing a cached CUDA 12 SDK with an auto-selected CUDA 13
+meta package. This does not claim CUDA-Q GPU execution support in FlagQuantum.
+
+The `prepare-cudaq-wheels` composite action uses pip's resolver to collect the
+complete transitive dependency closure for each version, including ordinary
+Python packages and the newer logical package dependencies. It does not
+maintain a partial prefix list or install with `--no-deps`. All wheels share a
+private job directory and an `actions/cache` key scoped to OS, architecture,
+Python 3.12, CUDA 13, both SDK versions and the preparation action's content.
+A cache is usable only if a fresh offline resolver can satisfy the complete
+requirements while ignoring installed packages. SDK installation is then
+fully offline, followed by exact distribution-version/flavor checks and
+`pip check`. Failure remains failure; cache availability never skips a test.
+
+A miss retains the job's configured package index: TUNA for self-hosted jobs,
+official PyPI for hosted jobs. The mirror wheel-building attempt is bounded at
+900 seconds; a failed attempt tries official PyPI with the same SDK pins and
+CUDA constraints. Only the tiny upstream `cudaq` meta package may build from
+source; its wheel is rebuilt during a miss so a wheel previously inferred from
+another host's CUDA cannot select a different binary flavor. Other packages
+must provide wheels. A complete restored cache takes the offline path and
+avoids any index selection. The cache saves only after a successful job;
+bump its key epoch or preparation action when deliberately refreshing the
+resolved dependency set. Never remove shared public cache files while jobs
+are using them.
+
+On Linux with the optional SDK, a user can run:
+
+```bash
+python -m examples.cudaq_bell_export
+```
+
+Expected output on each certified version:
+
+```text
+Bell probabilities: [0.5, 0.0, 0.0, 0.5]
+```
+
+The same example is executed by the CUDA-Q job after its existing tests. Local
+cache regression tests use real pip and tiny synthetic wheel metadata to
+exercise transitive closure and incompatible/missing-cache refusal without
+requiring CUDA or downloading SDKs. Those tests are not substitutes for real
+SDK verification on Linux.
+
+GitHub cache visibility follows branch scope. A PR warms subsequent runs of
+that PR; other PRs can restore a default-branch cache. After this workflow
+change is merged, seed the main-branch cache once with the existing full manual
+workflow (under the repository's execution authorization):
+
+```bash
+gh workflow run ci.yml --ref main
+```
+
+Wait for that complete validation to succeed before reporting a shared cache
+as warm. This change does not add a main-push trigger or bypass full validation.
+Public wheel provisioning retains its official-source SHA256 checks: CPU Torch
+against its official index, and CUDA-Q wheels against official PyPI metadata.

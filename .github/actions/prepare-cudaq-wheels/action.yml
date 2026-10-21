@@ -1,0 +1,47 @@
+name: Prepare certified CUDA-Q wheels
+description: Cache both certified CUDA 13 SDKs and their complete dependency closures
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        : "${FQ_CUDAQ_WHEEL_DIRECTORY:?Set the private CUDA-Q wheel directory}"
+        : "${OPTIONAL_VERSIONS:?Set the certified SDK versions}"
+        mkdir -p "$FQ_CUDAQ_WHEEL_DIRECTORY"
+        constraints="$FQ_CUDAQ_WHEEL_DIRECTORY/cuda-variant.txt"
+        # Refuse automatic selection of another binary flavor by the meta package.
+        printf '%s\n' 'cuda-quantum<0' 'cuda-quantum-cu11<0' 'cuda-quantum-cu12<0' > "$constraints"
+        links=(--find-links "$FQ_CUDAQ_WHEEL_DIRECTORY")
+        public_cache="${FQ_CUDAQ_PUBLIC_WHEELS:-/opt/flagquantum-runners/tools/public-wheels}"
+        if [ "${RUNNER_ENVIRONMENT:-}" = self-hosted ] && [ -d "$public_cache" ]; then
+          links+=(--find-links "$public_cache")
+          echo "Using the available self-hosted public wheel cache"
+        fi
+        for version in ${OPTIONAL_VERSIONS}; do
+          requirements=("cudaq==$version" "cuda-quantum-cu13==$version")
+          # The offline resolver must find every transitive dependency, not just
+          # a hand-picked prefix list. It writes all selected wheels to one cache.
+          if python -m pip wheel --no-index "${links[@]}" \
+            --constraint "$constraints" --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" \
+            "${requirements[@]}"; then
+            echo "Complete offline CUDA-Q $version / cu13 wheel cache"
+          else
+            # Respect the job's index (TUNA on self-hosted runners). A bounded
+            # mirror attempt falls back to the official index, retaining tests.
+            # Rebuild the tiny auto-selecting meta wheel instead of trusting a
+            # cached meta wheel built for a different host CUDA installation.
+            if ! timeout --kill-after=15s 900s python -m pip wheel \
+              "${links[@]}" --only-binary=:all: --no-binary=cudaq --constraint "$constraints" \
+              --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "${requirements[@]}"; then
+              echo "::warning::CUDA-Q mirror resolution failed; trying official PyPI"
+              python -m pip wheel "${links[@]}" --only-binary=:all: --no-binary=cudaq \
+                --index-url https://pypi.org/simple --constraint "$constraints" \
+                --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "${requirements[@]}"
+            fi
+          fi
+          # Do not treat a partial download or a resolver exit as a cache hit.
+          python -m pip install --dry-run --ignore-installed --no-index \
+            --find-links "$FQ_CUDAQ_WHEEL_DIRECTORY" --constraint "$constraints" \
+            "${requirements[@]}"
+        done
