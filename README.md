@@ -221,6 +221,17 @@ use the [repository documentation](docs/README.md), [examples](examples/README.m
 and [capability catalog](docs/generated/CAPABILITIES.md) matching your installed
 release; `main` can describe newer development.
 
+## Citing FlagQuantum
+
+If you use FlagQuantum in work you publish, cite the software through
+[`CITATION.cff`](CITATION.cff). GitHub renders it under **Cite this
+repository** in APA and BibTeX, and `cffconvert` produces other formats from
+the same file, so a citation does not have to be assembled by hand.
+
+Cite the version you ran rather than `main`: a result is reproducible against
+the release it was measured on. The file records 0.3.1; adjust the version and
+date if you ran an earlier release.
+
 <!-- BEGIN GENERATED CAPABILITY_SUMMARY -->
 Support varies by execution path. See the [capability catalog](docs/generated/CAPABILITIES.md) for maturity and limitations.
 <!-- END GENERATED CAPABILITY_SUMMARY -->
