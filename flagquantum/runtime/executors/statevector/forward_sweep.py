@@ -714,7 +714,7 @@ class _ShardedForwardSweep:
         if self.fuse_cross_shard_gates and touched and cursor - index > 1:
             group = self.ir.instructions[index:cursor]
             matrix = _compose_gate_matrices(self.matrices[index:cursor])
-            diagonal_count = sum(_is_diagonal_instruction(item.name) for item in group)
+            diagonal_count = sum(_is_diagonal_instruction(item) for item in group)
             non_diagonal_count = len(group) - diagonal_count
             if non_diagonal_count == 0:
                 self.shard_state, scratch = _vectorized_local_diagonal_gate(
@@ -780,7 +780,7 @@ class _ShardedForwardSweep:
     ) -> bool:
         """Apply a diagonal gate locally, or report it cannot."""
 
-        if _is_diagonal_instruction(instruction.name):
+        if _is_diagonal_instruction(instruction):
             self.shard_state, scratch = _vectorized_local_diagonal_gate(
                 self.shard_state,
                 matrix,

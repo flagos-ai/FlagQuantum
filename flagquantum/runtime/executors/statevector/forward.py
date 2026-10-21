@@ -12,7 +12,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....core.ir import CircuitIR
+from ....core.ir import CircuitIR, Instruction
+from ....core.operator_schema import canonical_opcode
 from ....simulation.statevector.index_basis import (
     _basis_indices_for_wires,
     _basis_offset,
@@ -44,8 +45,17 @@ _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
 
 
-def _is_diagonal_instruction(name: str) -> bool:
-    return str(name).lower() in _DIAGONAL_STATEVECTOR_GATES
+def _is_diagonal_instruction(instruction: Instruction) -> bool:
+    """Whether an instruction provably applies a diagonal matrix.
+
+    A carried matrix takes precedence over the operator the name denotes, so a
+    name from the diagonal table says nothing about an instruction carrying one.
+    """
+
+    return (
+        instruction.matrix is None
+        and canonical_opcode(instruction.name) in _DIAGONAL_STATEVECTOR_GATES
+    )
 
 
 def _runtime_index_validation_enabled() -> bool:

@@ -177,6 +177,13 @@ def remove_identity_gates(
     the `crz(0)`, `rxx(0)`, `cphase(0)` and `rzz(0)` removals this pass already
     performed untouched, and it declines a two-qubit half turn for the same reason
     the single-qubit branch does: `rzz(2*pi)` is `-I`.
+
+    An instruction carrying its own matrix is never removed. The angle says what
+    the opcode's matrix would be, not what the caller supplied, so a
+    matrix-bearing `rz(0)` is not the identity and `is_identity_one_qubit`
+    already declines it on that ground. This branch declines for the same reason
+    rather than for a different one, so the two branches cannot disagree about
+    the same instruction.
     """
 
     from .one_qubit_synthesis import is_identity_one_qubit
@@ -186,9 +193,10 @@ def remove_identity_gates(
     for instruction in ir:
         if is_identity_one_qubit(instruction):
             continue
-        param_name = rotations.get(instruction.name)
-        if param_name is not None and _is_zero(instruction.params.get(param_name)):
-            continue
+        if instruction.matrix is None:
+            param_name = rotations.get(instruction.name)
+            if param_name is not None and _is_zero(instruction.params.get(param_name)):
+                continue
         instructions.append(instruction)
     return replace(ir, instructions=tuple(instructions))
 

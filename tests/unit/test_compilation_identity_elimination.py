@@ -807,3 +807,78 @@ def test_the_removal_survives_the_shipped_loop() -> None:
     assert "u3" in surviving
     # And a rotation the target can distinguish survives the whole loop.
     assert program(_gate("rz", (0,), theta=1e-4)) == ["rz"]
+
+
+#: Every opcode whose declared parameter table names `theta`, with the arity the
+#: schema declares. Written as a literal rather than read from `_ROTATION_PARAM`,
+#: because a test that reads the table it is testing cannot notice the table
+#: growing; the literal is compared with the table first.
+_DECLARED_ROTATIONS: dict[str, int] = {
+    "cphase": 2,
+    "crx": 2,
+    "cry": 2,
+    "crz": 2,
+    "phase": 1,
+    "rx": 1,
+    "rxx": 2,
+    "ryy": 2,
+    "rz": 1,
+    "rzz": 2,
+    "ry": 1,
+    "u1": 1,
+}
+
+
+def _seeded_unitary(dimension: int, seed: int) -> torch.Tensor:
+    """A deterministic unitary that is neither the identity nor diagonal-only."""
+
+    generator = torch.Generator().manual_seed(seed)
+    raw = torch.randn(dimension, dimension, generator=generator, dtype=torch.float64)
+    q, r = torch.linalg.qr(raw)
+    return (q * torch.sign(torch.diagonal(r))).to(torch.complex128)
+
+
+def test_a_matrix_bearing_rotation_survives_the_identity_pass() -> None:
+    """A zero angle is not evidence when the instruction carries its own operand.
+
+    The rotation branch decides from the raw `theta` because it has no triple to
+    fold, so `crz(0.0)` is removed by name. That argument reads a parameter, not
+    the operator, and an instruction that carries a matrix is not the operator its
+    name denotes. Both arities are here because the branch covers both, and the
+    parameter-free branch above it is covered by
+    `test_a_gate_carrying_a_caller_supplied_matrix_is_left_alone`.
+    """
+
+    assert set(_DECLARED_ROTATIONS) == set(_ROTATION_PARAM)
+    for name, arity in _DECLARED_ROTATIONS.items():
+        matrix = _seeded_unitary(2**arity, seed=arity * 31 + len(name))
+        wires = tuple(range(arity))
+        bearing = Instruction(name, wires, {"theta": 0.0}, matrix, {})
+        assert _names(remove_identity_gates(CircuitIR(arity, (bearing,)))) == [name], (
+            f"{name} carries a matrix that is not the identity and the pass "
+            "removed it anyway"
+        )
+        # The same instruction without a matrix *is* removed, so what the row
+        # above measures is the guard rather than the opcode.
+        plain = Instruction(name, wires, {"theta": 0.0})
+        assert _names(remove_identity_gates(CircuitIR(arity, (plain,)))) == [], name
+
+
+def test_the_optimizer_keeps_an_operand_it_cannot_read() -> None:
+    """A user who optimizes and then executes the result gets the operand's action.
+
+    The pass is one stage of a fixed-point loop, so a removal here is a program the
+    caller is handed back. This is the end-to-end claim: the optimized program has
+    one instruction where the source had one, and executing it produces the
+    operand's image of `|0>` rather than `|0>`.
+    """
+
+    matrix = _seeded_unitary(2, seed=77)
+    bearing = CircuitIR(1, (Instruction("rz", (0,), {"theta": 0.0}, matrix, {}),))
+    optimized = optimize(bearing)
+    assert _names(optimized) == ["rz"]
+    _assert_statevectors_match(_statevector(optimized), matrix[:, 0])
+
+    # The control: the same rotation with no operand attached is removed by the
+    # zero-angle rule, and that removal is what the rule is for.
+    assert _names(optimize(CircuitIR(1, (_gate("rz", (0,), theta=0.0),)))) == []

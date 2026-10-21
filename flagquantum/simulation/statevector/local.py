@@ -817,11 +817,12 @@ def _execute_statevector_program(
             if dispatched is not None:
                 output = dispatched
                 continue
-        if name in {"x", "cx", "swap"}:
+        carries_matrix = instruction.matrix is not None
+        if not carries_matrix and name in {"x", "cx", "swap"}:
             output = _apply_fixed_permutation(
                 output, name, instruction.wires, circuit.n_qubits
             )
-        elif name == "y":
+        elif not carries_matrix and name == "y":
             output = _apply_single_qubit_fixed(
                 output, name, instruction.wires[0], circuit.n_qubits
             )

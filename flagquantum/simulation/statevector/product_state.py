@@ -632,11 +632,16 @@ def _apply_step(
         global_qubits = tuple(instruction.wires)
         name = canonical_opcode(instruction.name)
         local_qubits = tuple(component.qubits.index(qubit) for qubit in global_qubits)
-        if name in {"x", "cx", "swap"}:
+        carries_matrix = instruction.matrix is not None
+        if not carries_matrix and name in {"x", "cx", "swap"}:
             return _apply_fixed_permutation(
                 component.state, name, local_qubits, len(component.qubits)
             )
-        if enable_fixed_clifford and name in _FIXED_SINGLE_QUBIT_CLIFFORD_GATES:
+        if (
+            enable_fixed_clifford
+            and not carries_matrix
+            and name in _FIXED_SINGLE_QUBIT_CLIFFORD_GATES
+        ):
             return _apply_fixed_clifford_gate(
                 component.state, name, local_qubits[0], len(component.qubits)
             )
