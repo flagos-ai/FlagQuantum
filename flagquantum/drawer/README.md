@@ -69,28 +69,78 @@ existing files with different contents.
 ## Explicit hybrid architecture
 
 ```python
-from flagquantum.drawer import draw_hybrid
+from flagquantum.drawer import ClassicalLayer, draw_hybrid
 
+encoder = (
+    ClassicalLayer("Conv2d", (1, 8, 8), (3, 8, 8), trainable=True),
+    ClassicalLayer("Pool", (3, 8, 8), (3, 1, 1)),
+    ClassicalLayer("Flatten", (3, 1, 1), (3,)),
+)
+head = (ClassicalLayer("Linear", (3,), (2,), trainable=True),)
+hybrid_circuit = fq.Circuit(3).ry(0, fq.Parameter("theta_0"))
 figure = draw_hybrid(
-    circuit,
-    encoder="CNN encoder",
-    encoder_features=2,
-    head="Dense head",
-    head_outputs=2,
+    hybrid_circuit,
+    encoder=encoder,
+    head=head,
+    readout="Z expectations",
+    readout_features=3,
     training=True,
+    quantum_view="detail",
 )
 figure
 ```
 
-The architecture labels and feature counts are explicitly supplied presentation
-data, not an inferred PyTorch graph. The embedded circuit is read from IR.
-Training arrows illustrate data and parameter updates; drawing never invokes
-forward or backward execution. Large circuits are best inspected with a separate
-circuit figure because the hybrid view has a fixed-width circuit inset.
+ClassicalLayer is immutable presentation data, with shapes excluding the batch
+axis. Adjacent layer shapes must agree. The encoder's final vector determines
+encoder_features, and the head's final vector determines head_outputs; conflicting
+explicit counts raise ValueError. A detailed head requires a declared readout and
+readout_features matching its input vector. These checks validate declarations,
+not operation formulas or actual model outputs. The Notebook checks both.
+
+String encoder/head labels remain supported. Omitted counts now display
+unspecified values instead of the former example defaults of 32 and 10. Pass
+those counts explicitly when they describe your model. Readout is never guessed
+from the number of qubits or encoded features; unspecified readout uses a normal
+data arrow. An explicit readout label uses a double line, as a caller declaration.
+
+With training=True, parameter feedback is drawn only for trainable stages.
+Detailed classical stages must contain a trainable layer. encoder_trainable=False
+and head_trainable=False freeze entire stages and override per-layer labels.
+quantum_trainable=False freezes the circuit; circuits without gate parameters
+receive no quantum update. Fixed transformations still propagate input gradients:
+their label does not imply detachment. Drawing never executes a training step.
+
+The default hybrid figure is publication artwork for a 170 mm two-column text
+area: a 166 mm canvas, 2 pt crop margins, 9 pt body/gate text and named panels.
+There is no global scale transform. A star marks trainable classical layers or
+circuit parameters; dashed arrows show eligible optimizer updates. Shapes omit
+the batch axis. Put notation and model context in the paper caption, not in an
+extra legend inside the graphic. Colors reinforce the named classical/quantum
+stages; the diagram remains interpretable in grayscale.
+
+quantum_view="auto" and "detail" separate the architecture (a) and exact circuit
+(b), including short circuits. gates_per_panel limits each continuation panel's
+instruction count (default eight). "overview" omits circuit detail. Registers
+continue between panels without resets; describe this in the caption. Terminal
+IR readout annotations appear only in the final panel. All modes validate every
+circuit operation. An over-wide panel raises a rendering error with a width
+diagnostic instead of shrinking type. Reduce gates_per_panel, shorten labels or
+use overview. Very large register counts can still make the figure tall.
+
+Save the PDF and include it in a two-column article using `figure*` and
+`\includegraphics[width=\textwidth]{hybrid.pdf}` when textwidth is approximately
+170 mm. Do not shrink this double-column asset into an 85 mm single column;
+readability is checked at the intended final size. The Notebook includes a paper
+inclusion snippet and caption. Very long unrolled circuits normally belong in
+supplementary material. Source remains editable for venue-specific typography.
+This is a linear encoder/circuit/head composition, not arbitrary graph tracing.
 
 Run the fully executed [Notebook example](../../examples/notebooks/hybrid_latex_drawing.ipynb)
-for a real CPU CNN -> parameterized three-qubit circuit -> two-output head, a
-training step with gradients in all components, inline figures and portable export.
+for a real CPU CNN -> parameterized three-qubit circuit -> two-output head,
+actual shape checks, joint and frozen-encoder training, five inline figures,
+ordered long-circuit panels and portable export. The
+[layout validation record](../../docs/development/HYBRID_LAYOUT_VALIDATION.md)
+records test scope and PDF visual review.
 
 ## Limits, licenses and contributor checks
 
