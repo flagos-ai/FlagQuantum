@@ -1107,16 +1107,37 @@ execution failed`, so the wrapper itself stays and is not renamed.
 What changes is *when* the failure happens. A `(3, 3)` operand, or a `(4, 4)`
 operand on one wire, is a malformed argument to `Circuit.gate` and belongs in
 `IRValidationError`, raised from `Instruction.__post_init__` beside the existing
-`unknown opcode {name!r}; custom operations require an explicit matrix`. The
-error states the expected side and the received shape:
+`unknown opcode {name!r}; custom operations require an explicit matrix`.
+
+The landing change measures against the entry count rather than against a square,
+because that is the quantity the runtime compares and the runtime's own rule is
+documented; the sentence it raises, quoted from a run rather than drafted here, is
 
 ```
-the custom operation 'wide' on qubits (0,) carries a matrix of shape (2, 3);
-a single-wire operand must be a (2, 2) square
+the custom operation 'any' on qubits (0,) carries a matrix of shape (2, 3); an
+operand on 1 qubit(s) must supply 4 entries, and this one supplies 6
 ```
 
-The message names the operand, the wires and both shapes, in the style of
+(wrapped here; it is one sentence, with the operation's own name and wire tuple in
+the slots). It names
+the operand, the wires, the received shape, and both entry counts, in the style of
 `flagquantum/algorithms/folding.py`'s existing refusal.
+
+Consequences this section records rather than leaves implicit:
+
+- A matrix that publishes no `shape` — a nested Python list — is not measured at
+  construction and is left to `_dense_operator`, `to_qiskit`'s
+  `_validated_custom_unitary`, and `folding._require_unitary`, which each still
+  refuse it by their own rule. Both spellings of a wrong operand are refused, at
+  different layers, and `tests/unit/test_instruction_operand_shape.py` pins the
+  split.
+- The half of this decision that asks for a flat `(4,)`, `(1, 4)` or `(4, 1)` to be
+  refused is **not** implemented. `_dense_operator`'s docstring states that "the
+  entry count decides the size, not the shape, so `(1, 2, 2)` is the same operator
+  as `(2, 2)`", and `tests/unit/test_matrix_expectation_contract.py` parametrises a
+  `(1, 2, 2)` operand as accepted. Refusing a flat spelling while accepting that
+  one needs a shape rule that disagrees with what the runtime reads, so it belongs
+  with Decision 3's keyword and its own authorization.
 
 ### 6. Channels are explicitly out of scope, by classifier and not by shape
 
