@@ -14,6 +14,8 @@ tests, and rendered in the
 
 | Task | Primary interface | Result |
 | --- | --- | --- |
+| Draw or export a circuit | `Circuit.draw(format="text"/"mpl"/"latex")` | Text, Matplotlib figure/axes, or lazy LaTeX figure |
+| Draw an explicit hybrid architecture | `flagquantum.drawer.draw_hybrid` | LaTeX figure with Notebook display |
 | Build a program | `fq.Circuit` | Circuit backed by FlagQuantum IR |
 | Reuse a program inside another | `Circuit.compose` | The receiving circuit, extended in place |
 | Undo a program | `Circuit.adjoint` | A new circuit that inverts the block |

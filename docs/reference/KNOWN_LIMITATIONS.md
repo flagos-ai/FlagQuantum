@@ -155,3 +155,15 @@ before executing a GPU task. Automatic uploading, image builds, multi-GPU/multin
 and recovery that automatically relaunches partially submitted work are absent.
 This implementation evidence does not promote an entry in the generated
 capability catalog or establish a released API, training or scalability claim.
+
+
+## LaTeX drawing and Notebook rendering
+
+The source exporter is available with the default install; image display requires
+a TeX compiler and Poppler in the Notebook kernel environment. The LaTeX backend
+accepts native Circuit/CircuitIR or serialized IR with supported scalar/symbolic
+unitary operations. Noise, explicit matrices, dynamic control and batched gate
+parameters are rejected. Terminal readout requests are annotations, not new
+collapse gates. The hybrid view explicitly describes encoder/circuit/head stages
+and optional training paths; it does not trace arbitrary models or execute them.
+See [drawer usage and dependency matrix](../../flagquantum/drawer/README.md).
