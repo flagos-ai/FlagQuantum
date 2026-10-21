@@ -125,3 +125,62 @@ tier pass. The clean validation clone initially lacked installed entry-point
 metadata; installing the built wheel resolved that setup error, and its discovery
 test passes in the complete tier. These are recorded as environment constraints,
 not drawing fixes or weakened checks.
+
+
+## Publication-layout verification
+
+The final default exports measure 167.41 mm wide including crop margins:
+CNN detail 104.30 mm high, frozen overview 75.80 mm high, and the four-panel
+supplementary example 189.80 mm high. Body/gate text measures 8.97 PDF points
+(9 TeX points); mathematical subscripts retain their normal smaller size.
+Rotated feedback annotations use the same 9 pt font. Every text bounding box
+lies within the page. Each PDF is one vector page. All three latest PNGs and a
+grayscale CNN rendering are inspected for clipping, crossing routes, spacing
+and contrast. The default CNN PDF is also embedded, without artwork editing,
+into an actual 170 mm-wide figure* in a two-column article, with a separate
+caption; that compiled article contains vector artwork, not a raster image.
+
+The Notebook executes without errors and retains five image outputs, actual
+joint/frozen training checks, and a ready-to-use paper-inclusion TeX snippet.
+The revised artwork no longer requires removing a demo title/legend, shrinking
+a circuit or rerouting feedback after export. Main-paper and supplementary
+roles are explained in the Notebook; the synthetic model is not presented as
+an experimentally validated classifier.
+
+- Focused selection: **105 passed**, including four real compiler/converter
+  tests and an intentionally over-wide parameter label that must fail rather
+  than shrink. Existing text/Matplotlib/source/cache behavior remains covered.
+- The two hybrid modules: **100% statement and branch coverage**, 135 statements
+  and 76 branches; 63 tests in the coverage selection.
+- Whole-package strict mypy: **776 source files pass**. The complete pre-commit
+  suite passes, including source hygiene, English content, architecture, docs,
+  protected API baseline, Ruff, Black and package/tooling type checks.
+- Wheel and sdist build. Outside the checkout, the installed wheel's four drawer
+  Python files match the source, compiles PDF/PNG within the paper width and
+  exports the complete licensed TeX bundle.
+
+The full default tier uses the same isolated validation checkout as above. A
+local fetch could not transport a missing promisor object, so the exact source
+snapshot was copied and committed there; equality of the Git tree object was
+checked before testing (3fa22e9056094962421ec9ef743975d3ff79a988).
+No test exclusions, source-history rewrites or provenance-fixture changes are
+used. The original shared checkout and other user branches remain untouched.
+
+
+The current pr-default selection is fully verified in two contiguous segments:
+**14,172 passed, 165 skipped** in total (2,980 deselected by the tier's original
+marker). The initial sandboxed run has 10,003 passed and 95 skipped before a
+Gloo setup error, `Cannot resolve 127.0.0.1 to a (local) address`. Without changing
+source or tests, the six-case failing module passes with local-network access.
+A fresh collection identifies the exact remaining 4,239 node IDs beginning with
+the interrupted case; the already-completed prefix is verified against the
+initial counts, accounting for 48 collection-time skips. That complete suffix
+then passes: 4,169 passed, 70 skipped, 210.06 seconds. No cases are omitted or
+assertions weakened. This is full selection coverage across an environment-error
+recovery, not a claim of one uninterrupted full-tier invocation.
+
+The complete current pr-runtime invocation passes: **1,720 passed, 123 skipped**,
+15,474 deselected, 198.58 seconds. It runs with local-network access for its
+original integration cases and uses unchanged assertions and marker selection.
+Only this evidence record and the manual known-limitations paragraph change
+after the verified implementation snapshot.
