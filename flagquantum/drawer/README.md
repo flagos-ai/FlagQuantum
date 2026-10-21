@@ -110,30 +110,43 @@ quantum_trainable=False freezes the circuit; circuits without gate parameters
 receive no quantum update. Fixed transformations still propagate input gradients:
 their label does not imply detachment. Drawing never executes a training step.
 
-The default hybrid figure is publication artwork for a 170 mm two-column text
-area: a 166 mm canvas, 2 pt crop margins, 9 pt body/gate text and named panels.
-There is no global scale transform. A star marks trainable classical layers or
-circuit parameters; dashed arrows show eligible optimizer updates. Shapes omit
-the batch axis. Put notation and model context in the paper caption, not in an
-extra legend inside the graphic. Colors reinforce the named classical/quantum
-stages; the diagram remains interpretable in grayscale.
+The default hybrid renderer composes a horizontal journal-style schematic:
+representative tensor planes/vectors, the actual short quantum circuit, declared
+readout and classical output. Layer labels and numeric shapes carry the model
+meaning; glyph geometry is schematic and never depicts measured activations.
+Names and black text preserve meaning in grayscale. There are no nested stage
+cards. Trainable components carry stars; the paper caption defines that notation.
+Use training=False for forward-model artwork; training=True adds the optional
+optimizer and update paths. Unstarred transformations still propagate gradients.
 
-quantum_view="auto" and "detail" separate the architecture (a) and exact circuit
-(b), including short circuits. gates_per_panel limits each continuation panel's
-instruction count (default eight). "overview" omits circuit detail. Registers
-continue between panels without resets; describe this in the caption. Terminal
-IR readout annotations appear only in the final panel. All modes validate every
-circuit operation. An over-wide panel raises a rendering error with a width
-diagnostic instead of shrinking type. Reduce gates_per_panel, shorten labels or
-use overview. Very large register counts can still make the figure tall.
+The typography/size reference is Nature's
+[official research figure guide](https://research-figure-guide.nature.com/figures/building-and-exporting-figure-panels/):
+183 mm double-column width, a maximum 170 mm figure height, compact arrangements
+and standard sans-serif labels. The content canvas is 181.5 mm plus 2 pt crop
+margins (182.9 mm overall). Text uses 7 pt Helvetica-compatible Nimbus Sans via
+standard TeX fonts. Mathematical notation retains its normal smaller scripts.
+This is a design reference, not journal endorsement or guaranteed acceptance.
 
-Save the PDF and include it in a two-column article using `figure*` and
-`\includegraphics[width=\textwidth]{hybrid.pdf}` when textwidth is approximately
-170 mm. Do not shrink this double-column asset into an 85 mm single column;
-readability is checked at the intended final size. The Notebook includes a paper
-inclusion snippet and caption. Very long unrolled circuits normally belong in
-supplementary material. Source remains editable for venue-specific typography.
-This is a linear encoder/circuit/head composition, not arbitrary graph tracing.
+quantum_view="auto" integrates at most eight instructions on at most four wires
+at natural size. Larger circuits use a unitary summary and ordered detail panels.
+"detail" forces panels; "overview" omits them. gates_per_panel controls the
+instruction count (default eight). TeX measures each panel: two panels share a
+row when both fit half-width, otherwise they stack at unchanged font size.
+Registers continue between panels without resets; explain this in the caption.
+Terminal IR annotations appear once. All modes validate every circuit operation.
+The double line denotes declared classical readout values after the readout.
+
+Rendering rejects panels wider than the canvas and complete figures higher than
+170 mm rather than shrinking text. Reduce gates_per_panel, shorten labels, use
+summary strings for long classical chains, choose overview or split circuit
+detail into separate figures. This is a linear encoder/circuit/head description,
+not arbitrary PyTorch tracing or branching-graph execution.
+
+Save the PDF and include it in a 183 mm double-column article using `figure*`
+and `\includegraphics[width=\textwidth]{hybrid.pdf}`. Do not shrink the wide
+asset to a single column. The Notebook contains a matching caption and inclusion
+snippet. Long unrolled circuits normally belong in supplementary material;
+source remains editable for venue-specific composition.
 
 Run the fully executed [Notebook example](../../examples/notebooks/hybrid_latex_drawing.ipynb)
 for a real CPU CNN -> parameterized three-qubit circuit -> two-output head,
@@ -160,3 +173,10 @@ Run `tests/unit/test_drawer_latex.py`, `tests/test_drawer_ir.py` and
 `tests/unit/test_drawer_input_ownership.py` after drawer changes. Optional real
 compiler/image conformance is in `tests/integration/test_drawer_latex_rendering.py`.
 Use Matplotlib's Agg backend for headless tests and close caller-owned figures.
+
+
+The private `_hybrid_layout.py` owns tensor glyphs, aligned stage geometry,
+measured circuit rows and font/width handling. `hybrid_drawer.py` owns input
+validation and composes that renderer. The owned flaghybrid.sty supplies separate
+TeX box registers and a standard Helvetica-compatible font dependency; upstream
+yquant/PlotNeuralNet sources and licenses remain unmodified.

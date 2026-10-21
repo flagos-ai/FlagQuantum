@@ -127,7 +127,7 @@ test passes in the complete tier. These are recorded as environment constraints,
 not drawing fixes or weakened checks.
 
 
-## Publication-layout verification
+## Earlier publication-layout verification (superseded composition)
 
 The final default exports measure 167.41 mm wide including crop margins:
 CNN detail 104.30 mm high, frozen overview 75.80 mm high, and the four-panel
@@ -184,3 +184,41 @@ The complete current pr-runtime invocation passes: **1,720 passed, 123 skipped**
 original integration cases and uses unchanged assertions and marker selection.
 Only this evidence record and the manual known-limitations paragraph change
 after the verified implementation snapshot.
+
+
+## Journal-style composition revision
+
+The user rejected the nested-card appearance, including its whitespace and
+isolated circuit detail, despite the earlier mechanical checks. The default is
+now a horizontal sequence of schematic feature maps/vectors, the exact short
+circuit, declared readout and output. The main Notebook figure uses training=False
+for forward-model artwork; actual training and gradient checks remain intact.
+The frozen example separately exercises training=True and its update ownership.
+Stars mark declared trainable components. Glyph geometry is schematic; numeric
+shapes, not plane size or the number of representative tiles, carry dimensions.
+
+The measurable design reference is Nature's official research figure guide:
+https://research-figure-guide.nature.com/figures/building-and-exporting-figure-panels/
+This is not a claim of endorsement or submission acceptance. The Science author
+page returned HTTP 403, so no unverified Science-specific dimensions are used.
+The default content canvas is 181.5 mm plus 2 pt margins (182.9 mm total), with
+7 pt Helvetica-compatible Nimbus Sans text and conventional mathematical scripts.
+Panels are measured before arranging them in two columns; wider panels stack
+without scaling. A complete figure exceeding 170 mm height fails with guidance
+to use an overview or separate detail. The earlier 166 mm/9 pt output is obsolete.
+
+Visual iteration fixed a silent XeTeX TU-encoding fallback to Roman: explicit T1
+font selection now embeds Nimbus Sans regular and bold. Named TeX box registers
+prevent nested minipages and TikZ from clobbering raw scratch registers. Paragraph
+starts center circuit boxes within their columns. Tensor glyph ports and the
+actual circuit center share the forward baseline; metadata below the circuit
+cannot move that baseline. A trailing space in the outer figure box was caught
+by the real-rendering width limit and removed. The declared classical readout
+uses a double-line connection after the readout stage.
+
+Model validation, IR ownership, unsupported-operation handling and public
+signatures are unchanged. No Python dependency or upstream resource/license
+changes; the owned style adds standard TeX font loading and private box storage.
+The layout implementation has one private module, keeping validation separate
+from the tensor/circuit composition. The Notebook labels operations concisely
+(Conv 3x3 and Avg. pool), with actual PyTorch shapes still checked independently.

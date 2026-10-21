@@ -3,6 +3,7 @@
 \ProvidesPackage{flaghybrid}[2026/10/21 v0.1.0 Quantum-classical diagrams]
 \RequirePackage{tikz}
 \RequirePackage{graphicx}
+\RequirePackage{helvet}
 \RequirePackage[compat=0.6]{yquant}
 \usetikzlibrary{arrows.meta,positioning,calc,quotes}
 \RequirePackage{Box}
@@ -11,6 +12,10 @@
 \definecolor{fhClassical}{HTML}{176B87}
 \definecolor{fhQuantum}{HTML}{6C4AB6}
 \definecolor{fhInk}{HTML}{243447}
+\newsavebox{\fhFigure}
+\newsavebox{\fhPanelA}
+\newsavebox{\fhPanelB}
+\newdimen\fhPanelWide
 \def\fh@autolabel{auto}
 \tikzset{
  fh/label baseline/.store in=\fh@labelbaseline,
