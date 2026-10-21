@@ -60,3 +60,4 @@ process.
 - [Core-lane dependency discipline for optional imports and `tomllib`](FQ-CORE-LANE-DEPENDENCIES-20261025.md)
 
 - [LaTeX circuit export and Notebook display](FQ-DRAWER-LATEX-20261021.md)
+- [Explicit hybrid layers and readable circuit panels](FQ-HYBRID-LAYOUT-20261021.md)
