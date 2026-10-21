@@ -140,17 +140,22 @@ def _observables(
             "Lindblad evolution always returns probabilities and currently supports "
             f"only expectation output requests, not: {kinds}"
         )
-    names = tuple(item.name for item in requests if item.name is not None)
-    if len(set(names)) != len(names):
-        raise EvolutionValidationError(
-            "duplicate_output_name",
-            "output names must be unique",
-            field="outputs",
+    observables: dict[str, object] = {}
+    for index, item in enumerate(requests):
+        name = item.name or f"expectation_{index}"
+        if name in observables:
+            raise EvolutionValidationError(
+                "duplicate_output_name",
+                "output names must be unique",
+                field="outputs",
+            )
+        operator = item.observable
+        # Capture the caller's matrix without detaching its live gradient graph.
+        # Numeric shape, basis and Hermiticity validation remain in Simulation.
+        observables[name] = (
+            operator.clone() if isinstance(operator, torch.Tensor) else operator
         )
-    return {
-        item.name or f"expectation_{index}": item.observable
-        for index, item in enumerate(requests)
-    }
+    return observables
 
 
 def run(

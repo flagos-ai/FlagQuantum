@@ -80,3 +80,31 @@ proposed public `fq.expectation(projector)` spelling is not yet available.
 Each follow-up PR requires its own applicable merge/queue authorization and
 latest full validation. This approval does not extend previous PR merge grants
 or promote native optical, topological, accelerator or distributed support.
+
+## Simulation implementation
+
+After baseline #669 merged at `362b2184add084069176e6073d1c7bfe2fcfdd9a`,
+the Simulation implementation replaces the test-only planner adapter with
+`flagquantum.lindblad.plan`. Only the pending Core request producer remains a
+test fake; its concrete type is injected into the planner's existing imported
+class boundary in tests. The production request validator is not broadened.
+Physical, gradient, replay and fixed compatibility assertions are unchanged.
+
+The existing output normalizer resolves all effective names before accepting
+an output, refuses generated/explicit collisions, and clones tensor operators
+without detaching their graph. Numeric validation, scalar binding, the sealed
+plan, all three integrators, results and serialization remain with their
+existing owners. There is no new API, schema, registry or solver. The public
+matrix constructor and circuit/remote refusal checks are the subsequent
+Core-owned implementation, not a capability claimed by this step.
+
+A public user example is `python -m examples.lindblad_output_names`, with:
+
+```text
+Polarization: 1.0
+X expectation: 0.0
+Collision refused: duplicate_output_name
+```
+
+Unique names keep their existing results. A colliding request must provide
+unique names; the release notes describe this approved behavioral correction.
