@@ -46,6 +46,7 @@ protected_paths = [
     ".gitignore",
     ".pre-commit-config.yaml",
     "ARCHITECTURE.md",
+    "CITATION.cff",
     # Project-level statements about who may contribute, how decisions are made, and
     # where a vulnerability is reported. They are the same class as `CONTRIBUTING.md`:
     # changing one changes the terms the project offers its contributors, so they are
