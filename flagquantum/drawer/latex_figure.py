@@ -17,7 +17,7 @@ ImageFormat = Literal["pdf", "svg", "png"]
 
 def _document(body: str) -> str:
     return (
-        "\\documentclass[border=12pt]{standalone}\n"
+        "\\documentclass[border=2pt]{standalone}\n"
         "\\usepackage{flaghybrid}\n\\begin{document}\n" + body + "\\end{document}\n"
     )
 

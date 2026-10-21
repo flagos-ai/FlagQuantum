@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import FrozenInstanceError, dataclass
 from pathlib import Path
 from typing import TypeAlias
@@ -118,65 +118,6 @@ def _requests(outputs: _Output | Sequence[_Output] | None) -> tuple[_Output, ...
     return values
 
 
-def _named_matrices(outputs: _Output | Sequence[_Output] | None) -> dict[str, object]:
-    matrices: dict[str, object] = {}
-    for index, request in enumerate(_requests(outputs)):
-        if request.kind != "expectation":
-            raise CapabilityError("Lindblad outputs support only expectations")
-        name = request.name or f"expectation_{index}"
-        if name in matrices:
-            raise EvolutionValidationError(
-                "duplicate_output_name", "output names must be unique", field="outputs"
-            )
-        matrices[name] = (
-            request.observable.clone()
-            if isinstance(request.observable, torch.Tensor)
-            else request.observable
-        )
-    return matrices
-
-
-def _plan_fake(
-    hamiltonian: object,
-    initial_state: object,
-    times: object,
-    *,
-    outputs: _Output | Sequence[_Output] | None = None,
-    options: fq.ExecutionOptions | None = None,
-    dimensions: Sequence[int] | None = None,
-    basis_labels: Sequence[Sequence[int | str]] | None = None,
-    parameter_values: Sequence[Mapping[str | fq.Parameter, object]] | None = None,
-    n_qubits: int | None = None,
-    collapse_operators: Sequence[object] | None = None,
-    method: str = "runge-kutta",
-    return_density_matrices: bool = False,
-) -> fql.LindbladPlan:
-    matrices = _named_matrices(outputs)
-    device, dtype, batch, gradients = fql._execution_settings(options)
-    qubits = (
-        fql._infer_n_qubits(initial_state)
-        if n_qubits is None and dimensions is None and basis_labels is None
-        else n_qubits
-    )
-    return build_lindblad_plan(
-        hamiltonian,
-        initial_state,
-        qubits,
-        times,
-        collapse_operators,
-        matrices,
-        device=device,
-        dtype=dtype,
-        batch_size=batch,
-        require_gradients=gradients,
-        dimensions=dimensions,
-        basis_labels=basis_labels,
-        parameter_values=parameter_values,
-        method=method,
-        return_density_matrices=return_density_matrices,
-    )
-
-
 def _lower_fake(
     outputs: _Output | Sequence[_Output] | None,
     *,
@@ -210,8 +151,11 @@ def expectation_factory() -> Callable[..., _Output]:
 
 
 @pytest.fixture
-def plan_factory() -> Callable[..., fql.LindbladPlan]:
-    return _plan_fake
+def plan_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., fql.LindbladPlan]:
+    # Only the Core producer is still a fake. Exercise the real public planner;
+    # retain its concrete request check without broadening the production API.
+    monkeypatch.setattr(fql, "OutputRequest", (OutputRequest, _OutputFake))
+    return fql.plan
 
 
 @pytest.fixture

@@ -102,6 +102,21 @@ These examples do not use that alias:
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
 
+## Lindblad output names
+
+Run `python -m examples.lindblad_output_names` to retrieve two named expectation
+trajectories and see an explicit/generated name collision refused with
+`duplicate_output_name`. Expected output:
+
+```text
+Polarization: 1.0
+X expectation: 0.0
+Collision refused: duplicate_output_name
+```
+
+This uses the existing public Pauli output requests. Full-space matrix request
+construction remains pending the approved Core implementation.
+
 ## Static finite-mode training
 
 Run `python -m examples.train_boson_coupling` to fit a static exchange coupling

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 from .hybrid_drawer import draw_hybrid
+from .hybrid_layers import ClassicalLayer
 from .ir_adapter import DrawableCircuit, to_drawable_circuit
 from .latex_drawer import draw_latex
 from .latex_figure import LatexFigure
@@ -83,6 +84,7 @@ __all__ = [
     "LatexFigure",
     "draw_latex",
     "draw_hybrid",
+    "ClassicalLayer",
 ]
 
 if _has_mpl:
