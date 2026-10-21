@@ -68,9 +68,24 @@ captured on 2026-09-30, is:
 
 | Status | Rows |
 | --- | ---: |
-| `supported` | 10 |
-| `partial` | 60 |
+| `supported` | 11 |
+| `partial` | 59 |
 | `unsupported` | 25 |
+
+`super_operator_algebra` moved from `partial` to `supported` in wave 7, and it is
+the first move in this document that changed nothing but the traceability of the
+claim. Its reason named two clauses for staying `partial`: that CUDA-Q exposes
+neither `matrix_in_basis` nor local application of a map to a subsystem, and that
+no registry entry covered the algebra itself because its only `maturity_ref` was
+the Lindblad route that consumes it. The row denies the first clause in its own
+words -- an operation the baseline lacks is additive scope, not a way in which this
+implementation covers less -- and the second was simply true until
+`capability-maturity.toml` gained a `superoperator_algebra` entry with its own
+owner, its own focused suite, the Pauli-twirl integration test that reads
+`matrix_in_basis`, and a limitations field that states the entry points and the
+dense ceiling. That entry is `production_supported`, which is a claim about this
+capability's evidence and is printed beside the row rather than derived from the
+row's status; the Lindblad entry keeps its own two rows and its own level.
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
