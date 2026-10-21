@@ -456,7 +456,11 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
     assert len(steps) == 2
     for step in steps:
         command = str(step.get("run", ""))
-        for token in ("-n 2", "--dist=worksteal", "--durations=50"):
+        for token in (
+            "-n ${{ env.FQ_PYTEST_WORKERS }}",
+            "--dist=worksteal",
+            "--durations=50",
+        ):
             assert token in command
         for token in (
             "-p tools.pytest_shard",

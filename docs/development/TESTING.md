@@ -593,7 +593,8 @@ distributed CPU, coverage and dependency-bound jobs use the A100 CPU pool;
 fork pull requests use GitHub-hosted Ubuntu. The manual source-hygiene job
 also uses A100, while the short PR hygiene job retains its hosted budget. See
 [A100 runner operation](A100_RUNNERS.md) for pool isolation and validation.
-Coverage uses two work-stealing workers on both A100 and hosted runners.
+Coverage uses the measured CPU/memory budget for work-stealing workers
+(four on the verified A100 slots, at most two on hosted runners).
 Other measured CPU jobs retain resource and timing reports. The distributed
 CPU selector clears inherited platform rank variables before running and uses
 a separate budget for launchers that may spawn eight ranks; an explicit

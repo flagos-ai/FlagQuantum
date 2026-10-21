@@ -1346,7 +1346,7 @@ jobs:
         # instrumented minutes here; manual full validation measures them below.
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
-          -n 2 --dist=worksteal --durations=50
+          -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
           -p tools.pytest_shard
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
@@ -1355,7 +1355,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
-          -n 2 --dist=worksteal --durations=50
+          -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
           -p tools.pytest_shard
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
