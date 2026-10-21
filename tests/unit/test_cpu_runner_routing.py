@@ -16,7 +16,10 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
     routed = [
         job
         for job in document["jobs"].values()
-        if "'flagquantum-a100-cpu'" in str(job.get("runs-on", ""))
+        if any(
+            label in str(job.get("runs-on", ""))
+            for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+        )
     ]
     assert routed, "The policy must discover at least one CPU-pool job"
     expected = (
@@ -25,7 +28,10 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
         "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
     )
     for job in routed:
-        assert job["runs-on"] == expected
+        assert job["runs-on"] in (
+            expected,
+            expected.replace("flagquantum-a100-cpu", "flagquantum-cpu-general"),
+        )
         steps = job["steps"]
         for index, step in enumerate(steps):
             if str(step.get("uses", "")).startswith("actions/setup-python@"):
@@ -57,7 +63,10 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
     for workflow in ("ci.yml", "pre-commit.yaml"):
         jobs = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"]
         for name, job in jobs.items():
-            if "'flagquantum-a100-cpu'" not in str(job.get("runs-on", "")):
+            if not any(
+                label in str(job.get("runs-on", ""))
+                for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+            ):
                 continue
             selector = (
                 "${{ (github.event_name != 'pull_request' || "
@@ -111,3 +120,36 @@ def test_dependency_matrix_separates_cpu_wheels_from_ordinary_dependencies() -> 
     assert steps[installation]["with"]["torch-spec"] == "${{ matrix.torch }}"
     assert "--upgrade pip" in steps[installation - 1]["run"]
     assert len(jobs["dependency-bounds"]["strategy"]["matrix"]["include"]) == 7
+
+
+def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    portable = {
+        "jax-optional",
+        "azure-optional",
+        "triton-optional",
+        "qiskit-optional",
+        "cirq-optional",
+        "braket-optional",
+        "cudaq-optional",
+        "pennylane-optional",
+        "dependency-bounds",
+        "distributed-cpu",
+        "coverage-shard",
+        "supply-chain",
+        "cpu-core-3-12",
+        "ci-complete",
+    }
+    for name in portable:
+        job = jobs[name]
+        assert "'flagquantum-cpu-general'" in job["runs-on"], name
+        assert "flagquantum-a100-cpu" not in job["runs-on"], name
+        assert not any(
+            str(step.get("uses", "")).startswith("actions/checkout@")
+            for step in job["steps"]
+        ), f"{name} must not need A800's unavailable HTTPS checkout"
+    assert "'flagquantum-a100-cpu'" in jobs["quality"]["runs-on"]
+    assert any(
+        step.get("with", {}).get("fetch-depth") == 0
+        for step in jobs["quality"]["steps"]
+    ), "Evidence provenance still needs full Git history"

@@ -5,21 +5,41 @@ The dedicated A100 node serves this repository with sixteen CPU runners named
 `fq-a100-gpu08`. The CPU pool has the `flagquantum-a100-cpu` label. The GPU runner
 has `gpu`, `flagquantum-local`, `flagquantum-a100`, and `a100-8gpu` labels.
 
-CPU coverage, quality, optional-dependency and pre-commit jobs use the A100 pool
-for pushes and same-repository pull requests, with GitHub-hosted fallback for fork
-pull requests. The existing A800 CPU compatibility, smoke/unit and runtime jobs
-retain their own source-artifact transport and runner configuration. macOS, Windows,
-Linux wheel-container builds, and container publishing retain their existing
-runners. Existing required check names and hosted-fallback capacity buckets are
-unchanged.
+Portable CPU coverage, optional-dependency, distributed CPU, dependency-bound
+and supply-chain checks use `flagquantum-cpu-general`, registered on all sixteen
+A100 and eight A800 CPU runners. GitHub can assign the same PR's ready jobs to
+both hosts' pools without an A100-only backlog while A800 slots are idle. Each
+job restores the producer's digest-verified source artifact and checks its exact
+commit, including when only failed jobs are rerun. This avoids A800's unreliable
+HTTPS Git route without adding checkout credentials. Source restoration clears
+sparse checkout state, dirty files and files left by preceding jobs.
 
-Trusted A100 CPU jobs use a distinct concurrency group for each workflow run,
-job and matrix index. The sixteen provisioned runners bound parallelism;
-`light-a/b/c` buckets apply only to hosted fallback. Self-hosted matrices have
-no `max-parallel` cap, and dedicated A800 CPU jobs have no job-level capacity
-lock. Device locks remain for jobs that use the same physical GPUs. In particular, the seven
-dependency-bound matrix legs can run together instead of queuing behind one
-another while CPU runners are idle.
+Quality checks need full Git history for evidence provenance and retain the A100
+pool's existing authenticated Git transport. Manual pre-commit and coverage
+aggregation also retain that pool. A800 CPU compatibility, smoke/unit and runtime
+jobs retain their dedicated label, source transport and configuration. macOS,
+Windows, Linux wheel-container builds and container publishing retain their
+existing runners. Fork pull requests use GitHub-hosted fallback.
+
+Every self-hosted CPU job uses a distinct concurrency group for each workflow
+run, job and matrix index. Physical runner availability bounds parallelism; there
+is no self-hosted matrix `max-parallel` or shared capacity lock. The historical
+`a100-cpu` group prefix also covers portable jobs and imposes no pool limit.
+Sixteen scoped concurrency buckets continue to bound GitHub-hosted Ubuntu
+fallback jobs. Physical GPU device locks remain independent of CPU scheduling.
+
+To deploy this routing, add the general label without replacing existing labels:
+
+```bash
+for id in $(gh api 'repos/flagos-ai/FlagQuantum/actions/runners?per_page=100' \
+  --jq '.runners[] | select(any(.labels[]; .name == "flagquantum-cpu" or .name == "flagquantum-a100-cpu")) | .id'); do
+  gh api --method POST "repos/flagos-ai/FlagQuantum/actions/runners/$id/labels" \
+    -f 'labels[]=flagquantum-cpu-general'
+done
+```
+
+Only CPU registrations receive this label. Keep A100 validation slot labels and
+A800 dedicated labels: those jobs depend on their original host environments.
 
 ## Validate the deployed pool
 
