@@ -127,7 +127,7 @@ margins (182.9 mm overall). Text uses 7 pt Helvetica-compatible Nimbus Sans via
 standard TeX fonts. Mathematical notation retains its normal smaller scripts.
 This is a design reference, not journal endorsement or guaranteed acceptance.
 
-quantum_view="auto" integrates at most eight instructions on at most four wires
+quantum_view="auto" integrates at most eight instructions on at most four qubits
 at natural size. Larger circuits use a unitary summary and ordered detail panels.
 "detail" forces panels; "overview" omits them. gates_per_panel controls the
 instruction count (default eight). TeX measures each panel: two panels share a

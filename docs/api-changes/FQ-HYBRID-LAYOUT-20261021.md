@@ -97,7 +97,7 @@ The default becomes a horizontal sequence of schematic tensor glyphs, actual
 quantum gates when short enough, declared readout and classical output. Glyphs
 are schematic; numeric shape labels remain authoritative. Avoid nested cards,
 redundant stage titles and large empty continuation panels. Auto inlines up to
-eight instructions on at most four wires at natural 7 pt size. Detail forces
+eight instructions on at most four qubits at natural 7 pt size. Detail forces
 continuation panels; compact panels share rows when their measured widths fit.
 Overview retains a unitary summary. All modes retain exact IR validation and
 terminal readout annotations; panels continue the same registers. Rendering
@@ -110,4 +110,4 @@ The earlier 166 mm guard and associated layout dimensions are superseded.
 Long classical chains may need explicit summary labels rather than every
 intermediate tensor; the drawer must never invent encoder mathematics.
 The default install still exports source without a compiler; rendering uses
-standard local TeX fonts. No new Python dependencies or licensed source edits.
+standard local TeX fonts. No new Python dependencies or upstream source/license edits.

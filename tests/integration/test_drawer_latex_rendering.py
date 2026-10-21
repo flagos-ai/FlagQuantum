@@ -159,3 +159,22 @@ def test_tensor_matrix_and_large_vectors_keep_declared_counts() -> None:
     )
     assert "6 values" in figure.source and r"\vdots" in figure.source
     assert figure.render().startswith(b"%PDF-")
+
+
+def test_large_image_shapes_wrap_without_reducing_type_size() -> None:
+    if not shutil.which("tectonic") or not shutil.which("pdftoppm"):
+        pytest.skip("Real rendering requires Tectonic and Poppler")
+    figure = draw_hybrid(
+        fq.Circuit(3).ry(0, fq.Parameter("theta_0")),
+        encoder=[
+            ClassicalLayer("Conv+Tanh", (3, 224, 224), (64, 224, 224), True),
+            ClassicalLayer("Global pool", (64, 224, 224), (64, 1, 1)),
+            ClassicalLayer("Flatten", (64, 1, 1), (64,)),
+            ClassicalLayer("Linear", (64,), (3,), True),
+        ],
+        head=[ClassicalLayer("Linear", (3,), (2,), True)],
+        readout="Z expectations",
+        readout_features=3,
+    )
+    width, height = struct.unpack(">II", figure.render("png")[16:24])
+    assert width <= 1153 and height <= 300

@@ -14,7 +14,7 @@ _CANVAS_MM = 181.5
 
 
 def _shape_tex(shape: tuple[int, ...]) -> str:
-    return r"\,$\times$\,".join(str(n) for n in shape)
+    return r"\,$\times$\,\allowbreak{}".join(str(n) for n in shape)
 
 
 def _label_tex(label: str) -> str:
@@ -72,7 +72,7 @@ def _stage_tex(
     if not layers:
         description = "unspecified " + unit if count is None else f"{count} {unit}"
         return (
-            r"\begin{tikzpicture}[baseline=0mm,font={" + _FONT + r"}]"
+            r"\begin{tikzpicture}[anchor=center,baseline=0mm,font={" + _FONT + r"}]"
             r"\node[draw=black!65,line width=.5pt,fill=white,text width=22mm,"
             r"minimum height=8mm,align=center,inner sep=3pt] {"
             + _label_tex(label)
@@ -86,7 +86,11 @@ def _stage_tex(
     ]
     if include_input:
         tensors.insert(0, ("Input", layers[0].input_shape, False))
-    lines = [r"\begin{tikzpicture}[baseline=0mm,x=1mm,y=1mm,font={" + _FONT + r"}]"]
+    lines = [
+        r"\begin{tikzpicture}[anchor=center,baseline=0mm,x=1mm,y=1mm,font={"
+        + _FONT
+        + r"}]"
+    ]
     for i, (title, shape, learned) in enumerate(tensors):
         x = i * 15.5
         lines += [
@@ -95,7 +99,7 @@ def _stage_tex(
             + _label_tex(title)
             + (r"\textsuperscript{*}" if learned else "")
             + "};",
-            rf"\node[anchor=north,inner sep=0] at ({x:g},-6) {{"
+            rf"\node[anchor=north,inner sep=0,text width=14mm,align=center] at ({x:g},-6) {{"
             + _shape_tex(shape)
             + "};",
         ]
@@ -110,9 +114,9 @@ def _quantum_tex(ir: CircuitIR, inline: bool) -> str:
     if inline:
         content = r"\begin{yquant}" + _circuit_body(ir) + r"\end{yquant}"
     else:
-        content = r"\path[use as bounding box] (-1.4,-.4) rectangle (1.4,.4);\draw[draw=fhInk,line width=.5pt] (-1.4,0)--(-.75,0) (.75,0)--(1.4,0);\node[draw=fhQuantum,fill=fhQuantum!9,line width=.6pt,minimum width=15mm,minimum height=8mm] at (0,0) {$U$};"
+        content = r"\path[use as bounding box] (-1.4,-.4) rectangle (1.4,.4);\draw[draw=fhInk,line width=.5pt] (-1.4,0)--(-.75,0) (.75,0)--(1.4,0);\node[draw=fhQuantum,fill=fhQuantum!9,line width=.6pt,minimum width=15mm,minimum height=8mm,anchor=center] at (0,0) {$U$};"
     return (
-        r"\begin{tikzpicture}[baseline=(current bounding box.center),font={"
+        r"\begin{tikzpicture}[anchor=center,baseline=(current bounding box.center),font={"
         + _FONT
         + r"}]"
         + content
@@ -122,7 +126,11 @@ def _quantum_tex(ir: CircuitIR, inline: bool) -> str:
 
 def _readout_tex(label: str | None, count: int | None) -> str:
     text = "Readout unspecified" if label is None else _escape_text(label)
-    lines = [r"\begin{tikzpicture}[baseline=0mm,x=1mm,y=1mm,font={" + _FONT + "}]"]
+    lines = [
+        r"\begin{tikzpicture}[anchor=center,baseline=0mm,x=1mm,y=1mm,font={"
+        + _FONT
+        + "}]"
+    ]
     if count is not None:
         lines.append(_tensor_tex((count,), 0, "readout"))
     else:
@@ -165,7 +173,7 @@ def _architecture(
         r"\node[anchor=base west,inner sep=0,outer sep=0] (head) at ([xshift=5mm]readout.base east) {"
         + head
         + "};",
-        r"\node[anchor=north,inner sep=0] at ([yshift=-3mm]quantum.south) {"
+        r"\node[anchor=north,inner sep=0] (quantum-size) at ([yshift=-3mm]quantum.south) {"
         + quantum_size
         + "};",
         r"\fhConnect{encoder.base east}{quantum.base west}{$x$}",
@@ -220,8 +228,9 @@ def _architecture(
                     r"\node[fh/label,anchor=north east,yshift=-1mm] at (headfeedback |- optimizer.east) {head update};",
                 ]
             else:
+                target = "quantum-size" if name == "quantum" else name
                 lines.append(
-                    rf"\draw[fh/data,fh/feedback,line width=.5pt] ({name}.south |- updates) -- node[fh/label,midway,right]{{{name} update}} ({name}.south);"
+                    rf"\draw[fh/data,fh/feedback,line width=.5pt] ({name}.south |- updates) -- node[fh/label,midway,right]{{{name} update}} ({target}.south);"
                 )
     return "\n".join([*lines, r"\end{fhdiagram}"])
 
@@ -261,7 +270,7 @@ def _circuit_grid(ir: CircuitIR, panel_size: int) -> str:
         )
         title = f"gates {start+1}--{end}" if end else "no gates"
         picture = (
-            r"\begin{tikzpicture}[font={"
+            r"\begin{tikzpicture}[anchor=center,font={"
             + _FONT
             + r"}]\begin{yquant}"
             + _circuit_body(panel)

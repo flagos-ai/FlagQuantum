@@ -222,3 +222,23 @@ changes; the owned style adds standard TeX font loading and private box storage.
 The layout implementation has one private module, keeping validation separate
 from the tensor/circuit composition. The Notebook labels operations concisely
 (Conv 3x3 and Avg. pool), with actual PyTorch shapes still checked independently.
+
+Final visual fixes isolate nested TikZ anchors from the containing stage node,
+center the U summary and connect its lines continuously. Optional quantum
+feedback terminates below the complete stage metadata, avoiding a line through
+the qubit/gate count. Long numeric shapes wrap within their tensor column; a
+224 x 224 RGB input with 64 output channels is a real-rendering regression case.
+The main forward figure remains a single compact row with the exact circuit.
+
+The current pr-default selection is fully covered across the initial run and
+its corrected suffix: **14,172 passed, 165 skipped**. The first run passed 5,353
+cases and skipped 58 before the vocabulary ledger rejected the new docstring's
+word `wires`. The docstring now uses canonical `qubits`; the unchanged 60-case
+vocabulary module passes. A fresh collection verifies the completed prefix
+(accounting for 48 collection-time skips) and the exact remaining 8,926 node IDs.
+The entire suffix passes: 8,819 passed, 107 skipped, 424.44 seconds. No exemption,
+contract, test assertion or marker selection is changed to accommodate the
+renderer. This is selection coverage after a correction, not one uninterrupted
+green invocation. Subsequent fixes only change private TeX anchor/annotation
+placement; the complete focused selection is rerun on those fixes, followed by
+the integration tier on the final source tree. Numerical/Core code is untouched.
