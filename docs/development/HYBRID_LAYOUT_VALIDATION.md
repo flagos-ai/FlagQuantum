@@ -242,3 +242,42 @@ renderer. This is selection coverage after a correction, not one uninterrupted
 green invocation. Subsequent fixes only change private TeX anchor/annotation
 placement; the complete focused selection is rerun on those fixes, followed by
 the integration tier on the final source tree. Numerical/Core code is untouched.
+
+
+### Final journal-figure evidence
+
+Final PDFs are 182.90 mm wide. Main CNN detail is 31.18 mm high; the optional
+frozen training view is 42.67 mm; the four-panel example is 82.62 mm. All are
+single-page vector PDFs with zero raster image objects. Text bounds lie inside
+the page; Nimbus Sans regular/bold is embedded, with CM mathematical symbols.
+The main figure is checked in grayscale and in an actual 183 mm article figure.
+For the four circuit panels, extracted coordinates verify paired headings on
+the same baseline and six qubit labels in each column. All final color PNGs are
+visually inspected. No nested cards, isolated short-circuit panel, rotated update
+labels or compiler font substitutions remain in the main example.
+
+The complete pr-runtime invocation on tree
+`a7de18e1e414bd6bb1645f4ecd14361d9f154be5` passes: **1,726 passed, 123 skipped**,
+229.28 seconds. Later polishing is limited to singular/plural labels, a minimum
+quantum-heading width and font selection isolation. The final focused selection
+has **172 passed**: 112 drawer/legacy/dependency/example cases and the unchanged
+60-case vocabulary module. It includes 11 real compiler/converter cases covering
+compact eight-gate composition, paired/stacked continuation, large tensor-label
+wrapping, over-width/height failure and preservation of the paper's font default.
+No numerical/Core source changes accompany those presentation corrections.
+
+The complete pre-commit suite passes, including whole-package/tooling strict
+mypy, Ruff, Black, English content, architecture, links, source hygiene and the
+protected API baseline. Production mypy covers 777 files. The hybrid validation,
+layer and layout modules have 100% statement/branch coverage (198 statements,
+94 branches); the final coverage selection is rerun after the last font-isolation
+test. These are scoped coverage figures, not a whole-repository coverage claim.
+
+Wheel and sdist build. Outside the checkout, the installed wheel is compared
+byte-for-byte against five drawer Python files and the owned TeX style. It renders
+the forward, frozen and continuation views, checks the large-image labels,
+verifies the sdist contains the private layout module and exports the complete
+licensed project. Font selection is local NFSS selection, not a global helvet
+package override; an executable preamble regression checks the enclosing paper's
+sans-serif default is preserved. Upstream yquant/PlotNeuralNet source and license
+bytes remain unchanged. No protected snapshot is regenerated.

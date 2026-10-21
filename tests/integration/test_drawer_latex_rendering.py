@@ -11,7 +11,7 @@ import pytest
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
-from flagquantum.drawer import ClassicalLayer, draw_hybrid, draw_latex
+from flagquantum.drawer import ClassicalLayer, LatexFigure, draw_hybrid, draw_latex
 
 pytestmark = pytest.mark.integration
 
@@ -178,3 +178,17 @@ def test_large_image_shapes_wrap_without_reducing_type_size() -> None:
     )
     width, height = struct.unpack(">II", figure.render("png")[16:24])
     assert width <= 1153 and height <= 300
+
+
+def test_figure_package_preserves_the_papers_sans_serif_default() -> None:
+    if not shutil.which("tectonic"):
+        pytest.skip("Preamble isolation requires Tectonic")
+    source = r"""\documentclass{standalone}
+\let\beforeFigureFamily\sfdefault
+\usepackage{flaghybrid}
+\ifx\beforeFigureFamily\sfdefault\else
+\PackageError{figure-test}{The diagram package changed the paper font}{Keep font selection local.}
+\fi
+\begin{document}\sffamily Preserved document font\end{document}
+"""
+    assert LatexFigure(source).render().startswith(b"%PDF-")

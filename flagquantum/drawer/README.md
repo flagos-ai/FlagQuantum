@@ -178,5 +178,6 @@ Use Matplotlib's Agg backend for headless tests and close caller-owned figures.
 The private `_hybrid_layout.py` owns tensor glyphs, aligned stage geometry,
 measured circuit rows and font/width handling. `hybrid_drawer.py` owns input
 validation and composes that renderer. The owned flaghybrid.sty supplies separate
-TeX box registers and a standard Helvetica-compatible font dependency; upstream
+TeX box registers. Font selection stays local to the generated hybrid figure,
+preserving the enclosing paper's sans-serif default; upstream
 yquant/PlotNeuralNet sources and licenses remain unmodified.

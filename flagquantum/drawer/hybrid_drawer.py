@@ -176,7 +176,8 @@ def draw_hybrid(
         ),
         quantum,
         _readout_tex(readout, readout_features),
-        f"{ir.n_wires} qubits / {len(ir.instructions)} gates",
+        f"{ir.n_wires} {'qubit' if ir.n_wires == 1 else 'qubits'} / "
+        f"{len(ir.instructions)} {'gate' if len(ir.instructions) == 1 else 'gates'}",
         training,
         trainable,
         readout is not None,

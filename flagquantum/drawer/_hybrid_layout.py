@@ -164,7 +164,7 @@ def _architecture(
         + _FONT
         + r"}}]",
         r"\node[anchor=base,inner sep=0,outer sep=0] (encoder) {" + encoder + "};",
-        r"\node[anchor=base west,inner sep=0,outer sep=0] (quantum) at ([xshift=5mm]encoder.base east) {"
+        r"\node[anchor=base west,inner sep=0,outer sep=0,minimum width=28mm] (quantum) at ([xshift=5mm]encoder.base east) {"
         + quantum
         + "};",
         r"\node[anchor=base west,inner sep=0,outer sep=0] (readout) at ([xshift=5mm]quantum.base east) {"
