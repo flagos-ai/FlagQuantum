@@ -131,7 +131,6 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
         "qiskit-optional",
         "cirq-optional",
         "braket-optional",
-        "cudaq-optional",
         "pennylane-optional",
         "dependency-bounds",
         "distributed-cpu",
@@ -148,6 +147,8 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
             str(step.get("uses", "")).startswith("actions/checkout@")
             for step in job["steps"]
         ), f"{name} must not need A800's unavailable HTTPS checkout"
+    # CUDA-Q stays hosted because cold SDK downloads time out on the shared pool.
+    assert jobs["cudaq-optional"]["runs-on"] == "ubuntu-latest"
     assert "'flagquantum-a100-cpu'" in jobs["quality"]["runs-on"]
     assert any(
         step.get("with", {}).get("fetch-depth") == 0

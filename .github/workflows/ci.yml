@@ -1023,9 +1023,11 @@ jobs:
 
   cudaq-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    # Cold SDK downloads are network-bound on the self-hosted CPU pool.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cudaq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"
@@ -1058,36 +1060,44 @@ jobs:
       - uses: ./.github/actions/isolated-python
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Select the private CUDA-Q wheel directory
+        run: echo "FQ_CUDAQ_WHEEL_DIRECTORY=$RUNNER_TEMP/cudaq-cu13-wheels" >> "$GITHUB_ENV"
+      - name: Restore complete certified CUDA-Q wheel cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.FQ_CUDAQ_WHEEL_DIRECTORY }}
+          key: cudaq-wheels-v1-${{ runner.os }}-${{ runner.arch }}-py312-cu13-0.15.1-0.16.0.post1-${{ hashFiles('.github/actions/prepare-cudaq-wheels/action.yml') }}
+          restore-keys: |
+            cudaq-wheels-v1-${{ runner.os }}-${{ runner.arch }}-py312-cu13-0.15.1-0.16.0.post1-
+      - uses: ./.github/actions/prepare-cudaq-wheels
+        timeout-minutes: 10
       - name: Verify both certified CUDA-Q versions
         run: |
           set -euxo pipefail
           for version in ${OPTIONAL_VERSIONS}; do
-            cache=/opt/flagquantum-runners/tools/public-wheels
-            if [ "${FQ_RUNNER_KIND:-}" = cpu ] && [ -d "$cache" ]; then
-              if python -m pip install --no-index --no-deps --find-links "$cache" "cuda-quantum-cu12==${version}"; then
-                mapfile -t cached_dependencies < <(python - <<'PYTHON'
-          from importlib.metadata import requires
-          from packaging.requirements import Requirement
+            python -m pip install --upgrade --no-index \
+              --find-links "$FQ_CUDAQ_WHEEL_DIRECTORY" \
+              --constraint "$FQ_CUDAQ_WHEEL_DIRECTORY/cuda-variant.txt" \
+              "cudaq==${version}" "cuda-quantum-cu13==${version}"
+            CUDAQ_EXPECTED_VERSION="$version" python - <<'PYTHON'
+          import os
+          from importlib.metadata import PackageNotFoundError, version
 
-          cached_prefixes = (
-              "nvidia-", "custatevec-", "cutensornet-", "cudensitymat-", "cupy-"
-          )
-          for value in requires("cuda-quantum-cu12") or []:
-              requirement = Requirement(value)
-              if requirement.name.startswith(cached_prefixes) and (
-                  requirement.marker is None or requirement.marker.evaluate()
-              ):
-                  print(requirement)
+          expected = os.environ["CUDAQ_EXPECTED_VERSION"]
+          assert version("cudaq") == expected
+          assert version("cuda-quantum-cu13") == expected
+          for unwanted in ("cuda-quantum", "cuda-quantum-cu11", "cuda-quantum-cu12"):
+              try:
+                  installed = version(unwanted)
+              except PackageNotFoundError:
+                  continue
+              raise RuntimeError(f"Unexpected CUDA-Q binary: {unwanted} {installed}")
+          print(f"CUDA-Q {expected}: explicit cu13 distribution")
           PYTHON
-                )
-                if ! python -m pip install --no-index --no-deps --find-links "$cache" "${cached_dependencies[@]}"; then
-                  echo "CUDA-Q dependency cache incomplete; normal installation will resolve dependencies."
-                fi
-              fi
-            fi
-            python -m pip install --upgrade "cudaq==${version}"
+            python -m pip check
             python tools/check_cudaq_export_contract.py --verify-sdk
             python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
+            python -m examples.cudaq_bell_export
             python -c "import sys, flagquantum; assert not any(name == 'cudaq' or name.startswith('cudaq.') for name in sys.modules)"
           done
       - name: Retain resource limits and pytest timing reports

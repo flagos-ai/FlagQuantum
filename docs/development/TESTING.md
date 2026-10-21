@@ -529,7 +529,10 @@ The checked-in `ci.yml` defines twenty-three jobs:
   against the certified QDK 1.32.x line, with a fake workspace and target only —
   no credential, no workspace resource id, and no submission;
 - `cudaq-optional`: one-way kernel export and seeded statevector conformance
-  against CUDA-Q 0.15.1 and 0.16.0.post1 on Linux;
+  against CUDA-Q 0.15.1 and 0.16.0.post1 on GitHub-hosted Linux; dependency
+  preparation is capped at ten minutes and reuses validated complete cu13 wheel
+  caches across recipe revisions. Self-hosted cold downloads previously spent
+  over 27 minutes in dependency setup before timing out, without starting tests;
 - `qiskit-optional`: the machine-readable interoperability contract plus real
   Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional
   differential programs, and local Aer conformance on the certified Qiskit
