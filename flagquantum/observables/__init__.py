@@ -122,6 +122,7 @@ class OutputRequest:
                 operator = self.observable
                 if (
                     operator.layout != torch.strided
+                    or operator.is_nested
                     or operator.is_quantized
                     or operator.device.type == "meta"
                     or operator.dtype == torch.bool

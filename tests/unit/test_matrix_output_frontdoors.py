@@ -137,7 +137,13 @@ assert not any(n == 'cudaq' or n.startswith('cudaq.') for n in sys.modules)
 
 def test_nonnumeric_bit_storage_is_not_an_expectation_matrix() -> None:
     with pytest.raises(TypeError, match="numeric"):
-        fq.expectation(torch.empty((2, 2), dtype=torch.bits8))
+        fq.expectation(torch.zeros((2, 2), dtype=torch.uint8).view(torch.bits8))
+
+
+def test_ragged_nested_storage_is_refused_without_inspecting_sizes() -> None:
+    matrix = torch.nested.nested_tensor([torch.ones(2), torch.ones(3)])
+    with pytest.raises(TypeError, match="ordinary numeric dense tensor"):
+        fq.expectation(matrix)
 
 
 @pytest.mark.parametrize(
