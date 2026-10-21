@@ -37,18 +37,7 @@ SCHEMA = "flagquantum_required_checks_v1"
 # The checks required on `main`, named as GitHub reports them. A job that merely
 # exists is not gated; a job that is gated must exist. Both halves are asserted
 # below.
-REQUIRED_CHECKS = frozenset(
-    {
-        "quality",
-        "cpu-core (3.10)",
-        "cpu-core (3.11)",
-        "cpu-core (3.12)",
-        "package",
-        "distributed-cpu",
-        "coverage",
-        "pre-commit",
-    }
-)
+REQUIRED_CHECKS = frozenset({"CI complete"})
 
 
 def _matrix_suffixes(matrix: object) -> list[str]:
@@ -175,8 +164,10 @@ def main() -> int:
     trigger = gpu.split("jobs:", 1)[0]
     events = yaml.safe_load(trigger)
     declared = events.get("on", events.get(True, {}))
-    if set(declared) != {"push", "pull_request", "workflow_dispatch"}:
-        raise SystemExit("GPU workflow must run on pushes, pull requests and dispatch")
+    if set(declared) != {"pull_request", "workflow_dispatch"}:
+        raise SystemExit(
+            "GPU workflow must run once per pull request or manual dispatch"
+        )
     print(
         f"validated {len(checks)} externally configured required checks "
         f"against {len(_produced_checks(root))} checks the workflows produce"

@@ -1,33 +1,17 @@
 name: CI
 
 on:
-  push:
-    # `develop` and the `refactor/flagquantum-vnext-architecture` integration branch
-    # were listed here as well. Neither has ever existed in this repository or in the
-    # private integration checkout, so those two entries could never fire. A `push`
-    # trigger that cannot run is worse than an absent one: it reads as coverage.
-    branches: [main]
   pull_request:
     branches: [main]
-  merge_group:
-    types: [checks_requested]
-    branches: [main]
+  workflow_dispatch:
 
 # flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
 # jobs, and this workflow fans out beyond the share one repository should hold.
 # Two constraints bound this repository's share of it.
 #
-# The block below cancels a superseded run of the same pull request, so a push to
-# a branch under review does not queue a second full matrix behind it, and it
-# deliberately does not cancel a superseded run of `main`. A pull request's older
-# tree is a tree nobody will merge, so its reading is replaceable. A revision of
-# `main` has already been merged, so cancelling its run leaves a merge commit that
-# no gate ever read, and nothing here reports the difference between that and a
-# passing revision: on 2026-10-08 the merges of #590 and #591 landed 17 seconds
-# apart and all 23 check runs attached to the first of them were `cancelled`,
-# `quality` among them (issue #579). A push run is therefore keyed to its own
-# commit and allowed to finish. The cost is a queued matrix per push to `main`
-# rather than a dropped one, and that is the trade this file makes knowingly.
+# PR pushes cancel that PR's superseded checks. Manual full validation is
+# independent per run. Main pushes use main-smoke.yml instead of repeating
+# the full PR matrix, and strict required checks protect the merge base.
 #
 # CPU smoke/unit and runtime suites retain the dedicated A800 CPU runners.
 # Other trusted Ubuntu checks use the A100 CPU pool, with hosted fork fallback.
@@ -41,11 +25,22 @@ on:
 # keeps only the newest waiting job and cancels the ones behind it, which would
 # report nothing at all for the job that was dropped.
 concurrency:
-  # Queue revisions have their own SHA; never cancel another integration tree.
-  group: flagquantum-ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || github.event.merge_group.head_sha || 'pr' }}
+  group: flagquantum-ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      queue: max
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/source-hygiene
+
   # Prepare source before fan-out so the first hosted slot also unlocks A800 jobs.
   prepare-source:
     outputs:
@@ -1222,7 +1217,7 @@ jobs:
         if: github.event_name == 'pull_request'
         # The two full P5 trajectory conformance tests already run in the
         # Python 3.12 cpu-core integration tier. Avoid repeating their 3+
-        # instrumented minutes here; pushes to main still measure them below.
+        # instrumented minutes here; manual full validation measures them below.
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
           -n 2 --dist=worksteal --durations=50
@@ -1332,6 +1327,7 @@ jobs:
   ci-complete:
     name: CI complete
     needs:
+      - pre-commit
       - prepare-source
       - quality
       - cpu-core
@@ -1359,7 +1355,7 @@ jobs:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-ci-complete-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
-      - name: Require every CI job to succeed before queue admission
+      - name: Require every CI job to succeed before merging
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |

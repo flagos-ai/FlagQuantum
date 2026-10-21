@@ -1,8 +1,6 @@
 name: Local GPU Gate
 
 on:
-  push:
-    branches: ['**']
   pull_request:
   workflow_dispatch:
     inputs:
@@ -10,6 +8,10 @@ on:
         description: Validate all sixteen CPU slots and the exclusive eight-GPU runner
         type: boolean
         default: false
+
+concurrency:
+  group: flagquantum-gpu-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
