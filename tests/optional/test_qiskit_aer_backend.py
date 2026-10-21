@@ -15,6 +15,11 @@ from flagquantum.ecosystem.extensions import (
     CapabilityRequest,
     ExtensionConfig,
     ExtensionRegistry,
+    discover_extensions,
+)
+from flagquantum.ecosystem.extensions.admission import (
+    admit_backend_extension,
+    withdraw_backend,
 )
 from flagquantum.ecosystem.qiskit import QiskitAerBackend, run
 from flagquantum.ecosystem.qiskit.research_provider import (
@@ -157,3 +162,38 @@ def test_unsupported_requests_fail_before_aer_execution() -> None:
     response = QiskitAerBackend().negotiate(CapabilityRequest(require_gradients=True))
     assert response.accepted is False
     assert response.blockers == ("Qiskit Aer bridge does not support gradients",)
+
+
+def test_the_declared_entry_point_serves_fq_run_and_agrees_with_the_builtin() -> None:
+    """The installed declaration is what admits, and Aer agrees with the default.
+
+    Every other test here reaches the plugin directly. This one starts from the
+    ``flagquantum.extensions`` group instead, which is the only path a third
+    party's simulator takes: discovery reads the installed metadata, admission
+    checks and starts what it found, and ``fq.run`` reaches it as an admitted
+    route rather than through the module-level bridge function. The statevector
+    it returns is then compared against a default ``fq.run``, because a route
+    that executes is not the same thing as a route that computes the right
+    answer, and the row that claims admission states both.
+    """
+
+    declared = discover_extensions("backend").entries
+    assert ("backend", "qiskit_aer") in declared, declared.keys()
+    handle, capabilities = admit_backend_extension(
+        declared[("backend", "qiskit_aer")],
+        config=ExtensionConfig({"seed": 13, "threads": 1}),
+    )
+    try:
+        circuit = (
+            fq.Circuit(3, dtype=torch.complex128).h(0).ry(1, 0.37).cx(0, 2).cz(2, 1)
+        )
+        result = fq.run(
+            circuit,
+            options=fq.ExecutionOptions(backend=capabilities.name, mode="statevector"),
+        )
+        reference = fq.run(circuit)
+        assert result.runtime["execution_path"] == "admitted_extension_backend"
+        assert torch.allclose(result.state, reference.state, rtol=1e-6, atol=1e-8)
+    finally:
+        handle.close()
+        withdraw_backend(capabilities.name)
