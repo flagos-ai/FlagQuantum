@@ -49,3 +49,29 @@ compile real PDFs for detailed CNN and long-circuit layouts, execute the Noteboo
 including actual shapes and gradients, render every final PDF page and inspect
 labels, routing, font sizes, margins and continuation semantics. Test source-only
 work without external tools and run repository quality/default/runtime gates.
+
+## Publication layout acceptance amendment
+
+The user clarified on 2026-10-21 that generated figures must be directly usable
+in papers; demonstration-quality output is insufficient. The existing PR's
+presentation is revised before merge, with no new public signature or root API.
+Owner: compiler/drawer; authorization: the user's explicit publication standard.
+
+The default hybrid figure targets a 170 mm two-column paper text area. Its
+content canvas is 166 mm wide with 2 pt export margins and 9 pt body/gate text.
+No global scaling or circuit inset is used. Auto and detail both separate the
+architecture (panel a) from the exact circuit (panel b and continuations), even
+for short circuits. Overview retains only panel a. An empty circuit is explicit.
+Demo titles, redundant state labels and color legends move out of the artwork;
+notation, omitted batch axes and continuation semantics belong in the caption.
+Trainability and unspecified data remain visible. Long circuit panels fail
+compilation with an actionable width diagnostic rather than silently shrinking
+text or producing an oversized figure; reduce gates_per_panel or use overview.
+
+Existing arguments retain their semantic meanings; auto's placement is a
+presentation change in this unmerged feature. Standard LaTeX drawing also gets
+2 pt crop margins. Default terminal text and Matplotlib behavior are unchanged.
+The Notebook must demonstrate final-size paper inclusion with a suitable caption.
+Acceptance requires rendered size/font and grayscale checks, not only successful
+compilation. This targets two-column-width figures; shrinking that asset to a
+single column is not a supported readability claim.
