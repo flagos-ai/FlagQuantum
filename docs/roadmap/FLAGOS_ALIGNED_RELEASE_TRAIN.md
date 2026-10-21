@@ -213,6 +213,14 @@ workflow, not circuit/GPU/QPU dense-output support or completion of all M2 gates
 Each implementation PR still requires its own merge authorization and complete
 applicable verification.
 
+The next bounded M2 acceptance composes these existing APIs across a three-level
+model and a spin-mode model. Run `python -m examples.shared_dynamics_workflow`
+for named matrix outputs, retained time/batch axes, PyTorch optimizer updates and
+detached numeric JSON replay. The [shared workflow review](../development/M2_SHARED_WORKFLOW_ACCEPTANCE.md)
+records its independent references and refusal/compatibility checks. This is a
+CPU workflow acceptance slice; domain-native motion and loss retain their M3
+contract and implementation gates.
+
 ### Reference scenarios
 
 | Scenario | Shared capability under test | Additional acceptance |

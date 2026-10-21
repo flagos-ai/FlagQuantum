@@ -127,6 +127,16 @@ Coupling derivative: 0.32210884
 Circuit matrix output: refused; use flagquantum.lindblad
 ```
 
+## Shared dynamics training and replay
+
+Run `python -m examples.shared_dynamics_workflow` to train a three-level and a
+spin-mode model with the same output requests, batch axes and PyTorch optimizer,
+then replay detached numeric plans. Each model prints axes `(51, 2)`, initial
+transfer `0.11757891`, coupling derivative `0.32210884`, `Loss decreased: True`
+and `Exact numeric replay: True`. See the
+[M2 workflow review](../docs/development/M2_SHARED_WORKFLOW_ACCEPTANCE.md) for
+physical references, supported scope and focused tests.
+
 ## Lindblad output names
 
 Run `python -m examples.lindblad_output_names` to retrieve two named expectation
