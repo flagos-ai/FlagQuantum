@@ -410,8 +410,13 @@ def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None
     assert package.qasm_version == 3.0
     assert package.shots == 256
     assert package.metadata["dynamic_circuit"] is True
+    assert package.metadata["program_ir_verified"] is True
     assert package.metadata["deployment_program_format"] == "openqasm-3"
     assert package.metadata["dynamic_backend_compatibility"]["compatible"] is True
+    assert (
+        package.metadata["dynamic_backend_compatibility"]["program_ir_verified"]
+        is True
+    )
     assert package.metadata["experiment"] == "bell-feedback"
 
     tampered = replace(package, qasm=package.qasm + "// tampered\n")
@@ -475,6 +480,34 @@ def test_dynamic_deployment_preflight_blocks_provider_submission() -> None:
     with pytest.raises(
         fqe.CapabilityError,
         match="conditional_gate_not_in_backend_basis:h",
+    ):
+        deploy_dynamic_circuit(circuit, RejectCalls(), backend=backend)
+
+
+def test_dynamic_deployment_requires_exact_program_ir_before_submission() -> None:
+    circuit = DynamicCircuit(2)
+    circuit.measure(0, classical_bit=0)
+    circuit.conditional(
+        "custom_feedback_gate",
+        1,
+        classical_bit=0,
+        matrix=torch.eye(2, dtype=torch.complex64),
+    )
+    backend = _dynamic_backend()
+    report = fq.experimental.dynamic.assess_dynamic_backend(circuit, backend)
+
+    assert report.program_ir_verified is False
+    assert report.blockers == (
+        "dynamic_program_ir_lowering_failed:program.opcode_unknown",
+    )
+
+    class RejectCalls:
+        def run(self, _package: object) -> None:
+            raise AssertionError("an unverified program must not reach the provider")
+
+    with pytest.raises(
+        fqe.CapabilityError,
+        match="dynamic_program_ir_lowering_failed:program.opcode_unknown",
     ):
         deploy_dynamic_circuit(circuit, RejectCalls(), backend=backend)
 

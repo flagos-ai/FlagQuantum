@@ -4,6 +4,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from ...core.ir.levels import (
+    SUPPORTED_EXACT,
+    circuit_to_program,
+    program_to_circuit,
+)
 from ...deployment.cloud import DeploymentPackage
 from ...deployment.routing_evidence import (
     DEPLOYMENT_PACKAGE_SCHEMA,
@@ -24,6 +29,7 @@ class DynamicBackendCompatibility:
     compatible: bool
     required_classical_bits: int
     blockers: tuple[str, ...]
+    program_ir_verified: bool = False
     qasm_version: float = 3.0
     dynamic_dialect: str = "openqasm3"
 
@@ -33,14 +39,35 @@ class DynamicBackendCompatibility:
             "required_classical_bits": self.required_classical_bits,
             "qasm_version": self.qasm_version,
             "dynamic_dialect": self.dynamic_dialect,
+            "program_ir_verified": self.program_ir_verified,
             "blockers": self.blockers,
         }
+
+
+def _dynamic_program_ir_blockers(circuit: DynamicCircuit) -> tuple[str, ...]:
+    """Return typed blockers unless the dynamic IR lowers and restores exactly."""
+
+    lowered = circuit_to_program(circuit.to_ir())
+    if lowered.state != SUPPORTED_EXACT or lowered.record is None:
+        codes = tuple(diagnostic.code for diagnostic in lowered.diagnostics)
+        return tuple(
+            f"dynamic_program_ir_lowering_failed:{code}" for code in codes
+        ) or ("dynamic_program_ir_lowering_failed:missing_record",)
+    restored = program_to_circuit(lowered.record)
+    if restored.state != SUPPORTED_EXACT:
+        codes = tuple(diagnostic.code for diagnostic in restored.diagnostics)
+        return tuple(
+            f"dynamic_program_ir_round_trip_failed:{code}" for code in codes
+        ) or ("dynamic_program_ir_round_trip_failed:missing_diagnostic",)
+    return ()
 
 
 def assess_dynamic_backend(
     circuit: DynamicCircuit, backend: Any
 ) -> DynamicBackendCompatibility:
     blockers = []
+    program_ir_blockers = _dynamic_program_ir_blockers(circuit)
+    blockers.extend(program_ir_blockers)
     raw_capacity = getattr(backend, "n_qubits", None)
     if raw_capacity is None:
         raw_capacity = getattr(backend, "n_wires", 0)
@@ -75,6 +102,7 @@ def assess_dynamic_backend(
         compatible=not blockers,
         required_classical_bits=required,
         blockers=tuple(dict.fromkeys(blockers)),
+        program_ir_verified=not program_ir_blockers,
         dynamic_dialect=dialect,
     )
 
@@ -162,6 +190,7 @@ def create_dynamic_deployment_package(
         "source": "flagquantum",
         "compiled": backend.coupling_map is not None,
         "dynamic_circuit": True,
+        "program_ir_verified": compatibility.program_ir_verified,
         "dynamic_execution_semantics": "provider_mid_circuit_measurement",
         "dynamic_dialect": compatibility.dynamic_dialect,
         "mid_circuit_measurements_returned": (
