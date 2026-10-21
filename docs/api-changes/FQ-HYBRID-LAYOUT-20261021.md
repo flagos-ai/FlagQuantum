@@ -75,3 +75,39 @@ The Notebook must demonstrate final-size paper inclusion with a suitable caption
 Acceptance requires rendered size/font and grayscale checks, not only successful
 compilation. This targets two-column-width figures; shrinking that asset to a
 single column is not a supported readability claim.
+
+
+## Journal-style composition revision
+
+The user rejected the framed flowchart aesthetic and explicitly requested a
+Nature/Science-style figure on 2026-10-21. This supersedes the preceding visual
+acceptance amendment; it does not change public signatures, validation or model
+semantics. Owner: compiler/drawer. The prior 170 mm/9 pt nested-card rendering
+met mechanical checks but failed the user's visual quality requirement.
+
+Use Nature's official research figure guide as a measurable reference, not as a
+claim of journal endorsement: 183 mm double-column width, compact arrangements,
+standard sans-serif type, 5-7 pt labels, editable vector output, black text and
+accessible colors. Source:
+https://research-figure-guide.nature.com/figures/building-and-exporting-figure-panels/
+Science's current author page could not be retrieved (HTTP 403); no unverified
+Science-specific measurements are asserted.
+
+The default becomes a horizontal sequence of schematic tensor glyphs, actual
+quantum gates when short enough, declared readout and classical output. Glyphs
+are schematic; numeric shape labels remain authoritative. Avoid nested cards,
+redundant stage titles and large empty continuation panels. Auto inlines up to
+eight instructions on at most four wires at natural 7 pt size. Detail forces
+continuation panels; compact panels share rows when their measured widths fit.
+Overview retains a unitary summary. All modes retain exact IR validation and
+terminal readout annotations; panels continue the same registers. Rendering
+still fails rather than shrinking over-wide content. Training remains an
+explicit opt-in; main-paper Notebook artwork presents the forward architecture,
+while the frozen example demonstrates the optional update paths.
+
+The content canvas is 181.5 mm plus 2 pt export margins (about 183 mm overall).
+The earlier 166 mm guard and associated layout dimensions are superseded.
+Long classical chains may need explicit summary labels rather than every
+intermediate tensor; the drawer must never invent encoder mathematics.
+The default install still exports source without a compiler; rendering uses
+standard local TeX fonts. No new Python dependencies or licensed source edits.
