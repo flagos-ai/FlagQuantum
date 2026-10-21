@@ -82,7 +82,7 @@ def _apply_single_process_cpu_gate(
         updated = _apply_fixed_permutation(
             source, instruction.name, instruction.wires, plan.n_qubits
         )
-    elif _is_diagonal_instruction(instruction.name):
+    elif _is_diagonal_instruction(instruction):
         updated = _apply_diagonal_matrix(
             source, matrix, instruction.wires, plan.n_qubits
         )
@@ -200,7 +200,7 @@ def _fused_single_process_cpu_reversible_vjp(
     inverse = matrix.mH
     apply = (
         _apply_diagonal_matrix
-        if _is_diagonal_instruction(instruction.name)
+        if _is_diagonal_instruction(instruction)
         else _apply_matrix
     )
     previous_ket = apply(ket, inverse, instruction.wires, n_wires)
@@ -266,7 +266,7 @@ def _apply_matrix_gate(
         if evidence is not None:
             evidence.peak_scratch_bytes = max(evidence.peak_scratch_bytes, scratch)
         return state
-    if _is_diagonal_instruction(instruction.name):
+    if _is_diagonal_instruction(instruction):
         state, scratch = _vectorized_local_diagonal_gate(
             shard_state,
             matrix,

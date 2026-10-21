@@ -98,9 +98,10 @@ def _apply_instruction(
     """Apply one static instruction without constructing a temporary circuit."""
 
     name = canonical_opcode(instruction.name)
-    if name in {"x", "cx", "swap"}:
+    carries_matrix = instruction.matrix is not None
+    if not carries_matrix and name in {"x", "cx", "swap"}:
         return _apply_fixed_permutation(state, name, instruction.wires, n_wires)
-    if name == "y":
+    if not carries_matrix and name == "y":
         return _apply_single_qubit_fixed(
             state,
             name,
@@ -115,7 +116,9 @@ def _apply_instruction(
         parameter_bindings=None,
     )
     apply_gate = (
-        _apply_diagonal_matrix if name in _DIAGONAL_STATEVECTOR_GATES else _apply_matrix
+        _apply_diagonal_matrix
+        if not carries_matrix and name in _DIAGONAL_STATEVECTOR_GATES
+        else _apply_matrix
     )
     return apply_gate(
         state,
