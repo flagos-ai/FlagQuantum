@@ -485,17 +485,17 @@ preflight must not be presented as runtime or scalability certification.
 
 ## CI Policy
 
-The existing CI and pre-commit workflows also accept main-targeted
-`merge_group.checks_requested` events. Queue revisions use the complete
-integration selection, including the older-Python smoke/unit suites and slow
-coverage cases, with the same checks, matrices and thresholds. Ownership and
-evidence-retention gates compare against merge_group.base_sha and refuse a
-missing queue base. See [the staged merge-queue rollout](CI_MERGE_QUEUE.md);
-workflow support does not itself enable the repository setting.
+Pull requests run the full existing CI graph once. Its `CI complete` aggregate
+also waits for source hygiene, so one required GitHub Actions context represents
+all existing acceptance checks. Strict base freshness remains enabled. Main
+pushes run the installed-wheel acceptance job instead of another full matrix;
+manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-two jobs:
+The checked-in `ci.yml` defines twenty-three jobs:
 
+- `pre-commit`: source-file hygiene hooks, using the same action as the manual
+  diagnostics workflow;
 - `prepare-source`: package the exact commit and complete tree, plus a smaller
   incremental Git pack, before the test jobs fan out. A800 jobs verify the
   commit and the presence of every required tree object, reuse their existing Git objects, and
@@ -507,7 +507,7 @@ The checked-in `ci.yml` defines twenty-two jobs:
   capability-maturity, evidence-revision-origin, Braket/Cirq/CUDA-Q/Qiskit/
   PennyLane interoperability contracts, and repository-hygiene checks;
 - `cpu-core`: Python 3.10 and 3.11 compile, import, dependency-isolation, and
-  smoke compatibility on pull requests; pushes to `main` retain the complete
+  smoke compatibility on pull requests; manual full validation runs the complete
   smoke/unit suite on both interpreters;
 - `cpu-core-3-12-tests`: the complete smoke/unit suite on the newest supported
   interpreter;
@@ -553,10 +553,10 @@ The checked-in `ci.yml` defines twenty-two jobs:
   data files before enforcing the floors in `contracts/coverage-policy.toml`
   with `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM;
-- `ci-complete`: the additive CI complete gate, which requires every other CI
-  job to succeed, including optional SDK matrices, wheel builds and supply-chain
-  checks. Queue admission must retain this gate and the original eight required
-  checks; no failed, cancelled, missing or skipped dependency counts as success.
+- `ci-complete`: the single required CI complete gate, which requires every other
+  CI job to succeed, including source hygiene, optional SDK matrices, wheel builds
+  and supply-chain checks. No failed, cancelled, missing or skipped dependency
+  counts as success.
 
 Each two-version ecosystem compatibility job reuses one runner for its minimum
 and latest SDK checks. The versions still execute in separate Python and pytest
@@ -571,7 +571,7 @@ one run at five concurrent jobs without forcing a new pull request to wait for
 an older pull request's coverage or interpreter lane. The organisation-level
 20-runner pool remains the aggregate admission limit. Superseding a run of the
 same pull request still cancels the older run. Already-merged main revisions
-and distinct merge-group revisions retain their own workflow run.
+retain their own lightweight installed-wheel acceptance run.
 
 Optional integration jobs name the test files they own and retain the marker
 selector inside that file set. This prevents an unrelated module-level
@@ -579,7 +579,7 @@ collection error elsewhere in the repository from making every Cirq, CUDA-Q,
 PennyLane, Qiskit, and Triton lane fail before its own tests start. The broad
 CPU and coverage lanes remain responsible for repository-wide collection.
 
-The pull-request `pre-commit` workflow runs only source-hygiene hooks. Ruff,
+The pull-request `pre-commit` job runs only source-hygiene hooks. Ruff,
 Black, mypy, architecture, generated-contract, and repository-wide policy
 checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a

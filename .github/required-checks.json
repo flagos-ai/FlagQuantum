@@ -2,13 +2,6 @@
   "schema": "flagquantum_required_checks_v1",
   "externally_configured": true,
   "checks": [
-    "quality",
-    "cpu-core (3.10)",
-    "cpu-core (3.11)",
-    "cpu-core (3.12)",
-    "package",
-    "distributed-cpu",
-    "coverage",
-    "pre-commit"
+    "CI complete"
   ]
 }

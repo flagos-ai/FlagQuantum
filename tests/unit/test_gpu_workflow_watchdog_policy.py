@@ -25,7 +25,7 @@ def test_required_check_and_watchdog_policy_are_valid():
 def test_every_required_check_is_one_a_workflow_job_produces():
     """A required name nobody reports is an `Expected` check that blocks `main`.
 
-    All eight names are enforced on `main`, so a name no job produces never
+    The aggregate name is enforced on `main`, so a name no job produces never
     reports and nothing can merge. The reverse also matters: a name that no
     longer matches what a job reports stops gating silently.
     """
@@ -63,6 +63,7 @@ def test_the_required_names_are_names_github_actually_reports():
     """
 
     observed = {
+        "CI complete",
         "azure-optional",
         "braket-optional",
         "cirq-optional",
@@ -140,8 +141,7 @@ def test_automatic_gpu_workflows_fail_closed_and_bound_long_commands():
     trigger = local.split("jobs:", 1)[0]
     assert "workflow_dispatch:" in trigger
     events = yaml.safe_load(trigger)[True]
-    assert set(events) == {"push", "pull_request", "workflow_dispatch"}
-    assert events["push"]["branches"] == ["**"]
+    assert set(events) == {"pull_request", "workflow_dispatch"}
     assert local.count("run_with_watchdog.py") >= 10
     assert scheduled.count("run_with_watchdog.py") >= 8
     scale_lane = scheduled.split("local-scale-scheduled:", 1)[1]

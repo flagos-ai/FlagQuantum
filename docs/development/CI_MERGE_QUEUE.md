@@ -1,126 +1,87 @@
-# Main merge queue rollout
+# PR checks and main acceptance
 
-## Status and purpose
+## Current policy
 
-Workflow support is implemented in the existing CI and pre-commit workflows.
-The repository setting is **not enabled by this change**. The reviewed template
-in `ci/merge-queue-main.json` has enforcement disabled. Enable only after the
-workflow PR passes its latest checks, is merged through the existing protection,
-and its main workflow runs finish successfully. Local configuration tests alone
-are not evidence that GitHub dispatched or completed a real merge-group run.
+Pull requests targeting `main` run the existing complete CI job graph once.
+`CI complete` depends on every CI job, including source hygiene (`pre-commit`),
+compatibility matrices, packaging, coverage, optional SDKs and distributed proofs.
+A failed, cancelled or skipped dependency fails the aggregate. Required jobs are
+never filtered out by changed-file paths.
 
-Frequent Update branch operations create new heads and cancel superseded PR
-runs. A native merge queue validates a temporary integration revision containing
-main and the queued change, without repeatedly rewriting every PR branch. It does
-not reuse a successful result from a different revision or eliminate all rebuilds:
-removing or reordering queue entries can require another integration run.
+Main protection requires the GitHub Actions `CI complete` check and an up-to-date
+base, including for administrators. Review approval count remains zero for the
+current administrator-driven workflow. Force pushes and branch deletion remain
+prohibited. The merge queue is not required. When ordinary auto-merge is enabled,
+a specifically authorized PR merges after its required checks succeed.
 
-## Reuse and check preservation
+If another PR advances `main`, update the branch and validate that new integration
+before merging. A single administrator can still have concurrent PRs; strict
+checks retain this protection. New pushes to one PR cancel its obsolete run.
 
-- Both existing workflows accept merge_group.checks_requested targeting main.
-  No parallel workflow, queue runner, result copier or additional dependency is
-  introduced. Default checkout validates the merge-group SHA, not the PR head.
-- All existing jobs, compatibility matrices, package checks, coverage floors,
-  optional SDK checks and distributed proofs remain. The required names stay
-  quality, cpu-core (3.10), cpu-core (3.11), cpu-core (3.12), package,
-  distributed-cpu, coverage and pre-commit.
-- The additive CI complete job waits for all twenty-one other CI jobs, requiring
-  success from each, and reuses a light-a bucket. The staged ruleset adds it as
-  a GitHub-Actions-bound requirement beside the original eight. Native queue
-  merging must not turn the prior full-workflow acceptance into eight checks
-  passing while an SDK or wheel lane still runs. Pre-commit remains separately
-  required.
-- A queue event follows the current non-PR selection: full smoke/unit on Python
-  3.10/3.11 and full maintained-runtime coverage including slow cases. Python
-  3.12 unit/runtime, package and other lanes retain their existing commands.
-- Both change-based quality gates use the queue base SHA. A missing or zero
-  queue base fails instead of skipping ownership or evidence-retention checks.
-- Workflow concurrency distinguishes queue SHAs. Cancellation stays limited to
-  superseded PR runs. Five GitHub-hosted buckets bound the hosted share; eight
-  A800 CPU runners bound the CPU share. The organisation's hosted runner limit
-  is unchanged; merge-group refs isolate unrelated integration candidates.
-- Existing strict branch protection, required checks with their GitHub Actions
-  app binding, administrator enforcement, review policy and force-push/deletion
-  restrictions remain. The added ruleset contains the queue rule and only the additive CI complete
-  requirement, with no bypass actors. It neither replaces nor copies the
-  original status-check authority.
+## Workflow ownership
 
-## Staged activation
+- `ci.yml`: full pull-request CI and manual full validation. It has no `push` or
+  `merge_group` trigger. Test selections and thresholds are unchanged.
+- `pre-commit.yaml`: manual source-hygiene diagnostics. Both it and the CI job use
+  `.github/actions/source-hygiene`, so there is one implementation of the hooks.
+- `local-gpu.yml`: one automatic GPU workflow per PR, plus manual dispatch.
+  Branch pushes and queue refs do not create duplicate hardware workflows.
+- `main-smoke.yml`: a small acceptance job for every main push. It builds and
+  inspects a CPU wheel, installs it into a private environment, verifies that the
+  import comes from that environment and the native extension loads, then runs
+  the existing minimal circuit and autograd smoke tests outside the source tree.
+  Changes to this workflow or its smoke tests also validate the job on the PR.
+- Existing scheduled hardware and release workflows keep their validation.
+  Manual full CI retains the non-PR interpreter and slow-coverage selections.
 
-1. Validate the workflow diff, shell gate cases, event routing, YAML and existing
-   policy tests. Run the repository's default and CPU distributed/contract tiers.
-   Require all latest-head CI checks and complete workflows to succeed before
-   merging the CI PR. Do not use an administrator bypass.
-2. After merge, verify both workflow definitions are on main and the main CI and
-   pre-commit runs are successful. Re-read current protections and rulesets;
-   preserve concurrent changes and do not create duplicate queue rulesets.
-3. Confirm CI complete is present and successful on main. In-flight PRs may
-   need one bootstrap synchronization to acquire the new workflow; a missing
-   check must block admission rather than receive a fabricated status. Apply
-   the reviewed template with enforcement changed to active, keeping the
-   existing branch protections intact. Queue builds start at one concurrent
-   candidate with one entry per merge, ALLGREEN and a 120-minute response timeout.
-   This bounds runner demand and does not relax any test or required status.
-   MERGE preserves original development commits and their authors; GitHub owns
-   the metadata of the resulting merge commit.
-4. Verify the live rule, no bypass actors, the unchanged required checks and
-   strict setting. For the first separately authorized PR, observe an actual
-   merge_group run at its integration SHA. Verify every required check and the
-   complete CI/pre-commit workflows before treating the rollout as proven.
-   A pending, skipped, missing or cancelled result is not success.
-5. Record the activation rule id, configuration, integration SHA and run URLs in
-   the CI PR. If event dispatch or status names fail, remove the candidate from
-   the queue, fix the workflow and revalidate. If activation must be rolled back,
-   disable only the added queue rule; retain the original strict protection.
+Hosted jobs retain their capacity buckets. Self-hosted CPU capacity remains
+bounded by provisioned runners rather than a workflow parallelism cap. Device
+locks protect shared hardware measurements. A runner may be idle after all
+eligible jobs have started or completed; tasks are not automatically subdivided.
 
-No PR is enrolled automatically by this change. In particular, monitoring #652
-and implementing its approved contract do not authorize its merge. Native queue
-entry can lead directly to a merge, so use it only for a separately authorized PR.
+## Safe settings migration
 
-The template can be inspected without changing GitHub settings:
+1. Validate the workflow diff and aggregate failure cases. Run full PR CI and the
+   new installed-wheel smoke job on the candidate revision.
+2. Read and save the live branch protection, ruleset and queued PR identities.
+   Preserve unrelated protection fields and concurrent changes.
+3. After candidate checks succeed, replace the classic required contexts with
+   GitHub Actions `CI complete`, keeping strict checks and administrator
+   enforcement. The existing ruleset already requires that aggregate.
+4. Remove only the merge-queue rule from the existing ruleset, preserving its
+   strict aggregate requirement and empty bypass list. The reviewed target
+   configuration is `ci/pr-gate-main.json`; update the existing ruleset instead
+   of creating a second rule authority.
+5. Enable ordinary repository auto-merge. Preserve merge authorization for
+   existing queued PRs when converting them to ordinary auto-merge; do not enable
+   it on unrelated PRs.
+6. Merge the CI change through the protected PR flow, without administrator
+   bypass. Verify its main acceptance run. Record remote settings and run URLs.
 
-```bash
-python -m json.tool ci/merge-queue-main.json
-```
+The prior queue rollout used one build at a time and repeated full validation on
+PR, merge-group and main-push events. Historical run links remain in the PRs;
+this document describes the replacement policy rather than activating settings
+merely by being checked into the repository.
 
-Expected: enforcement is disabled, the queue strategy is ALLGREEN, its build/merge limits are one, bypass_actors
-is empty, and the only added status requirement is CI complete.
-An operator should read current remote state before applying the active version;
-this repository does not add a second settings-management framework.
+## Contributor commands
 
-## Contributor and user workflows
-
-After activation, finish the review and required checks, then use the PR's
-**Merge when ready / Add to merge queue** control. Avoid Update branch on every
-waiting PR. In the CLI, after a specific PR has merge authorization:
+After a PR has merge authorization:
 
 ```bash
 PR=123  # replace with the authorized pull request
-HEAD=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
 gh pr checks "$PR" --required
-gh pr merge "$PR" --match-head-commit "$HEAD"
+HEAD=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
+gh pr merge "$PR" --auto --merge --match-head-commit "$HEAD"
 ```
 
-Expected on a queue-protected branch with successful required checks: GitHub
-queues the PR, reports new checks on the integration revision, and merges only
-when its protection requirements pass. A conflict or failing check blocks it.
-This is the built-in GitHub queue, not a FlagQuantum SDK interface.
+Expected: required checks and strict base freshness remain enforced. A failing
+check blocks the merge; a stale branch must be updated and checked again.
 
-The existing local quantum-computing workflow is unchanged:
+For an explicit full validation of the current default branch:
 
-```python
-import torch
-import flagquantum as fq
-
-circuit = fq.Circuit(1, dtype=torch.complex128).h(0)
-probabilities = circuit.state().abs().square()[0]
-print([round(value, 6) for value in probabilities.tolist()])
+```bash
+gh workflow run ci.yml --repo flagos-ai/FlagQuantum --ref main
 ```
 
-Expected: `[0.5, 0.5]`. No queue operation or network access is needed by SDK users.
-
-## References
-
-- [GitHub merge queues](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue)
-- [merge_group workflow event](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#merge_group)
-- [Repository ruleset API](https://docs.github.com/en/rest/repos/rules#create-a-repository-ruleset)
+Expected: the complete non-PR matrix runs independently of the short main smoke.
+The FlagQuantum SDK workflow and public APIs are unchanged.
