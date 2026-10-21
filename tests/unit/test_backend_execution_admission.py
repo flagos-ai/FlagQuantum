@@ -1015,3 +1015,37 @@ def test_runtime_reaches_the_admitted_aer_route_rather_than_refusing_it(admitted
             assert result.runtime["backend"] == "qiskit_aer"
     finally:
         handle.close()
+
+
+def test_a_user_who_asks_for_two_ranks_meets_the_planner_not_the_bridge(
+    admitted, monkeypatch
+):
+    """The refusal a user meets is the planner's, and it comes before any kernel.
+
+    An admitted route cannot serve more than one rank when its record does not
+    assert a scalability claim, and two later guards say so as well: one in
+    ``flagquantum/runtime/plan_execution.py`` beside the executor, and one
+    inside each bridge for the ``world_size`` fact it is handed. Driving the
+    request from the environment, which is where a user sets it, shows which of
+    the three answers: the planner refuses first, so the message names the plan
+    rather than the backend's own contract, and the executor is never reached.
+    The bridge's own branch is still worth keeping and is pinned by direct
+    ``execute`` above; what this records is that a user never lands there.
+    """
+
+    monkeypatch.setenv("FQ_LOCAL_WORLD_SIZE", "2")
+    backend = REFERENCE.ReferenceStatevectorBackend()
+    handle, capabilities = admitted(backend)
+    try:
+        with pytest.raises(
+            CapabilityError, match="cannot serve this plan: distributed execution"
+        ):
+            fq.run(
+                _bell(),
+                options=fq.ExecutionOptions(
+                    backend=capabilities.name, mode="statevector"
+                ),
+            )
+        assert backend.executions == 0
+    finally:
+        handle.close()
