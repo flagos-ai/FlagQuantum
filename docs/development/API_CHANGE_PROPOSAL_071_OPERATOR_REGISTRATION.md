@@ -8,11 +8,29 @@ rows at once)" from the alternatives offered with it. The three parity rows it w
 approved to unblock are `custom_operation_registration`,
 `kraus_channel_algebra` and `matrix_and_custom_operator`.**
 
-Decisions 1 and 4 are implemented by this proposal's own pull request. Decision 2
-belongs to `collapse_one_qubit_runs` and Decision 5 to construction-time operand
-validation; both are recorded here as the contract the shipped code has to meet
-and land with their own changes, because each is in a different domain from the
-executor dispatch Decision 1 corrects.
+Decisions 1 and 4 are implemented by this proposal's own pull request, #688.
+Decision 2 is implemented by #689, in `collapse_one_qubit_runs`. Decision 5's
+size half is implemented by its own change, in `Instruction.__post_init__`.
+Decisions 3, 7 and 8 remain open: each needs a surface this proposal deliberately
+does not own — a stable keyword name, 075's lowering registry, and 075's
+registration entry point respectively.
+
+Decision 5 is implemented as the entry-count rule the runtime already enforced,
+moved to the stage that can know it. `_dense_operator` states the rule in its own
+docstring — "the entry count decides the size, not the shape, so `(1, 2, 2)` is
+the same operator as `(2, 2)`" — so the check compares `prod(shape)` against
+`4 ** len(wires)` and refuses a mismatch with `IRValidationError` at
+`Instruction.__post_init__`. A `(2, 3)`, a `(3,)`, a `(0, 0)`, and a `(4, 4)` on
+one wire are refused; a flat `(4,)`, a `(1, 4)`, a `(1, 2, 2)` and a nested list
+are still accepted, because refusing them would change which programs run rather
+than when a wrong one is reported. The half of Decision 5 that would refuse a
+flat spelling is therefore **not** implemented, and the reason is that it
+contradicts the runtime's documented rule above and
+`tests/unit/test_matrix_expectation_contract.py`, which accepts `(1, 2, 2)`; the
+shape a caller may spell is Decision 3's keyword question, and it stays there.
+A matrix that publishes no `shape` — a nested Python list — is not measured at
+construction and is left to the runtime's own operand check, so no new refusal
+was invented for a value whose size would have to be guessed.
 
 **Revision 2 re-measures this proposal against `origin/main` at `62e06b7c` in the
 `fq-qec` worktree. It corrects one cross-reference number, six code citations, and

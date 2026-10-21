@@ -36,6 +36,26 @@ OpcodeSchema = OperatorSchema
 OPCODE_SCHEMAS = OPERATOR_SCHEMAS
 
 
+def _operand_shape(matrix: Any) -> tuple[int, ...] | None:
+    """The shape of a carried operand, or None when it has no countable one.
+
+    An operand reaches the IR as a torch tensor or a numpy array, both of which
+    publish ``shape``, or behind a carrier object that exposes its tensor as
+    ``.tensor``. A caller's Python sequence does not, and a channel's matrix is a
+    tuple of Kraus tensors rather than one operand, so neither is counted here;
+    the runtime's own operand check answers for them.
+    """
+
+    carried = getattr(matrix, "tensor", matrix)
+    shape = getattr(carried, "shape", None)
+    if shape is None:
+        return None
+    try:
+        return tuple(int(size) for size in shape)
+    except (TypeError, ValueError):
+        return None
+
+
 def _normalize_wires(wires: Sequence[int], *, owner: str) -> tuple[int, ...]:
     normalized = tuple(int(wire) for wire in wires)
     if not normalized:
@@ -395,6 +415,25 @@ class Instruction:
                 if parameter in self.params:
                     _normalize_angle(
                         self.params[parameter], opcode=name, parameter=parameter
+                    )
+        # An operand the runtime cannot apply is a malformed argument to
+        # `Circuit.gate`, and this is the earliest stage that can know it. The
+        # entry count is the same quantity `_dense_operator` compares against
+        # `4 ** arity`, so nothing is refused here that the runtime would accept;
+        # what changes is where the refusal happens and that it names the operand.
+        # The classifier is read first: a channel's matrix is a Kraus tuple, not
+        # an operand (proposal 071, Decision 6).
+        if self.matrix is not None and not is_channel:
+            shape = _operand_shape(self.matrix)
+            if shape is not None:
+                entries = math.prod(shape)
+                expected = 4 ** len(self.wires)
+                if entries != expected:
+                    raise IRValidationError(
+                        f"the custom operation {name!r} on qubits "
+                        f"{tuple(self.wires)} carries a matrix of shape {shape}; "
+                        f"an operand on {len(self.wires)} qubit(s) must supply "
+                        f"{expected} entries, and this one supplies {entries}"
                     )
 
 

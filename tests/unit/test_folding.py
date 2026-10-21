@@ -49,6 +49,7 @@ from flagquantum.algorithms.folding import _pair_count
 from flagquantum.algorithms.folding import fold_program as module_fold_program
 from flagquantum.core.ir import (
     CircuitIR,
+    IRValidationError,
     MeasurementNode,
     ObservableNode,
     ensure_circuit_ir,
@@ -755,17 +756,29 @@ def test_a_custom_operation_whose_matrix_is_not_unitary_is_refused() -> None:
         name="flip",
     )
     assert names(fold_program(flip, scale_factor=3.0).program) == ["flip"] * 3
-    # A non-square matrix has no conjugate transpose to fold with.
+    # A non-square matrix has no conjugate transpose to fold with. The operand is
+    # spelled as a nested list so that it reaches this guard: a tensor publishes a
+    # shape, and `Instruction.__post_init__` refuses a wrong entry count from it, so
+    # a tensor would be refused an entire layer earlier.
     wide = fq.Circuit(1)
     wide.any(
         0,
-        unitary=torch.tensor(
-            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=torch.complex128
-        ),
+        unitary=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
         name="wide",
     )
     with pytest.raises(ValueError, match="not square"):
         fold_program(wide, scale_factor=2.0)
+    # And the same operand in the spelling that carries its shape is refused where
+    # the instruction is built, which is what `test_instruction_operand_shape.py`
+    # pins in full.
+    with pytest.raises(IRValidationError):
+        fq.Circuit(1).any(
+            0,
+            unitary=torch.tensor(
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=torch.complex128
+            ),
+            name="wide",
+        )
 
 
 # --------------------------------------------------------------------------
