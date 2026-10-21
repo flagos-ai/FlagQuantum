@@ -414,8 +414,7 @@ def test_dynamic_deployment_package_is_sealed_and_provider_submittable() -> None
     assert package.metadata["deployment_program_format"] == "openqasm-3"
     assert package.metadata["dynamic_backend_compatibility"]["compatible"] is True
     assert (
-        package.metadata["dynamic_backend_compatibility"]["program_ir_verified"]
-        is True
+        package.metadata["dynamic_backend_compatibility"]["program_ir_verified"] is True
     )
     assert package.metadata["experiment"] == "bell-feedback"
 
