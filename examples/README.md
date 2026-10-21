@@ -88,6 +88,10 @@ These examples do not use that alias:
 - [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) — it imports
   the QEC subpackage surface, because the code record built from parity-check
   matrices lives there and has no root-level `fq.` name.
+- [`qec/mixed_check_code.py`](qec/mixed_check_code.py) — it imports the QEC
+  subpackage surface, because a mixed-check code record, its memory circuit, its
+  detector error model and the matching decoder all live there and none has a
+  root-level `fq.` name.
 - [`dynamic_density_matrix.py`](dynamic_density_matrix.py) — it imports
   `flagquantum.dynamic` and `flagquantum.simulation.density_matrix`, because the
   exact route for a mid-circuit measurement is reached through
@@ -284,6 +288,7 @@ boundaries are listed in the capability catalog.
 | Build an extension | [`extensions/reference_extensions.py`](extensions/reference_extensions.py) | Experimental API |
 | Decode a Stim detector error model here | [`qec/stim_user_migration.py`](qec/stim_user_migration.py) | Experimental QEC surface |
 | State a stabilizer code as matrices | [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) | Experimental QEC surface |
+| Measure what a mixed-check patch costs | [`qec/mixed_check_code.py`](qec/mixed_check_code.py) | Experimental QEC surface |
 
 Larger application and research examples are intentionally not presented as
 minimal getting-started paths.

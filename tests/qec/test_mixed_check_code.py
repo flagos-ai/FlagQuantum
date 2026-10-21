@@ -34,6 +34,11 @@ detectors on the rotated patch would break 4; reporting a mixed patch's rate as
 decoded without decoding it would break 5; and a record that quietly dropped a
 check would break 3. None of those is checkable from the model's own text, because
 the model is derived from the record and would agree with any label given to it.
+
+**The example samples a memory circuit**, so this file needs the ``stim`` extra and
+skips without it rather than reporting a missing extra as a test failure. The
+decode step itself is the in-tree matcher over the model's own graphlikeness and
+needs no sampler; it is the noisy shot batch that does.
 """
 
 from __future__ import annotations
@@ -46,6 +51,10 @@ from pathlib import Path
 import pytest
 
 pytestmark = pytest.mark.integration
+
+#: The example samples its noisy shot batches through the stabilizer engine, so the
+#: extra is required here and its absence is a skip rather than a failure.
+pytest.importorskip("stim")
 
 ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE = ROOT / "examples" / "qec" / "mixed_check_code.py"
@@ -91,7 +100,9 @@ def _sections(stdout: str) -> dict[str, dict[str, str]]:
     for line in stdout.splitlines():
         stripped = line.strip()
         if stripped.startswith(SECTIONS):
-            current = blocks[next(name for name in SECTIONS if stripped.startswith(name))]
+            current = blocks[
+                next(name for name in SECTIONS if stripped.startswith(name))
+            ]
             continue
         label, separator, value = stripped.partition(":")
         if current is not None and separator and line.startswith("  "):
