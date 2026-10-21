@@ -46,27 +46,32 @@ The Notebook itself exports three PDFs and matching editable TeX/PNG files:
 - `long-circuit-hybrid.pdf`: separate layout stress example, 24 rotations in four
   ordered six-gate panels. This is explicitly not the trained model's circuit.
 
-All three PDFs were rendered with Poppler and inspected at full resolution.
-The first render revealed an incorrect table row delimiter and a readout label
-crossing quantum feedback; both were corrected. Subsequent review moved the head
-feedback label onto the outer vertical route, replaced overlapping feedback
-segments with a shared bus, removed implicit table padding, and increased panel
-separation. Readout now stays inside the quantum card. The forward path is
-horizontal; updates stay below or outside the model. Frozen layers are marked
-fixed; only eligible stages receive feedback arrows.
+The user subsequently required publication-ready output as the default acceptance
+standard. The initial 18 cm demo layouts with 8 pt labels were rejected and
+replaced: the current hybrid PDFs use a 166 mm content canvas with 2 pt crop
+margins (about 167.4 mm overall), and 9 pt body/gate text. Architecture (a) and
+exact circuit (b) remain separate even for short circuits. Explicit paragraph
+spacing separates the panels; TeX table row spacing had been insufficient for
+tall nested diagrams. The head feedback route now derives its outside port from
+the head boundary rather than the narrower optimizer boundary.
 
-The final PDFs each contain one page. Text bounds are inside the MediaBox;
-headings, shapes, route labels and continuation captions are visible without
-clipping or overlap. Body annotations use 8pt type (7.97 PDF points); gate
-subscripts are naturally smaller. Diagram widths are approximately 18cm; the
-four-panel example is approximately 27cm tall. Circuit text is never globally
-shrunk. Panels explicitly continue registers without resetting them. The output
-is standalone vector PDF, with raster images used only for Notebook/visual QA.
+Demo titles, duplicate trainable/fixed lines and in-graphic color legends were
+removed. Trainable layers/circuit parameters carry a star; dashed routes remain
+explicitly labeled. Input/output shapes and declared/unspecified readout remain
+visible. Captions in the Notebook define x/z, stars, batch-free shapes and
+continuation semantics. A ready-to-use figure* snippet includes the PDF in a
+170 mm text area; the intended use is a two-column-width figure, not shrinking
+that asset into an 85 mm column. The four-panel stress example is supplementary
+material, not a replacement for a compact main-paper overview.
 
-Very long labels and very large register counts can still enlarge a figure;
-use overview and a separate circuit source in those cases. Shape declarations
-are checked for continuity, not operation formulas, actual gradients or arbitrary
-branching graphs. The Notebook independently validates its specific model.
+Every panel is measured by TeX at the intended size. Content wider than 166 mm
+raises a rendering error with instructions to reduce gates_per_panel, shorten
+labels or choose overview. The drawer never globally scales down a circuit.
+Large register counts can still require a tall supplementary figure. Native
+LaTeX circuit exports also use 2 pt crop margins. All source remains editable.
+
+Final-size/color/grayscale inspection and exact dimensions are recorded below.
+No training computation, dependency, licensed runtime or protected API changes.
 
 ## Tests and packaging
 
@@ -89,7 +94,7 @@ Torch lib directory on DYLD_LIBRARY_PATH. The independent QFT fusion test then
 passes in both precisions. This is a local loader setup, not a simulation patch.
 The complete tier reruns use that environment and one thread per worker.
 
-## Recorded results
+## Initial implementation results (before publication-layout revision)
 
 - Focused drawer/legacy/docstring/installation/lane-policy selection: **104
   passed**, including three real TeX/PNG integration tests.

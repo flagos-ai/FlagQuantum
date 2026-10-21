@@ -110,16 +110,30 @@ quantum_trainable=False freezes the circuit; circuits without gate parameters
 receive no quantum update. Fixed transformations still propagate input gradients:
 their label does not imply detachment. Drawing never executes a training step.
 
-quantum_view="auto" inlines circuits with at most six gates and four qubits at
-natural size. Larger circuits get an architecture overview and ordered panels;
-gates_per_panel controls their instruction count (default eight). "overview"
-omits circuit detail, while "detail" always includes panels. Each panel continues
-the same registers without resetting states. Terminal IR readout annotations
-appear only in the last panel. All modes validate every circuit operation.
-Panels keep the natural circuit font; exceptionally long labels or very large
-register counts can still produce large figures. Use overview for those cases
-and export circuit detail separately. This is a linear encoder/circuit/head
-composition, not an arbitrary branching graph or PyTorch tracing engine.
+The default hybrid figure is publication artwork for a 170 mm two-column text
+area: a 166 mm canvas, 2 pt crop margins, 9 pt body/gate text and named panels.
+There is no global scale transform. A star marks trainable classical layers or
+circuit parameters; dashed arrows show eligible optimizer updates. Shapes omit
+the batch axis. Put notation and model context in the paper caption, not in an
+extra legend inside the graphic. Colors reinforce the named classical/quantum
+stages; the diagram remains interpretable in grayscale.
+
+quantum_view="auto" and "detail" separate the architecture (a) and exact circuit
+(b), including short circuits. gates_per_panel limits each continuation panel's
+instruction count (default eight). "overview" omits circuit detail. Registers
+continue between panels without resets; describe this in the caption. Terminal
+IR readout annotations appear only in the final panel. All modes validate every
+circuit operation. An over-wide panel raises a rendering error with a width
+diagnostic instead of shrinking type. Reduce gates_per_panel, shorten labels or
+use overview. Very large register counts can still make the figure tall.
+
+Save the PDF and include it in a two-column article using `figure*` and
+`\includegraphics[width=\textwidth]{hybrid.pdf}` when textwidth is approximately
+170 mm. Do not shrink this double-column asset into an 85 mm single column;
+readability is checked at the intended final size. The Notebook includes a paper
+inclusion snippet and caption. Very long unrolled circuits normally belong in
+supplementary material. Source remains editable for venue-specific typography.
+This is a linear encoder/circuit/head composition, not arbitrary graph tracing.
 
 Run the fully executed [Notebook example](../../examples/notebooks/hybrid_latex_drawing.ipynb)
 for a real CPU CNN -> parameterized three-qubit circuit -> two-output head,

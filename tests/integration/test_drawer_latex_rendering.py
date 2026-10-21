@@ -66,8 +66,21 @@ def test_real_detailed_layers_stack_circuit_panels_below_architecture() -> None:
     overview_width, overview_height = struct.unpack(
         ">II", overview.render("png")[16:24]
     )
+    # The 166 mm canvas plus 2 pt margins fits a 170 mm two-column paper.
+    assert width <= 1071  # 170 mm at the renderer's 160 dpi.
     # Panels add height, not side-by-side columns or scaled-down circuit text.
     assert width <= overview_width + 32
     assert height > overview_height
     assert r"\resizebox" not in detailed.source
     assert detailed.render("pdf").startswith(b"%PDF-")
+
+
+def test_oversized_circuit_panel_fails_instead_of_shrinking_text() -> None:
+    if not shutil.which("tectonic"):
+        pytest.skip("Width guard requires Tectonic")
+    circuit = fq.Circuit(1).ry(0, fq.Parameter("theta_" + "a" * 160))
+    figure = draw_hybrid(circuit)
+    with pytest.raises(RuntimeError, match="Figure panel exceeds 166 mm"):
+        figure.render()
+    # Overview remains usable without omitting validation of circuit semantics.
+    assert draw_hybrid(circuit, quantum_view="overview").render().startswith(b"%PDF-")

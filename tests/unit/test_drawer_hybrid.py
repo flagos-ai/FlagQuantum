@@ -82,7 +82,7 @@ def test_unknown_counts_and_readout_are_not_filled_with_example_values() -> None
     explicit = draw_hybrid(
         fq.Circuit(2), encoder_features=32, head_outputs=10, readout="Z_0%"
     ).source
-    assert "{32 features}" in explicit and "{10 outputs}" in explicit
+    assert "32 features" in explicit and "10 outputs" in explicit
     assert r"Z\_0\%" in explicit
 
 
@@ -111,20 +111,20 @@ def test_circuit_panels_preserve_order_and_terminal_requests_once(view: str) -> 
     source = draw_hybrid(ir, quantum_view=view, gates_per_panel=5).source
     assert r"\resizebox" not in source
     if view == "overview":
-        assert "13 gates" in source and "Circuit detail" not in source
+        assert "13 gates" in source and "(b) Quantum circuit" not in source
     else:
         positions = [source.index(rf"R_y({i})") for i in range(13)]
         assert positions == sorted(positions)
         assert source.count("Observable:") == source.count("Readout:") == 1
         assert "gates 1--5" in source and "gates 11--13" in source
-        assert source.count("no reset") == 3
+        assert source.count(r"qubit {$q_{\idx}$} q[2];") == 3
     assert ir.instructions[0].params["theta"] == 0.0
 
 
 def test_short_empty_and_unsupported_circuits_in_all_modes() -> None:
     short = fq.Circuit(2).h(0).cx(0, 1)
     assert "cnot q[1]" in draw_hybrid(short).source
-    assert "Circuit detail" not in draw_hybrid(short).source
+    assert "(b) Quantum circuit" in draw_hybrid(short).source
     assert "no gates" in draw_hybrid(fq.Circuit(2), quantum_view="detail").source
     ir = replace(
         short.to_ir(),
