@@ -41,11 +41,13 @@ LINEAR_VALUE_KINDS = ("qubit",)
 
 TERMINATORS = ("return", "branch")
 
-#: The one program-level opcode that is not a circuit opcode. A parameter is a
-#: compile constant that the circuit states as a number and the program states as
-#: a `scalar` value, so a gate operation binds a value rather than a literal and
-#: the value's def-use is checkable.
+#: Program-level opcodes with semantics beyond the static circuit operator
+#: vocabulary. A parameter is a compile constant that the circuit states as a
+#: number and the program states as a `scalar` value. Measurement and reset make
+#: dynamic qubit and classical def-use explicit.
 CONSTANT_OPCODE = "constant"
+MEASURE_OPCODE = "measure"
+RESET_OPCODE = "reset"
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,14 @@ class ValueRef:
     def linear(self) -> bool:
         """Whether this value identifies a resource that cannot be copied."""
         return self.kind in LINEAR_VALUE_KINDS
+
+
+@dataclass(frozen=True)
+class ConditionRef:
+    """One boolean SSA value comparison inside a condition clause."""
+
+    value: ValueRef
+    equals: bool
 
 
 @dataclass(frozen=True)
@@ -80,8 +90,8 @@ class Operation:
     a later operation has already replaced gives that value two consumers.
 
     `parameters` binds every parameter the opcode declares to a `scalar` value
-    rather than to a number, and `literal` carries the number for the one
-    `constant` opcode that defines such a value.
+    rather than to a number, and `literal` carries the number for the `constant`
+    opcode that defines such a value.
 
     Attributes:
         opcode: Either `CONSTANT_OPCODE` or a canonical circuit opcode.
@@ -89,6 +99,7 @@ class Operation:
         results: The values this operation defines, positionally.
         parameters: Declared parameter name to the `scalar` value binding it.
         literal: The compile constant, present only on `CONSTANT_OPCODE`.
+        condition_clauses: Disjunction of conjunctions over boolean SSA values.
     """
 
     opcode: str
@@ -96,6 +107,7 @@ class Operation:
     results: tuple[ValueRef, ...] = ()
     parameters: tuple[tuple[str, ValueRef], ...] = ()
     literal: float | None = None
+    condition_clauses: tuple[tuple[ConditionRef, ...], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -175,9 +187,8 @@ class OpcodeSignature:
 
     A circuit opcode consumes one qubit value per operand and defines its successor
     value for the same qubit, which is what makes the value flow a chain rather than
-    a tree: a channel maps a qubit to its successor just as a unitary does. The one
-    opcode that is not a circuit opcode, `CONSTANT_OPCODE`, consumes nothing and
-    defines one `scalar`.
+    a tree: a channel maps a qubit to its successor just as a unitary does. The
+    program-only signatures also type constants, measurement, and reset.
 
     Attributes:
         opcode: The canonical opcode this signature describes.
@@ -203,12 +214,24 @@ def opcode_signature(opcode: str) -> OpcodeSignature | None:
     The canonical operator vocabulary is the one the repository already owns, so
     this reads `flagquantum.core.operator_schema` rather than restating it: a
     program-level signature that drifted from the operator manifest would silently
-    retype every gate. An opcode outside that vocabulary has no program-level
-    signature and is therefore not modelled here; the quantum level owns the
-    extended vocabulary.
+    retype every gate. Dynamic measurement and reset are typed explicitly above
+    that vocabulary. Every other opcode outside it has no program-level signature;
+    the quantum level owns the extended vocabulary.
     """
     if opcode == CONSTANT_OPCODE:
         return OpcodeSignature(opcode, result_kinds=("scalar",))
+    if opcode == MEASURE_OPCODE:
+        return OpcodeSignature(
+            opcode,
+            operand_kinds=("qubit",),
+            result_kinds=("qubit", "bool"),
+        )
+    if opcode == RESET_OPCODE:
+        return OpcodeSignature(
+            opcode,
+            operand_kinds=("qubit",),
+            result_kinds=("qubit",),
+        )
     schema = get_operator_schema(opcode)
     if schema is None:
         return None

@@ -1,9 +1,10 @@
 """Conformance suite for the internal multi-level IR boundary.
 
-`contracts/multi-level-ir-internal-v1-candidate.json` declares seven claims about
+`contracts/multi-level-ir-internal-v1-candidate.json` declares claims about
 the boundary between the public IR and the internal program, quantum, and target
 levels: level entry and exit, value identity, linearity, joins, failure
-categories, round trip, and rejection. `flagquantum.core.ir.levels` supplies the
+categories, round trip, dynamic def-use, and rejection.
+`flagquantum.core.ir.levels` supplies the
 vocabulary those claims are spelled in, plus the contract fake.
 
 This module is the conformance suite, not a test of the fake's internals. The
@@ -375,6 +376,93 @@ def test_an_operation_that_does_not_type_is_invalid_input():
     assert "program.result_kind" in {
         diagnostic.code for diagnostic in level_boundary.verify_program_record(quiet)
     }
+
+
+def test_the_contract_fake_types_dynamic_def_use():
+    q0 = level_boundary.ValueRef("entry", 0, "qubit")
+    q1 = level_boundary.ValueRef("entry", 1, "qubit")
+    measured = level_boundary.ValueRef("entry", 2, "bool")
+    q2 = level_boundary.ValueRef("entry", 3, "qubit")
+    q3 = level_boundary.ValueRef("entry", 4, "qubit")
+    block = level_boundary.BlockRecord(
+        "entry",
+        (q0,),
+        operations=(
+            level_boundary.Operation("measure", (q0,), (q1, measured)),
+            level_boundary.Operation("reset", (q1,), (q2,)),
+            level_boundary.Operation(
+                "x",
+                (q2,),
+                (q3,),
+                condition_clauses=((level_boundary.ConditionRef(measured, True),),),
+            ),
+        ),
+    )
+    record = level_boundary.ProgramRecord(
+        functions=(level_boundary.FunctionRecord("main", (block,)),)
+    )
+
+    assert level_boundary.verify_program_record(record) == ()
+    measure = level_boundary.opcode_signature("measure")
+    reset = level_boundary.opcode_signature("reset")
+    assert measure is not None
+    assert measure.operand_kinds == ("qubit",)
+    assert measure.result_kinds == ("qubit", "bool")
+    assert reset is not None
+    assert reset.operand_kinds == ("qubit",)
+    assert reset.result_kinds == ("qubit",)
+
+
+def test_dynamic_condition_contract_rejects_invalid_def_use():
+    q0 = level_boundary.ValueRef("entry", 0, "qubit")
+    q1 = level_boundary.ValueRef("entry", 1, "qubit")
+    boolean = level_boundary.ValueRef("entry", 2, "bool")
+    scalar = level_boundary.ValueRef("entry", 3, "scalar")
+    absent = level_boundary.ValueRef("entry", 99, "bool")
+
+    cases = {
+        "program.condition_kind": level_boundary.Operation(
+            "x",
+            (q0,),
+            (q1,),
+            condition_clauses=((level_boundary.ConditionRef(scalar, True),),),
+        ),
+        "program.condition_undefined": level_boundary.Operation(
+            "x",
+            (q0,),
+            (q1,),
+            condition_clauses=((level_boundary.ConditionRef(absent, True),),),
+        ),
+        "program.condition_target": level_boundary.Operation(
+            "reset",
+            (q0,),
+            (q1,),
+            condition_clauses=((level_boundary.ConditionRef(boolean, True),),),
+        ),
+        "program.condition_noncanonical": level_boundary.Operation(
+            "x", (q0,), (q1,), condition_clauses=((),)
+        ),
+        "program.condition_value": level_boundary.Operation(
+            "x",
+            (q0,),
+            (q1,),
+            condition_clauses=(
+                (level_boundary.ConditionRef(boolean, 1),),  # type: ignore[arg-type]
+            ),
+        ),
+    }
+    for expected, operation in cases.items():
+        block = level_boundary.BlockRecord(
+            "entry", (q0, boolean, scalar), operations=(operation,)
+        )
+        record = level_boundary.ProgramRecord(
+            functions=(level_boundary.FunctionRecord("main", (block,)),)
+        )
+        codes = {
+            diagnostic.code
+            for diagnostic in level_boundary.verify_program_record(record)
+        }
+        assert expected in codes, (expected, codes)
 
 
 # --------------------------------------------------------------------------

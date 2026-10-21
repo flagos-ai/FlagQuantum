@@ -5,9 +5,9 @@ levels behind it. Nothing in this module is public: it is not re-exported from
 `flagquantum.core.ir`, is absent from `docs/public_api_v1.json`, and adds no root
 export.
 
-`contracts/multi-level-ir-internal-v1-candidate.json` owns the boundary's seven
+`contracts/multi-level-ir-internal-v1-candidate.json` owns the boundary's
 claims -- level entry and exit, value identity, linearity, joins, failure
-categories, round trip, and rejection -- and
+categories, round trip, dynamic def-use, and rejection -- and
 `tools/check_multi_level_ir_contract.py` is its reader. This module supplies the
 two things that contract names:
 
@@ -52,6 +52,7 @@ from .program import TERMINATORS as TERMINATORS
 from .program import UNSUPPORTED_WITH_DIAGNOSTICS as UNSUPPORTED_WITH_DIAGNOSTICS
 from .program import VALUE_KINDS as VALUE_KINDS
 from .program import BlockRecord as BlockRecord
+from .program import ConditionRef as ConditionRef
 from .program import Edge as Edge
 from .program import FunctionRecord as FunctionRecord
 from .program import LevelConversion as LevelConversion
