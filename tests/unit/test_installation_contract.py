@@ -1,7 +1,14 @@
+import os
+import sys
 from pathlib import Path
+from unittest import mock
 
 import pytest
+import setuptools
+import torch
 import yaml
+from setuptools.dist import Distribution
+from torch.utils.cpp_extension import BuildExtension
 
 from tools.check_dependency_policy import load_toml
 
@@ -214,3 +221,134 @@ def test_native_extension_avoids_compiler_specific_bit_builtins() -> None:
 
     assert "__builtin_" not in source
     assert "trailing_zero_count" in source
+
+
+def _build_ext_command(inplace: bool):
+    """Return a configured `build_ext` command without running a build.
+
+    `setup.py` cannot be imported, so it is executed with `setuptools.setup`
+    replaced by a recorder. That yields the real command class and the real
+    extension declarations, which is what the linker arguments are computed
+    from.
+    """
+
+    captured: dict[str, object] = {}
+    source = (ROOT / "setup.py").read_text(encoding="utf-8")
+    namespace: dict[str, object] = {"__name__": "fq_setup_probe"}
+    with mock.patch.object(
+        setuptools, "setup", lambda **kwargs: captured.update(kwargs)
+    ):
+        exec(compile(source, "setup.py", "exec"), namespace)
+    command = captured["cmdclass"]["build_ext"](
+        Distribution({"ext_modules": captured["ext_modules"]})
+    )
+    command.initialize_options()
+    command.inplace = inplace
+    command.finalize_options()
+    return command
+
+
+def _torch_library_rpath() -> str:
+    return f"-Wl,-rpath,{Path(torch.__file__).parent / 'lib'}"
+
+
+def _relocatable_torch_rpath() -> str:
+    origin = "@loader_path" if sys.platform == "darwin" else "$ORIGIN"
+    return f"-Wl,-rpath,{origin}/../../../torch/lib"
+
+
+def test_an_inplace_build_adds_this_machines_torch_library_to_the_rpath() -> None:
+    """An in-place artifact sits where the relocatable rpath cannot resolve.
+
+    The compiled extension lands in `<source>/flagquantum/simulation/native_cpu/`
+    and carries a path relative to itself, which from there is
+    `<source>/torch/lib` -- absent, so `dlopen` fails and
+    `adjoint._load_extension` reports the native operator as unavailable.
+    """
+
+    if os.name == "nt":
+        pytest.skip("Windows resolves the PyTorch DLLs through PATH")
+
+    link_args = _build_ext_command(inplace=True).extensions[0].extra_link_args
+
+    assert _relocatable_torch_rpath() in link_args
+    assert link_args.count(_torch_library_rpath()) == 1
+
+
+def test_a_distributed_build_keeps_only_the_relocatable_rpath() -> None:
+    """A wheel must not carry the build machine's PyTorch path.
+
+    `tools/verify_reproducible_builds.py` compares two isolated builds byte for
+    byte, so an absolute path recorded at link time would differ between them.
+    """
+
+    link_args = _build_ext_command(inplace=False).extensions[0].extra_link_args
+
+    assert _torch_library_rpath() not in link_args
+
+
+def test_the_load_check_follows_the_inplace_flag(monkeypatch) -> None:
+    """The delivered artifact is opened only after an in-place build.
+
+    setuptools clears `inplace` while the extensions are built and copies them
+    into the source tree afterwards, so the check belongs to `run`, where the
+    path it opens is the one the runtime loads.
+    """
+
+    checked: list[str] = []
+    monkeypatch.setattr(BuildExtension, "run", lambda self: None)
+    for inplace, expected in ((True, 1), (False, 0)):
+        command = _build_ext_command(inplace=inplace)
+        monkeypatch.setattr(
+            command,
+            "_require_loadable_artifact",
+            lambda ext, name=f"{expected}": checked.append(name),
+        )
+        command.run()
+
+    assert checked == ["1"]
+
+
+def test_an_inplace_build_relinks_an_artifact_linked_by_an_earlier_build(
+    monkeypatch, tmp_path
+) -> None:
+    """A staged artifact newer than its sources is reused, not relinked.
+
+    The up-to-date test compares the sources against the staged artifact and
+    never sees the link command, so an artifact left by an earlier build keeps
+    that build's rpath. Removing the linked output forces this build's link
+    arguments onto it and leaves the object files to be reused.
+    """
+
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(BuildExtension, "build_extension", lambda self, ext: None)
+    artifact = tmp_path / "_C.abi3.so"
+
+    def does_the_artifact_survive(inplace: bool) -> bool:
+        artifact.write_bytes(b"linked by an earlier build")
+        command = _build_ext_command(inplace=inplace)
+        command.get_ext_fullpath = lambda name: str(artifact)
+        command.build_extension(command.extensions[0])
+        return artifact.exists()
+
+    assert does_the_artifact_survive(inplace=True) is False
+    assert does_the_artifact_survive(inplace=False) is True
+
+
+def test_an_inplace_build_fails_when_the_linked_artifact_cannot_load(
+    tmp_path,
+) -> None:
+    """A build that reports success while `dlopen` fails is the defect.
+
+    `_load_extension` turns that failure into `False` so an unbuilt extension
+    degrades instead of raising; a built one that cannot load must not be
+    reported as a successful build.
+    """
+
+    artifact = tmp_path / "_C.abi3.so"
+    artifact.write_bytes(b"not a shared library")
+    command = _build_ext_command(inplace=True)
+    command.get_ext_fullpath = lambda name: str(artifact)
+
+    with pytest.raises(RuntimeError, match="was built but cannot be loaded"):
+        command._require_loadable_artifact(command.extensions[0])

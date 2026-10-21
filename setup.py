@@ -94,10 +94,63 @@ def _normalize_macho_uuid(path: Path) -> None:
         offset += size
 
 
+def _torch_library_directory() -> Path:
+    """Return the directory that holds the installed PyTorch shared libraries."""
+
+    return Path(torch.__file__).parent / "lib"
+
+
+def _absolute_rpath_flag(directory: Path) -> str:
+    """Return the linker flag that adds one absolute library directory."""
+
+    return f"-Wl,-rpath,{directory}"
+
+
 class ReproducibleBuildExtension(BuildExtension):
-    """Keep compiled wheels byte-reproducible on Mach-O platforms."""
+    """Make the compiled operator loadable, and keep a wheel byte-reproducible.
+
+    A distributed wheel must not embed this machine's PyTorch path, so the
+    relocatable rpath stays the only one it carries. An in-place build lands in
+    ``<source>/flagquantum/simulation/native_cpu/``, where that relocatable
+    rpath resolves to ``<source>/torch/lib`` -- a directory that does not
+    exist, so the artifact cannot be loaded at all. The absolute directory is
+    therefore added only to an in-place build, which is exactly the build whose
+    final location is already known, and the artifact that build delivers into
+    the source tree is then opened, so a build that cannot produce a loadable
+    operator fails instead of returning success.
+    """
+
+    inplace_build = False
+
+    def finalize_options(self) -> None:
+        super().finalize_options()
+        # `inplace` is set here and cleared again before `build_extension` runs,
+        # so both the link decision and the load check record it now.
+        self.inplace_build = bool(self.inplace)
+        if not self.inplace_build or os.name == "nt":
+            return
+        flag = _absolute_rpath_flag(_torch_library_directory())
+        for extension in self.extensions:
+            extension.extra_link_args = [*(extension.extra_link_args or ()), flag]
+
+    def run(self) -> None:
+        super().run()
+        if not self.inplace_build:
+            return
+        # setuptools restores `inplace` once the staged build is done and copies
+        # the extensions into the source tree, so the path resolved here is the
+        # one the runtime loads.
+        for extension in self.extensions:
+            self._require_loadable_artifact(extension)
 
     def build_extension(self, ext: Any) -> None:
+        if self.inplace_build:
+            # A staged artifact is reused whenever it is newer than its sources,
+            # and the link command is not part of that comparison, so an
+            # extension linked by an earlier build would keep the rpath that
+            # build chose. Removing only the linked output forces the link this
+            # build configured and leaves the object files to be reused.
+            Path(self.get_ext_fullpath(ext.name)).unlink(missing_ok=True)
         super().build_extension(ext)
         if sys.platform == "darwin":
             extension_path = Path(self.get_ext_fullpath(ext.name))
@@ -123,6 +176,39 @@ class ReproducibleBuildExtension(BuildExtension):
             subprocess.run(
                 ("codesign", "--force", "--sign", "-", str(extension_path)),
                 check=True,
+            )
+
+    def _require_loadable_artifact(self, ext: Any) -> None:
+        """Fail the build when the artifact delivered to the source tree cannot be opened.
+
+        ``native_cpu.adjoint._load_extension`` reports a failed ``dlopen`` as
+        ``False`` so that an unbuilt extension degrades to the Python fallback
+        instead of raising. A built extension that cannot load is a different
+        state that must not borrow that silence: it means every native path is
+        silently running the fallback while the build reports success.
+        """
+
+        artifact = Path(self.get_ext_fullpath(ext.name)).resolve()
+        # The runtime imports torch before the extension, and on Windows that
+        # import is what puts the PyTorch DLLs on the search path, so the probe
+        # opens the artifact the way the runtime does.
+        probe = (
+            "import importlib.util, sys\n"
+            "import torch\n"
+            "spec = importlib.util.spec_from_file_location('_C', sys.argv[1])\n"
+            "module = importlib.util.module_from_spec(spec)\n"
+            "spec.loader.exec_module(module)\n"
+        )
+        completed = subprocess.run(
+            (sys.executable, "-c", probe, str(artifact)),
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(
+                f"{artifact} was built but cannot be loaded:\n"
+                f"{completed.stderr.strip()}"
             )
 
 
