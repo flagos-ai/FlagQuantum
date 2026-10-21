@@ -276,9 +276,9 @@ def _verify_conditions(
                         f"{_value_text(condition.value)}, which is not live there",
                     )
                 )
-    if clause_identities != sorted(clause_identities) or len(
-        set(clause_identities)
-    ) != len(clause_identities):
+    if clause_identities != sorted(
+        clause_identities, key=lambda clause: (len(clause), clause)
+    ) or len(set(clause_identities)) != len(clause_identities):
         diagnostics.append(
             _diagnostic(
                 "program.condition_noncanonical",

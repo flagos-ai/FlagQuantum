@@ -51,7 +51,7 @@ SKIPPED_DIRECTORIES = frozenset(
 CANONICAL_KIND = "flagquantum.circuit_ir"
 
 EXPECTED_SCHEMA = "flagquantum.multi_level_ir_internal_contract"
-EXPECTED_VERSION = "0.2"
+EXPECTED_VERSION = "0.3"
 EXPECTED_STATUS = "implementation_authorized"
 EXPECTED_OWNER = "core"
 EXPECTED_PUBLIC_LEVEL = "circuit"
@@ -152,8 +152,8 @@ RULE_READERS: dict[str, tuple[str, ...]] = {
         "test_dynamic_condition_contract_rejects_invalid_def_use",
     ),
     "rejection": (
-        "test_dynamic_instruction_is_refused",
-        "test_conditional_instruction_is_refused",
+        "test_unsupported_dynamic_marker_is_refused",
+        "test_malformed_conditional_instruction_is_refused",
         "test_tampered_payload_is_refused",
     ),
     "no_best_effort": (

@@ -1,9 +1,9 @@
 {
   "schema": "flagquantum.multi_level_ir_internal_contract",
-  "version": "0.2",
+  "version": "0.3",
   "status": "implementation_authorized",
   "owner": "core",
-  "approval_basis": "docs/development/API_CHANGE_PROPOSAL_076_DYNAMIC_PROGRAM_IR_CONTRACT.md",
+  "approval_basis": "docs/development/API_CHANGE_IMPLEMENTATION_076_DYNAMIC_PROGRAM_IR_LOWERING.md",
   "decision": "docs/architecture/decisions/IR_007_PHASE_4_HYBRID_DYNAMIC_SCOPE.md",
   "taxonomy_source": "docs/architecture/decisions/IR_006_PHASE1_REVERSIBLE_SCOPE.md",
   "existing_authorities": {
@@ -66,12 +66,12 @@
     {
       "code": "level.conditional_instruction",
       "level": "circuit",
-      "meaning": "the circuit carries an instruction with declared conditions that the public schema does not resolve"
+      "meaning": "the circuit carries malformed or ill-ordered condition metadata that cannot be represented as typed def-use"
     },
     {
       "code": "level.dynamic_instruction",
       "level": "circuit",
-      "meaning": "the circuit carries an instruction marked is_dynamic, which has no def-use representation at the internal levels"
+      "meaning": "the circuit carries malformed dynamic metadata or applies the dynamic marker to an unsupported operation"
     },
     {
       "code": "level.no_canonical_payload",
@@ -236,8 +236,8 @@
     "joins": "Every predecessor contributes exactly one live value for the same resource, which this boundary checks positionally: an edge into a block must contribute exactly the kinds that block declares as arguments, in order. Nothing is unified or merged implicitly.",
     "failure_categories": "Exactly one state per conversion, from IR-006's taxonomy extended to the internal levels: supported_exact, unsupported_with_diagnostics, or invalid_input. A refusal carries at least one typed diagnostic naming a code this contract declares, and a supported_exact result carries none.",
     "round_trip": "A supported static circuit round-trips to a canonical CircuitIR payload exactly: the payload restored from the program level equals, field for field, the canonical payload that entered it, and a payload the boundary cannot re-canonicalize is refused rather than reported as an exact round trip. The contract fake reaches this by recording the payload rather than by lowering; the program level that replaces it must reach it by construction.",
-    "dynamic_def_use": "Measurement consumes one qubit value and defines its successor plus one bool value. Reset consumes one qubit value and defines its successor. A condition is canonical disjunctive normal form over bool ValueRefs defined before the conditioned gate; it never attaches to constant, measure, or reset. The public CircuitIR lowering continues to refuse dynamic metadata until the separately reviewed activation implements this mapping exactly.",
-    "rejection": "Dynamic public lowering remains inactive until it can construct the admitted typed def-use exactly. Unmodelled structure and a payload that no longer reads as a CircuitIR are rejected with diagnostics rather than approximated. An illegal control-flow graph is additionally refused as invalid input, including an unknown terminator, an unknown successor, a missing successor on a branch, a successor on a return, and a join whose kinds disagree.",
+    "dynamic_def_use": "Measurement consumes one qubit value and defines its successor plus one bool value. Reset consumes one qubit value and defines its successor. A condition is canonical disjunctive normal form over bool ValueRefs defined before the conditioned gate; it never attaches to constant, measure, or reset. CircuitIR classical-control metadata lowers to this graph exactly, and the inverse accepts it only when lowering the attested payload reproduces the same graph.",
+    "rejection": "Malformed dynamic metadata, an unsupported dynamic marker, unmodelled structure, and a payload that no longer reads as a CircuitIR are rejected with diagnostics rather than approximated. An illegal control-flow graph is additionally refused as invalid input, including an unknown terminator, an unknown successor, a missing successor on a branch, a successor on a return, and a join whose kinds disagree.",
     "no_best_effort": "No implicit lossy mode exists. best_effort is not a support state, and no code path may report one conversion as another because the difference was believed to be small.",
     "no_second_pass_manager": "This boundary adds levels to the pass infrastructure that already exists at flagquantum.compiler.pass_manager; it does not introduce a pass manager, a pass registry, an analysis registry, an ExecutableArtifact, or a RuntimeAdapter of its own.",
     "no_root_export": "The boundary module is internal: it is absent from the package root's exports, absent from the Stable Core snapshot, and adds no root export. CircuitIR schema 1.0 and IR_VERSION remain the only public serialized IR identity."
