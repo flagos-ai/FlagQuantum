@@ -317,6 +317,16 @@ def validate() -> tuple[str, ...]:
             extension_protocol_contract.get("root_signatures", {})
         )
     expected_signatures.update(observable_outputs_contract.get("signatures", {}))
+    if observable_outputs_contract["rules"].get(
+        "tensor_request_equality_by_object_identity"
+    ):
+        import flagquantum as fq
+
+        request_contract = observable_outputs_contract.get("output_request", {})
+        if dataclass_record(fq.OutputRequest) != request_contract.get("dataclass"):
+            errors.append("OutputRequest fields differ from approved proposal 080")
+        if list(fq.OutputRequest.__slots__) != request_contract.get("slots"):
+            errors.append("OutputRequest slots differ from approved proposal 080")
     if gradient_contract.get("implementation_authorized") is True:
         expected_signatures.update(gradient_contract.get("signatures", {}))
     if openqasm_import_contract.get("implementation_authorized") is True:

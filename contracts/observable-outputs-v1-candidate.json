@@ -7,7 +7,10 @@
     "amended_at": "2026-11-01",
     "amended_by": "API owner via explicit user directive",
     "amendment_proposal": "docs/development/API_CHANGE_PROPOSAL_069_VN_ENTROPY_OUTPUT.md",
-    "amendment_record": "docs/api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md"
+    "amendment_record": "docs/api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md",
+    "matrix_expectation_approved_at": "2026-10-21",
+    "matrix_expectation_proposal": "docs/development/API_CHANGE_PROPOSAL_080_MATRIX_EXPECTATION_OUTPUTS.md",
+    "matrix_expectation_record": "docs/api-changes/FQ-MATRIX-EXPECTATION-OUTPUTS-20261021.md"
   },
   "root_additions": [
     "I",
@@ -30,7 +33,7 @@
   "signatures": {
     "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
     "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
-    "expectation": "(observable: 'Observable', *, name: 'str | None' = None) -> 'OutputRequest'",
+    "expectation": "(observable: 'Observable | torch.Tensor', *, name: 'str | None' = None) -> 'OutputRequest'",
     "probabilities": "(qubits: 'Iterable[int] | int | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | None | Omitted' = OMITTED) -> 'OutputRequest'",
     "samples": "(qubits: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED) -> 'OutputRequest'",
     "counts": "(qubits: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED, *, name: 'str | None' = None, wires: 'Iterable[int] | int | Observable | None | Omitted' = OMITTED) -> 'OutputRequest'",
@@ -49,7 +52,90 @@
     "statevector_to_density_matrix_is_bounded": true,
     "vn_entropy_requires_at_least_one_qubit": true,
     "vn_entropy_refuses_nonpositive_log_base": true,
-    "vn_entropy_refuses_readout_confusion": true
+    "vn_entropy_refuses_readout_confusion": true,
+    "full_space_matrix_expectations_require_lindblad": true,
+    "matrix_plans_snapshot_values_without_detaching": true,
+    "tensor_request_equality_by_object_identity": true,
+    "lindblad_effective_names_are_unique": true
   },
-  "qubit_naming_migration": "docs/api-changes/FQ-QUBIT-NAMING-20260913.md"
+  "qubit_naming_migration": "docs/api-changes/FQ-QUBIT-NAMING-20260913.md",
+  "output_request": {
+    "dataclass": [
+      {
+        "class_frozen": true,
+        "class_order": false
+      },
+      {
+        "name": "kind",
+        "type": "str",
+        "default": {
+          "kind": "missing"
+        },
+        "default_factory": {
+          "kind": "missing"
+        },
+        "init": true,
+        "keyword_only": false
+      },
+      {
+        "name": "qubits",
+        "type": "tuple[int, ...]",
+        "default": {
+          "kind": "tuple",
+          "items": []
+        },
+        "default_factory": {
+          "kind": "missing"
+        },
+        "init": true,
+        "keyword_only": false
+      },
+      {
+        "name": "observable",
+        "type": "Observable | torch.Tensor | None",
+        "default": {
+          "kind": "literal",
+          "value": null
+        },
+        "default_factory": {
+          "kind": "missing"
+        },
+        "init": true,
+        "keyword_only": false
+      },
+      {
+        "name": "name",
+        "type": "str | None",
+        "default": {
+          "kind": "literal",
+          "value": null
+        },
+        "default_factory": {
+          "kind": "missing"
+        },
+        "init": true,
+        "keyword_only": false
+      },
+      {
+        "name": "log_base",
+        "type": "float | None",
+        "default": {
+          "kind": "literal",
+          "value": null
+        },
+        "default_factory": {
+          "kind": "missing"
+        },
+        "init": true,
+        "keyword_only": false
+      }
+    ],
+    "slots": [
+      "kind",
+      "qubits",
+      "observable",
+      "name",
+      "log_base"
+    ]
+  }
 }

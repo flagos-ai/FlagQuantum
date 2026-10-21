@@ -110,6 +110,19 @@ These examples do not use that alias:
 For exact support levels, consult the
 [capability catalog](../docs/generated/CAPABILITIES.md).
 
+## Matrix expectation dynamics
+
+Run `python -m examples.matrix_expectation_dynamics` to evolve a three-level
+model using the shared `fq.expectation` request, retrieve a named expectation,
+and differentiate its coupling with PyTorch. It uses the existing CPU
+Lindblad planner and integrator. Expected output:
+
+```text
+Leakage expectation: 0.11757891
+Coupling derivative: 0.32210884
+Circuit matrix output: refused; use flagquantum.lindblad
+```
+
 ## Lindblad output names
 
 Run `python -m examples.lindblad_output_names` to retrieve two named expectation
@@ -123,7 +136,7 @@ Collision refused: duplicate_output_name
 ```
 
 This uses the existing public Pauli output requests. Full-space matrix request
-construction remains pending the approved Core implementation.
+construction is demonstrated by the matrix dynamics example above.
 
 ## Static finite-mode training
 

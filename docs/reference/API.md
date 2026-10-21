@@ -618,6 +618,16 @@ positive shot count. Use `result.expectation()`, `result.expectations`,
 typed result path. Unsupported output kinds and missing shot counts fail before
 execution.
 
+For finite-dimensional CPU dynamics, the same `fq.expectation` factory accepts
+a full-space dense tensor. Pass it through `flagquantum.lindblad.plan/run` with
+the existing `dimensions=` or `basis_labels=` declaration. Numeric shape,
+finiteness and Hermiticity are checked by the existing dynamics normalizer;
+live plans copy matrix values without detaching gradients. Circuit/remote
+outputs refuse this form before execution or submission. See
+[`examples/matrix_expectation_dynamics.py`](../../examples/matrix_expectation_dynamics.py).
+`Observable` itself remains the Pauli algebra; samples/counts do not accept
+matrix operators. No result field or plan schema is added.
+
 Use `result.measurement(index_or_name)` for a specific request,
 `result.statevector()` for a required statevector, and `result.native()` only
 when intentionally depending on an unstable backend-native object. Backend

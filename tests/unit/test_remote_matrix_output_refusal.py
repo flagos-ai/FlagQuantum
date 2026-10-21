@@ -15,12 +15,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def matrix_request() -> fq.OutputRequest:
-    # Only the producer is pending: replace this fixture with fq.expectation
-    # after Core implements the approved matrix constructor. No validator is
-    # patched, and the refusal assertions must stay unchanged.
-    output = fq.expectation(fq.Z(0), name="population")
-    object.__setattr__(output, "observable", torch.eye(2))
-    return output
+    return fq.expectation(torch.eye(2), name="population")
 
 
 @pytest.mark.parametrize(

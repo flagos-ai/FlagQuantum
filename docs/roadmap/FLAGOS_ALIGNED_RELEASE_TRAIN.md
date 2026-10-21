@@ -192,6 +192,27 @@ domain. A new `physics/` package requires a separate boundary decision and
 architecture-policy change justified by multiple consumers; this roadmap
 creates neither it nor empty packages for each physical route.
 
+### M2 matrix expectation workflow
+
+[Proposal 080](../development/API_CHANGE_PROPOSAL_080_MATRIX_EXPECTATION_OUTPUTS.md)
+was approved on 2026-10-21. Its replaceable contract baseline landed in #669;
+#671 supplies Simulation-owned matrix snapshots and output-name validation.
+The Core implementation reuses `fq.expectation`, `OutputRequest`, and the existing
+CPU Lindblad plan/result path. A full-space numeric tensor follows the declared
+product or explicit basis; the Simulation boundary owns dimension, finiteness,
+and Hermiticity checks. CircuitIR 1.0 and Pauli outputs remain unchanged.
+
+Acceptance for this slice requires unchanged contract consumers to run against
+the real implementation, tensor-identity request equality/hash behavior, matrix
+snapshots on plans, exact-plan replay, named results and control gradients.
+Circuit, receipt, resident and QPU front doors must refuse dense outputs before
+execution or submission; Remote-owned preparation is reviewed separately in
+#678. Run `python -m examples.matrix_expectation_dynamics` for a three-level
+leakage expectation and its coupling derivative. The example is a CPU dynamics
+workflow, not circuit/GPU/QPU dense-output support or completion of all M2 gates.
+Each implementation PR still requires its own merge authorization and complete
+applicable verification.
+
 ### Reference scenarios
 
 | Scenario | Shared capability under test | Additional acceptance |
