@@ -58,3 +58,5 @@ process.
 - [A global phase on the program](FQ-IR-GLOBAL-PHASE-20261006.md)
 - [The optimization-level parameter on the compiler entry points](FQ-COMPILER-OPTIMIZATION-LEVEL-20261006.md)
 - [Core-lane dependency discipline for optional imports and `tomllib`](FQ-CORE-LANE-DEPENDENCIES-20261025.md)
+
+- [LaTeX circuit export and Notebook display](FQ-DRAWER-LATEX-20261021.md)
