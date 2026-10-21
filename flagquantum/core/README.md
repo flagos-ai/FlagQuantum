@@ -21,6 +21,10 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   basis labels shared by dynamics. Explicit labels do not infer tensor factors
   or certify physical sectors; no circuit or root export is added.
 - `parameters.py`: symbolic parameters and binding semantics.
+- `rydberg.py`: the approved experimental Rydberg frontend over ProgramRecord.
+  `ir/program/physical.py` owns its typed control profile and semantic checks;
+  `geometry.py` owns finite Cartesian pairs for this profile and the separately
+  scheduled Remote normalizer replacement. Neither file executes dynamics.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.
 - `contracts.py`: versioned cross-domain execution and evidence records.

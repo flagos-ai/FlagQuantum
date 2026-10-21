@@ -105,3 +105,23 @@ It does not claim native motion from matrix assembly.
    full CI/GPU gates. Each PR includes runnable user code and expected results,
    and requires its own merge authorization. Native success does not close the
    remaining event, motional, hardware or scalability gates.
+
+## Core implementation admission
+
+After baseline #698 merged at `acc420c258042de5189a6edf934efdd8e2d25ec9`,
+the Core delivery owns `core/rydberg.py` (frontend), `core/geometry.py` (finite
+Cartesian validation), and `core/ir/program/physical.py` (typed records and
+physical verification). The existing ProgramRecord/Operation gain only the two
+approved optional fields. The existing level verifier/dispatcher and circuit
+normalizer consume them; the global circuit opcode manifest stays unchanged.
+
+The existing experimental surface candidate admits exactly RydbergProgram under
+experimental.simulation, with no root export or change to its frozen governance
+baseline. The existing internal-level candidate admits the six approved
+physical diagnostic codes and the one typed profile; its existing checker must
+read that admission. This is not a second profile registry or a new IR hierarchy.
+Core's local README owns the shortest construction/verification change path.
+
+Numerical native consumption, native plan 1.7 and the Remote adapter replacement
+remain subsequent domain deliveries. Core tensor helpers construct small CPU
+mathematical inputs; they do not execute the program or certify full M3.

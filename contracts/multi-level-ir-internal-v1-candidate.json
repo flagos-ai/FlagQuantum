@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.multi_level_ir_internal_contract",
-  "version": "0.3",
+  "version": "0.4",
   "status": "implementation_authorized",
   "owner": "core",
   "approval_basis": "docs/development/API_CHANGE_IMPLEMENTATION_076_DYNAMIC_PROGRAM_IR_LOWERING.md",
@@ -53,12 +53,21 @@
   ],
   "dynamic_operation_signatures": {
     "measure": {
-      "operands": ["qubit"],
-      "results": ["qubit", "bool"]
+      "operands": [
+        "qubit"
+      ],
+      "results": [
+        "qubit",
+        "bool"
+      ]
     },
     "reset": {
-      "operands": ["qubit"],
-      "results": ["qubit"]
+      "operands": [
+        "qubit"
+      ],
+      "results": [
+        "qubit"
+      ]
     },
     "condition_form": "canonical_dnf_over_bool_value_refs"
   },
@@ -227,6 +236,36 @@
       "code": "value.linear_unconsumed",
       "level": "program",
       "meaning": "a branching block does not forward a linear argument it owns"
+    },
+    {
+      "code": "physical.invalid_context",
+      "level": "program",
+      "meaning": "invalid physical identities, units or immutable context"
+    },
+    {
+      "code": "physical.invalid_operation",
+      "level": "program",
+      "meaning": "invalid typed physical operation or references"
+    },
+    {
+      "code": "physical.occupancy_conflict",
+      "level": "program",
+      "meaning": "inconsistent source history or overlapping actor moves"
+    },
+    {
+      "code": "physical.path_collision",
+      "level": "program",
+      "meaning": "continuous paths breach minimum separation"
+    },
+    {
+      "code": "physical.channel_conflict",
+      "level": "program",
+      "meaning": "overlapping declared resource or drive use"
+    },
+    {
+      "code": "physical.unsupported_structure",
+      "level": "program",
+      "meaning": "physical profile contains unimplemented program structure"
     }
   ],
   "rules": {
@@ -244,10 +283,22 @@
   },
   "exclusions": [
     "no general-purpose classical language: recursion, unbounded loops, dynamic memory, exceptions, closures, or higher-order values",
-    "no timing, pulse, or calibration surface",
+    "no timing or pulse surface outside the approved finite Rydberg profile; no calibration surface",
     "no provider-native instruction set",
     "no change to IR_VERSION, to CircuitIR schema 1.0, or to the Stable Core export set",
     "no textual internal IR as a compatibility surface",
     "no fq.AncillaQubit or other new public qubit type"
-  ]
+  ],
+  "physical_profile": {
+    "kind": "rydberg",
+    "approval_basis": "docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md",
+    "context_type": "flagquantum.core.ir.program.physical.RydbergContext",
+    "operation_types": [
+      "flagquantum.core.ir.program.physical.RydbergTransport",
+      "flagquantum.core.ir.program.physical.RydbergPulse"
+    ],
+    "frontend": "flagquantum.experimental.simulation.RydbergProgram",
+    "operation_field": "physical_data",
+    "program_field": "physical_context"
+  }
 }

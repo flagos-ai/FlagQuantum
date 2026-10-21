@@ -39,7 +39,13 @@
       "run_dynamic"
     ],
     "execution": [],
-    "interop": ["braket", "cirq", "cudaq", "pennylane", "qiskit"],
+    "interop": [
+      "braket",
+      "cirq",
+      "cudaq",
+      "pennylane",
+      "qiskit"
+    ],
     "mps": [],
     "numerics": [
       "execute_split_real_imag_expectation",
@@ -47,7 +53,10 @@
       "parameter_shift_split_real_imag_gradient"
     ],
     "planning": [],
-    "simulation": ["run_tebd"]
+    "simulation": [
+      "RydbergProgram",
+      "run_tebd"
+    ]
   },
   "surface_metrics_scope": "Historical Proposal 011 reduction; excludes subsequent approved additive domains.",
   "approved_additions": [
@@ -65,9 +74,14 @@
       "proposal": "docs/development/TENSOR_NETWORK_DISTRIBUTED_CONTRACT.md",
       "namespace": "distributed",
       "discoverable_feature_exports": 1
+    },
+    {
+      "proposal": "docs/development/API_CHANGE_PROPOSAL_081_RYDBERG_TRANSPORT_PROGRAMS.md",
+      "namespace": "simulation",
+      "discoverable_feature_exports": 1
     }
   ],
-  "current_total_discoverable_feature_exports": 19,
+  "current_total_discoverable_feature_exports": 20,
   "surface_metrics": {
     "previous_discoverable_feature_exports": 114,
     "current_discoverable_feature_exports": 10,
