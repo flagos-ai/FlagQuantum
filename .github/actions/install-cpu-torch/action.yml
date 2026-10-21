@@ -1,11 +1,18 @@
 name: Install CPU PyTorch
 description: Use a domestic CPU wheel mirror with an official CPU index fallback
+inputs:
+  torch-spec:
+    description: Requested CPU PyTorch requirement, including dependency-bound matrix lanes
+    default: "torch>=2.13,<2.14"
 runs:
   using: composite
   steps:
     - shell: bash
+      env:
+        FQ_TORCH_SPEC: ${{ inputs.torch-spec }}
       run: |
-        if python -c 'import torch; from packaging.specifiers import SpecifierSet; assert torch.version.cuda is None; assert "+cpu" in torch.__version__; assert torch.__version__ in SpecifierSet(">=2.13,<2.14")' 2>/dev/null; then
+        export FQ_TORCH_SPEC="${FQ_TORCH_SPEC:-torch>=2.13,<2.14}"
+        if python -c 'import os, torch; from packaging.requirements import Requirement; assert torch.version.cuda is None; assert "+cpu" in torch.__version__; assert torch.__version__ in Requirement(os.environ["FQ_TORCH_SPEC"]).specifier' 2>/dev/null; then
           echo "Using the verified CPU PyTorch wheel already installed in this private environment"
         elif [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
           # Select Torch only from the CPU directory, then resolve its ordinary
@@ -15,17 +22,17 @@ runs:
           if TMPDIR="$wheel_directory" timeout --kill-after=10s 180s python -m pip download \
             --only-binary=:all: --no-index --no-deps \
             --find-links https://mirrors.aliyun.com/pytorch-wheels/cpu/ \
-            --dest "$wheel_directory" 'torch>=2.13,<2.14' && \
-            python -m pip install --no-deps "$wheel_directory"/*.whl && \
-            python -m pip install 'torch>=2.13,<2.14'; then
+            --dest "$wheel_directory" "$FQ_TORCH_SPEC" && \
+            python -m pip install --no-deps "$wheel_directory"/*.whl; then
             echo "CPU PyTorch installed through the domestic mirror"
           else
             echo "::warning::CPU mirror installation failed; retrying the official CPU index"
-            python -m pip install 'torch>=2.13,<2.14' \
+            python -m pip install --no-deps "$FQ_TORCH_SPEC" \
               --index-url https://download.pytorch.org/whl/cpu
           fi
         else
-          python -m pip install 'torch>=2.13,<2.14' \
+          python -m pip install --no-deps "$FQ_TORCH_SPEC" \
             --index-url https://download.pytorch.org/whl/cpu
         fi
+        python -m pip install "$FQ_TORCH_SPEC"
         python -c "import torch; assert torch.version.cuda is None, torch.version.cuda; assert '+cpu' in torch.__version__, torch.__version__; print('CPU PyTorch:', torch.__version__)"

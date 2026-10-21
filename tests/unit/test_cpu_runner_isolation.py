@@ -106,6 +106,7 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
     assert all(not step.get("with", {}).get("lfs", False) for step in checkouts)
 
 
+@pytest.mark.parametrize("torch_spec", ["torch>=2.13,<2.14", "torch>=2.10,<2.11"])
 @pytest.mark.parametrize(
     ("runner_environment", "mirror_failure"),
     [
@@ -116,7 +117,7 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
     ],
 )
 def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
-    tmp_path: Path, runner_environment: str, mirror_failure: str
+    tmp_path: Path, runner_environment: str, mirror_failure: str, torch_spec: str
 ) -> None:
     action = yaml.safe_load(
         (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
@@ -128,7 +129,7 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
         "import json, os, pathlib, sys\n"
         "with open(os.environ['PIP_CALL_LOG'], 'a') as stream:\n"
         "    stream.write(json.dumps(sys.argv[1:]) + '\\n')\n"
-        "if sys.argv[1] == '-c' and 'SpecifierSet' in sys.argv[2]:\n"
+        "if sys.argv[1] == '-c' and 'Requirement' in sys.argv[2]:\n"
         "    raise SystemExit(1)\n"
         "if 'download' in sys.argv:\n"
         "    if os.environ['MIRROR_FAILURE'] == 'error':\n"
@@ -153,6 +154,7 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
             "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
             "PIP_CALL_LOG": str(log),
             "MIRROR_FAILURE": mirror_failure,
+            "FQ_TORCH_SPEC": torch_spec,
             "RUNNER_ENVIRONMENT": runner_environment,
             "RUNNER_TEMP": str(tmp_path),
         },
@@ -171,13 +173,16 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
         assert len(pip_calls) == 3
         assert official not in str(pip_calls)
         assert "--no-deps" in pip_calls[1]
-        assert pip_calls[2] == ["-m", "pip", "install", "torch>=2.13,<2.14"]
+        assert pip_calls[2] == ["-m", "pip", "install", torch_spec]
     else:
-        assert official in pip_calls[-1]
-        assert "torch>=2.13,<2.14" in pip_calls[-1]
+        assert official in pip_calls[-2]
+        assert "--no-deps" in pip_calls[-2]
+        assert torch_spec in pip_calls[-2]
     if runner_environment == "github-hosted":
-        assert len(pip_calls) == 1
+        assert len(pip_calls) == 2
         assert mirror not in str(pip_calls)
+    assert pip_calls[-1] == ["-m", "pip", "install", torch_spec]
+    assert "--index-url" not in pip_calls[-1]
     assert commands[-1][0] == "-c"
     assert "torch.version.cuda is None" in commands[-1][1]
     assert not list(tmp_path.glob("fq-cpu-wheel.*"))
@@ -277,14 +282,22 @@ def test_cached_torch_probe_rejects_wrong_version_or_accelerator_build(
     action = yaml.safe_load(
         (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
     )
-    command = action["runs"]["steps"][0]["run"].splitlines()[0]
+    command = next(
+        line.strip()
+        for line in action["runs"]["steps"][0]["run"].splitlines()
+        if line.strip().startswith("if python -c")
+    )
     probe = shlex.split(command)[3]
     (tmp_path / "torch.py").write_text(
         f"__version__ = {version!r}\n" f"class version:\n    cuda = {cuda!r}\n"
     )
     result = subprocess.run(
         [sys.executable, "-c", probe],
-        env={**os.environ, "PYTHONPATH": str(tmp_path)},
+        env={
+            **os.environ,
+            "PYTHONPATH": str(tmp_path),
+            "FQ_TORCH_SPEC": "torch>=2.13,<2.14",
+        },
         capture_output=True,
         timeout=10,
         check=False,

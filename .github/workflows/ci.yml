@@ -1087,7 +1087,10 @@ jobs:
       - uses: ./.github/actions/isolated-python
         with:
           torch-spec: ${{ matrix.torch }}
-      - run: python -m pip install '${{ matrix.torch }}' --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+        with:
+          torch-spec: ${{ matrix.torch }}
       - run: python -m pip install pytest
       - run: python -m pip install --no-build-isolation -e . --no-deps
       - name: Verify dependency consistency and CPU frameworks
