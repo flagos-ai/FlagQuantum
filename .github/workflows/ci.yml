@@ -1,52 +1,46 @@
 name: CI
 
 on:
-  push:
-    # `develop` and the `refactor/flagquantum-vnext-architecture` integration branch
-    # were listed here as well. Neither has ever existed in this repository or in the
-    # private integration checkout, so those two entries could never fire. A `push`
-    # trigger that cannot run is worse than an absent one: it reads as coverage.
-    branches: [main]
   pull_request:
     branches: [main]
-  merge_group:
-    types: [checks_requested]
-    branches: [main]
+  workflow_dispatch:
 
 # flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
 # jobs, and this workflow fans out beyond the share one repository should hold.
 # Two constraints bound this repository's share of it.
 #
-# The block below cancels a superseded run of the same pull request, so a push to
-# a branch under review does not queue a second full matrix behind it, and it
-# deliberately does not cancel a superseded run of `main`. A pull request's older
-# tree is a tree nobody will merge, so its reading is replaceable. A revision of
-# `main` has already been merged, so cancelling its run leaves a merge commit that
-# no gate ever read, and nothing here reports the difference between that and a
-# passing revision: on 2026-10-08 the merges of #590 and #591 landed 17 seconds
-# apart and all 23 check runs attached to the first of them were `cancelled`,
-# `quality` among them (issue #579). A push run is therefore keyed to its own
-# commit and allowed to finish. The cost is a queued matrix per push to `main`
-# rather than a dropped one, and that is the trade this file makes knowingly.
+# PR pushes cancel that PR's superseded checks. Manual full validation is
+# independent per run. Main pushes use main-smoke.yml instead of repeating
+# the full PR matrix, and strict required checks protect the merge base.
 #
-# CPU core/runtime, coverage and dependency suites share eight A800 CPU runners,
-# with up to 16 quota-aware pytest workers per job and a separate virtual environment per run.
-# Self-hosted CPU jobs have no matrix parallelism cap or shared capacity lock.
-# Fork CPU jobs fall back to Ubuntu with two workers. All Ubuntu fallbacks
-# share sixteen GitHub-hosted buckets: three core Python versions, runtime,
-# eight coverage shards, distributed, and light-a/b/c. Source preparation shares
-# the 3.12 summary bucket. Their PR/branch
-# scope prevents unrelated runs from serializing behind each other.
+# CPU smoke/unit and runtime suites retain the dedicated A800 CPU runners.
+# Other trusted Ubuntu checks use the A100 CPU pool, with hosted fork fallback.
+# A800 jobs use up to 16 quota-aware workers and a private environment per run.
+# Hosted fallback jobs share sixteen scoped concurrency buckets. A100 CPU
+# jobs instead include run ID, job ID and matrix index in their groups, so the
+# provisioned runner count bounds concurrency without serializing unrelated
+# checks or matrix legs behind the hosted light-a/b/c buckets.
 #
 # `queue: max` is what makes a bucket a cap instead of a drop: the default
 # keeps only the newest waiting job and cancels the ones behind it, which would
 # report nothing at all for the job that was dropped.
 concurrency:
-  # Queue revisions have their own SHA; never cancel another integration tree.
-  group: flagquantum-ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || github.event.merge_group.head_sha || 'pr' }}
+  group: flagquantum-ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      queue: max
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/source-hygiene
+
   # Prepare source before fan-out so the first hosted slot also unlocks A800 jobs.
   prepare-source:
     outputs:
@@ -93,16 +87,9 @@ jobs:
 
   quality:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
-    timeout-minutes: 45
-    env:
-      CUDA_VISIBLE_DEVICES: ""
-      OMP_NUM_THREADS: "2"
-      MKL_NUM_THREADS: "2"
-      OPENBLAS_NUM_THREADS: "2"
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-quality-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
       # The evidence provenance gates below ask whether each recorded source
@@ -125,7 +112,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: ${{ runner.environment == 'github-hosted' && 'pip' || '' }}
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
@@ -424,7 +410,7 @@ jobs:
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
       - name: Measure dedicated CPU service limits
         run: python -I tools/ci_cpu_budget.py --dedicated
-      - run: python -m pip install --upgrade pip setuptools wheel
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - name: Install the CPU PyTorch wheel from the local cache or official index
         run: |
           if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
@@ -561,7 +547,7 @@ jobs:
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
       - name: Measure dedicated CPU service limits
         run: python -I tools/ci_cpu_budget.py --dedicated
-      - run: python -m pip install --upgrade pip setuptools wheel
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - name: Install the CPU PyTorch wheel from the local cache or official index
         run: |
           if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
@@ -666,7 +652,7 @@ jobs:
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
       - name: Measure dedicated CPU service limits
         run: python -I tools/ci_cpu_budget.py --dedicated
-      - run: python -m pip install --upgrade pip setuptools wheel
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - name: Install the CPU PyTorch wheel from the local cache or official index
         run: |
           if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
@@ -699,9 +685,9 @@ jobs:
     name: cpu-core (3.12)
     needs: [cpu-core-3-12-tests, cpu-runtime]
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cpu-core-3-12-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
       - name: Require Python 3.12 unit and runtime suites to pass
@@ -711,37 +697,56 @@ jobs:
 
   jax-optional:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-jax-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   azure-optional:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-azure-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.32.3 1.32.*"
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - name: Install the declared Azure extra
         run: python -m pip install --no-build-isolation -e '.[dev,azure]'
       - name: Verify the certified QDK Azure versions and the offline provider suite
@@ -756,41 +761,67 @@ jobs:
             python -m pytest tests/test_azure_quantum_provider.py -m azure -q
             python -c "import sys, flagquantum; assert not any(name == 'qdk' or name.startswith('qdk.') or name == 'azure' or name.startswith('azure.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   triton-optional:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-triton-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,cuda]'
       - name: Run the Triton kernels that do not need a device
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   qiskit-optional:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
       OPTIONAL_VERSIONS: "2.0.* 2.5.*"
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Qiskit and Aer versions
         run: |
@@ -817,23 +848,36 @@ jobs:
             python -m pytest tests/benchmark_contract/test_compiler_*.py -m benchmark_contract -q
             python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cirq-optional:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.6.1 1.7.0"
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Cirq Core versions
         run: |
@@ -844,22 +888,36 @@ jobs:
             python -m pytest tests/test_cirq_interop.py tests/test_cirq_interop_conformance.py -m cirq -q
             python -c "import sys, flagquantum; assert not any(name == 'cirq' or name.startswith('cirq.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   braket-optional:
     needs: prepare-source
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.117.0 1.127.1"
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Amazon Braket SDK versions
         run: |
@@ -870,49 +928,99 @@ jobs:
             python -m pytest tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py tests/test_braket_interop.py tests/test_braket_interop_conformance.py -m braket -q
             python -c "import sys, flagquantum; assert not any(name == 'braket' or name.startswith('braket.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cudaq-optional:
     needs: prepare-source
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cudaq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified CUDA-Q versions
         run: |
           set -euxo pipefail
           for version in ${OPTIONAL_VERSIONS}; do
+            cache=/opt/flagquantum-runners/tools/public-wheels
+            if [ "${FQ_RUNNER_KIND:-}" = cpu ] && [ -d "$cache" ]; then
+              if python -m pip install --no-index --no-deps --find-links "$cache" "cuda-quantum-cu12==${version}"; then
+                mapfile -t cached_dependencies < <(python - <<'PYTHON'
+          from importlib.metadata import requires
+          from packaging.requirements import Requirement
+
+          cached_prefixes = (
+              "nvidia-", "custatevec-", "cutensornet-", "cudensitymat-", "cupy-"
+          )
+          for value in requires("cuda-quantum-cu12") or []:
+              requirement = Requirement(value)
+              if requirement.name.startswith(cached_prefixes) and (
+                  requirement.marker is None or requirement.marker.evaluate()
+              ):
+                  print(requirement)
+          PYTHON
+                )
+                if ! python -m pip install --no-index --no-deps --find-links "$cache" "${cached_dependencies[@]}"; then
+                  echo "CUDA-Q dependency cache incomplete; normal installation will resolve dependencies."
+                fi
+              fi
+            fi
             python -m pip install --upgrade "cudaq==${version}"
             python tools/check_cudaq_export_contract.py --verify-sdk
             python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
             python -c "import sys, flagquantum; assert not any(name == 'cudaq' or name.startswith('cudaq.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   pennylane-optional:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-pennylane-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.44.1 0.45.1"
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified PennyLane versions
         run: |
@@ -923,21 +1031,27 @@ jobs:
             python -m pytest tests/team/ecosystem/test_pennylane_boundary_semantics.py tests/test_pennylane_interop.py tests/test_pennylane_interop_conformance.py tests/benchmark_contract/test_batched_statevector_corpus.py -m pennylane -q
             python -c "import sys, flagquantum; assert not any(name == 'pennylane' or name.startswith('pennylane.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   dependency-bounds:
     needs: prepare-source
-    runs-on: >-
-      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     timeout-minutes: 30
-    concurrency:
-      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
-      queue: max
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      JAX_PLATFORMS: cpu
+    concurrency:
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      queue: max
     strategy:
       fail-fast: false
       matrix:
@@ -957,69 +1071,26 @@ jobs:
           - python: "3.12"
             torch: "torch>=2.14,<2.15"
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
-      - name: Check whether cached Git objects complete the source tree
-        id: source-cache
+      - name: Clear sparse checkout state from a previous job
         run: |
-          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
-          test "$sha" = "$GITHUB_SHA"
-          if [ ! -d .git ]; then
-            git init .
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
           fi
-          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
-          complete=false
-          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
-            if ! printf '%s\n' "$objects" | grep -q '^?'; then
-              complete=true
-            fi
-          fi
-          echo "complete=$complete" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+      - uses: actions/checkout@v4
         with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
-      - name: Restore and verify this run's exact source commit
-        run: |
-          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
-          test "$sha" = "$GITHUB_SHA"
-          if [ ! -d .git ]; then
-            git init .
-          fi
-          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
-          printf '%s\n' "$sha" >> .git/shallow
-          sort -u .git/shallow -o .git/shallow
-          git config --worktree core.sparseCheckout false
-          git config --worktree core.sparseCheckoutCone false
-          rm -f .git/info/sparse-checkout
-          git read-tree --empty
-          git checkout --force --detach "$sha"
-          git clean -ffdx
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      # Persistent A800 hosts already retain pip downloads locally.
+          ref: ${{ github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Create an isolated environment for this job
-        run: |
-          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
-      - run: python -m pip install --upgrade pip setuptools wheel
-      - name: Install the CPU PyTorch wheel from the local cache or official index
-        run: |
-          if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels '${{ matrix.torch }}'; then
-            python -m pip install --no-deps '${{ matrix.torch }}' --index-url https://download.pytorch.org/whl/cpu
-          fi
-      - name: Install PyTorch dependencies from the Python package mirror
-        run: python -m pip install '${{ matrix.torch }}'
+      - uses: ./.github/actions/isolated-python
+        with:
+          torch-spec: ${{ matrix.torch }}
+      - run: python -m pip install '${{ matrix.torch }}' --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
       - run: python -m pip install pytest
       - run: python -m pip install --no-build-isolation -e . --no-deps
-      - name: Verify dependency consistency and the CPU-only PyTorch build
+      - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
           python -c "import torch; assert torch.version.cuda is None"
@@ -1038,6 +1109,13 @@ jobs:
           ruff check flagquantum tests tools
           black --check flagquantum tests tools
           mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   package:
     needs: prepare-source
@@ -1045,7 +1123,7 @@ jobs:
     # which is still the default compiler on a maintained Linux LTS release.
     runs-on: ubuntu-22.04
     timeout-minutes: 30
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    # One of the five GitHub-hosted buckets -- see the capacity note above.
     concurrency:
       group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
@@ -1169,17 +1247,16 @@ jobs:
 
   distributed-cpu:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     timeout-minutes: 60
     env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
-      OMP_NUM_THREADS: "2"
-      MKL_NUM_THREADS: "2"
-      OPENBLAS_NUM_THREADS: "2"
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-distributed
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-distributed-cpu-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-distributed
       queue: max
     steps:
       - name: Clear sparse checkout state from a previous job
@@ -1196,7 +1273,6 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - name: Verify dependency consistency and CPU frameworks
@@ -1225,87 +1301,40 @@ jobs:
 
   coverage-shard:
     needs: prepare-source
-    runs-on: >-
-      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     timeout-minutes: 30
-    concurrency:
-      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
-      queue: max
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
-      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
+    concurrency:
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
+      queue: max
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
-      - name: Check whether cached Git objects complete the source tree
-        id: source-cache
+      - name: Clear sparse checkout state from a previous job
         run: |
-          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
-          test "$sha" = "$GITHUB_SHA"
-          if [ ! -d .git ]; then
-            git init .
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
           fi
-          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
-          complete=false
-          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
-            if ! printf '%s\n' "$objects" | grep -q '^?'; then
-              complete=true
-            fi
-          fi
-          echo "complete=$complete" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+      - uses: actions/checkout@v4
         with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
-      - name: Restore and verify this run's exact source commit
-        run: |
-          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
-          test "$sha" = "$GITHUB_SHA"
-          if [ ! -d .git ]; then
-            git init .
-          fi
-          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
-          printf '%s\n' "$sha" >> .git/shallow
-          sort -u .git/shallow -o .git/shallow
-          git config --worktree core.sparseCheckout false
-          git config --worktree core.sparseCheckoutCone false
-          rm -f .git/info/sparse-checkout
-          git read-tree --empty
-          git checkout --force --detach "$sha"
-          git clean -ffdx
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      # Persistent A800 hosts already retain pip downloads locally.
+          ref: ${{ github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Create an isolated environment for this job
-        run: |
-          python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
-      - run: python -m pip install --upgrade pip setuptools wheel
-      - name: Install the CPU PyTorch wheel from the local cache or official index
-        run: |
-          if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
-            python -m pip install --no-deps "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
-          fi
-      - name: Install PyTorch dependencies from the Python package mirror
-        run: python -m pip install "torch>=2.13,<2.14"
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
-      - name: Verify dependency consistency and the CPU-only PyTorch build
+      - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
           python -c "import torch; assert torch.version.cuda is None"
@@ -1314,10 +1343,10 @@ jobs:
         if: github.event_name == 'pull_request'
         # The two full P5 trajectory conformance tests already run in the
         # Python 3.12 cpu-core integration tier. Avoid repeating their 3+
-        # instrumented minutes here; pushes to main still measure them below.
+        # instrumented minutes here; manual full validation measures them below.
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
-          -n ${{ runner.environment == 'self-hosted' && 8 || 2 }} --dist=worksteal --durations=50
+          -n 2 --dist=worksteal --durations=50
           -p tools.pytest_shard
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
@@ -1326,7 +1355,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
-          -n ${{ runner.environment == 'self-hosted' && 8 || 2 }} --dist=worksteal --durations=50
+          -n 2 --dist=worksteal --durations=50
           -p tools.pytest_shard
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
@@ -1336,24 +1365,36 @@ jobs:
           name: coverage-shard-${{ matrix.shard }}-${{ github.sha }}
           path: .coverage.${{ matrix.shard }}
           include-hidden-files: true
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   coverage:
     needs: coverage-shard
     if: ${{ always() }}
-    runs-on: ubuntu-latest
-    # Reuse shard zero's bucket after it finishes. Aggregation is serial
-    # metadata work, so it needs no tenth runner slot.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-coverage-0
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-0
       queue: max
     steps:
       - name: Require every coverage shard to pass
         run: test '${{ needs.coverage-shard.result }}' = success
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
+      - uses: ./.github/actions/isolated-python
       - run: python -m pip install 'pytest-cov>=4.0.0,<8'
       - uses: actions/download-artifact@v4
         with:
@@ -1370,24 +1411,37 @@ jobs:
         with:
           name: coverage-${{ github.sha }}
           path: coverage.xml
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   supply-chain:
     needs: prepare-source
-    runs-on: ubuntu-latest
-    # One of the sixteen GitHub-hosted buckets -- see the capacity note above.
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-supply-chain-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     permissions:
       contents: read
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url https://download.pytorch.org/whl/cpu
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
       - name: Install project and security tooling
         run: >-
           python -m pip install --no-build-isolation -e '.[dev]'
@@ -1409,10 +1463,18 @@ jobs:
         with:
           name: sbom-${{ github.sha }}
           path: sbom.cdx.json
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   ci-complete:
     name: CI complete
     needs:
+      - pre-commit
       - prepare-source
       - quality
       - cpu-core
@@ -1435,12 +1497,12 @@ jobs:
       - coverage
       - supply-chain
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-ci-complete-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-a
       queue: max
     steps:
-      - name: Require every CI job to succeed before queue admission
+      - name: Require every CI job to succeed before merging
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: |

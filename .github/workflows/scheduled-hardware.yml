@@ -12,14 +12,15 @@ on:
 
 jobs:
   gpu-scheduled:
-    runs-on: [self-hosted, linux, gpu]
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     # Every accelerator job here measures a device that the others also measure,
     # and the repository registers its runners onto shared hosts. Nothing
     # ordered these jobs against each other, so a single-GPU benchmark could
     # take its latency samples while the scaling sweep held eight devices on the
     # same host. That is how a threshold the code passes gets reported as a
     # regression. One group serializes them, and every accelerator job in every
-    # workflow joins it.
+    # workflow on the A800 pair joins it. The independent A100 host has its
+    # own group; host labels keep these scheduled jobs off that host.
     concurrency:
       group: flagquantum-accelerator
       # `queue: max` keeps every waiting lane. The default keeps one and drops
@@ -69,7 +70,7 @@ jobs:
 
   local-scale-scheduled:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
-    runs-on: [self-hosted, linux, gpu, flagquantum-local]
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
       group: flagquantum-accelerator
       # `queue: max` keeps every waiting lane. The default keeps one and drops
@@ -133,7 +134,7 @@ jobs:
 
   crossover-scheduled:
     needs: local-scale-scheduled
-    runs-on: [self-hosted, linux, gpu, flagquantum-local]
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
       group: flagquantum-accelerator
       # `queue: max` keeps every waiting lane. The default keeps one and drops

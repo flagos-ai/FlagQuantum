@@ -1,15 +1,17 @@
 name: Isolated Python environment
 description: Keep job dependencies out of the persistent Python tool cache
+inputs:
+  torch-spec:
+    description: CPU PyTorch requirement to seed from the verified local wheel cache
+    default: "torch>=2.13,<2.14"
 runs:
   using: composite
   steps:
     - shell: bash
+      env:
+        FQ_TORCH_SPEC: ${{ inputs.torch-spec }}
       run: |
         unset PYTHONPATH PYTHONHOME
-        job_venv="$(mktemp -d "$RUNNER_TEMP/fq-python.XXXXXX")"
-        python -m venv "$job_venv"
-        echo "$job_venv/bin" >> "$GITHUB_PATH"
-        echo "VIRTUAL_ENV=$job_venv" >> "$GITHUB_ENV"
         echo "PYTHONPATH=" >> "$GITHUB_ENV"
         echo "PYTHONHOME=" >> "$GITHUB_ENV"
         echo "PYTHONNOUSERSITE=1" >> "$GITHUB_ENV"
@@ -23,6 +25,21 @@ runs:
           esac
         done
         echo "LD_LIBRARY_PATH=$library_path" >> "$GITHUB_ENV"
+        export LD_LIBRARY_PATH="$library_path"
+        if [ "${FQ_RUNNER_KIND:-}" = cpu ] && [ -d "${FQ_BASE_ENV:-/unavailable}" ] && [ -x "${ACTIONS_RUNNER_HOOK_JOB_STARTED:-/unavailable}" ]; then
+          FQ_JOB_PYTHON="$(command -v python)" FQ_JOB_VENV="$RUNNER_TEMP/fq-python" bash "$ACTIONS_RUNNER_HOOK_JOB_STARTED"
+          if [ -d /opt/flagquantum-runners/tools/public-wheels ]; then
+            if ! "$RUNNER_TEMP/fq-python/bin/python" -m pip install --no-index --no-deps \
+              --find-links /opt/flagquantum-runners/tools/public-wheels "$FQ_TORCH_SPEC"; then
+              echo "No matching cached CPU wheel; the installation step will use its configured index."
+            fi
+          fi
+        else
+          job_venv="$(mktemp -d "$RUNNER_TEMP/fq-python.XXXXXX")"
+          python -m venv "$job_venv"
+          echo "$job_venv/bin" >> "$GITHUB_PATH"
+          echo "VIRTUAL_ENV=$job_venv" >> "$GITHUB_ENV"
+        fi
         if [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
           echo "PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple" >> "$GITHUB_ENV"
         else

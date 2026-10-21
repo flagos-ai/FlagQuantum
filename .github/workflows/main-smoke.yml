@@ -1,0 +1,72 @@
+name: Main smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/main-smoke.yml
+      - tests/smoke/test_smoke_baseline.py
+
+permissions:
+  contents: read
+
+jobs:
+  installed-wheel-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Reuse a hosted capacity bucket; preserve one result per main commit.
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-a
+      queue: max
+    env:
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "2"
+      MAX_JOBS: "2"
+      PYTHONPATH: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Create an isolated build and install environment
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/main-smoke-env"
+          echo "$RUNNER_TEMP/main-smoke-env/bin" >> "$GITHUB_PATH"
+      - name: Install the CPU build floor and smoke tooling
+        run: |
+          python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel build pytest
+          python -m pip install 'torch>=2.10,<2.11' --index-url https://download.pytorch.org/whl/cpu
+      - name: Build and inspect the wheel
+        run: |
+          python -m build --wheel --no-isolation
+          python tools/verify_distribution_artifacts.py dist
+      - name: Install the built wheel
+        run: python -m pip install --no-deps dist/*.whl
+      - name: Check the installed package outside the source checkout
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/main-smoke-tests"
+          cp tests/smoke/test_smoke_baseline.py "$RUNNER_TEMP/main-smoke-tests/"
+          cd "$RUNNER_TEMP/main-smoke-tests"
+          python - <<'PYTHON'
+          import sys
+          from pathlib import Path
+          import flagquantum as fq
+          from flagquantum.simulation.native_cpu import adjoint
+
+          assert Path(fq.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
+          assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)
+          PYTHON
+          python -m pytest test_smoke_baseline.py -q
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: main-smoke-wheel-${{ github.sha }}
+          path: dist/*.whl
+          if-no-files-found: ignore
+          retention-days: 1

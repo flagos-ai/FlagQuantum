@@ -24,10 +24,17 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github" / "workflows"
 
-# The one group every accelerator job joins. A shared name is the point: the
-# group is repository-wide, so the scheduled lane and the manual gate serialize
-# against each other and not merely against themselves.
+# The multi-node lane uses both A800 hosts, so their jobs still share a group.
+# The A100 validation host is independent and must not wait for the A800 pair.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
+
+A800_CPU_ROUTE = '${{ fromJSON((github.event_name == \'push\' || (github.event_name == \'pull_request\' && github.event.pull_request.head.repo.full_name == github.repository)) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
+
+TRUSTED_CPU_ROUTE = (
+    "${{ (github.event_name != 'pull_request' || "
+    "github.event.pull_request.head.repo.full_name == github.repository) "
+    "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
+)
 
 # The files that ask a host for its device state. They cannot share the
 # constant: every tool here is a self-contained script, and a script under
@@ -134,7 +141,19 @@ def _triggers(path: Path) -> frozenset[str]:
 
 
 def _is_self_hosted(job: dict[str, object]) -> bool:
-    return any("self-hosted" in label.lower() for label in _runs_on(job))
+    labels = {label.lower() for label in _runs_on(job)}
+    return any("self-hosted" in label for label in labels) or any(
+        "flagquantum-a100-cpu" in label for label in labels
+    )
+
+
+def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> bool:
+    if not _is_self_hosted(job):
+        return False
+    return not (
+        reaching == frozenset({"pull_request"})
+        and job.get("runs-on") in (TRUSTED_CPU_ROUTE, A800_CPU_ROUTE)
+    )
 
 
 def _accelerator_jobs() -> dict[str, tuple[Path, dict[str, object]]]:
@@ -164,25 +183,35 @@ def test_the_scan_finds_the_accelerator_jobs_it_is_meant_to_police() -> None:
     } <= found
 
 
-def test_every_accelerator_job_joins_the_serializing_group() -> None:
+def test_accelerator_jobs_serialize_only_with_their_shared_hosts() -> None:
     offenders: list[str] = []
     for key, (path, job) in sorted(_accelerator_jobs().items()):
         concurrency = job.get("concurrency")
         if not isinstance(concurrency, dict):
             offenders.append(f"{key} declares no concurrency block")
             continue
-        if concurrency.get("group") != ACCELERATOR_GROUP:
+        labels = set(_runs_on(job))
+        expected = (
+            f"{ACCELERATOR_GROUP}-a100"
+            if "flagquantum-a100" in labels
+            else ACCELERATOR_GROUP
+        )
+        if key.startswith("scheduled-hardware.yml:"):
+            # A generic GPU selector could choose the independent A100 host
+            # while holding only the A800 lock, defeating device exclusion.
+            assert "a800-172" in labels or "multinode" in labels
+        if concurrency.get("group") != expected:
             offenders.append(
                 f"{key} joins group {concurrency.get('group')!r} "
-                f"instead of {ACCELERATOR_GROUP!r}"
+                f"instead of {expected!r}"
             )
         # The default keeps one waiting job and drops it when another arrives,
         # which would report nothing at all for the lane that was dropped.
         if concurrency.get("queue") != "max":
             offenders.append(f"{key} does not set `queue: max`")
     assert not offenders, (
-        "accelerator jobs must share one concurrency group so that no two of "
-        "them measure the same devices at the same time:\n" + "\n".join(offenders)
+        "jobs using the same hosts must share a concurrency group, while "
+        "independent hosts must not block each other:\n" + "\n".join(offenders)
     )
 
 
@@ -267,24 +296,32 @@ def test_every_workflow_event_is_attributed() -> None:
     )
 
 
-def test_pull_requests_only_reach_provisioned_a800_jobs() -> None:
+def test_pull_requests_only_reach_provisioned_or_guarded_jobs() -> None:
     allowed = {
         ("local-gpu.yml", "one-gpu-local"): "a800-171",
         ("local-gpu.yml", "two-gpu-distributed-required"): "a800-172",
-        ("ci.yml", "cpu-core"): "flagquantum-cpu",
-        ("ci.yml", "cpu-core-3-12-tests"): "flagquantum-cpu",
-        ("ci.yml", "cpu-runtime"): "flagquantum-cpu",
-        ("ci.yml", "coverage-shard"): "flagquantum-cpu",
-        ("ci.yml", "dependency-bounds"): "flagquantum-cpu",
     }
     found = set()
     for name, (path, reaching) in sorted(_untrusted_workflow_jobs().items()):
         for job, definition in _jobs(path).items():
             if _is_self_hosted(definition):
+                if not _allows_untrusted_code(definition, reaching):
+                    continue
+                if name == "local-gpu.yml" and job in {
+                    "validate-cpu-pool",
+                    "validate-eight-gpus",
+                }:
+                    assert definition.get("if") == "${{ inputs.validate_pool }}"
+                    inputs = yaml.safe_load(path.read_text())[True][
+                        "workflow_dispatch"
+                    ]["inputs"]
+                    assert inputs["validate_pool"]["type"] == "boolean"
+                    assert inputs["validate_pool"]["default"] is False
+                    continue
                 key = (name, job)
                 assert key in allowed, f"unexpected self-hosted PR job: {key}"
                 assert reaching == frozenset({"pull_request"})
-                assert allowed[key] in " ".join(_runs_on(definition))
+                assert allowed[key] in _runs_on(definition)
                 found.add(key)
     assert found == set(allowed)
 
@@ -305,7 +342,7 @@ def test_the_self_hosted_detector_recognises_a_known_self_hosted_job() -> None:
     # The discovery assertion above covers which workflows are reachable, not
     # whether a self-hosted job can be seen at all.
     self_hosted = _jobs(WORKFLOWS / "local-gpu.yml")["one-gpu-local"]
-    github_hosted = _jobs(WORKFLOWS / "ci.yml")["coverage"]
+    github_hosted = _jobs(WORKFLOWS / "ci.yml")["prepare-source"]
 
     assert _is_self_hosted(self_hosted)
     assert not _is_self_hosted(github_hosted)
@@ -325,3 +362,28 @@ def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
 
     assert _triggers(mapping) == frozenset({"push", "pull_request"})
     assert _triggers(scalar) == frozenset({"push"})
+
+
+def test_cpu_route_rejects_missing_guards_and_other_untrusted_events() -> None:
+    guarded = {"runs-on": TRUSTED_CPU_ROUTE}
+    assert _is_self_hosted(guarded)
+    assert not _allows_untrusted_code(guarded, frozenset({"pull_request"}))
+    for event in ("pull_request_target", "workflow_run"):
+        assert _allows_untrusted_code(guarded, frozenset({event}))
+    for route in (
+        "flagquantum-a100-cpu",
+        "${{ 'flagquantum-a100-cpu' }}",
+        TRUSTED_CPU_ROUTE.replace(
+            "github.event.pull_request.head.repo.full_name == github.repository",
+            "true",
+        ),
+    ):
+        assert _allows_untrusted_code({"runs-on": route}, frozenset({"pull_request"}))
+
+
+def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
+    jobs = _jobs(WORKFLOWS / "ci.yml")
+    for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
+        assert jobs[name]["runs-on"] == A800_CPU_ROUTE
+        assert _is_self_hosted(jobs[name])
+        assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))

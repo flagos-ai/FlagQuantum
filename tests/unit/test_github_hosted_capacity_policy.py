@@ -74,9 +74,9 @@ BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 RUN_SCOPE = "${{ github.event.pull_request.number || github.ref_name }}"
 BUCKETS = frozenset(
     {
-        f"flagquantum-gh-{RUN_SCOPE}-runtime",
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.10",
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.11",
+        f"flagquantum-gh-{RUN_SCOPE}-runtime",
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-0",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-1",
@@ -94,6 +94,7 @@ BUCKETS = frozenset(
 )
 
 CEILING = 16
+TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
@@ -114,9 +115,10 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
     found: dict[str, dict[str, object]] = {}
     for name, job in jobs.items():
         assert isinstance(job, dict), f"{workflow}:{name}: not a job mapping"
-        runner = job.get("runs-on")
-        if isinstance(runner, str) and (
-            runner in GITHUB_HOSTED_UBUNTU_RUNNERS or "ubuntu-latest" in runner
+        if isinstance(job.get("runs-on"), str) and (
+            job["runs-on"] in GITHUB_HOSTED_UBUNTU_RUNNERS
+            or "'ubuntu-latest'" in job["runs-on"]
+            or '["ubuntu-latest"]' in job["runs-on"]
         ):
             found[name] = job
     return found
@@ -138,8 +140,16 @@ def _groups(job: dict[str, object]) -> set[str]:
     group = concurrency.get("group")
     if not isinstance(group, str):
         return set()
-    # Hosted fallback retains the old capacity bucket; trusted jobs use
-    # independent run/job/matrix groups and do not consume this budget.
+    # Evaluate the hosted fallback of the trusted-pool selector. Its A100 arm
+    # has independent groups and does not consume the hosted capacity budget.
+    group = re.sub(
+        r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
+        r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
+        r"&& format\('a100-cpu-\{0\}-[a-z0-9-]+-\{1\}', "
+        r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
+        "gh",
+        group,
+    )
     group = re.sub(
         r"\$\{\{ \(github\.event_name == 'push' \|\| "
         r"\(github\.event_name == 'pull_request' && "
@@ -235,41 +245,17 @@ def test_the_buckets_in_use_are_exactly_the_declared_ceiling() -> None:
     )
 
 
-def test_a_superseded_pull_request_run_is_cancelled_and_a_main_push_is_not() -> None:
-    offenders: list[str] = []
-    for workflow in BUCKETED_WORKFLOWS:
-        concurrency = _document(workflow).get("concurrency")
-        if not isinstance(concurrency, dict):
-            offenders.append(f"{workflow} declares no workflow-level concurrency")
-            continue
-        group = str(concurrency.get("group", ""))
-        # The two halves have to be asserted together. A group keyed to
-        # `github.sha` for every event would satisfy "a push is not superseded"
-        # while also giving every push to a branch under review its own group, so
-        # `cancel-in-progress` would never cancel anything and each push would
-        # queue a full matrix behind the last.
-        if "github.sha" not in group:
-            offenders.append(
-                f"{workflow} keys a push run to its branch, so the next push to "
-                "main supersedes a revision that is already merged"
-            )
-        if "github.event_name == 'push'" not in group:
-            offenders.append(
-                f"{workflow} does not keep pull request runs in one group, so a "
-                "push to a branch under review queues a matrix that is never read"
-            )
-        if concurrency.get("cancel-in-progress") != (
-            "${{ github.event_name == 'pull_request' }}"
-        ):
-            offenders.append(
-                f"{workflow} does not scope cancellation to the pull request"
-            )
-    assert not offenders, (
-        "a push to a branch under review must cancel that branch's superseded "
-        "run, and a push to `main` must not cancel the run of a revision that is "
-        "already merged, because a cancelled merge-commit reading is "
-        "indistinguishable from a passing one:\n" + "\n".join(offenders)
-    )
+def test_superseded_prs_cancel_without_cancelling_manual_or_main_validation() -> None:
+    ci = _document("ci.yml")
+    assert ci["concurrency"] == {
+        "group": "flagquantum-ci-${{ github.event.pull_request.number || github.run_id }}",
+        "cancel-in-progress": "${{ github.event_name == 'pull_request' }}",
+    }
+    smoke = _document("main-smoke.yml")
+    assert "concurrency" not in smoke
+    lock = smoke["jobs"]["installed-wheel-smoke"]["concurrency"]
+    assert lock["queue"] == "max"
+    assert lock.get("cancel-in-progress", False) is False
 
 
 def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
@@ -277,7 +263,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         name
         for name, definition in _document("ci.yml")["jobs"].items()
         if not definition.get("needs")
-    ] == ["prepare-source"]
+    ] == ["pre-commit", "prepare-source"]
     tier_steps = []
     for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
         definition = _document("ci.yml")["jobs"][job]
@@ -353,26 +339,20 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     assert definition["needs"] == "prepare-source"
     assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
     for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
-        assert definition["env"][variable] == ("2" if job == "distributed-cpu" else "1")
+        assert definition["env"][variable] == "1"
     steps = _steps("ci.yml", job)
     commands = "\n".join(str(step.get("run", "")) for step in steps)
     assert "python -m pip check" in commands
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
+    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
+    assert definition["timeout-minutes"] == (60 if job == "distributed-cpu" else 30)
+    assert any(
+        step.get("uses") == "./.github/actions/isolated-python" for step in steps
+    )
     if job == "coverage-shard":
-        assert (
-            definition["runs-on"] == _document("ci.yml")["jobs"]["cpu-core"]["runs-on"]
-        )
-        assert definition["timeout-minutes"] == 30
-        assert "max-parallel" not in definition["strategy"]
-        assert "python -m venv" in commands
+        assert definition["strategy"]["matrix"]["shard"] == list(range(8))
     else:
-        assert definition["runs-on"] == "ubuntu-latest"
-        assert definition["timeout-minutes"] == 60
-        assert any(
-            step.get("uses") == "./.github/actions/isolated-python" for step in steps
-        )
-        assert "unset RANK WORLD_SIZE" in commands
         assert "python tools/ci_tier.py pr-distributed" in commands
 
 
@@ -387,11 +367,14 @@ def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> N
     assert "python -m pytest tests/smoke tests/test_native_circuit.py -q" in commands
     assert "--print-floor" in commands
     assert "mypy --strict" in commands
-    assert definition["runs-on"] == _document("ci.yml")["jobs"]["cpu-core"]["runs-on"]
+    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
     assert "max-parallel" not in definition["strategy"]
-    assert "python -m venv" in commands
-    assert "--no-index --no-deps --find-links" in commands
-    assert "'${{ matrix.torch }}'" in commands
+    isolated = next(
+        step
+        for step in steps
+        if step.get("uses") == "./.github/actions/isolated-python"
+    )
+    assert isolated["with"]["torch-spec"] == "${{ matrix.torch }}"
 
 
 def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
@@ -473,11 +456,7 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
     assert len(steps) == 2
     for step in steps:
         command = str(step.get("run", ""))
-        for token in (
-            "-n ${{ runner.environment == 'self-hosted' && 8 || 2 }}",
-            "--dist=worksteal",
-            "--durations=50",
-        ):
+        for token in ("-n 2", "--dist=worksteal", "--durations=50"):
             assert token in command
         for token in (
             "-p tools.pytest_shard",
@@ -573,23 +552,16 @@ def test_the_release_matrix_leaves_capacity_for_other_repositories() -> None:
     assert wheel_parallelism + 1 <= 5  # one concurrent sdist build
 
 
-@pytest.mark.parametrize("workflow", BUCKETED_WORKFLOWS)
-def test_required_workflows_validate_main_merge_groups(workflow: str) -> None:
-    document = _document(workflow)
-    # PyYAML's YAML 1.1 loader reads the unquoted Actions key `on` as True.
-    events = document.get("on", document.get(True))
-    assert isinstance(events, dict)
-    assert events["merge_group"] == {
-        "types": ["checks_requested"],
-        "branches": ["main"],
-    }
+def test_full_ci_runs_once_per_pr_and_remains_manually_available() -> None:
+    ci = _document("ci.yml")
+    events = ci.get("on", ci.get(True))
+    assert set(events) == {"pull_request", "workflow_dispatch"}
     assert events["pull_request"] == {"branches": ["main"]}
-    assert events["push"] == {"branches": ["main"]}
-    concurrency = document["concurrency"]
-    assert "github.event.merge_group.head_sha" in concurrency["group"]
-    assert concurrency["cancel-in-progress"] == (
-        "${{ github.event_name == 'pull_request' }}"
-    )
+    manual = _document("pre-commit.yaml")
+    assert set(manual.get("on", manual.get(True))) == {"workflow_dispatch"}
+    gpu = _document("local-gpu.yml")
+    assert set(gpu.get("on", gpu.get(True))) == {"pull_request", "workflow_dispatch"}
+    assert _document("main-smoke.yml").get(True)["push"] == {"branches": ["main"]}
 
 
 @pytest.mark.parametrize(
@@ -689,31 +661,25 @@ def test_queue_uses_full_integration_suites_and_preserves_required_check_names()
     } <= contexts
 
 
-def test_queue_rollout_is_disabled_and_adds_no_bypass_or_replacement_gate() -> None:
-    config = json.loads((ROOT / "ci/merge-queue-main.json").read_text())
-    assert config["enforcement"] == "disabled"
+def test_pr_gate_template_preserves_strict_checks_without_a_merge_queue() -> None:
+    config = json.loads((ROOT / "ci/pr-gate-main.json").read_text())
+    assert config["enforcement"] == "active"
     assert config["target"] == "branch"
     assert config["conditions"] == {
         "ref_name": {"include": ["refs/heads/main"], "exclude": []}
     }
     assert config["bypass_actors"] == []
-    queue, status = config["rules"]
-    assert queue["type"] == "merge_queue"
-    parameters = queue["parameters"]
-    assert parameters["grouping_strategy"] == "ALLGREEN"
-    assert parameters["merge_method"] == "MERGE"
-    assert parameters["max_entries_to_build"] == 1
-    assert parameters["min_entries_to_merge"] == parameters["max_entries_to_merge"] == 1
-    assert parameters["check_response_timeout_minutes"] == 120
-    assert status == {
-        "type": "required_status_checks",
-        "parameters": {
-            "required_status_checks": [
-                {"context": "CI complete", "integration_id": 15368}
-            ],
-            "strict_required_status_checks_policy": True,
-        },
-    }
+    assert config["rules"] == [
+        {
+            "type": "required_status_checks",
+            "parameters": {
+                "required_status_checks": [
+                    {"context": "CI complete", "integration_id": 15368}
+                ],
+                "strict_required_status_checks_policy": True,
+            },
+        }
+    ]
 
 
 @pytest.mark.parametrize("result", ["success", "failure", "cancelled", "skipped"])
@@ -740,7 +706,9 @@ def test_integration_aggregation_never_accepts_an_unsuccessful_suite(
 
 
 @pytest.mark.parametrize("result", ["success", "failure", "cancelled", "skipped"])
-def test_queue_waits_for_every_existing_ci_job(result: str) -> None:
+def test_merge_gate_waits_for_every_ci_job_including_source_hygiene(
+    result: str,
+) -> None:
     jobs = _document("ci.yml")["jobs"]
     complete = jobs["ci-complete"]
     assert complete["name"] == "CI complete"
@@ -769,21 +737,3 @@ def test_queue_waits_for_every_existing_ci_job(result: str) -> None:
         check=False,
     )
     assert completed.returncode != 0
-
-
-def test_shared_distributed_tier_uses_the_measured_worker_budget() -> None:
-    steps = _steps("ci.yml", "distributed-cpu")
-    tier = next(
-        step
-        for step in steps
-        if "python tools/ci_tier.py pr-distributed" in step.get("run", "")
-    )
-    assert tier["env"]["PYTEST_ADDOPTS"] == (
-        "-vv -n ${{ env.FQ_DISTRIBUTED_WORKERS }} --dist=worksteal --durations=50"
-    )
-    from tools.ci_cpu_budget import GIB, select_workers
-
-    assert select_workers(31, 125 * GIB, shared=True) == 8
-    from tools.ci_cpu_budget import select_distributed_workers
-
-    assert select_distributed_workers(31, 125 * GIB, shared=True) == 2

@@ -5,7 +5,9 @@ runs:
   steps:
     - shell: bash
       run: |
-        if [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
+        if python -c 'import torch; from packaging.specifiers import SpecifierSet; assert torch.version.cuda is None; assert "+cpu" in torch.__version__; assert torch.__version__ in SpecifierSet(">=2.13,<2.14")' 2>/dev/null; then
+          echo "Using the verified CPU PyTorch wheel already installed in this private environment"
+        elif [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
           # Select Torch only from the CPU directory, then resolve its ordinary
           # dependencies through the job's PyPI mirror without upgrading Torch.
           wheel_directory="$(mktemp -d "$RUNNER_TEMP/fq-cpu-wheel.XXXXXX")"
