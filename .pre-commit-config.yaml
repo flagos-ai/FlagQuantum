@@ -6,9 +6,13 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^(benchmarks/results/|assets/readme/.*\.svg$)
+        # LPPL requires distributing its license text verbatim. Its original
+        # bytes are verified by the drawer resource integrity test.
+        exclude: ^(benchmarks/results/|assets/readme/.*\.svg$|flagquantum/drawer/tex/licenses/yquant\.txt$)
       - id: end-of-file-fixer
-        exclude: ^benchmarks/results/
+        # Preserve the unmodified LPPL runtime, including absent final newlines.
+        # Resource integrity tests protect these exact upstream bytes.
+        exclude: ^(benchmarks/results/|flagquantum/drawer/tex/(yquant[^/]*\.(sty|tex)|licenses/yquant\.txt)$)
       - id: check-docstring-first
       - id: check-yaml
       - id: debug-statements

@@ -85,8 +85,9 @@ sequence; the classical architecture is explicitly supplied, not traced.
 A wheel and sdist were built using the declared PyTorch 2.10 build dependency.
 The wheel's four drawer Python modules match the reviewed checkout byte for
 byte. Both archives include yquant, PlotNeuralNet and component licenses; wheel
-metadata records `Apache-2.0 AND MIT AND LPPL-1.3c`. Upstream runtime bytes,
-including original line endings, are retained through local Git attributes.
+metadata records `Apache-2.0 AND MIT AND LPPL-1.3c`. The yquant runtime and
+license texts are preserved. PlotNeuralNet's MIT styles have line endings and
+trailing whitespace normalized; their TeX commands and geometry are unchanged.
 
 The wheel was installed into a separate directory, and source generation plus
 portable bundle export succeeded outside the repository. The installed S/T gate

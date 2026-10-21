@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,26 @@ from flagquantum.drawer import LatexFigure, draw, draw_hybrid, draw_latex
 from flagquantum.drawer import latex_figure as rendering
 
 pytestmark = pytest.mark.unit
+
+
+def test_lppl_runtime_and_license_are_distributed_verbatim(tmp_path: Path) -> None:
+    source = draw_latex(fq.Circuit(1).h(0)).export_bundle(tmp_path)
+    root = source.parent
+    paths = sorted(
+        [
+            *root.glob("yquant*.sty"),
+            *root.glob("yquant*.tex"),
+            root / "licenses/yquant.txt",
+        ]
+    )
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(
+            path.relative_to(root).as_posix().encode() + b"\0" + path.read_bytes()
+        )
+    assert digest.hexdigest() == (
+        "644ff1c188a322de1b0abf9eb00446230653ca74f94a92faa0b70a38584d8a7f"
+    )
 
 
 def test_circuit_ir_json_and_fragment_export_agree() -> None:
