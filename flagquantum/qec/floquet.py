@@ -628,9 +628,9 @@ def ring_floquet_code(num_qubits: int) -> FloquetCode:
     bare representative, which is why the family is published as a record of the
     *shape* of a dynamic code rather than as a distance claim. The bound is measured
     rather than assumed: sweeping every ring schedule of two, three and four phase
-    classes over widths four to twelve, five hundred and eighty-five schedules, no
-    schedule's least logical weight exceeds two, and the three- and four-class rings
-    are lighter still, reaching weight one.
+    classes over every width from four to twelve, one thousand and fifty-three
+    schedules, no schedule's least logical weight exceeds two, and the three- and
+    four-class rings are lighter still, reaching weight one.
 
     Raises:
         ValueError: If ``num_qubits`` is odd, or below four.
