@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Refuse collisions between explicit and generated Lindblad expectation output
+  names with `duplicate_output_name`, instead of silently overwriting a result.
+  Supply distinct names to keep both outputs. The existing planner now captures
+  numeric output matrices without detaching gradients, preparing the approved
+  matrix request contract; the public expectation constructor remains Pauli-only
+  until the Core implementation lands. Existing plan formats remain unchanged.
+
 - Add ordered basis_labels to the existing CPU Lindblad plan/run and
   initial-density adjoint entries for non-factorized matrix coordinates.
   Static and piecewise labelled requests use plan 1.6 with retained literal
