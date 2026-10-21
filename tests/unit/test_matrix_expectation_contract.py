@@ -247,6 +247,7 @@ def test_qutrit_expectation_and_gradient_use_existing_engine(
         options=fq.ExecutionOptions(require_gradients=True),
     )
     result = fql.run(plan)
+    assert plan.to_dict()["version"] == "1.4"
     (gradient,) = torch.autograd.grad(result.expectation("leakage")[-1], g)
     tolerance = 1e-6 if method == "crank-nicolson" else 1e-10
     torch.testing.assert_close(
@@ -365,6 +366,7 @@ def test_complex_labelled_outputs_match_independent_unitary_and_coordinates(
         options=fq.ExecutionOptions(batch_size=batch_size, require_gradients=True),
     )
     result = fql.run(plan)
+    assert plan.to_dict()["version"] == "1.6"
     states = torch.einsum(
         "tij,bj->tbi", torch.matrix_exp(-1j * times[:, None, None] * g * y), initial
     )
@@ -448,6 +450,7 @@ def test_schedule_binding_and_initial_state_gradients(
         outputs=expectation_factory(_projector()),
         options=fq.ExecutionOptions(require_gradients=True),
     )
+    assert plan.to_dict()["version"] == "1.5"
     value = fql.run(plan).expectation()[-1]
     duration = amplitudes.new_tensor([0.1, 0.15, 0.25])
     angle = (amplitudes.detach() * duration).sum()
@@ -645,6 +648,28 @@ def test_names_order_identity_and_closed_plan_behavior(
             )
         assert caught.value.code == "duplicate_output_name"
         assert caught.value.field == "outputs"
+
+
+def test_tensor_identity_is_not_numeric_plan_identity(
+    expectation_factory: Callable[..., _Output],
+    plan_factory: Callable[..., fql.LindbladPlan],
+) -> None:
+    h = torch.tensor([[0.0, 0.7], [0.7, 0.0]], dtype=torch.complex128)
+    z = torch.diag(torch.tensor([1.0, -1.0], dtype=torch.complex128))
+    first = expectation_factory(z, name="z")
+    same_values = expectation_factory(z.clone(), name="z")
+    assert first != same_values
+    plan = plan_factory(h, [1.0, 0.0], [0.0, 0.1], outputs=first)
+    clone_plan = plan_factory(h, [1.0, 0.0], [0.0, 0.1], outputs=same_values)
+    old = fql.plan(h, [1.0, 0.0], [0.0, 0.1], outputs=fq.expectation(fq.Z(0), name="z"))
+    assert plan.to_dict()["version"] == "1.3"
+    assert plan.to_json() == clone_plan.to_json() == old.to_json()
+    norm = expectation_factory(torch.eye(2), name="norm")
+    ordered = plan_factory(h, [1.0, 0.0], [0.0, 0.1], outputs=[first, norm])
+    reversed_order = plan_factory(h, [1.0, 0.0], [0.0, 0.1], outputs=[norm, first])
+    assert ordered.identity != reversed_order.identity
+    assert tuple(fql.run(ordered).observables) == ("z", "norm")
+    assert tuple(fql.run(reversed_order).observables) == ("norm", "z")
 
 
 def test_request_equality_hash_and_frozen_fields_do_not_read_tensor_values(
