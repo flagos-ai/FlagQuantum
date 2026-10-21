@@ -159,13 +159,16 @@
       "namespace": "flagquantum.operators",
       "symbols": [
         "GateInfo",
-        "gate_info"
+        "OperatorRegistry",
+        "gate_info",
+        "register_operator"
       ]
     }
   ],
   "approved_namespace_additions": [
     "I",
     "Observable",
+    "OperatorRegistry",
     "OutputRequest",
     "X",
     "Y",
@@ -176,6 +179,7 @@
     "from_openqasm",
     "gradient",
     "probabilities",
+    "register_operator",
     "run_noisy_statevector",
     "samples",
     "twin",
