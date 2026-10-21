@@ -2,13 +2,18 @@
 
 ## Status and decision
 
-**Proposed; implementation is not approved.** This is a bounded M2 developer
+**Approved for implementation by the repository owner on 2026-10-21.** The
+owner explicitly approved all five decisions and instructed delivery in the
+order "replaceable contract baseline, then implementation". The authorization
+is recorded in [the API change record](../api-changes/FQ-MATRIX-EXPECTATION-OUTPUTS-20261021.md).
+The earlier document-only PR #663 merged without implementation approval; the
+explicit decision recorded here is the implementation authorization. This is a bounded M2 developer
 workflow step in the [shared-framework roadmap](../roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md).
 The inspected baseline is main `4488cc5a17abb631ebc1c4d46d698bb0c408aa1e` on
 2026-10-20. Proposals 073/078/079 already authorize their implemented dynamics
 contracts; they do not authorize this change to the protected output boundary.
 
-Approve or revise these five decisions together:
+The following five decisions are approved together:
 
 1. Widen the existing expectation factory and OutputRequest field to accept a
    full-space dense torch.Tensor, retaining the existing Pauli Observable form.
@@ -21,9 +26,9 @@ Approve or revise these five decisions together:
 5. Define tensor-request equality by the tensor's object identity, preserving
    existing Pauli equality and hashes and avoiding tensor-valued comparisons.
 
-Document review or merge does not approve implementation. The API owner must
-explicitly approve this contract before production signatures, behavior or
-protected snapshots change. No capability or parity maturity is promoted here.
+Document review or merge alone does not approve implementation. The explicit
+owner decision above authorizes these narrow changes, not unrelated signatures,
+behaviors or snapshots. No capability or parity maturity is promoted here.
 
 ## User problem and existing arithmetic
 
