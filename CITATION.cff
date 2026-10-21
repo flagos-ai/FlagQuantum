@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: >-
+  If you use FlagQuantum in work you publish, please cite the software using
+  the metadata in this file.
+title: FlagQuantum
+abstract: >-
+  A PyTorch-first framework for differentiable quantum computing and quantum
+  AI. FlagQuantum builds circuits through one versioned intermediate
+  representation and executes them across statevector, matrix product state,
+  tensor-network, density-matrix, and stabilizer representations, across CPU,
+  single-accelerator, multi-accelerator, and multi-node execution, and across
+  multiple accelerator vendors, without rewriting the program. Backend
+  selection may change execution, but it does not change the meaning of the
+  program or the result contract.
+type: software
+license: Apache-2.0
+version: 0.3.1
+date-released: "2026-10-16"
+repository-code: "https://github.com/flagos-ai/FlagQuantum"
+url: "https://flagquantum.com"
+keywords:
+  - quantum computing
+  - quantum machine learning
+  - automatic differentiation
+  - pytorch
+  - tensor networks
+  - matrix product states
+  - quantum error correction
+  - distributed training
+authors:
+  - given-names: Wei
+    family-names: Liu
+    email: liuwei.chem.phys@gmail.com
+    affiliation: Beijing Academy of Artificial Intelligence
+  - name: The FlagQuantum maintainers
+    website: "https://github.com/flagos-ai/FlagQuantum/graphs/contributors"
