@@ -16,6 +16,7 @@ def test_local_dynamic_conformance_vectors_pass() -> None:
     assert result.cases == (
         ("active_reset", True),
         ("conditional_flip", True),
+        ("repeated_measurement", True),
         ("qubit_reuse", True),
     )
 
@@ -64,6 +65,21 @@ def test_feature_assessment_rejects_classical_read_before_measurement() -> None:
     )
     report = fqdc.assess_dynamic_features(circuit, fqdc.QISKIT_AER_DYNAMIC_FEATURES)
     assert report.blockers == ("classical_bit_read_before_measurement",)
+
+
+def test_feature_assessment_rejects_repeated_measurement_when_unsupported() -> None:
+    circuit = DynamicCircuit(1)
+    circuit.measure(0, classical_bit=0)
+    circuit.measure(0, classical_bit=0)
+    features = fqdc.DynamicFeatureSet(
+        name="single_measurement_target",
+        supports_repeated_measurement=False,
+    )
+
+    report = fqdc.assess_dynamic_features(circuit, features)
+
+    assert not report.compatible
+    assert report.blockers == ("repeated_measurement_unsupported",)
 
 
 @pytest.mark.qiskit
