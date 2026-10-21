@@ -88,3 +88,35 @@ building it in place, its OpenMP library also needed the virtual environment's
 Torch lib directory on DYLD_LIBRARY_PATH. The independent QFT fusion test then
 passes in both precisions. This is a local loader setup, not a simulation patch.
 The complete tier reruns use that environment and one thread per worker.
+
+## Recorded results
+
+- Focused drawer/legacy/docstring/installation/lane-policy selection: **104
+  passed**, including three real TeX/PNG integration tests.
+- Hybrid modules: **100% statement and branch coverage**, 130 statements and
+  72 branches; the coverage selection has 64 passing tests. This is not a
+  whole-package coverage claim.
+- Whole-package strict mypy: **776 source files pass**. Ruff, Black, source
+  hygiene, architecture, language, local links and protected API baseline pass.
+- Complete `pr-runtime`: **1718 passed, 123 skipped**, 168.82 seconds.
+- Complete `pr-default` on feature code `430901a3e`: **14128 passed, 165
+  skipped**, 2979 deselected, 791.17 seconds. It runs every selected test,
+  without per-test exclusions, in a single-branch validation clone with the
+  package installed and its native extension available.
+- Main advanced to `362b2184a` during validation. Its four changed files contain
+  tests, fixture data and documentation only. After merging that baseline, all
+  **44 newly introduced matrix expectation contract tests pass**. No production
+  source from that synchronization changes the tested drawing implementation.
+- Wheel/sdist build; the installed wheel's hybrid Python files match the
+  checkout. Outside the repository it imports ClassicalLayer, validates shapes,
+  exports the licensed project and compiles a real PDF.
+
+The single-branch clone avoids a host-specific Git topology: this machine has an
+unrelated local branch containing the intentionally absent producer revision
+used by the provenance negative test. No history, artifact or test assertion is
+changed to suppress that test. A 0.2-second calibration-budget test also failed
+during the earlier parallel run; its isolated rerun and final complete serial
+tier pass. The clean validation clone initially lacked installed entry-point
+metadata; installing the built wheel resolved that setup error, and its discovery
+test passes in the complete tier. These are recorded as environment constraints,
+not drawing fixes or weakened checks.
