@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import struct
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,7 @@ import pytest
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
-from flagquantum.drawer import draw_hybrid, draw_latex
+from flagquantum.drawer import ClassicalLayer, draw_hybrid, draw_latex
 
 pytestmark = pytest.mark.integration
 
@@ -46,3 +47,27 @@ def test_real_registered_unitary_gate_gallery() -> None:
     )
     figure = draw_latex(CircuitIR(3, instructions))
     assert figure.render().startswith(b"%PDF-")
+
+
+def test_real_detailed_layers_stack_circuit_panels_below_architecture() -> None:
+    if not shutil.which("tectonic") or not shutil.which("pdftoppm"):
+        pytest.skip("Real rendering requires Tectonic and Poppler")
+    circuit = fq.Circuit(3)
+    for index in range(18):
+        circuit.ry(index % 3, fq.Parameter(f"theta_{index}"))
+    layers = (
+        ClassicalLayer("Conv2d", (1, 8, 8), (3, 8, 8), True),
+        ClassicalLayer("Pool", (3, 8, 8), (3, 1, 1)),
+        ClassicalLayer("Flatten", (3, 1, 1), (3,)),
+    )
+    detailed = draw_hybrid(circuit, encoder=layers, gates_per_panel=6, standalone=False)
+    overview = draw_hybrid(circuit, encoder=layers, quantum_view="overview")
+    width, height = struct.unpack(">II", detailed.render("png")[16:24])
+    overview_width, overview_height = struct.unpack(
+        ">II", overview.render("png")[16:24]
+    )
+    # Panels add height, not side-by-side columns or scaled-down circuit text.
+    assert width <= overview_width + 32
+    assert height > overview_height
+    assert r"\resizebox" not in detailed.source
+    assert detailed.render("pdf").startswith(b"%PDF-")

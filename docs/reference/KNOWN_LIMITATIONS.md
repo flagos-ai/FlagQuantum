@@ -165,5 +165,10 @@ accepts native Circuit/CircuitIR or serialized IR with supported scalar/symbolic
 unitary operations. Noise, explicit matrices, dynamic control and batched gate
 parameters are rejected. Terminal readout requests are annotations, not new
 collapse gates. The hybrid view explicitly describes encoder/circuit/head stages
-and optional training paths; it does not trace arbitrary models or execute them.
+and optional training paths. Detailed classical layers check declared shape
+continuity and the readout/head boundary; this does not infer Conv/Pool formulas
+or verify an actual model. Readout labels and stage trainability are declarations.
+Large circuits use ordered continuation panels or an overview; exceptionally
+long labels and large register counts can still produce large figures. Arbitrary
+branching graphs, automatic PyTorch tracing and model execution are not provided.
 See [drawer usage and dependency matrix](../../flagquantum/drawer/README.md).

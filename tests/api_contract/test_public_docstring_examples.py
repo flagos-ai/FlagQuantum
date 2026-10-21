@@ -59,7 +59,7 @@ from flagquantum.compiler.openqasm_import import (
 )
 from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.compiler.translate import translate
-from flagquantum.drawer import LatexFigure, draw_hybrid, draw_latex
+from flagquantum.drawer import ClassicalLayer, LatexFigure, draw_hybrid, draw_latex
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.ecosystem.cirq import run as run_cirq
 from flagquantum.ecosystem.extensions.target_sdk import target_capability_snapshot
@@ -187,6 +187,7 @@ pytestmark = pytest.mark.unit
 # figures a caller takes from one run rather than a second execution.
 ENTRIES = (
     LatexFigure,
+    ClassicalLayer,
     draw_latex,
     draw_hybrid,
     Ansatz,
