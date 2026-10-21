@@ -8,7 +8,7 @@ queues every other repository in the organisation behind it.
 The ceiling is expressed the way GitHub expresses it. A concurrency group
 admits one job at a time, so the number of distinct groups one workflow run
 uses *is* the number of GitHub-hosted runners that run can hold at once.
-`ci.yml` and `pre-commit.yaml` partition their jobs across the thirteen scoped
+`ci.yml` and `pre-commit.yaml` partition their jobs across the sixteen scoped
 buckets below, and this module holds that partition still. The pull-request or
 branch scope prevents an unrelated older run from serializing a newer run;
 the organisation's 20-runner pool remains the aggregate ceiling.
@@ -61,8 +61,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # Workflows whose GitHub-hosted jobs share the bounded runner pool.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these thirteen scoped names are a
-# ceiling of thirteen concurrent GitHub-hosted runners for one run.
+# One concurrency group admits one job, so these sixteen scoped names are a
+# ceiling of sixteen concurrent GitHub-hosted runners for one run.
 #
 # The scope is the pull request number where there is one and the branch name
 # otherwise, so an unrelated branch's older run cannot serialize a newer one.
@@ -74,6 +74,9 @@ BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 RUN_SCOPE = "${{ github.event.pull_request.number || github.ref_name }}"
 BUCKETS = frozenset(
     {
+        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.10",
+        f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.11",
+        f"flagquantum-gh-{RUN_SCOPE}-runtime",
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-0",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-1",
@@ -90,7 +93,7 @@ BUCKETS = frozenset(
     }
 )
 
-CEILING = 13
+CEILING = 16
 TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
@@ -115,6 +118,7 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
         if isinstance(job.get("runs-on"), str) and (
             job["runs-on"] in GITHUB_HOSTED_UBUNTU_RUNNERS
             or "'ubuntu-latest'" in job["runs-on"]
+            or '["ubuntu-latest"]' in job["runs-on"]
         ):
             found[name] = job
     return found
@@ -142,6 +146,15 @@ def _groups(job: dict[str, object]) -> set[str]:
         r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
         r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
         r"&& format\('a100-cpu-\{0\}-[a-z0-9-]+-\{1\}', "
+        r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
+        "gh",
+        group,
+    )
+    group = re.sub(
+        r"\$\{\{ \(github\.event_name == 'push' \|\| "
+        r"\(github\.event_name == 'pull_request' && "
+        r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\)\) "
+        r"&& format\('self-hosted-\{0\}-[a-z0-9-]+-\{1\}', "
         r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
         "gh",
         group,
@@ -254,12 +267,12 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     tier_steps = []
     for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
         definition = _document("ci.yml")["jobs"][job]
-        assert definition["runs-on"] == [
-            "self-hosted",
-            "linux",
-            "x64",
-            "flagquantum-cpu",
-        ]
+        assert '"flagquantum-cpu"' in definition["runs-on"]
+        assert (
+            "github.event.pull_request.head.repo.full_name == github.repository"
+            in definition["runs-on"]
+        )
+        assert '["ubuntu-latest"]' in definition["runs-on"]
         assert definition["timeout-minutes"] == 30
         setup_python = next(
             step
@@ -285,7 +298,9 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
         assert definition["env"]["OMP_NUM_THREADS"] == "1"
         assert definition["env"]["PIP_INDEX_URL"] == (
-            "https://pypi.tuna.tsinghua.edu.cn/simple"
+            "${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && "
+            "github.event.pull_request.head.repo.full_name == github.repository)) && "
+            "'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}"
         )
         commands = "\n".join(str(step.get("run", "")) for step in _steps("ci.yml", job))
         assert "assert torch.version.cuda is None" in commands
@@ -308,7 +323,14 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     for step in tier_steps:
         env = step.get("env")
         assert isinstance(env, dict)
-        assert env.get("PYTEST_ADDOPTS") == BOUNDED_PYTEST_ADDOPTS
+        assert env.get("PYTEST_ADDOPTS") == (
+            "-n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 "
+            "--junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml"
+        )
+    from tools.ci_cpu_budget import GIB, select_workers
+
+    assert select_workers(24, 64 * GIB, shared=True, dedicated=True) == 16
+    assert select_workers(24, 64 * GIB, shared=False, dedicated=True) == 2
 
 
 @pytest.mark.parametrize("job", ["distributed-cpu", "coverage-shard"])
@@ -324,7 +346,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
     assert definition["runs-on"] == TRUSTED_CPU_ROUTE
-    assert definition["timeout-minutes"] == 30
+    assert definition["timeout-minutes"] == (60 if job == "distributed-cpu" else 30)
     assert any(
         step.get("uses") == "./.github/actions/isolated-python" for step in steps
     )
@@ -434,7 +456,11 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
     assert len(steps) == 2
     for step in steps:
         command = str(step.get("run", ""))
-        for token in ("-n 2", "--dist=worksteal", "--durations=50"):
+        for token in (
+            "-n ${{ env.FQ_PYTEST_WORKERS }}",
+            "--dist=worksteal",
+            "--durations=50",
+        ):
             assert token in command
         for token in (
             "-p tools.pytest_shard",

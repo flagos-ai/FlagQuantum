@@ -98,3 +98,16 @@ def test_dependency_matrix_seeds_its_requested_torch_version() -> None:
         if step.get("uses") == "./.github/actions/isolated-python"
     )
     assert isolated["with"]["torch-spec"] == "${{ matrix.torch }}"
+
+
+def test_dependency_matrix_separates_cpu_wheels_from_ordinary_dependencies() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    steps = jobs["dependency-bounds"]["steps"]
+    installation = next(
+        index
+        for index, step in enumerate(steps)
+        if step.get("uses") == "./.github/actions/install-cpu-torch"
+    )
+    assert steps[installation]["with"]["torch-spec"] == "${{ matrix.torch }}"
+    assert "--upgrade pip" in steps[installation - 1]["run"]
+    assert len(jobs["dependency-bounds"]["strategy"]["matrix"]["include"]) == 7

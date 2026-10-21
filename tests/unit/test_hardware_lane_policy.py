@@ -28,6 +28,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The A100 validation host is independent and must not wait for the A800 pair.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
 
+A800_CPU_ROUTE = '${{ fromJSON((github.event_name == \'push\' || (github.event_name == \'pull_request\' && github.event.pull_request.head.repo.full_name == github.repository)) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
+
 TRUSTED_CPU_ROUTE = (
     "${{ (github.event_name != 'pull_request' || "
     "github.event.pull_request.head.repo.full_name == github.repository) "
@@ -140,7 +142,7 @@ def _triggers(path: Path) -> frozenset[str]:
 
 def _is_self_hosted(job: dict[str, object]) -> bool:
     labels = {label.lower() for label in _runs_on(job)}
-    return "self-hosted" in labels or any(
+    return any("self-hosted" in label for label in labels) or any(
         "flagquantum-a100-cpu" in label for label in labels
     )
 
@@ -150,7 +152,7 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
         return False
     return not (
         reaching == frozenset({"pull_request"})
-        and job.get("runs-on") == TRUSTED_CPU_ROUTE
+        and job.get("runs-on") in (TRUSTED_CPU_ROUTE, A800_CPU_ROUTE)
     )
 
 
@@ -298,9 +300,6 @@ def test_pull_requests_only_reach_provisioned_or_guarded_jobs() -> None:
     allowed = {
         ("local-gpu.yml", "one-gpu-local"): "a800-171",
         ("local-gpu.yml", "two-gpu-distributed-required"): "a800-172",
-        ("ci.yml", "cpu-core"): "flagquantum-cpu",
-        ("ci.yml", "cpu-core-3-12-tests"): "flagquantum-cpu",
-        ("ci.yml", "cpu-runtime"): "flagquantum-cpu",
     }
     found = set()
     for name, (path, reaching) in sorted(_untrusted_workflow_jobs().items()):
@@ -380,3 +379,11 @@ def test_cpu_route_rejects_missing_guards_and_other_untrusted_events() -> None:
         ),
     ):
         assert _allows_untrusted_code({"runs-on": route}, frozenset({"pull_request"}))
+
+
+def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
+    jobs = _jobs(WORKFLOWS / "ci.yml")
+    for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
+        assert jobs[name]["runs-on"] == A800_CPU_ROUTE
+        assert _is_self_hosted(jobs[name])
+        assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))

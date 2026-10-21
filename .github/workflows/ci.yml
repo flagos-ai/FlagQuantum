@@ -15,8 +15,8 @@ on:
 #
 # CPU smoke/unit and runtime suites retain the dedicated A800 CPU runners.
 # Other trusted Ubuntu checks use the A100 CPU pool, with hosted fork fallback.
-# A800 jobs use 16 pytest workers and a separate virtual environment per run.
-# Hosted fallback jobs share thirteen scoped concurrency buckets. A100 CPU
+# A800 jobs use up to 16 quota-aware workers and a private environment per run.
+# Hosted fallback jobs share sixteen scoped concurrency buckets. A100 CPU
 # jobs instead include run ID, job ID and matrix index in their groups, so the
 # provisioned runner count bounds concurrency without serializing unrelated
 # checks or matrix legs behind the hosted light-a/b/c buckets.
@@ -113,8 +113,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: English repository content
         run: python tools/check_repository_language.py
@@ -329,17 +329,28 @@ jobs:
         run: python tools/check_repository_hygiene.py
       - name: Lazy import budget
         run: python tools/check_import_time.py
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cpu-core:
     needs: prepare-source
-    runs-on: [self-hosted, linux, x64, flagquantum-cpu]
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
+      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+    concurrency:
+      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-cpu-core-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
+      queue: max
     strategy:
       fail-fast: false
       matrix:
@@ -397,7 +408,9 @@ jobs:
         run: |
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
-      - run: python -m pip install --upgrade pip setuptools wheel
+      - name: Measure dedicated CPU service limits
+        run: python -I tools/ci_cpu_budget.py --dedicated
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - name: Install the CPU PyTorch wheel from the local cache or official index
         run: |
           if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
@@ -415,12 +428,12 @@ jobs:
       - name: Run pull-request compatibility smoke tests
         if: github.event_name == 'pull_request'
         env:
-          PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
         run: python -m pytest -m smoke -q
       - name: Run complete smoke and unit tests on integration revisions
         if: github.event_name != 'pull_request'
         env:
-          PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
         run: python tools/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
@@ -457,17 +470,28 @@ jobs:
           for name in ('cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
       - name: Prove core import does not load JAX
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cpu-core-3-12-tests:
     needs: prepare-source
-    runs-on: [self-hosted, linux, x64, flagquantum-cpu]
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
+      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+    concurrency:
+      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-cpu-core-3-12-tests-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
         with:
@@ -521,7 +545,9 @@ jobs:
         run: |
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
-      - run: python -m pip install --upgrade pip setuptools wheel
+      - name: Measure dedicated CPU service limits
+        run: python -I tools/ci_cpu_budget.py --dedicated
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - name: Install the CPU PyTorch wheel from the local cache or official index
         run: |
           if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
@@ -536,7 +562,7 @@ jobs:
           python -c "import torch; assert torch.version.cuda is None"
       - name: Run smoke and unit tests with bounded workers
         env:
-          PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
         run: python tools/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
@@ -549,17 +575,28 @@ jobs:
           for name in ('cirq', 'cudaq', 'pennylane', 'qiskit', 'qiskit_aer', 'braket', 'quark'))"
       - name: Prove core import does not load JAX
         run: python -m pytest tests/smoke/test_no_jax_core.py -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cpu-runtime:
     needs: prepare-source
-    runs-on: [self-hosted, linux, x64, flagquantum-cpu]
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
+      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+    concurrency:
+      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-runtime
+      queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
         with:
@@ -613,7 +650,9 @@ jobs:
         run: |
           python -m venv "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "${RUNNER_TEMP}/venv-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}/bin" >> "$GITHUB_PATH"
-      - run: python -m pip install --upgrade pip setuptools wheel
+      - name: Measure dedicated CPU service limits
+        run: python -I tools/ci_cpu_budget.py --dedicated
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - name: Install the CPU PyTorch wheel from the local cache or official index
         run: |
           if ! python -m pip install --no-index --no-deps --find-links /root/liuwei/fq-ci-bootstrap/cpu-wheels "torch>=2.13,<2.14"; then
@@ -628,12 +667,19 @@ jobs:
           python -c "import torch; assert torch.version.cuda is None"
       - name: Run integration tests with bounded workers
         env:
-          PYTEST_ADDOPTS: -n 16 --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
         run: python tools/ci_tier.py pr-runtime
       - name: Prove native distributed runtime does not require JAX
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
       - name: Run the launched distributed tests under a real launcher
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cpu-core-3-12:
     name: cpu-core (3.12)
@@ -668,9 +714,16 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - run: python -m pytest tests/test_hybrid_jax.py tests/test_jax_distributed_plan.py -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   azure-optional:
     needs: prepare-source
@@ -693,7 +746,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - name: Install the declared Azure extra
         run: python -m pip install --no-build-isolation -e '.[dev,azure]'
       - name: Verify the certified QDK Azure versions and the offline provider suite
@@ -708,6 +761,13 @@ jobs:
             python -m pytest tests/test_azure_quantum_provider.py -m azure -q
             python -c "import sys, flagquantum; assert not any(name == 'qdk' or name.startswith('qdk.') or name == 'azure' or name.startswith('azure.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   triton-optional:
     needs: prepare-source
@@ -728,10 +788,17 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,cuda]'
       - name: Run the Triton kernels that do not need a device
         run: python -m pytest tests/test_statevector_triton_gates.py tests/unit/test_hva_forward_tangent_triton.py tests/unit/test_mps_two_site_triton.py tests/unit/test_real_imag_kernels.py tests/unit/test_single_qubit_loop_triton.py tests/unit/test_statevector_pauli_expectation_triton.py tests/unit/test_statevector_probabilities_triton.py tests/unit/test_statevector_triton.py tests/unit/test_triton_complex_bmm.py tests/unit/test_two_qubit_pauli_tangent_triton.py -m triton -q -rs
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   qiskit-optional:
     needs: prepare-source
@@ -754,7 +821,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Qiskit and Aer versions
         run: |
@@ -781,6 +848,13 @@ jobs:
             python -m pytest tests/benchmark_contract/test_compiler_*.py -m benchmark_contract -q
             python -c "import sys, flagquantum; assert not any(name == 'qiskit' or name.startswith('qiskit.') or name == 'qiskit_aer' or name.startswith('qiskit_aer.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cirq-optional:
     needs: prepare-source
@@ -803,7 +877,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Cirq Core versions
         run: |
@@ -814,6 +888,13 @@ jobs:
             python -m pytest tests/test_cirq_interop.py tests/test_cirq_interop_conformance.py -m cirq -q
             python -c "import sys, flagquantum; assert not any(name == 'cirq' or name.startswith('cirq.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   braket-optional:
     needs: prepare-source
@@ -836,7 +917,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Amazon Braket SDK versions
         run: |
@@ -847,6 +928,13 @@ jobs:
             python -m pytest tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py tests/test_braket_interop.py tests/test_braket_interop_conformance.py -m braket -q
             python -c "import sys, flagquantum; assert not any(name == 'braket' or name.startswith('braket.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   cudaq-optional:
     needs: prepare-source
@@ -869,7 +957,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified CUDA-Q versions
         run: |
@@ -903,6 +991,13 @@ jobs:
             python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
             python -c "import sys, flagquantum; assert not any(name == 'cudaq' or name.startswith('cudaq.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   pennylane-optional:
     needs: prepare-source
@@ -925,7 +1020,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified PennyLane versions
         run: |
@@ -936,6 +1031,13 @@ jobs:
             python -m pytest tests/team/ecosystem/test_pennylane_boundary_semantics.py tests/test_pennylane_interop.py tests/test_pennylane_interop_conformance.py tests/benchmark_contract/test_batched_statevector_corpus.py -m pennylane -q
             python -c "import sys, flagquantum; assert not any(name == 'pennylane' or name.startswith('pennylane.') for name in sys.modules)"
           done
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   dependency-bounds:
     needs: prepare-source
@@ -985,7 +1087,10 @@ jobs:
       - uses: ./.github/actions/isolated-python
         with:
           torch-spec: ${{ matrix.torch }}
-      - run: python -m pip install '${{ matrix.torch }}' --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+        with:
+          torch-spec: ${{ matrix.torch }}
       - run: python -m pip install pytest
       - run: python -m pip install --no-build-isolation -e . --no-deps
       - name: Verify dependency consistency and CPU frameworks
@@ -1007,6 +1112,13 @@ jobs:
           ruff check flagquantum tests tools
           black --check flagquantum tests tools
           mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   package:
     needs: prepare-source
@@ -1139,7 +1251,7 @@ jobs:
   distributed-cpu:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -1164,14 +1276,31 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
           python -c "import torch; assert torch.version.cuda is None"
           python -c "import jax; assert jax.default_backend() == 'cpu'"
-      - run: python tools/ci_tier.py pr-distributed
+      - name: Run both complete distributed CPU contract selections
+        env:
+          PYTEST_ADDOPTS: -vv -n ${{ env.FQ_DISTRIBUTED_WORKERS }} --dist=worksteal --durations=50
+        run: |
+          # The shared platform may set RANK=0 for its own one-process job.
+          # Only an explicit torchrun child may define the tested rank topology.
+          unset RANK WORLD_SIZE LOCAL_RANK LOCAL_WORLD_SIZE MASTER_ADDR MASTER_PORT GROUP_RANK NODE_RANK
+          python tools/ci_tier.py pr-distributed
+      - name: Verify the JAX rank-local gradient contract under two actual ranks
+        timeout-minutes: 10
+        run: torchrun --standalone --nproc-per-node=2 -m pytest tests/distributed/test_hybrid_jax_runtime.py -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   coverage-shard:
     needs: prepare-source
@@ -1206,7 +1335,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax,viz,braket,cirq,pennylane,cotengra,stim,pymatching,kaiwu]'
       - name: Verify dependency consistency and CPU frameworks
         run: |
@@ -1220,7 +1349,7 @@ jobs:
         # instrumented minutes here; manual full validation measures them below.
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
-          -n 2 --dist=worksteal --durations=50
+          -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
           -p tools.pytest_shard
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
@@ -1229,7 +1358,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
-          -n 2 --dist=worksteal --durations=50
+          -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
           -p tools.pytest_shard
           --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
@@ -1239,6 +1368,13 @@ jobs:
           name: coverage-shard-${{ matrix.shard }}-${{ github.sha }}
           path: .coverage.${{ matrix.shard }}
           include-hidden-files: true
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   coverage:
     needs: coverage-shard
@@ -1278,6 +1414,13 @@ jobs:
         with:
           name: coverage-${{ github.sha }}
           path: coverage.xml
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   supply-chain:
     needs: prepare-source
@@ -1300,8 +1443,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - run: python -m pip install --upgrade pip setuptools wheel
-      - run: python -m pip install "torch>=2.13,<2.14" --index-url "${{ env.FQ_TORCH_CPU_INDEX_URL || 'https://download.pytorch.org/whl/cpu' }}"
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
       - name: Install project and security tooling
         run: >-
           python -m pip install --no-build-isolation -e '.[dev]'
@@ -1323,6 +1466,13 @@ jobs:
         with:
           name: sbom-${{ github.sha }}
           path: sbom.cdx.json
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
 
   ci-complete:
     name: CI complete

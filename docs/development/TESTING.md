@@ -565,9 +565,9 @@ FlagQuantum install happen once per framework instead of once per version. This
 preserves the certified compatibility matrix while reducing runner cold starts
 and the serial queue behind the `light-b` and `light-c` capacity buckets.
 
-The GitHub-hosted jobs are partitioned across thirteen concurrency buckets per
+The GitHub-hosted jobs are partitioned across sixteen concurrency buckets per
 pull request or manual workflow run. The scope is part of every bucket name: it keeps
-one run at thirteen concurrent jobs without forcing a new pull request to wait for
+one run at sixteen concurrent jobs without forcing a new pull request to wait for
 an older pull request's coverage or interpreter lane. The organisation-level
 20-runner pool remains the aggregate admission limit. Superseding a run of the
 same pull request still cancels the older run. Already-merged main revisions
@@ -585,15 +585,24 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
-The CPU core and runtime tiers use the dedicated A800 CPU runners with 16
-xdist workers and isolated per-job environments. Trusted quality, optional SDK,
+The CPU core and runtime tiers use the dedicated A800 CPU runners with up to
+16 xdist workers, bounded by measured affinity, nested cgroup CPU quotas and
+memory limits, and isolated per-job environments. Fork PRs run these tiers on
+GitHub-hosted Ubuntu with at most two workers. Trusted quality, optional SDK,
 distributed CPU, coverage and dependency-bound jobs use the A100 CPU pool;
 fork pull requests use GitHub-hosted Ubuntu. The manual source-hygiene job
 also uses A100, while the short PR hygiene job retains its hosted budget. See
 [A100 runner operation](A100_RUNNERS.md) for pool isolation and validation.
-Coverage uses two work-stealing workers on both A100 and hosted runners.
+Coverage uses the measured CPU/memory budget for work-stealing workers
+(four on the verified A100 slots, at most two on hosted runners).
+Other measured CPU jobs retain resource and timing reports. The distributed
+CPU selector clears inherited platform rank variables before running and uses
+a separate budget for launchers that may spawn eight ranks; an explicit
+two-rank JAX regression remains outside pytest worker fan-out.
 The seven dependency-bound variants retain their declared Python and CPU Torch
-versions and may run concurrently on separate A100 registrations. CPU jobs
+versions and may run concurrently on separate A100 registrations. The private-environment action clears inherited Python and framework library
+paths, retains the verified A100 bootstrap and CPU wheel cache, and bounds the
+domestic wheel download before falling back to the official CPU index. CPU jobs
 hide GPUs and verify dependency consistency and CPU-only framework selection.
 The eight coverage shards use checked-in duration hints from a cited CI run and a
 deterministic least-loaded assignment, then merge raw data before applying the
