@@ -482,3 +482,21 @@ shows existing text/Matplotlib drawing, LaTeX export, inline Notebook images,
 a real CPU CNN/quantum/head training step, and a portable Overleaf bundle.
 Source export uses the default install; image display additionally requires
 a TeX engine and Poppler on the kernel PATH.
+
+## Linear-path neutral-atom reference
+
+Run `python -m examples.rydberg_transport_reference` for the fixed moving-pair
+matrix reference behind proposal 081. It uses the existing CPU Lindblad planner,
+three-level absorbing loss and interval-midpoint geometry. Expected output:
+
+```text
+Physical survival: 0.81873075
+Unconditional RR: 0.40936538
+Linear-path coherence: 0.81489256
+Exact numeric replay: True
+Native transport API: pending implementation
+```
+
+This is a reference for replacing contract consumers, not native transport,
+calibrated motion, sampled detection or hardware support. See the
+[authorization record](../docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md).
