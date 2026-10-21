@@ -492,8 +492,10 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines the following acceptance jobs:
+The checked-in `ci.yml` defines twenty-three jobs:
 
+- `pre-commit`: source-file hygiene hooks, using the same action as the manual
+  diagnostics workflow;
 - `prepare-source`: package the exact commit and complete tree, plus a smaller
   incremental Git pack, before the test jobs fan out. A800 jobs verify the
   commit and the presence of every required tree object, reuse their existing Git objects, and
@@ -505,7 +507,7 @@ The checked-in `ci.yml` defines the following acceptance jobs:
   capability-maturity, evidence-revision-origin, Braket/Cirq/CUDA-Q/Qiskit/
   PennyLane interoperability contracts, and repository-hygiene checks;
 - `cpu-core`: Python 3.10 and 3.11 compile, import, dependency-isolation, and
-  smoke compatibility on pull requests; pushes to `main` retain the complete
+  smoke compatibility on pull requests; manual full validation runs the complete
   smoke/unit suite on both interpreters;
 - `cpu-core-3-12-tests`: the complete smoke/unit suite on the newest supported
   interpreter;
@@ -551,10 +553,10 @@ The checked-in `ci.yml` defines the following acceptance jobs:
   data files before enforcing the floors in `contracts/coverage-policy.toml`
   with `tools/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM;
-- `ci-complete`: the additive CI complete gate, which requires every other CI
-  job to succeed, including optional SDK matrices, wheel builds and supply-chain
-  checks. Queue admission must retain this gate and the original eight required
-  checks; no failed, cancelled, missing or skipped dependency counts as success.
+- `ci-complete`: the single required CI complete gate, which requires every other
+  CI job to succeed, including source hygiene, optional SDK matrices, wheel builds
+  and supply-chain checks. No failed, cancelled, missing or skipped dependency
+  counts as success.
 
 Each two-version ecosystem compatibility job reuses one runner for its minimum
 and latest SDK checks. The versions still execute in separate Python and pytest

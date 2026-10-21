@@ -1287,7 +1287,7 @@ jobs:
         if: github.event_name == 'pull_request'
         # The two full P5 trajectory conformance tests already run in the
         # Python 3.12 cpu-core integration tier. Avoid repeating their 3+
-        # instrumented minutes here; pushes to main still measure them below.
+        # instrumented minutes here; manual full validation measures them below.
         run: >-
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
           -n 8 --dist=worksteal --durations=50
