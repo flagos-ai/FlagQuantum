@@ -177,6 +177,7 @@ exclude = ["tests*", "docs*", "scripts*", "examples*"]
 flagquantum = [
     "drawer/tex/*.sty",
     "drawer/tex/*.tex",
+    "drawer/tex/*.md",
     "drawer/tex/licenses/*.txt",
     "simulation/numerics/double-single-contract.toml",
     "runtime/profiles/*.json",
