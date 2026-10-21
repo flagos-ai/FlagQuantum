@@ -17,6 +17,14 @@ These examples do not use that alias:
   and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
   Unconditional output probabilities, survival, and plan serialization share the
   existing dynamics path; this is a bounded CPU model.
+- [`superoperator_channel_algebra.py`](superoperator_channel_algebra.py) — it
+  reads one amplitude-damping channel as a superoperator through
+  `flagquantum.operators.SuperOperator`: the action, the dense map, the Choi
+  matrix, the complete-positivity certificate, the two normalization registers,
+  the Pauli transfer matrix, the local application to one qubit of a larger
+  register, and the Kraus list read back off the map. Run
+  `python -m examples.superoperator_channel_algebra`. It builds no circuit and
+  runs no evolution; the algebra is a numerical primitive.
 - [`kaiwu_matrix_boundary.py`](kaiwu_matrix_boundary.py) — it imports the
   experimental Kaiwu ecosystem surface directly to demonstrate local QUBO and
   Ising interoperability without credentials, provider submission, or quota.
