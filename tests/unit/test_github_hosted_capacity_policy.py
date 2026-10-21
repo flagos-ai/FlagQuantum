@@ -138,6 +138,17 @@ def _groups(job: dict[str, object]) -> set[str]:
     group = concurrency.get("group")
     if not isinstance(group, str):
         return set()
+    # Hosted fallback retains the old capacity bucket; trusted jobs use
+    # independent run/job/matrix groups and do not consume this budget.
+    group = re.sub(
+        r"\$\{\{ \(github\.event_name == 'push' \|\| "
+        r"\(github\.event_name == 'pull_request' && "
+        r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\)\) "
+        r"&& format\('self-hosted-\{0\}-[a-z0-9-]+-\{1\}', "
+        r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
+        "gh",
+        group,
+    )
     reference = _MATRIX_REFERENCE.search(group)
     if reference is None:
         return {group}
@@ -353,7 +364,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
             definition["runs-on"] == _document("ci.yml")["jobs"]["cpu-core"]["runs-on"]
         )
         assert definition["timeout-minutes"] == 30
-        assert definition["strategy"]["max-parallel"] == 8
+        assert "max-parallel" not in definition["strategy"]
         assert "python -m venv" in commands
     else:
         assert definition["runs-on"] == "ubuntu-latest"
@@ -377,7 +388,7 @@ def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> N
     assert "--print-floor" in commands
     assert "mypy --strict" in commands
     assert definition["runs-on"] == _document("ci.yml")["jobs"]["cpu-core"]["runs-on"]
-    assert definition["strategy"]["max-parallel"] == 3
+    assert "max-parallel" not in definition["strategy"]
     assert "python -m venv" in commands
     assert "--no-index --no-deps --find-links" in commands
     assert "'${{ matrix.torch }}'" in commands

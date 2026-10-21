@@ -28,7 +28,7 @@ jobs:
       MKL_NUM_THREADS: "2"
       OPENBLAS_NUM_THREADS: "2"
     concurrency:
-      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-pre-commit-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
 
     steps:

@@ -612,8 +612,10 @@ CPU-only Torch build are checked before tests.
 Each coverage-shard pytest phase uses exactly eight xdist workers on A800 CPU
 runners. All eight shards may be queued together; the eight registered CPU
 services bound concurrency across coverage, core/runtime and compatibility jobs. Fork and merge-group
-coverage jobs run on GitHub-hosted Ubuntu with two workers. The seven dependency-bound variants run at most three
-concurrently, each in a fresh environment with its declared CPU Torch version.
+coverage jobs run on GitHub-hosted Ubuntu with two workers. The seven dependency-bound variants have no self-hosted matrix limit,
+each in a fresh environment with its declared CPU Torch version. Hosted fallback
+retains its capacity buckets. Trusted jobs use independent groups per run, job
+and matrix index so they cannot wait behind an unrelated hosted platform build.
 JAX is explicitly restricted to its CPU backend. These fixed
 counts prevent a runner-image change from silently widening process fan-out. The
 eight coverage shards use checked-in duration hints from a cited CI run and a
