@@ -169,10 +169,11 @@ collapse gates. The hybrid view explicitly describes encoder/circuit/head stages
 and optional training paths. Detailed classical layers check declared shape
 continuity and the readout/head boundary; this does not infer Conv/Pool formulas
 or verify an actual model. Readout labels and stage trainability are declarations.
-The default hybrid PDF targets a 170 mm two-column paper text area with 9 pt
-body text and separate architecture/circuit panels. It must not be shrunk to
-an 85 mm single column. Over-wide panels fail rendering with a width diagnostic;
-reduce gates_per_panel, shorten labels or use overview. Large register counts
-can still require a tall supplementary figure. Arbitrary branching graphs,
+The default hybrid PDF targets a 183 mm double-column figure with 7 pt
+Helvetica-compatible text and schematic tensor glyphs. Auto inlines short
+circuits; longer circuits use measured continuation rows. Rendering refuses
+over-wide panels and figures higher than 170 mm instead of shrinking text.
+Do not reduce this wide asset to a single column. Summarize long classical
+chains or split detailed circuits when needed. Arbitrary branching graphs,
 automatic PyTorch tracing and model execution are not provided.
 See [drawer usage and dependency matrix](../../flagquantum/drawer/README.md).

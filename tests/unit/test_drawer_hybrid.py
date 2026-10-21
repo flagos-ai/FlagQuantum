@@ -38,7 +38,7 @@ def test_declared_cnn_shape_checks_and_frozen_stage_ownership() -> None:
     assert "Conv2d" in figure.source and "Flatten" in figure.source
     assert "encoder update" not in figure.source
     assert "quantum update" in figure.source and "head update" in figure.source
-    assert "Z expectations / 3 values" in figure.source
+    assert "Z expectations" in figure.source and "3 values" in figure.source
     before = figure.source
     layers.clear()
     head.clear()
@@ -111,7 +111,7 @@ def test_circuit_panels_preserve_order_and_terminal_requests_once(view: str) -> 
     source = draw_hybrid(ir, quantum_view=view, gates_per_panel=5).source
     assert r"\resizebox" not in source
     if view == "overview":
-        assert "13 gates" in source and "(b) Quantum circuit" not in source
+        assert "13 gates" in source and r"\textbf{b}\quad Quantum circuit" not in source
     else:
         positions = [source.index(rf"R_y({i})") for i in range(13)]
         assert positions == sorted(positions)
@@ -124,7 +124,7 @@ def test_circuit_panels_preserve_order_and_terminal_requests_once(view: str) -> 
 def test_short_empty_and_unsupported_circuits_in_all_modes() -> None:
     short = fq.Circuit(2).h(0).cx(0, 1)
     assert "cnot q[1]" in draw_hybrid(short).source
-    assert "(b) Quantum circuit" in draw_hybrid(short).source
+    assert r"\textbf{b}\quad Quantum circuit" not in draw_hybrid(short).source
     assert "no gates" in draw_hybrid(fq.Circuit(2), quantum_view="detail").source
     ir = replace(
         short.to_ir(),

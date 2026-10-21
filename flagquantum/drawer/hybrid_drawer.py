@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import replace
 from itertools import pairwise
 from typing import Literal
 
+from ._hybrid_layout import (
+    _architecture,
+    _circuit_grid,
+    _paper_panel,
+    _quantum_tex,
+    _readout_tex,
+    _stage_tex,
+    _width_guard,
+)
 from .hybrid_layers import ClassicalLayer, _positive_count
-from .latex_drawer import _as_ir, _circuit_body, _escape_text
+from .latex_drawer import _as_ir, _circuit_body
 from .latex_figure import LatexFigure, _document
 
 
@@ -46,130 +54,6 @@ def _vector_count(
             raise ValueError(f"{name}={count} conflicts with declared output {shape}")
         count = shape[0]
     return count
-
-
-def _shape_tex(shape: tuple[int, ...]) -> str:
-    return r" $\times$ ".join(str(n) for n in shape)
-
-
-def _stage_tex(
-    label: str,
-    layers: tuple[ClassicalLayer, ...],
-    trainable: bool,
-    count: int | None,
-    unit: str,
-) -> str:
-    if not layers:
-        description = "unspecified " + unit if count is None else f"{count} {unit}"
-        return (
-            r"\parbox{38mm}{\centering\textbf{"
-            + _escape_text(label)
-            + r"}\\[4pt]{"
-            + description
-            + "}}"
-        )
-    lines = [r"\begin{tikzpicture}[font=\sffamily\fontsize{9}{11}\selectfont]"]
-    for i, layer in enumerate(layers):
-        position = "" if i == 0 else f",below=3mm of layer{i-1}"
-        state = r"\,\textsuperscript{*}" if trainable and layer.trainable else ""
-        lines.append(
-            r"\node[draw=fhClassical!70,fill=white,rounded corners=1pt,"
-            r"text width=38mm,align=center,inner sep=3pt"
-            + position
-            + f"] (layer{i}) {{"
-            + r"\textbf{"
-            + _escape_text(layer.label)
-            + "}"
-            + state
-            + r"\\[2pt]"
-            + _shape_tex(layer.input_shape)
-            + r" $\rightarrow$ "
-            + _shape_tex(layer.output_shape)
-            + "};"
-        )
-        if i:
-            lines.append(rf"\draw[fh/data] (layer{i-1}.south) -- (layer{i}.north);")
-    return "\n".join([*lines, r"\end{tikzpicture}"])
-
-
-def _architecture(
-    encoder: str,
-    head: str,
-    quantum: str,
-    training: bool,
-    trainable: tuple[bool, bool, bool],
-    declared_readout: bool,
-) -> str:
-    lines = [
-        r"\begin{fhdiagram}[font=\sffamily\fontsize{9}{11}\selectfont,"
-        r"fh/label/.append style={font=\sffamily\fontsize{9}{11}\selectfont}]",
-        r"\node[fh/block,inner sep=5pt] (encoder) {\begin{tabular}{@{}c@{}}\textbf{Classical encoder}\\[5pt]"
-        + encoder
-        + r"\end{tabular}};",
-        r"\node[fh/quantum,right=10mm of encoder,inner sep=5pt] (quantum) {"
-        + quantum
-        + "};",
-        r"\node[fh/block,right=10mm of quantum,inner sep=5pt] (head) {\begin{tabular}{@{}c@{}}\textbf{Classical head}\\[5pt]"
-        + head
-        + r"\end{tabular}};",
-        r"\fhConnect{encoder.east}{quantum.west}{$x$}",
-        r"\fhConnect"
-        + ("[fh/measurement]" if declared_readout else "")
-        + r"{quantum.east}{head.west}{$z$}",
-    ]
-    if training:
-        lines += [
-            r"\node[fh/block,fh/optimizer,below=8mm of head,inner sep=5pt] (optimizer)"
-            r" {Loss + optimizer"
-            + ("" if any(trainable) else r"\\No trainable stages")
-            + "};",
-            r"\draw[fh/data] (head.south) -- node[fh/label,midway,right]{predictions} (optimizer.north);",
-            r"\coordinate (updates) at ([yshift=-7mm]current bounding box.south);",
-        ]
-        if trainable[0] or trainable[1]:
-            leftmost = "encoder" if trainable[0] else "quantum"
-            lines.append(
-                r"\draw[fh/feedback,draw=fhInk,line width=.7pt]"
-                r" (optimizer.south) -- (optimizer.south |- updates) -- "
-                + f"({leftmost}.south |- updates);"
-            )
-        for name, enabled in zip(
-            ("encoder", "quantum", "head"), trainable, strict=True
-        ):
-            if not enabled:
-                continue
-            if name == "head":
-                lines.append(
-                    r"\coordinate (headfeedback) at ([xshift=8mm]head.east);"
-                    r"\draw[fh/data,fh/feedback] (optimizer.east)"
-                    r" -| (headfeedback |- optimizer.east) -- (headfeedback) -- (head.east);"
-                    r"\node[fh/label,rotate=90,anchor=south] at"
-                    r" ($(headfeedback)!.5!(headfeedback |- optimizer.east)$) {head update};"
-                )
-            else:
-                lines.append(
-                    rf"\draw[fh/data,fh/feedback] ({name}.south |- updates)"
-                    + rf" -- node[fh/label,midway,right]{{{name} update}} ({name}.south);"
-                )
-    lines.append(r"\end{fhdiagram}")
-    return "\n".join(lines)
-
-
-def _paper_panel(content: str, heading: str) -> str:
-    # Measure at the intended font size; never shrink an oversized circuit.
-    return (
-        r"\begin{minipage}{166mm}\sffamily\fontsize{9}{11}\selectfont"
-        + r"\textbf{"
-        + heading
-        + r"}\par\vspace{5pt}\centering"
-        + r"\setbox0=\hbox{"
-        + content
-        + r"}\ifdim\wd0>166mm"
-        + r"\PackageError{flagquantum}{Figure panel exceeds 166 mm. "
-        r"Reduce gates_per_panel, shorten labels or use quantum_view=overview}"
-        r"{The drawer preserves publication font sizes instead of scaling.}\fi"
-        + r"\noindent\box0\par\end{minipage}"
-    )
 
 
 def draw_hybrid(
@@ -210,13 +94,13 @@ def draw_hybrid(
         encoder_trainable: Enable encoder parameter updates; False freezes the stage.
         quantum_trainable: Whether to draw quantum parameter updates.
         head_trainable: Enable head parameter updates; False freezes the stage.
-        quantum_view: Auto and detail separate architecture and ordered circuit
-            panels at publication font size; overview omits circuit detail.
+        quantum_view: Auto inlines up to eight gates on four qubits; larger circuits
+            use measured continuation rows. Detail forces panels; overview omits them.
         gates_per_panel: Maximum instructions in each continuation panel.
 
     Returns:
-        An editable, lazily compiled LatexFigure for a 170 mm paper text area.
-        Body text is 9 pt; shapes exclude the batch axis. A star marks trainable
+        An editable, lazily compiled LatexFigure for a 183 mm paper text area.
+        Helvetica body text is 7 pt; shapes exclude the batch axis. A star marks trainable
         classical layers; dashed arrows show eligible parameter updates.
 
     Raises:
@@ -265,18 +149,8 @@ def draw_hybrid(
     ir = _as_ir(program)
     _circuit_body(ir)  # Validate all operations, even in overview mode.
     quantum_updates = quantum_trainable and any(n.params for n in ir.instructions)
-    readout_label = "Readout unspecified" if readout is None else _escape_text(readout)
-    if readout_features is not None:
-        readout_label += f" / {readout_features} values"
-    quantum = (
-        r"\begin{tabular}{@{}c@{}}\textbf{Quantum circuit}"
-        + (r"\,\textsuperscript{*}" if quantum_updates else "")
-        + r"\\[5pt]"
-        + f"{ir.n_wires} qubits / {len(ir.instructions)} gates"
-        + r"\\[5pt]\parbox{36mm}{\centering "
-        + readout_label
-        + r"}\end{tabular}"
-    )
+    inline = quantum_view == "auto" and len(ir.instructions) <= 8 and ir.n_wires <= 4
+    quantum = _quantum_tex(ir, inline)
     trainable = (
         encoder_trainable
         and (not encoder_layers or any(n.trainable for n in encoder_layers)),
@@ -290,6 +164,7 @@ def draw_hybrid(
             encoder_trainable,
             features,
             "features",
+            include_input=True,
         ),
         _stage_tex(
             str(head) if not head_layers else "",
@@ -297,45 +172,36 @@ def draw_hybrid(
             head_trainable,
             outputs,
             "outputs",
+            include_input=False,
         ),
         quantum,
+        _readout_tex(readout, readout_features),
+        f"{ir.n_wires} {'qubit' if ir.n_wires == 1 else 'qubits'} / "
+        f"{len(ir.instructions)} {'gate' if len(ir.instructions) == 1 else 'gates'}",
         training,
         trainable,
         readout is not None,
     )
-    rows = [_paper_panel(architecture, "(a) Hybrid model")]
-    if quantum_view != "overview":
-        for index, start in enumerate(
-            range(0, max(1, len(ir.instructions)), panel_size)
-        ):
-            end = min(start + panel_size, len(ir.instructions))
-            last = end == len(ir.instructions)
-            panel = replace(
-                ir,
-                instructions=ir.instructions[start:end],
-                observables=ir.observables if last else (),
-                measurements=ir.measurements if last else (),
-            )
-            heading = "(b) Quantum circuit" if index == 0 else "(b) Continued"
-            if len(ir.instructions) > panel_size:
-                heading += f" / gates {start + 1}--{end}"
-            elif not end:
-                heading += " / no gates"
-            rows.append(
-                _paper_panel(
-                    r"\begin{tikzpicture}[font=\sffamily\fontsize{9}{11}\selectfont]"
-                    r"\begin{yquant}"
-                    + _circuit_body(panel)
-                    + r"\end{yquant}\end{tikzpicture}",
-                    heading,
-                )
-            )
+    rows = [
+        _paper_panel(
+            architecture, "a" if quantum_view != "overview" and not inline else ""
+        )
+    ]
+    if quantum_view != "overview" and not inline:
+        rows.append(_circuit_grid(ir, panel_size))
     body = (
-        r"\begin{minipage}{166mm}\sffamily\noindent"
-        + "\n"
-        + (r"\par\vspace{14pt}\noindent" + "\n").join(rows)
-        + "\n"
+        r"\begin{minipage}{181.5mm}\noindent"
+        + (r"\par\vspace{10pt}\noindent" + "\n").join(rows)
         + r"\par\end{minipage}"
+        + "\n"
+    )
+    body = (
+        r"\setbox\fhFigure=\hbox{"
+        + body.rstrip()
+        + "}"
+        + _width_guard(r"\fhFigure")
+        + r"\ifdim\dimexpr\ht\fhFigure+\dp\fhFigure\relax>168.5mm"
+        r"\PackageError{flagquantum}{Figure exceeds 170 mm height. Use overview or split circuit detail}{Text is never shrunk to fit.}\fi\box\fhFigure"
         + "\n"
     )
     figure = LatexFigure(
