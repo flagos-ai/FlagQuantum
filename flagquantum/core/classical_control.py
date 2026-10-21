@@ -52,9 +52,11 @@ def _condition_clause(value: object, *, owner: str) -> tuple[tuple[int, int], ..
     return clause
 
 
-def _instruction_clauses(
+def instruction_condition_clauses(
     instruction: Instruction,
 ) -> tuple[tuple[tuple[int, int], ...], ...]:
+    """Return one validated instruction's canonical condition clauses."""
+
     metadata = instruction.metadata
     if "conditions" in metadata and "condition_clauses" in metadata:
         raise ValidationError(
@@ -130,7 +132,7 @@ def validate_classical_control(
         if instruction.name == "measure" and classical_bit is None:
             raise ValidationError("a measure instruction requires classical_bit")
 
-        clauses = _instruction_clauses(instruction)
+        clauses = instruction_condition_clauses(instruction)
         if clauses and instruction.name in {"measure", "reset"}:
             raise ValidationError(
                 f"a conditional {instruction.name} is not constructible"
@@ -152,6 +154,7 @@ def validate_classical_control(
 
 __all__ = (
     "CLASSICAL_CONTROL_KEYS",
+    "instruction_condition_clauses",
     "is_classical_control_instruction",
     "validate_classical_control",
 )

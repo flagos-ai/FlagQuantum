@@ -3,30 +3,39 @@
 `circuit_to_program` is a real lowering. It reads each instruction's opcode
 signature, declares one live qubit value per qubit, chains every gate's consumed
 value into the successor it defines, and binds every declared parameter to a
-`scalar` value defined by a `constant` operation. The result is a straight-line
-single-entry block whose value flow is the circuit's data flow.
+`scalar` value defined by a `constant` operation. A measurement additionally
+defines one boolean SSA value, reset advances its qubit value, and conditioned
+gates read the live measurement values through canonical DNF. The result is a
+straight-line single-entry block whose value flow is the circuit's data flow.
 
 `program_to_circuit` is the inverse, and it runs *before* the recorded payload is
-restored: the operation graph is re-derived into an instruction sequence, and that
-sequence must agree with the sequence the recorded payload states. A record whose
-graph was edited -- a dropped operation, an operand re-bound to another value, a
-retyped result -- therefore refuses instead of being reported as an exact round
-trip. The payload itself is then restored and re-canonicalized, which catches a
-payload that decodes but does not re-encode to the recorded form.
+restored: the payload is lowered again and its complete canonical function graph
+must equal the record's graph. A record whose graph was edited -- a dropped
+operation, an operand re-bound to another value, a retyped result, or a changed
+condition -- therefore refuses instead of being reported as an exact round trip.
+The payload itself is then restored and re-canonicalized, which catches a payload
+that decodes but does not re-encode to the recorded form.
 
 The payload is an attestation, not a source. `MULTI_LEVEL_IR_ARCHITECTURE.md`
-section 5.5 keeps observables, measurements, and metadata with the request rather
-than with the program, so the program level does not model them: it carries the
-canonical payload the circuit came from and states which sections the round trip
-has to reproduce. A record without one has nothing to attest against, so it is
-refused rather than silently under-restored.
+section 5.5 keeps observables, terminal measurement requests, and request metadata
+with the request rather than with the program. Mid-circuit classical-control
+metadata is the exception because it is executable semantics and is represented
+as typed def-use. The program carries the canonical payload the circuit came from
+and states which sections the round trip has to reproduce. A record without one
+has nothing to attest against, so it is refused rather than silently
+under-restored.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from .. import CircuitIR, IRSerializationError, IRValidationError
+from ....errors import ValidationError
+from ...classical_control import (
+    instruction_condition_clauses,
+    validate_classical_control,
+)
+from .. import CircuitIR, Instruction, IRSerializationError, IRValidationError
 from ..diagnostics import LEVEL_PROGRAM, PUBLIC_LEVEL, LevelDiagnostic, _diagnostic
 from .model import (
     CONSTANT_OPCODE,
@@ -34,6 +43,7 @@ from .model import (
     SUPPORTED_EXACT,
     UNSUPPORTED_WITH_DIAGNOSTICS,
     BlockRecord,
+    ConditionRef,
     FunctionRecord,
     LevelConversion,
     Operation,
@@ -75,9 +85,9 @@ class _BlockBuilder:
 def classify_public_circuit(program: Any) -> LevelConversion:
     """Classify one public input against the level boundary.
 
-    Static `CircuitIR` values enter exactly. A dynamic instruction, or one
-    carrying declared conditions, is refused with diagnostics because the internal
-    levels would need a measurement def-use graph the public schema does not carry.
+    Static and supported dynamic `CircuitIR` values enter exactly. Dynamic
+    metadata is validated before lowering so measurement results and conditions
+    can be represented as typed def-use rather than interpreted heuristically.
     Anything else is invalid input.
     """
     if not isinstance(program, CircuitIR):
@@ -91,28 +101,46 @@ def classify_public_circuit(program: Any) -> LevelConversion:
                 ),
             ),
         )
+    conditional = any(
+        "conditions" in instruction.metadata
+        or "condition_clauses" in instruction.metadata
+        for instruction in program.instructions
+    )
+    try:
+        validate_classical_control(
+            program.instructions,
+            n_qubits=program.n_wires,
+        )
+    except (TypeError, ValidationError) as exc:
+        diagnostic = (
+            _diagnostic(
+                "level.conditional_instruction",
+                f"invalid classical-control metadata: {exc}",
+            )
+            if conditional
+            else _diagnostic(
+                "level.dynamic_instruction",
+                f"invalid classical-control metadata: {exc}",
+            )
+        )
+        return LevelConversion(
+            state=INVALID_INPUT,
+            level=PUBLIC_LEVEL,
+            diagnostics=(diagnostic,),
+        )
     for index, instruction in enumerate(program.instructions):
-        if instruction.metadata.get("is_dynamic"):
+        if instruction.metadata.get("is_dynamic") and instruction.name not in {
+            "measure",
+            "reset",
+        }:
             return LevelConversion(
                 state=UNSUPPORTED_WITH_DIAGNOSTICS,
                 level=PUBLIC_LEVEL,
                 diagnostics=(
                     _diagnostic(
                         "level.dynamic_instruction",
-                        f"instruction {index} ({instruction.name!r}) is dynamic and has "
-                        "no def-use representation at the internal levels",
-                    ),
-                ),
-            )
-        if instruction.metadata.get("conditions"):
-            return LevelConversion(
-                state=UNSUPPORTED_WITH_DIAGNOSTICS,
-                level=PUBLIC_LEVEL,
-                diagnostics=(
-                    _diagnostic(
-                        "level.conditional_instruction",
-                        f"instruction {index} ({instruction.name!r}) declares conditions "
-                        "that the public schema does not resolve",
+                        f"instruction {index} ({instruction.name!r}) uses the dynamic "
+                        "marker outside measurement or reset",
                     ),
                 ),
             )
@@ -120,6 +148,39 @@ def classify_public_circuit(program: Any) -> LevelConversion:
         state=SUPPORTED_EXACT,
         level=PUBLIC_LEVEL,
         canonical_payload=program.to_dict(),
+    )
+
+
+def _condition_identity(condition: ConditionRef) -> tuple[str, int, bool]:
+    return condition.value.scope, condition.value.index, condition.equals
+
+
+def _lower_conditions(
+    instruction: Instruction,
+    classical_values: dict[int, ValueRef],
+) -> tuple[tuple[ConditionRef, ...], ...]:
+    """Map canonical public bit tests to canonical boolean SSA references."""
+
+    clauses = []
+    for clause in instruction_condition_clauses(instruction):
+        conditions = tuple(
+            sorted(
+                (
+                    ConditionRef(classical_values[bit], bool(expected))
+                    for bit, expected in clause
+                ),
+                key=_condition_identity,
+            )
+        )
+        clauses.append(conditions)
+    return tuple(
+        sorted(
+            clauses,
+            key=lambda clause: (
+                len(clause),
+                tuple(_condition_identity(condition) for condition in clause),
+            ),
+        )
     )
 
 
@@ -141,6 +202,7 @@ def _lower_instructions(circuit: CircuitIR) -> BlockRecord:
     )
     builder = _BlockBuilder("entry", arguments)
     wires = list(arguments)
+    classical_values: dict[int, ValueRef] = {}
     operations: list[Operation] = []
     for index, instruction in enumerate(circuit.instructions):
         signature = opcode_signature(instruction.name)
@@ -165,15 +227,22 @@ def _lower_instructions(circuit: CircuitIR) -> BlockRecord:
             )
             parameters.append((name, scalar))
         operands = tuple(wires[wire] for wire in instruction.wires)
-        results = tuple(builder.define("qubit") for _ in instruction.wires)
-        for wire, result in zip(instruction.wires, results, strict=True):
+        results = tuple(builder.define(kind) for kind in signature.result_kinds)
+        qubit_results = results[: len(instruction.wires)]
+        for wire, result in zip(instruction.wires, qubit_results, strict=True):
             wires[wire] = result
+        if instruction.name == "measure":
+            classical_values[int(instruction.metadata["classical_bit"])] = results[-1]
         operations.append(
             Operation(
                 instruction.name,
                 operands=operands,
                 results=results,
                 parameters=tuple(parameters),
+                condition_clauses=_lower_conditions(
+                    instruction,
+                    classical_values,
+                ),
             )
         )
     return BlockRecord("entry", arguments, operations=tuple(operations))
@@ -216,44 +285,13 @@ def circuit_to_program(program: Any) -> LevelConversion:
     )
 
 
-def _reproduce_instructions(entry: BlockRecord) -> list[tuple[str, tuple[int, ...]]]:
-    """Re-derive the instruction sequence one block's value graph states.
-
-    Returns one `(opcode, qubit indices)` pair per non-constant operation, in
-    order. A qubit index is recovered from the position of the value the operand
-    holds, which is the inverse of the numbering `_lower_instructions` performs.
-    An operation that consumes a value the block never defined, or that pairs a
-    different number of operands and results, ends the derivation: the caller
-    compares the shorter sequence with the payload and refuses.
-    """
-    wire_of: dict[ValueRef, int] = {
-        value: index
-        for index, value in enumerate(entry.arguments)
-        if value.kind == "qubit"
-    }
-    reproduced: list[tuple[str, tuple[int, ...]]] = []
-    for operation in entry.operations:
-        if operation.opcode == CONSTANT_OPCODE:
-            continue
-        if len(operation.operands) != len(operation.results):
-            return reproduced
-        try:
-            indices = tuple(wire_of[operand] for operand in operation.operands)
-        except KeyError:
-            return reproduced
-        reproduced.append((operation.opcode, indices))
-        for operand, result in zip(operation.operands, operation.results, strict=True):
-            wire_of[result] = wire_of.pop(operand)
-    return reproduced
-
-
 def program_to_circuit(record: Any) -> LevelConversion:
     """Restore the public circuit a program-level record states.
 
-    The record is verified, its value graph is re-derived into an instruction
-    sequence, and that sequence must agree with the payload's instructions before
-    the payload is restored. The restored circuit must then canonicalize to
-    exactly the payload the record carried.
+    The record is verified, the payload is lowered into its canonical function
+    graph, and that graph must agree exactly with the record before the payload is
+    restored. The restored circuit must then canonicalize to exactly the payload
+    the record carried.
     """
     if not isinstance(record, ProgramRecord):
         return LevelConversion(
@@ -306,22 +344,29 @@ def program_to_circuit(record: Any) -> LevelConversion:
                 ),
             ),
         )
-    stated = [
-        (instruction.name, tuple(instruction.wires))
-        for instruction in circuit.instructions
-    ]
-    function = record.functions[0]
-    entry = next(block for block in function.blocks if block.name == function.entry)
-    reproduced = _reproduce_instructions(entry)
-    if reproduced != stated:
+    classification = classify_public_circuit(circuit)
+    try:
+        expected_entry = _lower_instructions(circuit)
+    except (KeyError, _UnmodelledOpcodeError):
+        expected_entry = None
+    expected_functions = (
+        ()
+        if expected_entry is None
+        else (FunctionRecord(name="main", entry="entry", blocks=(expected_entry,)),)
+    )
+    if (
+        classification.state != SUPPORTED_EXACT
+        or expected_entry is None
+        or record.functions != expected_functions
+    ):
         return LevelConversion(
             state=UNSUPPORTED_WITH_DIAGNOSTICS,
             level=LEVEL_PROGRAM,
             diagnostics=(
                 _diagnostic(
                     "level.round_trip_mismatch",
-                    "the operation graph states the instruction sequence "
-                    f"{reproduced}, but the recorded payload states {stated}",
+                    "the operation graph does not exactly re-derive the canonical "
+                    "instruction payload",
                 ),
             ),
         )

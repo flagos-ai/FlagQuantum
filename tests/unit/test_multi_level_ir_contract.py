@@ -28,6 +28,7 @@ import pytest
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from flagquantum.core.ir import levels as level_boundary
+from flagquantum.dynamic import DynamicCircuit
 
 pytestmark = pytest.mark.unit
 
@@ -60,6 +61,18 @@ def _static_circuit() -> CircuitIR:
         measurements=(MeasurementNode("probability", (0, 1)),),
         metadata={"seed": 7, "origin": "conformance"},
     )
+
+
+def _dynamic_circuit() -> CircuitIR:
+    """Return measurement, reset, overwrite, and DNF through the public builder."""
+
+    circuit = DynamicCircuit(3)
+    circuit.h(0)
+    circuit.measure(0, classical_bit=2)
+    circuit.reset(0)
+    circuit.measure(1, classical_bit=0)
+    circuit.conditional("x", 2, any_of=({0: 0}, {2: 1}))
+    return circuit.to_ir()
 
 
 def _record_with(**overrides: object) -> level_boundary.ProgramRecord:
@@ -119,18 +132,92 @@ def test_a_restored_circuit_is_equal_to_the_one_that_entered():
     assert CircuitIR.from_dict(restored.canonical_payload) == circuit
 
 
+def test_dynamic_circuit_lowers_and_round_trips_exactly():
+    circuit = _dynamic_circuit()
+    conversion = level_boundary.circuit_to_program(circuit)
+
+    assert conversion.state == level_boundary.SUPPORTED_EXACT
+    assert conversion.record is not None
+    operations = conversion.record.functions[0].blocks[0].operations
+    assert tuple(operation.opcode for operation in operations) == (
+        "h",
+        "measure",
+        "reset",
+        "measure",
+        "x",
+    )
+    measurements = tuple(
+        operation for operation in operations if operation.opcode == "measure"
+    )
+    assert tuple(result.kind for result in measurements[0].results) == (
+        "qubit",
+        "bool",
+    )
+    conditioned = operations[-1]
+    assert {
+        condition.value
+        for clause in conditioned.condition_clauses
+        for condition in clause
+    } == {measurements[0].results[1], measurements[1].results[1]}
+    restored = level_boundary.program_to_circuit(conversion.record)
+    assert restored.state == level_boundary.SUPPORTED_EXACT
+    assert restored.canonical_payload == circuit.to_dict()
+
+
+def test_remeasuring_a_classical_slot_rebinds_subsequent_conditions():
+    circuit = DynamicCircuit(3)
+    circuit.measure(0, classical_bit=0)
+    circuit.measure(1, classical_bit=0)
+    circuit.conditional("x", 2, classical_bit=0)
+    conversion = level_boundary.circuit_to_program(circuit.to_ir())
+
+    assert conversion.record is not None
+    operations = conversion.record.functions[0].blocks[0].operations
+    measurements = tuple(
+        operation for operation in operations if operation.opcode == "measure"
+    )
+    condition = operations[-1].condition_clauses[0][0]
+    assert condition.value == measurements[1].results[1]
+    assert condition.value != measurements[0].results[1]
+
+
+def test_a_live_but_incorrect_dynamic_condition_fails_exact_round_trip():
+    conversion = level_boundary.circuit_to_program(_dynamic_circuit())
+    assert conversion.record is not None
+    record = conversion.record
+    entry = record.functions[0].blocks[0]
+    conditioned = entry.operations[-1]
+    first_clause = conditioned.condition_clauses[0]
+    changed_clause = (
+        dataclasses.replace(first_clause[0], equals=not first_clause[0].equals),
+    )
+    changed = dataclasses.replace(
+        conditioned,
+        condition_clauses=(changed_clause, *conditioned.condition_clauses[1:]),
+    )
+    edited_entry = dataclasses.replace(
+        entry, operations=(*entry.operations[:-1], changed)
+    )
+    edited = dataclasses.replace(
+        record,
+        functions=(dataclasses.replace(record.functions[0], blocks=(edited_entry,)),),
+    )
+
+    assert level_boundary.verify_program_record(edited) == ()
+    restored = level_boundary.program_to_circuit(edited)
+    assert restored.state == level_boundary.UNSUPPORTED_WITH_DIAGNOSTICS
+    assert _codes(restored) == {"level.round_trip_mismatch"}
+
+
 # --------------------------------------------------------------------------
 # Refusal
 # --------------------------------------------------------------------------
 
 
-def test_dynamic_instruction_is_refused():
+def test_unsupported_dynamic_marker_is_refused():
     circuit = CircuitIR(
-        n_wires=2,
-        instructions=(
-            Instruction("h", (0,)),
-            Instruction("measure", (0,), metadata={"is_dynamic": True}),
-        ),
+        n_wires=1,
+        instructions=(Instruction("h", (0,), metadata={"is_dynamic": True}),),
     )
     conversion = level_boundary.classify_public_circuit(circuit)
     assert conversion.state == level_boundary.UNSUPPORTED_WITH_DIAGNOSTICS
@@ -138,13 +225,13 @@ def test_dynamic_instruction_is_refused():
     assert conversion.canonical_payload is None
 
 
-def test_conditional_instruction_is_refused():
+def test_malformed_conditional_instruction_is_refused():
     circuit = CircuitIR(
         n_wires=2,
         instructions=(Instruction("x", (1,), metadata={"conditions": ((0, 1),)}),),
     )
     conversion = level_boundary.classify_public_circuit(circuit)
-    assert conversion.state == level_boundary.UNSUPPORTED_WITH_DIAGNOSTICS
+    assert conversion.state == level_boundary.INVALID_INPUT
     assert _codes(conversion) == {"level.conditional_instruction"}
 
 
