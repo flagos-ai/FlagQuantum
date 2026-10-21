@@ -66,8 +66,10 @@ error-correcting code or a provider backend.
 The ordering below is binding for this workstream; durations are planning
 estimates for a four-to-six-person team with physics support, not release dates.
 Milestones advance by evidence, not elapsed time. M0 is a baseline repair and
-documentation change. The first M1 static finite-product slice is implemented
-below; remaining M1 controls and M2-M4 require their own exit gates.
+documentation change. The bounded M1 mathematical slices below have merged;
+their consolidated acceptance is proposed in the
+[M1 acceptance review](../development/M1_SHARED_EXECUTION_ACCEPTANCE.md).
+M2-M4 retain their own exit gates.
 
 | Milestone | Estimate | Owning domains | Deliverable and exit gate |
 | --- | --- | --- | --- |
@@ -104,12 +106,11 @@ three-level leakage and spin-mode exchange through the same existing generator,
 integrators, result, and PyTorch gradient path. The focused acceptance is
 `tests/unit/test_lindblad_mixed_dimensions.py`, including analytic decay and
 initial-density adjoints, basis order, live/JSON gradients, truncation, and
-time-grid convergence. This completes the static finite-product step, not all
-of M1: time dependence and constrained-space execution remain separate gates;
-static operator coefficient binding is described below. Proposal 073 now states
-its separate temporal contract against this baseline; the owner approved it on
-2026-10-20. The bounded piecewise implementation is described below; continuously varying
-controls and constrained-space execution remain separate gates.
+time-grid convergence. This records the static finite-product step; the later
+coefficient, temporal and explicit-basis slices have their own evidence below.
+Proposal 073 states its separate temporal contract against this baseline; the
+owner approved it on 2026-10-20. The bounded piecewise implementation is described
+below. Continuously varying controls remain outside that approved contract.
 
 The next M1 slice connects existing `BosonOperator` values directly to the
 same static CPU dynamics input normalization. Explicit `dimensions=` supplies
