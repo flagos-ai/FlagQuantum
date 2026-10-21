@@ -413,7 +413,7 @@ def test_the_published_instance_reproduces_its_parameters() -> None:
     ``[[72, 12, 6]]`` over ``Z_6 * Z_6`` is the smallest published member of the
     family, and it is the only assertion in this file whose expected numbers come
     from outside the repository. It is marked slow because the distance search
-    dominates the build -- about eighteen seconds, against no measurable time for
+    dominates the build -- about twenty seconds, against no measurable time for
     the eighteen-qubit instance -- and a published distance is what the search is
     for, so building it at a lower bound would prove a different statement.
 
