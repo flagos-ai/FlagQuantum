@@ -8,7 +8,7 @@ queues every other repository in the organisation behind it.
 The ceiling is expressed the way GitHub expresses it. A concurrency group
 admits one job at a time, so the number of distinct groups one workflow run
 uses *is* the number of GitHub-hosted runners that run can hold at once.
-`ci.yml` and `pre-commit.yaml` partition their jobs across the five scoped
+`ci.yml` and `pre-commit.yaml` partition their jobs across the thirteen scoped
 buckets below, and this module holds that partition still. The pull-request or
 branch scope prevents an unrelated older run from serializing a newer run;
 the organisation's 20-runner pool remains the aggregate ceiling.
@@ -61,8 +61,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # Workflows whose GitHub-hosted jobs share the bounded runner pool.
 BUCKETED_WORKFLOWS = ("ci.yml", "pre-commit.yaml")
 
-# One concurrency group admits one job, so these five scoped names are a
-# ceiling of five concurrent GitHub-hosted runners for one run.
+# One concurrency group admits one job, so these thirteen scoped names are a
+# ceiling of thirteen concurrent GitHub-hosted runners for one run.
 #
 # The scope is the pull request number where there is one and the branch name
 # otherwise, so an unrelated branch's older run cannot serialize a newer one.
@@ -76,13 +76,22 @@ BUCKETS = frozenset(
     {
         f"flagquantum-gh-{RUN_SCOPE}-cpucore-3.12",
         f"flagquantum-gh-{RUN_SCOPE}-coverage-0",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-1",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-2",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-3",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-4",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-5",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-6",
+        f"flagquantum-gh-{RUN_SCOPE}-coverage-7",
+        f"flagquantum-gh-{RUN_SCOPE}-distributed",
         f"flagquantum-gh-{RUN_SCOPE}-light-a",
         f"flagquantum-gh-{RUN_SCOPE}-light-b",
         f"flagquantum-gh-{RUN_SCOPE}-light-c",
     }
 )
 
-CEILING = 5
+CEILING = 13
+TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
@@ -103,9 +112,9 @@ def _github_hosted_jobs(workflow: str) -> dict[str, dict[str, object]]:
     found: dict[str, dict[str, object]] = {}
     for name, job in jobs.items():
         assert isinstance(job, dict), f"{workflow}:{name}: not a job mapping"
-        if (
-            isinstance(job.get("runs-on"), str)
-            and job["runs-on"] in GITHUB_HOSTED_UBUNTU_RUNNERS
+        if isinstance(job.get("runs-on"), str) and (
+            job["runs-on"] in GITHUB_HOSTED_UBUNTU_RUNNERS
+            or "'ubuntu-latest'" in job["runs-on"]
         ):
             found[name] = job
     return found
@@ -127,6 +136,16 @@ def _groups(job: dict[str, object]) -> set[str]:
     group = concurrency.get("group")
     if not isinstance(group, str):
         return set()
+    # Evaluate the hosted fallback of the trusted-pool selector. Its A100 arm
+    # has independent groups and does not consume the hosted capacity budget.
+    group = re.sub(
+        r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
+        r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
+        r"&& format\('a100-cpu-\{0\}-[a-z0-9-]+-\{1\}', "
+        r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
+        "gh",
+        group,
+    )
     reference = _MATRIX_REFERENCE.search(group)
     if reference is None:
         return {group}
@@ -295,54 +314,45 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
 @pytest.mark.parametrize("job", ["distributed-cpu", "coverage-shard"])
 def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> None:
     definition = _document("ci.yml")["jobs"][job]
-    assert definition["runs-on"] == ["self-hosted", "linux", "x64", "flagquantum-cpu"]
-    assert definition["timeout-minutes"] == 30
     assert definition["needs"] == "prepare-source"
     assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
-    assert definition["env"]["JAX_PLATFORMS"] == "cpu"
     for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
         assert definition["env"][variable] == "1"
     steps = _steps("ci.yml", job)
-    setup = next(
-        step for step in steps if step.get("uses") == "actions/setup-python@v5"
-    )
-    assert setup["with"] == {"python-version": "3.12"}
     commands = "\n".join(str(step.get("run", "")) for step in steps)
-    assert "python -m venv" in commands
     assert "python -m pip check" in commands
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
+    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
+    assert definition["timeout-minutes"] == 30
+    assert any(
+        step.get("uses") == "./.github/actions/isolated-python" for step in steps
+    )
     if job == "coverage-shard":
-        assert definition["strategy"]["max-parallel"] == 8
+        assert definition["strategy"]["matrix"]["shard"] == list(range(8))
     else:
-        tier = next(
-            step
-            for step in steps
-            if "ci_tier.py pr-distributed" in str(step.get("run", ""))
-        )
-        assert tier["env"]["PYTEST_ADDOPTS"] == "-n 8 --dist=worksteal --durations=50"
+        assert "python tools/ci_tier.py pr-distributed" in commands
 
 
 def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> None:
     definition = _document("ci.yml")["jobs"]["dependency-bounds"]
-    assert definition["runs-on"] == ["self-hosted", "linux", "x64", "flagquantum-cpu"]
-    assert definition["strategy"]["max-parallel"] == 3
     assert definition["strategy"]["fail-fast"] is False
     assert len(definition["strategy"]["matrix"]["include"]) == 7
     assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
     steps = _steps("ci.yml", "dependency-bounds")
-    setup = next(
-        step for step in steps if step.get("uses") == "actions/setup-python@v5"
-    )
-    assert setup["with"] == {"python-version": "${{ matrix.python }}"}
     commands = "\n".join(str(step.get("run", "")) for step in steps)
-    assert "python -m venv" in commands
-    assert "--no-index --no-deps --find-links" in commands
-    assert "'${{ matrix.torch }}'" in commands
     assert "torch.version.cuda is None" in commands
     assert "python -m pytest tests/smoke tests/test_native_circuit.py -q" in commands
     assert "--print-floor" in commands
     assert "mypy --strict" in commands
+    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
+    assert "max-parallel" not in definition["strategy"]
+    isolated = next(
+        step
+        for step in steps
+        if step.get("uses") == "./.github/actions/isolated-python"
+    )
+    assert isolated["with"]["torch-spec"] == "${{ matrix.torch }}"
 
 
 def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
@@ -424,7 +434,7 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
     assert len(steps) == 2
     for step in steps:
         command = str(step.get("run", ""))
-        for token in ("-n 8", "--dist=worksteal", "--durations=50"):
+        for token in ("-n 2", "--dist=worksteal", "--durations=50"):
             assert token in command
         for token in (
             "-p tools.pytest_shard",

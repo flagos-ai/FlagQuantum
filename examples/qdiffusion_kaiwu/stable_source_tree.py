@@ -75,10 +75,9 @@ def _hash_stable_file(
             os.O_RDONLY | no_follow | getattr(os, "O_CLOEXEC", 0),
         )
         opened = os.fstat(descriptor)
-        if (
-            not stat.S_ISREG(opened.st_mode)
-            or (opened.st_dev, opened.st_ino) != (metadata.st_dev, metadata.st_ino)
-        ):
+        if not stat.S_ISREG(opened.st_mode) or _metadata_identity(
+            opened
+        ) != _metadata_identity(metadata):
             raise ValueError(f"{label} file changed before hashing: {target.name}")
         if max_bytes is not None and opened.st_size > max_bytes:
             raise ValueError(f"{label} exceeds the size bound")
@@ -86,23 +85,31 @@ def _hash_stable_file(
             raise ValueError(f"{label} size differs from the expected value")
         with os.fdopen(descriptor, "rb", closefd=False) as stream:
             digest = _stream_sha256(stream)
+        # Metadata can remain identical for same-size writes within one clock
+        # tick. A fresh read buffer must also confirm the captured content.
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        with os.fdopen(descriptor, "rb", closefd=False) as stream:
+            confirmed_digest = _stream_sha256(stream)
         after = os.fstat(descriptor)
         visible = target.lstat()
         if (
-            _metadata_identity(after) != _metadata_identity(opened)
+            confirmed_digest != digest
+            or _metadata_identity(after) != _metadata_identity(opened)
             or _metadata_identity(visible) != _metadata_identity(opened)
         ):
             raise ValueError(f"{label} file changed during hashing: {target.name}")
         return digest
     except OSError:
-        raise ValueError(f"{label} file changed during hashing: {target.name}") from None
+        raise ValueError(
+            f"{label} file changed during hashing: {target.name}"
+        ) from None
     finally:
         if descriptor is not None:
             os.close(descriptor)
 
 
 def revalidate_regular_file(snapshot: RegularFileSnapshot, *, label: str) -> None:
-    """Require one visible file and its parent to retain captured identities."""
+    """Require the captured file identities and content to remain unchanged."""
 
     try:
         parent = snapshot.parent.lstat()
@@ -115,6 +122,20 @@ def revalidate_regular_file(snapshot: RegularFileSnapshot, *, label: str) -> Non
         or _metadata_identity(parent) != snapshot.parent_identity
         or snapshot.path.is_symlink()
         or not stat.S_ISREG(visible.st_mode)
+        or _metadata_identity(visible) != snapshot.identity
+    ):
+        raise ValueError(f"{label} changed after identity capture")
+    try:
+        digest = _hash_stable_file(
+            snapshot.path, visible, label=label, expected_bytes=snapshot.size
+        )
+        parent = snapshot.parent.lstat()
+        visible = snapshot.path.lstat()
+    except (OSError, ValueError):
+        raise ValueError(f"{label} changed after identity capture") from None
+    if (
+        digest != snapshot.sha256
+        or _metadata_identity(parent) != snapshot.parent_identity
         or _metadata_identity(visible) != snapshot.identity
     ):
         raise ValueError(f"{label} changed after identity capture")
@@ -235,7 +256,9 @@ def capture_regular_tree(
     try:
         root_metadata = root.lstat()
     except OSError:
-        raise ValueError(f"{label} root must be a regular, non-symlink directory") from None
+        raise ValueError(
+            f"{label} root must be a regular, non-symlink directory"
+        ) from None
     if root.is_symlink() or not stat.S_ISDIR(root_metadata.st_mode):
         raise ValueError(f"{label} root must be a regular, non-symlink directory")
     files: set[str] = set()
@@ -253,9 +276,7 @@ def capture_regular_tree(
                 directories.add(relative)
             elif stat.S_ISREG(metadata.st_mode):
                 files.add(relative)
-                recorded_path = (
-                    f"{path_prefix}/{relative}" if path_prefix else relative
-                )
+                recorded_path = f"{path_prefix}/{relative}" if path_prefix else relative
                 verified_files.append(
                     {
                         "path": recorded_path,

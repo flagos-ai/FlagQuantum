@@ -23,10 +23,9 @@ anything:
 
 from __future__ import annotations
 
-import time
-
 import pytest
 import torch
+from torch.utils.benchmark import Timer
 
 import flagquantum as fq
 import flagquantum.runtime.measurements as measurements
@@ -404,9 +403,9 @@ def test_an_mps_marginal_keeps_the_parity_path(monkeypatch: pytest.MonkeyPatch) 
 def test_the_two_arms_differ_by_orders_of_magnitude_on_a_wide_dense_state() -> None:
     """The change is a cost change, so it is measured rather than argued.
 
-    Sixteen wires keeps the runtime bounded; the exponent is what decides the
-    gap, and the timing is a bound assertion with a factor of five of slack so
-    that a loaded host cannot fail the suite.
+    Sixteen wires keeps the runtime bounded. Both arms use warmed, repeated
+    single-thread measurements so thread-pool startup and one scheduling delay
+    do not decide the comparison. The fivefold speed requirement is unchanged.
     """
 
     circuit = fq.Circuit(16)
@@ -418,17 +417,32 @@ def test_the_two_arms_differ_by_orders_of_magnitude_on_a_wide_dense_state() -> N
     state = circuit.state()
     target = measurements._statevector_target(state, 16)
 
-    started = time.perf_counter()
     reduction = measurements._joint_marginal_probabilities(
         state, (0, 1, 2, 3), n_wires=16, noise_model=None
     )
-    reduction_seconds = time.perf_counter() - started
-    started = time.perf_counter()
     reconstructed = measurements._marginal_probabilities(target, (0, 1, 2, 3))
-    parity_seconds = time.perf_counter() - started
-
     assert reduction is not None
     torch.testing.assert_close(reduction, reconstructed, atol=1e-5, rtol=0)
+
+    reduction_seconds = (
+        Timer(
+            "measurements._joint_marginal_probabilities("
+            "state, (0, 1, 2, 3), n_wires=16, noise_model=None)",
+            globals={"measurements": measurements, "state": state},
+            num_threads=1,
+        )
+        .blocked_autorange(min_run_time=0.3)
+        .median
+    )
+    parity_seconds = (
+        Timer(
+            "measurements._marginal_probabilities(target, (0, 1, 2, 3))",
+            globals={"measurements": measurements, "target": target},
+            num_threads=1,
+        )
+        .blocked_autorange(min_run_time=0.3)
+        .median
+    )
     assert reduction_seconds * 5 < parity_seconds
 
 

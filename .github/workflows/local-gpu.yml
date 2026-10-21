@@ -3,6 +3,11 @@ name: Local GPU Gate
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      validate_pool:
+        description: Validate all sixteen CPU slots and the exclusive eight-GPU runner
+        type: boolean
+        default: false
 
 concurrency:
   group: flagquantum-gpu-${{ github.event.pull_request.number || github.run_id }}
@@ -56,11 +61,11 @@ jobs:
           compression-level: 0
 
   one-gpu-local:
+    if: ${{ !inputs.validate_pool }}
     needs: prepare-source
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-171]
-    # This job benchmarks device 0 and the two-GPU job beside it holds devices 0
-    # and 1, so on one host they measure each other. The group is the one the
-    # scheduled lane also joins, because those jobs measure the same devices.
+    # The multi-node lane uses both A800 hosts. Keep their local and scheduled
+    # jobs in one group until that lane can reserve both hosts independently.
     concurrency:
       group: flagquantum-accelerator
       queue: max
@@ -138,6 +143,7 @@ jobs:
           path: hardware-run/
 
   two-gpu-distributed-required:
+    if: ${{ !inputs.validate_pool }}
     needs: prepare-source
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
@@ -220,4 +226,113 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: two-gpu-required-${{ github.sha }}-${{ github.run_attempt }}
+          path: hardware-run/
+
+  validate-cpu-pool:
+    if: ${{ inputs.validate_pool }}
+    runs-on: [self-hosted, linux, x64, flagquantum-a100-cpu, "${{ matrix.slot }}"]
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        slot: [cpu01, cpu02, cpu03, cpu04, cpu05, cpu06, cpu07, cpu08, cpu09, cpu10, cpu11, cpu12, cpu13, cpu14, cpu15, cpu16]
+    steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify account, CPU allocation, and CPU-only environment
+        run: |
+          python - <<'PYCODE'
+          import os
+          from pathlib import Path
+          import torch
+          assert os.geteuid() != 0
+          assert len(os.sched_getaffinity(0)) == 8
+          assert torch.cuda.device_count() == 0
+          assert torch.version.cuda is None
+          status = Path('/proc/self/status').read_text()
+          assert 'CapEff:\t0000000000000000' in status
+          assert 'NoNewPrivs:\t1' in status
+          own_slot = os.environ['FQ_RUNNER_NAME']
+          other_slot = 'cpu02' if own_slot != 'cpu02' else 'cpu01'
+          private_files = ['/root', '/opt/flagquantum-runners/admin',
+                           '/opt/flagquantum-runners/homes/' + other_slot]
+          for path in private_files:
+              try:
+                  fd = os.open(path, os.O_RDONLY)
+              except PermissionError:
+                  pass
+              else:
+                  os.close(fd)
+                  raise AssertionError('Unexpected access: ' + path)
+          print('runner:', os.environ['RUNNER_NAME'], 'CPU affinity:', sorted(os.sched_getaffinity(0)), 'torch:', torch.__version__)
+          PYCODE
+      - name: Install FlagQuantum into the isolated job environment
+        run: python -m pip install --no-deps --no-build-isolation -e .
+      - name: CPU circuit and backend regressions
+        run: python -m pytest tests/test_native_circuit.py tests/test_backends.py -q
+
+  validate-eight-gpus:
+    if: ${{ inputs.validate_pool }}
+    runs-on: [self-hosted, linux, x64, gpu, flagquantum-a100]
+    concurrency:
+      group: flagquantum-accelerator-a100
+      queue: max
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: "4"
+      MKL_NUM_THREADS: "4"
+      OPENBLAS_NUM_THREADS: "4"
+    steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify eight visible GPUs
+        run: |
+          python - <<'PYCODE'
+          import os
+          import torch
+          assert os.geteuid() != 0
+          assert torch.cuda.is_available()
+          assert torch.cuda.device_count() == 8
+          for i in range(8):
+              print(i, torch.cuda.get_device_name(i))
+              x = torch.ones(256, device=f'cuda:{i}')
+              assert x.sum().item() == 256
+          print('torch:', torch.__version__, 'CUDA:', torch.version.cuda)
+          PYCODE
+      - name: Install FlagQuantum into the isolated job environment
+        run: python -m pip install --no-deps --no-build-isolation -e .
+      - name: Eight-GPU sharded forward differential
+        run: >-
+          python tools/run_with_watchdog.py --phase eight-gpu-forward
+          --stall-seconds 180 --timeout-seconds 600
+          --diagnostics hardware-run/watchdog-eight-gpu-forward --
+          torchrun --standalone --nproc-per-node=8
+          tests/distributed/statevector_forward_executor.py --backend nccl
+      - name: Eight-GPU sharded gradient differential
+        run: >-
+          python tools/run_with_watchdog.py --phase eight-gpu-reverse
+          --stall-seconds 180 --timeout-seconds 600
+          --diagnostics hardware-run/watchdog-eight-gpu-reverse --
+          torchrun --standalone --nproc-per-node=8
+          tests/distributed/statevector_reverse_executor.py --backend nccl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: a100-pool-validation-${{ github.run_id }}
           path: hardware-run/
