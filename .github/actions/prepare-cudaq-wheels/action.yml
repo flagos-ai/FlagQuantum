@@ -10,7 +10,6 @@ runs:
         : "${OPTIONAL_VERSIONS:?Set the certified SDK versions}"
         mkdir -p "$FQ_CUDAQ_WHEEL_DIRECTORY"
         constraints="$FQ_CUDAQ_WHEEL_DIRECTORY/cuda-variant.txt"
-        # Refuse automatic selection of another binary flavor by the meta package.
         printf '%s\n' 'cuda-quantum<0' 'cuda-quantum-cu11<0' 'cuda-quantum-cu12<0' > "$constraints"
         links=(--find-links "$FQ_CUDAQ_WHEEL_DIRECTORY")
         public_cache="${FQ_CUDAQ_PUBLIC_WHEELS:-/opt/flagquantum-runners/tools/public-wheels}"
@@ -18,29 +17,58 @@ runs:
           links+=(--find-links "$public_cache")
           echo "Using the available self-hosted public wheel cache"
         fi
+        download_wheels() {
+          # Preserve the configured domestic index, with a bounded official fallback.
+          if ! timeout --kill-after=15s 900s python -m pip wheel \
+            --constraint "$constraints" --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "$@"; then
+            echo "::warning::CUDA-Q mirror resolution failed; trying official PyPI"
+            python -m pip wheel --index-url https://pypi.org/simple \
+              --constraint "$constraints" --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "$@"
+          fi
+        }
         for version in ${OPTIONAL_VERSIONS}; do
-          requirements=("cudaq==$version" "cuda-quantum-cu13==$version")
-          # The offline resolver must find every transitive dependency, not just
-          # a hand-picked prefix list. It writes all selected wheels to one cache.
+          requirements=("cudaq==${version}" "cuda-quantum-cu13==${version}")
           if python -m pip wheel --no-index "${links[@]}" \
             --constraint "$constraints" --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" \
             "${requirements[@]}"; then
             echo "Complete offline CUDA-Q $version / cu13 wheel cache"
           else
-            # Respect the job's index (TUNA on self-hosted runners). A bounded
-            # mirror attempt falls back to the official index, retaining tests.
-            # Rebuild the tiny auto-selecting meta wheel instead of trusting a
-            # cached meta wheel built for a different host CUDA installation.
-            if ! timeout --kill-after=15s 900s python -m pip wheel \
-              "${links[@]}" --only-binary=:all: --no-binary=cudaq --constraint "$constraints" \
-              --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "${requirements[@]}"; then
-              echo "::warning::CUDA-Q mirror resolution failed; trying official PyPI"
-              python -m pip wheel "${links[@]}" --only-binary=:all: --no-binary=cudaq \
-                --index-url https://pypi.org/simple --constraint "$constraints" \
-                --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "${requirements[@]}"
+            # Resolve all binary SDK dependencies before building the auto-selecting
+            # meta package. Never install a hand-picked partial dependency closure.
+            if ! python -m pip wheel --no-index "${links[@]}" \
+              --constraint "$constraints" --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" \
+              "cuda-quantum-cu13==${version}"; then
+              download_wheels "${links[@]}" --only-binary=:all: "cuda-quantum-cu13==${version}"
             fi
+            nvrtc_directory="$(mktemp -d "$RUNNER_TEMP/fq-cudaq-nvrtc.XXXXXX")"
+            trap 'rm -rf "$nvrtc_directory"' EXIT
+            python -m pip install --no-index --find-links "$FQ_CUDAQ_WHEEL_DIRECTORY" \
+              --target "$nvrtc_directory" 'nvidia-cuda-nvrtc>=13,<14'
+            nvrtc_library="$(find "$nvrtc_directory" -name libnvrtc.so.13 -print -quit)"
+            test -n "$nvrtc_library"
+            # Upstream probes NVRTC before the host driver. Use the actual NVIDIA
+            # CUDA 13 library for its unmodified metadata hook, including under
+            # pip build isolation. This is not a forged version or patched wheel.
+            CUDAQ_NVRTC_LIBRARY="$nvrtc_library" python - <<'PYTHON'
+        import ctypes
+        import os
+
+        library = ctypes.CDLL(os.environ["CUDAQ_NVRTC_LIBRARY"])
+        major, minor = ctypes.c_int(), ctypes.c_int()
+        assert library.nvrtcVersion(ctypes.byref(major), ctypes.byref(minor)) == 0
+        assert major.value == 13, (major.value, minor.value)
+        PYTHON
+            # Only remove a private cached meta wheel, never shared public wheels.
+            rm -f "$FQ_CUDAQ_WHEEL_DIRECTORY"/cudaq-"$version"-*.whl
+            LD_LIBRARY_PATH="$(dirname "$nvrtc_library")${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+              download_wheels --no-cache-dir --no-deps --no-binary=cudaq "cudaq==${version}"
+            rm -rf "$nvrtc_directory"
+            trap - EXIT
+            # The meta-wheel-only build above does not resolve dependencies. This
+            # full resolver also includes logical extras introduced by newer SDKs.
+            download_wheels --find-links "$FQ_CUDAQ_WHEEL_DIRECTORY" \
+              --only-binary=:all: "${requirements[@]}"
           fi
-          # Do not treat a partial download or a resolver exit as a cache hit.
           python -m pip install --dry-run --ignore-installed --no-index \
             --find-links "$FQ_CUDAQ_WHEEL_DIRECTORY" --constraint "$constraints" \
             "${requirements[@]}"

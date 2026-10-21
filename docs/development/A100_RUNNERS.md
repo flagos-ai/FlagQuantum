@@ -165,9 +165,14 @@ A miss retains the job's configured package index: TUNA for self-hosted jobs,
 official PyPI for hosted jobs. The mirror wheel-building attempt is bounded at
 900 seconds; a failed attempt tries official PyPI with the same SDK pins and
 CUDA constraints. Only the tiny upstream `cudaq` meta package may build from
-source; its wheel is rebuilt during a miss so a wheel previously inferred from
-another host's CUDA cannot select a different binary flavor. Other packages
-must provide wheels. A complete restored cache takes the offline path and
+source. On a miss, binary SDK wheels and their full dependency closure are
+resolved first. A private temporary installation of the real NVIDIA CUDA 13
+NVRTC library is version-checked and supplied to the unmodified upstream
+metadata hook through its library search path. Thus host CUDA 12 autodetection
+cannot override the chosen variant. The meta-wheel-only build disables pip's
+wheel reuse and dependency resolution; a subsequent full resolver (including
+logical extras) and the final offline resolution still require every dependency.
+No shared public wheel is rewritten. Other packages must provide wheels. A complete restored cache takes the offline path and
 avoids any index selection. The cache saves only after a successful job;
 bump its key epoch or preparation action when deliberately refreshing the
 resolved dependency set. Never remove shared public cache files while jobs

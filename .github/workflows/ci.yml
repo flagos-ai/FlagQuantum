@@ -1073,7 +1073,7 @@ jobs:
             python -m pip install --upgrade --no-index \
               --find-links "$FQ_CUDAQ_WHEEL_DIRECTORY" \
               --constraint "$FQ_CUDAQ_WHEEL_DIRECTORY/cuda-variant.txt" \
-              "cudaq==$version" "cuda-quantum-cu13==$version"
+              "cudaq==${version}" "cuda-quantum-cu13==${version}"
             CUDAQ_EXPECTED_VERSION="$version" python - <<'PYTHON'
           import os
           from importlib.metadata import PackageNotFoundError, version
