@@ -233,7 +233,15 @@ def test_custom_unitary_export_fails_closed_for_invalid_matrix() -> None:
 @pytest.mark.parametrize(
     ("matrix", "issue_code"),
     (
-        (torch.eye(3, dtype=torch.complex128), "invalid_custom_unitary_shape"),
+        # Spelled as a nested list rather than as a tensor: `Instruction` refuses a
+        # tensor whose entry count does not fit its wires, so a tensor never reaches
+        # the exporter. A list publishes no shape, construction declines to judge it,
+        # and the exporter is what has to answer -- which is the contract this test
+        # pins, and the reason the exporter's own check is not redundant.
+        (
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            "invalid_custom_unitary_shape",
+        ),
         (
             torch.diag(
                 torch.tensor(
@@ -246,7 +254,7 @@ def test_custom_unitary_export_fails_closed_for_invalid_matrix() -> None:
     ),
 )
 def test_custom_unitary_export_reports_invalid_matrix_contract(
-    matrix: torch.Tensor,
+    matrix: object,
     issue_code: str,
 ) -> None:
     ir = fq.CircuitIR(

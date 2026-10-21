@@ -27,7 +27,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
 from flagquantum.core.operator_schema import get_operator_schema
 from flagquantum.errors import CapabilityError, FlagQuantumError, ValidationError
 from flagquantum.runtime.dynamic import run_dynamic
@@ -189,8 +189,11 @@ def test_a_materialized_channel_is_refused_here_and_executed_by_its_own_engine()
 @pytest.mark.parametrize(
     "label,carried",
     (
-        ("a 4-by-4 operator on one operand", torch.eye(4, dtype=torch.complex128)),
-        ("a 3-by-3 operator", torch.eye(3, dtype=torch.complex128)),
+        (
+            "a 4-by-4 operator on one operand",
+            [[float(i == j) for j in range(4)] for i in range(4)],
+        ),
+        ("a 3-by-3 operator", [[float(i == j) for j in range(3)] for i in range(3)]),
         ("a string", "not a matrix"),
     ),
 )
@@ -200,10 +203,18 @@ def test_a_carried_matrix_that_is_not_a_dense_operator_is_refused(
     """A carried matrix is checked as an operator, not reshaped and hoped for.
 
     `Circuit.gate` accepts a matrix for any opcode, so this shape is reachable from
-    the public API; today the size mismatch escapes as a `RuntimeError` from
-    `reshape` naming no instruction, and a string escapes as a `TypeError` from
+    the public API; the size mismatch escapes as a `RuntimeError` from `reshape`
+    naming no instruction, and a string escapes as a `TypeError` from
     `torch.as_tensor`. The first is the framework's own validation category and the
     second is the wrong-Python-type category the errors-module boundary reserves.
+
+    The two wrong-size operands are spelled as nested lists rather than as tensors
+    on purpose. `Instruction.__post_init__` refuses a wrong entry count through the
+    shape a tensor publishes, so a tensor never reaches this layer; a nested list
+    publishes no shape, construction declines to judge it, and the guard below is
+    what answers. Both spellings are a wrong operand, and both are refused — this
+    test pins the layer that still has to answer for the one construction cannot
+    count.
     """
 
     instruction = Instruction("h", (0,), {}, carried, {})
@@ -213,3 +224,28 @@ def test_a_carried_matrix_that_is_not_a_dense_operator_is_refused(
     message = str(refusal.value)
     assert "'h'" in message
     assert "operand" in message
+
+
+@pytest.mark.parametrize(
+    "label,carried",
+    (
+        ("a 4-by-4 operator on one operand", torch.eye(4, dtype=torch.complex128)),
+        ("a 3-by-3 operator", torch.eye(3, dtype=torch.complex128)),
+    ),
+)
+def test_a_tensor_operand_of_the_wrong_size_never_becomes_an_instruction(
+    label: str, carried: torch.Tensor
+) -> None:
+    """The same wrong operand in a spelling that carries its own shape.
+
+    A tensor says how many entries it has, so the instruction refuses it before an
+    executor is asked, which is the earliest stage that can know. The layer above
+    still answers for the spelling that cannot be counted, so neither guard is
+    redundant.
+    """
+
+    with pytest.raises(IRValidationError) as refusal:
+        Instruction("h", (0,), {}, carried, {})
+    message = str(refusal.value)
+    assert "'h'" in message
+    assert str(tuple(carried.shape)) in message
