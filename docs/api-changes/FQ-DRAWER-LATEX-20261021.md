@@ -44,7 +44,9 @@ compiles PDF. Poppler pdftocairo produces SVG; pdftoppm (or pdftocairo) produces
 PNG. Notebook auto-display prefers SVG when pdftocairo exists and otherwise uses
 PNG. No compiler or converter is downloaded or installed by library code.
 IPython is imported only for an explicit display call. There is no new required
-Python dependency, no Matplotlib requirement for source export, and no network
+Python dependency. The existing `viz` extra adds BSD-licensed IPython for explicit
+display and formatter conformance; it stays lazily imported and is replaceable
+at the MIME/display boundary. There is no Matplotlib requirement for source export or network
 or subprocess work at import or source-generation time.
 
 The drawer owns the resource reader and bounded compiler/converter boundary.

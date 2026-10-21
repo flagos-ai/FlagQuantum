@@ -58,6 +58,8 @@ Tectonic. FlagQuantum does not download or install executables.
 
 The `LatexFigure` MIME protocol does not require importing IPython at source
 export time. Only explicit `.display()` / `display=True` imports IPython.
+The `viz` extra includes IPython for explicit display; an existing Notebook
+kernel already provides it. LaTeX source and bundle export need no extra.
 Compiled PDF and converted images are cached on that immutable figure instance;
 there is no global persistent cache. A new figure captures changed model
 parameters. Missing tools and failed compilation raise actionable errors and

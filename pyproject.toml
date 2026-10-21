@@ -133,6 +133,7 @@ examples = [
 
 viz = [
     "matplotlib>=3.5.0",
+    "ipython>=8,<10",
 ]
 
 invertible = [
@@ -151,6 +152,7 @@ all = [
      "tomli>=2.0,<3; python_version < '3.11'",
      "pyyaml>=6.0,<7",
      "matplotlib>=3.5.0",
+     "ipython>=8,<10",
      "jax>=0.10,<0.11",
      "datasets>=2.20.0",
      "transformers>=4.40.0",
