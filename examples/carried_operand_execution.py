@@ -19,7 +19,8 @@ replicated, or sharded, and no device is contacted.
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.dynamic import DynamicCircuit, run_dynamic
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.experimental.dynamic import run_dynamic
 
 #: A real symmetric unitary. It is not `X`, not `Z`, and not a phase, so no named
 #: operator can stand in for it.
