@@ -1023,9 +1023,11 @@ jobs:
 
   cudaq-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    # Cold SDK downloads are network-bound on the self-hosted CPU pool.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cudaq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"
@@ -1065,7 +1067,10 @@ jobs:
         with:
           path: ${{ env.FQ_CUDAQ_WHEEL_DIRECTORY }}
           key: cudaq-wheels-v1-${{ runner.os }}-${{ runner.arch }}-py312-cu13-0.15.1-0.16.0.post1-${{ hashFiles('.github/actions/prepare-cudaq-wheels/action.yml') }}
+          restore-keys: |
+            cudaq-wheels-v1-${{ runner.os }}-${{ runner.arch }}-py312-cu13-0.15.1-0.16.0.post1-
       - uses: ./.github/actions/prepare-cudaq-wheels
+        timeout-minutes: 10
       - name: Verify both certified CUDA-Q versions
         run: |
           set -euxo pipefail

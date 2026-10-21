@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -70,6 +71,7 @@ def _prepare(
             "FQ_RUNNER_KIND": "",
             "RUNNER_ENVIRONMENT": host,
             "PIP_NO_INDEX": "1",
+            "PIP_INDEX_URL": "https://mirror.invalid/simple",
             "PIP_DISABLE_PIP_VERSION_CHECK": "1",
             "PIP_CACHE_DIR": str(tmp_path / "pip-cache"),
         },
@@ -144,7 +146,13 @@ def test_certified_checks_and_aggregate_are_retained() -> None:
     jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
     job = jobs["cudaq-optional"]
     assert job["env"]["OPTIONAL_VERSIONS"].split() == list(VERSIONS)
+    assert job["runs-on"] == "ubuntu-latest"
+    assert job["timeout-minutes"] == 20
     steps = job["steps"]
+    preparation = next(
+        s for s in steps if s.get("uses") == "./.github/actions/prepare-cudaq-wheels"
+    )
+    assert preparation["timeout-minutes"] == 10
     assert any(s.get("uses") == "./.github/actions/prepare-cudaq-wheels" for s in steps)
     check = next(
         s["run"]
@@ -162,3 +170,74 @@ def test_certified_checks_and_aggregate_are_retained() -> None:
     assert "--no-deps" not in check
     assert "continue-on-error" not in job
     assert "cudaq-optional" in jobs["ci-complete"]["needs"]
+
+
+@pytest.mark.parametrize(
+    "index,mirror_result,official_result,durations,expected_code",
+    [
+        ("https://pypi.org/simple", 0, 0, ["300s"], 0),
+        ("https://pypi.org/simple/", 0, 1, ["300s"], 1),
+        ("https://mirror.invalid/simple", 0, 0, ["180s"], 0),
+        ("https://mirror.invalid/simple", 1, 0, ["180s", "300s"], 0),
+        ("https://mirror.invalid/simple", 124, 1, ["180s", "300s"], 1),
+    ],
+)
+def test_download_deadlines_and_official_fallback_do_not_repeat_an_endpoint(
+    tmp_path: Path,
+    index: str,
+    mirror_result: int,
+    official_result: int,
+    durations: list[str],
+    expected_code: int,
+) -> None:
+    action = yaml.safe_load(
+        (ROOT / ".github/actions/prepare-cudaq-wheels/action.yml").read_text()
+    )
+    prefix = action["runs"]["steps"][0]["run"].split(
+        "for version in ${OPTIONAL_VERSIONS};", 1
+    )[0]
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    calls = tmp_path / "calls.jsonl"
+    timeout = bindir / "timeout"
+    timeout.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\n"
+        "with open(os.environ['TIMEOUT_CALLS'], 'a') as log: log.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+        "raise SystemExit(int(os.environ['MIRROR_RESULT'] if sys.argv[2] == '180s' else os.environ['OFFICIAL_RESULT']))\n"
+    )
+    timeout.chmod(0o755)
+    completed = subprocess.run(
+        [
+            "bash",
+            "-eu",
+            "-c",
+            prefix + "\ndownload_wheels --only-binary=:all: cuda-quantum-cu13==0.15.1",
+        ],
+        env={
+            **os.environ,
+            "PATH": str(bindir) + os.pathsep + os.environ["PATH"],
+            "PIP_INDEX_URL": index,
+            "FQ_CUDAQ_WHEEL_DIRECTORY": str(tmp_path / "wheels"),
+            "OPTIONAL_VERSIONS": VERSIONS[0],
+            "RUNNER_ENVIRONMENT": "github-hosted",
+            "TIMEOUT_CALLS": str(calls),
+            "MIRROR_RESULT": str(mirror_result),
+            "OFFICIAL_RESULT": str(official_result),
+        },
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert completed.returncode == expected_code, completed.stderr
+    commands = [json.loads(line) for line in calls.read_text().splitlines()]
+    assert [args[1] for args in commands] == durations
+    assert all(args[0] == "--kill-after=15s" for args in commands)
+    indexes = [args[args.index("--index-url") + 1] for args in commands]
+    assert indexes == (
+        [index]
+        if durations == ["180s"]
+        else [index, "https://pypi.org/simple"]
+        if len(durations) == 2
+        else ["https://pypi.org/simple"]
+    )

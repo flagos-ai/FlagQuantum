@@ -18,13 +18,19 @@ runs:
           echo "Using the available self-hosted public wheel cache"
         fi
         download_wheels() {
-          # Preserve the configured domestic index, with a bounded official fallback.
-          if ! timeout --kill-after=15s 900s python -m pip wheel \
-            --constraint "$constraints" --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "$@"; then
+          index="${PIP_INDEX_URL:-https://pypi.org/simple}"
+          # Do not retry the same official endpoint as a mirror fallback.
+          if [ "${index%/}" != https://pypi.org/simple ]; then
+            if timeout --kill-after=15s 180s python -m pip wheel \
+              --index-url "$index" --constraint "$constraints" \
+              --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "$@"; then
+              return 0
+            fi
             echo "::warning::CUDA-Q mirror resolution failed; trying official PyPI"
-            python -m pip wheel --index-url https://pypi.org/simple \
-              --constraint "$constraints" --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "$@"
           fi
+          timeout --kill-after=15s 300s python -m pip wheel \
+            --index-url https://pypi.org/simple --constraint "$constraints" \
+            --wheel-dir "$FQ_CUDAQ_WHEEL_DIRECTORY" "$@"
         }
         for version in ${OPTIONAL_VERSIONS}; do
           requirements=("cudaq==${version}" "cuda-quantum-cu13==${version}")
