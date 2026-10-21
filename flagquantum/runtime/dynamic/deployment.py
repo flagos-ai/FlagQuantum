@@ -12,7 +12,8 @@ from ...deployment.routing_evidence import (
     same_undirected_device,
     stable_payload_sha256,
 )
-from ._conditions import classical_width
+from ...errors import CapabilityError
+from ._conditions import classical_width, instruction_condition_clauses
 from .circuit import DynamicCircuit
 from .dialects.openqasm3 import export_dynamic_qasm3_for_backend
 from .routing import route_dynamic_circuit
@@ -40,7 +41,11 @@ def assess_dynamic_backend(
     circuit: DynamicCircuit, backend: Any
 ) -> DynamicBackendCompatibility:
     blockers = []
-    if circuit.n_qubits > int(getattr(backend, "n_wires", 0)):
+    raw_capacity = getattr(backend, "n_qubits", None)
+    if raw_capacity is None:
+        raw_capacity = getattr(backend, "n_wires", 0)
+    capacity = 0 if raw_capacity is None else int(raw_capacity)
+    if circuit.n_qubits > capacity:
         blockers.append("circuit_exceeds_backend_qubit_capacity")
     if not bool(getattr(backend, "supports_openqasm", False)):
         blockers.append("backend_does_not_support_openqasm")
@@ -51,6 +56,17 @@ def assess_dynamic_backend(
     if maximum is not None and required > int(maximum):
         blockers.append("required_classical_bits_exceed_backend_limit")
     dialect = getattr(backend, "dynamic_dialect", None) or "openqasm3"
+    basis_gates = tuple(getattr(backend, "basis_gates", ()) or ())
+    if dialect == "openqasm3" and basis_gates:
+        supported = set(basis_gates)
+        for instruction in circuit._instructions:
+            if (
+                instruction_condition_clauses(instruction)
+                and instruction.name not in supported
+            ):
+                blockers.append(
+                    f"conditional_gate_not_in_backend_basis:{instruction.name}"
+                )
     try:
         export_dynamic_qasm3_for_backend(circuit, backend)
     except (TypeError, ValueError) as exc:
@@ -58,9 +74,24 @@ def assess_dynamic_backend(
     return DynamicBackendCompatibility(
         compatible=not blockers,
         required_classical_bits=required,
-        blockers=tuple(blockers),
+        blockers=tuple(dict.fromkeys(blockers)),
         dynamic_dialect=dialect,
     )
+
+
+def _require_dynamic_compatibility(
+    circuit: DynamicCircuit,
+    backend: Any,
+    *,
+    stage: str,
+) -> DynamicBackendCompatibility:
+    compatibility = assess_dynamic_backend(circuit, backend)
+    if not compatibility.compatible:
+        raise CapabilityError(
+            f"dynamic_backend_incompatible:{stage}: "
+            + ", ".join(compatibility.blockers)
+        )
+    return compatibility
 
 
 def create_dynamic_deployment_package(
@@ -85,7 +116,7 @@ def create_dynamic_deployment_package(
     Raises:
         ValueError: if `shots` is not positive, or if the circuit carries
             parameters that are still unbound or a non-default initial state.
-        RuntimeError: if the backend cannot host the circuit, either before
+        CapabilityError: if the backend cannot host the circuit, either before
             routing or after it.
     """
     if int(shots) <= 0:
@@ -97,11 +128,9 @@ def create_dynamic_deployment_package(
         )
     if circuit.parameter_names:
         raise ValueError("dynamic deployment requires all parameters to be bound")
-    compatibility = assess_dynamic_backend(circuit, backend)
-    if not compatibility.compatible:
-        raise RuntimeError(
-            "dynamic backend is incompatible: " + ", ".join(compatibility.blockers)
-        )
+    compatibility = _require_dynamic_compatibility(
+        circuit, backend, stage="before_routing"
+    )
     source_ir = circuit.to_ir()
     existing_routing = source_ir.metadata.get("routing")
     routing_reused = bool(
@@ -118,12 +147,7 @@ def create_dynamic_deployment_package(
         if backend.coupling_map is None or routing_reused
         else route_dynamic_circuit(circuit, backend.coupling_map)
     )
-    routed_report = assess_dynamic_backend(deployment_circuit, backend)
-    if not routed_report.compatible:
-        raise RuntimeError(
-            "routed dynamic circuit is incompatible: "
-            + ", ".join(routed_report.blockers)
-        )
+    _require_dynamic_compatibility(deployment_circuit, backend, stage="after_routing")
     deployment_ir = deployment_circuit.to_ir()
     qasm = export_dynamic_qasm3_for_backend(deployment_circuit, backend)
     routing_evidence = build_deployment_routing_evidence(

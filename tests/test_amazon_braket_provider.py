@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 import flagquantum as fq
+import flagquantum.errors as fqe
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.remote import AmazonBraketProvider, braket_backend_profile
 from flagquantum.runtime.dynamic import create_dynamic_deployment_package
@@ -130,7 +131,7 @@ def test_braket_iqm_missing_groups_fails_before_hardware_submission() -> None:
 
     assert not report.compatible
     assert "braket_iqm_dynamic_qubit_groups_are_required" in report.blockers
-    with pytest.raises(RuntimeError, match="dynamic_qubit_groups"):
+    with pytest.raises(fqe.CapabilityError, match="dynamic_qubit_groups"):
         create_dynamic_deployment_package(
             circuit,
             backend=provider.backend,
