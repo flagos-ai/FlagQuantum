@@ -139,7 +139,7 @@ import flagquantum as fq
 import torch
 
 gate = torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex64)
-block = fq.Circuit(1).any(0, unitary=gate)
+block = fq.Circuit(1).any(0, matrix=gate)
 
 placed = fq.Circuit(2).compose(block, qubits=(1,))
 print(placed.to_ir().instructions[0].wires)
@@ -154,7 +154,7 @@ try:
         getattr(target, item.name)(*item.wires)
 except TypeError as error:
     print(error)
-# Circuit.any() missing 1 required keyword-only argument: 'unitary'
+# Circuit.any() missing 1 required keyword-only argument: 'matrix'
 ```
 
 The second way is a noise channel, and it is quieter. `Circuit.depolarizing` records a
@@ -269,7 +269,7 @@ import flagquantum as fq
 import torch
 
 gate = torch.tensor([[1.0, 0.0], [0.0, 1.0j]], dtype=torch.complex64)
-print([item.name for item in fq.Circuit(1).any(0, unitary=gate).adjoint().to_ir().instructions])
+print([item.name for item in fq.Circuit(1).any(0, matrix=gate).adjoint().to_ir().instructions])
 # ['any']  -- inverted through the matrix, not through an opcode rule
 
 channels = [schema for schema in fq.core.OPERATOR_SCHEMAS.values() if schema.semantic_kind == "channel"]

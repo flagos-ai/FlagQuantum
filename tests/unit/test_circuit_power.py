@@ -413,7 +413,7 @@ def test_the_rewrite_does_not_touch_an_operation_carrying_a_matrix() -> None:
     """The matrix is what executes, so it suppresses the rewrite."""
 
     matrix = torch.tensor([[0.0, 0.6], [0.6, 0.0]], dtype=torch.complex128)
-    custom = fq.Circuit(1).any(0, unitary=matrix)
+    custom = fq.Circuit(1).any(0, matrix=matrix)
 
     raised = custom.power(2)
     instructions = raised.to_ir().instructions

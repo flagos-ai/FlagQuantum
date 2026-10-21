@@ -379,7 +379,7 @@ class _PhaseFromEmbedding:
             circuit: The circuit to extend.
             qubits: The embedding's qubits.
         """
-        circuit.any(*qubits, unitary=self._matrix, name="embedding_phase")
+        circuit.any(*qubits, matrix=self._matrix, name="embedding_phase")
 
     def apply_controlled(
         self, circuit: Circuit, control: int, qubits: Sequence[int]
@@ -419,7 +419,7 @@ class _PhaseFromEmbedding:
             ),
             dim=0,
         )
-        circuit.any(control, *qubits, unitary=controlled, name="embedding_phase_power")
+        circuit.any(control, *qubits, matrix=controlled, name="embedding_phase_power")
 
 
 # A block encoding is a construction the primitive layer would admit only if a second
@@ -482,7 +482,7 @@ def _append_block_encoding(
     circuit.any(
         ancilla,
         *qubits,
-        unitary=select,
+        matrix=select,
         name="block_encoding_select",
     )
     circuit.gate("h", ancilla)

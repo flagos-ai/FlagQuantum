@@ -427,8 +427,63 @@ class Circuit:
         self._invalidate_execution_cache(instructions_changed=True)
         return self
 
-    def any(self, *qubits: int, unitary: Any, name: str = "any") -> "Circuit":
-        return self.gate(name, qubits, matrix=unitary)
+    def any(
+        self,
+        *qubits: int,
+        matrix: Any | None = None,
+        name: str = "any",
+        unitary: Any | None = None,
+    ) -> "Circuit":
+        """Record a custom operation as the matrix it applies.
+
+        The matrix is carried by the instruction rather than resolved through the
+        operator registry, so the operation needs no registered opcode, arity,
+        parameter list or inverse rule, and its entry count is checked at
+        construction against ``4 ** len(qubits)``, the size the executors read.
+
+        Args:
+            qubits: The qubits the operation acts on, in the order the matrix's
+                tensor factors are written, last qubit least significant.
+            matrix: The dense operator, with ``4 ** len(qubits)`` entries.
+            name: The opcode recorded on the instruction: how the operation appears
+                in the IR, in a drawing, and in an error message. A name the registry
+                does not know is admitted because the matrix is present.
+            unitary: Deprecated alias for ``matrix``, removed in 0.4.0. The name was
+                a false claim: a matrix that is not unitary is accepted here, which is
+                what :func:`flagquantum.expectation` relies on.
+
+        Raises:
+            TypeError: If neither keyword is supplied, or both are.
+            IRValidationError: If the matrix's entry count does not fit the qubits.
+
+        Examples:
+            >>> import torch
+            >>> import flagquantum as fq
+            >>> xx = torch.tensor([[0, 0, 0, 1], [0, 0, 1, 0],
+            ...                    [0, 1, 0, 0], [1, 0, 0, 0]], dtype=torch.complex128)
+            >>> circuit = fq.Circuit(2).x(0).any(0, 1, matrix=xx, name="xx")
+            >>> [round(float(value), 6) for value in circuit.state().reshape(-1).real]
+            [0.0, 1.0, 0.0, 0.0]
+        """
+
+        from .core._qubit_aliases import warn_qubit_alias
+
+        # Both refusals spell the method as CPython's missing-argument message did
+        # while the keyword was required, so a caller matching it keeps matching.
+        called = f"{type(self).__name__}.any()"
+        if matrix is not None and unitary is not None:
+            raise TypeError(
+                f"{called} received both 'matrix' and its deprecated alias "
+                "'unitary'; supply exactly one"
+            )
+        if unitary is not None:
+            warn_qubit_alias("any(unitary=...)", "any(matrix=...)")
+            matrix = unitary
+        if matrix is None:
+            raise TypeError(
+                f"{called} missing 1 required keyword-only argument: 'matrix'"
+            )
+        return self.gate(name, qubits, matrix=matrix)
 
     unitary = any
 

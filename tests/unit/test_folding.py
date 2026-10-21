@@ -742,7 +742,7 @@ def test_a_custom_operation_whose_matrix_is_not_unitary_is_refused() -> None:
     shear = fq.Circuit(1)
     shear.any(
         0,
-        unitary=torch.tensor([[1.0, 1.0], [0.0, 1.0]], dtype=torch.complex128),
+        matrix=torch.tensor([[1.0, 1.0], [0.0, 1.0]], dtype=torch.complex128),
         name="shear",
     )
     with pytest.raises(ValueError, match="is not unitary"):
@@ -752,7 +752,7 @@ def test_a_custom_operation_whose_matrix_is_not_unitary_is_refused() -> None:
     flip = fq.Circuit(1)
     flip.any(
         0,
-        unitary=torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex128),
+        matrix=torch.tensor([[0.0, 1.0], [1.0, 0.0]], dtype=torch.complex128),
         name="flip",
     )
     assert names(fold_program(flip, scale_factor=3.0).program) == ["flip"] * 3
@@ -763,7 +763,7 @@ def test_a_custom_operation_whose_matrix_is_not_unitary_is_refused() -> None:
     wide = fq.Circuit(1)
     wide.any(
         0,
-        unitary=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+        matrix=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
         name="wide",
     )
     with pytest.raises(ValueError, match="not square"):
@@ -774,7 +774,7 @@ def test_a_custom_operation_whose_matrix_is_not_unitary_is_refused() -> None:
     with pytest.raises(IRValidationError):
         fq.Circuit(1).any(
             0,
-            unitary=torch.tensor(
+            matrix=torch.tensor(
                 [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=torch.complex128
             ),
             name="wide",

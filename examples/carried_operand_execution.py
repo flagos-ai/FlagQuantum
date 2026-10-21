@@ -101,7 +101,7 @@ def main() -> None:
     # matrix to something the schema does not declare, and it has always executed
     # as written, which is the route the four above now agree with.
     two = fq.Circuit(2)
-    two.any(0, 1, unitary=torch.kron(_OPERAND, _OPERAND))
+    two.any(0, 1, matrix=torch.kron(_OPERAND, _OPERAND))
     print("the same operand on two qubits through any():")
     print(
         "  planned instructions:",

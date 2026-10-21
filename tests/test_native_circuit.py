@@ -1106,7 +1106,7 @@ def test_native_distributed_bridge_preserves_complex128_end_to_end():
     theta = torch.tensor(0.371 + 2**-30, dtype=torch.float64)
     custom = torch.tensor([[1.0, 2**-30j], [2**-30j, 1.0]], dtype=torch.complex128)
     circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta=theta)
-    circuit.any(0, unitary=custom)
+    circuit.any(0, matrix=custom)
 
     result, plan = circuit.run_distributed(
         device="cpu",

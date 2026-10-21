@@ -146,7 +146,7 @@ def two_qubit_case() -> None:
         pulse_opcode=PULSE,
     )
     assert leaves is not None
-    source = input_state().any(0, 1, unitary=matrix)
+    source = input_state().any(0, 1, matrix=matrix)
     print("two-qubit synthesis: swap on qubits (0, 1)")
     report(
         "  swap on h(0) ry(0.7)(1)",

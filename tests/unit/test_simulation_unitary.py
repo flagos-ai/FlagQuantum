@@ -170,7 +170,7 @@ def test_an_arbitrary_matrix_gate_is_materialized() -> None:
     square_root_x = torch.tensor(
         [[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]], dtype=torch.complex64
     )
-    circuit = fq.Circuit(1).any(0, unitary=square_root_x)
+    circuit = fq.Circuit(1).any(0, matrix=square_root_x)
 
     assert torch.allclose(get_unitary(circuit), square_root_x, atol=_ATOL)
 

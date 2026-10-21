@@ -336,7 +336,7 @@ def test_adjoint_ir_template_cache_bypasses_non_parameter_tensors():
     _clear_adjoint_ir_template_cache()
     theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(2, dtype=torch.complex128).ry(0, theta)
-    circuit.any(0, unitary=torch.eye(2, dtype=torch.complex128))
+    circuit.any(0, matrix=torch.eye(2, dtype=torch.complex128))
     ir = circuit.to_ir()
     _, slots, _ = _parameter_layout(ir)
 
