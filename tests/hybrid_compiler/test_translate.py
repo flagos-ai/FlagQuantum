@@ -135,7 +135,7 @@ def test_a_noise_channel_is_refused_by_name(translation_format: str) -> None:
 
 @pytest.mark.parametrize("translation_format", TRANSLATION_FORMATS)
 def test_an_arbitrary_matrix_gate_is_refused(translation_format: str) -> None:
-    circuit = fq.Circuit(1).any(0, unitary=[[0, 1], [1, 0]])
+    circuit = fq.Circuit(1).any(0, matrix=[[0, 1], [1, 0]])
 
     with pytest.raises(UnsupportedLoweringError) as excinfo:
         translate(circuit, format=translation_format)

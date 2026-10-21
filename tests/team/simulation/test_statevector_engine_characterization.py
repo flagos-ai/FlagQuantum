@@ -69,7 +69,7 @@ def test_local_statevector_custom_matrix_keeps_autograd_graph():
     matrix = (
         torch.stack((cosine, -sine, sine, cosine)).reshape(2, 2).to(torch.complex128)
     )
-    circuit = fq.Circuit(1, dtype=torch.complex128).unitary(0, unitary=matrix)
+    circuit = fq.Circuit(1, dtype=torch.complex128).unitary(0, matrix=matrix)
 
     value = circuit.state()[0, 1].real
     value.backward()

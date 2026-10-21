@@ -338,7 +338,7 @@ class _PhaseFromDensityMatrix:
             circuit: The circuit to extend.
             qubits: The data register's qubits.
         """
-        circuit.any(*qubits, unitary=self._matrix, name="pca_phase")
+        circuit.any(*qubits, matrix=self._matrix, name="pca_phase")
 
     def apply_controlled(
         self, circuit: Circuit, control: int, qubits: Sequence[int]
@@ -378,7 +378,7 @@ class _PhaseFromDensityMatrix:
             ),
             dim=0,
         )
-        circuit.any(control, *qubits, unitary=controlled, name="pca_phase_power")
+        circuit.any(control, *qubits, matrix=controlled, name="pca_phase_power")
 
 
 def _density_matrix(A: torch.Tensor) -> tuple[torch.Tensor, int, int]:  # noqa: N803

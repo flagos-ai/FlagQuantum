@@ -144,7 +144,7 @@ def test_compose_carries_the_unitary_of_an_arbitrary_operation():
     """
 
     unitary = torch.eye(2, dtype=torch.complex64)
-    block = fq.Circuit(1).any(0, unitary=unitary)
+    block = fq.Circuit(1).any(0, matrix=unitary)
     composed = fq.Circuit(2).compose(block, qubits=1)
 
     recorded = composed.to_ir().instructions[0]

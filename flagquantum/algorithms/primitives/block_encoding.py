@@ -341,7 +341,7 @@ class SpectralBlockEncoding:
                 ``ancilla`` is one of them.
         """
         _require_register(self, ancilla, qubits)
-        circuit.any(ancilla, *qubits, unitary=self._select, name="block_encoding")
+        circuit.any(ancilla, *qubits, matrix=self._select, name="block_encoding")
 
     def append_walk_step(
         self, circuit: Circuit, *, ancilla: int, qubits: Sequence[int]
@@ -363,7 +363,7 @@ class SpectralBlockEncoding:
         _require_register(self, ancilla, qubits)
         # A circuit composes its instructions in reverse, so the sequence emitted for the
         # product ``Z U`` is the encoding first and the phase flip second.
-        circuit.any(ancilla, *qubits, unitary=self._select, name="walk_step_select")
+        circuit.any(ancilla, *qubits, matrix=self._select, name="walk_step_select")
         circuit.gate(_FLAG_REFLECTION, ancilla)
 
     def append_adjoint_walk_step(
@@ -383,7 +383,7 @@ class SpectralBlockEncoding:
         _require_register(self, ancilla, qubits)
         circuit.gate(_FLAG_REFLECTION, ancilla)
         circuit.any(
-            ancilla, *qubits, unitary=self._select, name="walk_step_select_adjoint"
+            ancilla, *qubits, matrix=self._select, name="walk_step_select_adjoint"
         )
 
 

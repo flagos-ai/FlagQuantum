@@ -247,6 +247,11 @@ The guide carries the two losses that make the point it is making, and both were
   composes onto another qubit with its matrix intact, while a loop calling
   `getattr(target, item.name)(*item.wires)` raises
   `TypeError: Circuit.any() missing 1 required keyword-only argument: 'unitary'`.
+
+  > The keyword was renamed `matrix` after this record was written (proposal 071
+  > Decision 3). The transcript above is what this record measured on its date; the
+  > guide now quotes `TypeError: Circuit.any() missing 1 required keyword-only
+  > argument: 'matrix'`, and `unitary=` still works while warning.
 * **A channel's `is_channel` metadata is what the planner reads.** Dropping it through the
   public `to_ir()`/`from_ir` route rebuilds a circuit whose channel is unnamed, and the
   loss is visible twice: `fq.plan` reports `statevector` and 16 bytes where the composed

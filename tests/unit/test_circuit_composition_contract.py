@@ -187,7 +187,7 @@ _TRIGGERS: dict[str, Callable[[], object]] = {
         Instruction("x", (1,), metadata={"conditions": (("c", 1),)})
     ).control(1, ctrl_qubits=(2,)),
     "control_of_matrix": lambda: fq.Circuit(1)
-    .any(0, unitary=torch.eye(2, dtype=torch.complex128))
+    .any(0, matrix=torch.eye(2, dtype=torch.complex128))
     .control(1, ctrl_qubits=(1,)),
     "control_of_execution_metadata": lambda: _with_instruction(
         Instruction("h", (1,), metadata={"origin": "test"})
@@ -323,7 +323,7 @@ def test_the_placement_flags_hold_on_a_measured_composition() -> None:
 
     # `instruction_payload_preserved`: `rz` keeps its angle and a custom instruction
     # keeps its matrix and metadata, so composition is a rewrite and not a re-creation.
-    custom = fq.Circuit(1).any(0, unitary=torch.eye(2, dtype=torch.complex128))
+    custom = fq.Circuit(1).any(0, matrix=torch.eye(2, dtype=torch.complex128))
     custom._instructions[-1].metadata["origin"] = "test"
     carried = fq.Circuit(2).compose(fq.Circuit(1).rz(0, 0.25), qubits=1)
     carried.compose(custom, qubits=0)
@@ -649,7 +649,7 @@ def test_the_power_flags_hold_on_a_measured_repetition() -> None:
     # `matrix_route_precedes_opcode_rule` and `matrix_route`: a custom operation that
     # carries a matrix is repeated rather than rewritten, because the matrix is what
     # executes and the opcode declares no angle to scale.
-    custom = fq.Circuit(1).any(0, unitary=torch.eye(2, dtype=torch.complex128))
+    custom = fq.Circuit(1).any(0, matrix=torch.eye(2, dtype=torch.complex128))
     assert [item.name for item in custom.power(2).to_ir().instructions] == ["any"] * 2
     assert power["matrix_route_precedes_opcode_rule"] is True
     assert power["matrix_route"] == "repeat"
@@ -978,7 +978,7 @@ def test_composition_adds_no_ir_field_and_no_root_export() -> None:
         fq.Circuit(2)
         .h(0)
         .cnot(0, 1)
-        .any(0, unitary=torch.eye(2, dtype=torch.complex128))
+        .any(0, matrix=torch.eye(2, dtype=torch.complex128))
     )
     emitted = [
         *source.compose(fq.Circuit(1).x(0), qubits=1).to_ir().instructions,

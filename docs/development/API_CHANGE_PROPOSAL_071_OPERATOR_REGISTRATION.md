@@ -9,11 +9,28 @@ approved to unblock are `custom_operation_registration`,
 `kraus_channel_algebra` and `matrix_and_custom_operator`.**
 
 Decisions 1 and 4 are implemented by this proposal's own pull request, #688.
-Decision 2 is implemented by #689, in `collapse_one_qubit_runs`. Decision 5's
-size half is implemented by its own change, in `Instruction.__post_init__`.
-Decisions 3, 7 and 8 remain open: each needs a surface this proposal deliberately
-does not own — a stable keyword name, 075's lowering registry, and 075's
-registration entry point respectively.
+Decision 2 is implemented by #689, in `collapse_one_qubit_runs`. Decision 3 is
+implemented by its own change, which renames the keyword to `matrix` and keeps
+`unitary` as a deprecated alias. Decision 5's size half is implemented by its
+own change, in `Instruction.__post_init__`. Decisions 7 and 8 remain open: each
+needs a surface this proposal deliberately does not own — 075's lowering
+registry and 075's registration entry point respectively.
+
+Decision 3's keyword was named by the repository owner as `matrix`. The name is
+the one :meth:`flagquantum.Circuit.gate` already uses for the same value and the
+one the executors read, so a caller learns one word rather than two. `unitary` is
+kept as a deprecated alias that forwards to `matrix` and warns once, in the shape
+the repository already uses for a staged keyword rename (`n_wires is deprecated;
+use n_qubits. Removal is planned for 0.4.0 after the 0.3.x migration window.`),
+and it is scheduled for removal in 0.4.0. The shipped callers were migrated in the
+same change — five in `flagquantum/algorithms`, one in `flagquantum/simulation`,
+and every test and guide example — so no repository code path exercises the
+alias, and its remaining use is the one it exists for: a caller written against
+0.3.x. The refusal for supplying neither keyword keeps the text CPython produced
+while the keyword was required (`Circuit.any() missing 1 required keyword-only
+argument: 'matrix'`), because a caller matching on that message must keep
+matching while it migrates. Supplying both is refused rather than ordered, so an
+ambiguous call cannot silently pick one.
 
 Decision 5 is implemented as the entry-count rule the runtime already enforced,
 moved to the stage that can know it. `_dense_operator` states the rule in its own
@@ -27,10 +44,20 @@ than when a wrong one is reported. The half of Decision 5 that would refuse a
 flat spelling is therefore **not** implemented, and the reason is that it
 contradicts the runtime's documented rule above and
 `tests/unit/test_matrix_expectation_contract.py`, which accepts `(1, 2, 2)`; the
-shape a caller may spell is Decision 3's keyword question, and it stays there.
+shape a caller may spell is Decision 3's question, and Revision 3 answers it there
+by leaving the accepted spellings alone.
 A matrix that publishes no `shape` — a nested Python list — is not measured at
 construction and is left to the runtime's own operand check, so no new refusal
 was invented for a value whose size would have to be guessed.
+
+**Revision 3 records the two owner rulings this proposal was waiting on and what
+each changed. The keyword is `matrix` (Decision 3), so the last open question in
+this document that only a name was blocking is closed; the flat operand spellings
+stay accepted as Revision 1 had them, because the refusal Revision 1 drafted for
+them contradicts two shipped contracts and no defect this proposal measured
+required it. Decision 5 is now implemented and its text quotes the message a run
+produces rather than the message a draft expected. Decisions 7 and 8 remain open
+and depend on 075.**
 
 **Revision 2 re-measures this proposal against `origin/main` at `62e06b7c` in the
 `fq-qec` worktree. It corrects one cross-reference number, six code citations, and
@@ -125,7 +152,7 @@ channel. Section 1 of the probe measures the acceptance:
   len(flagquantum.__all__)           -> 36
 ```
 
-`flagquantum/core/ir/__init__.py:369` refuses an unknown name without a matrix and
+`flagquantum/core/ir/__init__.py:388-391` refuses an unknown name without a matrix and
 accepts an unknown name *with* one, so the IR deliberately admits an arbitrary
 named operation. The consequence, measured in "Problem" sections 2 to 5, is that the name
 is what every executor dispatches on, and a supplied matrix is an input the
@@ -618,9 +645,9 @@ present".
 
 ### 7. There is no construction-time check on the operand at all
 
-`Instruction.__post_init__` (`flagquantum/core/ir/__init__.py:357`) checks the name, the
-wires and the params, and never inspects `self.matrix` beyond testing it for
-`None`. Section 6 of the probe:
+`Instruction.__post_init__` (`flagquantum/core/ir/__init__.py:374`) checks the name, the
+wires and the params, and — as Revision 1 measured — never inspected `self.matrix`
+beyond testing it for `None`. Section 6 of the probe:
 
 ```
   1 wire, (4,4)        CONSTRUCTED, stored shape (4, 4)
@@ -634,6 +661,27 @@ wires and the params, and never inspects `self.matrix` beyond testing it for
 
 Seven operands, including a matrix whose side is not a power of two and two that
 are not square at all, all construct and store their shape verbatim.
+
+> **Revision 3: this paragraph, and the four `ExecutionError` lines thirty lines
+> below, record the state Revision 1 measured. Decision 5 changed it.** The four
+> operands whose entry count does not fit their wires are now refused at
+> construction, so they no longer reach the executor and no longer produce
+> `planned execution failed`:
+>
+> ```
+> (4, 4) on 1 wire   IRValidationError: the custom operation 'any' on qubits (0,)
+>                      carries a matrix of shape (4, 4); an operand on 1 qubit(s)
+>                      must supply 4 entries, and this one supplies 16
+> (3, 3) on 1 wire   ... must supply 4 entries, and this one supplies 9
+> (2, 3) on 1 wire   ... must supply 4 entries, and this one supplies 6
+> (2, 2) on 2 wires  ... on 2 qubit(s) must supply 16 entries, and this one
+>                      supplies 4
+> ```
+>
+> The `(4,)`, `(1, 4)` and `(4, 1)` operands still construct and still run,
+> exactly as measured, and Revision 3 leaves them running (see Decision 3). The
+> paragraph below about `.reshape` is still the reason a flat operand runs and is
+> unchanged by Decision 5.
 
 The reason nothing downstream catches them is
 `flagquantum/simulation/gate_matrix.py:144-147`, which reshapes rather than
@@ -739,7 +787,7 @@ operand on two wires with `gap=1.0728836059570312e-06`, opcode
 `pca_phase_power`, built at `flagquantum/algorithms/pca.py:381` by
 
 ```python
-        circuit.any(control, *wires, unitary=controlled, name="pca_phase_power")
+        circuit.any(control, *wires, matrix=controlled, name="pca_phase_power")
 ```
 
 from `tests/test_algorithm_examples.py`'s guide-example test. So the whole
@@ -777,7 +825,7 @@ The channel's Kraus tuple is derived from its declared parameters, and
 
 Any operand rule must therefore be keyed on "a matrix is present **and the
 instruction is not a channel**". The classifier already exists:
-`instruction.metadata["is_channel"]`, read at `flagquantum/core/ir/__init__.py:366`.
+`instruction.metadata["is_channel"]`, read at `flagquantum/core/ir/__init__.py:386`.
 
 ### 11. The dense-expectation helper deliberately routes a Hermitian, non-unitary operator through `Circuit.any`
 
@@ -799,7 +847,7 @@ operand is the user's observable:
 
 ```python
     for matrix, qubits in ops:
-        circuit.any(*qubits, unitary=matrix)
+        circuit.any(*qubits, matrix=matrix)
     return complex_mul(complex_conj(input_state), state(circuit)).sum(dim=-1)
 ```
 
@@ -822,7 +870,7 @@ exercises in four parameterisations.
 The two functions called `expectation` must not be confused. The stable root
 export `fq.expectation` is the one in `flagquantum/observables/__init__.py` with the
 signature `(observable: Observable, *, name: str | None = None) -> OutputRequest`
-and is in the 36-name stable surface; `flagquantum.circuit.expectation` is the
+and is in the 41-name stable surface; `flagquantum.circuit.expectation` is the
 dense helper above, is **not** a root export, and is nonetheless public enough
 to be used by `tests/test_native_circuit.py`. `flagquantum.circuit`'s `__all__`
 is `["Circuit", "expectation"]`, so it is not an accident.
@@ -1040,15 +1088,16 @@ in "Problem" section 11. It is a property the *fold* needs, and
 `flagquantum/algorithms/folding.py:164-194` is the precedent for testing it
 where it is needed.
 
-### 3. `Circuit.any` keeps accepting a non-unitary operand; a new keyword records the intent
+### 3. `Circuit.any` keeps accepting a non-unitary operand; the keyword is `matrix`
 
 Because `flagquantum.circuit.expectation` routes a Hermitian, non-unitary
 operator through `Circuit.any` on purpose, unitarity cannot become a
 construction-time precondition. The intent is instead recorded explicitly, and
 the operand contract depends on which intent was declared.
 
-The shape of the decision, deliberately left as a decision rather than a
-signature, is:
+The decision is now a signature, `def any(self, *qubits: int, matrix: Any | None
+= None, name: str = "any", unitary: Any | None = None)`, and these are the
+properties it fixes:
 
 - a matrix carried as a *gate* must be an operand the executors can apply — a
   square matrix of side `2 ** len(wires)` — and is subject to the dispatch rule
@@ -1056,15 +1105,32 @@ signature, is:
 - a matrix carried as an *operator* for a dense expectation is exempt from
   squareness-of-side expectations only in the sense that it is still a
   `2 ** len(wires)` square, but is exempt from unitarity;
-- the flat `(4,)`, `(1, 4)` and `(4, 1)` forms are **refused**, because "Problem" section 7
-  shows they are accepted by `.reshape` and therefore run, and an accepted form
-  with no declared meaning is the defect this proposal exists to remove. A
-  caller who holds a flat buffer writes `.reshape(n, n)`.
+- the flat `(4,)`, `(1, 4)` and `(4, 1)` forms are **not** refused. Revision 3
+  withdraws the refusal this bullet used to state: "Problem" section 7 is right
+  that `.reshape` accepts them, but `_dense_operator`'s own docstring makes that
+  acceptance a documented rule rather than an accident ("the entry count decides
+  the size, not the shape"), and
+  `tests/unit/test_matrix_expectation_contract.py` pins a `(1, 2, 2)` operand as
+  accepted. That is a contract this proposal did not measure as a defect, and it
+  stays. Nothing in this proposal needed to change it.
 
-The exact keyword name is left to the API owner. It is named here as an open
-question rather than invented, because `PUBLIC_API_PROTECTION.md` bans
-relative and transitional labels and because 075 owns the neighbouring
-namespace.
+The keyword is `matrix`, named by the repository owner, and it is implemented.
+The spelling is the one `Circuit.gate` already gives the same value, so there is
+one word for the dense operator in the whole `Circuit` surface:
+`Circuit.gate(name, wires, matrix=...)` and `Circuit.any(*wires, matrix=...)`.
+`unitary` is a deprecated alias for the 0.3.x migration window and is removed in
+0.4.0; it forwards to `matrix` and warns, so it records the same instruction
+rather than a second code path that could drift from the named one.
+
+What the rename does **not** change is which operands are accepted. The flat
+`(4,)`, `(1, 4)` and `(4, 1)` spellings stay accepted, for the two reasons
+Decision 5 records: `_dense_operator` documents that "the entry count decides the
+size, not the shape, so `(1, 2, 2)` is the same operator as `(2, 2)`", and
+`tests/unit/test_matrix_expectation_contract.py` accepts a `(1, 2, 2)` operand as
+a supported contract. Refusing the flat spellings would therefore delete a
+behaviour two shipped contracts state, under a proposal about *when* a wrong
+operand is reported. It is a separate question with its own evidence burden, and
+it is not answered here.
 
 ### 4. The identity-elimination pass has to choose, and the choice is to decline
 
@@ -1142,7 +1208,7 @@ Consequences this section records rather than leaves implicit:
 ### 6. Channels are explicitly out of scope, by classifier and not by shape
 
 `instruction.metadata["is_channel"]` is the classifier
-(`flagquantum/core/ir/__init__.py:366`), and section 10 of "Problem" measures why shape
+(`flagquantum/core/ir/__init__.py:386`), and section 10 of "Problem" measures why shape
 cannot substitute for it: a channel's `matrix` is a Kraus 4-tuple of `(2, 2)`
 tensors, so it is square, non-empty, and not an operand. Every rule in this
 proposal reads the classifier first.
@@ -1181,8 +1247,10 @@ are asserted in the acceptance list.
 
 ## Public API
 
-This proposal adds **no root export**. `len(flagquantum.__all__)` is 36 today
-and stays 36; `docs/public_api_v1.json`'s `stable_exports` is unchanged;
+This proposal adds **no root export**. Revision 3 re-measured both counts and
+they are 41 today — `len(flagquantum.__all__)` and `docs/public_api_v1.json`'s
+`stable_exports` agree — where Revision 1 measured 36; the five names other
+proposals added since are not this proposal's, and neither number changes here.
 `experimental_stability` stays `"none"`; `IR_VERSION` stays `"1.0"`.
 
 The only candidate-namespace change is the one 075 already needs. If the
@@ -1217,8 +1285,10 @@ records each one that moves.
   field or a schema entry.
 
 - **`docs/public_api_v1.json` is unchanged, and its `stable_exports` list stays
-  at 36 names.** `tools/public_api_snapshot.py` refuses automatic regeneration
-  and reports `public API migration baseline passed`.
+  at 41 names.** (Revision 1 measured 36; Revision 3 re-measured 41 after five
+  unrelated names landed. This proposal adds none of them and removes none.)
+  `tools/public_api_snapshot.py` refuses automatic regeneration and reports
+  `public API migration baseline passed`.
 
 - **Three suites pin behaviour this proposal changes, and each is disclosed
   rather than quietly adjusted.**
@@ -1441,7 +1511,7 @@ deleting it and observing a test fail.
   proposal proposes neither and does not name them in `## Public API`. Where the
   two meet is the capability record of Decision 7, which 075's registry is the
   natural container for.
-- **A new root export.** The root surface stays at 36 names. Nothing here needs a
+- **A new root export.** The root surface stays at 41 names. Nothing here needs a
   new name, because every behaviour it changes is reachable through `Circuit`,
   `Circuit.any`, `Circuit.gate`, `fq.plan`, `fq.run` and
   `fq.experimental.dynamic.run_dynamic`, all of which already exist.

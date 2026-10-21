@@ -302,7 +302,7 @@ def test_adjoint_binds_to_the_same_values_as_the_forward_block() -> None:
 
 def test_adjoint_inverts_a_custom_unitary_through_its_matrix() -> None:
     unitary = torch.tensor([[0.0, -1.0j], [1.0j, 0.0]], dtype=torch.complex128)
-    circuit = fq.Circuit(1, dtype=torch.complex128).any(0, unitary=unitary)
+    circuit = fq.Circuit(1, dtype=torch.complex128).any(0, matrix=unitary)
 
     _append(circuit, circuit.adjoint())
 

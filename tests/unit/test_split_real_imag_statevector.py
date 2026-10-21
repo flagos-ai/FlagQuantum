@@ -143,7 +143,7 @@ def test_executor_rejects_gradients_and_custom_matrices() -> None:
         )
 
     custom = Circuit(1).any(
-        0, unitary=torch.eye(2, dtype=torch.complex64), name="custom"
+        0, matrix=torch.eye(2, dtype=torch.complex64), name="custom"
     )
     with pytest.raises(NotImplementedError, match="custom matrices"):
         execute_split_real_imag_statevector(custom.to_ir(), preflight=False)

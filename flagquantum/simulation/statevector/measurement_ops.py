@@ -120,5 +120,5 @@ def _expectation_from_operators(
         inputs=input_state,
     )
     for matrix, qubits in ops:
-        circuit.any(*qubits, unitary=matrix)
+        circuit.any(*qubits, matrix=matrix)
     return complex_mul(complex_conj(input_state), state(circuit)).sum(dim=-1)
