@@ -936,7 +936,7 @@ jobs:
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: ${{ runner.environment == 'self-hosted' && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
     strategy:
       fail-fast: false
       max-parallel: 3
@@ -1243,7 +1243,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
-      PIP_INDEX_URL: ${{ runner.environment == 'self-hosted' && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     steps:
       - uses: actions/download-artifact@v8.0.2

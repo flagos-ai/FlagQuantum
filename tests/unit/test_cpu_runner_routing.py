@@ -315,3 +315,14 @@ def test_jax_launcher_coverage_uses_actual_two_rank_topology() -> None:
     )
     assert launched["timeout-minutes"] == 10
     assert "PYTEST_ADDOPTS" not in launched.get("env", {})
+
+
+@pytest.mark.parametrize("job", ["dependency-bounds", "coverage-shard"])
+def test_package_indexes_match_routing_before_runner_assignment(job: str) -> None:
+    document = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())
+    # Job env is evaluated before runner assignment; runner context is unavailable.
+    assert document["jobs"][job]["env"]["PIP_INDEX_URL"] == (
+        "${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && "
+        "github.event.pull_request.head.repo.full_name == github.repository)) && "
+        "'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}"
+    )
