@@ -358,6 +358,16 @@ def test_adjoint_carries_the_metadata_of_the_instruction_it_inverts() -> None:
             Instruction("x", (1,), metadata={"conditions": (("c", 1),)}),
         ),
         (
+            # The disjunctive spelling of the same condition. Before this case the
+            # refusal read `metadata.get("conditions")`, so an instruction carrying
+            # only `condition_clauses` was inverted and its condition carried into
+            # the inverted instruction -- a conditioned gate reported as undone.
+            "classically conditioned",
+            Instruction(
+                "x", (1,), metadata={"condition_clauses": (((0, 0),), ((1, 0),))}
+            ),
+        ),
+        (
             "does not expose a conjugate transpose",
             Instruction("custom", (1,), matrix=((1.0, 0.0), (0.0, 1.0))),
         ),
