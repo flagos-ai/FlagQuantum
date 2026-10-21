@@ -14,7 +14,8 @@ from ...deployment import (
     create_pauli_measurement_plan,
     deploy_circuit,
 )
-from ...observables import OutputRequest
+from ...errors import CapabilityError
+from ...observables import Observable, OutputRequest
 from ...observables import counts as request_counts
 from ...runtime.result import ExecutionResult, MeasurementResult
 from .azure import AzureQuantumProvider
@@ -25,6 +26,16 @@ if TYPE_CHECKING:
     from ...circuit import Circuit
     from ...core.ir import CircuitIR
     from ...runtime.execution_plan import ExecutionPlan
+
+
+def _pauli_output_observable(output: OutputRequest) -> Observable | None:
+    observable = output.observable
+    if observable is not None and not isinstance(observable, Observable):
+        raise CapabilityError(
+            "Dense matrix expectations currently require flagquantum.lindblad; "
+            "remote circuit outputs support Pauli observables"
+        )
+    return observable
 
 
 def execute_quafu(
@@ -39,6 +50,7 @@ def execute_quafu(
 ) -> ExecutionResult:
     """Submit one compiled circuit and normalize its Quafu result."""
 
+    _pauli_output_observable(output)
     package_options: dict[str, Any] = {}
     if compiler is None:
         backend = target.partition(":")[2].strip()
@@ -102,6 +114,8 @@ def validate_quafu_output(
     source_ir = ensure_circuit_ir(program)
     if any(not isinstance(item, OutputRequest) for item in requested):
         raise TypeError("outputs must contain OutputRequest values")
+    for item in requested:
+        _pauli_output_observable(item)
     full_counts = (
         len(requested) == 1
         and requested[0].kind == "counts"
@@ -119,7 +133,7 @@ def validate_quafu_output(
             "or one fq.expectation(...) output"
         )
 
-    observable = requested[0].observable
+    observable = _pauli_output_observable(requested[0])
     if observable is not None and any(
         qubit >= source_ir.n_wires
         for term in observable.terms
@@ -145,6 +159,8 @@ def validate_azure_output(
     source_ir = ensure_circuit_ir(program)
     if any(not isinstance(item, OutputRequest) for item in requested):
         raise TypeError("outputs must contain OutputRequest values")
+    for item in requested:
+        _pauli_output_observable(item)
     full_counts = (
         len(requested) == 1
         and requested[0].kind == "counts"
@@ -187,6 +203,7 @@ def execute_azure(
 ) -> ExecutionResult:
     """Compile OpenQASM 3 to QIR and execute one Azure Quantum counts job."""
 
+    _pauli_output_observable(output)
     resource_id = os.environ.get("AZURE_QUANTUM_RESOURCE_ID", "").strip()
     if not resource_id:
         raise RuntimeError("Azure Quantum fq.run requires AZURE_QUANTUM_RESOURCE_ID")
@@ -229,13 +246,14 @@ def _execute_expectation(
     name: str | None,
     package_options: dict[str, Any],
 ) -> ExecutionResult:
-    assert output.observable is not None
+    observable = _pauli_output_observable(output)
+    assert observable is not None
     hamiltonian = Hamiltonian(
         HamiltonianTerm(
             term.coefficient,
             {qubit: axis for qubit, axis in term.factors},
         )
-        for term in output.observable.terms
+        for term in observable.terms
     )
     deployment_name = name.strip() if name is not None else "flagquantum_job"
     measurement_plan = create_pauli_measurement_plan(
@@ -272,9 +290,7 @@ def _execute_expectation(
         )
     )
     observable_qubits = tuple(
-        sorted(
-            {qubit for term in output.observable.terms for qubit, _axis in term.factors}
-        )
+        sorted({qubit for term in observable.terms for qubit, _axis in term.factors})
     )
     result = ExecutionResult(
         measurements=(
