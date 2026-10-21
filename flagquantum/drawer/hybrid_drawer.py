@@ -94,7 +94,7 @@ def draw_hybrid(
         encoder_trainable: Enable encoder parameter updates; False freezes the stage.
         quantum_trainable: Whether to draw quantum parameter updates.
         head_trainable: Enable head parameter updates; False freezes the stage.
-        quantum_view: Auto inlines up to eight gates on four wires; larger circuits
+        quantum_view: Auto inlines up to eight gates on four qubits; larger circuits
             use measured continuation rows. Detail forces panels; overview omits them.
         gates_per_panel: Maximum instructions in each continuation panel.
 

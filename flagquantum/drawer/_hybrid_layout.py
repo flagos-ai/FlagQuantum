@@ -110,7 +110,7 @@ def _quantum_tex(ir: CircuitIR, inline: bool) -> str:
     if inline:
         content = r"\begin{yquant}" + _circuit_body(ir) + r"\end{yquant}"
     else:
-        content = r"\path[use as bounding box] (-1.4,-.4) rectangle (1.4,.4);\draw[draw=fhInk,line width=.5pt] (-1.4,0)--(-.75,0) (.75,0)--(1.4,0);\node[draw=fhQuantum,fill=fhQuantum!9,line width=.6pt,minimum width=15mm,minimum height=8mm] {$U$};"
+        content = r"\path[use as bounding box] (-1.4,-.4) rectangle (1.4,.4);\draw[draw=fhInk,line width=.5pt] (-1.4,0)--(-.75,0) (.75,0)--(1.4,0);\node[draw=fhQuantum,fill=fhQuantum!9,line width=.6pt,minimum width=15mm,minimum height=8mm] at (0,0) {$U$};"
     return (
         r"\begin{tikzpicture}[baseline=(current bounding box.center),font={"
         + _FONT
