@@ -18,6 +18,8 @@ from __future__ import annotations
 from ..diagnostics import LevelDiagnostic, _diagnostic
 from .model import (
     CONSTANT_OPCODE,
+    MEASURE_OPCODE,
+    RESET_OPCODE,
     TERMINATORS,
     VALUE_KINDS,
     BlockRecord,
@@ -185,6 +187,7 @@ def _verify_operations(
             )
             continue
         diagnostics.extend(_verify_operation_shape(block, position, operation))
+        diagnostics.extend(_verify_conditions(block, position, operation, live))
         bound = tuple(value for _, value in operation.parameters)
         for value in (*operation.operands, *bound):
             if value not in live:
@@ -208,6 +211,82 @@ def _verify_operations(
         live.update(operation.results)
         results.extend(operation.results)
     return tuple(results), diagnostics
+
+
+def _verify_conditions(
+    block: BlockRecord,
+    position: int,
+    operation: Operation,
+    live: set[ValueRef],
+) -> list[LevelDiagnostic]:
+    """Verify canonical DNF over boolean values defined before the operation."""
+
+    clauses = operation.condition_clauses
+    if not clauses:
+        return []
+    diagnostics: list[LevelDiagnostic] = []
+    if operation.opcode in {CONSTANT_OPCODE, MEASURE_OPCODE, RESET_OPCODE}:
+        diagnostics.append(
+            _diagnostic(
+                "program.condition_target",
+                f"operation {position} in block {block.name!r} applies a condition "
+                f"to {operation.opcode!r}, which is not conditionable",
+            )
+        )
+    clause_identities: list[tuple[tuple[str, int, bool], ...]] = []
+    for clause in clauses:
+        identity = tuple(
+            (condition.value.scope, condition.value.index, condition.equals)
+            for condition in clause
+        )
+        clause_identities.append(identity)
+        ordered = tuple(sorted(identity))
+        values = tuple((scope, index) for scope, index, _ in identity)
+        if not clause or identity != ordered or len(set(values)) != len(values):
+            diagnostics.append(
+                _diagnostic(
+                    "program.condition_noncanonical",
+                    f"operation {position} in block {block.name!r} carries an empty, "
+                    "unsorted, or duplicate condition clause",
+                )
+            )
+        for condition in clause:
+            if type(condition.equals) is not bool:
+                diagnostics.append(
+                    _diagnostic(
+                        "program.condition_value",
+                        f"operation {position} in block {block.name!r} compares a "
+                        "condition with a non-boolean value",
+                    )
+                )
+            if condition.value.kind != "bool":
+                diagnostics.append(
+                    _diagnostic(
+                        "program.condition_kind",
+                        f"operation {position} in block {block.name!r} conditions on "
+                        f"{_value_text(condition.value)} of kind "
+                        f"{condition.value.kind!r}, not 'bool'",
+                    )
+                )
+            if condition.value not in live:
+                diagnostics.append(
+                    _diagnostic(
+                        "program.condition_undefined",
+                        f"operation {position} in block {block.name!r} conditions on "
+                        f"{_value_text(condition.value)}, which is not live there",
+                    )
+                )
+    if clause_identities != sorted(clause_identities) or len(
+        set(clause_identities)
+    ) != len(clause_identities):
+        diagnostics.append(
+            _diagnostic(
+                "program.condition_noncanonical",
+                f"operation {position} in block {block.name!r} carries unsorted or "
+                "duplicate condition clauses",
+            )
+        )
+    return diagnostics
 
 
 def _verify_operation_shape(

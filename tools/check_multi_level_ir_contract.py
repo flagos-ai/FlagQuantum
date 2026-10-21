@@ -51,7 +51,7 @@ SKIPPED_DIRECTORIES = frozenset(
 CANONICAL_KIND = "flagquantum.circuit_ir"
 
 EXPECTED_SCHEMA = "flagquantum.multi_level_ir_internal_contract"
-EXPECTED_VERSION = "0.1"
+EXPECTED_VERSION = "0.2"
 EXPECTED_STATUS = "implementation_authorized"
 EXPECTED_OWNER = "core"
 EXPECTED_PUBLIC_LEVEL = "circuit"
@@ -85,6 +85,7 @@ EXPECTED_KEYS = frozenset(
         "value_kinds",
         "linear_value_kinds",
         "terminators",
+        "dynamic_operation_signatures",
         "diagnostic_codes",
         "rules",
         "exclusions",
@@ -106,6 +107,7 @@ FORBIDDEN_SECOND_BOUNDARY_NAMES = (
 
 # Names the boundary must keep out of the public surface.
 INTERNAL_ONLY_NAMES = (
+    "ConditionRef",
     "ProgramRecord",
     "LevelConversion",
     "LevelDiagnostic",
@@ -144,6 +146,11 @@ RULE_READERS: dict[str, tuple[str, ...]] = {
         "test_a_payload_that_is_not_canonical_is_refused",
         "tool:committed_payloads_round_trip",
     ),
+    "dynamic_def_use": (
+        "tool:dynamic_operation_signatures_are_typed",
+        "test_the_contract_fake_types_dynamic_def_use",
+        "test_dynamic_condition_contract_rejects_invalid_def_use",
+    ),
     "rejection": (
         "test_dynamic_instruction_is_refused",
         "test_conditional_instruction_is_refused",
@@ -162,6 +169,7 @@ RULE_READERS: dict[str, tuple[str, ...]] = {
 
 TOOL_CHECKS = (
     "realized_exits_are_declared",
+    "dynamic_operation_signatures_are_typed",
     "forbidden_states_are_unreachable",
     "no_second_boundary",
     "no_root_export",
@@ -308,6 +316,43 @@ def realized_exits_are_declared(
                 f"the unimplemented exit {level!r} must refuse with "
                 "level.unsupported_exit"
             )
+    return tuple(errors)
+
+
+def dynamic_operation_signatures_are_typed(
+    contract: dict[str, Any], *, boundary: Any = None
+) -> tuple[str, ...]:
+    """The recorded dynamic signatures must equal the program model's types."""
+
+    if boundary is None:
+        boundary = importlib.import_module(BOUNDARY_MODULE)
+    declared = contract.get("dynamic_operation_signatures")
+    if not isinstance(declared, dict):
+        return ("dynamic_operation_signatures must be an object",)
+    errors: list[str] = []
+    expected_keys = {"measure", "reset", "condition_form"}
+    if set(declared) != expected_keys:
+        errors.append(
+            "dynamic_operation_signatures must contain exactly measure, reset, "
+            f"and condition_form; found {sorted(declared)}"
+        )
+    for opcode in ("measure", "reset"):
+        signature = boundary.opcode_signature(opcode)
+        expected = None
+        if signature is not None:
+            expected = {
+                "operands": list(signature.operand_kinds),
+                "results": list(signature.result_kinds),
+            }
+        if declared.get(opcode) != expected:
+            errors.append(
+                f"dynamic signature {opcode!r} differs from the program model: "
+                f"contract {declared.get(opcode)!r}, model {expected!r}"
+            )
+    if declared.get("condition_form") != "canonical_dnf_over_bool_value_refs":
+        errors.append(
+            "dynamic condition_form must be " "'canonical_dnf_over_bool_value_refs'"
+        )
     return tuple(errors)
 
 
@@ -532,6 +577,8 @@ def contract_errors(
     for key, (found, expected) in declared_levels.items():
         if found != expected:
             errors.append(f"{key} must be {list(expected)}, found {found}")
+
+    errors.extend(dynamic_operation_signatures_are_typed(contract, boundary=boundary))
 
     for attribute, key in (
         ("PUBLIC_LEVEL", "public_level"),
