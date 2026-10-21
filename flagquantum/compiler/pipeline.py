@@ -195,9 +195,7 @@ def remove_identity_gates(
             continue
         if instruction.matrix is None:
             param_name = rotations.get(instruction.name)
-            if param_name is not None and _is_zero(
-                instruction.params.get(param_name)
-            ):
+            if param_name is not None and _is_zero(instruction.params.get(param_name)):
                 continue
         instructions.append(instruction)
     return replace(ir, instructions=tuple(instructions))

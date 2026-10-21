@@ -874,9 +874,7 @@ def test_the_optimizer_keeps_an_operand_it_cannot_read() -> None:
     """
 
     matrix = _seeded_unitary(2, seed=77)
-    bearing = CircuitIR(
-        1, (Instruction("rz", (0,), {"theta": 0.0}, matrix, {}),)
-    )
+    bearing = CircuitIR(1, (Instruction("rz", (0,), {"theta": 0.0}, matrix, {}),))
     optimized = optimize(bearing)
     assert _names(optimized) == ["rz"]
     _assert_statevectors_match(_statevector(optimized), matrix[:, 0])

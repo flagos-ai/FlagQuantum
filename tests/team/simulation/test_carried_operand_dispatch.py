@@ -52,7 +52,7 @@ def _operand(name: str) -> tuple[torch.Tensor, dict[str, float]]:
     schema = OPERATOR_SCHEMAS[name]
     arity = schema.arity
     matrix = _seeded_unitary(2**arity, seed=arity * 100 + len(name))
-    params = {parameter: 0.3 for parameter in schema.parameters}
+    params = dict.fromkeys(schema.parameters, 0.3)
     return matrix, params
 
 
@@ -170,9 +170,7 @@ _PRODUCT_STATE_QUBITS = 16
 _PRODUCT_STATE_ROUNDS = 2
 
 
-def _product_state_circuit(
-    name: str, matrix: torch.Tensor | None
-) -> fq.Circuit:
+def _product_state_circuit(name: str, matrix: torch.Tensor | None) -> fq.Circuit:
     """A sixteen-qubit circuit deep enough to select the product-state route.
 
     `product_state_execution_is_beneficial` declines the route below sixteen
@@ -300,9 +298,9 @@ def test_the_diagonal_kernel_is_still_used_without_a_matrix() -> None:
         plain = DynamicCircuit(1)
         plain.z(0)
         run_dynamic(plain, shots=1, seed=5)
-        assert selected == ["diagonal"], (
-            "a plain z no longer reaches the diagonal kernel"
-        )
+        assert selected == [
+            "diagonal"
+        ], "a plain z no longer reaches the diagonal kernel"
 
         selected.clear()
         bearing = DynamicCircuit(1)
