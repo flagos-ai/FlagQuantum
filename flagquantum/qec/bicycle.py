@@ -143,9 +143,9 @@ def bivariate_bicycle_code(
     transcribed from anywhere. Both are the reason this route costs what it costs:
     the search tries every qubit subset in increasing weight up to
     ``distance_search_weight``, so a published instance of distance six over 72 data
-    qubits takes about eighteen seconds to build while the small instances an
+    qubits takes about twenty seconds to build while the small instances an
     experiment is demonstrated on are immediate. Measured on this implementation:
-    0.00 s for the ``[[18, 4, 4]]`` parameters below and 18.5 s for the published
+    0.001 s for the ``[[18, 4, 4]]`` parameters below and 20.6 s for the published
     ``[[72, 12, 6]]`` of ``x_period = y_period = 6`` with ``A = x**3 + y + y**2`` and
     ``B = y**3 + x + x**2``. The bound is therefore the caller's to accept, in the
     same sense the record means it: a bound the search does not reach is refused

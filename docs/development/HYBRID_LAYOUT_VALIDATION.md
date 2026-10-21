@@ -127,7 +127,7 @@ test passes in the complete tier. These are recorded as environment constraints,
 not drawing fixes or weakened checks.
 
 
-## Publication-layout verification
+## Earlier publication-layout verification (superseded composition)
 
 The final default exports measure 167.41 mm wide including crop margins:
 CNN detail 104.30 mm high, frozen overview 75.80 mm high, and the four-panel
@@ -184,3 +184,100 @@ The complete current pr-runtime invocation passes: **1,720 passed, 123 skipped**
 original integration cases and uses unchanged assertions and marker selection.
 Only this evidence record and the manual known-limitations paragraph change
 after the verified implementation snapshot.
+
+
+## Journal-style composition revision
+
+The user rejected the nested-card appearance, including its whitespace and
+isolated circuit detail, despite the earlier mechanical checks. The default is
+now a horizontal sequence of schematic feature maps/vectors, the exact short
+circuit, declared readout and output. The main Notebook figure uses training=False
+for forward-model artwork; actual training and gradient checks remain intact.
+The frozen example separately exercises training=True and its update ownership.
+Stars mark declared trainable components. Glyph geometry is schematic; numeric
+shapes, not plane size or the number of representative tiles, carry dimensions.
+
+The measurable design reference is Nature's official research figure guide:
+https://research-figure-guide.nature.com/figures/building-and-exporting-figure-panels/
+This is not a claim of endorsement or submission acceptance. The Science author
+page returned HTTP 403, so no unverified Science-specific dimensions are used.
+The default content canvas is 181.5 mm plus 2 pt margins (182.9 mm total), with
+7 pt Helvetica-compatible Nimbus Sans text and conventional mathematical scripts.
+Panels are measured before arranging them in two columns; wider panels stack
+without scaling. A complete figure exceeding 170 mm height fails with guidance
+to use an overview or separate detail. The earlier 166 mm/9 pt output is obsolete.
+
+Visual iteration fixed a silent XeTeX TU-encoding fallback to Roman: explicit T1
+font selection now embeds Nimbus Sans regular and bold. Named TeX box registers
+prevent nested minipages and TikZ from clobbering raw scratch registers. Paragraph
+starts center circuit boxes within their columns. Tensor glyph ports and the
+actual circuit center share the forward baseline; metadata below the circuit
+cannot move that baseline. A trailing space in the outer figure box was caught
+by the real-rendering width limit and removed. The declared classical readout
+uses a double-line connection after the readout stage.
+
+Model validation, IR ownership, unsupported-operation handling and public
+signatures are unchanged. No Python dependency or upstream resource/license
+changes; the owned style adds standard TeX font loading and private box storage.
+The layout implementation has one private module, keeping validation separate
+from the tensor/circuit composition. The Notebook labels operations concisely
+(Conv 3x3 and Avg. pool), with actual PyTorch shapes still checked independently.
+
+Final visual fixes isolate nested TikZ anchors from the containing stage node,
+center the U summary and connect its lines continuously. Optional quantum
+feedback terminates below the complete stage metadata, avoiding a line through
+the qubit/gate count. Long numeric shapes wrap within their tensor column; a
+224 x 224 RGB input with 64 output channels is a real-rendering regression case.
+The main forward figure remains a single compact row with the exact circuit.
+
+The current pr-default selection is fully covered across the initial run and
+its corrected suffix: **14,172 passed, 165 skipped**. The first run passed 5,353
+cases and skipped 58 before the vocabulary ledger rejected the new docstring's
+word `wires`. The docstring now uses canonical `qubits`; the unchanged 60-case
+vocabulary module passes. A fresh collection verifies the completed prefix
+(accounting for 48 collection-time skips) and the exact remaining 8,926 node IDs.
+The entire suffix passes: 8,819 passed, 107 skipped, 424.44 seconds. No exemption,
+contract, test assertion or marker selection is changed to accommodate the
+renderer. This is selection coverage after a correction, not one uninterrupted
+green invocation. Subsequent fixes only change private TeX anchor/annotation
+placement; the complete focused selection is rerun on those fixes, followed by
+the integration tier on the final source tree. Numerical/Core code is untouched.
+
+
+### Final journal-figure evidence
+
+Final PDFs are 182.90 mm wide. Main CNN detail is 31.18 mm high; the optional
+frozen training view is 42.67 mm; the four-panel example is 82.62 mm. All are
+single-page vector PDFs with zero raster image objects. Text bounds lie inside
+the page; Nimbus Sans regular/bold is embedded, with CM mathematical symbols.
+The main figure is checked in grayscale and in an actual 183 mm article figure.
+For the four circuit panels, extracted coordinates verify paired headings on
+the same baseline and six qubit labels in each column. All final color PNGs are
+visually inspected. No nested cards, isolated short-circuit panel, rotated update
+labels or compiler font substitutions remain in the main example.
+
+The complete pr-runtime invocation on tree
+`a7de18e1e414bd6bb1645f4ecd14361d9f154be5` passes: **1,726 passed, 123 skipped**,
+229.28 seconds. Later polishing is limited to singular/plural labels, a minimum
+quantum-heading width and font selection isolation. The final focused selection
+has **172 passed**: 112 drawer/legacy/dependency/example cases and the unchanged
+60-case vocabulary module. It includes 11 real compiler/converter cases covering
+compact eight-gate composition, paired/stacked continuation, large tensor-label
+wrapping, over-width/height failure and preservation of the paper's font default.
+No numerical/Core source changes accompany those presentation corrections.
+
+The complete pre-commit suite passes, including whole-package/tooling strict
+mypy, Ruff, Black, English content, architecture, links, source hygiene and the
+protected API baseline. Production mypy covers 777 files. The hybrid validation,
+layer and layout modules have 100% statement/branch coverage (198 statements,
+94 branches); the final coverage selection is rerun after the last font-isolation
+test. These are scoped coverage figures, not a whole-repository coverage claim.
+
+Wheel and sdist build. Outside the checkout, the installed wheel is compared
+byte-for-byte against five drawer Python files and the owned TeX style. It renders
+the forward, frozen and continuation views, checks the large-image labels,
+verifies the sdist contains the private layout module and exports the complete
+licensed project. Font selection is local NFSS selection, not a global helvet
+package override; an executable preamble regression checks the enclosing paper's
+sans-serif default is preserved. Upstream yquant/PlotNeuralNet source and license
+bytes remain unchanged. No protected snapshot is regenerated.

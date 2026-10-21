@@ -873,12 +873,12 @@ one edge per class leaves no check to protect a qubit with. On `n` wires the
 two-phase ring -- `Z` on the even edges, `X` on the odd ones -- settles at period
 two after one transient round, holds `n / 2 + 1` checks, protects `n / 2 - 1`
 qubits and has least logical weight two. The ceiling that comes with the number was
-measured rather than asserted. All 585 ring schedules of two, three and four phase
-classes over widths four to twelve were built through `FloquetCode` itself; every
-one settled, every one protected at least one qubit, every one read one count at
+measured rather than asserted. All 1053 ring schedules of two, three and four phase
+classes over every width from four to twelve were built through `FloquetCode` itself;
+every one settled, every one protected at least one qubit, every one read one count at
 every round of its own period, no member reached weight three, and the three- and
-four-class rings reached weight one. So the published ring is a record of the
-*shape* of a dynamic code rather than a distance claim, and the module says that
+four-class rings reached weight one. So the published ring is a record of the *shape*
+of a dynamic code rather than a distance claim, and the module says that
 beside the number rather than leaving the number bare. The second family is the
 refusal: a four-phase ring that alternates `Z`, `X`, `Z`, `X` over the two edge
 classes settles at period four with zero protected qubits and is refused by name as
@@ -1083,6 +1083,51 @@ the logical row fires exactly the Z-type round-zero detectors and flips the
 observable. Only the distance-three patch is executed through that simulator: it
 draws each shot from the full output distribution, so a 17-qubit patch costs a
 `2**17`-way draw and a distance-five patch would need `2**49`.
+
+## A record whose checks are all mixed, and what the mixing costs
+
+`ZxxzSurfaceCode` is the rotated patch seen after a Hadamard on the data
+checkerboard. The conjugation is a local Clifford, so it preserves the qubit
+register, the ancilla count, every operator's weight and the distance -- and it
+changes the type of every operator, which is exactly why the matrix route cannot
+state this family and the memory-circuit route can. On the rotated patch's own
+assignment every check has at least one qubit on the board and at least one off
+it, so after the conjugation every check comes out mixed: an X-and-Z product on a
+single ancilla, and no pure check anywhere in the patch. The earlier reading that a
+mixed stabilizer needs a second ancilla was wrong and is retracted above; one
+ancilla measures the product because the two factor runs are separated by the `H`
+pair, and that separation is what the coupling-order rule states.
+
+The record's own claims are about what it *is*, and the interesting statement is
+about what it costs, so that statement is measured rather than asserted. A mixed
+check has no known value on a computational-basis preparation and is not
+recoverable from a Z-basis data readout, so neither end of a Z-basis memory
+experiment anchors to it. The consequence is visible in the detector count before
+any rate is read: at distance three over three rounds the rotated patch's model
+carries twenty-four detectors -- sixteen from the bulk rule of one per check per
+round boundary, plus eight anchored at the preparation and the readout -- while the
+mixed patch's model carries exactly the sixteen and no anchored detector at all.
+A fault that strikes the ends of the experiment is therefore outside the model, and
+a decoder cannot suppress a rate it cannot see.
+
+`examples/qec/mixed_check_code.py` runs both patches through the same circuit,
+the same noise model, the same matcher and the same seed, so the only difference
+left between them is the check families, and prints the four rates. At distance
+three over three rounds, with a one-percent data and measurement fault and four
+thousand shots, the two raw rates are 0.0848 and 0.0838 -- one probability drawn
+twice, as the equivalence above predicts -- and the decoded rates are 0.0715 and
+0.0092. Decoding divides the rotated patch's rate by 9.1 and the mixed patch's by
+1.2, and the eight anchored detectors are why. That contrast is a statement about
+the two check families and not about the matcher, so the example closes on the
+same refusal the rest of the layer carries: no threshold, no logical-suppression
+claim, and no scalability claim.
+
+Closing the gap needs a readout plan that anchors a mixed check against a
+rotated-basis terminal measurement, which this package does not have. Until then
+the record's suppression is bounded by its anchoring, and that bound is what the
+example prints and what `tests/qec/test_mixed_check_code.py` falsifies: the test
+reads the transcript, so a change that restored an anchored detector or reported
+the raw rate as the decoded one fails by name rather than passing quietly.
 
 ## A decoder over the detector error model
 

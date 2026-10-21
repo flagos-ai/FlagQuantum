@@ -36,9 +36,9 @@ What this file proves
    neither generator, so a generator-at-a-time reading reports the trivial group
    where the solved reading reports a rank-one group.
 5. ``test_every_ring_schedule_settles_with_one_count_per_period``: every ring
-   schedule of two, three and four phase classes over widths four to twelve settles,
-   protects at least one qubit, and has every round of its period protecting the same
-   number, with no least logical weight above two.
+   schedule of two, three and four phase classes over every width from four to
+   twelve settles, protects at least one qubit, and has every round of its period
+   protecting the same number, with no least logical weight above two.
 6. ``test_the_period_is_the_least_number_the_groups_repeat_over``: two phases that
    measure the same operators under different names repeat over two rounds and not
    over four, so the period is a property of the groups and not of the phase count.
@@ -102,7 +102,13 @@ from flagquantum.qec.pauli import Pauli
 
 pytestmark = pytest.mark.unit
 
+# ``ring_floquet_code`` refuses an odd width, because a ring of odd length cannot be
+# matched, so the tests that go through the published helper use the even widths.
 RING_WIDTHS = (4, 6, 8, 10, 12)
+
+# ``FloquetCode`` itself takes every width at or above four, so the sweep over declared
+# schedules covers all nine of them; a sweep over the helper alone would cover five.
+SWEEP_WIDTHS = tuple(range(4, 13))
 
 
 def _ring_schedule(width: int, kinds: str) -> tuple[MeasurementPhase, ...]:
@@ -272,7 +278,7 @@ def test_the_basis_wise_reading_would_lose_a_product() -> None:
 def test_every_ring_schedule_settles_with_one_count_per_period() -> None:
     settled = 0
     weights: set[int] = set()
-    for width in RING_WIDTHS:
+    for width in SWEEP_WIDTHS:
         for classes in (2, 3, 4):
             if classes > width:
                 continue
@@ -291,7 +297,7 @@ def test_every_ring_schedule_settles_with_one_count_per_period() -> None:
                 assert record.least_logical_weight >= 1
                 weights.add(record.least_logical_weight)
 
-    assert settled == 585
+    assert settled == 1053
     # No ring schedule in the family beats weight two, and the three- and four-class
     # rings reach weight one.
     assert max(weights) == 2
