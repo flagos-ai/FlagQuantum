@@ -2258,11 +2258,19 @@ def test_the_parity_row_no_longer_denies_the_subsystem_route() -> None:
     in the matrix is searched rather than only this one, because the claim used to
     live in two places -- the reason and a ``search:`` evidence token -- and a
     rewrite that fixed one of them would leave the other standing.
+
+    The row is then checked against the matrix's own rule rather than against the
+    prose it happens to carry: ``supported`` is defined as an equivalent
+    capability *with* a registry entry, so this test reads the ``maturity_ref``
+    the row names and requires it to be an entry in ``capability-maturity.toml``
+    that is not the Lindblad route the algebra was previously filed under. A
+    status flip whose registry entry were missing, or were still the consumer's,
+    would be a claim with no owner of its own, which is exactly what the previous
+    ``partial`` recorded.
     """
 
-    matrix = (
-        Path(__file__).resolve().parents[2] / "contracts" / "cudaq-parity-matrix.toml"
-    )
+    root = Path(__file__).resolve().parents[2]
+    matrix = root / "contracts" / "cudaq-parity-matrix.toml"
     document = tomllib.loads(matrix.read_text())
     rows = {
         row["id"]: row
@@ -2272,7 +2280,7 @@ def test_the_parity_row_no_longer_denies_the_subsystem_route() -> None:
 
     assert len(rows) == 95
     row = rows["super_operator_algebra"]
-    assert row["status"] == "partial"
+    assert row["status"] == "supported"
 
     for field in ("reason", "baseline_gap", "evidence"):
         text = row.get(field)
@@ -2284,6 +2292,27 @@ def test_the_parity_row_no_longer_denies_the_subsystem_route() -> None:
 
     assert "apply_to_subsystem" in row["reason"]
     assert "flagquantum/simulation/density_matrix.py" in row["evidence"]
+
+    # The entry the row names is the algebra's own, it exists, and it names the
+    # algebra rather than the route that consumes it.
+    registered = tomllib.loads((root / "capability-maturity.toml").read_text())
+    capabilities = registered["capabilities"]
+    assert row["maturity_ref"] == "superoperator_algebra"
+    capability = capabilities["superoperator_algebra"]
+    assert capability["public_apis"]
+    for api in capability["public_apis"]:
+        assert api.startswith("flagquantum.operators"), api
+    assert "flagquantum.operators.SuperOperator.apply_to_subsystem" in (
+        capability["public_apis"]
+    )
+
+    # The consumer keeps its own rows and its own entry, so the flip moved this
+    # row's traceability rather than deleting the entry it used to point at.
+    assert rows["backend_dynamics"]["maturity_ref"] == "continuous_time_lindblad"
+    assert rows["dynamics_schedule_and_integrators"]["maturity_ref"] == (
+        "continuous_time_lindblad"
+    )
+    assert capabilities["continuous_time_lindblad"]["public_apis"]
 
     # No other row may take the claim over, which is why the scan is not scoped to
     # the row that used to make it.
