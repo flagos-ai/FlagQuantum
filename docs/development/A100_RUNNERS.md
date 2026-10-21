@@ -161,10 +161,13 @@ requirements while ignoring installed packages. SDK installation is then
 fully offline, followed by exact distribution-version/flavor checks and
 `pip check`. Failure remains failure; cache availability never skips a test.
 
-A miss retains the job's configured package index: TUNA for self-hosted jobs,
-official PyPI for hosted jobs. The mirror wheel-building attempt is bounded at
-900 seconds; a failed attempt tries official PyPI with the same SDK pins and
-CUDA constraints. Only the tiny upstream `cudaq` meta package may build from
+The CUDA-Q certification job runs on GitHub-hosted Ubuntu because cold SDK
+downloads timed out on the self-hosted CPU pool. It uses official PyPI and has
+a twenty-minute job limit, including a ten-minute preparation limit. The
+reusable preparation action still honors its configured index: an alternate
+mirror gets at most 180 seconds before the 300-second official PyPI attempt.
+An already selected official index is attempted only once. SDK pins, CUDA
+constraints, both version checks and all tests remain mandatory. Only the tiny upstream `cudaq` meta package may build from
 source. On a miss, binary SDK wheels and their full dependency closure are
 resolved first. A private temporary installation of the real NVIDIA CUDA 13
 NVRTC library is version-checked and supplied to the unmodified upstream
