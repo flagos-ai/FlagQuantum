@@ -360,6 +360,23 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
     rejected = fq.experimental.dynamic.assess_dynamic_backend(circuit, too_small)
     assert rejected.blockers == ("required_classical_bits_exceed_backend_limit",)
 
+    unsupported_condition = CloudBackendProfile(
+        provider="test",
+        name="limited-dynamic-qpu",
+        n_qubits=2,
+        basis_gates=("x",),
+        supports_openqasm=True,
+        supports_dynamic_circuits=True,
+        max_classical_bits=2,
+    )
+    conditioned_h = DynamicCircuit(2)
+    conditioned_h.measure(0, classical_bit=0)
+    conditioned_h.conditional("h", 1, classical_bit=0)
+    rejected = fq.experimental.dynamic.assess_dynamic_backend(
+        conditioned_h, unsupported_condition
+    )
+    assert rejected.blockers == ("conditional_gate_not_in_backend_basis:h",)
+
 
 def _dynamic_backend(**overrides) -> CloudBackendProfile:
     values = {
@@ -428,7 +445,10 @@ def test_dynamic_deployment_rejects_unsupported_capacity_and_batching() -> None:
     circuit = DynamicCircuit(2)
     circuit.measure(0, classical_bit=0)
 
-    with pytest.raises(RuntimeError, match="qubit_capacity"):
+    with pytest.raises(
+        fqe.CapabilityError,
+        match="dynamic_backend_incompatible:before_routing:.*qubit_capacity",
+    ):
         create_dynamic_deployment_package(
             circuit,
             backend=_dynamic_backend(n_qubits=1),
@@ -440,6 +460,23 @@ def test_dynamic_deployment_rejects_unsupported_capacity_and_batching() -> None:
             batched,
             backend=_dynamic_backend(),
         )
+
+
+def test_dynamic_deployment_preflight_blocks_provider_submission() -> None:
+    circuit = DynamicCircuit(2)
+    circuit.measure(0, classical_bit=0)
+    circuit.conditional("h", 1, classical_bit=0)
+    backend = _dynamic_backend(basis_gates=("x",))
+
+    class RejectCalls:
+        def run(self, _package: object) -> None:
+            raise AssertionError("an incompatible package must not reach the provider")
+
+    with pytest.raises(
+        fqe.CapabilityError,
+        match="conditional_gate_not_in_backend_basis:h",
+    ):
+        deploy_dynamic_circuit(circuit, RejectCalls(), backend=backend)
 
 
 def test_dynamic_routing_preserves_measurement_and_conditional_semantics(
