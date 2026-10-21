@@ -2,10 +2,27 @@
 
 ## Status
 
-**Proposed. No code is written by this proposal and no behaviour changes until the repository owner approves it and the acceptance items below are measured.**
+**Approved by the repository owner, then implemented. The approval was given in
+the owner's own language and selected "proposal 071 (recommended, unblocks three
+rows at once)" from the alternatives offered with it. The three parity rows it was
+approved to unblock are `custom_operation_registration`,
+`kraus_channel_algebra` and `matrix_and_custom_operator`.**
 
-Every measurement below was taken on commit `bc02d88b` on branch
-`parity/w6-recovery`, in the authoritative worktree, with
+Decisions 1 and 4 are implemented by this proposal's own pull request. Decision 2
+belongs to `collapse_one_qubit_runs` and Decision 5 to construction-time operand
+validation; both are recorded here as the contract the shipped code has to meet
+and land with their own changes, because each is in a different domain from the
+executor dispatch Decision 1 corrects.
+
+**Revision 2 re-measures this proposal against `origin/main` at `62e06b7c` in the
+`fq-qec` worktree. It corrects one cross-reference number, six code citations, and
+two premises that measurement has since falsified: the reachability of the
+product-state call site, and what `remove_identity_gates` already does with a
+matrix-bearing `i`/`id`. Each correction says what was measured, because a
+proposal whose premises cannot be re-derived is not evidence.**
+
+Revision 1 was measured on commit `bc02d88b` on branch `parity/w6-recovery`, in
+the authoritative worktree, with
 
 ```
 $ cd fq-parity
@@ -29,9 +46,30 @@ and its output is in `/tmp/audit_integration3.txt`. The same plugin with no
 marker filter and the paths `tests/unit` produced the unit-tier list in
 `/tmp/probe_any_plugin.py`'s `/tmp/audit_run.txt`.
 
+Revision 2 re-measured every claim it changes with a census that walks every
+non-channel opcode of `OPERATOR_SCHEMAS`, hands each one a seeded random unitary of
+its own size as a carried operand, and compares the public route's state against
+that operand's own action on `|0...0>`:
+
+```
+$ cd fq-qec
+$ export PYTHONPATH=$PWD PYTHONDONTWRITEBYTECODE=1
+$ .venv/bin/python -B /tmp/census.py
+STATIC (Circuit.state) unfaithful: ['cx', 'swap', 'x', 'y']
+STATIC faithful count: 27 / 31
+DYNAMIC (run_dynamic) unfaithful: ['cphase', 'cx', 'cz', 'phase', 'rz', 'rzz', 's', 'sdg', 'swap', 't', 'tdg', 'u1', 'x', 'y', 'z']
+DYNAMIC faithful count: 16 / 31
+```
+
+The statevector route therefore loses exactly four names and the dynamic route
+loses fifteen: those four plus the eleven arity-respecting members of
+`_DIAGONAL_STATEVECTOR_GATES`. The same census through `fq.run` at
+`mode="statevector"` loses the same four, and `mode="density_matrix"` and
+`mode="mps"` lose none.
+
 This proposal is a companion to
 `docs/development/API_CHANGE_PROPOSAL_075_OPERATOR_MODIFIERS.md`, not a
-replacement for it, and "Problem" section 14 measures exactly what 067 already
+replacement for it, and "Problem" section 14 measures exactly what 075 already
 covers so that the two can be read as one design. The repository's
 `docs/development/PUBLIC_API_PROTECTION.md` is the policy this document follows.
 
@@ -82,24 +120,27 @@ The three answers come from one program.
 
 ### 2. The default statevector executor never reads the operand for `x`, `y`, `cx` and `swap`
 
-`flagquantum/simulation/statevector/local.py:838-845`:
+`flagquantum/simulation/statevector/local.py:820-827`:
 
 ```python
-        name = canonical_opcode(instruction.name)
         if name in {"x", "cx", "swap"}:
             output = _apply_fixed_permutation(
-                output, name, instruction.wires, circuit.n_wires
+                output, name, instruction.wires, circuit.n_qubits
             )
         elif name == "y":
             output = _apply_single_qubit_fixed(
-                output, name, instruction.wires[0], circuit.n_wires
+                output, name, instruction.wires[0], circuit.n_qubits
             )
         else:
+            ...
             matrix = _gate_matrix(...)
 ```
 
 Neither branch tests `instruction.matrix`, and the `else` is the only path that
-reads it. Section 3 of the probe, with `M` a seeded QR unitary whose image of
+reads it. Revision 2 corrects the line number, the `circuit.n_wires` spelling
+(the file says `circuit.n_qubits`) and the `else`, which begins with an
+`rxx`/`ryy`/`rzz` catalog dispatch -- measured not to intercept a carried matrix,
+so it is left alone by Decision 1. Section 3 of the probe, with `M` a seeded QR unitary whose image of
 `|0>` is `[-0.1532, 0.9882]`:
 
 ```
@@ -189,24 +230,24 @@ and `swap`. The earlier premise is withdrawn.
 
 ### 3. The same shape of dispatch exists twice more, once guarded and twice not
 
-`flagquantum/simulation/statevector/product_state.py:480-486` repeats the
+`flagquantum/simulation/statevector/product_state.py:635-642` repeats the
 pattern and adds a second name-keyed table:
 
 ```python
         if name in {"x", "cx", "swap"}:
             return _apply_fixed_permutation(
-                component.state, name, local_wires, len(component.wires)
+                component.state, name, local_qubits, len(component.qubits)
             )
         if enable_fixed_clifford and name in _FIXED_SINGLE_QUBIT_CLIFFORD_GATES:
             return _apply_fixed_clifford_gate(
-                component.state, name, local_wires[0], len(component.wires)
+                component.state, name, local_qubits[0], len(component.qubits)
             )
 ```
 
 with `_FIXED_SINGLE_QUBIT_CLIFFORD_GATES = frozenset({"h", "s", "sdg", "y", "z"})`
-at `:52`. Neither branch tests `instruction.matrix`.
+at `:61`. Neither branch tests `instruction.matrix`.
 
-The proposed guard is not new to this file. `product_state.py:116-122` is the
+The proposed guard is not new to this file. `product_state.py:129-143` is the
 same kind of function written correctly:
 
 ```python
@@ -241,14 +282,32 @@ acceptance item below, not a claim made here.
 
 ### 4. The identity-elimination pass deletes a matrix-bearing instruction before any executor sees it
 
-`flagquantum/compiler/pipeline.py:84-88`, inside `remove_identity_gates`:
+`flagquantum/compiler/pipeline.py:186-193`, inside `remove_identity_gates`:
 
 ```python
-        if instruction.name in {"i", "id"}:
+    for instruction in ir:
+        if is_identity_one_qubit(instruction):
             continue
-        param_name = _ROTATION_PARAM.get(instruction.name)
+        param_name = rotations.get(instruction.name)
         if param_name is not None and _is_zero(instruction.params.get(param_name)):
             continue
+        instructions.append(instruction)
+```
+
+Revision 2 corrects this section's shape as well as its line: the `i`/`id` pair is
+no longer a name set here, it is `is_identity_one_qubit`, and that function
+**already** consults the matrix and declines. Measured on `62e06b7c` through
+`fq.plan`: a matrix-bearing `i` and `id` both plan to **one** instruction and
+leave the operand intact, while a matrix-bearing `rx`, `ry` or `rz` at
+`theta = 0.0` plans to **zero**. So the defect is the rotation branch alone, and
+the `i`/`id` half of Decision 4 is already satisfied by declining. What follows
+is the measured table for the two halves, not the Revision 1 table:
+
+```
+  gate('i',  [0],                 matrix=M)  planned n=1  state=M|0>
+  gate('id', [0],                 matrix=M)  planned n=1  state=M|0>
+  gate('rx', [0], theta=0.0,      matrix=M)  planned n=0  state=|0>
+  gate('rx', [0],                 matrix=M)  planned n=1  state=M|0>
 ```
 
 Neither test consults `instruction.matrix`. Section 4 of the probe:
@@ -262,11 +321,12 @@ Neither test consults `instruction.matrix`. Section 4 of the probe:
 
 `planned n=0` is the decisive number: the instruction is present in the IR and
 absent from the execution plan, so this is a fourth *kind* of loss, upstream of
-every executor. `gate("id", ...)` is additionally canonicalised to `i` before
-the pass runs, so the alias and the canonical name are both affected.
+every executor. `gate("id", ...)` is additionally canonicalised to `i` before the
+pass runs, which is why the two rows above cannot be distinguished downstream --
+and why it is the matrix, not the name, that has to decide.
 
 The same loss reproduces through `fq.run` on the whole rotation family, which
-matters because `_ROTATION_PARAM` at `flagquantum/compiler/pipeline.py:28-41`
+matters because `_ROTATION_PARAM` at `flagquantum/compiler/pipeline.py:48-63`
 maps twelve names to `"theta"` — `rx`, `ry`, `rz`, `phase`, `u1`, `rxx`, `ryy`,
 `rzz`, `crx`, `cry`, `crz`, `cphase` — so the pass reaches arity-2 and
 controlled names, not only arity-1 ones. Section 13b of the probe walks all
@@ -355,7 +415,7 @@ arity" analysis would have to start from why
 ### 5. A run of two or more one-qubit gates rewrites a non-unitary operand into a normalised unitary
 
 This is the finding that changes the shape of the whole contract, and it was not
-in 067.
+in 075.
 
 `collapse_one_qubit_runs` (`flagquantum/compiler/one_qubit_optimization.py:355`)
 is the last one-qubit pass of `OPTIMIZATION_PIPELINE`
@@ -471,7 +531,7 @@ in the system for that operand is the fold's, cited in "Problem" section 9.
 
 ### 6. The dynamic executor dispatches on the name, and one name cannot complete a run
 
-`flagquantum/runtime/dynamic/execution.py:99-116`:
+`flagquantum/runtime/dynamic/execution.py:100-126`:
 
 ```python
     if name in {"x", "cx", "swap"}:
@@ -649,7 +709,7 @@ operands, every one of them a `(2, 2)` `any` with `wires=` a single qubit:
 
 - four parameterisations of `tests/test_native_circuit.py::test_dense_expectation_preserves_complex_precision_and_gradients`,
   `gap` `0.929736316204071` and `0.9297363256214735`, whose stack is
-  `flagquantum/simulation/statevector/local.py:1203` →
+  `flagquantum/simulation/statevector/measurement_ops.py:102` →
   `flagquantum/circuit.py:427` → `flagquantum/circuit.py:415`;
 - `tests/test_native_circuit.py::test_native_distributed_bridge_preserves_complex128_end_to_end`
   at `tests/test_native_circuit.py:1044`, `gap=1.0`.
@@ -706,19 +766,22 @@ instruction is not a channel**". The classifier already exists:
 This is the constraint that decides whether unitarity can be a construction-time
 requirement, and the answer is that it cannot.
 
-`flagquantum/circuit.py:884` defines a module-level helper
+`flagquantum/circuit.py:1103` defines a module-level helper
 
 ```python
 def expectation(*ops: tuple[Any, Sequence[int]], ket: torch.Tensor) -> torch.Tensor:
     """Compute a small dense expectation value with native PyTorch tensors."""
 ```
 
-and its implementation, `flagquantum/simulation/statevector/local.py:1203`,
-builds a circuit whose every operand is the user's observable:
+and its implementation,
+`flagquantum/simulation/statevector/measurement_ops.py:102`
+(`_expectation_from_operators`, re-exported at
+`flagquantum/simulation/statevector/local.py:56`), builds a circuit whose every
+operand is the user's observable:
 
 ```python
-    for matrix, wires in ops:
-        circuit.any(*wires, unitary=matrix)
+    for matrix, qubits in ops:
+        circuit.any(*qubits, unitary=matrix)
     return complex_mul(complex_conj(input_state), state(circuit)).sum(dim=-1)
 ```
 
@@ -807,12 +870,12 @@ added after import.
 `MappingProxyType` of 35 entries and `flagquantum/core/AGENTS.md` states that
 "Changes to protected artifacts, IR, public schemas, or Stable Core APIs require
 an integration contract/ADR change before implementation." Any registration
-design has to keep it immutable, which is what makes the registry pattern in 067
+design has to keep it immutable, which is what makes the registry pattern in 075
 the right shape rather than an in-place mutation.
 
-### 14. What proposal 067 already covers, and what this proposal is left holding
+### 14. What proposal 075 already covers, and what this proposal is left holding
 
-067 is titled "Control and adjoint modifiers, and an operator registration
+075 is titled "Control and adjoint modifiers, and an operator registration
 table" and proposes `flagquantum.operators.{OperatorRegistry, register_operator}`,
 `OperatorRegistry.schemas` / `.with_operator`, and `Circuit.control` /
 `Circuit.adjoint`. Its sections 4 to 9 already establish the registration entry
@@ -825,18 +888,18 @@ capability document be regenerated rather than hand-edited. Its measured probe
 `LOWERING_WITHOUT_CAPABILITY[qasm]: backend 'qasm' cannot lower: my_op (not registered)`
 and `JSON_ROUND_TRIP_OPCODE: my_op`.
 
-067 contains no shape, unitarity or construction-time operand premise at all. A
+075 contains no shape, unitarity or construction-time operand premise at all. A
 case-insensitive search of the document for `unitar`, `shape`, `reshape` and
 `square` returns: the `_unitary` helper name (`:93`, `:95`, `:99`, `:103`,
 `:696`), one rhetorical sentence on `:491` ("A unitary passed through
-`Circuit.any` is not a modifier"), which is the closest 067 comes to this
+`Circuit.any` is not a modifier"), which is the closest 075 comes to this
 subject; and three rhetorical uses of "shape" (`:187`, `:768`, `:968`). It
 returns nothing for `reshape` and nothing for `square`.
 
 This proposal is therefore scoped to the operand contract and the dispatch
-defects, and it defers the registration table itself to 067 in full. Where the
+defects, and it defers the registration table itself to 075 in full. Where the
 two meet is "Problem" section 12 above: a registered operation needs a declared
-degradation contract, which 067's registry can hold, but the operand it carries
+degradation contract, which 075's registry can hold, but the operand it carries
 is this proposal's subject.
 
 ### 15. A measured adjacent defect this proposal does **not** fix: `fq.run` ignores `Circuit(inputs=...)`
@@ -888,7 +951,7 @@ reviewer as a surprise:
 2. This is a second, independent gap of the same class — a declared property of
    the program that a second entry point silently drops — and it needs its own
    proposal with its own fixtures. It is **not** covered by this proposal, is
-   **not** covered by 067, and does not appear in the parity matrix's
+   **not** covered by 075, and does not appear in the parity matrix's
    `custom_operation_registration` row. It is recorded here because it was found
    here, and it is a candidate for its own row.
 
@@ -905,14 +968,14 @@ on which name and which executor the instruction reaches. The rule is:
 
 "Every executor" is the load-bearing phrase. The measured defects are in three
 modules and five call sites, and fixing one of them leaves the others:
-`flagquantum/simulation/statevector/local.py:838-845` and
-`flagquantum/simulation/statevector/product_state.py:480-486` are corrected by
+`flagquantum/simulation/statevector/local.py:820-827` and
+`flagquantum/simulation/statevector/product_state.py:635-642` are corrected by
 adding `instruction.matrix is None` to each name test, matching the two existing
-correct spellings at `product_state.py:116-122` and
-`reverse_adjoint_kernels.py:78`;
-`flagquantum/compiler/pipeline.py:84-88` is corrected by skipping the
+correct spellings at `product_state.py:129-143` and
+`reverse_adjoint_kernels.py:81`;
+`flagquantum/compiler/pipeline.py:186-193` is corrected by skipping the
 elimination when `instruction.matrix is not None`; and
-`flagquantum/runtime/dynamic/execution.py:99-116` is corrected by removing the
+`flagquantum/runtime/dynamic/execution.py:100-126` is corrected by removing the
 name-keyed choice between `_apply_diagonal_matrix` and `_apply_matrix` when a
 matrix is present, because a user-supplied operand is not diagonal merely because
 the name is `z`.
@@ -982,24 +1045,34 @@ signature, is:
 
 The exact keyword name is left to the API owner. It is named here as an open
 question rather than invented, because `PUBLIC_API_PROTECTION.md` bans
-relative and transitional labels and because 067 owns the neighbouring
+relative and transitional labels and because 075 owns the neighbouring
 namespace.
 
-### 4. The identity-elimination pass has to choose, and the choice is to refuse
+### 4. The identity-elimination pass has to choose, and the choice is to decline
 
 `remove_identity_gates` eliminates `i`/`id` and zero-angle rotations because
 they are semantic no-ops. With a matrix present, they are not no-ops: "Problem"
-section 4 measures a matrix-bearing `i` producing `|0>` from a program that
-should have produced `M|0>`, and the same for twelve rotation names at
-`theta = 0.0`.
+section 4 measures a matrix-bearing zero-angle rotation producing `|0>` from a
+program that should have produced `M|0>`.
 
-The pass has two defensible behaviours and the measured facts select one. It
-cannot keep the instruction, because the pass exists to delete exactly that
-shape and a matrix-bearing `i` is indistinguishable downstream from a genuine
-one. It can refuse. Refusing is chosen, with a named error, so that the program
-never reaches an executor under a name that misdescribes it. A caller who
-genuinely wants `i` with a matrix has `Circuit.any`, which has no name-based
-elimination.
+The pass has two defensible behaviours and the measured facts select one. It can
+keep the instruction, which is what `is_identity_one_qubit` already does for
+`i`/`id`, or it can refuse the program with a named error. Declining is chosen,
+for three measured reasons. The shipped code already declines for `i`/`id`, so
+refusing would make one pass treat two spellings of the same defect differently.
+Declining leaves a program that is correct as written executable, which refusing
+does not. And a matrix-bearing `i` is *not* indistinguishable downstream from a
+genuine `i` -- the matrix is exactly the distinguishing property, and it is the
+one the pass fails to read. The rotation branch at
+`flagquantum/compiler/pipeline.py:189-191` is corrected to match
+`is_identity_one_qubit`: when `instruction.matrix is not None`, the pass appends
+the instruction unchanged.
+
+Revision 2 records this narrowing. The Revision 1 text chose refusal on the
+argument that the instruction "cannot be kept"; that argument is falsified by the
+shipped `i`/`id` behaviour, and no user-visible case is served by a refusal. A
+caller who genuinely wants `i` with a matrix has `Circuit.any`, which has no
+name-based elimination and is unaffected either way.
 
 ### 5. A malformed operand becomes a named error at construction
 
@@ -1045,18 +1118,18 @@ record rather than only through the absence of a registry entry. The distinction
 is observable: today the reason text for `any` is the generic `not registered`,
 which is the same string a typo would produce.
 
-067 owns the registry that holds these capabilities. This proposal requires only
+075 owns the registry that holds these capabilities. This proposal requires only
 that the operand decision be *visible* in it — a capability declared for an
 opcode that receives a matrix must be able to say whether it accepts the operand
-— and leaves the container to 067.
+— and leaves the container to 075.
 
-### 8. The registration entry point is 067's, and the late-install constraint is recorded
+### 8. The registration entry point is 075's, and the late-install constraint is recorded
 
 No second entry point is proposed. The constraint measured in "Problem" section 13 is
 recorded here because it is a property of `Circuit` and of the install loop, not
 of the registry: `flagquantum/circuit.py:972` runs once at import, so
 `register_operator` has to install the bound method as part of registration or
-the registry will hold an opcode that `Circuit` cannot spell. 067's acceptance
+the registry will hold an opcode that `Circuit` cannot spell. 075's acceptance
 items do not currently cover that, and this proposal adds it as an item.
 
 ### 9. `OPERATOR_SCHEMAS` stays a `MappingProxyType` of 35 entries
@@ -1073,7 +1146,7 @@ This proposal adds **no root export**. `len(flagquantum.__all__)` is 36 today
 and stays 36; `docs/public_api_v1.json`'s `stable_exports` is unchanged;
 `experimental_stability` stays `"none"`; `IR_VERSION` stays `"1.0"`.
 
-The only candidate-namespace change is the one 067 already needs. If the
+The only candidate-namespace change is the one 075 already needs. If the
 intent-recording keyword of Decision 3 lands on `Circuit.gate` / `Circuit.any`,
 that is a signature change on an existing stable surface and is governed by
 `PUBLIC_API_PROTECTION.md`'s additive rules, not by this proposal's own scope.
@@ -1143,7 +1216,7 @@ records each one that moves.
     not changed, so these three tests keep passing and are not edited.
 
 - **The negative control for Decision 1 has been run.** Adding
-  `and instruction.matrix is None` to `local.py:838` and `:842`, in a fresh
+  `and instruction.matrix is None` to `local.py:820` and `:824`, in a fresh
   process against a backed-up file, changes `gate('x',[0],matrix=M)` from
   `[0.0, 1.0]` to `M|0> = [-0.1532, 0.9882]`, and `gate('y',...)` likewise, while
   leaving `gate('x',[0])`, `gate('cx',[0,1])` and `any(0, unitary=M)` correct.
@@ -1204,7 +1277,7 @@ records each one that moves.
 - **A registered operation still cannot be spelled on `Circuit` after import**
   until the install-loop constraint of Decision 8 is addressed. That is not a
   regression introduced here; it is a measured property of `circuit.py:972` that
-  this proposal records so that 067's acceptance list can carry it.
+  this proposal records so that 075's acceptance list can carry it.
 
 ## Required evidence before this proposal can be accepted
 
@@ -1219,15 +1292,30 @@ deleting it and observing a test fail.
       as controls, so the acceptance item is that **all four names and both
       controls** are in the suite. A test that only checks `x` does not
       establish the branch.
-- [ ] The product-state call site at
-      `flagquantum/simulation/statevector/product_state.py:480-486` is shown to
-      be **reachable** with a matrix-bearing instruction, or the guard is added
-      and the impossibility of reaching it is stated as the reason it cannot be
-      proved by test. This session measured `product_state_calls=0` for 16-, 20-
-      and 24-wire circuits with a matrix-bearing `z`, `h`, `s` and `y`. A guard
-      that no test can reach is not evidence, and an unguarded site that can be
-      reached is a defect, so one of the two has to be measured rather than
-      assumed.
+- [x] The product-state call site at
+      `flagquantum/simulation/statevector/product_state.py:635-642` is shown to
+      be **reachable** with a matrix-bearing instruction. Revision 1 recorded
+      `product_state_calls=0` for 16-, 20- and 24-wire circuits and left this
+      open; Revision 2 measures the opposite, because the Revision 1 circuit was
+      too shallow for `product_state_execution_is_beneficial` to select the route
+      at all. With four rounds of a sparse `h`/`cx` lattice plus the
+      matrix-bearing gate, `Circuit.state()` reaches
+      `execute_product_state_program` once and hands the matrix-bearing opcode
+      itself to a name-keyed branch, for all six names and at both 16 and 20
+      qubits:
+
+      ```
+      n=16 x    product_exec=1 perm=['cx', 'x'] clifford=['h'] MATRIX GATE TOOK FAST PATH=True
+      n=16 y    product_exec=1 perm=['cx'] clifford=['h', 'y'] MATRIX GATE TOOK FAST PATH=True
+      n=16 z    product_exec=1 perm=['cx'] clifford=['h', 'z'] MATRIX GATE TOOK FAST PATH=True
+      n=20 h    product_exec=1 perm=['cx'] clifford=['h'] MATRIX GATE TOOK FAST PATH=True
+      n=20 s    product_exec=1 perm=['cx'] clifford=['h', 's'] MATRIX GATE TOOK FAST PATH=True
+      n=20 sdg  product_exec=1 perm=['cx'] clifford=['h', 'sdg'] MATRIX GATE TOOK FAST PATH=True
+      ```
+
+      A guard no test can reach is not evidence, and an unguarded site that can
+      be reached is a defect; the measurement settles which one this is, and the
+      shipped test drives the public route to it.
 - [ ] The adjacency effect of Decision 2 is shown to be gone, with the exact
       six-operand table of "Problem" section 8 reproduced after the change:
       every one of the six operands is faithful at one gate and at two gates.
@@ -1235,17 +1323,20 @@ deleting it and observing a test fail.
       asserting "folding changes the answer", and the `zeros(2, 2)` row is the
       control that shows a zero-norm program is no longer turned into `|0>` by
       an unrelated neighbouring gate.
-- [ ] `remove_identity_gates` is shown to refuse a matrix-bearing `i`/`id` and a
-      zero-angle `rx`/`ry`/`rz` by name, and `fq.plan` on such a program is shown
-      to raise rather than to return a shorter plan. Section 13b of the probe
-      already measures all **twelve** names of `_ROTATION_PARAM` at `theta = 0.0`
-      as `planned n=0`, so at least the five arity-1 names and one arity-2 name
-      have to be asserted after the change; the arity-2 half is what a test
-      written from the arity-1 description would miss. The four rows of "Problem"
-      section 4 are the fixture. The refusal is proven by deletion, not by the
-      presence of the branch.
+- [ ] `remove_identity_gates` is shown to keep a matrix-bearing `i`/`id` and a
+      zero-angle `rx`/`ry`/`rz`, and `fq.plan` on such a program is shown to
+      return a plan of the same length with the operand intact. Revision 2
+      corrects the observable: the pass declines, it does not raise, because that
+      is what `is_identity_one_qubit` already does for `i`/`id` and a raising pass
+      would refuse a program that is correct as written. Section 13b of the probe
+      measures all **twelve** names of `_ROTATION_PARAM` at `theta = 0.0` as
+      `planned n=0`, so at least the five arity-1 names and one arity-2 name have
+      to be asserted after the change; the arity-2 half is what a test written
+      from the arity-1 description would miss. The `i`/`id` rows already hold on
+      `62e06b7c` and are the regression guard for the narrowing. The guard is
+      proven by deletion, not by the presence of the branch.
 - [ ] The `_DIAGONAL_STATEVECTOR_GATES` dispatch in
-      `flagquantum/runtime/dynamic/execution.py:115-116` is shown to apply the
+      `flagquantum/runtime/dynamic/execution.py:117-119` is shown to apply the
       operand and not the diagonal, for `z`, `s`, `t` and `rz`. The six-row
       table of "Problem" section 5a is the fixture, and the `h` row is the
       control, because `h` already reads the operand.
@@ -1306,10 +1397,10 @@ deleting it and observing a test fail.
   explicitly excluded in "Problem" section 15. It is a separate gap of the same
   class, it has its own fixtures, and folding it in here would put two unrelated
   defects in one proposal. It needs its own document.
-- **A new registration function.** 067 proposes
+- **A new registration function.** 075 proposes
   `flagquantum.operators.register_operator` and `OperatorRegistry`; this
   proposal proposes neither and does not name them in `## Public API`. Where the
-  two meet is the capability record of Decision 7, which 067's registry is the
+  two meet is the capability record of Decision 7, which 075's registry is the
   natural container for.
 - **A new root export.** The root surface stays at 36 names. Nothing here needs a
   new name, because every behaviour it changes is reachable through `Circuit`,
@@ -1327,7 +1418,7 @@ deleting it and observing a test fail.
   executor that fails after validation. Decision 5 moves failures out of it
   rather than changing it.
 - **A gate-count or performance claim.** The fold's normalisation was found
-  through `collapse_one_qubit_runs`, and 067's sibling work records that folding
+  through `collapse_one_qubit_runs`, and 075's sibling work records that folding
   a `rz`/`sx` run was *undone* by `native_gate_legalization` at a 19% cost. This
   proposal changes when the fold fires and makes no claim that the change is
   faster or slower; that measurement belongs to whoever lands Decision 2.
@@ -1337,5 +1428,5 @@ deleting it and observing a test fail.
   a fourth accepted layout would not be more meaningful than the three.
 - **Photonic, control-system or provider-roster parity.** Unrelated rows of the
   parity matrix; this proposal does not touch them.
-- **A `Pow`, `pow`, `conjugate` or symbolic modifier.** 067's non-goals already
+- **A `Pow`, `pow`, `conjugate` or symbolic modifier.** 075's non-goals already
   refuse these and this proposal adds nothing to that list.
