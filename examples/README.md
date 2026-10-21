@@ -330,6 +330,26 @@ credentials. The local device, the precision, and the result are the machine's;
 the qubit capacity, native gate set, and program limits are the profile's
 declaration, and the record keeps those two sources apart.
 
+## Attach your own operator to a declared gate
+
+`Circuit.gate(name, qubits, matrix=...)` attaches an operand: from that point the
+instruction is the matrix you wrote and `name` is only the spelling it was
+registered under. Three executors used to pick a kernel from the name before they
+read the operand, so an `x` carrying a matrix applied `X`, and the identity pass
+deleted a `rz(theta=0.0)` that carried one.
+
+```bash
+python -m examples.carried_operand_execution
+```
+
+The example attaches one real symmetric unitary -- not `X`, not `Z`, not a phase
+-- to `x`, `y`, `z` and `rz`, and prints what `Circuit.state()` and `run_dynamic()`
+each produce next to the operand's own image of `|0>`. That image differs from the
+named operators' images by a whole amplitude, so a route that substitutes the name
+is visible in the transcript rather than inferred. It prints the two controls too:
+`x` with no operand is still `X|0>`, and a zero-angle `rz` that carries nothing is
+still removed. Everything runs locally in one process.
+
 ## Decode a Stim circuit's error model without Stim's decoder
 
 Replace the decoding half of a Stim QEC workflow while keeping Stim for the
