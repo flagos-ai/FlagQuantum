@@ -1,16 +1,21 @@
 # Proposal 081: Native Rydberg transport programs on the shared Core boundary
 
-## Status and decisions requested
+## Status and approved decisions
 
-**Proposed; not approved for implementation.** This document changes no API,
-IR, plan schema, capability status or implementation. The inspected baseline is
+**Approved for staged implementation on 2026-10-22.** The repository owner
+replied "Approved" (English rendering) to the explicit implementation-approval
+request for this proposal. The approval covers the seven decisions below and
+the sequence of replaceable baseline, Core, Remote and Simulation changes.
+The [authorization record](../api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md)
+records scope and delivery gates. This document changes no API, IR, plan schema
+or capability status; production implementation remains pending. The inspected baseline is
 main `085c7b94157bd63699d2f274532776d6ab5dbb09` on 2026-10-21. The design and
 current-API loss/detection reference are reviewed separately in
 [#687](https://github.com/flagos-ai/FlagQuantum/pull/687); that PR's review or
 merge is not approval of this proposal. Proposals 073/078/079/080 remain approved
 for their existing scopes.
 
-The following decisions require an explicit owner decision together:
+The owner approved the following decisions together:
 
 1. Add one experimental `RydbergProgram` frontend, backed by the existing Core
    `ProgramRecord`, with explicit atom/site identity, timed moves and pulses.

@@ -221,6 +221,15 @@ records its independent references and refusal/compatibility checks. This is a
 CPU workflow acceptance slice; domain-native motion and loss retain their M3
 contract and implementation gates.
 
+Proposal 081 was explicitly approved on 2026-10-22 for the native Rydberg
+transport profile. The [authorization and baseline record](../api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md)
+tracks the replaceable fixed-reference consumers before Core construction,
+Remote geometry reuse and Simulation consumption. The baseline is not native
+transport support. Event instruments, feedback, motional heating, hardware and
+the complete M3 scenario remain open gates. Existing plan compatibility fixtures
+and scientific budgets remain unchanged; each implementation PR has separate
+merge and verification requirements.
+
 ### Reference scenarios
 
 | Scenario | Shared capability under test | Additional acceptance |
