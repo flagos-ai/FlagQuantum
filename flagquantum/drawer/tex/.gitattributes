@@ -1,0 +1,3 @@
+# Preserve upstream runtime bytes, including original line endings.
+*.sty -text
+*.tex -text

@@ -13,8 +13,8 @@ description = "A PyTorch-first framework for differentiable quantum computing an
 authors = [
     {name = "FlagQuantum Team", email = "flagquantum@gmail.com"}
 ]
-license = "Apache-2.0"
-license-files = ["LICENSE"]
+license = "Apache-2.0 AND MIT AND LPPL-1.3c"
+license-files = ["LICENSE", "flagquantum/drawer/tex/licenses/*.txt"]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
@@ -133,6 +133,7 @@ examples = [
 
 viz = [
     "matplotlib>=3.5.0",
+    "ipython>=8,<10",
 ]
 
 invertible = [
@@ -151,6 +152,7 @@ all = [
      "tomli>=2.0,<3; python_version < '3.11'",
      "pyyaml>=6.0,<7",
      "matplotlib>=3.5.0",
+     "ipython>=8,<10",
      "jax>=0.10,<0.11",
      "datasets>=2.20.0",
      "transformers>=4.40.0",
@@ -175,6 +177,10 @@ exclude = ["tests*", "docs*", "scripts*", "examples*"]
 
 [tool.setuptools.package-data]
 flagquantum = [
+    "drawer/tex/*.sty",
+    "drawer/tex/*.tex",
+    "drawer/tex/*.md",
+    "drawer/tex/licenses/*.txt",
     "simulation/numerics/double-single-contract.toml",
     "runtime/profiles/*.json",
 ]

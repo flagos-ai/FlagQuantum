@@ -1,0 +1,969 @@
+% BEGIN_FOLD Attributes
+\yquant@langhelper@declare@attr{%
+   value/.store in=\yquant@lang@attr@value,%
+   after/.code={%
+      \yquant@register@get@ids{#1}%
+      \let\yquant@lang@attr@after=\yquant@register@get@ids@list%
+   },%
+   type/.store in=\yquant@lang@attr@type,%
+   ancilla/.code={%
+      \undef\yquant@lang@attr@input%
+      \undef\yquant@lang@attr@output%
+   },%
+   in/.code={%
+      \let\yquant@lang@attr@input=\relax%
+      \undef\yquant@lang@attr@output%
+   },%
+   out/.code={%
+      \undef\yquant@lang@attr@input%
+      \let\yquant@lang@attr@output=\relax%
+   },%
+   inout/.code={%
+      \let\yquant@lang@attr@input=\relax%
+      \let\yquant@lang@attr@output=\relax%
+   },%
+   frameless/.code={%
+      \pgfkeysalso{/yquant/operators/subcircuit/frameless}%
+      \appto\yquant@attrs@remaining{,/yquant/operators/subcircuit/frameless}%
+   },%
+   seamless/.code={%
+      \pgfkeysalso{/yquant/operators/subcircuit/seamless}%
+      \appto\yquant@attrs@remaining{,/yquant/operators/subcircuit/seamless}%
+   },%
+   direct control/.code={%
+      \let\yquant@lang@attr@directcontrol=\relax%
+   },%
+   indirect control/.code={%
+      \undef\yquant@lang@attr@directcontrol%
+   },%
+   name mangling/.code={%
+      \pgfkeysalso{/yquant/operators/subcircuit/name mangling={#1}}%
+      \appto\yquant@attrs@remaining{,/yquant/operators/subcircuit/name mangling={#1}}%
+   },%
+   enclose/set from/.store in=\yquant@lang@attr@enclose@setfrom,%
+   enclose/set to/.store in=\yquant@lang@attr@enclose@setto
+}
+\yquant@langhelper@declare@attr@global{%
+   name/.store in=\yquant@lang@attr@name,%
+   overlay/.code={%
+      \ifstrequal{#1}{true}{%
+         \yquant@lang@attr@overlay@multitrue%
+         \yquant@lang@attr@overlay@heighttrue%
+         \yquant@lang@attr@overlay@depthtrue%
+      }{%
+         \ifstrequal{#1}{false}{%
+            % Why??? This is the default and should always be reset automatically!
+            \yquant@lang@attr@overlay@multifalse%
+            \yquant@lang@attr@overlay@heightfalse%
+            \yquant@lang@attr@overlay@depthfalse%
+         }{%
+            \pgfqkeys{/yquant/global attrs/overlay}{#1}%
+         }%
+      }%
+   },%
+   overlay/.default=true,%
+   overlay/multi/.is if=yquant@lang@attr@overlay@multi,%
+   overlay/m/.forward to=/yquant/global attrs/overlay/multi,%
+   overlay/height/.is if=yquant@lang@attr@overlay@height,%
+   overlay/ht/.forward to=/yquant/global attrs/overlay/height,%
+   overlay/h/.forward to=/yquant/global attrs/overlay/height,%
+   overlay/left/.forward to=/yquant/global attrs/overlay/height,%
+   overlay/l/.forward to=/yquant/global attrs/overlay/height,%
+   overlay/before/.forward to=/yquant/global attrs/overlay/height,%
+   overlay/bef/.forward to=/yquant/global attrs/overlay/height,%
+   overlay/b/.forward to=/yquant/global attrs/overlay/height,%
+   overlay/depth/.is if=yquant@lang@attr@overlay@depth,%
+   overlay/dp/.forward to=/yquant/global attrs/overlay/depth,%
+   overlay/d/.forward to=/yquant/global attrs/overlay/depth,%
+   overlay/right/.forward to=/yquant/global attrs/overlay/depth,%
+   overlay/r/.forward to=/yquant/global attrs/overlay/depth,%
+   overlay/after/.forward to=/yquant/global attrs/overlay/depth,%
+   overlay/aft/.forward to=/yquant/global attrs/overlay/depth,%
+   overlay/a/.forward to=/yquant/global attrs/overlay/depth,%
+   overlay/single/.code={\pgfkeysalso{%
+      /yquant/global attrs/overlay/height={#1},%
+      /yquant/global attrs/overlay/depth={#1}%
+   }},%
+   overlay/single/.default=true,%
+   overlay/s/.forward to=/yquant/global attrs/overlay/single,%
+}
+\newif\ifyquant@lang@attr@overlay@multi%
+\newif\ifyquant@lang@attr@overlay@height%
+\newif\ifyquant@lang@attr@overlay@depth%
+
+\protected\def\yquant@lang@reset@attrs{%
+   \undef\yquant@lang@attr@value%
+   \undef\yquant@lang@attr@after%
+   \undef\yquant@lang@attr@type%
+   \yquant@lang@reset@attrs@inputoutput%
+   \let\yquant@lang@attr@name=\empty%
+   \yquant@lang@attr@overlay@multifalse%
+   \yquant@lang@attr@overlay@heightfalse%
+   \yquant@lang@attr@overlay@depthfalse%
+}
+
+\protected\def\yquant@lang@reset@attrs@inputoutput{%
+   \undef\yquant@lang@attr@input%
+   \undef\yquant@lang@attr@output%
+}
+
+\protected\def\yquant@lang@reset@attrs@inputoutput@subcircuit{%
+   \let\yquant@lang@attr@input=\relax%
+   \let\yquant@lang@attr@output=\relax%
+}
+% END_FOLD
+
+% BEGIN_FOLD Declaration of registers
+\yquant@langhelper@declare@command@create{nobit}\yquant@lang@@nobit
+\yquant@langhelper@setup@attrs{nobit}{}{ancilla,out,enclose/set from,enclose/set to}
+\def\yquant@lang@@nobit#1{%
+   \let\yquant@lang@create@type=\yquant@register@types@nobit%
+   \def\yquant@lang@create@style{initial}% there is no separate style, just duplicate
+   \ifdefined\yquant@lang@attr@value%
+      \PackageError{yquant.sty}{Placeholder initialization must not have value}%
+                   {You must not provide a description for an invisible register.}
+   \else%
+      \let\yquant@lang@attr@value=\empty%
+   \fi%
+   \yquant@lang@create@parse@name#1[;%
+}
+
+\yquant@langhelper@declare@command@create{qubit}\yquant@lang@@qubit
+\yquant@langhelper@setup@attrs{qubit}{}{after,value,ancilla,in,out,inout,enclose/set from,enclose/set to}
+\def\yquant@lang@@qubit#1{%
+   \let\yquant@lang@create@type=\yquant@register@types@qubit%
+   \def\yquant@lang@create@style{qubit}%
+   \unless\ifdefined\yquant@lang@attr@value%
+      \let\yquant@lang@attr@value=\yquant@config@register@default@name%
+   \fi%
+   \yquant@lang@create@parse@name#1[;%
+}
+
+\yquant@langhelper@declare@command@create{cbit}\yquant@lang@@cbit
+\yquant@langhelper@setup@attrs{cbit}{}{after,value,ancilla,in,out,inout,enclose/set from,enclose/set to}
+\def\yquant@lang@@cbit#1{%
+   \let\yquant@lang@create@type=\yquant@register@types@cbit%
+   \def\yquant@lang@create@style{cbit}%
+   \unless\ifdefined\yquant@lang@attr@value%
+      \let\yquant@lang@attr@value=\yquant@config@register@default@name%
+   \fi%
+   \yquant@lang@create@parse@name#1[;%
+}
+
+\yquant@langhelper@declare@command@create{qubits}\yquant@lang@@qubits
+\yquant@langhelper@setup@attrs{qubits}{}{after,value,ancilla,in,out,inout,enclose/set from,enclose/set to}
+\def\yquant@lang@@qubits#1{%
+   \let\yquant@lang@create@type=\yquant@register@types@qubits%
+   \def\yquant@lang@create@style{qubits}%
+   \unless\ifdefined\yquant@lang@attr@value%
+      \let\yquant@lang@attr@value=\yquant@config@register@default@name%
+   \fi%
+   \yquant@lang@create@parse@name#1[;%
+}
+
+\def\yquant@lang@create@parse@name#1[#2;{%
+   \ifstrempty{#2}{%
+      \yquant@lang@create@do#1[1][;%
+   }{%
+      \yquant@lang@create@do#1[#2;%
+   }%
+}
+
+\protected\def\yquant@lang@maybe@idx{}
+
+% sync with \yquant@register@get@id@lazycreate@do
+\protected\def\yquant@lang@create@do#1[#2]#3[;{%
+   % parse length
+   \ifstrempty{#3}{%
+      \yquant@langhelper@validate\len\count{#2}%
+      \ifnum\len<1 %
+         \PackageError{yquant.sty}{Invalid register length}%
+                      {Valid register lengths are integers greater or equal to one.}%
+      \fi%
+   }{%
+      \PackageError{yquant.sty}{Invalid register name}%
+         {Register names must not contain `[' apart from register length indication.}%
+   }%
+   \edef\reg{\trim@spaces{#1}}%
+   % we allow for scattering, so check whether the register already exists
+   \ifcsname\yquant@prefix registerhigh@\reg\endcsname%
+      \ifyquant@firsttoken+{#2}{%
+         \numdef\idx{\csname\yquant@prefix registerhigh@\reg\endcsname+1+\yquant@config@idxbase}%
+         \numdef\len{\len+\idx}%
+      }{%
+         \PackageError{yquant.sty}{Duplicate registers}%
+            {Register `\reg' was already defined. Use `\reg[+#2]' with explicit plus symbol to indicate that you want to enlarge the register on purpose.}%
+      }%
+   \else%
+      \let\idx=\yquant@config@idxbase%
+   \fi%
+   \ifnum\len>1 %
+      \def\regidx{\reg[\idx]}%
+   \else%
+      \ifnum\yquant@compat<4 %
+         \let\regidx=\reg%
+      \else%
+         \def\regidx{\reg\vphantom[\yquant@lang@maybe@idx}%
+      \fi%
+      % Note: the \vphantom[ is a cheap excuse. We don't know yet whether our register will be a vector register. Currently, it is not, but it might be extended later on. But always putting the height of [ in here makes it larger than necessary. However, this should be acceptable, for unless the register contains only swaps and phases, it will be larger than the [ anyway. But this is breaking behavior, so we protect it.
+   \fi%
+   \numdef\yquant@circuit@operator@mintarget{\csname\yquant@prefix registers\endcsname+1}%
+   % create the registers
+   \let\yquant@circuit@enclose@allowmovelabel=\@gobble%
+   \begingroup%
+      % if we have the after attribute, we start with a discarded wire
+      \ifdefined\yquant@lang@attr@after%
+         \ifdefined\yquant@lang@attr@input%
+            \PackageError{yquant.sty}{An input register cannot be created with `after` attribute}{}%
+         \fi%
+         \let\yquant@lang@create@type=\yquant@register@types@nobit%
+      \fi%
+      \yquant@for \idx := \numexpr\idx-\yquant@config@idxbase\relax to \numexpr\len-1\relax {%
+         \yquant@prepare@create\reg\idx\yquant@lang@create@type%
+      }%
+   \endgroup%
+   % gather details about the created registers
+   \letcs\yquant@circuit@operator@maxtarget{\yquant@prefix registers}%
+   \numdef\yquant@circuit@operator@numtarget{\yquant@circuit@operator@maxtarget-\yquant@circuit@operator@mintarget+1}%
+   \edef\yquant@circuit@operator@targets{%
+      \yquant@list@range%
+         \yquant@circuit@operator@mintarget%
+         \yquant@circuit@operator@maxtarget%
+   }%
+   \yquant@circuit@operator@hasControlsfalse%
+   \let\yquant@circuit@operator@pctrls=\empty%
+   \def\yquant@circuit@operator@minpctrl{2147483647}%
+   \def\yquant@circuit@operator@maxpctrl{0}%
+   \let\yquant@circuit@operator@numpctrl=\yquant@circuit@operator@maxpctrl%
+   \let\yquant@circuit@operator@nctrls=\empty%
+   \let\yquant@circuit@operator@minnctrl=\yquant@circuit@operator@minpctrl%
+   \let\yquant@circuit@operator@maxnctrl=\yquant@circuit@operator@maxpctrl%
+   \let\yquant@circuit@operator@numnctrl=\yquant@circuit@operator@numpctrl%
+   \let\yquant@circuit@operator@minctrl=\yquant@circuit@operator@mintarget%
+   \let\yquant@circuit@operator@maxctrl=\yquant@circuit@operator@maxtarget%
+   \ifdefined\yquant@lang@attr@enclose@setfrom%
+      \yquant@circuit@enclose@set{from}\yquant@circuit@operator@mintarget\yquant@lang@attr@enclose@setfrom%
+   \fi%
+   \ifdefined\yquant@lang@attr@enclose@setto%
+      \yquant@circuit@enclose@set{to}\yquant@circuit@operator@maxtarget\yquant@lang@attr@enclose@setto%
+   \fi%
+   % if we have the after attribute, we fake an align gate
+   \ifdefined\yquant@lang@attr@after%
+      \edef\@yquant@jointindices{\yquant@circuit@operator@targets\yquant@lang@attr@after}%
+      \yquant@circuit@align\@yquant@jointindices%
+      % and we also need to change the wire after the alignment
+      \let\yquant@circuit@settype@to=\yquant@lang@create@type%
+      \let\yquant@prepare@callback@prepare=\yquant@circuit@settype@prepare%
+      \let\yquant@prepare@callback@draw=\yquant@circuit@settype%
+      \expandafter\@thirdofthree%
+   \else%
+      \expandafter\@firstofone%
+   \fi%
+   % unless there is no name, no text and no after attribute, we now need an init gate
+   {%
+      \ifx\yquant@lang@attr@value\empty%
+         \expandafter\@firstofone%
+      \else%
+         \expandafter\@secondoftwo%
+      \fi%
+   }%
+   {%
+      \ifx\yquant@lang@attr@name\empty%
+         \expandafter\@gobble%
+      \else%
+         \expandafter\@firstofone%
+      \fi%
+   }%
+   {%
+      % there are no multi inits in this context
+      \let\yquant@lang@@init@encloserelevant=\empty%
+      \forlistloop\yquant@lang@@init@checkenclose\yquant@circuit@enclose@active%
+      \ifx\yquant@lang@@init@encloserelevant\empty%
+         \preto\yquant@attrs@remaining{internal/move label,}%
+      \else
+         % This is a troubling situation: we know we are within a rectangular enclose, but we don't know yet which registers will all be within. Assuming that none of the involved registers already had some content before the enclosing region started, we are allowed to shift the label to the left. However, if there's just a single one, we have to align all of them, which means starting unshifted. As we cannot know this at preparation stage, we have to be aware of the issue and figure it out at drawing stage.
+         \epreto\yquant@attrs@remaining{internal/maybe move label={\yquant@config@operator@minimum@width}{\yquant@lang@@init@encloserelevant}}%
+      \fi%
+      \def\yquant@config@operator@minimum@width{0pt}%
+      \epreto\yquant@attrs@remaining{internal/setregidx={\idx}{\reg},}%
+      \unless\ifx\yquant@lang@attr@value\empty%
+         % make sure to immediately remove the "clear" marker again if we have a text
+         \yquant@for \@yquant@i := \yquant@circuit@operator@mintarget to \yquant@circuit@operator@maxtarget {%
+            \yquant@register@execclear@lastgate{\@yquant@i}{init}%
+         }%
+      \fi%
+      \expandafter\yquant@prepare%
+         \expandafter{\yquant@lang@attr@value}%
+         {/yquant/every label, /yquant/every initial label,%
+          /yquant/every \yquant@lang@create@style\space label,%
+          \ifnum\yquant@compat<2 \ifdefined\yquant@lang@attr@input /yquant/every input label\fi\fi}%
+      \unless\ifx\yquant@lang@attr@name\empty%
+         \ifnum\len=1 %
+            \csxappto{\yquant@prefix draw}%
+                     {\yquant@draw@alias{\yquant@lang@attr@name}}%
+         \fi%
+      \fi%
+   }%
+}
+% END_FOLD
+
+% BEGIN_FOLD Define own gates
+% if the argument contains #2, replace it by #1 and add value as a required attribute
+\protected\long\def\yquantdefinegate@parsearg#1#2{%
+   \def\yquantdefinegate@parsearg@check##1{#2}%
+   \edef\yquantdefinegate@parsearg@replaced{%
+      \unexpanded\expandafter{\yquantdefinegate@parsearg@check{#1}}%
+   }%
+   \edef\yquantdefinegate@parsearg@compare{%
+      \unexpanded\expandafter{\yquantdefinegate@parsearg@check\dummy}%
+   }%
+   \unless\ifx\yquantdefinegate@parsearg@replaced\yquantdefinegate@parsearg@compare%
+      \preto\yquantdefinegate@requiredattrs{value,}%
+   \fi%
+}
+
+\let\yquantdeclareattr=\yquant@langhelper@declare@attr
+
+\pgfqkeys{/yquant/definegate}{%
+   required attrs/.store in=\yquantdefinegate@requiredattrs,%
+   optional attrs/.store in=\yquantdefinegate@optionalattrs
+}
+
+\ifnum\yquant@compat<4 %
+   \protected\def\yquantdefinegate@compaterror#1{%
+      \protected\def#1{%
+         \PackageError{yquant.sty}{Undefined control sequence \string#1\space}%
+                      {Command \string#1\space requires compat version at least 0.8.}%
+      }
+   }
+
+   \protected\def\yquantdefinegate{%
+      \yquantdefinegate@{\yquantdefinegate@namecheck\yquantredefinegate}\@firstofone%
+   }
+
+   \yquantdefinegate@compaterror\yquantedefinegate
+
+   \protected\def\yquantredefinegate{%
+      \yquantdefinegate@{\yquantredefinegate@namecheck\yquantdefinegate}\@firstofone%
+   }
+
+   \yquantdefinegate@compaterror\yquanteredefinegate
+\else
+   \protected\def\yquantdefinegate{%
+      \yquantdefinegate@{\yquantdefinegate@namecheck\yquantredefinegate}\expandonce%
+   }
+
+   \protected\def\yquantedefinegate{%
+      \yquantdefinegate@{\yquantdefinegate@namecheck\yquanteredefinegate}\@firstofone%
+   }
+
+   \protected\def\yquantredefinegate{%
+      \yquantdefinegate@{\yquantredefinegate@namecheck\yquantdefinegate}\expandonce%
+   }
+
+   \protected\def\yquanteredefinegate{%
+      \yquantdefinegate@{\yquantredefinegate@namecheck\yquantedefinegate}\@firstofone%
+   }
+\fi
+
+\protected\def\yquantdefinegate@namecheck#1#2{%
+   \ifcsname yquant@lang@#2\endcsname%
+      \PackageError{yquant.sty}{Gate redefined}%
+                   {The gate `#2' already exists. Use \string#1\space if you really want to redefine it.}%
+   \fi%
+}
+
+\protected\def\yquantredefinegate@namecheck#1#2{%
+   \unless\ifcsname yquant@lang@#2\endcsname%
+      \PackageError{yquant.sty}{Unknown gate redefined}%
+                   {The gate `#2' is unknown and cannot be redefined. Use \string#1\space to define it.}%
+   \fi%
+}
+
+\protected\def\yquantdefinegate@#1#2{%
+   \@ifnextchar[{\yquantdefinegate@i{#1}{#2}}
+                {\yquantdefinegate@i{#1}{#2}[]}%
+}
+
+\protected\def\yquantdefinegate@i#1#2[#3]#4{%
+   % #1: namecheck macro
+   % #2: what to do with expansion
+   % #3: attributes
+   % #4: gate name
+   #1{#4}%
+   \yquant@begingroup%
+      \let\yquantdefinegate@requiredattrs=\empty%
+      \let\yquantdefinegate@optionalattrs=\empty%
+      \pgfqkeys{/yquant/definegate}{#3}%
+      \@ifnextchar[{\yquantdefinegate@ii{#2}{#4}}%
+                   {\yquantdefinegate@ii{#2}{#4}[/yquant/operators/every custom gate]}%
+}
+
+\protected\long\def\yquantdefinegate@ii#1#2[#3]#4{%
+   % #1: what to do with expansion
+   % #2: gate name
+   % #3: style
+   % #4: content
+      \yquant@prepare@ifs@set%
+      % usually, we will not be in a tikzpicture here, so all the commands that abbreviate some path operation are undefined!
+      \tikz@installcommands%
+      % While we want the content to be expanded, protect the most likely TikZ commands - the same ones that we usually substitute in \yquant@env@substikz.
+      \let\path=\yquant@protectedempty%
+      \let\scoped=\path%
+      \let\scope=\path%
+      \let\endscope=\path%
+      \let\stopscope=\path%
+      \ifx#1\@firstofone%
+         \yquantdefinegate@parsearg{\noexpand\yquantdefinegate@attr@value}{#4}%
+      \else%
+         \yquantdefinegate@parsearg\yquantdefinegate@attr@value{#4}%
+      \fi%
+      \protected@edef\yquantdefinegate@do{%
+         \yquant@endgroup%
+         \noexpand\pgfkeys{/yquant/operators/every #2/.code={%
+            \yquant@config@operator@subcircuit@mangling@set{%
+               \yquant@config@operator@subcircuit@mangling%
+            }%
+            \noexpand\pgfkeysalso{\unexpanded{#3}}%
+         }}%
+         \yquant@langhelper@declare@command%
+            {#2}%
+            \yquant@register@get@multiaslist%
+            {%
+               \let\noexpand\yquant@circuit@subcircuit@content=\expandafter\noexpand\csname yquant@lang@@#2\endcsname%
+               % the value attribute will be reset for the subcircuit, so we'll preserve it
+               \let\noexpand\yquantdefinegate@attr@value=\noexpand\yquant@lang@attr@value%
+               \yquant@prepare@subcircuit{/yquant/operators/every #2}%
+            }%
+         % This does not clear the attributes for redefines, but makes at least sure nothing is marked as required that should not be.
+         \yquant@langhelper@setup@attrs{#2}{\yquantdefinegate@requiredattrs}%
+                                           {\yquantdefinegate@optionalattrs}%
+         % Now define the gate's content as a macro
+         \def\expandafter\noexpand\csname yquant@lang@@#2\endcsname{%
+            #1{\yquantdefinegate@parsearg@replaced}%
+         }%
+      }%
+   \yquantdefinegate@do%
+}
+
+\ifnum\yquant@compat<4 %
+   \protected\def\yquantdefinebox{%
+      \yquantdefinebox@{\yquantdefinegate@namecheck\yquantredefinebox}{}\@firstofone%
+   }
+
+   \yquantdefinegate@compaterror\yquantedefinebox
+
+   \protected\def\yquantredefinebox{%
+      \yquantdefinebox@{\yquantredefinegate@namecheck\yquantdefinebox}{}\@firstofone%
+   }
+
+   \yquantdefinegate@compaterror\yquanteredefinebox
+
+   \protected\def\yquantdefinemultibox{%
+      \yquantdefinebox@{\yquantdefinegate@namecheck\yquantredefinemultibox}%
+                       \yquant@register@get@allowmultitrue\@firstofone%
+   }
+
+   \yquantdefinegate@compaterror\yquantedefinemultibox
+
+   \protected\def\yquantredefinemultibox{%
+      \yquantdefinebox@{\yquantredefinegate@namecheck\yquantdefinemultibox}%
+                       \yquant@register@get@allowmultitrue\@firstofone%
+   }
+
+   \yquantdefinegate@compaterror\yquanteredefinemultibox
+\else
+   \protected\def\yquantdefinebox{%
+      \yquantdefinebox@{\yquantdefinegate@namecheck\yquantredefinebox}{}\expandonce%
+   }
+
+   \protected\def\yquantedefinebox{%
+      \yquantdefinebox@{\yquantdefinegate@namecheck\yquanteredefinebox}{}\@firstofone%
+   }
+
+   \protected\def\yquantredefinebox{%
+      \yquantdefinebox@{\yquantredefinegate@namecheck\yquantdefinebox}{}\expandonce%
+   }
+
+   \protected\def\yquanteredefinebox{%
+      \yquantdefinebox@{\yquantredefinegate@namecheck\yquantedefinebox}{}\@firstofone%
+   }
+
+   \protected\def\yquantdefinemultibox{%
+      \yquantdefinebox@{\yquantdefinegate@namecheck\yquantredefinemultibox}%
+                       \yquant@register@get@allowmultitrue\expandonce%
+   }
+
+   \protected\def\yquantedefinemultibox{%
+      \yquantdefinebox@{\yquantdefinegate@namecheck\yquanteredefinemultibox}%
+                       \yquant@register@get@allowmultitrue\@firstofone%
+   }
+
+   \protected\def\yquantredefinemultibox{%
+      \yquantdefinebox@{\yquantredefinegate@namecheck\yquantdefinemultibox}%
+                       \yquant@register@get@allowmultitrue\expandonce%
+   }
+
+   \protected\def\yquanteredefinemultibox{%
+      \yquantdefinebox@{\yquantredefinegate@namecheck\yquantedefinemultibox}%
+                       \yquant@register@get@allowmultitrue\@firstofone%
+   }
+\fi
+
+\protected\def\yquantdefinebox@#1#2#3{%
+   \@ifnextchar[{\yquantdefinebox@i{#1}{#2}{#3}}%
+                {\yquantdefinebox@i{#1}{#2}{#3}[]}%
+}
+
+\protected\def\yquantdefinebox@i#1#2#3[#4]#5{%
+   % #1: namecheck macro
+   % #2: allow multi
+   % #3: what to do with expansion
+   % #4: attributes
+   % #5: gate name
+   #1{#5}%
+   \yquant@begingroup%
+      \let\yquantdefinegate@requiredattrs=\empty%
+      \let\yquantdefinegate@optionalattrs=\empty%
+      \pgfqkeys{/yquant/definegate}{#4}%
+      \@ifnextchar[{\yquantdefinebox@ii{#2}{#3}{#5}}%
+                   {\yquantdefinebox@ii{#2}{#3}{#5}[/yquant/operators/every rectangular box]}%
+}
+
+\protected\long\def\yquantdefinebox@ii#1#2#3[#4]#5{%
+   % #1: allow multi
+   % #2: what to do with expansion
+   % #3: gate name
+   % #4: style
+   % #5: content
+      \yquant@prepare@ifs@set%
+      \ifx#2\@firstofone%
+         \yquantdefinegate@parsearg{\noexpand\yquant@lang@attr@value}{#5}%
+      \else%
+         \yquantdefinegate@parsearg\yquant@lang@attr@value{#5}%
+      \fi%
+      \protected@edef\yquantdefinebox@do{%
+         \yquant@endgroup%
+         \unexpanded{\pgfkeys{/yquant/operators/every #3/.style={#4}}}%
+         \yquant@langhelper@declare@command%
+            {#3}%
+            {\unexpanded{#1}}%
+            {%
+               \yquant@prepare{#2{\yquantdefinegate@parsearg@replaced}}%
+                              {/yquant/operators/every #3}%
+            }%
+         \yquant@langhelper@setup@attrs{#3}{\yquantdefinegate@requiredattrs}%
+                                           {\yquantdefinegate@optionalattrs}%
+      }%
+   \yquantdefinebox@do%
+}
+% END_FOLD
+
+% BEGIN_FOLD Box registers
+% all-purpose box with arbitrary text
+\yquant@langhelper@declare@command%
+   {box}%
+   \yquant@register@get@allowmultitrue%
+   {%
+      \expandafter\yquant@prepare%
+         \expandafter{\yquant@lang@attr@value}%
+         {/yquant/operators/every box}%
+   }
+\yquant@langhelper@setup@attrs{box}{value}{}
+
+\yquant@langhelper@declare@command%
+   {text}%
+   \yquant@register@get@allowmultitrue%
+   {%
+      \expandafter\yquant@prepare%
+         \expandafter{\yquant@lang@attr@value}%
+         {/yquant/operators/every text}%
+   }
+\yquant@langhelper@setup@attrs{text}{value}{}
+
+% Hadamard
+\yquantdefinebox{h}{$H$}
+
+% Pauli X (or NOT)
+\yquantdefinebox{x}[/yquant/operators/every pauli]{$X$}
+
+% Pauli Y
+\yquantdefinebox{y}[/yquant/operators/every pauli]{$Y$}
+
+% Pauli Z
+\yquantdefinebox{z}[/yquant/operators/every pauli]{$Z$}
+
+% sub-circuit: This is a nested circuit.
+\yquant@langhelper@declare@command%
+   {subcircuit}%
+   \yquant@register@get@multiaslist%
+   {%
+      \let\yquant@circuit@subcircuit@content=\yquant@lang@attr@value%
+      \yquant@prepare@subcircuit{/yquant/operators/every subcircuit}%
+   }
+\yquant@langhelper@setup@attrs{subcircuit}{value}{frameless,seamless,name mangling}
+% END_FOLD
+
+% BEGIN_FOLD other geometric shapes
+% phase
+\yquant@langhelper@declare@command%
+   {phase}%
+   {}%
+   {%
+      \edef\@yquant@cmd{%
+         \yquant@prepare%
+            {}%
+            {/yquant/operators/every phase, label={\unexpanded\expandafter{\yquant@lang@attr@value}}}%
+      }%
+      \@yquant@cmd%
+   }
+\yquant@langhelper@setup@attrs{phase}{value}{}%
+
+% two-qubit controlled x (symmetric notation)
+\yquant@langhelper@declare@command%
+   {xx}%
+   \yquant@register@get@multiassingle%
+   {%
+      \yquant@prepare%
+         {}%
+         {/yquant/operators/every xx}%
+   }
+\yquant@langhelper@setup@attrs{xx}{}{}
+
+% two-qubit controlled phase (symmetric notation)
+\yquant@langhelper@declare@command@uncontrolled%
+   {zz}%
+   \yquant@register@get@multiassingle%
+   {%
+      \yquant@prepare%
+         {}%
+         {/yquant/operators/every zz}%
+   }
+\yquant@langhelper@setup@attrs{zz}{}{}
+
+% slash (pseudo-operator, alternative indication for a bundle)
+\yquant@langhelper@declare@command@uncontrolled%
+   {slash}%
+   {}%
+   {%
+      % temporarily squeeze most into the separation
+      \pgfkeys{%
+         /yquant/operator/minimum width=0pt,%
+      }%
+      \preto\yquant@attrs@remaining{internal/squeeze slash,}%
+      \yquant@prepare%
+         {}%
+         {/yquant/operators/every slash}%
+   }
+\yquant@langhelper@setup@attrs{slash}{}{}
+
+% swap
+\yquant@langhelper@declare@command%
+   {swap}%
+   \yquant@register@get@multiassingle
+   {%
+      \yquant@prepare%
+         {}%
+         {/yquant/operators/every swap}%
+   }
+\yquant@langhelper@setup@attrs{swap}{}{}
+
+% iswap
+\yquant@langhelper@declare@command%
+   {iswap}%
+   \yquant@register@get@multiassingle
+   {%
+      \yquant@prepare%
+         {}%
+         {/yquant/operators/every iswap}%
+   }
+\yquant@langhelper@setup@attrs{iswap}{}{}
+
+% not
+\yquant@langhelper@declare@command%
+   {not}%
+   {}%
+   {%
+      \yquant@prepare%
+         {}%
+         {/yquant/operators/every not}%
+   }
+\yquant@langhelper@setup@attrs{not}{}{}
+% alias to cnot
+\yquant@langhelper@declare@command@alias{cnot}{not}
+\yquant@langhelper@setup@attrs{cnot}{}{}
+
+% measure
+\yquant@langhelper@declare@command@uncontrolled%
+   {measure}%
+   \yquant@register@get@allowmultitrue%
+   {%
+      \ifdefined\yquant@lang@attr@type%
+         \yquant@register@type@fromstring\yquant@lang@attr@type\yquant@circuit@settype@to%
+      \else%
+         \let\yquant@circuit@settype@to=\yquant@register@types@cbit%
+      \fi%
+      \let\yquant@prepare@callback@prepare=\yquant@circuit@settype@prepare%
+      \let\yquant@prepare@callback@draw=\yquant@circuit@settype%
+      \unless\ifcsname yquant@lang@attr@value\endcsname%
+         \let\yquant@lang@attr@value=\empty%
+      \fi%
+      \ifdefined\yquant@lang@attr@directcontrol%
+         % direct control means that we must defer this operator until the next that has this/these targets as positive controls.
+         \expandafter\yquant@prepare@injection%
+            \expandafter{\yquant@lang@attr@value}%
+            {/yquant/operators/every measure}%
+      \else%
+         \expandafter\yquant@prepare%
+            \expandafter{\yquant@lang@attr@value}%
+            {/yquant/operators/every measure}%
+      \fi%
+   }
+\yquant@langhelper@setup@attrs{measure}{}{value,type,direct control,indirect control}
+
+% measure (dmeter)
+\yquant@langhelper@declare@command@uncontrolled%
+   {dmeter}%
+   \yquant@register@get@allowmultitrue%
+   {%
+      \ifdefined\yquant@lang@attr@type%
+         \yquant@register@type@fromstring\yquant@lang@attr@type\yquant@circuit@settype@to%
+      \else%
+         \let\yquant@circuit@settype@to=\yquant@register@types@cbit%
+      \fi%
+      \let\yquant@prepare@callback@prepare=\yquant@circuit@settype@prepare%
+      \let\yquant@prepare@callback@draw=\yquant@circuit@settype%
+      \unless\ifcsname yquant@lang@attr@value\endcsname%
+         \let\yquant@lang@attr@value=\empty%
+      \fi%
+      \expandafter\yquant@prepare%
+         \expandafter{\yquant@lang@attr@value}%
+         {/yquant/operators/every dmeter}%
+   }
+\yquant@langhelper@setup@attrs{dmeter}{}{value,type}
+% END_FOLD
+
+% BEGIN_FOLD miscellaneous
+\yquant@langhelper@declare@command@uncontrolled%
+   {barrier}%
+   \yquant@register@get@allowmultitrue%
+   {%
+      \yquant@prepare%
+         {}%
+         {/yquant/operators/every barrier}%
+   }%
+\yquant@langhelper@setup@attrs{barrier}{}{}
+
+\yquant@langhelper@declare@command@uncontrolled%
+   {correlate}%
+   {%
+      % do not call \yquant@register@get@multiassingle, we do not want to install a different multi line style!
+      \yquant@register@get@allowmultitrue%
+      \let\yquant@register@multi@splitparts=\yquant@register@multi@splitparts@sepall%
+   }{%
+      \yquant@prepare%
+         {}%
+         {/yquant/operators/every wave}%
+   }
+\yquant@langhelper@setup@attrs{correlate}{}{}
+
+\yquant@langhelper@declare@command@uncontrolled%
+   {align}%
+   {}%
+   {%
+      \yquant@circuit@align\yquant@circuit@operator@targets%
+   }
+\yquant@langhelper@setup@attrs{align}{}{}
+
+\yquant@langhelper@declare@command@uncontrolled%
+   {hspace}%
+   {%
+      \yquant@langhelper@validate\amount\dimen\yquant@lang@attr@value%
+   }{%
+      \yquant@circuit@hspace\yquant@circuit@operator@targets\amount%
+   }
+\yquant@langhelper@setup@attrs{hspace}{value}{}
+
+\yquant@langhelper@declare@command%
+   {discard}%
+   {}%
+   {%
+      \let\yquant@circuit@settype@to=\yquant@register@types@nobit%
+      \ifyquant@circuit@operator@hasControls%
+         \epreto\yquant@attrs@remaining{internal/corner={\yquant@orientation@plus}{\yquant@circuit@operator@targets}{\yquant@circuit@operator@minctrl}{\yquant@circuit@operator@maxctrl},}%
+         \let\yquant@prepare@callback@prepare=\yquant@circuit@settype@prepare%
+         \let\yquant@prepare@callback@draw=\yquant@circuit@settype@beforenobit%
+         \yquant@prepare%
+            {}%
+            {shape=yquant-nothing}%
+      \else%
+         \yquant@circuit@actonwires%
+            \yquant@circuit@settype@prepare%
+            \yquant@circuit@settype%
+            \yquant@circuit@operator@targets%
+            {}%
+      \fi%
+   }
+\yquant@langhelper@setup@attrs{discard}{}{}
+
+\yquant@langhelper@declare@command%
+   {init}%
+   {%
+      \yquant@register@get@allowmultitrue%
+      \let\yquant@config@register@default@lazyname=\empty%
+      % we will count how many registers contain the "clean" flag, and only if this is equal to the number of targets, we apply the shift.
+      \def\yquant@register@flag@cleancount{0}%
+   }%
+   {%
+      \ifdefined\yquant@lang@attr@type%
+         \yquant@register@type@fromstring\yquant@lang@attr@type\yquant@circuit@settype@to%
+      \else%
+         % We don't know which type is desired. Scan all target registers and use the first wire that is available as a type.
+         \let\yquant@circuit@settype@to=\yquant@register@types@nobit%
+         \forlistloop\yquant@lang@@init@loop\yquant@circuit@operator@targets%
+         \ifx\yquant@circuit@settype@to\yquant@register@types@nobit%
+            % now we don't have a clue; assume it's a qubit
+            \let\yquant@circuit@settype@to=\yquant@register@types@qubit%
+         \fi%
+         \edef\yquant@lang@attr@type{%
+            \yquant@register@type@tostring\yquant@circuit@settype@to%
+         }%
+      \fi%
+      \unless\ifdefined\yquant@lang@attr@value%
+         \let\yquant@lang@attr@value=\empty%
+      \fi%
+      \let\yquant@prepare@callback@prepare=\yquant@circuit@settype@prepare%
+      \ifyquant@circuit@operator@hasControls%
+         \epreto\yquant@attrs@remaining{internal/corner={\yquant@orientation@minus}{\yquant@circuit@operator@targets}{\yquant@circuit@operator@minctrl}{\yquant@circuit@operator@maxctrl},}%
+         \let\yquant@prepare@callback@draw=\yquant@circuit@settype@afternobit%
+         \def\yquant@register@flag@cleancount{0}% never apply the shift if we have controls
+      \else%
+         \let\yquant@prepare@callback@draw=\yquant@circuit@settype%
+      \fi%
+      \let\yquant@prepare@multi=\yquant@prepare@multiinit%
+      \ifnum\yquant@register@flag@cleancount=\numexpr\yquant@circuit@operator@maxctrl-\yquant@circuit@operator@minctrl+1\relax%
+         \let\yquant@lang@@init@encloserelevant=\empty%
+         \forlistloop\yquant@lang@@init@checkenclose\yquant@circuit@enclose@active%
+         \ifx\yquant@lang@@init@encloserelevant\empty%
+            \preto\yquant@attrs@remaining{internal/move label,}%
+         \else
+            % This is a troubling situation: we know we are within a rectangular enclose, but we don't know yet which registers will all be within. Assuming that none of the involved registers already had some content before the enclosing region started, we are allowed to shift the label to the left. However, if there's just a single one, we have to align all of them, which means starting unshifted. As we cannot know this at preparation stage, we have to be aware of the issue and figure it out at drawing stage.
+            \epreto\yquant@attrs@remaining{internal/maybe move label={\yquant@config@operator@minimum@width}{\yquant@lang@@init@encloserelevant}}%
+         \fi%
+         \def\yquant@config@operator@minimum@width{0pt}%
+         \let\yquant@circuit@enclose@allowmovelabel=\@gobble%
+         \edef\@yquant@cmd{%
+            \yquant@prepare%
+               {\unexpanded\expandafter{\yquant@lang@attr@value}}%
+               {/yquant/every label, /yquant/every initial label,%
+               /yquant/every \yquant@lang@attr@type\space label}%
+         }%
+      \else%
+         \edef\@yquant@cmd{%
+            \yquant@prepare%
+               {\unexpanded\expandafter{\yquant@lang@attr@value}}%
+               {/yquant/every label, /yquant/every \yquant@lang@attr@type\space label}%
+         }%
+      \fi%
+      \@yquant@cmd%
+   }
+\yquant@langhelper@setup@attrs{init}{}{type,value}
+
+\protected\def\yquant@lang@@init@loop#1{%
+   \ifyquant@firsttoken\yquant@register@multi{#1}{%
+      \let\yquant@register@multi@contiguous=\yquant@lang@@init@multi@@extract%
+      \@fifthoffive#1%
+      % we should reset multi@contiguous to the original command; but this is really just a placeholder. As long as it is \protected, everything is fine.
+   }{%
+      \edef\yquant@circuit@settype@to{\yquant@register@get@type{#1}}%
+   }%
+   \unless\ifx\yquant@circuit@settype@to\yquant@register@types@nobit%
+      \expandafter\listbreak%
+   \fi%
+}
+
+\protected\def\yquant@lang@@init@multi@@extract#1#2#3{%
+   \yquant@for \yquant@i := #1 to #2 {%
+      \edef\yquant@circuit@settype@to{\yquant@register@get@type\yquant@i}%
+      \unless\ifx\yquant@circuit@settype@to\yquant@register@types@nobit%
+         \expandafter\yquant@for@break%
+      \fi%
+   }%
+}
+
+\protected\def\yquant@lang@@init@checkenclose#1{%
+   \expandafter\ifx\csname yquant@circuit@enclose@#1@involved\endcsname\yquant@circuit@enclose@allinvolved%
+      \listadd\yquant@lang@@init@encloserelevant{#1}%
+   \else%
+      \ifnum\csname yquant@circuit@enclose@#1@shape\endcsname=0 %
+         \yquant@for \@yquant@i := \yquant@circuit@operator@minctrl to \yquant@circuit@operator@maxctrl {
+            \xifinlistcs{\yquant@env@prefix@id\yquant@prefix:\@yquant@i}{yquant@circuit@enclose@#1@involved}{%
+               \listadd\yquant@lang@@init@encloserelevant{#1}%
+               \listbreak%
+            }\relax
+         }%
+      \fi%
+   \fi%
+}
+
+\yquant@langhelper@declare@command@uncontrolled%
+   {output}%
+   \yquant@register@get@allowmultitrue%
+   \yquant@circuit@output%
+\yquant@langhelper@setup@attrs{output}{value}{}
+
+\yquant@langhelper@declare@command@uncontrolled%
+   {inspect}%
+   \yquant@register@get@allowmultitrue%
+   {%
+      \expandafter\yquant@prepare%
+         \expandafter{\yquant@lang@attr@value}%
+         {/yquant/operators/every inspect}%
+   }
+\yquant@langhelper@setup@attrs{inspect}{value}{}
+
+\yquant@langhelper@declare@command@uncontrolled%
+   {settype}%
+   {}%
+   {%
+      \yquant@register@type@fromstring\yquant@lang@attr@value\yquant@circuit@settype@to%
+      \yquant@circuit@actonwires%
+         \yquant@circuit@settype@prepare%
+         \yquant@circuit@settype%
+         \yquant@circuit@operator@targets%
+         {}%
+   }
+\yquant@langhelper@setup@attrs{settype}{value}{}
+
+\ifnum\yquant@compat<2 %
+   \def\yquant@lang@setwire{%
+      \PackageWarning{yquant.sty}{`setwire' gate is deprecated as of yquant 0.1.2. Use `settype' instead.}%
+      \yquant@lang@settype%
+   }
+   \yquant@langhelper@setup@attrs{setwire}{value}{}
+\fi
+
+\yquant@langhelper@declare@command@uncontrolled%
+   {setstyle}%
+   {}%
+   {%
+      \yquant@circuit@actonwires%
+         \@gobbletwo%
+         \yquant@circuit@setstyle%
+         \yquant@circuit@operator@targets%
+         {{\yquant@lang@attr@value}}%
+   }
+\yquant@langhelper@setup@attrs{setstyle}{value}{}
+
+\yquant@langhelper@declare@command@uncontrolled%
+   {addstyle}%
+   {}%
+   {%
+      \yquant@circuit@actonwires%
+         \@gobbletwo%
+         \yquant@circuit@addstyle%
+         \yquant@circuit@operator@targets%
+         {{\yquant@lang@attr@value}}%
+   }
+\yquant@langhelper@setup@attrs{addstyle}{value}{}
+% END_FOLD

@@ -10,7 +10,10 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 
+from .hybrid_drawer import draw_hybrid
 from .ir_adapter import DrawableCircuit, to_drawable_circuit
+from .latex_drawer import draw_latex
+from .latex_figure import LatexFigure
 from .style import available_styles, use_style
 from .text_drawer import TextDrawer, draw_text
 
@@ -28,24 +31,25 @@ except ImportError:
     MPLDrawer = None  # type: ignore[assignment, misc]
 
 
-_FORMATS = ("text", "mpl")
+_FORMATS = ("text", "mpl", "latex")
 
 
 def draw(
     program: object, format: str = "text", **kwargs: Any
-) -> str | tuple[Figure, Axes]:
+) -> str | tuple[Figure, Axes] | LatexFigure:
     """
     Draw a circuit diagram
 
     Args:
         program: FlagQuantum Circuit, CircuitIR, or device object
-        format: "text" or "mpl"
+        format: "text", "mpl", or "latex"
         **kwargs: Additional arguments passed to the specific drawer
 
     Returns:
-        For text mode: returns a string; for mpl mode: returns (fig, ax)
+        Text returns a string, mpl returns (fig, ax), and latex returns a
+        lazy LatexFigure exposing source and Notebook image display.
     Raises:
-        ValueError: When format is not one of the two supported renderers
+        ValueError: When format is not a supported renderer
         ImportError: When format="mpl" is used but matplotlib is not installed
     """
     if format not in _FORMATS:
@@ -56,6 +60,8 @@ def draw(
             f"unknown draw format {format!r}; expected one of "
             f"{', '.join(repr(name) for name in _FORMATS)}"
         )
+    if format == "latex":
+        return draw_latex(program, **kwargs)
     if format == "mpl":
         if not _has_mpl:
             raise ImportError(
@@ -74,6 +80,9 @@ __all__ = [
     "available_styles",
     "use_style",
     "draw",
+    "LatexFigure",
+    "draw_latex",
+    "draw_hybrid",
 ]
 
 if _has_mpl:

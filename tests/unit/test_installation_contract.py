@@ -210,7 +210,11 @@ def test_one_wheel_is_loaded_on_the_older_runtime_minors() -> None:
 
 def test_build_backend_supports_spdx_license_metadata() -> None:
     project = load_toml(ROOT / "pyproject.toml")
-    assert project["project"]["license"] == "Apache-2.0"
+    assert project["project"]["license"] == "Apache-2.0 AND MIT AND LPPL-1.3c"
+    assert project["project"]["license-files"] == [
+        "LICENSE",
+        "flagquantum/drawer/tex/licenses/*.txt",
+    ]
     assert "setuptools>=77.0.3" in project["build-system"]["requires"]
 
 

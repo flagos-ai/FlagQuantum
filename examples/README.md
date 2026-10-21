@@ -402,3 +402,12 @@ A curated example must:
 Shared helpers belong next to the examples that use them. Example-only
 convenience code must not become a framework abstraction without a separate API
 review.
+
+
+## LaTeX and hybrid-model Notebook
+
+[`notebooks/hybrid_latex_drawing.ipynb`](notebooks/hybrid_latex_drawing.ipynb)
+shows existing text/Matplotlib drawing, LaTeX export, inline Notebook images,
+a real CPU CNN/quantum/head training step, and a portable Overleaf bundle.
+Source export uses the default install; image display additionally requires
+a TeX engine and Poppler on the kernel PATH.
