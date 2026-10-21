@@ -1,0 +1,63 @@
+% SPDX-License-Identifier: MIT
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{flaghybrid}[2026/10/21 v0.1.0 Quantum-classical diagrams]
+\RequirePackage{tikz}
+\RequirePackage{graphicx}
+\RequirePackage[compat=0.6]{yquant}
+\usetikzlibrary{arrows.meta,positioning,calc,quotes}
+\RequirePackage{Box}
+\RequirePackage{RightBandedBox}
+\RequirePackage{Ball}
+\definecolor{fhClassical}{HTML}{176B87}
+\definecolor{fhQuantum}{HTML}{6C4AB6}
+\definecolor{fhInk}{HTML}{243447}
+\def\fh@autolabel{auto}
+\tikzset{
+ fh/label baseline/.store in=\fh@labelbaseline,
+ fh/label baseline=auto,
+ fh/block/.style={draw=fhClassical,fill=fhClassical!7,rounded corners=3pt,
+   minimum width=2.6cm,minimum height=1.05cm,align=center,inner sep=8pt},
+ fh/quantum/.style={fh/block,draw=fhQuantum,fill=fhQuantum!5},
+ fh/optimizer/.style={draw=fhInk,fill=black!3},
+ fh/data/.style={-{Stealth[length=5pt]},draw=fhInk,line width=.7pt},
+ fh/measurement/.style={double,double distance=1.3pt},
+ fh/feedback/.style={dashed,rounded corners=5pt},
+ fh/label/.style={font=\sffamily\scriptsize,fill=white,inner sep=2pt}
+}
+\newenvironment{fhdiagram}[1][]{\begin{tikzpicture}[font=\sffamily\small,#1]}{\end{tikzpicture}}
+% #2 is a unique TikZ node identifier; #3 includes coordinate parentheses.
+\newcommand{\fhBlock}[5][]{%
+ \node[fh/block,#1] (#2) at #3 {\textbf{#4}\\[-1pt]{\scriptsize #5}};}
+% Circuit source is passed unmodified to yquant in a nested picture.
+\newcommand{\fhQuantumBlock}[5][]{%
+ \node[fh/quantum,#1] (#2) at #3 {\textbf{#4}\\[5pt]
+   \resizebox{3.5cm}{!}{\begin{tikzpicture}\begin{yquant}#5\end{yquant}\end{tikzpicture}}};}
+\newcommand{\fhConnect}[4][]{%
+ \draw[fh/data,#1] (#2) -- node[fh/label,midway,above]{#4} (#3);}
+% Feedback routing is outside the forward path. Use explicit .south/.east ports.
+\newcommand{\fhFeedback}[4][]{%
+ \draw[fh/data,fh/feedback,#1] (#2) |- node[fh/label,pos=.75,above]{#4} (#3);}
+% Upstream PlotNeuralNet Box keys are exposed without reinterpretation.
+\newcommand{\fhPNNLayer}[5][]{%
+ \pic at #3 {Box={name=#2,
+    fill=fhClassical!30,opacity=.85,scale=.12,#1,
+    caption={},xlabel={{"","","","","","","","","",""}}}};
+ % Keep upstream geometry, but decouple labels from physical box thickness.
+ \coordinate (#2-labelanchor) at
+   ($(#2-nearsouthwest)!.5!(#2-nearsoutheast)+(0,-.07)$);
+ \ifx\fh@labelbaseline\fh@autolabel\else
+   \coordinate (#2-labelanchor) at (#2-labelanchor |- 0,\fh@labelbaseline);
+ \fi
+ \node[font=\sffamily\scriptsize,anchor=north,inner sep=1pt]
+   (#2-features) at (#2-labelanchor) {#5};
+ \node[font=\sffamily\small\bfseries,anchor=north,align=center,
+   text width=2.7cm,inner sep=1pt]
+   (#2-caption) at ($(#2-features.south)+(0,-.10)$) {#4};}
+\newcommand{\fhPNNConnect}[3][]{%
+ \draw[fh/data,#1] (#2-east) -- (#3-west);}
+\newcommand{\fhLegend}[1]{%
+ \node[font=\sffamily\scriptsize,align=center,text=fhInk] at #1
+ {\textcolor{fhClassical}{Classical block}\quad
+  \textcolor{fhQuantum}{Quantum block}\\[3pt]
+  Solid: data\quad Double: measurement result\quad Dashed: training feedback};}
+\endinput
