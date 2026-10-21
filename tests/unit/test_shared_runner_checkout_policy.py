@@ -69,7 +69,10 @@ def _jobs(path: Path) -> dict[str, dict[str, object]]:
 def _labels(job: dict[str, object]) -> tuple[str, ...]:
     value = job.get("runs-on")
     if isinstance(value, str):
-        if "'flagquantum-a100-cpu'" in value:
+        if any(
+            label in value
+            for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+        ):
             return ("self-hosted", "flagquantum-a100-cpu")
         return (value,)
     assert isinstance(value, list), f"unexpected runs-on: {value!r}"

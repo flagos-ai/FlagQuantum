@@ -21,6 +21,18 @@ ROOT = Path(__file__).resolve().parents[2]
     "workflow,job",
     [
         ("ci.yml", "cpu-runtime"),
+        ("ci.yml", "jax-optional"),
+        ("ci.yml", "azure-optional"),
+        ("ci.yml", "triton-optional"),
+        ("ci.yml", "qiskit-optional"),
+        ("ci.yml", "cirq-optional"),
+        ("ci.yml", "braket-optional"),
+        ("ci.yml", "cudaq-optional"),
+        ("ci.yml", "pennylane-optional"),
+        ("ci.yml", "dependency-bounds"),
+        ("ci.yml", "distributed-cpu"),
+        ("ci.yml", "coverage-shard"),
+        ("ci.yml", "supply-chain"),
         ("local-gpu.yml", "one-gpu-local"),
     ],
 )
@@ -37,7 +49,12 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
         if step.get("name") == "Restore and verify this run's exact source commit"
     )
     probe = next(
-        step["run"] for step in jobs[job]["steps"] if step.get("id") == "source-cache"
+        (
+            step["run"]
+            for step in jobs[job]["steps"]
+            if step.get("id") == "source-cache"
+        ),
+        None,
     )
     source = tmp_path / "source"
     target = tmp_path / "target"
@@ -111,8 +128,9 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
         temporary / "ci-source-incremental/source.pack",
         temporary / "ci-source/source.pack",
     )
-    shell(probe, target)
-    assert output.read_text().splitlines()[-1] == "complete=false"
+    if probe:
+        shell(probe, target)
+        assert output.read_text().splitlines()[-1] == "complete=false"
     (temporary / "ci-source/source.pack").write_bytes(full_pack)
 
     for attempt in range(2):
@@ -125,8 +143,9 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
             temporary / "ci-source-incremental/source.pack",
             temporary / "ci-source/source.pack",
         )
-        shell(probe, target)
-        assert output.read_text().splitlines()[-1] == "complete=true"
+        if probe:
+            shell(probe, target)
+            assert output.read_text().splitlines()[-1] == "complete=true"
         assert git("rev-parse", "HEAD", cwd=target) == sha
         assert git("status", "--porcelain", cwd=target) == ""
         assert (target / "tracked.txt").read_text() == "current\n"
@@ -145,7 +164,19 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
 )
 def test_checkout_jobs_use_the_exact_workflow_revision(job: str) -> None:
     jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
-    checkout = next(
-        step for step in jobs[job]["steps"] if step.get("uses") == "actions/checkout@v4"
+    steps = jobs[job]["steps"]
+    assert not any(
+        step.get("uses", "").startswith("actions/checkout@") for step in steps
     )
-    assert checkout["with"]["ref"] == "${{ github.sha }}"
+    restore = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Restore and verify this run's exact source commit"
+    )
+    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in restore
+    download = next(
+        step
+        for step in steps
+        if step.get("uses", "").startswith("actions/download-artifact@")
+    )
+    assert download["with"]["digest-mismatch"] == "error"
