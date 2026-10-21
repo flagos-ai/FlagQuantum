@@ -839,6 +839,15 @@ A conditioned `measure` or `reset` is refused as well, because those operations
 project a qubit and write or discard a classical outcome rather than apply a
 matrix.
 
+Every condition may read only a classical bit written by an earlier
+`measure`. The builder checks this def-use rule immediately and raises
+`flagquantum.errors.ValidationError`; `run_dynamic` repeats the check for a
+program reconstructed directly from IR. Distributed statevector execution does
+not yet carry classical feedback and therefore raises `CapabilityError` with the
+blocker `dynamic_conditional_execution_unsupported` instead of silently dropping
+the condition. Use `fq.experimental.dynamic.run_dynamic(..., shots=...)` for the
+supported single-process trajectory path.
+
 `DynamicCircuit` and its CircuitIR encoding are candidate-stable pending API
 owner approval. `run_dynamic` and backend assessment remain experimental;
 routing, dialect export, deployment and provider adapters are internal. Stable

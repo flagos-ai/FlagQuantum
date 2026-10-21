@@ -5,8 +5,10 @@ from time import perf_counter
 
 import torch
 
+from ...core.classical_control import validate_classical_control
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode
+from ...errors import ValidationError
 from ...noise import NoiseModel
 from ...simulation.gate_matrix import gate_matrix
 from ...simulation.statevector.operations import (
@@ -298,7 +300,9 @@ def _active_trajectory(
     clauses = instruction_condition_clauses(instruction)
     for bit_index in {bit for clause in clauses for bit, _ in clause}:
         if classical[bit_index] < 0:
-            raise RuntimeError(f"classical bit {bit_index} was read before measurement")
+            raise ValidationError(
+                f"classical bit {bit_index} was read before measurement"
+            )
     if not clauses:
         return True, False
     return (
@@ -531,7 +535,9 @@ def _active_shot_mask(
     clauses = instruction_condition_clauses(instruction)
     for bit_index in {bit for clause in clauses for bit, _ in clause}:
         if bool(torch.any(classical[:, bit_index] < 0)):
-            raise RuntimeError(f"classical bit {bit_index} was read before measurement")
+            raise ValidationError(
+                f"classical bit {bit_index} was read before measurement"
+            )
     if not clauses:
         return (
             torch.ones(classical.shape[0], dtype=torch.bool, device=classical.device),
@@ -780,6 +786,10 @@ def run_dynamic(
         raise TypeError("run_dynamic requires an experimental DynamicCircuit")
     if int(shots) <= 0:
         raise ValueError("shots must be a positive integer")
+    validate_classical_control(
+        circuit._instructions,
+        n_qubits=circuit.n_qubits,
+    )
     _require_nondifferentiable_parameters(circuit)
     _validate_dynamic_noise(circuit, noise_model)
     if _feedback_plan is not None:

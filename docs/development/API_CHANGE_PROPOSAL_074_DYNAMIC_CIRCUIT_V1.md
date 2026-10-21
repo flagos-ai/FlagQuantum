@@ -2,8 +2,13 @@
 
 ## Status
 
-**Proposed. No code is written by this proposal and no behaviour changes until
-the repository owner approves it and the acceptance items below are measured.**
+**Approved for implementation by the repository owner on 2026-10-21 through the
+explicit directive `approve API-CHANGE-074-DYNAMIC-CIRCUIT-V1-IMPLEMENTATION`.**
+
+Implementation measurements, approval scope, and unresolved acceptance gaps are
+recorded in
+[`API_CHANGE_074_DYNAMIC_CIRCUIT_V1_IMPLEMENTATION.md`](API_CHANGE_074_DYNAMIC_CIRCUIT_V1_IMPLEMENTATION.md).
+This approval does not promote dynamic execution from experimental status.
 
 One plan row names this document: `W5-10`, whose deliverable column is this file.
 The recorded critical-path block places the node `W5-10/11` after `W5-04` and
@@ -554,7 +559,7 @@ CLASSICAL_CONTROL_KEYS: tuple[str, ...] = (
 def validate_classical_control(
     instructions: Iterable[Instruction],
     *,
-    n_wires: int,
+    n_qubits: int,
 ) -> int: ...
 
 def is_classical_control_instruction(instruction: Instruction) -> bool: ...
@@ -748,7 +753,7 @@ What is added, with the exact names and the namespaces they live in:
 | --- | --- | --- | --- |
 | `CLASSICAL_CONTROL_KEYS` | `flagquantum.core.classical_control`, `flagquantum/core/classical_control.py` | internal constant | `tuple[str, ...]`, exactly the four keys in decision 4 |
 | `is_classical_control_instruction` | same module | internal function | `(instruction: Instruction) -> bool` |
-| `validate_classical_control` | same module | internal function | `(instructions: Iterable[Instruction], *, n_wires: int) -> int` |
+| `validate_classical_control` | same module | internal function | `(instructions: Iterable[Instruction], *, n_qubits: int) -> int` |
 | `dynamic_conditional_execution_unsupported` | string blocker in `flagquantum.runtime.dynamic.deployment`, `flagquantum/runtime/dynamic/deployment.py` | blocker code inside the existing `DynamicBackendCompatibility.blockers` tuple, and the message key of the `CapabilityError` raised by `run_distributed` | n/a |
 
 Three existing signatures change and are listed here so the change is not

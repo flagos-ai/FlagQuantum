@@ -88,20 +88,27 @@ def test_dynamic_builder_uses_stable_error_categories() -> None:
     with pytest.raises(fqe.CapabilityError):
         fqd.DynamicCircuit(1).measure(0).state()
     with pytest.raises(fqe.CapabilityError):
-        fqd.DynamicCircuit(1).conditional("x", 0, classical_bit=0).state()
+        (
+            fqd.DynamicCircuit(1)
+            .measure(0, classical_bit=0)
+            .conditional("x", 0, classical_bit=0)
+            .state()
+        )
 
 
 def test_disjunctive_condition_survives_the_ir_round_trip() -> None:
-    circuit = fqd.DynamicCircuit(2).measure(0, classical_bit=0)
+    circuit = (
+        fqd.DynamicCircuit(2).measure(0, classical_bit=0).measure(1, classical_bit=1)
+    )
     circuit.conditional("x", 1, any_of=({0: 1}, {1: 1}))
 
     restored = fq.CircuitIR.from_json(circuit.to_ir().to_json())
 
-    assert restored.instructions[1].metadata["condition_clauses"] == (
+    assert restored.instructions[2].metadata["condition_clauses"] == (
         ((0, 1),),
         ((1, 1),),
     )
-    assert "conditions" not in restored.instructions[1].metadata
+    assert "conditions" not in restored.instructions[2].metadata
     rebuilt = fqd.DynamicCircuit.from_ir(restored)
     assert rebuilt.to_ir().instructions == restored.instructions
 

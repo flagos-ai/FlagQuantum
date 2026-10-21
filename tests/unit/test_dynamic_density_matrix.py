@@ -317,9 +317,8 @@ def test_a_disjunctive_condition_executes_as_the_metadata_spells_it() -> None:
 def test_reading_a_bit_before_measuring_it_is_refused() -> None:
     """Guessing a value would be a silent branch, so the route fails closed."""
 
-    program = DynamicCircuit(1).x(0).conditional("x", 0, classical_bit=4)
     with pytest.raises(ValueError, match="classical bit 4 was read before measurement"):
-        program.density_matrix()
+        DynamicCircuit(1).x(0).conditional("x", 0, classical_bit=4)
 
 
 def test_two_spellings_of_one_condition_are_refused() -> None:

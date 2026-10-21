@@ -8,6 +8,7 @@ from typing import Any
 import torch
 
 from ...circuit import Circuit
+from ...core.classical_control import validate_classical_control
 from ...core.ir import Instruction
 from ...errors import CapabilityError, ValidationError
 from ._conditions import (
@@ -44,8 +45,10 @@ class DynamicCircuit(Circuit):
     """Circuit builder for mid-circuit measurement and classical feedback."""
 
     def _append_dynamic(self, instruction: Instruction) -> DynamicCircuit:
-        if any(qubit < 0 or qubit >= self.n_qubits for qubit in instruction.wires):
-            raise ValidationError("dynamic instruction qubit is outside the circuit")
+        validate_classical_control(
+            (*self._instructions, instruction),
+            n_qubits=self.n_qubits,
+        )
         self._instructions.append(instruction)
         self._invalidate_execution_cache(instructions_changed=True)
         return self

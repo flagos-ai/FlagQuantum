@@ -12,6 +12,7 @@ import torch
 
 from ..compiler import compile as compile_program
 from ..compiler import lower_noise_model
+from ..core.classical_control import is_classical_control_instruction
 from ..core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ..core.numerics import coerce_accuracy_requirement, coerce_precision_plan
 from ..core.runtime_config import (
@@ -157,12 +158,7 @@ def _distributed_world_size_from_options(
     backend_policy: DistributedBackendPolicy,
     default: int = 1,
 ) -> int:
-    """Resolve effective distributed world size without changing user code.
-
-    Explicit API options win. Otherwise production follows torchrun's
-    WORLD_SIZE, while development follows FQ_LOCAL_WORLD_SIZE so a laptop CPU
-    can exercise the same rank ownership and communication signatures.
-    """
+    """Resolve world size from explicit options, torchrun, or local policy."""
 
     if "world_size" in options:
         return max(1, int(options["world_size"]))
@@ -242,6 +238,12 @@ def run_distributed(
 
     if device is not None and not isinstance(device, (str, torch.device)):
         raise TypeError("device must be a torch.device, device string, or None")
+    if any(is_classical_control_instruction(item) for item in ir.instructions):
+        raise CapabilityError(
+            "dynamic_conditional_execution_unsupported: distributed execution "
+            "does not carry classical feedback; use "
+            "fq.experimental.dynamic.run_dynamic(..., shots=...)"
+        )
     provided_execution_plan = device_options.pop("_execution_plan", None)
     execution_ir = (
         ir
@@ -561,8 +563,8 @@ def _run_tensor_network_mode(
 
         # A declared memory limit is this run's capacity, and the planner admitted
         # tensor network against it. The estimate the planner compares with is a
-        # floor rather than a peak, so the capacity is passed down as a hard peak
-        # budget that governs every contraction the state performs: the run slices
+        # floor, so it becomes a hard peak budget for every contraction: the run
+        # slices
         # to fit it, or raises instead of overrunning the memory it was admitted
         # for. Without a declared limit there is no capacity to enforce.
         tensor_network_options.pop("max_intermediate_bytes", None)
@@ -885,13 +887,10 @@ def _run_standard_native_mode(
             provided_execution_plan=provided_execution_plan,
         )
     if mode == "stabilizer":
-        # Lowering happens here rather than in the executor, because a scene-level
-        # model becomes positioned channel instructions through a Compiler
-        # dependency Runtime already holds at this level and the executor boundary
-        # does not. The density-matrix sibling above lowers the same way; a run
-        # that already carries a plan does not lower again, because the plan was
-        # built from the lowered program and its own execution program is the one
-        # carrying the channels.
+        # Lower here because a scene becomes positioned channel instructions
+        # through a Compiler dependency Runtime owns, not the executor. The
+        # density-matrix sibling does the same. A run with a plan does not lower
+        # again: that plan's execution program already carries the channels.
         stabilizer_ir = (
             execution_ir
             if provided_execution_plan is not None
