@@ -1,16 +1,15 @@
 """Replaceable proposal 080 consumers using the existing numerical engine.
 
-Only the four fixtures supply the temporary output boundary. Replace them with
-OutputRequest, expectation, fql.plan and lower_outputs after implementation,
-then remove the fake. Physical and compatibility assertions must not change.
+The four fixtures use the real public constructors, planner and lowerer.
+All baseline physical, refusal and compatibility assertions are retained.
 """
 
 from __future__ import annotations
 
 import json
 import math
-from collections.abc import Callable, Sequence
-from dataclasses import FrozenInstanceError, dataclass
+from collections.abc import Callable
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 from typing import TypeAlias
 
@@ -22,145 +21,33 @@ import flagquantum.lindblad as fql
 from flagquantum.core.ir import MeasurementNode
 from flagquantum.errors import CapabilityError
 from flagquantum.lindblad._plan import build_lindblad_plan
-from flagquantum.observables import Observable, OutputRequest, lower_outputs
+from flagquantum.observables import OutputRequest, expectation, lower_outputs
 from flagquantum.simulation.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
 
 
-@dataclass(frozen=True, slots=True, eq=False)
-class _OutputFake:
-    kind: str
-    qubits: tuple[int, ...] = ()
-    observable: Observable | torch.Tensor | None = None
-    name: str | None = None
-    log_base: float | None = None
-
-    def __post_init__(self) -> None:
-        matrix = isinstance(self.observable, torch.Tensor)
-        if matrix and self.kind != "expectation":
-            raise TypeError("matrix observables require expectation output")
-        # Common names, kinds and selectors remain the existing owner's job.
-        checked = fq.OutputRequest(
-            self.kind,
-            self.qubits,
-            fq.I(0) if isinstance(self.observable, torch.Tensor) else self.observable,
-            self.name,
-            self.log_base,
-        )
-        object.__setattr__(self, "qubits", checked.qubits)
-        if isinstance(self.observable, torch.Tensor):
-            operator = self.observable
-            if (
-                operator.layout != torch.strided
-                or operator.is_quantized
-                or operator.device.type == "meta"
-                or operator.dtype == torch.bool
-            ):
-                raise TypeError("expectation requires an ordinary numeric dense tensor")
-            if (
-                operator.ndim != 2
-                or not operator.shape[0]
-                or (operator.shape[0] != operator.shape[1])
-            ):
-                raise ValueError("expectation matrix must be nonempty and square")
-            if self.qubits:
-                raise ValueError(
-                    "full-space expectations do not accept qubit selectors"
-                )
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, _OutputFake) or type(self) is not type(other):
-            return NotImplemented
-        if (self.kind, self.qubits, self.name, self.log_base) != (
-            other.kind,
-            other.qubits,
-            other.name,
-            other.log_base,
-        ):
-            return False
-        if isinstance(self.observable, torch.Tensor) or isinstance(
-            other.observable, torch.Tensor
-        ):
-            return self.observable is other.observable
-        return self.observable == other.observable
-
-    def __hash__(self) -> int:
-        operator = (
-            id(self.observable)
-            if isinstance(self.observable, torch.Tensor)
-            else self.observable
-        )
-        return hash((self.kind, self.qubits, operator, self.name, self.log_base))
-
-
-_Output: TypeAlias = _OutputFake | OutputRequest
-
-
-def _expectation_fake(
-    observable: Observable | torch.Tensor, *, name: str | None = None
-) -> _OutputFake:
-    return _OutputFake("expectation", observable=observable, name=name)
-
-
-def _requests(outputs: _Output | Sequence[_Output] | None) -> tuple[_Output, ...]:
-    if outputs is None:
-        return ()
-    values = (
-        (outputs,)
-        if isinstance(outputs, (_OutputFake, OutputRequest))
-        else tuple(outputs)
-    )
-    if not values or any(
-        not isinstance(value, (_OutputFake, OutputRequest)) for value in values
-    ):
-        raise TypeError("outputs must contain output requests")
-    return values
-
-
-def _lower_fake(
-    outputs: _Output | Sequence[_Output] | None,
-    *,
-    n_qubits: int,
-    shots: int | None,
-) -> tuple[MeasurementNode, ...] | None:
-    old: list[fq.OutputRequest] = []
-    for request in _requests(outputs):
-        if isinstance(request.observable, torch.Tensor):
-            raise CapabilityError("matrix expectations require the Lindblad path")
-        old.append(
-            fq.OutputRequest(
-                request.kind,
-                request.qubits,
-                request.observable,
-                request.name,
-                request.log_base,
-            )
-        )
-    return lower_outputs(old or None, n_qubits=n_qubits, shots=shots)
+_Output: TypeAlias = OutputRequest
 
 
 @pytest.fixture
 def request_factory() -> Callable[..., _Output]:
-    return _OutputFake
+    return OutputRequest
 
 
 @pytest.fixture
 def expectation_factory() -> Callable[..., _Output]:
-    return _expectation_fake
+    return expectation
 
 
 @pytest.fixture
-def plan_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., fql.LindbladPlan]:
-    # Only the Core producer is still a fake. Exercise the real public planner;
-    # retain its concrete request check without broadening the production API.
-    monkeypatch.setattr(fql, "OutputRequest", (OutputRequest, _OutputFake))
+def plan_factory() -> Callable[..., fql.LindbladPlan]:
     return fql.plan
 
 
 @pytest.fixture
 def output_lowering() -> Callable[..., tuple[MeasurementNode, ...] | None]:
-    return _lower_fake
+    return lower_outputs
 
 
 def _transition() -> torch.Tensor:

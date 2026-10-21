@@ -21,8 +21,15 @@ Benchmark claims require audited artifacts and are not inferred from this file.
   names with `duplicate_output_name`, instead of silently overwriting a result.
   Supply distinct names to keep both outputs. The existing planner now captures
   numeric output matrices without detaching gradients, preparing the approved
-  matrix request contract; the public expectation constructor remains Pauli-only
-  until the Core implementation lands. Existing plan formats remain unchanged.
+  matrix request contract. Existing plan formats remain unchanged.
+- Accept full-space dense numeric tensors in the existing `expectation` factory
+  and `OutputRequest.observable` on CPU Lindblad workflows. Reuse existing
+  result accessors, live gradients, numeric validation and plan 1.3/1.4/1.5/1.6.
+  Tensor requests compare/hash by object identity and metadata; Pauli request
+  behavior remains unchanged. Invalid matrix representations, non-expectation
+  tensor requests and local selectors are refused at construction; unsupported
+  circuit/remote paths raise `CapabilityError` before execution or submission.
+  No new root export, output kind, solver or native hardware capability is added.
 
 - Add ordered basis_labels to the existing CPU Lindblad plan/run and
   initial-density adjoint entries for non-factorized matrix coordinates.

@@ -10,8 +10,11 @@ from importlib import import_module
 from numbers import Real
 from typing import Any, cast
 
+import torch
+
 from ..core._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
 from ..core.ir import MeasurementNode
+from ..errors import CapabilityError
 
 _DEFAULT_MAX_PAULI_SAMPLE_WIRES = 8
 
@@ -85,17 +88,19 @@ class Observable:
         return self * scalar
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class OutputRequest:
     """A backend-neutral description of one requested execution output."""
 
     kind: str
     qubits: tuple[int, ...] = ()
-    observable: Observable | None = None
+    observable: Observable | torch.Tensor | None = None
     name: str | None = None
     log_base: float | None = None
 
     def __post_init__(self) -> None:
+        if isinstance(self.observable, torch.Tensor) and self.kind != "expectation":
+            raise TypeError("matrix observables require expectation output")
         if self.kind not in {
             "counts",
             "density_matrix",
@@ -112,8 +117,39 @@ class OutputRequest:
             not isinstance(self.name, str) or not self.name.strip()
         ):
             raise ValueError("output name must be a non-empty string")
-        if self.kind == "expectation" and not isinstance(self.observable, Observable):
-            raise TypeError("expectation output requires an Observable")
+        if self.kind == "expectation":
+            if isinstance(self.observable, torch.Tensor):
+                operator = self.observable
+                if (
+                    operator.layout != torch.strided
+                    or operator.is_quantized
+                    or operator.device.type == "meta"
+                    or operator.dtype == torch.bool
+                ):
+                    raise TypeError(
+                        "expectation requires an ordinary numeric dense tensor"
+                    )
+                if not operator.is_floating_point() and not operator.is_complex():
+                    try:
+                        torch.iinfo(operator.dtype)
+                    except TypeError as exc:
+                        raise TypeError(
+                            "expectation requires a numeric tensor"
+                        ) from exc
+                if (
+                    operator.ndim != 2
+                    or not operator.shape[0]
+                    or operator.shape[0] != operator.shape[1]
+                ):
+                    raise ValueError("expectation matrix must be nonempty and square")
+                if self.qubits:
+                    raise ValueError(
+                        "full-space expectations do not accept qubit selectors"
+                    )
+            elif not isinstance(self.observable, Observable):
+                raise TypeError(
+                    "expectation output requires an Observable or dense torch.Tensor"
+                )
         if self.kind in {"density_matrix", "probabilities"} and (
             self.observable is not None
         ):
@@ -136,7 +172,32 @@ class OutputRequest:
         elif self.log_base is not None:
             raise TypeError(f"{self.kind} output does not accept a log_base")
         if self.kind in {"samples", "counts"} and self.observable is not None:
+            assert isinstance(self.observable, Observable)
             _sampled_pauli_term(self.observable)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, OutputRequest) or type(self) is not type(other):
+            return NotImplemented
+        if (self.kind, self.qubits, self.name, self.log_base) != (
+            other.kind,
+            other.qubits,
+            other.name,
+            other.log_base,
+        ):
+            return False
+        if isinstance(self.observable, torch.Tensor) or isinstance(
+            other.observable, torch.Tensor
+        ):
+            return self.observable is other.observable
+        return self.observable == other.observable
+
+    def __hash__(self) -> int:
+        operator = (
+            id(self.observable)
+            if isinstance(self.observable, torch.Tensor)
+            else self.observable
+        )
+        return hash((self.kind, self.qubits, operator, self.name, self.log_base))
 
     @property
     def wires(self) -> tuple[int, ...]:
@@ -290,8 +351,14 @@ def Z(
     return _pauli("z", _required_qubit(qubit, wire, owner="observable"))
 
 
-def expectation(observable: Observable, *, name: str | None = None) -> OutputRequest:
-    """Request the expectation value of an observable.
+def expectation(
+    observable: Observable | torch.Tensor, *, name: str | None = None
+) -> OutputRequest:
+    """Request a Pauli or full-space dense matrix expectation.
+
+    Dense matrices use the existing CPU ``flagquantum.lindblad`` path. They
+    follow the declared state-space basis and do not accept local selectors.
+    Circuit and remote outputs refuse them before execution or submission.
 
     Examples:
         >>> import flagquantum as fq
@@ -456,6 +523,11 @@ def lower_outputs(
     requests = (outputs,) if isinstance(outputs, OutputRequest) else tuple(outputs)
     if not requests or any(not isinstance(item, OutputRequest) for item in requests):
         raise TypeError("outputs must be an OutputRequest or a non-empty sequence")
+    if any(isinstance(request.observable, torch.Tensor) for request in requests):
+        raise CapabilityError(
+            "Dense matrix expectations currently require the Lindblad path (flagquantum.lindblad); "
+            "CircuitIR 1.0 cannot represent full-space matrix outputs"
+        )
     names = tuple(request.name for request in requests if request.name is not None)
     if len(set(names)) != len(names):
         raise ValueError("output names must be unique")
@@ -473,7 +545,7 @@ def lower_outputs(
         if request.name is not None:
             metadata["name"] = request.name
         if request.kind == "expectation":
-            assert request.observable is not None
+            assert isinstance(request.observable, Observable)
             term_count = len(request.observable.terms)
             for term_index, term in enumerate(request.observable.terms):
                 axes = {
@@ -496,6 +568,7 @@ def lower_outputs(
                 )
             continue
         if request.observable is not None:
+            assert isinstance(request.observable, Observable)
             term = _sampled_pauli_term(request.observable)
             axes = {
                 axis: tuple(qubit for qubit, value in term.factors if value == axis)
