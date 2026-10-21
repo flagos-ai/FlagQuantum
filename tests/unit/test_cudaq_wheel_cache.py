@@ -237,7 +237,9 @@ def test_download_deadlines_and_official_fallback_do_not_repeat_an_endpoint(
     assert indexes == (
         [index]
         if durations == ["180s"]
-        else [index, "https://pypi.org/simple"]
-        if len(durations) == 2
-        else ["https://pypi.org/simple"]
+        else (
+            [index, "https://pypi.org/simple"]
+            if len(durations) == 2
+            else ["https://pypi.org/simple"]
+        )
     )
