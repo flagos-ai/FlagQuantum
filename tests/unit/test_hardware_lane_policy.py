@@ -213,22 +213,16 @@ def test_accelerator_jobs_serialize_only_with_their_shared_hosts() -> None:
     )
 
 
-def test_no_accelerator_matrix_runs_its_legs_at_once() -> None:
-    # A runner label says `gpu`, not how many devices it has, so a matrix leg
-    # that asks for eight devices cannot tell whether its sibling asking for
-    # four landed on the same host. One leg at a time is the only assumption the
-    # label set supports.
-    offenders: list[str] = []
+def test_accelerator_matrix_uses_the_device_lock_instead_of_a_runner_cap() -> None:
     for key, (_path, job) in sorted(_accelerator_jobs().items()):
-        strategy = job.get("strategy")
-        if not isinstance(strategy, dict):
+        strategy = job.get("strategy", {})
+        if not strategy.get("matrix"):
             continue
-        matrix = strategy.get("matrix")
-        if not isinstance(matrix, dict) or sum(len(v) for v in matrix.values()) < 2:
-            continue
-        if strategy.get("max-parallel") != 1:
-            offenders.append(f"{key} runs its matrix legs in parallel")
-    assert not offenders, "\n".join(offenders)
+        assert "max-parallel" not in strategy, key
+        group = job["concurrency"]["group"]
+        assert (
+            "matrix." not in group
+        ), f"{key}: matrix legs sharing devices must share the same device lock"
 
 
 def _device_query(path: Path) -> str:

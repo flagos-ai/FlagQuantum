@@ -15,7 +15,9 @@ unchanged.
 
 Trusted A100 CPU jobs use a distinct concurrency group for each workflow run,
 job and matrix index. The sixteen provisioned runners bound parallelism;
-`light-a/b/c` buckets apply only to hosted fallback. In particular, the seven
+`light-a/b/c` buckets apply only to hosted fallback. Self-hosted matrices have
+no `max-parallel` cap, and dedicated A800 CPU jobs have no job-level capacity
+lock. Device locks remain for jobs that use the same physical GPUs. In particular, the seven
 dependency-bound matrix legs can run together instead of queuing behind one
 another while CPU runners are idle.
 

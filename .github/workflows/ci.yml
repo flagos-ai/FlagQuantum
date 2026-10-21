@@ -345,9 +345,6 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
-    concurrency:
-      group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
-      queue: max
     strategy:
       fail-fast: false
       matrix:
@@ -476,9 +473,6 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
-    concurrency:
-      group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
-      queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
         with:
@@ -571,9 +565,6 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
-    concurrency:
-      group: flagquantum-cpu-${{ github.event.pull_request.number || github.ref_name }}-runtime
-      queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
         with:
@@ -966,7 +957,6 @@ jobs:
       queue: max
     strategy:
       fail-fast: false
-      max-parallel: 7
       matrix:
         include:
           - python: "3.10"

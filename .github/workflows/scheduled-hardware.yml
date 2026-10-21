@@ -79,12 +79,8 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      # The 4-device and 8-device legs ask one host for twelve devices between
-      # them. Both runners carry `flagquantum-local`, so the two legs can land
-      # on the same host and measure each other; `max-parallel: 1` makes them
-      # take turns instead. `fail-fast` stays false so the second leg still
-      # reports after the first one fails.
-      max-parallel: 1
+      # The shared device concurrency group serializes the 4/8-GPU legs.
+      # No matrix-wide runner cap is needed; both legs still report failures.
       matrix:
         gpu-count: [4, 8]
     steps:

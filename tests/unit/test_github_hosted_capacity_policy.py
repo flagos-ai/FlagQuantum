@@ -370,7 +370,7 @@ def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> N
     assert "--print-floor" in commands
     assert "mypy --strict" in commands
     assert definition["runs-on"] == TRUSTED_CPU_ROUTE
-    assert definition["strategy"]["max-parallel"] == 7
+    assert "max-parallel" not in definition["strategy"]
     isolated = next(
         step
         for step in steps
