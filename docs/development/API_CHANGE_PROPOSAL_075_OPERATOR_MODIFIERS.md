@@ -2,8 +2,104 @@
 
 ## Status
 
-**Proposed. No code is written by this proposal and no behaviour changes until
-the repository owner approves it and the acceptance items below are measured.**
+**Approved in part, and the approved half is implemented. Decisions 6, 7, 8, 9
+and 10 are authorized; Decisions 1 to 5 are not.** The authorized half is the
+operator registration table, the IR rule a registered operator obeys, and the
+backend degradation contract it enters. It lands as
+`flagquantum/operators/registry.py` (`OperatorRegistry`, `register_operator`),
+with `flagquantum/core/operator_schema.py` and
+`flagquantum/compiler/operator_lowering.py` unchanged: the registry is a new
+value in the namespace that already exists, and the lowering registry already had
+the two methods the contract needs. The unauthorized half is Decisions 1 to 5, and
+its two halves are not in the same state: **the control modifier landed under a
+different approved design** (see the supersession note below), while the adjoint
+modifier does not exist at all -- `Circuit.adjoint` keeps its zero-argument
+signature. "Problem" sections 1 and 3 describe a tree that no longer exists for
+the control half, section 7 still holds for the adjoint half, section 4 still
+holds, and sections 5 and 6 are answered by the authorized half.
+
+**Revision 3 records that ruling and what the authorized half measured.** The
+measurements, each produced by the shipped code:
+
+- `register_operator` returns a new `OperatorRegistry`;
+  `len(OPERATOR_SCHEMAS)` is 35 before and after a registration, and
+  `get_operator_schema("cphase_quarter")` still returns `None`. Assignment to
+  `OPERATOR_SCHEMAS` raises `TypeError`, which section 6 of "Decision" adopts as
+  the contract instead of working around.
+- A freshly registered opcode is unsupported by all eight backends, and the
+  refusal is `backend 'qasm' cannot lower: cphase_quarter (not registered)`.
+  Section 8 of "Decision" states this as the degradation contract and this is the
+  string it produces. The eight appear on the registry the caller extended -- the
+  shared `DEFAULT_LOWERING_REGISTRY.manifest()` is byte-identical before and
+  after a registration, which is what keeps the checked-in artefact independent
+  of which registrations a process ran.
+- An instruction naming a registered opcode is still refused without a matrix:
+  `unknown opcode 'cphase_quarter'; custom operations require an explicit matrix`
+  (Decision 7). With the matrix it runs, and the user path end to end is the
+  example in "Public API".
+- `tools/operator_manifest.py` then `tools/docs_source_of_truth.py` regenerate
+  `docs/operator_manifest.json` and `docs/generated/OPERATOR_CAPABILITIES.md` with
+  **no diff** (both exit 0, `git status --short` on the two paths is empty), which
+  is the outcome Decision 10 said to measure rather than assume: the authorized
+  half adds no built-in opcode.
+- `contracts/public-api-v1-candidate.json` changes in exactly the two places
+  "Compatibility" predicted, and both are load-bearing: dropping either edit
+  fails a different test in
+  `tests/unit/test_public_api_candidate.py` and
+  `tests/unit/test_api_namespace_convergence.py`.
+- `docs/public_api_v1.json` is unchanged and `len(flagquantum.__all__)` is still
+  41. The two new names are in `flagquantum.operators` and not at the root, so
+  `test_migrated_exports_are_not_discoverable_at_root` covers them.
+
+**Decisions 1, 2 and 3 are not merely unapproved: they have been superseded by an
+approved, landed design.** The control modifier shipped as
+`Circuit.control(n_controls, ctrl_qubits)` in
+`e791b361 feat(core): add Circuit.control as a construction-time composition
+member`, under `docs/api-changes/FQ-CIRCUIT-CONTROL-20261022.md`. That design
+differs from this proposal's sketch in the three places that matter, so a reader
+must not take sections 1, 3, or Decisions 1 to 3 as a description of the tree:
+
+```
+$ PYTHONPATH=$PWD python -c "import inspect, flagquantum as fq; print(inspect.signature(fq.Circuit.control)); print(inspect.signature(fq.Circuit.adjoint)); print(hasattr(fq.Circuit, 'power'))"
+(n_controls: 'int', ctrl_qubits: 'Iterable[int] | int') -> "'Circuit'"
+(self) -> "'Circuit'"
+True
+```
+
+It widens a `Circuit` and returns a new one rather than recording a modifier on
+an instruction; it adds the control qubits instead of reusing a wire tuple, so
+`Circuit.control` has no `"x"` name argument and cannot be mistaken for a
+per-instruction modifier; and the depth is bounded by `MAX_LADDER_LEVEL`, refused
+by name rather than by timeout:
+
+```
+$ PYTHONPATH=$PWD python -c "import flagquantum as fq; fq.Circuit(1).x(0).control(11, list(range(1, 12)))"
+ValueError: 11 control qubit(s) on a 1-qubit gate needs a phase ladder of level 11; the deepest supported ladder is 10
+```
+
+`OperatorSchema` therefore *does* have a `control` field today, with fifteen
+rules in `CONTROL_RULES`, and Problem section 1's `FIELDS_CONTAINING_CONTROL: []`
+is no longer true:
+
+```
+$ PYTHONPATH=$PWD python -c "import dataclasses; from flagquantum.core.operator_schema import OperatorSchema, CONTROL_RULES; print([f.name for f in dataclasses.fields(OperatorSchema)]); print(len(CONTROL_RULES))"
+['opcode', 'aliases', 'arity', 'parameters', 'dtype_policy', 'semantic_kind', 'adjoint', 'decomposition', 'qubit_convention', 'parameter_frequencies', 'control']
+15
+```
+
+The field is also no longer called `wire_convention`; the vocabulary migration
+renamed it to `qubit_convention`, which is why every `wire_convention=` string in
+Problem sections 1 and 3 and in Decisions 2 and 3 is a quote of an older tree
+rather than a name in this one. Revision 3 leaves those quotations in place and
+marks them, instead of rewriting measurements it did not take.
+
+**What genuinely remains open in this document is the adjoint modifier
+(Decisions 4 and 5).** `Circuit.adjoint` still takes no argument, so no
+per-instruction adjoint spelling exists, and the collision recorded in
+"Compatibility" is untouched. That half has no ruling, has no implementation, and
+is the only part of W5-11 this proposal still owes. The other thing a further
+ruling owes is the `controls=` keyword that `Circuit.gate` accepts and never
+reads; neither is touched here.
 
 **Revision 2, re-measured against this checkout.** Three of the eight premises
 below were measured on a checkout that has since moved, and revision 1 restated
@@ -42,6 +138,16 @@ search that establishes the absence. Everything in "Required evidence" is a
 requirement on the implementation, not a result: nothing here has been built.
 
 ## Problem
+
+**Re-measured, Revision 3: this section is stale and is kept as a record.** The
+schema now has an eleventh field, `control`, whose fifteen rules live in
+`CONTROL_RULES`, and the field this section calls `wire_convention` is now
+`qubit_convention`. The stale output below is reproduced unchanged because it is
+what the premise was argued from; the current measurement is in "Status". What
+survives from this section is narrower and is why the authorized half still says
+what it says: a `control` **rule** says how to build a controlled form of an
+opcode, not how many controls an instruction carries, and no field holds the
+latter.
 
 ### 1. The operator schema table has no field that can hold a control count or an
 adjoint rule
@@ -224,13 +330,19 @@ Revision 1 also printed `CIRCUIT_ATTR_adjoint: False` here and closed with
 `grep -rniE "def adjoint|def dagger|def inverse|def control\(|with_adjoint"
 --include=*.py flagquantum/` returning `exit=1`. Both lines are removed above
 rather than corrected, because the grep they came from cannot return `1` on this
-checkout: `flagquantum/circuit.py:431` defines `def adjoint(self) -> "Circuit"`.
+checkout: `flagquantum/circuit.py:490` defines `def adjoint(self) -> "Circuit"`.
 The refusal text is unchanged and is what this section rests on. The refusal
-comes from `flagquantum/core/ir/__init__.py:364`, which is a deliberate rule
+comes from `flagquantum/core/ir/__init__.py:388-391`, which is a deliberate rule
 rather than an accident: an unknown opcode is admitted only when the instruction
 carries an explicit matrix. A control-count-by-name design would therefore be
 refused by the IR before it reached any backend, and each name a caller invented
 would be a permanent addition to a name space the IR already treats as closed.
+
+**Re-measured, Revision 3: this section is stale for the control half.** A caller
+can now ask, through `Circuit.control(n_controls, ctrl_qubits)`, and the answer is
+a wider circuit rather than a modifier on an instruction. The `HAS
+Circuit.control: False` line in the probe output below is a measurement of the
+tree this section was written against.
 
 ### 3. Control wires are fixed per opcode, and the nearest way a caller can ask
 for more is silently ignored
@@ -649,12 +761,19 @@ under "Non-goals".
 
 ## Decision
 
+**Superseded, Revision 3.** Decisions 1 to 3 describe a control modifier recorded
+on an instruction. The shipped design records nothing on the instruction: it
+returns a new, wider `Circuit` whose program is the emitted instruction sequence.
+These three decisions are kept because they are the argument the registration half
+does not depend on, and because a future adjoint modifier may yet be recorded on
+an instruction. They are not a description of the tree and are not authorized.
+
 ### 1. A modifier is recorded on the instruction, not in the opcode name
 
 The two candidate representations are an instruction-level modifier and a family
 of generated opcode names (`mcx`, `cccx`, `h_dg`, ...). The second is refused.
-`flagquantum/core/ir/__init__.py:349` canonicalises every instruction name through
-`canonical_opcode` and `flagquantum/core/ir/__init__.py:364` refuses an unknown name
+`flagquantum/core/ir/__init__.py:375` canonicalises every instruction name through
+`canonical_opcode` and `flagquantum/core/ir/__init__.py:388-391` refuses an unknown name
 unless the instruction carries an explicit matrix, so a name-per-modifier design
 would have to add a permanent, unbounded set of names to a table the rest of the
 system already treats as closed, and each added name would create a new
@@ -793,7 +912,7 @@ Refused explicitly:
 
 ### 7. A registered operator enters the IR only with an explicit matrix
 
-`flagquantum/core/ir/__init__.py:364` admits an unknown opcode only when the instruction
+`flagquantum/core/ir/__init__.py:388-391` admits an unknown opcode only when the instruction
 carries a matrix, and this proposal keeps that rule rather than exempting
 registered operators from it. The reason is that the IR is the serialized
 boundary: an `Instruction` whose opcode is known only to a runtime registry
@@ -831,9 +950,9 @@ The following are refused rather than inferred:
 
 ### 9. Registration does not change the root namespace
 
-No name added by this proposal is a root export. `docs/public_api_v1.json` has 34
+No name added by this proposal is a root export. `docs/public_api_v1.json` has 41
 `stable_exports`, none of whose names is `register_operator`, `OperatorRegistry`,
-`control` or `adjoint`, and `flagquantum.__all__` has the same 34 names. The new
+`control` or `adjoint`, and `flagquantum.__all__` has the same 41 names. The new
 names land in `flagquantum.operators`, which is a namespace entry in
 `contracts/public-api-v1-candidate.json`, not a root export. Section 7 of
 "Compatibility" states exactly what changes in that file and the negative control
@@ -849,9 +968,12 @@ that cannot be confused with it, and this proposal does not touch that option.
 **Re-measured.** Revision 1 listed `adjoint` among the names this proposal would
 add to `Circuit`, on the strength of a probe that reported
 `CIRCUIT_ATTR_adjoint: False`. It is `True`: `def adjoint(self) -> "Circuit"` at
-`flagquantum/circuit.py:431`, shipped in
+`flagquantum/circuit.py:490`, shipped in
 `cd5c8e43 feat(core): invert a program with Circuit.adjoint (#376)`. Only
-`control` is added. This narrows the proposal in the way section 4 describes --
+`control` is added -- and **Revision 3 does not authorize that addition**, so
+under the current ruling nothing is added to `Circuit` at all and the method the
+registration half ships is not on `Circuit`. This narrows the proposal in the way
+section 4 describes --
 the program-level adjoint exists, and the modifier half is the part that must
 extend it -- and it removes a collision that revision 1 would have created.
 `contracts/circuit-composition-contract.toml` already contracts both
@@ -883,24 +1005,62 @@ plan row's third deliverable unverifiable.
 
 ## Public API
 
-One new namespace member set, two new `Circuit` methods, and one new Core table
-type. No Stable Core root export is added, removed or renamed, so
-`docs/public_api_v1.json` is unchanged by this proposal: its 34 `stable_exports`
-do not contain any name introduced here, and its `experimental_stability` stays
-`"none"`.
+One new namespace member set and two new `Circuit` methods are sketched below.
+**Only the namespace member set is authorized as of Revision 3**; the two methods
+belong to Decisions 1 to 5 and are not implemented. No Stable Core root export is
+added, removed or renamed, so `docs/public_api_v1.json` is unchanged by this
+proposal: its 41 `stable_exports` do not contain any name introduced here, and its
+`experimental_stability` stays `"none"`.
+
+The authorized and implemented signature is:
 
 ```python
 from flagquantum.operators import OperatorRegistry, register_operator
 
 registry = register_operator(
-    "my_op",
-    arity=1,
+    "cphase_quarter",
+    arity=2,
     parameters=(),
-    aliases=(),
+    aliases=("cp4",),
     adjoint="self_inverse",
-    wire_convention=("target",),
+    qubit_convention=("control", "target"),
 )
-registry.schemas["my_op"].opcode  # 'my_op'; registry.schemas is immutable
+registry.schemas["cphase_quarter"].opcode  # 'cphase_quarter'
+registry.canonical("CP4")                  # 'cphase_quarter'
+```
+
+Two differences from the sketch in Revision 2 are deliberate and both narrow it.
+`qubit_convention` defaults to positional names `qubit_0` to `qubit_{arity-1}`
+when it is omitted, because registration knows no semantics beyond position and a
+default of `("target",)` would be wrong for every arity but one. `registry`
+defaults to the built-in table and lets a caller extend a table it already holds,
+which is what makes two registrations compose without either one mutating the
+other. `OperatorRegistry.aliases` and `OperatorRegistry.registered()` are the two
+readers the contract needs; `registered()` is what makes "this table has an opcode
+the built-ins do not" answerable without comparing 35 names by hand.
+
+The whole user path, with the output this checkout produces:
+
+```python
+import torch
+import flagquantum as fq
+from flagquantum.compiler.operator_lowering import (
+    DEFAULT_LOWERING_REGISTRY, UnsupportedLoweringError,
+)
+from flagquantum.operators import register_operator
+
+registry = register_operator("cphase_quarter", arity=2, adjoint="self_inverse")
+lowerings = DEFAULT_LOWERING_REGISTRY.with_operator(registry.schemas["cphase_quarter"])
+try:
+    lowerings.validate("qasm", ["cphase_quarter"])
+except UnsupportedLoweringError as error:
+    print(error)
+# backend 'qasm' cannot lower: cphase_quarter (not registered)
+
+matrix = torch.diag(torch.tensor([1, 1, 1, 1j], dtype=torch.complex128))
+circuit = fq.Circuit(2).h(0).h(1).gate("cphase_quarter", (0, 1), matrix=matrix)
+print([round(float(abs(value)), 4) for value in circuit.state().reshape(-1)])
+# [0.5, 0.5, 0.5, 0.5]
 ```
 
 ```python
@@ -910,6 +1070,10 @@ circuit = Circuit(4)
 circuit.control("x", controls=(0, 1, 2), wires=(3,))   # three controls
 circuit.adjoint("u3", wires=(0,), params={"theta": 0.37, "phi": 0.21, "lbd": -0.53})
 ```
+
+**The block above is not implemented.** Decisions 1 to 5 are not authorized, so
+`Circuit.control` does not exist and `Circuit.adjoint` still takes no argument.
+It is kept here because it is the shape the modifier half is decided in.
 
 `register_operator` returns a new `OperatorRegistry`; it never mutates the
 argument. `OperatorRegistry.schemas` is an immutable mapping and
@@ -925,7 +1089,7 @@ in "Compatibility". The new public root name count is zero.
 
 ## Compatibility
 
-- **`docs/public_api_v1.json` is unchanged.** Its `stable_exports` list has 34
+- **`docs/public_api_v1.json` is unchanged.** Its `stable_exports` list has 41
   names and none of them is introduced here, and `tools/public_api_snapshot.py`
   refuses automatic regeneration of that file at all:
 
@@ -942,33 +1106,44 @@ in "Compatibility". The new public root name count is zero.
   are required. `flagquantum.operators` is already a `stable_extensions` entry
   with `symbols = ["GateInfo", "gate_info"]`. The new namespace members must be
   added to that entry's `symbols` list *and* to
-  `approved_namespace_additions`. Each edit alone fails a different test, which
-  was measured as a negative control by patching the file, running the two test
-  modules, and restoring it:
+  `approved_namespace_additions`. Each edit alone fails, and each omission fails
+  with a different message on the other side of the same assertion. Measured as
+  four negative controls by patching the file, running the two test modules, and
+  restoring it:
 
   ```
   $ PYTHONPATH=$PWD python -m pytest tests/unit/test_public_api_candidate.py tests/unit/test_api_namespace_convergence.py -q
-  # symbols only:
-  E   AssertionError: flagquantum.operators is missing candidate exports: ['register_operator']
+  # symbols edited, approved_namespace_additions not:
+  E     Extra items in the left set:
+  E     'register_operator'
+  E     'OperatorRegistry'
+  FAILED tests/unit/test_public_api_candidate.py::test_candidate_classifies_every_historical_stable_export_exactly_once
+  1 failed, 17 passed
+
+  # approved_namespace_additions edited, symbols not:
+  E     Extra items in the right set:
+  E     'register_operator'
+  E     'OperatorRegistry'
+  FAILED tests/unit/test_public_api_candidate.py::test_candidate_classifies_every_historical_stable_export_exactly_once
+  1 failed, 17 passed
+
+  # both edited:
+  18 passed
+
+  # both edited, plus a listed name the namespace does not export:
+  E   AssertionError: assert 131 == 130
+  E   AssertionError: flagquantum.operators is missing candidate exports: ['bogus_operator', 'bogus_operator']
   FAILED tests/unit/test_public_api_candidate.py::test_candidate_classifies_every_historical_stable_export_exactly_once
   FAILED tests/unit/test_api_namespace_convergence.py::test_every_stable_migration_destination_is_importable
   2 failed, 16 passed
-
-  # approved_namespace_additions only:
-  E     Extra items in the right set: 'register_operator'
-  FAILED tests/unit/test_public_api_candidate.py::test_candidate_classifies_every_historical_stable_export_exactly_once
-  1 failed, 17 passed
-
-  # both:
-  E   AssertionError: flagquantum.operators is missing candidate exports: ['register_operator']
-  FAILED tests/unit/test_api_namespace_convergence.py::test_every_stable_migration_destination_is_importable
-  1 failed, 17 passed
   ```
 
-  The third case is the shape the implementation must reach: the only remaining
-  failure is that the symbol is not yet importable, which is what the
-  implementation supplies. So the candidate contract is not "unchanged" and this
-  proposal does not claim it is.
+  Revision 2 quoted three of these and attributed the messages to the wrong cases;
+  Revision 3 replaces them with the four that were actually run. The shape the
+  implementation must reach is the third: both edits, and the names importable.
+  The fourth is the control that establishes the second half, because it shows the
+  convergence test does read the namespace rather than only the contract. So the
+  candidate contract is not "unchanged" and this proposal does not claim it is.
 
 - **The existing silent no-op changes behaviour, deliberately.** A caller who
   passes `controls=` as a keyword to `Circuit.gate` or to a generated gate method
@@ -993,7 +1168,7 @@ in "Compatibility". The new public root name count is zero.
 - **`Circuit.adjoint` already ships, so this proposal extends it rather than
   adding it.** Revision 1 listed `adjoint` among the names it would add to
   `Circuit`; that line is withdrawn in section 9 of "Decision". The method is
-  `def adjoint(self) -> "Circuit"` at `flagquantum/circuit.py:431`, landed in
+  `def adjoint(self) -> "Circuit"` at `flagquantum/circuit.py:490`, landed in
   `cd5c8e43 feat(core): invert a program with Circuit.adjoint (#376)`. The
   consequence for compatibility is that the per-instruction spelling this
   proposal wants is a **signature change to a name that is already in use**:
@@ -1131,7 +1306,7 @@ it and observing a test fail.
       and each is traceable to a change in `operator_manifest()` or in the
       default registry's capabilities.
 - [ ] `docs/public_api_v1.json` is byte-identical before and after, verified by
-      hash, and `flagquantum.__all__` still has 34 names.
+      hash, and `flagquantum.__all__` still has 41 names.
 - [ ] `contracts/public-api-v1-candidate.json` differs from the current file in
       exactly the two places described in "Compatibility", and
       `tests/unit/test_public_api_candidate.py` and

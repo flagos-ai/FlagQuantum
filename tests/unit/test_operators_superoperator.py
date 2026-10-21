@@ -144,8 +144,10 @@ def test_the_package_reexports_the_operator_schema_and_the_superoperator() -> No
     assert set(operators.__all__) == {
         "DEFAULT_DENSE_MATRIX_BYTES",
         "GateInfo",
+        "OperatorRegistry",
         "SuperOperator",
         "gate_info",
+        "register_operator",
     }
     for name in operators.__all__:
         assert getattr(operators, name) is not None

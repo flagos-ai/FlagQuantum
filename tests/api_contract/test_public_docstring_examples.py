@@ -75,7 +75,7 @@ from flagquantum.observables.fermion import (
     jordan_wigner,
     parity_encoding,
 )
-from flagquantum.operators import SuperOperator
+from flagquantum.operators import SuperOperator, register_operator
 from flagquantum.qec import (
     BeliefPropagationOsdDecoder,
     CssCode,
@@ -258,6 +258,7 @@ ENTRIES = (
     qldpc_code,
     reed_muller_code,
     recommend_simulator,
+    register_operator,
     ring_floquet_code,
     run_cirq,
     run_pennylane,
