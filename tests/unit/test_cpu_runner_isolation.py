@@ -106,6 +106,7 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
     assert all(not step.get("with", {}).get("lfs", False) for step in checkouts)
 
 
+@pytest.mark.parametrize("cache_state", ["absent", "hit", "miss"])
 @pytest.mark.parametrize("torch_spec", ["torch>=2.13,<2.14", "torch>=2.10,<2.11"])
 @pytest.mark.parametrize(
     ("runner_environment", "mirror_failure"),
@@ -117,11 +118,18 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
     ],
 )
 def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
-    tmp_path: Path, runner_environment: str, mirror_failure: str, torch_spec: str
+    tmp_path: Path,
+    runner_environment: str,
+    mirror_failure: str,
+    torch_spec: str,
+    cache_state: str,
 ) -> None:
     action = yaml.safe_load(
         (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
     )
+    cache = tmp_path / "cpu-wheels"
+    if cache_state != "absent":
+        cache.mkdir()
     log = tmp_path / "pip-calls.jsonl"
     fake_python = tmp_path / "python"
     fake_python.write_text(
@@ -131,6 +139,8 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
         "    stream.write(json.dumps(sys.argv[1:]) + '\\n')\n"
         "if sys.argv[1] == '-c' and 'Requirement' in sys.argv[2]:\n"
         "    raise SystemExit(1)\n"
+        "if '--find-links' in sys.argv and os.environ['FQ_CPU_WHEEL_CACHE'] in sys.argv:\n"
+        "    raise SystemExit(0 if os.environ['CACHE_STATE'] == 'hit' else 1)\n"
         "if 'download' in sys.argv:\n"
         "    if os.environ['MIRROR_FAILURE'] == 'error':\n"
         "        raise SystemExit(1)\n"
@@ -154,6 +164,8 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
             "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
             "PIP_CALL_LOG": str(log),
             "MIRROR_FAILURE": mirror_failure,
+            "CACHE_STATE": cache_state,
+            "FQ_CPU_WHEEL_CACHE": str(cache),
             "FQ_TORCH_SPEC": torch_spec,
             "RUNNER_ENVIRONMENT": runner_environment,
             "RUNNER_TEMP": str(tmp_path),
@@ -163,6 +175,28 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     )
     commands = [json.loads(line) for line in log.read_text().splitlines()]
     pip_calls = [command for command in commands if command[:2] == ["-m", "pip"]]
+    cached = [call for call in pip_calls if str(cache) in call]
+    if runner_environment == "self-hosted" and cache_state != "absent":
+        assert cached == [
+            [
+                "-m",
+                "pip",
+                "install",
+                "--no-index",
+                "--no-deps",
+                "--find-links",
+                str(cache),
+                torch_spec,
+            ]
+        ]
+        if cache_state == "hit":
+            assert len(pip_calls) == 2
+            assert pip_calls[-1] == ["-m", "pip", "install", torch_spec]
+            assert not list(tmp_path.glob("fq-cpu-wheel.*"))
+            return
+        pip_calls = [call for call in pip_calls if str(cache) not in call]
+    else:
+        assert not cached
     official = "https://download.pytorch.org/whl/cpu"
     mirror = "https://mirrors.aliyun.com/pytorch-wheels/cpu/"
     if runner_environment == "self-hosted" and mirror_failure != "timeout":

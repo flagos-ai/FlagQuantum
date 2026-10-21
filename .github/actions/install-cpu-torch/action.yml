@@ -12,8 +12,13 @@ runs:
         FQ_TORCH_SPEC: ${{ inputs.torch-spec }}
       run: |
         export FQ_TORCH_SPEC="${FQ_TORCH_SPEC:-torch>=2.13,<2.14}"
+        cpu_wheel_cache="${FQ_CPU_WHEEL_CACHE:-/root/liuwei/fq-ci-bootstrap/cpu-wheels}"
         if python -c 'import os, torch; from packaging.requirements import Requirement; assert torch.version.cuda is None; assert "+cpu" in torch.__version__; assert torch.__version__ in Requirement(os.environ["FQ_TORCH_SPEC"]).specifier' 2>/dev/null; then
           echo "Using the verified CPU PyTorch wheel already installed in this private environment"
+        elif [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ] && \
+          [ -d "$cpu_wheel_cache" ] && \
+          python -m pip install --no-index --no-deps --find-links "$cpu_wheel_cache" "$FQ_TORCH_SPEC"; then
+          echo "CPU PyTorch installed from the local A800 wheel cache"
         elif [ "${RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
           # Select Torch only from the CPU directory, then resolve its ordinary
           # dependencies through the job's PyPI mirror without upgrading Torch.

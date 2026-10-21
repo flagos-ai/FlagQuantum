@@ -38,6 +38,12 @@ for id in $(gh api 'repos/flagos-ai/FlagQuantum/actions/runners?per_page=100' \
 done
 ```
 
+A800 portable jobs reuse `/root/liuwei/fq-ci-bootstrap/cpu-wheels` before
+trying the network CPU wheel mirrors. A cache miss preserves the existing
+mirror and official-index fallback, and each dependency-bound leg retains its
+requested Torch version. Other dependencies still resolve through the job PyPI
+index.
+
 Only CPU registrations receive this label. Keep A100 validation slot labels and
 A800 dedicated labels: those jobs depend on their original host environments.
 
