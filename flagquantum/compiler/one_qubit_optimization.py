@@ -94,6 +94,7 @@ from .one_qubit_synthesis import (
     _PHASE_EPS,
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
+    _is_unitary,
     _polar_angle,
 )
 
@@ -329,15 +330,27 @@ def _emit(
 def _is_foldable(instruction: Instruction) -> bool:
     """Whether one instruction is a single-qubit unitary that could join a fold.
 
-    False for anything else — a wider gate, a measurement, a barrier, or an
-    opcode no Euler table covers — and such an instruction *ends* the run on each
-    qubit it touches rather than joining it.
+    False for anything else — a wider gate, a measurement, a barrier, an opcode
+    no Euler table covers, or a carried matrix that is not unitary — and such an
+    instruction *ends* the run on each qubit it touches rather than joining it.
+
+    The unitarity test is what keeps a carried operand exact. `_emit` spells a
+    matrix as `u3`, `phase`, and `rz`, which carry magnitudes and phases and
+    nothing else, so the fold can reproduce a unitary's action and only that; a
+    non-unitary operand folded together with its neighbours comes back as the
+    unitary nearest to the product rather than as the product. Measured on `x`,
+    `h`, then the shear `[[1, 0.5], [0, 1]]`: the fold replaced the shear with
+    `u3(2.2143, 3.1416, -3.1416)` and moved the state from
+    `(+0.3536, -0.7071)` to `(+0.4472, -0.8944)` — a normalised vector, and the
+    wrong one. Declining leaves the instruction the runtime already executes
+    faithfully, and only the run it was in stays unfolded.
     """
 
     if len(instruction.wires) != 1:
         return False
     if instruction.matrix is not None:
-        return True
+        matrix = _instruction_matrix(instruction)
+        return matrix is not None and _is_unitary(matrix)
     return canonical_opcode(instruction.name) in _EULER_ANGLES
 
 

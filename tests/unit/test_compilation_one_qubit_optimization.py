@@ -572,3 +572,104 @@ def test_the_pipeline_still_reaches_a_fixed_point_with_the_fold_in_it() -> None:
         ir = CircuitIR(3, tuple(instructions))
         once = optimize(ir)
         assert optimize(once).instructions == once.instructions
+
+
+#: Operands the fold must decline. `_emit` spells a matrix as magnitudes and
+#: phases, so it can reproduce a unitary and only a unitary; each of these is
+#: something else, including one that misses unitarity by 1e-4 and so cannot be
+#: declined by a tolerance that would also accept the float noise of a long run.
+_NON_UNITARY_OPERANDS: dict[str, torch.Tensor] = {
+    "shear": torch.tensor([[1.0, 0.5], [0.0, 1.0]], dtype=torch.complex128),
+    "complex shear": torch.tensor([[1.0, 0.5j], [0.0, 1.0]], dtype=torch.complex128),
+    "projector": torch.tensor([[1.0, 0.0], [0.0, 0.0]], dtype=torch.complex128),
+    "scaled identity": torch.tensor([[2.0, 0.0], [0.0, 2.0]], dtype=torch.complex128),
+    "near unitary": torch.tensor([[1.0, 1.0], [1.0, -1.0]], dtype=torch.complex128)
+    * 0.9999,
+}
+
+#: An operand the fold may take: the same run with a unitary in the last slot.
+_UNITARY_OPERAND = (
+    torch.tensor([[1.0, 1.0], [1.0, -1.0]], dtype=torch.complex128) * 2**-0.5
+)
+
+
+def _operand_run(matrix: torch.Tensor) -> CircuitIR:
+    """`x`, `h`, then one instruction carrying `matrix` as its operand."""
+
+    return CircuitIR(
+        1,
+        (
+            Instruction("x", (0,)),
+            Instruction("h", (0,)),
+            Instruction("any", (0,), matrix=matrix),
+        ),
+        dtype="complex128",
+    )
+
+
+def _local_statevector(ir: CircuitIR) -> torch.Tensor:
+    from flagquantum.simulation.statevector.local import run_local_statevector
+
+    return run_local_statevector(
+        ir, batch_size=1, device=torch.device("cpu"), dtype=torch.complex128
+    )
+
+
+@pytest.mark.parametrize("label", sorted(_NON_UNITARY_OPERANDS))
+def test_a_non_unitary_operand_keeps_its_run_from_folding(label: str) -> None:
+    """The operand is left standing, and the program's action is preserved.
+
+    Folding it would not raise; it would return a unit vector, because the
+    emission normalises what it reads. The state is compared against the source
+    rather than against a stored vector, so the assertion is the property the
+    pass has to keep: an optimisation may decline to fire, never change the
+    answer.
+    """
+
+    source = _operand_run(_NON_UNITARY_OPERANDS[label])
+    folded = collapse_one_qubit_runs(source)
+
+    assert [item.name for item in folded.instructions] == [
+        "u3",
+        "any",
+    ], f"{label}: the operand was folded into the run before it"
+    assert folded.instructions[-1].matrix is not None
+    before = _local_statevector(source)
+    after = _local_statevector(folded)
+    assert float(torch.max(torch.abs(before - after)).item()) < 1e-12
+
+
+def test_the_decline_is_a_decline_and_not_a_refusal() -> None:
+    """Every non-unitary operand yields a program, not an exception."""
+
+    for label, matrix in _NON_UNITARY_OPERANDS.items():
+        folded = collapse_one_qubit_runs(_operand_run(matrix))
+        assert isinstance(folded, CircuitIR), label
+        assert len(folded.instructions) == 2, label
+
+
+def test_a_unitary_operand_still_joins_the_fold() -> None:
+    """The control: the same run with a unitary operand folds as before."""
+
+    source = _operand_run(_UNITARY_OPERAND)
+    folded = collapse_one_qubit_runs(source)
+
+    assert [item.name for item in folded.instructions] == ["u3"]
+    gap = _gap(
+        _runtime_matrix(folded.instructions[0]),
+        _run_product_from_table(list(source.instructions)),
+    )
+    assert gap < 1e-12
+
+
+def test_the_unitarity_test_is_what_declines_not_the_shape() -> None:
+    """The two operands differ only in unitarity, and that is what separates them."""
+
+    from flagquantum.compiler.one_qubit_optimization import _is_foldable
+
+    bearing = Instruction("any", (0,), matrix=_NON_UNITARY_OPERANDS["shear"])
+    unitary = Instruction("any", (0,), matrix=_UNITARY_OPERAND)
+    assert bearing.matrix is not None and unitary.matrix is not None
+    assert bearing.matrix.shape == unitary.matrix.shape
+    assert not _is_foldable(bearing)
+    assert _is_foldable(unitary)
