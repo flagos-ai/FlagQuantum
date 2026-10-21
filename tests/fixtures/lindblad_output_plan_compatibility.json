@@ -1,0 +1,1852 @@
+{
+  "baseline_revision": "01280756b2be8b97a7963fbdeb52c969621d078b",
+  "capture_scope": "Unmodified production before proposal 080 implementation",
+  "plans": {
+    "qubit/complex64": {
+      "decision": {
+        "batch_size": 1,
+        "dimension": 2,
+        "n_times": 2,
+        "n_wires": 1,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "order": 4,
+          "precision": "complex64",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05000000074505806
+        },
+        "trajectory_bytes": 64
+      },
+      "identity": "8d58eb5cb682f2e2b9a4d45d7d0a0b26d6d5e2714257e85f42a17b0ef9ef6e1f",
+      "request": {
+        "collapse_operators": [],
+        "hamiltonian": {
+          "shape": [
+            2,
+            2
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.699999988079071,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.699999988079071,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "initial_density_matrix": {
+          "shape": [
+            2,
+            2
+          ],
+          "values": [
+            [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": 1,
+        "observables": [
+          {
+            "name": "z",
+            "operator": {
+              "shape": [
+                2,
+                2
+              ],
+              "values": [
+                [
+                  [
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    -1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.10000000149011612
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.3"
+    },
+    "qubit/complex128": {
+      "decision": {
+        "batch_size": 1,
+        "dimension": 2,
+        "n_times": 2,
+        "n_wires": 1,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "order": 4,
+          "precision": "complex128",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05
+        },
+        "trajectory_bytes": 128
+      },
+      "identity": "ea9dc2f22c4e4e45d5d4de7d0acb24588ce3d0eb35ab9fcd506d1add96cd87b8",
+      "request": {
+        "collapse_operators": [],
+        "hamiltonian": {
+          "shape": [
+            2,
+            2
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.699999988079071,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.699999988079071,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "initial_density_matrix": {
+          "shape": [
+            2,
+            2
+          ],
+          "values": [
+            [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": 1,
+        "observables": [
+          {
+            "name": "z",
+            "operator": {
+              "shape": [
+                2,
+                2
+              ],
+              "values": [
+                [
+                  [
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    -1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.1
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.3"
+    },
+    "product/complex64": {
+      "decision": {
+        "batch_size": 1,
+        "dimension": 3,
+        "dimensions": [
+          3
+        ],
+        "n_times": 2,
+        "n_wires": 1,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "order": 4,
+          "precision": "complex64",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05000000074505806
+        },
+        "trajectory_bytes": 144
+      },
+      "identity": "a4fd8fc5b8ab5f8a43ffcca13ba0e519e1a660fba244fd87a859f0815790ee00",
+      "request": {
+        "collapse_operators": [],
+        "dimensions": [
+          3
+        ],
+        "hamiltonian": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.699999988079071,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.699999988079071,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [
+          {
+            "name": "reading",
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.10000000149011612
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.4"
+    },
+    "product/complex128": {
+      "decision": {
+        "batch_size": 1,
+        "dimension": 3,
+        "dimensions": [
+          3
+        ],
+        "n_times": 2,
+        "n_wires": 1,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "order": 4,
+          "precision": "complex128",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05
+        },
+        "trajectory_bytes": 288
+      },
+      "identity": "9ed3e676e0ad3508fa6c80190c5a8fb44210eb4010ea236179ad75046de04104",
+      "request": {
+        "collapse_operators": [],
+        "dimensions": [
+          3
+        ],
+        "hamiltonian": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.7,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.7,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [
+          {
+            "name": "reading",
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.1
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.4"
+    },
+    "product-scheduled/complex64": {
+      "decision": {
+        "batch_size": 1,
+        "dimension": 3,
+        "dimensions": [
+          3
+        ],
+        "n_times": 2,
+        "n_wires": 1,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "n_intervals": 1,
+          "order": 4,
+          "precision": "complex64",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05000000074505806,
+          "time_dependence": "piecewise_constant"
+        },
+        "trajectory_bytes": 144
+      },
+      "identity": "ccdb5e4a32019927dc5c64059e05ac41577028d55cc9a416a8f9289d5a5474b0",
+      "request": {
+        "collapse_operators": [],
+        "dimensions": [
+          3
+        ],
+        "hamiltonians": [
+          {
+            "shape": [
+              3,
+              3
+            ],
+            "values": [
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.699999988079071,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.699999988079071,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ]
+            ]
+          }
+        ],
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [
+          {
+            "name": "reading",
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.10000000149011612
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.5"
+    },
+    "product-scheduled/complex128": {
+      "decision": {
+        "batch_size": 1,
+        "dimension": 3,
+        "dimensions": [
+          3
+        ],
+        "n_times": 2,
+        "n_wires": 1,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "n_intervals": 1,
+          "order": 4,
+          "precision": "complex128",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05,
+          "time_dependence": "piecewise_constant"
+        },
+        "trajectory_bytes": 288
+      },
+      "identity": "e0cd971b129390391288c3b5e8bb90f8a1493e7179a5c6938c4ffc5970a8b36f",
+      "request": {
+        "collapse_operators": [],
+        "dimensions": [
+          3
+        ],
+        "hamiltonians": [
+          {
+            "shape": [
+              3,
+              3
+            ],
+            "values": [
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.7,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.7,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ]
+            ]
+          }
+        ],
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [
+          {
+            "name": "reading",
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.1
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.5"
+    },
+    "labelled/complex64": {
+      "decision": {
+        "basis_labels": [
+          [
+            "vac"
+          ],
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ],
+        "batch_size": 1,
+        "dimension": 3,
+        "n_times": 2,
+        "n_wires": null,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "order": 4,
+          "precision": "complex64",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05000000074505806
+        },
+        "trajectory_bytes": 144
+      },
+      "identity": "e27915c1dbaa977fb1f65af941f27a68d603663914a0690a4e1eeca278a7c3f2",
+      "request": {
+        "basis_labels": [
+          [
+            "vac"
+          ],
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ],
+        "collapse_operators": [],
+        "hamiltonian": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.699999988079071,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.699999988079071,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [
+          {
+            "name": "reading",
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.10000000149011612
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.6"
+    },
+    "labelled/complex128": {
+      "decision": {
+        "basis_labels": [
+          [
+            "vac"
+          ],
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ],
+        "batch_size": 1,
+        "dimension": 3,
+        "n_times": 2,
+        "n_wires": null,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "order": 4,
+          "precision": "complex128",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05
+        },
+        "trajectory_bytes": 288
+      },
+      "identity": "1f28859d7ac79d160f2c7e67470f8969094ebf9ba735cae204df0e9fe3f8e75a",
+      "request": {
+        "basis_labels": [
+          [
+            "vac"
+          ],
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ],
+        "collapse_operators": [],
+        "hamiltonian": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.7,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.7,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [
+          {
+            "name": "reading",
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.1
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.6"
+    },
+    "labelled-scheduled/complex64": {
+      "decision": {
+        "basis_labels": [
+          [
+            "vac"
+          ],
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ],
+        "batch_size": 1,
+        "dimension": 3,
+        "n_times": 2,
+        "n_wires": null,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "n_intervals": 1,
+          "order": 4,
+          "precision": "complex64",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05000000074505806,
+          "time_dependence": "piecewise_constant"
+        },
+        "trajectory_bytes": 144
+      },
+      "identity": "d78cbf3c3a35a10b6afc579c8f52e6b031d410204ce3766506a0e883dc74b235",
+      "request": {
+        "basis_labels": [
+          [
+            "vac"
+          ],
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ],
+        "collapse_operators": [],
+        "hamiltonians": [
+          {
+            "shape": [
+              3,
+              3
+            ],
+            "values": [
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.699999988079071,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.699999988079071,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ]
+            ]
+          }
+        ],
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [
+          {
+            "name": "reading",
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.10000000149011612
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.6"
+    },
+    "labelled-scheduled/complex128": {
+      "decision": {
+        "basis_labels": [
+          [
+            "vac"
+          ],
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ],
+        "batch_size": 1,
+        "dimension": 3,
+        "n_times": 2,
+        "n_wires": null,
+        "numerics": {
+          "device": "cpu",
+          "method": "runge-kutta",
+          "n_intervals": 1,
+          "order": 4,
+          "precision": "complex128",
+          "require_gradients": false,
+          "solve_tolerance": null,
+          "step_size": 0.05,
+          "time_dependence": "piecewise_constant"
+        },
+        "trajectory_bytes": 288
+      },
+      "identity": "39d545b8eedad9a480a760da5a45ee22c53d9097ef73b29906da1c7f7360469b",
+      "request": {
+        "basis_labels": [
+          [
+            "vac"
+          ],
+          [
+            "left"
+          ],
+          [
+            "right"
+          ]
+        ],
+        "collapse_operators": [],
+        "hamiltonians": [
+          {
+            "shape": [
+              3,
+              3
+            ],
+            "values": [
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.7,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.7,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ]
+            ]
+          }
+        ],
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [
+          {
+            "name": "reading",
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ]
+                ]
+              ]
+            }
+          }
+        ],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          0.1
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.6"
+    }
+  }
+}
