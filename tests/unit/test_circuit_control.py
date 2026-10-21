@@ -422,6 +422,11 @@ def test_a_channel_has_no_controlled_form(opcode: str, parameter: str) -> None:
     [
         ({"is_dynamic": True}, "dynamic"),
         ({"conditions": (("c", 1),)}, "conditioned"),
+        # The disjunctive spelling reaches this refusal for the same reason as the
+        # conjunctive one. It fell into the matrix branch below, which reported
+        # "carries execution metadata a controlled form would drop" -- the
+        # mechanism of the refusal rather than the condition that caused it.
+        ({"condition_clauses": (((0, 0),), ((1, 0),))}, "conditioned"),
     ],
 )
 def test_a_non_unitary_instruction_is_refused(

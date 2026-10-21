@@ -580,6 +580,43 @@ premise 6: the planner guard tests two of the four keys and not the other two, a
 premise 5 shows the two condition spellings already diverging across five call
 sites. One validator removes the possibility of a third spelling.
 
+**Measured again, 2026-10-21: the divergence outlived the validator, in the
+composition members.** `flagquantum/core/_composition.py` is the per-instruction
+refusal behind `Circuit.adjoint`, `Circuit.power`, and `Circuit.control`. Its
+invert and control branches tested `metadata.get("conditions")` alone, so an
+instruction whose only metadata is the disjunctive `condition_clauses` key fell
+through to the branches below them:
+
+```console
+adjoint() -> rx(theta=-0.3) conditional={'condition_clauses': (((0, 0),), ((1, 0),))}
+control() -> CapabilityError: Cannot control instruction 'rx' on qubits (1,): it
+             carries execution metadata a controlled form would drop.
+```
+
+The first line is the defect: a conditioned rotation was inverted and reported as
+undone, with its condition carried into the inverted instruction. The second line
+is a refusal, but it names the mechanism rather than the cause, so a reader cannot
+tell a conditioned gate from one carrying an unrelated metadata key. Both branches
+now call `is_classical_control_instruction`:
+
+```console
+adjoint() -> CapabilityError: Cannot invert instruction 'rx' on qubits (1,): it is
+             classically conditioned, which has no fixed inverse.
+control() -> CapabilityError: Cannot control instruction 'rx' on qubits (1,): it is
+             classically conditioned, which has no controlled form.
+```
+
+The public `DynamicCircuit` builder does not reach this path: a program it produces
+carries a `measure`, and `adjoint` walks the program in reverse, so the measurement
+is refused first — with `Cannot invert instruction 'measure'`, which is a
+consequence of the reversal order rather than of this defect. The defect is
+reachable from IR, as in a `CircuitIR.from_dict` payload or any tool that writes
+the DNF spelling directly, which is the same reachability premise 6 records for the
+planner guard. The `classify_public_circuit` sibling this defect was first found
+beside is no longer a defect: dynamic lowering made it call
+`validate_classical_control`, which refuses every spelling of the four keys.
+
+
 ### 5. A condition on an unmeasured classical bit is refused at build time with `ValidationError`
 
 **Added, and a behaviour change.** `DynamicCircuit._append_dynamic`
