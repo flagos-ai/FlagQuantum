@@ -2,11 +2,11 @@
 
 ## Status and decision scope
 
-**Concrete migration contract awaiting approval.** On 2026-10-22 the repository
-owner instructed this boundary correction after reviewing PR #702. That direction
-authorizes this proposal and review preparation; the exact removals below are
-presented before implementation. Baseline: main
+**Approved for implementation on 2026-10-22.** The repository owner explicitly
+approved proposal 082 and instructed implementation of its four decisions.
+This supersedes the earlier direction-only review status. Baseline: main
 `4972fd0ce9b03a809cca78dc298810bb45a3c5c0`, including Core #700 and Deployment #701.
+This approval does not grant blanket PR merge permission.
 
 The affected Remote names are absent from the stable and experimental API
 snapshots. Under [PUBLIC_API_POLICY](../reference/PUBLIC_API_POLICY.md) they are
@@ -17,7 +17,7 @@ checked provider-roster capability claim. No snapshot or maturity record is
 regenerated to authorize the change. Document merge alone is not implementation
 approval, and implementation approval is not a blanket PR merge grant.
 
-Approve these four decisions together:
+The owner approved these four decisions together:
 
 1. Remove the generic, non-submitting NeutralAtomProvider and its Remote module
    and exports, without a compatibility shim or replacement provider shell.
