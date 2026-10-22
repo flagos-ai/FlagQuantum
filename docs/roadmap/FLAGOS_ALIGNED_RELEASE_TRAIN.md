@@ -230,6 +230,13 @@ the complete M3 scenario remain open gates. Existing plan compatibility fixtures
 and scientific budgets remain unchanged; each implementation PR has separate
 merge and verification requirements.
 
+[Proposal 082](../development/API_CHANGE_PROPOSAL_082_REMOTE_PROVIDER_BOUNDARY.md)
+records the requested service-owned Remote boundary correction and exact generic
+NeutralAtomProvider retirement. Its concrete removals and replacement of 081's
+Remote-consumer gate await approval; no provider is removed or new cloud access
+claimed by that proposal. Core #700 and Deployment #701 have landed. Native
+Simulation consumption and the remaining M3 evidence gates are still open.
+
 ### Reference scenarios
 
 | Scenario | Shared capability under test | Additional acceptance |
