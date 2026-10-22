@@ -11,3 +11,8 @@ consumers = ["docs/development/API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION
 class = "current_claim"
 reason = "Retains the profile-aware non-regression verdict consumed by DynamicCircuit promotion criterion 7."
 consumers = ["docs/development/API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md"]
+
+[entries."benchmarks/results/local/representation_agreement_cpu_grid.json"]
+class = "regression_baseline"
+reason = "Records the regime in which statevector, MPS, and tensor-network execution were measured to agree, and the bound the spread held to inside it. The conformance test enforces the invariant over a small subgrid; this payload is the measured grid that subgrid stands for, including which cells were truncated and which all-to-all widths the tensor-network path could not afford."
+consumers = ["tests/integration/test_representation_agreement_sweep.py"]
