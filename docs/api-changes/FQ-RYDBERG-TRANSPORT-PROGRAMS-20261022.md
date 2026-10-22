@@ -223,7 +223,7 @@ fixture files are not regenerated.
 
 Run `python -m examples.rydberg_native_dynamics`: version 1.7, survival 0.81873075,
 unconditional RR 0.40936538, no-flag 0.85353566 and exact numeric replay True.
-The 40 unchanged physics consumers and 47 native consistency/gradient/refusal
+The 40 unchanged physics consumers and 48 native consistency/gradient/refusal
 cases pass locally. Three-parameter controls are compared to an independent dense
 unitary for all three integrators. The focused dynamics suite passes 717 cases each on Python 3.10, 3.11 and 3.12;
 strict mypy passes 784 source files and all 11 repository gates pass. Full
@@ -253,3 +253,27 @@ sources also retain proposal 073's empty per-interval mapping semantics: the
 shared validator accepts empty mappings, refuses unused names, and plan 1.7 still
 captures null bindings. No solver or physical tolerance changes accompany these
 input-boundary fixes. The final native/unchanged-physics selection passes 87 cases.
+
+### Completed local verification and exact scope
+
+Initial feature d858f88019 completed the full default selection: 14,540 passed,
+169 skipped and 3,034 deselected in 917.92 seconds. That run collected the first
+36 native cases before subsequent scalar-boundary fixes and added tests; it is
+not reported as an exact-head default run of those later changes.
+
+Final production code 6bf24b7df5 completed the runtime integration selection:
+1,769 passed, 129 skipped and 15,856 deselected in 382.72 seconds. The final native
+selection has 48 passing cases on each of Python 3.10, 3.11 and 3.12, including an
+independent dense-unitary simultaneous-pair drive and a C6 blockade trend at the
+unchanged 1e-10 exponential budget. The 40 original physics consumers passed on
+all three versions after the scalar fixes. Python 3.12's broader focused dynamics
+selection passed 719 cases before the final additional blockade case. Earlier
+broad selections passed 717/718 cases on the other recorded feature revisions;
+these are retained as historical evidence, not relabelled as the latest tree.
+
+Strict mypy passes 784 source files; all 11 repository gates, both formatter/lint
+tool versions, consumer AST equality and unchanged fixture-byte checks pass. The
+last delivery commit adds only the blockade test and this evidence, with no
+production-code change. Latest remote full CI/GPU, applicable checks, repository
+rules and this PR's separate merge authorization remain mandatory. No scientific
+budget or legacy assertion was loosened, and full M3 remains open.

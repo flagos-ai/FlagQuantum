@@ -432,3 +432,46 @@ def test_numeric_static_source_keeps_existing_empty_mapping_semantics() -> None:
     with pytest.raises(EvolutionValidationError) as caught:
         fql.plan(p, initial, [0.0, 0.5], parameter_values=[{"unused": 0.7}])
     assert caught.value.code == "invalid_parameter_binding"
+
+
+def test_simultaneous_pair_drive_matches_dense_unitary_and_rydberg_blockade() -> None:
+    double_excitation = []
+    for c6 in (0.0, 640.0):
+        p = RydbergProgram(
+            atoms=(("a", "left"), ("b", "right")),
+            sites={"left": (0.0, 0.0), "right": (2.0, 0.0)},
+            length_unit="um",
+            time_unit="us",
+            c6=c6,
+            loss_rate=0.0,
+            minimum_separation=1.0,
+            drive_channels=("laser",),
+        )
+        p.pulse(("a", "b"), start=0.0, duration=2.0, amplitude=1.0, channel="laser")
+        result = fql.run(
+            p,
+            p.basis_state(("g", "g")),
+            torch.linspace(0.0, 2.0, 81, dtype=torch.float64),
+            method="krylov-exponential",
+            return_density_matrices=True,
+        )
+        # Independent product Hamiltonian in the declared g/r/lost coordinates.
+        x = torch.tensor(
+            [[0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0]], dtype=torch.complex128
+        )
+        n = torch.diag(torch.tensor([0.0, 1.0, 0.0], dtype=torch.complex128))
+        eye = torch.eye(3, dtype=torch.complex128)
+        h = 0.5 * (torch.kron(x, eye) + torch.kron(eye, x)) + c6 / 2**6 * torch.kron(
+            n, n
+        )
+        state = torch.matrix_exp(-2j * h)[:, 0]
+        assert result.density_matrices is not None
+        torch.testing.assert_close(
+            result.density_matrices[-1],
+            state[:, None] * state.conj()[None, :],
+            atol=1e-10,
+            rtol=0,
+        )
+        double_excitation.append(result.populations[-1, 4].item())
+    assert double_excitation[0] == pytest.approx(math.sin(1.0) ** 4, abs=1e-10)
+    assert double_excitation[1] < double_excitation[0] / 10
