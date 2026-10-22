@@ -23,6 +23,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from ...compiler import CouplingMap
+from ...core.geometry import finite_real
 from ...deployment.cloud import CloudBackendProfile, DeploymentPackage
 from .contracts import (
     ProviderSubmissionPreview,
@@ -74,9 +75,12 @@ def _coordinate(value: Any, *, owner: str, index: int) -> tuple[float, float]:
         if isinstance(component, bool) or not isinstance(component, int | float):
             raise ValueError(f"{owner} site {index} coordinates must be numbers")
         number = float(component)
-        if not math.isfinite(number):
-            raise ValueError(f"{owner} site {index} coordinates must be finite")
-        coordinates.append(number)
+        try:
+            coordinates.append(finite_real(number, "coordinate"))
+        except ValueError as exc:
+            raise ValueError(
+                f"{owner} site {index} coordinates must be finite"
+            ) from exc
     return (coordinates[0], coordinates[1])
 
 

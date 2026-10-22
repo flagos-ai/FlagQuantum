@@ -150,3 +150,24 @@ Keep that preparation separate from Core semantics and from numerical assembly.
 The existing Remote coordinate replacement and consumer-intake evidence remain
 subsequent domain-owned work. Native numerical enablement must retain the full
 front-door/refusal gate; this source-only delivery does not close it or M3.
+
+## Remote geometry consumer replacement
+
+After Core #700 landed at `050be1d7b30dd5f1c508120242a1195ffc9e66c0`, the
+existing Remote register parser delegates finite-coordinate validation to
+Core's `finite_real`, the same primitive used by `cartesian_pair` in the native
+profile. Remote retains declaration parsing, type acceptance, float conversion,
+unit aliases, first-two-coordinate extraction and its existing error messages.
+Validation remains sequential: a non-finite first coordinate must still fail
+before a wrongly typed second coordinate; an overflowing integer conversion
+retains its original OverflowError. No vendor parser or physical model moves
+into Core, and there is no second validator or provider-specific native guard.
+
+The pre-change captures cover 32 coordinate outcomes and four unchanged register
+profiles. They are reused as compatibility assertions, including numeric
+subclasses, ignored third coordinates and mixed-error precedence. Existing
+provider roster and golden-path consumers remain unchanged. Additional real
+frontend/raw-record consumers prove that both Jiuding submission clients and
+the resident measurement intake reuse Core's refusal before authentication,
+workspace discovery, target selection or submission. This is offline consumer
+evidence, not analog hardware execution or full native numerical acceptance.

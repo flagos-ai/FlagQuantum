@@ -1,0 +1,237 @@
+{
+  "captured_head": "3005d02ddd883ca417e815082b61831a542e2c4a",
+  "geometry": {
+    "pair": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "list": {
+      "result": [
+        1.5,
+        -2.0
+      ]
+    },
+    "three_coordinates": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "mapping_xy": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "mapping_upper": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "mapping_position": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "mapping_coord": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "mapping_coordinate": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "missing_y": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 must declare x and y coordinates"
+    },
+    "empty_mapping": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 must declare x and y coordinates"
+    },
+    "text": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 must declare x and y coordinates"
+    },
+    "bytes": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 must declare x and y coordinates"
+    },
+    "none": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 must declare x and y coordinates"
+    },
+    "short": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 must declare x and y coordinates"
+    },
+    "empty": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 must declare x and y coordinates"
+    },
+    "true": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be numbers"
+    },
+    "false": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be numbers"
+    },
+    "numeric_string": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be numbers"
+    },
+    "complex": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be numbers"
+    },
+    "infinite": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be finite"
+    },
+    "nan": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be finite"
+    },
+    "negative_infinite": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be finite"
+    },
+    "integer_subclass": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "float_subclass": {
+      "result": [
+        1.0,
+        2.0
+      ]
+    },
+    "huge_integer": {
+      "exception": "OverflowError",
+      "message": "int too large to convert to float"
+    },
+    "negative_zero": {
+      "result": [
+        -0.0,
+        0.0
+      ]
+    },
+    "nonfinite_then_wrong_type": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be finite"
+    },
+    "wrong_type_then_nonfinite": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be numbers"
+    },
+    "overflow_then_wrong_type": {
+      "exception": "OverflowError",
+      "message": "int too large to convert to float"
+    },
+    "wrong_type_then_overflow": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be numbers"
+    },
+    "nonfinite_then_overflow": {
+      "exception": "ValueError",
+      "message": "Neutral atom site 3 coordinates must be finite"
+    },
+    "overflow_then_nonfinite": {
+      "exception": "OverflowError",
+      "message": "int too large to convert to float"
+    }
+  },
+  "profiles": {
+    "um": {
+      "n_qubits": 2,
+      "edges": [
+        [
+          0,
+          1
+        ]
+      ],
+      "metadata": {
+        "capability_source": "neutral-atom register declaration",
+        "register_units": "um",
+        "interaction_radius": 5.0,
+        "declared_site_count": 2,
+        "derived_coupling_count": 1,
+        "connectivity_source": "derived_from_declared_geometry"
+      },
+      "basis_gates": [
+        "x"
+      ]
+    },
+    "micrometers": {
+      "n_qubits": 2,
+      "edges": [
+        [
+          0,
+          1
+        ]
+      ],
+      "metadata": {
+        "capability_source": "neutral-atom register declaration",
+        "register_units": "micrometers",
+        "interaction_radius": 5.0,
+        "declared_site_count": 2,
+        "derived_coupling_count": 1,
+        "connectivity_source": "derived_from_declared_geometry"
+      },
+      "basis_gates": [
+        "x"
+      ]
+    },
+    "nm": {
+      "n_qubits": 2,
+      "edges": [
+        [
+          0,
+          1
+        ]
+      ],
+      "metadata": {
+        "capability_source": "neutral-atom register declaration",
+        "register_units": "nm",
+        "interaction_radius": 5.0,
+        "declared_site_count": 2,
+        "derived_coupling_count": 1,
+        "connectivity_source": "derived_from_declared_geometry"
+      },
+      "basis_gates": [
+        "x"
+      ]
+    },
+    "m": {
+      "n_qubits": 2,
+      "edges": [
+        [
+          0,
+          1
+        ]
+      ],
+      "metadata": {
+        "capability_source": "neutral-atom register declaration",
+        "register_units": "m",
+        "interaction_radius": 5.0,
+        "declared_site_count": 2,
+        "derived_coupling_count": 1,
+        "connectivity_source": "derived_from_declared_geometry"
+      },
+      "basis_gates": [
+        "x"
+      ]
+    }
+  }
+}
