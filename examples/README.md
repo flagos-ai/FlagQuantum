@@ -483,6 +483,34 @@ a real CPU CNN/quantum/head training step, and a portable Overleaf bundle.
 Source export uses the default install; image display additionally requires
 a TeX engine and Poppler on the kernel PATH.
 
+## Terminal instrument mathematical references
+
+Run `python -m examples.terminal_instrument_reference` for proposal 083's
+current-API references. Existing SuperOperator Kraus maps calculate branch
+probabilities/backaction; Torch supplies illustrative samples. Expected:
+
+```text
+presence labels: ('no_flag', 'flag')
+presence probabilities: [0.68, 0.32]
+presence Torch draw replay: True
+No-flag conditional ground: 0.88235294
+Unread measurement changes coherence: True
+fock labels: ('0', '1', '2')
+fock probabilities: [0.6, 0.3, 0.1]
+fock Torch draw replay: True
+Framework terminal instrument API: proposed, not implemented
+```
+
+The coherent g/lost example distinguishes physical loss from observed flags and
+shows that an unread instrument can change coherence. The finite three-level
+Fock example explicitly models QND number projection. Neither is a calibrated
+photodetector or framework event API. The proposed terminal sampling entry and
+its metadata/result behavior require approval of
+[proposal 083](../docs/development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md)
+before implementation. No public exports, Program IR fields, plan formats,
+result types, sampling validators or framework execution paths change here.
+
+
 ## Native moving-atom dynamics
 
 Run `python -m examples.rydberg_native_dynamics` for a real RydbergProgram on
