@@ -56,6 +56,39 @@ implementing a related internal feature, does not by itself promote the surface.
 | 7 | Non-regression | Static batched execution shows no regression against the recorded baseline. |
 | 8 | Contract | `contracts/dynamic-circuit-v1-candidate.json` is superseded by a stable contract with a recorded migration path, and the candidate contract is retired rather than left to coexist indefinitely. |
 
+Criterion 7 is satisfied for the declared Apple-arm64 CPU profile at source
+revision `4972fd0ce9b03a809cca78dc298810bb45a3c5c0`. The profile-aware gate passed
+both maintained 18-qubit, batch-32, complex128 workloads with exact-statevector
+correctness and stable timing. Current/baseline time was `0.823x` for local
+brickwork and `0.909x` for Random Clifford; current/baseline peak RSS was
+`0.488x` and `0.509x`, respectively. The policy permits at most `1.20x` time
+and `1.10x` peak-RSS growth and requires at least five timing samples and three
+fresh-process memory probes.
+
+The machine-readable
+[`gate verdict`](../../benchmarks/results/comparison/batched_statevector_dynamic_promotion_gate_cpu_arm64_20261022.json)
+and its
+[`raw observations`](../../benchmarks/results/comparison/batched_statevector_dynamic_promotion_current_cpu_arm64_20261022.json)
+are comparison-only evidence: they make no release, scalability, or dynamic
+execution performance claim. Reproduce them with:
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+flagquantum-benchmark run batched_statevector_memory \
+  --workloads random_clifford_statevector local_brickwork_statevector \
+  --n-wires 18 --batch-sizes 32 \
+  --engines flagquantum_native_batch flagquantum_native_layout_retention \
+  --threads 1 --warmup 2 --iterations 11 --memory-probes 3 \
+  --json-output candidate-batched-memory.json
+
+flagquantum-benchmark run cpu_performance_gate \
+  benchmarks/results/comparison/batched_statevector_layout_lifetime_cpu_arm64_20261001.json \
+  candidate-batched-memory.json \
+  --max-slowdown 1.20 --max-memory-growth 1.10 \
+  --minimum-samples 5 --minimum-memory-probes 3 \
+  --json-output candidate-batched-memory-gate.json
+```
+
 ### 3. `run_dynamic` and the rest stay experimental
 
 `run_dynamic`, providers, dialects, and native results remain experimental
@@ -127,7 +160,9 @@ export set are unaffected either way.
       semantics, or an explicit blocker.
 - [ ] `python tools/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
       pass.
-- [ ] Static batched execution shows no regression against the recorded baseline.
+- [x] Static batched execution shows no regression against the recorded baseline
+      on the declared Apple-arm64 CPU profile; the evidence and its limits are
+      recorded above.
 - [ ] The stable contract supersedes the candidate contract, and the candidate
       contract has a named owner, removal condition, and target version.
 - [ ] The root export set, `IR_VERSION`, `CircuitIR` schema, and

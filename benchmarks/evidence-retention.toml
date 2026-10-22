@@ -1,3 +1,13 @@
 schema = "flagquantum.benchmark_evidence_retention.v1"
 
 [entries]
+
+[entries."benchmarks/results/comparison/batched_statevector_dynamic_promotion_current_cpu_arm64_20261022.json"]
+class = "current_claim"
+reason = "Retains the raw static batched-statevector observations used to assess DynamicCircuit promotion criterion 7 on the declared Apple-arm64 profile."
+consumers = ["docs/development/API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md"]
+
+[entries."benchmarks/results/comparison/batched_statevector_dynamic_promotion_gate_cpu_arm64_20261022.json"]
+class = "current_claim"
+reason = "Retains the profile-aware non-regression verdict consumed by DynamicCircuit promotion criterion 7."
+consumers = ["docs/development/API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md"]
