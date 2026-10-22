@@ -1,5 +1,9 @@
 """Contract for the exact-identity measurements W9-12 records.
 
+The historical narrative below records the pre-#704 readings. Current-policy pins
+are re-measured for exact-zero preservation, including its extra gate cost; see
+benchmarks/notes/exact_identity_policy.md. Archived result artifacts are unchanged.
+
 Before this round ``compiler.optimize`` decided a single-qubit instruction was the
 identity from a hand-written set of two opcode names -- ``{"i", "id"}`` -- so a
 ``u3`` whose polar angle had come back to zero was never removed however its two
@@ -73,7 +77,7 @@ _RULE = {
     ),
     "single_qubit_rule_period": 4.0 * math.pi,
     "modular_fold_limit": 2048.0 * math.pi,
-    "tolerance": 1e-12,
+    "tolerance": 0.0,
     "global_phase_field_in_ir": False,
     "declared_single_qubit_opcodes": [
         "h",
@@ -299,11 +303,11 @@ _DELTA = {
         "executed_circuit_count": 30,
         "source_instruction_count": 554,
         "superseded_rule_instruction_count": 162,
-        "optimized_instruction_count": 162,
-        "removed_by_the_rule_alone": 267,
+        "optimized_instruction_count": 282,
+        "removed_by_the_rule_alone": 83,
         "removed_by_the_rule_in_the_pipeline": 0,
-        "net_instruction_delta_against_the_superseded_rule": 0,
-        "changed_circuit_count": 0,
+        "net_instruction_delta_against_the_superseded_rule": -120,
+        "changed_circuit_count": 28,
     },
     "full_turn_rotations": {
         "circuit_count": 30,
@@ -327,30 +331,6 @@ _DELTA = {
         "net_instruction_delta_against_the_superseded_rule": 0,
         "changed_circuit_count": 5,
     },
-    # The next three rows are the only ones later passes co-own, and this is the
-    # population group where they have reach. `collapse_two_qubit_blocks` composes
-    # adjacent two-qubit rotations -- `rzz(a) rzz(b)` into `rzz(a + b)` -- and
-    # `merge_commuting_rotations` adds two rotations of one opcode across a proven
-    # commuting gap. Both run inside *both* pipelines, so the two post-pipeline counts
-    # move together while the source count and `removed_by_the_rule_alone`, which are
-    # properties of this rule alone, stay where they were.
-    #
-    # Each of the two co-owners is attributed by a test that pauses it and re-measures
-    # these same rows, so neither move can go silent and neither is inferred from the
-    # arithmetic:
-    # `test_compiler_two_qubit_optimization.py::test_the_fold_is_what_moved_the_round_18_pipeline_rows`
-    # holds this rule and the rotation merge fixed and moves only the fold, and
-    # `test_compiler_commutation_cancellation.py::test_the_identity_rows_the_rotation_merge_moved_are_attributed`
-    # holds this rule and the fold fixed and moves only the rotation merge. The literals
-    # below are the shipped pipeline, which is both co-owners active.
-    #
-    # The fold reached further once already, and this is the second occurrence of the
-    # hazard rather than a new one: widening its membership from an all-two-qubit run to
-    # a block that also draws in the single-qubit gates on the pair's wires moved these
-    # two rows again and left the other five exactly where they were. That measurement
-    # -- only its own two populations move -- is what keeps this an attribution rather
-    # than a re-baselining, and it is why the literals here were re-measured from a
-    # fresh payload instead of the assertions being relaxed.
     "two_wire_rotations": {
         "circuit_count": 30,
         "executed_circuit_count": 30,
@@ -366,30 +346,23 @@ _DELTA = {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 678,
-        "superseded_rule_instruction_count": 392,
-        "optimized_instruction_count": 382,
-        "removed_by_the_rule_alone": 164,
-        "removed_by_the_rule_in_the_pipeline": 10,
-        "net_instruction_delta_against_the_superseded_rule": 10,
-        "changed_circuit_count": 13,
+        "superseded_rule_instruction_count": 405,
+        "optimized_instruction_count": 421,
+        "removed_by_the_rule_alone": 128,
+        "removed_by_the_rule_in_the_pipeline": 4,
+        "net_instruction_delta_against_the_superseded_rule": -16,
+        "changed_circuit_count": 23,
     },
     "mixed_with_mid_circuit_measures": {
         "circuit_count": 30,
         "executed_circuit_count": 30,
         "source_instruction_count": 761,
-        "superseded_rule_instruction_count": 498,
-        "optimized_instruction_count": 491,
-        "removed_by_the_rule_alone": 159,
-        # The clamped column is a sum of per-circuit `max(0, legacy - shipped)`, so it
-        # does not compose the way the signed column below does: a fold that shrinks one
-        # circuit's two pipelines by different amounts moves it by a circuit rather than
-        # by the gate count. The signed column happens to agree with it here, and the
-        # identity this test asserts is the signed one -- reading the clamped column as
-        # if it carried the sign is how a lengthened population would get reported as a
-        # tie.
-        "removed_by_the_rule_in_the_pipeline": 8,
-        "net_instruction_delta_against_the_superseded_rule": 7,
-        "changed_circuit_count": 11,
+        "superseded_rule_instruction_count": 505,
+        "optimized_instruction_count": 532,
+        "removed_by_the_rule_alone": 121,
+        "removed_by_the_rule_in_the_pipeline": 4,
+        "net_instruction_delta_against_the_superseded_rule": -27,
+        "changed_circuit_count": 21,
     },
 }
 
@@ -702,20 +675,20 @@ def test_every_declined_reach_is_published_with_the_mechanism_that_produces_it(
     assert not_asked >= (declined & not_asked)
 
 
-def test_the_band_is_the_shipped_tolerance_and_both_edges_hold(payload: dict) -> None:
-    """The rule introduces no new tolerance and reaches a full period either side of zero."""
+def test_only_exact_zero_is_removed_on_the_historical_probe_grid(payload: dict) -> None:
+    """Nonzero historical-band probes now survive; exact periods still apply."""
 
     boundary = payload["boundary_table"]
     assert boundary["residues"] == payload["boundary_table"]["residues"]
     for name, family in boundary["families"].items():
         assert family["removed_at_zero"] is True, name
-        assert family["removed_at_the_tolerance"] is True, name
+        assert family["removed_at_the_tolerance"] is False, name
         assert family["kept_just_outside_the_tolerance"] is True, name
         # A single-wire rotation is exactly `+I` at `4*pi` and exactly `-I` at `2*pi`,
         # so the fold must reach the first and refuse the second. A two-wire rotation
         # is a different matter and the next test speaks for it.
         if family["arity"] == 1:
-            assert family["removed_at_the_fold_edge"] is True, name
+            assert family["removed_at_the_fold_edge"] is False, name
             assert family["at_four_pi"]["is_exactly_identity"] is True, name
             assert family["at_four_pi"]["removed"] is True, name
             # `phase` and `u1` are `+I` at a half period and are still declined; every
@@ -775,23 +748,29 @@ def test_a_population_that_was_not_shipped_shorter_says_so(payload: dict) -> Non
             row["removed_by_the_rule_in_the_pipeline"]
             >= row["net_instruction_delta_against_the_superseded_rule"]
         ), label
-    # Exactly one population was lengthened, it is named, and it is lengthened by the
-    # half-turn refusal rather than by an arithmetic slip.
+    # Record the precision cost explicitly. The zero-angle-labelled population
+    # also contains nonzero 1e-13 angles, which must no longer be discarded.
     lengthened = [
         row["label"]
         for row in rows
         if row["net_instruction_delta_against_the_superseded_rule"] < 0
     ]
-    assert lengthened == ["full_turn_rotations"]
+    assert lengthened == [
+        "zero_angle_rotations",
+        "full_turn_rotations",
+        "mixed",
+        "mixed_with_mid_circuit_measures",
+    ]
     assert set(rows[0]) == set(_DELTA[rows[0]["label"]]) | {
         "label",
         "max_probability_vector_difference",
     }
+    # Accuracy costs gates relative to the historical near-zero predicate.
     assert (
         sum(row["net_instruction_delta_against_the_superseded_rule"] for row in rows)
-        > 0
+        == -174
     )
-    assert sum(row["removed_by_the_rule_alone"] for row in rows) == 963
+    assert sum(row["removed_by_the_rule_alone"] for row in rows) == 705
 
 
 def test_the_pass_is_measured_against_an_execution_on_every_population(
@@ -923,3 +902,35 @@ def test_the_payload_declares_what_it_is_and_what_it_may_not_be_used_for(
     assert set(_POINTS) == set(
         payload["rule_contract"]["classification_census"]["removed_by_point"]
     )
+
+
+def test_intermediate_measurements_are_not_erased_by_the_benchmark() -> None:
+    from benchmarks.compiler_identity_elimination import (
+        _circuit,
+        _gate,
+        _measure,
+        _probabilities,
+        _probability_vector,
+        _statevector,
+    )
+    from flagquantum.compiler import optimize
+
+    source = _circuit(
+        (_gate("h", (0,)), _measure(0), _gate("h", (0,)), _measure(0)), width=1
+    )
+    probabilities = _probability_vector(source)
+    assert probabilities == pytest.approx({0: 0.5, 1: 0.5}, abs=1e-14)
+    erased = _probabilities(_statevector(source), 1)
+    assert erased == pytest.approx({0: 1.0, 1: 0.0}, abs=1e-14)
+    assert _probability_vector(optimize(source)) == pytest.approx(
+        probabilities, abs=1e-14
+    )
+
+
+def test_the_counterfactual_zero_tolerance_is_frozen() -> None:
+    from benchmarks.compiler_identity_elimination import _gate, _superseded_rule
+    from flagquantum.compiler.one_qubit_synthesis import is_identity_one_qubit
+
+    gate = _gate("rz", (0,), theta=1e-13)
+    assert _superseded_rule(gate)
+    assert not is_identity_one_qubit(gate)

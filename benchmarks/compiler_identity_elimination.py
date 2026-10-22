@@ -31,12 +31,10 @@ Three further claims are measured separately, because they fail differently.
   proven by replacement, which is why the measurement lives in this file. The refusal
   direction is reported rather than asserted, because a refusal costs an optimization
   and a false removal changes a program; each refusal is named with its mechanism.
-* **The band is the shipped one.** The tolerance is the `1e-12` ``pipeline._is_zero``
-  already used, applied through ``math.remainder`` to the angle's residue rather than
-  to the raw angle, so no new tolerance is introduced. ``boundary_table`` walks both
-  edges of the band and pins the one place this rule is deliberately narrower than the
-  anchor: a target's error rate is not consulted, so an angle merely *near* a multiple
-  stays.
+* **Exact-zero removal is measured separately from matrix residuals.** Following
+  #704, the optimizer's deletion tolerance is zero. ``boundary_table`` retains the
+  historical near-zero probe grid, whose nonzero entries must now survive. Matrix
+  validation and execution residuals keep their independently stated tolerances.
 * **The reach survives the loop.** ``pipeline_delta`` runs seeded populations through
   the shipped fixed-point loop twice -- once with the new rule and once with the
   superseded one substituted back in -- and reports what each removal did to the
@@ -86,6 +84,11 @@ runs no distributed work, makes no scalability claim, and is not a performance g
 Re-run it with::
 
     python benchmarks/compiler_identity_elimination.py --json-output /tmp/w912.json
+Current-policy note (#704): the historical W9-12 prose counts above describe the
+older near-zero policy. Live runs now preserve nonzero components, pin the
+counterfactual predicate's old tolerance explicitly, and use measurement-branch
+probabilities for dynamic populations. See benchmarks/notes/exact_identity_policy.md;
+archived evidence is not rewritten and gate-count improvement is not presumed.
 """
 
 from __future__ import annotations
@@ -602,7 +605,7 @@ def _multiple_row(
 
 
 def boundary_table() -> dict[str, Any]:
-    """The tolerance band, walked from inside and from outside, per opcode family.
+    """The historical probe grid under the current exact-zero deletion policy.
 
     Three families reach the identity differently: a diagonal rotation needs only its
     parameter to vanish, a `u3` needs its polar angle to vanish *and* its two phases to
@@ -777,13 +780,13 @@ def rule_contract() -> dict[str, Any]:
         "single_qubit_rule_period": 4.0 * math.pi,
         "multi_wire_rule": (
             "the angle parameter named by pipeline._ROTATION_PARAM for the opcode is "
-            "within pipeline._is_zero's 1e-12 of zero -- the raw parameter, not a folded "
+            "exactly zero -- the raw parameter, not a folded "
             "one, which is why cphase(2*pi) and every two-wire full turn are declined"
         ),
-        "tolerance": 1.0e-12,
+        "tolerance": 0.0,
         "tolerance_source": (
-            "pipeline._is_zero, applied to the residue of the angle modulo 4*pi as "
-            "math.remainder returns it, so no new tolerance is introduced"
+            "exact scalar zero in pipeline._is_zero; nonzero folded residues are "
+            "retained independently of the matrix/execution residual tolerance"
         ),
         "modular_fold_limit": _MODULAR_FOLD_LIMIT,
         "modular_fold_limit_rationale": (
@@ -838,7 +841,11 @@ def _superseded_rule(instruction: Instruction) -> bool:
     if instruction.name in {"i", "id"}:
         return True
     param_name = _ROTATION_PARAM.get(instruction.name)
-    return param_name is not None and _is_zero(instruction.params.get(param_name))
+    # Freeze the historical predicate's tolerance rather than inheriting a new
+    # default from the current optimizer. Other pipeline stages remain current.
+    return param_name is not None and _is_zero(
+        instruction.params.get(param_name), atol=1e-12
+    )
 
 
 @contextlib.contextmanager
@@ -887,18 +894,51 @@ def _probabilities(state: torch.Tensor, width: int) -> dict[int, float]:
 
 
 def _probability_vector(ir: CircuitIR) -> dict[int, float]:
-    """The exact probabilities of the gate-only program, keyed by basis index.
+    """Exact final basis probabilities, summing unnormalized measurement branches.
 
-    The key is the raw basis index, so the index is the bit pattern of every wire at
-    once, wire 0 being the most significant bit -- the same convention
-    ``run_local_statevector`` uses. The measure instructions are dropped first, which is
-    what makes this the *pre-measurement* vector: for a population whose only
-    measurements are terminal and over every wire, that is the distribution
-    ``run_dynamic`` would report, without sampling, and for the population that carries
-    mid-circuit measurements it is not, which is stated where it is used.
+    This bounded three-qubit benchmark has computational-basis measurements and
+    no feedback. Removing intermediate measurements changes its instrument:
+    H-measure-H is not the identity. Keep every branch (including zero branches)
+    and sum squared magnitudes, never amplitudes. Terminal measurements overwrite
+    every classical bit, so the final basis distribution is the recorded output.
     """
+    from flagquantum.simulation.gate_matrix import gate_matrix
 
-    return _probabilities(_statevector(ir), ir.n_wires)
+    width = ir.n_wires
+    assert width <= _REGISTER_WIDTH
+    size = 2**width
+    states = torch.zeros((1, size), dtype=torch.complex128)
+    states[0, 0] = 1
+    basis = torch.arange(size)
+    for instruction in ir.instructions:
+        assert not instruction.metadata.get("conditions")
+        if instruction.name == "measure":
+            assert len(instruction.wires) == 1
+            bit = width - 1 - instruction.wires[0]
+            zero = ((basis >> bit) & 1) == 0
+            states = torch.cat((states * zero, states * ~zero))
+            continue
+        assert not instruction.metadata.get("is_channel")
+        support = instruction.wires
+        local_size = 2 ** len(support)
+        local = gate_matrix(
+            instruction, bsz=1, device=torch.device("cpu"), dtype=torch.complex128
+        ).reshape(local_size, local_size)
+        full = torch.zeros((size, size), dtype=torch.complex128)
+        for source in range(size):
+            column = 0
+            for qubit in support:
+                column = (column << 1) | ((source >> (width - 1 - qubit)) & 1)
+            for row in range(local_size):
+                target = source
+                for position, qubit in enumerate(support):
+                    mask = 1 << (width - 1 - qubit)
+                    value = (row >> (len(support) - 1 - position)) & 1
+                    target = (target & ~mask) | (value << (width - 1 - qubit))
+                full[target, source] = local[row, column]
+        states = states @ full.T
+    probabilities = states.abs().square().sum(dim=0).tolist()
+    return dict(enumerate(probabilities))
 
 
 def _worst_difference(left: dict[int, float], right: dict[int, float]) -> float:
@@ -1081,20 +1121,10 @@ def pipeline_delta() -> list[dict[str, Any]]:
     *lower* bound on what the rule earns, because a removal one pass declines can still
     be reached by another pass through a different spelling.
 
-    The claim this measures is that no removal changes what a device would report, and
-    the instrument is the probability vector of the gate-only program. It is deliberately
-    *not* the statevector. The shipped loop contains a pass that drops a Z-diagonal gate
-    standing before a measurement -- that is what ``remove_diagonal_gates_before_measure``
-    is for -- and such a removal leaves the probabilities alone while changing the
-    amplitudes, which is correct for a program that is about to be measured and would
-    make a statevector comparison between the two pipelines report a difference that
-    belongs to neither of them. The statevector instrument therefore lives in
-    `execution_control`, where the removal under inspection is driven by itself.
-
-    ``max_probability_vector_difference`` compares the two pipelines' gate-only vectors
-    keyed by basis index; for the population that carries mid-circuit measurements that
-    vector is not the sampled distribution of the dynamic circuit, but the comparison is
-    still the same comparison on both sides, which is what the assertion needs.
+    Each optimized program is compared independently with its unoptimized source.
+    Exact measurement-branch probabilities retain intermediate projection and sum
+    hidden outcomes. Stripping intermediate measurements would compare different
+    coherent programs and is not a correctness instrument for these populations.
     """
 
     rows: list[dict[str, Any]] = []
@@ -1120,9 +1150,9 @@ def pipeline_delta() -> list[dict[str, Any]]:
             executed += 1
             worst_probability = max(
                 worst_probability,
+                _worst_difference(_probability_vector(ir), _probability_vector(legacy)),
                 _worst_difference(
-                    _probability_vector(legacy),
-                    _probability_vector(shipped),
+                    _probability_vector(ir), _probability_vector(shipped)
                 ),
             )
         rows.append(
@@ -1157,15 +1187,11 @@ def pipeline_delta() -> list[dict[str, Any]]:
         row["source_instruction_count"] > row["optimized_instruction_count"]
         for row in rows
     ), rows
-    # The rule has to actually earn something inside the loop somewhere, or the delta
-    # would be a measurement of nothing -- and the *net* column has to earn something
-    # too, which is the honest form of the same claim, because the clamped column above
-    # cannot go negative and would hide a population the rule lengthened.
+    # Non-vacuity: the rule still removes exact identities in the loop. Its net
+    # cost against a lossy historical predicate is reported, not assumed positive.
     assert sum(row["removed_by_the_rule_in_the_pipeline"] for row in rows) > 0, rows
-    assert (
-        sum(row["net_instruction_delta_against_the_superseded_rule"] for row in rows)
-        > 0
-    ), rows
+    # An exact policy may retain more work than a lossy near-zero predicate.
+    # Record the signed cost; correctness is checked against source execution.
     return rows
 
 
