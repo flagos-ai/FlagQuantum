@@ -164,6 +164,11 @@ No time-dependent pulse or separate trainer is introduced.
 
 ## Local basics
 
+Every command on this page runs from the root of a clone of this repository.
+The published wheel contains the `flagquantum` package only, so a
+`pip install flagquantum` environment has no `examples/`: clone the repository
+and run the commands from that working copy.
+
 Start with these small local workflows. The first three use only the stable
 `fq.*` API; the dynamic example uses the candidate and experimental surfaces
 named below:

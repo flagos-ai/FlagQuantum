@@ -155,6 +155,19 @@ def root_link(path: str, label: str) -> str:
     return f"[{label}](../../{path})"
 
 
+def quick_start_label(path: str, *, sentence_case: bool = True) -> str:
+    """Name a quick-start link after what the target actually is.
+
+    A `.py` or `.sh` quick start is executable, so "Run example" is accurate.
+    Most quick starts point at a guide that carries the snippet inline; calling
+    those "Run example" promises a file the reader cannot execute.
+    """
+
+    if path.endswith((".py", ".sh")):
+        return "Run example" if sentence_case else "quick example"
+    return "Read guide" if sentence_case else "quick-start guide"
+
+
 def format_claim_value(value: object, value_format: str) -> str:
     if value_format == "integer":
         return f"{int(value):,}"
@@ -376,7 +389,8 @@ def render_capabilities(data: dict[str, object]) -> str:
         assert isinstance(capability, dict)
         title = str(capability["title"])
         maturity = MATURITY_LABELS[str(capability["level"])]
-        start = root_link(str(capability["quick_start"]), "Run example")
+        quick_start = str(capability["quick_start"])
+        start = root_link(quick_start, quick_start_label(quick_start))
         for goal in capability["user_goals"]:
             sections.append(f"| {goal} | {title} | {maturity} | {start} |")
 
@@ -395,6 +409,11 @@ def render_capabilities(data: dict[str, object]) -> str:
                 f"`{mode}`" for mode in capability["runtime_modes"]
             )
             hardware = ", ".join(f"`{item}`" for item in capability["hardware"])
+            detail_quick_start = str(capability["quick_start"])
+            detail_start = root_link(
+                detail_quick_start,
+                quick_start_label(detail_quick_start, sentence_case=False),
+            )
             sections.extend(
                 [
                     f"### {capability['title']}",
@@ -407,7 +426,7 @@ def render_capabilities(data: dict[str, object]) -> str:
                     f"- **Hardware:** {hardware}",
                     f"- **Gradient support:** `{capability['gradient_support']}`",
                     f"- **Distribution semantics:** `{capability['distribution_semantics']}`",
-                    f"- **Start:** {root_link(str(capability['quick_start']), 'quick example')}",
+                    f"- **Start:** {detail_start}",
                     f"- **Documentation:** {root_link(str(capability['documentation']), 'guide')}",
                     f"- **Known boundary:** {capability['limitations']}",
                     "",
