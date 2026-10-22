@@ -182,6 +182,133 @@ def test_a_ladder_agrees_with_the_partner_it_does_not_use() -> None:
 
 
 # --------------------------------------------------------------------------------------
+# A carried operand
+# --------------------------------------------------------------------------------------
+#
+# An instruction that carries its own matrix has no declaration whose controlled form the
+# emitter could build, so the operand itself is wrapped: the identity on every branch a
+# clear control selects, and the operand on the one branch where all of them are set. The
+# wrap is the same definition the ladder satisfies, so the definition above is the oracle
+# for this route too rather than a second statement of it.
+
+#: `diag(1, i)`, the S gate, written as a matrix. Chosen because a declared opcode emits
+#: exactly this under one control -- `cphase` at `pi/2` -- so the wrap has a second route
+#: to agree with, and because the imaginary unit makes a misplaced block or a dropped
+#: phase visible in the operator rather than only in an amplitude.
+_S_GATE = torch.diag(torch.tensor([1, 1j], dtype=torch.complex128))
+
+#: The square root of NOT. Its entries are all complex, so a wrap that placed the operand
+#: in the leading block would differ from one that placed it in the trailing block at
+#: every entry rather than at a subset.
+_ROOT_X = torch.tensor(
+    [[0.5 + 0.5j, 0.5 - 0.5j], [0.5 - 0.5j, 0.5 + 0.5j]], dtype=torch.complex128
+)
+
+#: A two-qubit operand, so the wrap is measured where the operand spans more than one
+#: qubit and the control count is not the operand's own arity.
+_CX = torch.tensor(
+    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=torch.complex128
+)
+
+
+def test_a_carried_operand_is_wrapped_into_the_block_diagonal() -> None:
+    """The recorded matrix is `diag(I, U)`, written out here entry by entry."""
+
+    controlled = fq.Circuit(1).any(0, matrix=_S_GATE).control(1, ctrl_qubits=(1,))
+    recorded = controlled.to_ir().instructions
+    assert len(recorded) == 1
+    # The controls come first in the wire list and the last wire is the least significant
+    # one, so the operand occupies the trailing block and a clear control selects the
+    # leading identity block.
+    assert recorded[0].wires == (1, 0)
+    expected = torch.diag(torch.tensor([1, 1, 1, 1j], dtype=torch.complex128))
+    assert torch.equal(torch.as_tensor(recorded[0].matrix), expected)
+
+
+def test_a_carried_operand_matches_its_definition() -> None:
+    """The wrap is the definition, measured at one, two and three controls."""
+
+    operands = {"s_gate": _S_GATE, "root_x": _ROOT_X}
+    for label, operand in operands.items():
+        receiver = fq.Circuit(1, dtype=torch.complex128).any(0, matrix=operand)
+        for n_controls in _CONTROL_COUNTS:
+            controls = tuple(range(1, 1 + n_controls))
+            controlled = receiver.control(n_controls, ctrl_qubits=controls)
+            assert torch.allclose(
+                _program_operator(controlled),
+                _definition_operator(receiver, n_controls),
+                atol=1e-12,
+            ), f"{label} at {n_controls} control qubit(s)"
+
+
+def test_a_carried_operand_agrees_with_the_declared_gate_it_equals() -> None:
+    """`diag(I, S)` is the declared `cphase` at `pi/2`, which is a second route to it."""
+
+    by_matrix = fq.Circuit(1).any(0, matrix=_S_GATE).control(1, ctrl_qubits=(1,))
+    by_name = fq.Circuit(2).cphase(1, 0, theta=math.pi / 2)
+    assert torch.allclose(
+        _program_operator(by_matrix), _program_operator(by_name), atol=1e-12
+    )
+
+
+def test_a_multi_qubit_operand_is_wrapped_with_its_own_arity() -> None:
+    """The wrap follows the operand's wires, not the control count."""
+
+    controlled = fq.Circuit(2).any(0, 1, matrix=_CX).control(1, ctrl_qubits=(2,))
+    recorded = controlled.to_ir().instructions
+    assert len(recorded) == 1
+    assert recorded[0].wires == (2, 0, 1)
+    assert tuple(torch.as_tensor(recorded[0].matrix).shape) == (8, 8)
+    receiver = fq.Circuit(2, dtype=torch.complex128).any(0, 1, matrix=_CX)
+    assert torch.allclose(
+        _program_operator(controlled), _definition_operator(receiver, 1), atol=1e-12
+    )
+
+
+def test_a_carried_operand_costs_one_instruction_at_any_control_count() -> None:
+    """The price is the operand's size, not a ladder's instruction count."""
+
+    receiver = fq.Circuit(1).any(0, matrix=_S_GATE)
+    for n_controls in range(1, 4):
+        controlled = receiver.control(
+            n_controls, ctrl_qubits=tuple(range(1, 1 + n_controls))
+        )
+        assert len(controlled.to_ir().instructions) == 1
+    # The declared gate of the same arity pays the ladder instead, which is what makes
+    # this a different price and not a faster version of the same one.
+    laddered = fq.Circuit(1).t(0).control(2, ctrl_qubits=(1, 2))
+    assert len(laddered.to_ir().instructions) == 4 * 3 ** (2 - 1) - 3
+
+
+def test_a_declared_name_is_renamed_and_an_undeclared_one_is_kept() -> None:
+    """A registered name fixes an arity, so a wrapped operand cannot keep one.
+
+    `Circuit.gate` accepts a matrix alongside a declared name, and the IR then refuses
+    that name on a wider operand. The rename is confined to that case: a name the registry
+    does not declare is the custom-operation route and is kept, so a caller can still
+    recognise their own operation in the program.
+    """
+
+    renamed = fq.Circuit(1).gate("x", (0,), matrix=_S_GATE).control(1, ctrl_qubits=(1,))
+    assert [item.name for item in renamed.to_ir().instructions] == ["any"]
+    circuit = fq.Circuit(1)
+    circuit._instructions.append(Instruction("custom", (0,), matrix=_S_GATE))
+    kept = circuit.control(1, ctrl_qubits=(1,))
+    assert [item.name for item in kept.to_ir().instructions] == ["custom"]
+
+
+def test_a_carried_operand_with_execution_metadata_is_refused() -> None:
+    """Metadata is still dropped by a rewrite, so it is refused rather than carried."""
+
+    circuit = fq.Circuit(2)
+    circuit._instructions.append(
+        Instruction("any", (1,), matrix=_S_GATE, metadata={"origin": "test"})
+    )
+    with pytest.raises(CapabilityError, match="execution metadata"):
+        circuit.control(1, ctrl_qubits=(2,))
+
+
+# --------------------------------------------------------------------------------------
 # The emitted program
 # --------------------------------------------------------------------------------------
 
@@ -440,14 +567,19 @@ def test_a_non_unitary_instruction_is_refused(
         circuit.control(1, ctrl_qubits=(2,))
 
 
-def test_an_instruction_carrying_a_matrix_is_refused() -> None:
-    """A carried matrix is not a declaration, so it has no controlled form."""
+def test_an_operand_with_no_square_shape_is_refused() -> None:
+    """A matrix whose shape says nothing about its qubits cannot be wrapped.
+
+    `Instruction` counts entries rather than reading a shape, so a nested sequence is a
+    well-formed operand here. Wrapping it would mean deciding how many it spans, and that
+    decision is the guess the refusal declines to make.
+    """
 
     circuit = fq.Circuit(2)
     circuit._instructions.append(
         Instruction("custom", (1,), matrix=((1.0, 0.0), (0.0, 1.0)))
     )
-    with pytest.raises(CapabilityError):
+    with pytest.raises(CapabilityError, match="no square operand"):
         circuit.control(1, ctrl_qubits=(2,))
 
 

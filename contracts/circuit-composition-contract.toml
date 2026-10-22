@@ -36,6 +36,7 @@ authorization = [
     "docs/api-changes/FQ-CIRCUIT-ADJOINT-20261003.md",
     "docs/api-changes/FQ-CIRCUIT-POWER-20261021.md",
     "docs/api-changes/FQ-CIRCUIT-CONTROL-20261022.md",
+    "docs/api-changes/FQ-CIRCUIT-CONTROL-OPERAND-20261022.md",
 ]
 
 [scope]
@@ -185,7 +186,7 @@ max_emitted_instructions_source = "flagquantum/core/operator_schema.py"
 # This surface has its own authorizing record, and it must also appear in the list at the
 # top of this file: a table whose proposal is not among the file's authorizations is an
 # unapproved surface that happens to be written down.
-authorization = "docs/api-changes/FQ-CIRCUIT-CONTROL-20261022.md"
+authorization = "docs/api-changes/FQ-CIRCUIT-CONTROL-OPERAND-20261022.md"
 receiver_role = "an instruction sequence, not a program entry point"
 returns = "new_circuit"
 receiver_is_mutated = false
@@ -244,8 +245,10 @@ ladder_instruction_bound = "4 * 3 ** (ladder_level - 1) - 3"
 ladder_depth_growth = "exponential"
 max_ladder_level = 10
 max_ladder_level_source = "flagquantum/core/operator_schema.py"
-# Every instruction the expansion emits names an opcode the registry already declares, so
-# the result is a program the IR describes rather than a matrix the IR cannot express.
+# Every instruction the declared-gate expansion emits names an opcode the registry already
+# declares, so the result is a program the IR describes rather than a matrix the IR cannot
+# express. The operand route below is the exception, and it is the operand the caller
+# supplied rather than one this contract chooses.
 emitted_opcodes_are_registered = true
 # A zero angle is emitted rather than elided. A parameter, a per-batch sequence of angles,
 # and a bound tensor cannot all be compared with a float, and a tolerance that dropped a
@@ -253,6 +256,24 @@ emitted_opcodes_are_registered = true
 # count is a function of shape alone.
 zero_angles_are_emitted = true
 angle_handling = "scaled in place, so a parameter and a per-batch angle stay differentiable"
+# An instruction that carries its own operand has no declaration whose controlled form
+# could be built, so the operand is wrapped instead: the identity on every branch a clear
+# control selects, and the operand itself on the one branch where all controls are set.
+# The wrap is a block diagonal rather than a permutation because an instruction's matrix
+# reads its wires with the last one least significant, and the controls are written ahead
+# of the operand's own wires, so they occupy the leading factors.
+operand_control = "block diagonal over every branch the controls select"
+operand_control_matrix = "diag(I, U)"
+operand_control_wires = "the control qubits, then the operand's own wires"
+# A declared name fixes an arity, so a controlled operand cannot keep one. It keeps its
+# own name when the registry does not declare the name, which is the custom-operation
+# route, and otherwise takes `any`, the name `Circuit.any` already gives an instruction
+# whose only description is its matrix.
+operand_control_name = "the operand's own name unless the registry declares it, then any"
+# The price is paid in the operand's own size rather than in gate count: k controls over
+# an m-qubit operand record one instruction carrying a dense 2 ** (k + m) square matrix,
+# where a declared gate of the same arity would emit a ladder of instructions.
+operand_control_cost = "one instruction carrying a dense 2 ** (n_controls + arity) square matrix"
 
 [issue_codes]
 # Refusal reasons exist in the implementation as prose today. The vocabulary below is
@@ -580,15 +601,19 @@ trigger = "an instruction carrying conditions metadata"
 
 [[refusals]]
 entry_point = "control"
-code = "control_of_matrix"
+code = "control_of_operand_without_a_square_matrix"
 exception = "CapabilityError"
-message_phrase = "it carries its own matrix, which no opcode describes controlling"
+message_phrase = "its matrix exposes no square operand a control can wrap around"
 message_source = "flagquantum/core/_composition.py"
-# Controlling a recorded matrix would need a matrix the IR has no field for, and the
-# controlled form of an arbitrary matrix is not a registered opcode. This is the route a
-# custom operation written through `Circuit.any` takes.
+# Wrapping an operand means placing it in one block of a larger matrix, which requires
+# knowing how many entries one qubit spans. A nested Python sequence publishes no shape,
+# and a shape such as `(2, 8)` holds exactly the right number of entries without being a
+# matrix; `Instruction` admits both because it counts entries, which is the quantity the
+# executor needs. Guessing here would decide which qubit each entry belongs to, so the
+# two shapes are refused instead. The refusal is what remains of the matrix route, which
+# used to refuse every carried matrix.
 reachable = true
-trigger = "an instruction built through Circuit.any, which carries its own matrix"
+trigger = "a matrix recorded as a nested sequence, or with a shape that is not square"
 
 [[refusals]]
 entry_point = "control"

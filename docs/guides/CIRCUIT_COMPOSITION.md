@@ -458,6 +458,77 @@ except CapabilityError as error:
 # which has no controlled form.
 ```
 
+### Controlling a matrix you supplied
+
+A custom operation is not an opcode, so there is no declaration whose controlled form
+could be emitted. The operand itself is wrapped instead: the result is the identity on
+every branch where a control is clear and your matrix on the one branch where all of them
+are set, recorded as **one** instruction spanning the controls and the operand's own
+wires. `diag(I, U)` is the wrap, and the controls go first in the wire order because they
+are the most significant factors:
+
+```python
+import math
+import torch
+import flagquantum as fq
+
+# The S gate, written as a matrix instead of named as an opcode: diag(1, i).
+s_gate = torch.diag(torch.tensor([1, 1j], dtype=torch.complex128))
+
+by_matrix = fq.Circuit(1).any(0, matrix=s_gate).control(1, ctrl_qubits=(1,))
+print([(item.name, item.wires) for item in by_matrix.to_ir().instructions])
+# [('any', (1, 0))]
+print(tuple(by_matrix.to_ir().instructions[0].matrix.shape))
+# (4, 4)
+
+# The wrapped operand is diag(I, S), which is the declared cphase at pi/2. A control in
+# |+> and a target in |1> shows the phase the two routes agree on.
+prepare = lambda: fq.Circuit(2).x(0).h(1)
+amplitudes = lambda circuit: [
+    complex(round(float(value.real), 3) or 0.0, round(float(value.imag), 3) or 0.0)
+    for value in circuit.state().reshape(-1)
+]
+print(amplitudes(prepare().compose(by_matrix)))
+# [0j, 0j, (0.707+0j), 0.707j]
+print(amplitudes(prepare().cphase(1, 0, theta=math.pi / 2)))
+# [0j, 0j, (0.707+0j), 0.707j]
+```
+
+A registered name fixes that opcode's arity — the IR refuses an `x` on two qubits — so a
+matrix recorded under a declared name cannot keep it. Such an instruction is renamed to
+`any`, which is the name `Circuit.any` already gives an instruction whose only description
+is its matrix. A name the registry does not declare is kept, which is how a custom
+operation stays recognisable:
+
+```python
+import torch
+import flagquantum as fq
+
+s_gate = torch.diag(torch.tensor([1, 1j], dtype=torch.complex128))
+recorded = fq.Circuit(1).gate("x", (0,), matrix=s_gate).control(1, ctrl_qubits=(1,))
+print([(item.name, item.wires) for item in recorded.to_ir().instructions])
+# [('any', (1, 0))]
+```
+
+The cost is paid in the operand's size rather than in gate count. `k` controls over an
+`m`-qubit operand record one instruction carrying a dense `2 ** (k + m)` square matrix,
+where a declared gate of the same arity would emit a ladder of instructions — so a deep
+control on a wide custom operand grows as a dense matrix, not as depth. A matrix whose
+shape does not say how many entries one qubit spans cannot be wrapped, and is refused
+rather than guessed at:
+
+```python
+import flagquantum as fq
+from flagquantum.errors import CapabilityError
+
+try:
+    fq.Circuit(1).any(0, matrix=[[1, 0], [0, 1j]]).control(1, ctrl_qubits=(1,))
+except CapabilityError as error:
+    print(error)
+# Cannot control instruction 'any' on qubits (0,): its matrix exposes no square operand
+# a control can wrap around.
+```
+
 ## What is not provided
 
 All four members of the construction-time family are provided. The contract's `[scope]`

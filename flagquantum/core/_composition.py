@@ -25,12 +25,18 @@ listing still looked plausible.
 
 The module is private to :mod:`flagquantum.core` and is not part of the exported Core
 surface: the three methods on :class:`flagquantum.Circuit` are the public statement of the
-same behaviour, and this module must not grow a second one. It reads schema declarations
-and validates carried operands without selecting an executor. A matrix adjoint is only
-emitted after checking the unitary-inverse precondition on the operand's own device.
+same behaviour, and this module must not grow a second one. It chooses no matrix: what it
+emits is either the instructions :mod:`flagquantum.core.controlled` builds from a
+declaration, or one instruction carrying the caller's own operand, which
+:func:`controlled_operand` wraps rather than replaces. An adjoint of such an operand is
+emitted only after the unitary-inverse precondition is checked on the operand's own
+device. So what a program builder records, what the IR validates, and what any executor
+runs are the same instructions.
 """
 
 from __future__ import annotations
+
+from typing import Any
 
 import torch
 
@@ -188,6 +194,56 @@ def copy_instruction(instruction: Instruction) -> Instruction:
     )
 
 
+def controlled_operand(matrix: Any, n_controls: int) -> Any | None:
+    """Wrap one carried operand so it applies only where every control is set.
+
+    The result is the block diagonal ``diag(I, U)``: the identity on the branches where
+    at least one control is clear, and ``U`` on the single branch where all of them are
+    set. ``U`` lands in the trailing block because an instruction's matrix reads its
+    qubits in order with the last one least significant, and the controls are written
+    ahead of the operand's own qubits, so they occupy the leading, most significant,
+    factors. Reading the two orderings the same way is what makes the wrap a block
+    diagonal rather than a permutation.
+
+    The operand is the caller's own matrix, so this is the one matrix the composition
+    members do not choose: it is read, sized and wrapped. ``None`` is returned when the
+    operand publishes no square two-dimensional shape, which is the case for a nested
+    Python sequence and for a shape such as ``(2, 8)`` that holds the right number of
+    entries without being a matrix. A wrapper that guessed the shape would be guessing
+    which qubit each entry belongs to.
+    """
+
+    carried = getattr(matrix, "tensor", matrix)
+    shape = getattr(carried, "shape", None)
+    if shape is None or len(shape) != 2:
+        return None
+    side = int(shape[0])
+    if side < 2 or side != int(shape[1]) or side & (side - 1):
+        return None
+    total = (1 << n_controls) * side
+    clear = total - side
+    wrapped = torch.zeros((total, total), dtype=carried.dtype, device=carried.device)
+    wrapped[:clear, :clear].fill_diagonal_(1)
+    wrapped[clear:, clear:] = carried
+    return wrapped
+
+
+def _controlled_operand_name(name: str) -> str:
+    """The name a controlled operand is recorded under.
+
+    A name the registry declares is a claim that the instruction *is* that gate, and the
+    IR enforces the claim by fixing the name's arity: an ``x`` carries one qubit. A
+    controlled operand carries more, so it cannot keep a declared name. The operand keeps
+    its own name when the registry does not declare it, which is the custom-operation
+    route, and otherwise takes ``any`` -- the name ``Circuit.any`` already gives an
+    instruction whose only description is its matrix. Renaming is confined to the case
+    where the name was already a label over a caller-supplied matrix rather than a
+    description of what executes.
+    """
+
+    return name if get_operator_schema(name) is None else "any"
+
+
 def controlled_instruction(
     instruction: Instruction, controls: tuple[int, ...]
 ) -> tuple[Instruction, ...]:
@@ -199,13 +255,17 @@ def controlled_instruction(
     is the controlled program. One rule per opcode stays in
     :mod:`flagquantum.core.controlled`, which is where the expansion itself belongs.
 
-    An instruction carrying its own matrix, a noise channel, and a dynamic or
-    classically conditioned operation are all refused rather than expanded, because none
-    of them has an opcode whose controlled form the IR describes: the matrix is what
-    executes, and controlling a recorded matrix would need a second matrix the IR has no
-    field for. The three named reasons are the ones :func:`inverted_instruction`
-    reports for the same instructions, and any remaining execution metadata is refused
-    too, so that nothing an instruction carries is quietly dropped.
+    An instruction that carries its own operand has no opcode whose controlled form the
+    registry declares, so the operand itself is wrapped: :func:`controlled_operand`
+    turns it into the block diagonal that applies it only where every control is set,
+    and the wrapped matrix is recorded on one instruction spanning the controls and the
+    operand's own qubits. That is the only route for a caller's matrix, because the
+    matrix is what executes and no declaration describes it. A noise channel, a dynamic
+    operation, and a classically conditioned operation are still refused: each is an
+    execution behaviour rather than an operand, and the three named reasons are the ones
+    :func:`inverted_instruction` reports for the same instructions. Any remaining
+    execution metadata is refused too, so that nothing an instruction carries is quietly
+    dropped.
 
     Raises:
         CapabilityError: If the instruction has no controlled form, with the reason the
@@ -220,16 +280,29 @@ def controlled_instruction(
     elif is_classical_control_instruction(instruction):
         reason = "it is classically conditioned, which has no controlled form"
     elif getattr(instruction.matrix, "tensor", instruction.matrix) is not None:
-        reason = "it carries its own matrix, which no opcode describes controlling"
+        wrapped = controlled_operand(instruction.matrix, len(controls))
+        if wrapped is None:
+            reason = "its matrix exposes no square operand a control can wrap around"
+        elif instruction.metadata:
+            reason = "it carries execution metadata a controlled form would drop"
+        else:
+            return (
+                Instruction(
+                    name=_controlled_operand_name(instruction.name),
+                    wires=(*controls, *instruction.wires),
+                    params=dict(instruction.params),
+                    matrix=wrapped,
+                ),
+            )
 
     if reason is None:
         schema = get_operator_schema(instruction.name)
         # An opcode the registry does not know and an opcode whose declaration names no
         # controlled form are the same absence reported the same way: in both cases no
-        # rule exists to build the controlled program from. The two are also unreachable
-        # from a well-formed program for the same reason -- the first must carry a matrix
-        # to exist at all, which the branch above already refused, and the second is
-        # excluded by the opcode census this contract records.
+        # rule exists to build the controlled program from. The first is unreachable
+        # from a well-formed program, because an instruction with an unknown opcode must
+        # carry a matrix to exist at all and that route is above; the second is excluded
+        # by the opcode census this contract records.
         expansion = (
             controlled_instructions(
                 schema, instruction.params, instruction.wires, controls
