@@ -224,6 +224,11 @@ class LindbladPlan:
         if checked.get("schema") != _SCHEMA:
             raise SerializationError("invalid Lindblad plan schema")
         version = checked.get("version")
+        if version == "1.7":
+            from ._native_plan import validate_native_plan
+
+            validate_native_plan(checked)
+            return cls(_canonical_json(checked))
         if version not in (
             _VERSION,
             _PRODUCT_SPACE_VERSION,
@@ -387,7 +392,11 @@ class LindbladPlan:
         decision = payload["decision"]
         assert isinstance(request, Mapping)
         assert isinstance(decision, Mapping)
-        return _decode_request(request, decision, version=str(payload["version"]))
+        return _decode_request(
+            request,
+            decision,
+            version="1.5" if payload["version"] == "1.7" else str(payload["version"]),
+        )
 
 
 def build_lindblad_plan(
@@ -408,8 +417,18 @@ def build_lindblad_plan(
     dimensions: Sequence[int] | None = None,
     parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
     basis_labels: Sequence[Sequence[int | str]] | None = None,
+    bound_hamiltonians: Sequence[torch.Tensor] | None = None,
 ) -> LindbladPlan:
-    summary = plan_density_matrix_evolution(
+    scheduled = parameter_values is not None or bound_hamiltonians is not None
+    planner = (
+        plan_density_matrix_evolution
+        if bound_hamiltonians is None
+        else _plan_density_matrix_evolution
+    )
+    private: dict[str, Any] = (
+        {} if bound_hamiltonians is None else {"bound_hamiltonians": bound_hamiltonians}
+    )
+    summary = planner(
         hamiltonian,
         initial_state,
         n_qubits,
@@ -426,6 +445,7 @@ def build_lindblad_plan(
         dimensions=dimensions,
         parameter_values=parameter_values,
         basis_labels=basis_labels,
+        **private,
     )
     resolved_device = torch.device(device)
     dimension = summary.dimension
@@ -440,6 +460,7 @@ def build_lindblad_plan(
         hamiltonian,
         time_grid,
         parameter_values,
+        bound_hamiltonians=bound_hamiltonians,
         n_subsystems=summary.n_wires,
         dim=dimension,
         dtype=dtype,
@@ -487,7 +508,7 @@ def build_lindblad_plan(
         ],
         "return_density_matrices": return_density_matrices,
     }
-    if parameter_values is None:
+    if not scheduled:
         request["hamiltonian"] = _complex_tensor_payload(
             _request_hamiltonian_matrix(hamiltonians[0])
         )
@@ -503,7 +524,7 @@ def build_lindblad_plan(
             if summary.basis_labels is not None
             else (
                 _PIECEWISE_VERSION
-                if parameter_values is not None
+                if scheduled
                 else _VERSION if qubit_space else _PRODUCT_SPACE_VERSION
             )
         ),
@@ -520,7 +541,7 @@ def build_lindblad_plan(
     # tensors as the caller passed them. It is what makes execution keep the
     # matrix-free Hamiltonian and the autograd graph.
     live: dict[str, Any] = {
-        "hamiltonian": hamiltonians[0] if parameter_values is None else None,
+        "hamiltonian": hamiltonians[0] if not scheduled else None,
         "initial_state": density_matrix,
         "n_qubits": canonical_n_qubits,
         "times": time_grid,
@@ -538,7 +559,7 @@ def build_lindblad_plan(
         live["dimensions"] = summary.dimensions
     if summary.basis_labels is not None:
         live["basis_labels"] = summary.basis_labels
-    if parameter_values is not None:
+    if scheduled:
         live["bound_hamiltonians"] = hamiltonians
     return replace(validated, _live_request=live)
 

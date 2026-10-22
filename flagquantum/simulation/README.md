@@ -553,3 +553,24 @@ carries no plan, result, or scalability evidence. Read
 
 [Detailed source map](IMPLEMENTATION.md) locates shared gate primitives,
 rank-local kernels, specialized precision paths, and numerical migration rules.
+
+## Native Rydberg model assembly
+
+rydberg_model.py consumes verified Core physical records and assembles bounded
+one/two-actor CPU interval Hamiltonians and absorbing loss operators. It reuses
+Core's exact path geometry and eight-ULP boundary semantics, scalar binding and
+the existing request mapping validator. The high-level Lindblad facade consumes
+these matrices through the existing private pre-bound interval path. It owns the
+native-only 1.7 source capture; Simulation owns no second plan schema or binder.
+The initial-density adjoint delegates to the same forward/reverse integrator loop
+under no_grad; run retains live control graphs. Low-level mathematical entries
+retain their existing input contract.
+
+Run `python -m examples.rydberg_native_dynamics`; expected final survival is
+0.81873075, unconditional RR is 0.40936538 and exact numeric replay is True.
+The imposed linear trajectory uses interval midpoints: convergence of this
+approximation is separate from integration accuracy. The unchanged physical
+consumers in test_rydberg_transport_contract.py now use native fixtures;
+test_native_rydberg_dynamics.py covers source-aware replay, controls and refusals.
+Keep both sets when changing assembly. No quantum motion, heating, sampled events,
+feedback, GPU/distributed native dynamics or hardware control is implemented.

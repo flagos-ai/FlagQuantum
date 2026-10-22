@@ -223,9 +223,11 @@ contract and implementation gates.
 
 Proposal 081 was explicitly approved on 2026-10-22 for the native Rydberg
 transport profile. The [authorization and baseline record](../api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md)
-tracks the replaceable fixed-reference consumers before Core construction,
-Remote geometry reuse and Simulation consumption. The baseline is not native
-transport support. Event instruments, feedback, motional heating, hardware and
+tracks the replaceable fixed-reference consumers and domain deliveries. Core
+construction and Deployment refusal have landed; Simulation now replaces the
+three numerical fixtures with real native program consumption and source-aware
+plan 1.7 in its implementation PR. The fixed-reference baseline alone was not
+native transport support. Event instruments, feedback, motional heating, hardware and
 the complete M3 scenario remain open gates. Existing plan compatibility fixtures
 and scientific budgets remain unchanged; each implementation PR has separate
 merge and verification requirements.
@@ -233,9 +235,12 @@ merge and verification requirements.
 [Proposal 082](../development/API_CHANGE_PROPOSAL_082_REMOTE_PROVIDER_BOUNDARY.md)
 records the requested service-owned Remote boundary correction and exact generic
 NeutralAtomProvider retirement. Its four decisions, including replacement of 081's Remote-consumer gate, were
-explicitly approved on 2026-10-22. Implementation is a separate Remote delivery;
-no provider is removed or new cloud access claimed by the document. Core #700 and Deployment #701 have landed. Native
-Simulation consumption and the remaining M3 evidence gates are still open.
+explicitly approved on 2026-10-22. Remote retirement #705 has landed; Core #700
+and Deployment #701 are also on main. The current Simulation delivery is bounded
+to one/two-actor CPU dynamics, live control gradients and strict native replay.
+Its PR still needs complete verification and separate merge authorization. No
+concrete cloud service, detector events, feedback, motional heating or full M3
+completion follows.
 
 ### Reference scenarios
 

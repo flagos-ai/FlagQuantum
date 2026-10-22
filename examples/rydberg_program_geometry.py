@@ -1,7 +1,7 @@
 """Construct native atom controls and inspect their verified imposed geometry.
 
-Core construction is implemented here. Native numerical consumption and sampled
-events remain separate deliveries; this example does not execute on hardware.
+This example inspects Core geometry. Use rydberg_native_dynamics for CPU
+evolution; sampled events and hardware execution remain unsupported.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def main() -> None:
     try:
         fq.run(program)
     except CapabilityError:
-        print("Circuit route: refused; native evolution awaits Simulation integration")
+        print("Circuit route: refused; use flagquantum.lindblad for native evolution")
 
 
 if __name__ == "__main__":
