@@ -12,6 +12,8 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
+  commanded positions and the existing optional Matplotlib visualization extra.
 - [`terminal_instrument_reference.py`](terminal_instrument_reference.py) uses
   existing SuperOperator maps and illustrative Torch draws for proposal 083.
 - [`boson_interference.py`](boson_interference.py) — it uses the existing
