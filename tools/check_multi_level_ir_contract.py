@@ -51,7 +51,7 @@ SKIPPED_DIRECTORIES = frozenset(
 CANONICAL_KIND = "flagquantum.circuit_ir"
 
 EXPECTED_SCHEMA = "flagquantum.multi_level_ir_internal_contract"
-EXPECTED_VERSION = "0.3"
+EXPECTED_VERSION = "0.4"
 EXPECTED_STATUS = "implementation_authorized"
 EXPECTED_OWNER = "core"
 EXPECTED_PUBLIC_LEVEL = "circuit"
@@ -66,6 +66,19 @@ EXPECTED_FORBIDDEN_STATES = ("best_effort",)
 EXPECTED_VALUE_KINDS = ("bool", "index", "scalar", "tensor", "qubit")
 EXPECTED_LINEAR_VALUE_KINDS = ("qubit",)
 EXPECTED_TERMINATORS = ("return", "branch")
+EXPECTED_PHYSICAL_PROFILE = {
+    "kind": "rydberg",
+    "approval_basis": "docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md",
+    "context_type": "flagquantum.core.ir.program.physical.RydbergContext",
+    "operation_types": [
+        "flagquantum.core.ir.program.physical.RydbergTransport",
+        "flagquantum.core.ir.program.physical.RydbergPulse",
+    ],
+    "frontend": "flagquantum.experimental.simulation.RydbergProgram",
+    "operation_field": "physical_data",
+    "program_field": "physical_context",
+}
+
 EXPECTED_KEYS = frozenset(
     {
         "schema",
@@ -86,6 +99,7 @@ EXPECTED_KEYS = frozenset(
         "linear_value_kinds",
         "terminators",
         "dynamic_operation_signatures",
+        "physical_profile",
         "diagnostic_codes",
         "rules",
         "exclusions",
@@ -533,6 +547,38 @@ def contract_errors(
         value = contract.get(key)
         if not isinstance(value, str) or not (ROOT / value).is_file():
             errors.append(f"{key} {value!r} does not exist")
+
+    profile = contract.get("physical_profile")
+    if profile != EXPECTED_PHYSICAL_PROFILE:
+        errors.append("physical_profile differs from approved proposal 081")
+    if not isinstance(profile, dict) or profile.get("kind") != "rydberg":
+        errors.append("the physical profile must be the approved Rydberg profile")
+    else:
+        if not (ROOT / str(profile.get("approval_basis", ""))).is_file():
+            errors.append(
+                "the physical profile requires its approved authorization record"
+            )
+        for key in ("context_type", "frontend"):
+            value = profile.get(key)
+            if not isinstance(value, str) or _resolve_authority(value):
+                errors.append(
+                    f"physical_profile.{key} must resolve to its real implementation"
+                )
+        for value in profile.get("operation_types", ()):
+            if not isinstance(value, str) or _resolve_authority(value):
+                errors.append(
+                    "physical operation types must resolve to their real records"
+                )
+        for record, key in (
+            (boundary.Operation, "operation_field"),
+            (boundary.ProgramRecord, "program_field"),
+        ):
+            from dataclasses import fields
+
+            if profile.get(key) not in {item.name for item in fields(record)}:
+                errors.append(
+                    f"the admitted {key} is absent from the existing Core record"
+                )
 
     authorities = contract.get("existing_authorities")
     if not isinstance(authorities, dict) or not authorities:

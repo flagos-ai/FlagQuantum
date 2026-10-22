@@ -24,6 +24,7 @@ from typing import Any
 
 from ...operator_schema import get_operator_schema
 from ..diagnostics import LevelContractError, LevelDiagnostic
+from .physical import RydbergContext, RydbergPulse, RydbergTransport
 
 #: `IR-006`'s support states, extended to the internal levels by proposal 062
 #: section 3. There is no implicit lossy state and no `best_effort`.
@@ -108,6 +109,20 @@ class Operation:
     parameters: tuple[tuple[str, ValueRef], ...] = ()
     literal: float | None = None
     condition_clauses: tuple[tuple[ConditionRef, ...], ...] = ()
+    physical_data: RydbergTransport | RydbergPulse | None = None
+
+    def __hash__(self) -> int:
+        previous = (
+            self.opcode,
+            self.operands,
+            self.results,
+            self.parameters,
+            self.literal,
+            self.condition_clauses,
+        )
+        return hash(
+            previous if self.physical_data is None else (*previous, self.physical_data)
+        )
 
 
 @dataclass(frozen=True)
@@ -144,6 +159,15 @@ class ProgramRecord:
     canonical_payload: Mapping[str, Any] | None = field(
         default=None, compare=False, hash=False
     )
+    physical_context: RydbergContext | None = None
+
+    def __hash__(self) -> int:
+        previous = (self.functions,)
+        return hash(
+            previous
+            if self.physical_context is None
+            else (*previous, self.physical_context)
+        )
 
 
 @dataclass(frozen=True)

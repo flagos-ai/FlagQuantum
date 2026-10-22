@@ -309,6 +309,17 @@ def program_to_circuit(record: Any) -> LevelConversion:
         return LevelConversion(
             state=INVALID_INPUT, level=LEVEL_PROGRAM, diagnostics=diagnostics
         )
+    if record.physical_context is not None:
+        return LevelConversion(
+            state=UNSUPPORTED_WITH_DIAGNOSTICS,
+            level=LEVEL_PROGRAM,
+            diagnostics=(
+                _diagnostic(
+                    "level.no_canonical_payload",
+                    "native Rydberg timelines cannot lower to CircuitIR; use flagquantum.lindblad",
+                ),
+            ),
+        )
     if record.canonical_payload is None:
         return LevelConversion(
             state=UNSUPPORTED_WITH_DIAGNOSTICS,

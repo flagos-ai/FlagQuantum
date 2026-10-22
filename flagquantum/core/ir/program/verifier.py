@@ -46,6 +46,10 @@ def verify_program_record(record: ProgramRecord) -> tuple[LevelDiagnostic, ...]:
     example gate runs the docstrings of public entries only, and an example here
     would look tested while nothing ran it.
     """
+    from .physical import is_physical_record, verify_physical_program
+
+    if is_physical_record(record):
+        return verify_physical_program(record)
     diagnostics: list[LevelDiagnostic] = []
     if not record.functions:
         diagnostics.append(

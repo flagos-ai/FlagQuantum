@@ -125,3 +125,28 @@ Core's local README owns the shortest construction/verification change path.
 Numerical native consumption, native plan 1.7 and the Remote adapter replacement
 remain subsequent domain deliveries. Core tensor helpers construct small CPU
 mathematical inputs; they do not execute the program or certify full M3.
+
+The root run composition calls the same Core-owned native-input guard before
+choosing any local or remote route. This closes the pre-existing path that
+type-checked in Runtime before reaching Core normalization. Runtime and provider
+implementations remain unchanged; there is no provider-specific native check.
+
+Core also owns the native source encoding under
+`core/ir/program/physical_codec.py`. It serializes the actual functions, blocks,
+operations and typed context using the existing scalar codec, with strict
+unknown-field and canonical-round-trip checks. It adds no artifact kind or
+public frontend method. Simulation will consume this boundary for plan 1.7;
+the source codec itself does not assemble or validate numeric Hamiltonians.
+
+### Core-stage scope and remaining consumer checks
+
+The Core delivery proves source construction, typed identity, continuous path
+safety, scalar/source encoding, tensor inputs and refusal through Core
+normalization and root plan/run/compile composition. It does not yet prove
+every direct deployment/provider/client intake path. In particular, the legacy
+deployment package builder performs its own inline to_ir conversion and needs
+a domain-owned guard delegation before the complete front-door gate closes.
+Keep that preparation separate from Core semantics and from numerical assembly.
+The existing Remote coordinate replacement and consumer-intake evidence remain
+subsequent domain-owned work. Native numerical enablement must retain the full
+front-door/refusal gate; this source-only delivery does not close it or M3.

@@ -113,6 +113,36 @@
       "meaning": "the requested level is declared by this contract but not implemented"
     },
     {
+      "code": "physical.channel_conflict",
+      "level": "program",
+      "meaning": "overlapping declared resource or drive use"
+    },
+    {
+      "code": "physical.invalid_context",
+      "level": "program",
+      "meaning": "invalid physical identities, units or immutable context"
+    },
+    {
+      "code": "physical.invalid_operation",
+      "level": "program",
+      "meaning": "invalid typed physical operation or references"
+    },
+    {
+      "code": "physical.occupancy_conflict",
+      "level": "program",
+      "meaning": "inconsistent source history or overlapping actor moves"
+    },
+    {
+      "code": "physical.path_collision",
+      "level": "program",
+      "meaning": "continuous paths breach minimum separation"
+    },
+    {
+      "code": "physical.unsupported_structure",
+      "level": "program",
+      "meaning": "physical profile contains unimplemented program structure"
+    },
+    {
       "code": "program.block_duplicate",
       "level": "program",
       "meaning": "two blocks of one function share a name"
@@ -236,36 +266,6 @@
       "code": "value.linear_unconsumed",
       "level": "program",
       "meaning": "a branching block does not forward a linear argument it owns"
-    },
-    {
-      "code": "physical.invalid_context",
-      "level": "program",
-      "meaning": "invalid physical identities, units or immutable context"
-    },
-    {
-      "code": "physical.invalid_operation",
-      "level": "program",
-      "meaning": "invalid typed physical operation or references"
-    },
-    {
-      "code": "physical.occupancy_conflict",
-      "level": "program",
-      "meaning": "inconsistent source history or overlapping actor moves"
-    },
-    {
-      "code": "physical.path_collision",
-      "level": "program",
-      "meaning": "continuous paths breach minimum separation"
-    },
-    {
-      "code": "physical.channel_conflict",
-      "level": "program",
-      "meaning": "overlapping declared resource or drive use"
-    },
-    {
-      "code": "physical.unsupported_structure",
-      "level": "program",
-      "meaning": "physical profile contains unimplemented program structure"
     }
   ],
   "rules": {

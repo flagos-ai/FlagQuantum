@@ -23,6 +23,8 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 - `parameters.py`: symbolic parameters and binding semantics.
 - `rydberg.py`: the approved experimental Rydberg frontend over ProgramRecord.
   `ir/program/physical.py` owns its typed control profile and semantic checks;
+  `ir/program/physical_codec.py` owns native source encoding using the existing
+  scalar codec; the numerical plan stays outside Core.
   `geometry.py` owns finite Cartesian pairs for this profile and the separately
   scheduled Remote normalizer replacement. Neither file executes dynamics.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
@@ -57,3 +59,16 @@ an approved contract proposal and migration evidence; do not update snapshots
 merely to make checks pass. Ordinary compiler transforms, runtime policies,
 backend adaptations, and simulation math should be changed in their owning
 domains without extending Core.
+
+For native-control construction, run:
+
+```bash
+python -m examples.rydberg_program_geometry
+python -m pytest tests/unit/test_rydberg_program.py \
+  tests/unit/test_rydberg_source_codec.py \
+  tests/unit/test_rydberg_program_compatibility.py -q
+```
+
+A typical geometry change belongs in the typed profile and its consumer tests;
+numerical evolution belongs in Simulation. Do not reserve physical opcode names
+globally or modify old plan fixtures to hide a failure.

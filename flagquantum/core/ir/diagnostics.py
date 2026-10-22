@@ -30,6 +30,13 @@ LEVEL_TARGET = "target"
 #: reads both directions across every refusal site so the vocabulary cannot drift
 #: from the lowering and the verifier.
 DIAGNOSTIC_LEVELS: dict[str, str] = {
+    "physical.invalid_context": LEVEL_PROGRAM,
+    "physical.invalid_operation": LEVEL_PROGRAM,
+    "physical.occupancy_conflict": LEVEL_PROGRAM,
+    "physical.path_collision": LEVEL_PROGRAM,
+    "physical.channel_conflict": LEVEL_PROGRAM,
+    "physical.unsupported_structure": LEVEL_PROGRAM,
+
     "level.not_circuit_ir": PUBLIC_LEVEL,
     "level.dynamic_instruction": PUBLIC_LEVEL,
     "level.conditional_instruction": PUBLIC_LEVEL,
