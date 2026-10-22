@@ -25,19 +25,43 @@ listing still looked plausible.
 
 The module is private to :mod:`flagquantum.core` and is not part of the exported Core
 surface: the three methods on :class:`flagquantum.Circuit` are the public statement of the
-same behaviour, and this module must not grow a second one. It is backend-neutral in the
-same sense :mod:`flagquantum.core.controlled` is -- it reads the schema and emits
-instructions, never a matrix -- so what a program builder records, what the IR validates,
-and what any executor runs are the same instructions.
+same behaviour, and this module must not grow a second one. It reads schema declarations
+and validates carried operands without selecting an executor. A matrix adjoint is only
+emitted after checking the unitary-inverse precondition on the operand's own device.
 """
 
 from __future__ import annotations
+
+import torch
 
 from ..errors import CapabilityError
 from .classical_control import is_classical_control_instruction
 from .controlled import controlled_instructions
 from .ir import Instruction
 from .operator_schema import get_operator_schema, inverse_operator, power_operator
+
+
+def _is_finite_unitary(matrix: torch.Tensor) -> bool:
+    """Validate a dense operand without detaching its eventual adjoint.
+
+    A conjugate transpose is an inverse only for a unitary. The absolute Gram
+    residual tolerance is 32 machine epsilons of the real component dtype;
+    relative tolerance is zero. This is a floating-point admission check, not an
+    exact or interval certificate. Validation must not enter the autograd graph.
+    """
+    with torch.no_grad():
+        operand = matrix.detach()
+        if not (operand.is_floating_point() or operand.is_complex()):
+            operand = operand.to(dtype=torch.float64)
+        if not bool(torch.isfinite(operand).all()):
+            return False
+        identity = torch.eye(
+            operand.shape[-1], dtype=operand.dtype, device=operand.device
+        )
+        tolerance = 32 * torch.finfo(operand.real.dtype).eps
+        return torch.allclose(
+            operand.mH @ operand, identity, atol=tolerance, rtol=0
+        ) and torch.allclose(operand @ operand.mH, identity, atol=tolerance, rtol=0)
 
 
 def inverted_instruction(instruction: Instruction) -> Instruction:
@@ -65,17 +89,21 @@ def inverted_instruction(instruction: Instruction) -> Instruction:
     if reason is None:
         matrix = getattr(instruction.matrix, "tensor", instruction.matrix)
         if matrix is not None:
-            inverted_matrix = getattr(matrix, "mH", None)
-            if inverted_matrix is None:
+            if not isinstance(matrix, torch.Tensor):
                 reason = "its matrix does not expose a conjugate transpose"
             else:
-                return Instruction(
-                    name=instruction.name,
-                    wires=instruction.wires,
-                    params=dict(instruction.params),
-                    matrix=inverted_matrix,
-                    metadata=dict(instruction.metadata),
-                )
+                dimension = 2 ** len(instruction.wires)
+                operand = matrix.reshape(dimension, dimension)
+                if not _is_finite_unitary(operand):
+                    reason = "its matrix is not a finite unitary"
+                else:
+                    return Instruction(
+                        name=instruction.name,
+                        wires=instruction.wires,
+                        params=dict(instruction.params),
+                        matrix=operand.mH,
+                        metadata=dict(instruction.metadata),
+                    )
 
     if reason is None:
         schema = get_operator_schema(instruction.name)
