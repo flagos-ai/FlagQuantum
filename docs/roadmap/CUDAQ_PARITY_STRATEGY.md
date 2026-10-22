@@ -68,8 +68,8 @@ captured on 2026-09-30, is:
 
 | Status | Rows |
 | --- | ---: |
-| `supported` | 11 |
-| `partial` | 59 |
+| `supported` | 12 |
+| `partial` | 58 |
 | `unsupported` | 25 |
 
 `super_operator_algebra` moved from `partial` to `supported` in wave 7, and it is
@@ -86,6 +86,29 @@ owner, its own focused suite, the Pauli-twirl integration test that reads
 dense ceiling. That entry is `production_supported`, which is a claim about this
 capability's evidence and is printed beside the row rather than derived from the
 row's status; the Lindblad entry keeps its own two rows and its own level.
+
+`control_adjoint_modifiers` moved from `partial` to `supported` in the same wave, and
+it closed by building the mechanism its reason named. Both modifiers already existed
+on the Stable Core type and the row's own reason said so: `Circuit.adjoint()` inverted
+a program from the rule each opcode declares, including the conjugate transpose of a
+carried matrix, and `Circuit.control()` emitted a controlled form for 31 of the 35
+registered opcodes. What kept the row open was one clause -- a unitary passed through
+`Circuit.any` "is not a modifier" -- and the clause was true for a reason that ran the
+wrong way: a carried matrix declares no opcode, so there is no declaration whose
+controlled form the emitter could build, and the emitter refused the instruction
+rather than the capability. That made a custom operation the one route a user could
+not make conditional, while users of the registered gates could. The operand is
+wrapped into `diag(I, U)` instead, so an instruction carrying its own matrix is now
+the operand route rather than the refusal, and the wrap is measured against a second
+route to the same operator (`diag(I, S)` is `cphase` at `pi/2`) as well as against the
+definition of a controlled program, so the move is a measurement rather than a
+re-reading of the sentence. The two bounds the row keeps are published as refusals
+rather than as silences: a declared gate under more controls than ladder level 10 can
+thread, and a dense `2 ** (n_controls + arity)` matrix in place of ladder depth on the
+operand route. The change is
+[the operand control record](../api-changes/FQ-CIRCUIT-CONTROL-OPERAND-20261022.md),
+and it is a relaxation of a frozen refusal, which is why it is a record rather than an
+edit.
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry

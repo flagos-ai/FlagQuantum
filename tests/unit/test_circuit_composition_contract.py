@@ -186,8 +186,12 @@ _TRIGGERS: dict[str, Callable[[], object]] = {
     "control_of_conditioned_gate": lambda: _with_instruction(
         Instruction("x", (1,), metadata={"conditions": (("c", 1),)})
     ).control(1, ctrl_qubits=(2,)),
-    "control_of_matrix": lambda: fq.Circuit(1)
-    .any(0, matrix=torch.eye(2, dtype=torch.complex128))
+    # A carried operand is wrapped rather than refused, so the remaining refusal is the
+    # operand whose shape says nothing about which qubit an entry belongs to. A nested
+    # sequence is the shape `Instruction` admits without publishing one, and the wrap
+    # cannot read it.
+    "control_of_operand_without_a_square_matrix": lambda: fq.Circuit(1)
+    .any(0, matrix=[[1, 0], [0, 1j]])
     .control(1, ctrl_qubits=(1,)),
     "control_of_execution_metadata": lambda: _with_instruction(
         Instruction("h", (1,), metadata={"origin": "test"})
@@ -1343,7 +1347,9 @@ def _claim_an_unwritten_operation(contract: dict[str, Any]) -> None:
 def _dropped_control_authorization(contract: dict[str, Any]) -> None:
     """Leave the control table claiming a proposal the header no longer lists."""
 
-    contract["authorization"].remove("docs/api-changes/FQ-CIRCUIT-CONTROL-20261022.md")
+    contract["authorization"].remove(
+        "docs/api-changes/FQ-CIRCUIT-CONTROL-OPERAND-20261022.md"
+    )
 
 
 def _control_rule_dropped(contract: dict[str, Any]) -> None:
@@ -1476,6 +1482,16 @@ def _multi_instruction_rewrite(contract: dict[str, Any]) -> None:
     contract["power"]["single_instruction_rewrite_only"] = False
 
 
+def _mutated_operand_matrix(contract: dict[str, Any]) -> None:
+    contract["control"]["operand_control_matrix"] = "diag(U, I)"
+
+
+def _mutated_operand_wires(contract: dict[str, Any]) -> None:
+    contract["control"][
+        "operand_control_wires"
+    ] = "the operand's own wires, then the control qubits"
+
+
 @pytest.mark.parametrize(
     ("mutate", "expected"),
     [
@@ -1490,6 +1506,8 @@ def _multi_instruction_rewrite(contract: dict[str, Any]) -> None:
         (_control_wire_spelling, "Circuit.control signature drifted"),
         (_control_preserves_width, "preserves must be exactly bsz, device and dtype"),
         (_stale_control_census, "control census drifted"),
+        (_mutated_operand_matrix, "operand_control_matrix must be"),
+        (_mutated_operand_wires, "operand_control_wires must be"),
         (_no_trigger, "is reachable with no trigger"),
         (_no_reachability_note, "is unreachable with no reachability note"),
         (_second_unreachable_row, "exactly one unreachable refusal"),

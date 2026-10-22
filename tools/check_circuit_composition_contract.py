@@ -55,6 +55,7 @@ from flagquantum.core import (
     control_ladder_level,
     get_operator_schema,
 )
+from flagquantum.core._composition import controlled_instruction
 from flagquantum.core.controlled import controlled_instructions
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import MAX_POWER_REPEATS
@@ -479,6 +480,57 @@ def _control_errors(contract: dict[str, Any]) -> list[str]:
     for name, expected in flags.items():
         if control.get(name) is not expected:
             errors.append(f"circuit control {name} must be contracted as {expected}")
+
+    # The operand route is a construction, so it is measured rather than read back: wrap
+    # one known operand under one control and compare the recorded instruction with a
+    # block diagonal written out here by hand. The expected matrix shares nothing with the
+    # implementation, so a wrap that put the operand in the wrong block fails, and so does
+    # one that reversed the wire order while doing it.
+    operand = torch.diag(torch.tensor([1, 1j], dtype=torch.complex128))
+    expected_matrix = torch.diag(torch.tensor([1, 1, 1, 1j], dtype=torch.complex128))
+    wrapped = controlled_instruction(Instruction("any", (0,), matrix=operand), (1,))
+    if len(wrapped) != 1:
+        errors.append(
+            f"a controlled operand must record one instruction, got {len(wrapped)}"
+        )
+    else:
+        recorded = wrapped[0]
+        if recorded.wires != (1, 0):
+            errors.append(
+                "a controlled operand must name the controls before the operand's own "
+                f"wires, got {recorded.wires}"
+            )
+        if not torch.equal(torch.as_tensor(recorded.matrix), expected_matrix):
+            errors.append(
+                "a controlled operand is not the contracted diag(I, U): got "
+                f"{recorded.matrix}"
+            )
+        if recorded.name != "any":
+            errors.append(
+                "an operand whose name the registry does not declare must keep it, got "
+                f"{recorded.name!r}"
+            )
+    # A declared name fixes an arity, so a wrapped operand may not keep one.
+    built_in = controlled_instruction(Instruction("x", (0,), matrix=operand), (1,))
+    if [item.name for item in built_in] != ["any"]:
+        errors.append(
+            "a controlled operand must not keep a name the registry declares, got "
+            f"{[item.name for item in built_in]}"
+        )
+    operand_vocabulary = {
+        "operand_control": "block diagonal over every branch the controls select",
+        "operand_control_matrix": "diag(I, U)",
+        "operand_control_wires": "the control qubits, then the operand's own wires",
+        "operand_control_name": (
+            "the operand's own name unless the registry declares it, then any"
+        ),
+        "operand_control_cost": (
+            "one instruction carrying a dense 2 ** (n_controls + arity) square matrix"
+        ),
+    }
+    for name, expected in operand_vocabulary.items():
+        if control.get(name) != expected:
+            errors.append(f"circuit control {name} must be {expected!r}")
 
     # The rules must also be the rules the opcodes actually use, or the list is a
     # vocabulary nobody speaks.
