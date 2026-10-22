@@ -5,11 +5,12 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 pytest.importorskip("matplotlib")
+pytest.importorskip("numpy")
 import matplotlib.pyplot as plt
+import numpy as np
 
 from examples.visualize_rydberg_transport import transport_figure
 
