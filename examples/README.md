@@ -549,3 +549,29 @@ unitary/gradient reference budget for this fixture. At 64 intervals one gradient
 differed by 2.28e-10 and failed that unchanged budget; refinement fixes the
 integration error. Imposed-path midpoint convergence remains a separate check.
 The finite-dimensional example is not heating, hardware or scalability evidence.
+
+## Native transport geometry and schedule view
+
+Install the existing `flagquantum[viz]` extra and run:
+
+```bash
+MPLBACKEND=Agg python -m examples.visualize_rydberg_transport --output transport.svg
+```
+
+Expected output:
+
+```text
+Commanded b at t=0.5: (3.0, 0.0)
+Schedule: move b (aod); pulse a,b (laser)
+Saved: transport.svg
+```
+
+Use --output transport.png for a raster image and --samples 101 for a finer
+**display** sampling. The two panels show declared sites/commanded paths and
+source operation durations/channels. Positions call Core's commanded_position;
+the renderer does not duplicate interpolation or infer presence, trap activity,
+heating or gate fidelity. Pulse bars show duration, not amplitude: the named
+omega control is bound per interval by the training example. Display samples
+are not the numerical integration grid. This example reuses the moving-pair
+source from train_rydberg_controls and adds no public drawing API or renderer
+registry. The exported SVG/PNG is suitable for inspection without a GUI.
