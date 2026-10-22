@@ -162,7 +162,7 @@ def _pulse_leaf(
     parameters = schema.parameters if schema is not None else ()
     if not parameters:
         return Instruction(opcode, qubits, metadata=metadata)
-    if _is_zero(angle):
+    if _is_zero(angle, atol=_PHASE_EPS):
         return None
     return Instruction(
         opcode, qubits, params=dict.fromkeys(parameters, angle), metadata=metadata
@@ -284,9 +284,9 @@ def _zyz_angles(matrix: Matrix) -> tuple[float, float, float]:
     """
     top_left, top_right = matrix[0][0], matrix[0][1]
     bottom_left, bottom_right = matrix[1][0], matrix[1][1]
-    if bottom_left == 0:
+    if abs(bottom_left) <= _PHASE_EPS:
         return 0.0, 0.0, _principal(cmath.phase(bottom_right) - cmath.phase(top_left))
-    if top_left == 0:
+    if abs(top_left) <= _PHASE_EPS:
         return (
             math.pi,
             _principal(cmath.phase(bottom_left)),
@@ -364,8 +364,9 @@ def _emit_leaves(
 ) -> tuple[Instruction, ...]:
     """Turn the `(opcode, angle)` leaves of one Euler triple into instructions.
 
-    A zero z-angle is dropped: the short forms in `_leaves` produce them on
-    purpose, and `RZ(0)` is the identity.
+    Retain the existing synthesis residual tolerance for numerically generated
+    Euler leaves. This basis-translation policy is separate from exact identity
+    deletion of a submitted gate in the optimization pipeline.
     """
     replacement: list[Instruction] = []
     for leaf_opcode, angle in leaves:
@@ -375,7 +376,7 @@ def _emit_leaves(
             )
             if pulse is not None:
                 replacement.append(pulse)
-        elif not _is_zero(angle):
+        elif not _is_zero(angle, atol=_PHASE_EPS):
             replacement.append(
                 Instruction(
                     z_rotation, qubits, params={"theta": angle}, metadata=metadata

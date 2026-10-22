@@ -348,11 +348,6 @@ def _instruction_matrix(instruction: Instruction) -> Matrix | None:
     number to compose with, or one of them is a batch rather than one value.
     """
 
-    from .one_qubit_synthesis import _has_small_component
-
-    if _has_small_component(instruction):
-        return None
-
     if instruction.matrix is not None:
         return _as_complex_matrix(
             getattr(instruction.matrix, "tensor", instruction.matrix)
@@ -412,11 +407,6 @@ def _lifted_matrix(instruction: Instruction, pair: tuple[int, ...]) -> Matrix | 
     it is what makes the comparison in `_replacement` a comparison against what the
     program computes.
     """
-
-    from .one_qubit_synthesis import _has_small_component
-
-    if _has_small_component(instruction):
-        return None
 
     if len(instruction.wires) == 2:
         if tuple(instruction.wires) != pair:
@@ -549,6 +539,13 @@ def _replacement(
     Nothing is shorter than one gate except nothing at all, and re-spelling one
     declared gate as an equal-length one is not a win and would not terminate.
     """
+
+    from .one_qubit_synthesis import _has_small_component
+
+    # Preserve small supplied components before tolerance-based replacement.
+    # Matrix readers and exact factorization remain available to other passes.
+    if any(_has_small_component(item) for item in instructions):
+        return None
 
     product = _block_product(instructions, pair)
     if product is None:  # pragma: no cover - guarded by the caller
@@ -800,11 +797,6 @@ def _split_instruction(
     None means the instruction is not two-qubit, carries no matrix, is declared by an
     operator schema, or is not a product of two single-qubit unitaries at all.
     """
-
-    from .one_qubit_synthesis import _has_small_component
-
-    if _has_small_component(instruction):
-        return None
 
     if len(instruction.wires) != 2 or instruction.matrix is None:
         return None
