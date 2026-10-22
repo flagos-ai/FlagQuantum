@@ -151,6 +151,22 @@ The existing Remote coordinate replacement and consumer-intake evidence remain
 subsequent domain-owned work. Native numerical enablement must retain the full
 front-door/refusal gate; this source-only delivery does not close it or M3.
 
+## Deployment intake preparation
+
+The target-neutral package and Pauli-measurement package builders now delegate
+the native-input refusal to Core before reading circuit metadata, selecting a
+backend, compiling or emitting a digital circuit. This is a separate
+Deployment-owned change stacked on the Core producer. It adds no frontend,
+provider rule, compiler pass, numerical dispatch or public signature.
+
+The four real-input regressions failed before the delegation: package creation
+raised AttributeError on missing circuit metadata, and Pauli package planning
+raised its generic circuit TypeError. They now require the existing
+CapabilityError with the Lindblad direction and use side-effect spies before
+backend selection, compilation and both emitters. Old circuit package and
+routing-evidence consumers remain unchanged. Each PR retains its own latest
+CI/GPU and merge-authorization requirements.
+
 ## Remote geometry consumer replacement
 
 After Core #700 landed at `050be1d7b30dd5f1c508120242a1195ffc9e66c0`, the
