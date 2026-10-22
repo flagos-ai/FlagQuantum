@@ -12,6 +12,8 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`terminal_instrument_reference.py`](terminal_instrument_reference.py) uses
+  existing SuperOperator maps and illustrative Torch draws for proposal 083.
 - [`boson_interference.py`](boson_interference.py) — it uses the existing
   `flagquantum.lindblad` namespace and boson algebra for two-photon interference
   and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
