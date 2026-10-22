@@ -71,8 +71,8 @@ state-space execution. The function does not normalize away a missing loss secto
 All Kraus tensors have shape (D,D), the same CPU device and complex dtype as the
 state, ordinary strided storage and finite values. Fixed numeric matrices only;
 requires_grad on the state or any Kraus tensor is refused before detaching.
-The existing DEFAULT_DENSE_MATRIX_BYTES limit bounds the sum of state and Kraus
-numeric storage before cloning/capture; it does not claim a total-process RSS
+The existing DEFAULT_DENSE_MATRIX_BYTES limit bounds the sum of state, Kraus, branch-probability
+and int64 sample-output numeric storage before cloning/capture or drawing; it does not claim a total-process RSS
 limit. No dense D**4 Choi matrix is needed: tensor Kraus input is CP by construction.
 
 For branch j, J_j(rho) = sum_k K_jk rho K_jk^dagger and
@@ -119,7 +119,7 @@ their seven 1.7 fields; old 1.3-1.6 plans and CircuitIR 1.0 remain byte-identica
 No promise is made to recognize arbitrary edited metadata as a valid execution
 request. Semantic artifact loading would require its own reviewed boundary.
 
-seed is None or a Python integer in [0, 2**63-1]; booleans are refused. Use one
+seed is None or a Python integer in [0, 2**64-1]; booleans are refused. Use one
 private CPU torch.Generator per call, never mutate global Torch RNG state. With
 None, record the generated effective seed. Batch rows draw in their declared
 order. Repeated execution with identical numeric inputs, labels, effective seed,
@@ -141,9 +141,13 @@ gates; they must never interpret an unobserved lost-state coordinate as a flag.
 and zero false positives are explicit assumptions. K_no_flag is
  diag(1,1,sqrt(1-eta)); K_flag is diag(0,0,sqrt(eta)). Thus the effect matches
 081's no_flag_operator while this proposal additionally specifies the backaction.
-Tensor products define the pair's ordered observed flags; no actor renumbering
+This declares the square-root instrument explicitly; other instruments can
+share its effects and must not be silently substituted. Tensor products define
+the pair's ordered observed flags; no actor renumbering
 or resurrection occurs. Nonzero false positives, internal-state readout and
-calibrated motion-dependent detection are not inferred from this model.
+calibrated motion-dependent detection are not inferred from this model. Coherent
+lost-sector states in the reference are algebraic stress inputs, not a claim
+that this erasure model can physically prepare such an atom superposition.
 
 **Finite Fock counting.** The three-level number operator from the existing
 boson algebra defines the ordered 0/1/2 projectors. This reference is a declared
