@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import replace
-from math import isclose
 from types import MappingProxyType
 from typing import Any, cast
 
@@ -124,7 +123,8 @@ def _as_ir(circuit_or_ir: Any) -> CircuitIR:
     return ensure_circuit_ir(circuit_or_ir)
 
 
-def _is_zero(value: Any, atol: float = 1e-12) -> bool:
+def _is_zero(value: Any) -> bool:
+    """Recognize only an exact scalar zero, never a small nonzero rotation."""
     try:
         if bool(getattr(value, "requires_grad", False)):
             return False
@@ -134,7 +134,7 @@ def _is_zero(value: Any, atol: float = 1e-12) -> bool:
             return False
         if hasattr(value, "item"):
             value = value.item()
-        return isclose(float(value), 0.0, abs_tol=atol)
+        return float(value) == 0.0
     except (TypeError, ValueError):
         return False
 

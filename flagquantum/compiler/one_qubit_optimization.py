@@ -94,6 +94,7 @@ from .one_qubit_synthesis import (
     _PHASE_EPS,
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
+    _has_small_component,
     _is_unitary,
     _polar_angle,
 )
@@ -346,7 +347,7 @@ def _is_foldable(instruction: Instruction) -> bool:
     faithfully, and only the run it was in stays unfolded.
     """
 
-    if len(instruction.wires) != 1:
+    if len(instruction.wires) != 1 or _has_small_component(instruction):
         return False
     if instruction.matrix is not None:
         matrix = _instruction_matrix(instruction)

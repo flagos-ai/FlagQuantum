@@ -63,7 +63,7 @@ Z_ROTATION_OPCODES: tuple[str, ...] = ("rz", "phase", "u1")
 # first. `sx` is parameter-free; `rx` is the same pulse spelled as a rotation.
 HALF_PI_PULSE_OPCODES: tuple[str, ...] = ("sx", "rx")
 
-# Below this magnitude a matrix entry carries no usable phase.
+# Below this magnitude, tolerance-based Euler folds decline supplied components.
 _PHASE_EPS = 1.0e-12
 
 # ZYZ angle triples `(theta, phi, lam)` for the parameter-free single-qubit
@@ -216,6 +216,52 @@ def _leaves(
     )
 
 
+def _has_small_component(instruction: Instruction) -> bool:
+    """Decline tolerance-based matrix folding for explicitly small inputs.
+
+    Matrix matching and Euler singular-case handling use absolute tolerances.
+    Such routines cannot distinguish an intentional small component from their
+    own roundoff. Preserve the original instruction when a supplied angle or
+    matrix component falls in that unresolved range; this threshold permits no
+    truncation. Trainable/unreadable values keep their existing refusal paths.
+    """
+
+    def small(value: float) -> bool:
+        return 0.0 < abs(value) <= _PHASE_EPS
+
+    # Rotation off-diagonals scale as sin(angle/2). A fourfold angle margin
+    # also covers the boundary of the component matcher without deleting gates.
+    for value in instruction.params.values():
+        angle = _polar_angle(value)
+        if angle is not None and (
+            (0.0 < abs(angle) <= 4 * _PHASE_EPS)
+            or (
+                abs(angle) <= _MODULAR_FOLD_LIMIT
+                and 0.0 < abs(math.remainder(angle, math.pi)) <= 4 * _PHASE_EPS
+            )
+        ):
+            return True
+    if instruction.matrix is None:
+        return False
+    raw = getattr(instruction.matrix, "tensor", instruction.matrix)
+    if bool(getattr(raw, "requires_grad", False)):
+        return False
+    if hasattr(raw, "tolist"):
+        raw = raw.tolist()
+
+    def contains_small(value: Any) -> bool:
+        if isinstance(value, (list, tuple)):
+            return any(contains_small(item) for item in value)
+        number = complex(value)
+        return small(number.real) or small(number.imag)
+
+    try:
+        return contains_small(raw)
+    except (TypeError, ValueError, OverflowError):
+        # Leave malformed/unsupported operands to the existing matrix reader.
+        return False
+
+
 def _principal(angle: float) -> float:
     """Reduce an angle in radians to `(-pi, pi]`."""
     reduced = math.remainder(angle, _TWO_PI)
@@ -238,9 +284,9 @@ def _zyz_angles(matrix: Matrix) -> tuple[float, float, float]:
     """
     top_left, top_right = matrix[0][0], matrix[0][1]
     bottom_left, bottom_right = matrix[1][0], matrix[1][1]
-    if abs(bottom_left) <= _PHASE_EPS:
+    if bottom_left == 0:
         return 0.0, 0.0, _principal(cmath.phase(bottom_right) - cmath.phase(top_left))
-    if abs(top_left) <= _PHASE_EPS:
+    if top_left == 0:
         return (
             math.pi,
             _principal(cmath.phase(bottom_left)),
@@ -399,12 +445,9 @@ def is_diagonal_one_qubit(instruction: Instruction) -> bool:
 
 #: Above this magnitude an angle is not folded at all.
 #:
-#: A fold is only meaningful while a float64 can sit within the tolerance of a
-#: multiple of `4*pi` without *being* that multiple: past `4*pi * 512` the spacing
-#: of float64 exceeds the tolerance, so the only angle whose exact remainder
-#: vanishes is one already equal to `4*pi * k`, and such an angle is an arbitrary
-#: rotation rather than the identity. Folding there would compare rounded integers
-#: rather than angles and could only invent a removal.
+#: Retain the conservative magnitude limit: at large multiples, a float64
+#: angle no longer resolves a small displacement from the intended period.
+#: Outside the limit, preserve the submitted rotation rather than infer intent.
 _MODULAR_FOLD_LIMIT = 2048.0 * math.pi
 
 #: The angle at which the `U3` family returns to the identity *exactly*, rather
@@ -420,20 +463,20 @@ _MODULAR_FOLD_LIMIT = 2048.0 * math.pi
 _IDENTITY_PERIOD = 2.0 * _TWO_PI
 
 
-def _is_identity_angle(value: Any, atol: float = 1e-12) -> bool:
+def _is_identity_angle(value: Any) -> bool:
     """Report whether one tabulated angle is an integer multiple of `4*pi`.
 
     `math.remainder` returns `value - n * 4*pi` exactly, for the `n` nearest
-    `value / (4*pi)`, so the residue carries no rounding of its own and the same
-    `atol` `pipeline._is_zero` applies to a raw angle applies unchanged to the
-    folded one. A trainable value, a non-scalar, and a value outside the fold
+    `value / (4*pi)`, so the residue carries no rounding of its own. Only a zero
+    residue is removed: a small nonzero residue remains an observable rotation.
+    A trainable value, a non-scalar, and a value outside the fold
     limit all answer False, which keeps the removal fail-closed.
     """
 
     polar = _polar_angle(value)
     if polar is None or abs(polar) > _MODULAR_FOLD_LIMIT:
         return False
-    return _is_zero(math.remainder(polar, _IDENTITY_PERIOD), atol=atol)
+    return _is_zero(math.remainder(polar, _IDENTITY_PERIOD))
 
 
 def is_identity_one_qubit(instruction: Instruction) -> bool:
@@ -474,8 +517,8 @@ def is_identity_one_qubit(instruction: Instruction) -> bool:
     decided by the multi-qubit branch of `remove_identity_gates`, not here, so this
     module's whole reach is single-qubit.
 
-    Only exact integer multiples are considered, within `_is_zero`'s own `1e-12`,
-    rather than a fidelity cutoff of the kind a target error rate would supply: a
+    Only exactly zero folded residues are considered, rather than a fidelity
+    cutoff of the kind a target error rate would supply: a
     false yes changes the program, and an angle merely near a multiple is a
     rotation a target may well distinguish. `None` from `_polar_angle` on any of
     the three angles -- a trainable one most of all -- refuses, so a rotation
