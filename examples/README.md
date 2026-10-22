@@ -483,23 +483,27 @@ a real CPU CNN/quantum/head training step, and a portable Overleaf bundle.
 Source export uses the default install; image display additionally requires
 a TeX engine and Poppler on the kernel PATH.
 
-## Linear-path neutral-atom reference
+## Native moving-atom dynamics
 
-Run `python -m examples.rydberg_transport_reference` for the fixed moving-pair
-matrix reference behind proposal 081. It uses the existing CPU Lindblad planner,
-three-level absorbing loss and interval-midpoint geometry. Expected output:
+Run `python -m examples.rydberg_native_dynamics` for a real RydbergProgram on
+the existing CPU Lindblad planner. The source declares two atoms, a linear move,
+C6 and absorbing loss; Simulation constructs the interval matrices. Expected:
 
 ```text
+Native plan version: 1.7
 Physical survival: 0.81873075
 Unconditional RR: 0.40936538
-Linear-path coherence: 0.81489256
+No-flag probability: 0.85353566
 Exact numeric replay: True
-Native transport API: pending implementation
 ```
 
-This is a reference for replacing contract consumers, not native transport,
-calibrated motion, sampled detection or hardware support. See the
-[authorization record](../docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md).
+The one/two-actor profile uses g/r/lost states and interval-midpoint geometry.
+Refine the grid to check the imposed-path approximation independently of solver
+accuracy. The no-flag effect assumes independent detection with efficiency 0.8;
+it is distinct from physical survival and unconditional RR. There are no sampled
+events, heating, quantum motion or hardware submission. This native example
+replaces the fixed matrix adapter from the
+[contract baseline](../docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md).
 
 ## Native Rydberg program geometry
 
@@ -512,9 +516,9 @@ Atom order: ('a', 'b')
 Product dimensions: (3, 3)
 Commanded b position at t=0.25: (3.0, 0.0)
 Survival effect shape: (9, 9)
-Circuit route: refused; native evolution awaits Simulation integration
+Circuit route: refused; use flagquantum.lindblad for native evolution
 ```
 
 This is the Core construction slice of proposal 081. Commanded positions are
-not evidence of physical atom presence. Native numerical evolution, detector
-events and hardware submission retain their separate delivery gates.
+not evidence of physical atom presence. Use the moving-atom example above for
+native numerical evolution; detector events and hardware submission remain open.

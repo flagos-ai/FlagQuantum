@@ -223,9 +223,11 @@ fixture files are not regenerated.
 
 Run `python -m examples.rydberg_native_dynamics`: version 1.7, survival 0.81873075,
 unconditional RR 0.40936538, no-flag 0.85353566 and exact numeric replay True.
-The 40 unchanged physics consumers and 36 native consistency/gradient/refusal
+The 40 unchanged physics consumers and 45 native consistency/gradient/refusal
 cases pass locally. Three-parameter controls are compared to an independent dense
-unitary for all three integrators. Full verification remains a PR acceptance gate.
+unitary for all three integrators. The focused dynamics suite passes 717 cases each on Python 3.10, 3.11 and 3.12;
+strict mypy passes 784 source files and all 11 repository gates pass. Full
+default/runtime and remote verification remain PR acceptance gates.
 
 The initial physics run had eight failures: Python scalar bindings were first
 converted using Torch's default float32 before requested-precision conversion.
@@ -237,3 +239,8 @@ The integration evidence update records this bounded experimental consumer in
 the existing continuous_time_lindblad capability limitations and regenerates its
 documentation. It does not add a registry entry, raise maturity, change governance
 snapshots or promote the frontend to Stable Core.
+
+An additional snapshot test initially compared a single CN interval to the
+continuous analytic derivative (difference 2.37e-6 against a 1e-6 budget). The
+snapshot test now uses a refined RK grid; the separate unchanged consumers still
+validate CN against its discrete map and retain its original physical budgets.

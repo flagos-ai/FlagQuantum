@@ -74,3 +74,42 @@ replacement), test_lindblad_explicit_basis.py (public refusals, plan replay,
 physical loss, gradients and adjoints), and the existing Lindblad suites in
 `tests/unit/`. Broaden with the repository testing tiers. The authoritative
 support boundary is continuous_time_lindblad in capability-maturity.toml.
+
+## Native moving-atom programs
+
+The experimental RydbergProgram and its typed Core ProgramRecord are accepted by
+these same plan/run/adjoint entries. Start with
+`python -m examples.rydberg_native_dynamics`. Its one/two-actor CPU profile derives
+ordered (3, ...) g/r/lost coordinates, C6/r**6 interactions and two absorbing
+loss jumps per atom. Native programs own their collapse operators and dimensions;
+n_qubits, basis_labels and non-None collapse overrides are refused. Larger valid
+rosters fail before exponential allocation. Low-level numerical APIs retain
+mathematical inputs only; circuit/deployment/provider routes refuse this profile.
+
+The output grid starts at zero and includes every move/pulse boundary. Positions
+are sampled at interval midpoints of the commanded linear path, an explicit
+approximation requiring its own grid-convergence check. The same three integrators
+execute the resulting pre-bound intervals. Amplitude, detuning and phase accept
+Core parameters/expressions and the existing per-interval parameter_values maps.
+Live bindings preserve autograd; geometry, C6, loss rates and times are fixed.
+Use run for control gradients and adjoint_gradient for the initial-density
+cotangent, including the existing batch axes. Existing option/device refusals apply.
+
+Every native sealed plan uses version 1.7, even a static program. Its seven outer
+fields are schema, version, request, decision, program, bindings and identity.
+The actual Core source and precision-normalized bindings are sealed alongside the
+existing numerical request/decision. Decode validates source, boundaries, product
+dimensions, interval matrices and jumps, including rehashed inconsistent payloads.
+The reconstruction allowance is exactly 16 real-dtype epsilons, distinct from the
+physical error budgets. run(plan) executes captured matrices without recompiling
+or rebinding source. JSON stores values without a live graph; gradient-required
+restored plans refuse execution. Old 1.3/1.4/1.5/1.6 formats remain unchanged.
+
+For a numerical change, edit Simulation's rydberg_model.py and run
+`tests/unit/test_rydberg_transport_contract.py` plus
+`tests/unit/test_native_rydberg_dynamics.py`. For source encoding or consistency,
+edit _native_plan.py and run those tests plus the existing plan compatibility
+consumers. Core owns geometry and scalar codecs; do not reproduce them here.
+Physical survival, unconditional RR and the detector no-flag effect are distinct
+ordinary matrix outputs. This profile provides no sampled detector records,
+feedback, heating, quantum motion, cloud submission or full M3 acceptance.

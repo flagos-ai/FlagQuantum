@@ -27,6 +27,7 @@ from ..simulation.lindblad_adjoint import (
     adjoint_gradient as _adjoint_gradient,
 )
 from ..simulation.lindblad_integrators import DEFAULT_INTEGRATOR, INTEGRATOR_NAMES
+from ..simulation.rydberg_model import native_record
 from ._plan import LindbladPlan, build_lindblad_plan
 
 _MISSING = object()
@@ -277,6 +278,28 @@ def plan(
     """
 
     device, dtype, batch_size, require_gradients = _execution_settings(options)
+    record = native_record(hamiltonian)
+    if record is not None:
+        from ._native_plan import build_native_plan
+
+        return build_native_plan(
+            record,
+            initial_state,
+            times,
+            n_qubits=n_qubits,
+            dimensions=dimensions,
+            basis_labels=basis_labels,
+            collapse_operators=collapse_operators,
+            parameter_values=parameter_values,
+            observables=_observables(outputs),
+            device=device,
+            dtype=dtype,
+            batch_size=batch_size,
+            require_gradients=require_gradients,
+            return_density_matrices=return_density_matrices,
+            method=method,
+            solve_tolerance=solve_tolerance,
+        )
     resolved_n_qubits = (
         _infer_n_qubits(initial_state)
         if n_qubits is None and dimensions is None and basis_labels is None
@@ -348,6 +371,35 @@ def adjoint_gradient(
         torch.Size([2, 2])
     """
 
+    record = native_record(hamiltonian)
+    if record is not None:
+        from ..simulation.lindblad_adjoint import _adjoint_gradient as prebound_adjoint
+        from ._native_plan import native_request
+
+        device, dtype, batch_size, require_gradients = _execution_settings(options)
+        with torch.no_grad():
+            numeric, _ = native_request(
+                record,
+                times,
+                n_qubits=n_qubits,
+                dimensions=dimensions,
+                basis_labels=basis_labels,
+                collapse_operators=collapse_operators,
+                dtype=dtype,
+                device=device,
+                parameter_values=parameter_values,
+            )
+        return prebound_adjoint(
+            initial_state=initial_state,
+            cost=cost,
+            **numeric,
+            device=device,
+            dtype=dtype,
+            method=method,
+            solve_tolerance=solve_tolerance,
+            batch_size=batch_size,
+            require_gradients=require_gradients,
+        )
     resolved_n_qubits = (
         _infer_n_qubits(initial_state)
         if n_qubits is None and dimensions is None and basis_labels is None

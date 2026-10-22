@@ -1096,48 +1096,9 @@ def _normalize_hamiltonians(
     matrices = []
     for interval, mapping in enumerate(parameter_values):
         field = f"parameter_values[{interval}]"
-        if not isinstance(mapping, Mapping):
-            raise _error(
-                "invalid_parameter_binding", "each interval requires a mapping", field
-            )
-        values: dict[str, Any] = {}
-        for key, value in mapping.items():
-            name = key.name if isinstance(key, Parameter) else key
-            if not isinstance(name, str) or not name or name in values:
-                raise _error(
-                    "invalid_parameter_binding",
-                    f"invalid or duplicate normalized parameter name {name!r}",
-                    field,
-                )
-            value_field = f"{field}[{name!r}]"
-            if (
-                not isinstance(value, (Number, torch.Tensor))
-                or isinstance(value, bool)
-                or (isinstance(value, torch.Tensor) and value.dtype == torch.bool)
-            ):
-                raise _error(
-                    "invalid_coefficient",
-                    "bindings must be numeric scalars",
-                    value_field,
-                )
-            try:
-                tensor = value_to_tensor(value, dtype=dtype, device=device)
-            except (TypeError, ValueError, RuntimeError, OverflowError) as exc:
-                raise _error("invalid_coefficient", str(exc), value_field) from exc
-            if tensor.ndim != 0 or not bool(torch.isfinite(tensor).all().item()):
-                raise _error(
-                    "invalid_coefficient",
-                    "bindings must be finite scalars",
-                    value_field,
-                )
-            values[name] = value
-        if set(values) != names:
-            raise _error(
-                "invalid_parameter_binding",
-                f"missing parameters {sorted(names - set(values))}; "
-                f"unused parameters {sorted(set(values) - names)}",
-                field,
-            )
+        values = _normalize_parameter_mapping(
+            mapping, names, dtype=dtype, device=device, field=field
+        )
         try:
             terms = [
                 dict(
@@ -1157,3 +1118,57 @@ def _normalize_hamiltonians(
         except (TypeError, ValueError, RuntimeError, OverflowError) as exc:
             raise _error("invalid_coefficient", str(exc), field) from exc
     return tuple(matrices)
+
+
+def _normalize_parameter_mapping(
+    mapping: object,
+    names: set[str],
+    *,
+    dtype: torch.dtype,
+    device: torch.device,
+    field: str,
+) -> dict[str, Any]:
+    """Validate one interval mapping before Core binds its scalar expressions."""
+    if not isinstance(mapping, Mapping):
+        raise _error(
+            "invalid_parameter_binding", "each interval requires a mapping", field
+        )
+    values: dict[str, Any] = {}
+    for key, value in mapping.items():
+        name = key.name if isinstance(key, Parameter) else key
+        if not isinstance(name, str) or not name or name in values:
+            raise _error(
+                "invalid_parameter_binding",
+                f"invalid or duplicate normalized parameter name {name!r}",
+                field,
+            )
+        value_field = f"{field}[{name!r}]"
+        if (
+            not isinstance(value, (Number, torch.Tensor))
+            or isinstance(value, bool)
+            or (isinstance(value, torch.Tensor) and value.dtype == torch.bool)
+        ):
+            raise _error(
+                "invalid_coefficient",
+                "bindings must be numeric scalars",
+                value_field,
+            )
+        try:
+            tensor = value_to_tensor(value, dtype=dtype, device=device)
+        except (TypeError, ValueError, RuntimeError, OverflowError) as exc:
+            raise _error("invalid_coefficient", str(exc), value_field) from exc
+        if tensor.ndim != 0 or not bool(torch.isfinite(tensor).all().item()):
+            raise _error(
+                "invalid_coefficient",
+                "bindings must be finite scalars",
+                value_field,
+            )
+        values[name] = value
+    if set(values) != names:
+        raise _error(
+            "invalid_parameter_binding",
+            f"missing parameters {sorted(names - set(values))}; "
+            f"unused parameters {sorted(set(values) - names)}",
+            field,
+        )
+    return values

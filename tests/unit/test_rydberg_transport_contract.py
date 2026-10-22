@@ -1,21 +1,22 @@
-"""Replaceable proposal 081 physics consumers over existing matrix dynamics.
+"""Unchanged physics consumers now exercise the native proposal 081 input.
 
-Only the pair_planner fixture changes when native transport consumption lands.
-The fixed reference has no general program parser, transport compiler or solver.
+Only the three admitted fixtures change; physical, gradient and replay
+assertions remain the independent consumers established before implementation.
 """
 
 from __future__ import annotations
 
 import math
 from collections.abc import Callable
-from typing import Protocol
+from typing import Any, Protocol
 
 import pytest
 import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from examples.rydberg_transport_reference import reference_plan
+from examples.rydberg_native_dynamics import native_pair_plan
+from flagquantum.experimental.simulation import RydbergProgram
 from flagquantum.simulation.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
@@ -35,7 +36,7 @@ class PairPlanner(Protocol):
 
 @pytest.fixture
 def pair_planner() -> PairPlanner:
-    return reference_plan
+    return native_pair_plan
 
 
 class PulsePlanner(Protocol):
@@ -46,22 +47,31 @@ class PulsePlanner(Protocol):
 
 @pytest.fixture
 def pulse_planner() -> PulsePlanner:
-    # One fixed g/r drive; this does not parse or compile arbitrary native controls.
     def build(amplitude: torch.Tensor, phase: float, method: str) -> fql.LindbladPlan:
-        drive = torch.zeros((3, 3), dtype=torch.complex128)
-        drive[0, 1] = torch.tensor(
-            complex(math.cos(phase), math.sin(phase)) / 2, dtype=torch.complex128
+        program = RydbergProgram(
+            atoms=(("a", "trap"),),
+            sites={"trap": (0.0, 0.0)},
+            length_unit="um",
+            time_unit="us",
+            c6=0.0,
+            loss_rate=0.0,
+            minimum_separation=1.0,
+            drive_channels=("laser",),
         )
-        drive[1, 0] = drive[0, 1].conj()
+        program.pulse(
+            "a",
+            start=0.0,
+            duration=0.5,
+            amplitude=fq.Parameter("omega"),
+            phase=phase,
+            channel="laser",
+        )
         return fql.plan(
-            amplitude * drive,
-            torch.tensor([1.0, 0.0, 0.0], dtype=torch.complex128),
+            program,
+            program.basis_state(("g",)),
             torch.linspace(0.0, 0.5, 201, dtype=torch.float64),
-            dimensions=(3,),
-            outputs=fq.expectation(
-                torch.diag(torch.tensor([0.0, 1.0, 0.0], dtype=torch.complex128)),
-                name="rydberg",
-            ),
+            parameter_values=[{"omega": amplitude}] * 200,
+            outputs=fq.expectation(program.projector({"a": "r"}), name="rydberg"),
             options=fq.ExecutionOptions(require_gradients=amplitude.requires_grad),
             return_density_matrices=True,
             method=method,
@@ -251,7 +261,31 @@ def test_json_replay_does_not_claim_to_restore_a_control_graph(
 
 @pytest.fixture
 def initial_adjoint() -> Callable[..., torch.Tensor]:
-    return fql.adjoint_gradient
+    def native_adjoint(
+        hamiltonian: torch.Tensor,
+        initial: torch.Tensor,
+        times: torch.Tensor,
+        cost: Callable[[torch.Tensor], torch.Tensor],
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        # This fixture replaces one fixed oracle drive, not a matrix-to-program compiler.
+        expected = torch.zeros((3, 3), dtype=torch.complex128)
+        expected[0, 1] = expected[1, 0] = 0.35
+        assert torch.equal(hamiltonian, expected)
+        program = RydbergProgram(
+            atoms=(("a", "trap"),),
+            sites={"trap": (0.0, 0.0)},
+            length_unit="um",
+            time_unit="us",
+            c6=0.0,
+            loss_rate=0.0,
+            minimum_separation=1.0,
+            drive_channels=("laser",),
+        )
+        program.pulse("a", start=0.0, duration=0.5, amplitude=0.7, channel="laser")
+        return fql.adjoint_gradient(program, initial, times, cost, **kwargs)
+
+    return native_adjoint
 
 
 @pytest.mark.parametrize("method", fql.INTEGRATOR_NAMES)

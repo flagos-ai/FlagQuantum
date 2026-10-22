@@ -47,7 +47,7 @@ from ..core.ir.state_space import ProductStateSpace
 from ..core.parameters import Parameter
 from .lindblad import (
     EvolutionValidationError,
-    evolve_density_matrix,
+    _evolve_density_matrix,
 )
 from .lindblad_generator import Liouvillian
 from .lindblad_integrators import DEFAULT_INTEGRATOR, advance_interval
@@ -124,6 +124,47 @@ def adjoint_gradient(
         torch.Size([2, 2])
     """
 
+    return _adjoint_gradient(
+        hamiltonian,
+        initial_state,
+        n_qubits,
+        times,
+        cost,
+        collapse_operators,
+        observables,
+        device=device,
+        dtype=dtype,
+        method=method,
+        solve_tolerance=solve_tolerance,
+        batch_size=batch_size,
+        require_gradients=require_gradients,
+        dimensions=dimensions,
+        parameter_values=parameter_values,
+        basis_labels=basis_labels,
+    )
+
+
+def _adjoint_gradient(
+    hamiltonian: Any,
+    initial_state: Any,
+    n_qubits: int | None,
+    times: Any,
+    cost: Callable[[torch.Tensor], torch.Tensor],
+    collapse_operators: Sequence[Any] | None = None,
+    observables: Any = None,
+    *,
+    device: torch.device | str = "cpu",
+    dtype: torch.dtype = torch.complex128,
+    method: str = DEFAULT_INTEGRATOR,
+    solve_tolerance: float | None = None,
+    batch_size: int | None = None,
+    require_gradients: bool = False,
+    dimensions: Sequence[int] | None = None,
+    parameter_values: Sequence[Mapping[str | Parameter, Any]] | None = None,
+    basis_labels: Sequence[Sequence[int | str]] | None = None,
+    bound_hamiltonians: Sequence[torch.Tensor] | None = None,
+) -> torch.Tensor:
+
     if require_gradients:
         raise EvolutionValidationError(
             "adjoint_requires_no_graph",
@@ -150,7 +191,7 @@ def adjoint_gradient(
     # than a hope: nothing about the sweep can be retained if nothing is
     # recorded.
     with torch.no_grad():
-        forward = evolve_density_matrix(
+        forward = _evolve_density_matrix(
             hamiltonian,
             initial_state,
             n_qubits,
@@ -166,6 +207,7 @@ def adjoint_gradient(
             dimensions=dimensions,
             parameter_values=parameter_values,
             basis_labels=basis_labels,
+            bound_hamiltonians=bound_hamiltonians,
         )
     trajectory = forward.density_matrices
     if trajectory is None:  # pragma: no cover - asked for above
@@ -203,6 +245,7 @@ def adjoint_gradient(
             hamiltonian,
             forward.times,
             parameter_values,
+            bound_hamiltonians=bound_hamiltonians,
             n_subsystems=n_subsystems,
             dim=dim,
             dtype=dtype,
