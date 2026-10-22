@@ -193,3 +193,18 @@ retirement. The authoritative capability/parity records and their generated
 documents record the missing concrete neutral-atom service and retain their
 previous maturity levels. This delivery does not enable numerical evolution or
 cloud access. Separate PR verification and merge authorization remain required.
+
+## Simulation implementation admission
+
+After Core #700, Deployment #701 and approved Remote retirement #705, the
+Simulation delivery consumes the existing typed physical ProgramRecord on the
+three existing high-level Lindblad entries. Simulation owns bounded numeric
+assembly in simulation/rydberg_model.py; the existing Lindblad facade owns
+1.7 source/binding capture and consistency checks in lindblad/_native_plan.py.
+Existing plan construction gains a private pre-bound input, and the existing
+adjoint loop gains a private pre-bound entry while its public signature stays
+unchanged. Interval scalar mapping validation is factored from its existing
+normalizer for both old schedules and native controls, retaining Core binding.
+No new IR, scheduler, binder, solver, registry or result fields are admitted.
+Native-only plan 1.7 and invalid_native_request are already approved in 081;
+old numerical/source fixtures and all physical/gradient/replay budgets stay.
