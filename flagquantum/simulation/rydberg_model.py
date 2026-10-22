@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from fractions import Fraction
 from itertools import combinations
+from numbers import Complex, Real
 from typing import Any, Literal
 
 import torch
@@ -158,7 +159,7 @@ def native_model(
         parameter_names_in_value([(p.amplitude, p.detuning, p.phase) for p in pulses])
     )
     intervals = grid.numel() - 1
-    if names:
+    if names or parameter_values is not None:
         if (
             not isinstance(parameter_values, Sequence)
             or isinstance(parameter_values, (str, bytes))
@@ -169,12 +170,6 @@ def native_model(
                 "parameter_values must contain one mapping per interval",
                 "parameter_values",
             )
-    elif parameter_values is not None:
-        raise _error(
-            "invalid_parameter_values",
-            "native bindings require named control parameters",
-            "parameter_values",
-        )
     bindings: list[dict[str, float]] | None = [] if names else None
     local_n = torch.diag(torch.tensor([0.0, 1.0, 0.0], dtype=dtype))
     local_drive = torch.zeros((3, 3), dtype=dtype)
@@ -192,8 +187,7 @@ def native_model(
     for interval in range(intervals):
         field = f"parameter_values[{interval}]"
         values: dict[str, Any] = {}
-        if names:
-            assert parameter_values is not None and bindings is not None
+        if parameter_values is not None:
             raw = _normalize_parameter_mapping(
                 parameter_values[interval],
                 names,
@@ -202,7 +196,11 @@ def native_model(
                 field=field,
             )
             for name, value in raw.items():
-                if torch.as_tensor(value).is_complex():
+                if (
+                    value.is_complex()
+                    if isinstance(value, torch.Tensor)
+                    else isinstance(value, Complex) and not isinstance(value, Real)
+                ):
                     raise _error(
                         "invalid_coefficient",
                         "native controls require real scalar bindings",
@@ -216,9 +214,13 @@ def native_model(
                         field,
                     )
                 values[name] = tensor
-            bindings.append(
-                {name: float(value.detach().item()) for name, value in values.items()}
-            )
+            if bindings is not None:
+                bindings.append(
+                    {
+                        name: float(value.detach().item())
+                        for name, value in values.items()
+                    }
+                )
         # Fraction preserves the encoded midpoint without overflowing a+b.
         midpoint = (
             Fraction(float(grid[interval].item()))

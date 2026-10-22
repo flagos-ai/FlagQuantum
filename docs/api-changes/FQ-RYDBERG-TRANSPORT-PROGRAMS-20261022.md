@@ -223,7 +223,7 @@ fixture files are not regenerated.
 
 Run `python -m examples.rydberg_native_dynamics`: version 1.7, survival 0.81873075,
 unconditional RR 0.40936538, no-flag 0.85353566 and exact numeric replay True.
-The 40 unchanged physics consumers and 45 native consistency/gradient/refusal
+The 40 unchanged physics consumers and 47 native consistency/gradient/refusal
 cases pass locally. Three-parameter controls are compared to an independent dense
 unitary for all three integrators. The focused dynamics suite passes 717 cases each on Python 3.10, 3.11 and 3.12;
 strict mypy passes 784 source files and all 11 repository gates pass. Full
@@ -244,3 +244,12 @@ An additional snapshot test initially compared a single CN interval to the
 continuous analytic derivative (difference 2.37e-6 against a 1e-6 budget). The
 snapshot test now uses a refined RK grid; the separate unchanged consumers still
 validate CN against its discrete map and retain its original physical budgets.
+
+Native scalar classification now checks tensor/numeric types without a temporary
+int64/default-float tensor. The prior branch raised ValueError for a finite real
+binding of 2**70 before requested-precision conversion; the regression now seals
+its exact real value without executing an extreme-frequency model. Fully numeric
+sources also retain proposal 073's empty per-interval mapping semantics: the
+shared validator accepts empty mappings, refuses unused names, and plan 1.7 still
+captures null bindings. No solver or physical tolerance changes accompany these
+input-boundary fixes. The final native/unchanged-physics selection passes 87 cases.

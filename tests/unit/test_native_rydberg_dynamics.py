@@ -403,3 +403,32 @@ def test_native_reconstruction_budget_is_encoding_not_a_physics_tolerance() -> N
     payload["identity"] = _identity(payload)
     with pytest.raises(SerializationError):
         fql.LindbladPlan.from_dict(payload)
+
+
+def test_real_bindings_are_classified_without_default_integer_or_float_coercion() -> (
+    None
+):
+    p = atom()
+    p.pulse(
+        "a", start=0.0, duration=0.5, amplitude=fq.Parameter("omega"), channel="laser"
+    )
+    # Finite at the requested real precision, outside the default int64 range.
+    value = 2**70
+    plan = fql.plan(
+        p, p.basis_state(("g",)), [0.0, 0.5], parameter_values=[{"omega": value}]
+    )
+    assert plan.to_dict()["bindings"] == [{"omega": float(value)}]
+    assert plan.to_dict()["request"]["hamiltonians"][0]["values"][0][1][0] == value / 2
+
+
+def test_numeric_static_source_keeps_existing_empty_mapping_semantics() -> None:
+    p = atom()
+    initial = p.basis_state(("g",))
+    plain = fql.plan(p, initial, [0.0, 0.5])
+    empty = fql.plan(p, initial, [0.0, 0.5], parameter_values=[{}])
+    assert plain.to_json() == empty.to_json()
+    assert empty.to_dict()["version"] == "1.7"
+    assert empty.to_dict()["bindings"] is None
+    with pytest.raises(EvolutionValidationError) as caught:
+        fql.plan(p, initial, [0.0, 0.5], parameter_values=[{"unused": 0.7}])
+    assert caught.value.code == "invalid_parameter_binding"
