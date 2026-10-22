@@ -166,3 +166,18 @@ CapabilityError with the Lindblad direction and use side-effect spies before
 backend selection, compilation and both emitters. Old circuit package and
 routing-evidence consumers remain unchanged. Each PR retains its own latest
 CI/GPU and merge-authorization requirements.
+
+## Approved Remote boundary supersession
+
+On 2026-10-22 the owner explicitly approved
+[proposal 082](../development/API_CHANGE_PROPOSAL_082_REMOTE_PROVIDER_BOUNDARY.md).
+Its four decisions supersede only the generic Remote-coordinate-consumer gate
+in this record and proposal 081: retire the non-submitting NeutralAtomProvider
+and its generic parser/profile exports; preserve the Core geometry and native
+program; correct the roster evidence; require a concrete service adapter before
+claiming a Remote neutral-atom integration. PR #702's intermediate finite-check
+refactor is superseded rather than merged solely to retain an unused consumer.
+The original approval and captured evidence above remain historical records.
+All native Simulation, physical, gradient, replay, front-door, old-plan and
+remaining M3 acceptance gates continue unchanged. No blanket merge permission
+or cloud execution is granted or established by this approval.
