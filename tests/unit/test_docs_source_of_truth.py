@@ -96,6 +96,70 @@ def test_generated_capability_catalog_supports_goal_based_discovery():
     assert "../../examples/" in rendered
 
 
+def test_quick_start_label_names_what_the_target_is():
+    assert DOCS.quick_start_label("examples/quick_start.py") == "Run example"
+    assert (
+        DOCS.quick_start_label("examples/distributed_statevector_topologies/run.sh")
+        == "Run example"
+    )
+    assert DOCS.quick_start_label("docs/reference/API.md") == "Read guide"
+    assert (
+        DOCS.quick_start_label("examples/quick_start.py", sentence_case=False)
+        == "quick example"
+    )
+    assert (
+        DOCS.quick_start_label("docs/reference/API.md", sentence_case=False)
+        == "quick-start guide"
+    )
+
+
+def test_rendered_catalog_never_calls_a_guide_an_example():
+    maturity = DOCS.tomllib.loads(
+        (ROOT / "capability-maturity.toml").read_text(encoding="utf-8")
+    )
+    rendered = DOCS.render_capabilities(maturity)
+    for label in ("Run example", "quick example"):
+        for line in rendered.splitlines():
+            if f"[{label}]" not in line:
+                continue
+            target = line.split(f"[{label}](", 1)[1].split(")", 1)[0]
+            assert target.endswith(
+                (".py", ".sh")
+            ), f"{label!r} promises an executable file but points at {target}"
+
+    capabilities = maturity["capabilities"]
+    guide_capabilities = [
+        name
+        for name, capability in capabilities.items()
+        if not str(capability["quick_start"]).endswith((".py", ".sh"))
+    ]
+    # Every goal row of a guide-backed capability, plus one detail row each.
+    expected_goal_rows = sum(
+        len(capabilities[name]["user_goals"]) for name in guide_capabilities
+    )
+    assert rendered.count("[Read guide](") == expected_goal_rows
+    assert rendered.count("[quick-start guide](") == len(guide_capabilities)
+
+
+def test_detail_rows_link_their_own_capability():
+    maturity = DOCS.tomllib.loads(
+        (ROOT / "capability-maturity.toml").read_text(encoding="utf-8")
+    )
+    rendered = DOCS.render_capabilities(maturity)
+    detail_targets = [
+        line.split("](../../", 1)[1].split(")", 1)[0]
+        for line in rendered.splitlines()
+        if line.startswith("- **Start:**")
+    ]
+    declared = {
+        str(capability["quick_start"])
+        for capability in maturity["capabilities"].values()
+    }
+    assert set(detail_targets) <= declared
+    # A detail row that reused the previous loop's link would collapse to one target.
+    assert len(set(detail_targets)) > 1
+
+
 def test_readme_and_known_limitations_are_generated_from_capability_matrix():
     _require_repository_history()
 
