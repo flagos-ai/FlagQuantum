@@ -23,7 +23,12 @@ from ..compiler import CouplingMap
 from ..compiler import compile as compile_program
 from ..compiler.openqasm import emit_openqasm
 from ..compiler.qcis import emit_qcis
-from ..core.ir import CircuitIR, Instruction, MeasurementNode
+from ..core.ir import (
+    CircuitIR,
+    Instruction,
+    MeasurementNode,
+    _reject_native_circuit_input,
+)
 from ..runtime.parallel import ObservableGroup, group_observables
 from .routing_evidence import (
     DEPLOYMENT_PACKAGE_SCHEMA,
@@ -313,6 +318,7 @@ def create_deployment_package(
     name = name.strip()
     if not name:
         raise ValueError("deployment name must not be empty")
+    _reject_native_circuit_input(circuit_or_ir)
     ir = circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     execution_target = ir.metadata.get("execution_target")
     if execution_target is not None and not isinstance(execution_target, Mapping):
@@ -453,6 +459,7 @@ def create_pauli_measurement_plan(
 ) -> PauliMeasurementPlan:
     """Create qubit-wise-commuting Pauli measurement deployment packages."""
 
+    _reject_native_circuit_input(circuit_or_ir)
     source_ir = (
         circuit_or_ir.to_ir() if hasattr(circuit_or_ir, "to_ir") else circuit_or_ir
     )
