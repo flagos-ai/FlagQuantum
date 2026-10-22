@@ -77,7 +77,7 @@ application needs a non-submitting package preview.
 
 ## Reading a vendor device declaration
 
-`IonQProvider`, `QuantinuumProvider`, `IQMProvider` and `NeutralAtomProvider`
+`IonQProvider`, `QuantinuumProvider` and `IQMProvider`
 share one reader for a vendor's own device listing. Width, native gate set and
 connectivity are the vendor's declared facts: a listing that omits or mistypes
 one of them is refused with a message naming the vendor and the fact, and the
@@ -108,16 +108,14 @@ property of the hardware rather than of the adapter. IQM publishes a real
 lattice, so its declared couplings become the profile's `CouplingMap`.
 Trapped-ion devices (IonQ, Quantinuum) are all-to-all, so the profile carries no
 coupling map unless the listing states one; it does not invent a complete graph.
-A neutral-atom register declares atom coordinates, so connectivity is derived
-from the declared geometry with an explicit, documented interaction radius that
-the caller must supply in the register's own length unit — a default radius
-would invent a device.
 
-`NeutralAtomProvider` describes and preflights a register but does not submit:
-a neutral-atom machine executes an analog schedule over its register, and this
-package emits neither that schedule nor a vendor's serialization of it. The
-adapter reports that as its blocker instead of translating a circuit into a
-program the hardware would not run as declared.
+The generic NeutralAtomProvider and register profile factory were retired under
+[proposal 082](../../../docs/development/API_CHANGE_PROPOSAL_082_REMOTE_PROVIDER_BOUNDARY.md).
+Local atom geometry and timed controls belong to Core's experimental
+RydbergProgram; see [the construction example](../../../examples/rydberg_program_geometry.py).
+A concrete neutral-atom cloud adapter must name its actual service, supported
+program subset and task/result protocol. No such submission path is currently
+implemented. Braket's existing circuit adapter does not imply AHS support.
 
 No adapter claims hardware-identical behaviour, and no adapter is tested against
 a live provider. The offline provider tests use fake listings and fake

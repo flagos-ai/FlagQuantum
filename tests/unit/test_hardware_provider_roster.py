@@ -37,12 +37,6 @@ from flagquantum.remote.qpu.declaration import (
 )
 from flagquantum.remote.qpu.ionq import IonQProvider, ionq_backend_profile
 from flagquantum.remote.qpu.iqm import IQMProvider, iqm_backend_profile
-from flagquantum.remote.qpu.neutral_atom import (
-    NeutralAtomProvider,
-    interaction_edges,
-    neutral_atom_backend_profile,
-    neutral_atom_sites,
-)
 from flagquantum.remote.qpu.quantinuum import (
     QuantinuumProvider,
     _language,
@@ -267,11 +261,9 @@ def test_preflight_reports_each_policy_failure_the_adapter_owns() -> None:
 
 
 def test_preflight_declares_no_qasm_policy_when_none_is_implemented() -> None:
-    profile = neutral_atom_backend_profile(
-        {"name": "aquila", "sites": [[0.0, 0.0], [4.0, 0.0]]}, interaction_radius=5.0
-    )
+    profile = iqm_backend_profile({"name": "IQM Garnet", "n_qubits": 2})
     preview = preflight_submission(
-        _package(profile, shots=10), provider="neutral-atom", qasm_versions=None
+        _package(profile, shots=10), provider="iqm", qasm_versions=None
     )
 
     assert preview.blockers == ()
@@ -978,149 +970,8 @@ def test_iqm_refuses_a_per_shot_result_that_disagrees_with_the_shot_count() -> N
 
 
 # --------------------------------------------------------------------------
-# Neutral atom
+# Retired generic neutral-atom provider; native geometry lives in Core.
 # --------------------------------------------------------------------------
-
-
-def test_neutral_atom_reads_the_register_in_every_declared_shape() -> None:
-    assert neutral_atom_sites(
-        {"sites": [{"x": 0.0, "y": 0.0}, {"position": [4.0, 0.0]}]}
-    ) == ((0.0, 0.0), (4.0, 0.0))
-    assert neutral_atom_sites({"atoms": [[0, 0], [0, 1]]}) == ((0.0, 0.0), (0.0, 1.0))
-    assert neutral_atom_sites({"register": {"a": [0.0, 0.0], "b": [4.0, 0.0]}}) == (
-        (0.0, 0.0),
-        (4.0, 0.0),
-    )
-
-
-def test_neutral_atom_refuses_a_register_it_cannot_place() -> None:
-    with pytest.raises(ValueError, match="does not expose a register"):
-        neutral_atom_sites({"name": "aquila"})
-    with pytest.raises(ValueError, match="must declare x and y coordinates"):
-        neutral_atom_sites({"sites": [{"x": 0.0}]})
-    with pytest.raises(ValueError, match="coordinates must be numbers"):
-        neutral_atom_sites({"sites": [[0.0, "1.0"]]})
-    with pytest.raises(ValueError, match="coordinates must be finite"):
-        neutral_atom_sites({"sites": [[0.0, float("inf")]]})
-    with pytest.raises(ValueError, match="two atoms at the same coordinate"):
-        neutral_atom_sites({"sites": [[0.0, 0.0], [0.0, 0.0]]})
-    with pytest.raises(ValueError, match="does not declare any sites"):
-        neutral_atom_sites({"sites": []})
-
-
-def test_neutral_atom_requires_an_explicit_interaction_radius() -> None:
-    """The radius is a property of the atom species and the excitation scheme,
-    not of this package, so it has no default and a non-physical value is
-    refused rather than read as "no interactions"."""
-
-    signature = inspect.signature(neutral_atom_backend_profile)
-    assert signature.parameters["interaction_radius"].default is inspect.Parameter.empty
-
-    sites = ((0.0, 0.0), (1.0, 0.0))
-    with pytest.raises(ValueError, match="must be positive and finite"):
-        interaction_edges(sites, interaction_radius=0.0)
-    with pytest.raises(ValueError, match="must be positive and finite"):
-        interaction_edges(sites, interaction_radius=float("nan"))
-    with pytest.raises(ValueError, match="must be a number"):
-        interaction_edges(sites, interaction_radius="1.0")
-    # A boolean is an integer in Python, but it is not a distance.
-    with pytest.raises(ValueError, match="must be a number"):
-        interaction_edges(sites, interaction_radius=True)
-
-
-def test_neutral_atom_refuses_a_register_it_cannot_read_as_sites() -> None:
-    """A register is a sequence of sites, and a site is a coordinate pair; a
-    string is neither, however much it looks like one."""
-
-    with pytest.raises(ValueError, match="must be a sequence of sites"):
-        neutral_atom_sites({"sites": "01"})
-    with pytest.raises(ValueError, match="must declare x and y coordinates"):
-        neutral_atom_sites({"sites": ["01"]})
-
-
-def test_neutral_atom_derives_connectivity_from_the_declared_geometry() -> None:
-    sites = ((0.0, 0.0), (4.0, 0.0), (8.0, 0.0), (4.0, 1.0))
-
-    # The radius is inclusive, so a pair exactly at the radius interacts.
-    assert interaction_edges(sites, interaction_radius=4.0) == (
-        (0, 1),
-        (1, 2),
-        (1, 3),
-    )
-    assert interaction_edges(sites, interaction_radius=1.0) == ((1, 3),)
-
-
-def test_neutral_atom_profile_reports_where_its_connectivity_came_from() -> None:
-    profile = neutral_atom_backend_profile(
-        {"name": "aquila", "atoms": [[0.0, 0.0], [4.0, 0.0], [8.0, 0.0]]},
-        interaction_radius=5.0,
-        register_units="um",
-    )
-
-    assert profile.provider == "neutral-atom"
-    assert profile.n_qubits == 3
-    assert profile.coupling_map is not None
-    assert profile.coupling_map.edges == ((0, 1), (1, 2))
-    assert profile.metadata["connectivity_source"] == "derived_from_declared_geometry"
-    assert profile.metadata["register_units"] == "um"
-    assert profile.metadata["interaction_radius"] == 5.0
-    # The adapter submits no OpenQASM to a neutral-atom machine, so it declares
-    # no OpenQASM support rather than implying it can.
-    assert profile.supports_openqasm is False
-
-
-def test_neutral_atom_refuses_a_count_that_disagrees_with_the_register() -> None:
-    with pytest.raises(ValueError, match="states 5 atoms but places 2 sites"):
-        neutral_atom_backend_profile(
-            {"name": "aquila", "n_atoms": 5, "atoms": [[0.0, 0.0], [4.0, 0.0]]},
-            interaction_radius=5.0,
-        )
-    with pytest.raises(ValueError, match="register_units must be one of"):
-        neutral_atom_backend_profile(
-            {"name": "aquila", "atoms": [[0.0, 0.0], [4.0, 0.0]]},
-            interaction_radius=5.0,
-            register_units="furlongs",
-        )
-
-
-def test_neutral_atom_preflight_names_the_program_it_cannot_emit() -> None:
-    register = {"name": "aquila", "atoms": [[0.0, 0.0], [4.0, 0.0]]}
-    profile = neutral_atom_backend_profile(register, interaction_radius=5.0)
-    provider = NeutralAtomProvider(register=register, interaction_radius=5.0)
-
-    assert [item.name for item in provider.list_devices()] == ["aquila"]
-    preview = provider.dry_run(_package(profile, shots=10))
-
-    assert preview.compatible is False
-    assert preview.program_format == "analog_register_schedule"
-    assert preview.blockers == (
-        "neutral_atom_submission_requires_an_analog_program_schedule",
-    )
-    with pytest.raises(RuntimeError, match="requires an analog program schedule"):
-        provider.submit(_package(profile, shots=10))
-
-
-def test_neutral_atom_applies_no_qasm_policy_to_a_program_it_cannot_emit() -> None:
-    """The adapter emits an analog register schedule, not OpenQASM, so the
-    package's QASM version is not a submission requirement here."""
-
-    register = {"name": "aquila", "atoms": [[0.0, 0.0], [4.0, 0.0]]}
-    profile = neutral_atom_backend_profile(register, interaction_radius=5.0)
-    provider = NeutralAtomProvider(register=register, interaction_radius=5.0)
-
-    preview = provider.dry_run(_package(profile, shots=10, qasm_version=2.0))
-
-    assert preview.blockers == (
-        "neutral_atom_submission_requires_an_analog_program_schedule",
-    )
-
-
-def test_neutral_atom_list_devices_honours_a_requested_width() -> None:
-    register = {"name": "aquila", "atoms": [[0.0, 0.0], [4.0, 0.0]]}
-    provider = NeutralAtomProvider(register=register, interaction_radius=5.0)
-
-    assert provider.list_devices(n_qubits=2)[0].n_qubits == 2
-    assert provider.list_devices(n_qubits=3) == ()
 
 
 # --------------------------------------------------------------------------
@@ -1133,13 +984,11 @@ def test_the_roster_adapters_are_reachable_from_the_remote_facade() -> None:
         "IonQProvider",
         "QuantinuumProvider",
         "IQMProvider",
-        "NeutralAtomProvider",
     )
     profiles = (
         "ionq_backend_profile",
         "quantinuum_backend_profile",
         "iqm_backend_profile",
-        "neutral_atom_backend_profile",
     )
 
     assert all(getattr(remote, name).provider for name in providers)

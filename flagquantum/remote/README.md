@@ -6,6 +6,10 @@ lifecycle; directly controlled devices belong in Compute.
 
 Adapters own credentials, discovery, submission, polling, cancellation, and
 result decoding. They translate external data into FlagQuantum-owned contracts.
+Adapters represent actual external services or shared transport, not physics
+routes. Native atom geometry and controls belong in Core, not a generic
+NeutralAtomProvider; concrete neutral-atom service submission remains absent.
+
 Compilation, simulation, Runtime policy, and deployment-package semantics stay
 with their owning domains.
 

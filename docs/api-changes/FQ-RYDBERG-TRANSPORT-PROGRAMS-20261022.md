@@ -181,3 +181,15 @@ The original approval and captured evidence above remain historical records.
 All native Simulation, physical, gradient, replay, front-door, old-plan and
 remaining M3 acceptance gates continue unchanged. No blanket merge permission
 or cloud execution is granted or established by this approval.
+
+## Remote retirement implementation
+
+The Remote-owned proposal 082 delivery deletes the generic provider module and
+both namespace exports without an alias or stub. Existing Core/source/math and
+Simulation files remain unchanged. Current provider-roster examples use real
+vendor declarations for preflight and the existing Core frontend for local atom
+geometry. Negative module/export and submission-side-effect consumers cover the
+retirement. The authoritative capability/parity records and their generated
+documents record the missing concrete neutral-atom service and retain their
+previous maturity levels. This delivery does not enable numerical evolution or
+cloud access. Separate PR verification and merge authorization remain required.

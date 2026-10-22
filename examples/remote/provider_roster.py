@@ -20,11 +20,9 @@ import flagquantum.deployment as fqd
 from flagquantum.remote.qpu import (
     IonQProvider,
     IQMProvider,
-    NeutralAtomProvider,
     QuantinuumProvider,
     ionq_backend_profile,
     iqm_backend_profile,
-    neutral_atom_backend_profile,
     quantinuum_backend_profile,
 )
 
@@ -54,16 +52,6 @@ def main() -> None:
 
     # A machine-name-only listing and a register of physically placed atoms.
     quantinuum = quantinuum_backend_profile("H2-1E", n_qubits=32)
-    register = {
-        "name": "aquila",
-        "atoms": [[0.0, 0.0], [4.0, 0.0], [8.0, 0.0], [4.0, 1.0]],
-    }
-    # The interaction radius is a property of the atom species and the
-    # excitation scheme, not of this package, so it is required rather than
-    # defaulted: a default would invent a device.
-    neutral = neutral_atom_backend_profile(register, interaction_radius=5.0)
-    assert neutral.metadata["connectivity_source"] == "derived_from_declared_geometry"
-    print("neutral-atom derived couplings:", neutral.coupling_map.edges)
     assert quantinuum.metadata["qubit_count_source"] == "caller"
 
     # A program built once and preflighted against each device. Nothing is
@@ -91,17 +79,25 @@ def main() -> None:
     assert refused.blockers == ("quantinuum_provider_requires_openqasm_2",)
     print("Quantinuum refusal:", refused.blockers)
 
-    # A neutral-atom machine executes an analog schedule over its register, and
-    # this package emits neither that schedule nor a vendor's serialization of
-    # it, so the adapter names that gap instead of translating the circuit into
-    # a program the hardware would not run as declared.
-    package = fqd.create_deployment_package(
-        circuit, backend=neutral, shots=100, qasm_version=3.0
+    # Local physical geometry is a Core program, not a cloud provider.
+    from flagquantum.experimental.simulation import RydbergProgram
+
+    atoms = RydbergProgram(
+        atoms=(("a", "left"), ("b", "near")),
+        sites={"left": (0.0, 0.0), "near": (4.0, 0.0), "far": (8.0, 0.0)},
+        length_unit="um",
+        time_unit="us",
+        c6=64.0,
+        loss_rate=0.2,
+        minimum_separation=1.0,
+        transport_channels=("aod",),
     )
-    analog = NeutralAtomProvider(register=register, interaction_radius=5.0)
-    blocked = analog.dry_run(package)
-    assert blocked.compatible is False
-    print("neutral-atom blocker:", blocked.blockers)
+    atoms.move(
+        "b", source="near", destination="far", start=0.0, duration=1.0, channel="aod"
+    )
+    atoms.to_ir()
+    print("Core commanded atom position:", atoms.commanded_position("b", 0.5))
+    print("Neutral-atom cloud execution: unavailable")
 
     print("FlagQuantum hardware provider roster check passed")
 
