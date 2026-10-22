@@ -36,7 +36,6 @@ DIAGNOSTIC_LEVELS: dict[str, str] = {
     "physical.path_collision": LEVEL_PROGRAM,
     "physical.channel_conflict": LEVEL_PROGRAM,
     "physical.unsupported_structure": LEVEL_PROGRAM,
-
     "level.not_circuit_ir": PUBLIC_LEVEL,
     "level.dynamic_instruction": PUBLIC_LEVEL,
     "level.conditional_instruction": PUBLIC_LEVEL,

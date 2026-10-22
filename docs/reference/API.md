@@ -760,8 +760,9 @@ claimed.
 ### Provider-neutral dynamic conformance
 
 Backend conformance vectors are repository verification assets rather than SDK
-API. Maintainers can run the local suite with
-`pytest tests/test_dynamic_conformance.py`; the Qiskit lane additionally
+API. They cover active reset, conditional execution, repeated measurement of a
+collapsed qubit, and qubit reuse after reset. Maintainers can run the local suite
+with `pytest tests/test_dynamic_conformance.py`; the Qiskit lane additionally
 requires `pip install -e '.[qiskit]'`. User code should call
 `fq.experimental.dynamic.assess_dynamic_backend(...)` for preflight checks.
 `DynamicExecutionResult` exposes `final_samples`, `classical_register`,

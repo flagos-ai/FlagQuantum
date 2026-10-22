@@ -204,7 +204,9 @@ def _control_encoding(value: object) -> None:
         finite_real(value, "control scalar")
         return
     if not isinstance(value, Mapping):
-        raise SerializationError("native control scalar must be real or a Core parameter/expression")
+        raise SerializationError(
+            "native control scalar must be real or a Core parameter/expression"
+        )
     if "$parameter" in value:
         payload = _keys(value, {"$parameter"}, "parameter")
         if not isinstance(payload["$parameter"], str):
@@ -217,7 +219,9 @@ def _control_encoding(value: object) -> None:
         for argument in _array(expression["args"], "expression args"):
             _control_encoding(argument)
     else:
-        raise SerializationError("tensor, complex and container leaves are not native control scalars")
+        raise SerializationError(
+            "tensor, complex and container leaves are not native control scalars"
+        )
 
 
 def _block_from_dict(value: object) -> BlockRecord:
