@@ -39,6 +39,26 @@ ALL_ENGINES = {
 }
 
 
+class _VirtualClock:
+    """A ``perf_counter`` replacement whose readings a fake backend advances.
+
+    Live calibration ranks engines by measured duration, so a fake has to
+    supply durations rather than wait for them.  ``time.sleep`` guarantees a
+    lower bound and no upper one: measured on an idle machine, a nominal
+    0.2 ms sleep reached 1.4 ms, enough to invert the 1.8 ms gap this module's
+    fast/slow fake used to leave the scheduler to decide.
+    """
+
+    def __init__(self) -> None:
+        self._now = 0.0
+
+    def __call__(self) -> float:
+        return self._now
+
+    def advance(self, seconds: float) -> None:
+        self._now += seconds
+
+
 def _report() -> dict[str, object]:
     payload = json.loads(REPORT.read_text(encoding="utf-8"))
     assert isinstance(payload, dict)
@@ -188,11 +208,13 @@ def test_advisor_live_calibrates_an_unmeasured_circuit(
 ) -> None:
     circuit = fq.Circuit(2, dtype=torch.complex128).h(0).cx(0, 1)
 
+    clock = _VirtualClock()
+
     def fake_runner(engine: str):
-        delay = 0.002 if engine == "flagquantum_native" else 0.0002
+        duration = 0.002 if engine == "flagquantum_native" else 0.0002
 
         def execute(ir):
-            time.sleep(delay)
+            clock.advance(duration)
             state = torch.zeros(ir.shape, dtype=torch.complex128)
             state[..., 0] = 2**-0.5
             state[..., -1] = 2**-0.5
@@ -200,6 +222,7 @@ def test_advisor_live_calibrates_an_unmeasured_circuit(
 
         return execute
 
+    monkeypatch.setattr("time.perf_counter", clock)
     monkeypatch.setattr(_calibration, "_runner", fake_runner)
     decision = recommend(
         circuit,
