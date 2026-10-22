@@ -41,34 +41,28 @@ def test_provider_roster_user_example_runs_end_to_end() -> None:
 def test_a_vendor_declaration_becomes_a_coupling_map() -> None:
     """A device's own declaration is what the compiler is given, not a guess.
 
-    One vendor declares its lattice directly and another declares geometry a
-    coupling set is derived from, so both shapes are printed: the roster reads
-    what the vendor states rather than discovering a topology.
+    The vendor lattice remains a device fact. Local atom movement is a separate
+    Core program and must not be presented as cloud device discovery.
     """
 
     stdout = _run()
 
     assert "IQM declared lattice: ((0, 1), (1, 2))" in stdout
-    derived = "neutral-atom derived couplings: ((0, 1), (0, 3), (1, 2), (1, 3), (2, 3))"
-    assert derived in stdout
+    assert "Core commanded atom position: (6.0, 0.0)" in stdout
 
 
 def test_the_roster_refuses_fail_closed_and_names_the_reason() -> None:
     """A refusal before submission is the capability, not an error path.
 
-    Each refusal is a blocker a reader can act on: one provider accepts only
-    OpenQASM 2, and an analog target cannot carry a gate program at all. Both
-    are reported by name rather than by a compatibility flag alone, because
-    the name is what tells a caller what to change.
+    Quantinuum retains its actionable format refusal. The example explicitly
+    reports neutral-atom cloud execution as unavailable without constructing a
+    fictional provider to represent the missing service.
     """
 
     stdout = _run()
 
     assert "Quantinuum refusal: ('quantinuum_provider_requires_openqasm_2',)" in stdout
-    assert (
-        "neutral-atom blocker: "
-        "('neutral_atom_submission_requires_an_analog_program_schedule',)"
-    ) in stdout
+    assert "Neutral-atom cloud execution: unavailable" in stdout
 
 
 def test_every_preflight_reports_its_program_format_and_verdict() -> None:

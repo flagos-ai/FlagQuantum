@@ -5,6 +5,11 @@ implementation**. M2 workflow acceptance is separately reviewed in #686. This
 preparation does not merge that PR, approve new signatures or schemas, or promote
 capability maturity. No production source file changes here.
 
+The table below records the original inspected baseline. Approved
+[proposal 082](API_CHANGE_PROPOSAL_082_REMOTE_PROVIDER_BOUNDARY.md) retires its
+historical generic Remote register adapter; Core #700 now owns the native atom
+program. The historical table is not a current provider-support claim.
+
 ## Existing capabilities and the missing boundary
 
 | Requirement | Reusable implementation | Boundary still missing |

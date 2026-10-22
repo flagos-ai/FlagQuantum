@@ -31,11 +31,6 @@ from .http import (
 )
 from .ionq import IONQ_GATE_SETS, IonQProvider, ionq_backend_profile
 from .iqm import IQMProvider, iqm_backend_profile
-from .neutral_atom import (
-    NeutralAtomProvider,
-    interaction_edges,
-    neutral_atom_backend_profile,
-)
 from .quafu import QuafuProvider
 from .quantinuum import QuantinuumProvider, quantinuum_backend_profile
 
@@ -50,7 +45,6 @@ __all__ = (
     "IONQ_GATE_SETS",
     "IQMProvider",
     "IonQProvider",
-    "NeutralAtomProvider",
     "ProviderCredentials",
     "ProviderEndpoints",
     "ProviderSubmissionPreview",
@@ -64,10 +58,8 @@ __all__ = (
     "braket_backend_profile",
     "build_result_metadata",
     "build_submission_receipt",
-    "interaction_edges",
     "ionq_backend_profile",
     "iqm_backend_profile",
-    "neutral_atom_backend_profile",
     "preflight_submission",
     "quafu_noise_model_from_chip_info",
     "quantinuum_backend_profile",

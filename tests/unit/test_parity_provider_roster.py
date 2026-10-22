@@ -1,18 +1,8 @@
-"""Pin the provider roster the parity row claims, so the row cannot drift.
+"""Check the service/transport roster and its remaining capability gaps.
 
-``provider_roster_breadth`` is a ``priority = "now"`` row with no ``evidence``
-list at all, and its prose names seven adapters. The package declares eight: the
-shared HTTP adapter is a concrete ``QuantumProvider`` with its own ``submit`` and
-``fetch_result``, and ``QuafuProvider`` derives from it. That is the kind of
-off-by-one a roster claim drifts into, so the census here is a set equality
-rather than a count -- adding an adapter fails this module until the row is
-updated, and so does removing one.
-
-The refusals are the second half. A roster is only breadth if every member reads
-a vendor's declaration fail-closed, so every profile builder is handed an empty
-declaration and must refuse it in its own words. A builder that started
-accepting an empty declaration would make the row's "read fail-closed" clause
-false, and this is where that would show up.
+The exact exported adapter set must match the parity row. A shared HTTP
+transport is not hardware execution evidence; retiring a generic physics-route
+placeholder must not be reported as a new cloud integration.
 """
 
 from __future__ import annotations
@@ -28,14 +18,8 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
 
 import pytest
 
-import flagquantum as fq
 import flagquantum.remote as remote
 import flagquantum.remote.qpu as qpu
-from flagquantum.deployment.cloud import DeploymentPackage
-from flagquantum.remote.qpu import (
-    interaction_edges,
-    neutral_atom_backend_profile,
-)
 
 pytestmark = pytest.mark.unit
 
@@ -50,7 +34,6 @@ DECLARED_PROVIDERS = frozenset(
         "HttpQuantumProvider",
         "IQMProvider",
         "IonQProvider",
-        "NeutralAtomProvider",
         "QuafuProvider",
         "QuantinuumProvider",
     }
@@ -63,7 +46,6 @@ DECLARED_PROFILES = frozenset(
         "braket_backend_profile",
         "ionq_backend_profile",
         "iqm_backend_profile",
-        "neutral_atom_backend_profile",
         "quantinuum_backend_profile",
     }
 )
@@ -79,7 +61,7 @@ def _rows() -> dict[str, dict[str, Any]]:
 
 
 def test_the_roster_is_the_set_the_row_names() -> None:
-    """Eight concrete adapters, seven of which build a backend profile."""
+    """Seven declared adapters, including the generic HTTP transport."""
 
     exported = {name for name in qpu.__all__ if name.endswith("Provider")}
     assert exported == DECLARED_PROVIDERS | {"QuantumProvider"}
@@ -150,10 +132,6 @@ def test_the_declaration_readers_are_the_ones_that_read_a_vendor_listing() -> No
         (lambda: qpu.ionq_backend_profile({}), "IonQ declaration does not expose"),
         (lambda: qpu.iqm_backend_profile({}), "IQM declaration does not expose"),
         (
-            lambda: neutral_atom_backend_profile({}, interaction_radius=4.0),
-            "Neutral atom declaration does not expose",
-        ),
-        (
             lambda: qpu.quantinuum_backend_profile({}),
             "Quantinuum declaration does not expose",
         ),
@@ -199,79 +177,6 @@ def test_a_profile_carries_the_devices_own_declaration_not_a_default() -> None:
     assert azure.is_simulator is True
 
 
-def test_the_neutral_atom_connectivity_is_derived_from_the_declared_geometry() -> None:
-    """The register's coordinates are the connectivity, not a separate declaration.
-
-    Two of the three sites sit inside the interaction radius and the third does
-    not, so a profile that reported the register as fully connected, or as
-    isolated, would disagree with the geometry it was given.
-    """
-
-    sites = ((0.0, 0.0), (4.0, 0.0), (20.0, 0.0))
-    profile = neutral_atom_backend_profile(
-        {"name": "aquila", "sites": [list(site) for site in sites]},
-        interaction_radius=5.0,
-    )
-    assert profile.coupling_map is not None
-    assert profile.coupling_map.edges == ((0, 1),)
-    assert profile.metadata["connectivity_source"] == "derived_from_declared_geometry"
-    assert profile.metadata["derived_coupling_count"] == 1
-    assert interaction_edges(sites, interaction_radius=5.0) == ((0, 1),)
-
-    # The radius is inclusive: a pair exactly at the radius interacts, so a
-    # radius equal to the pair's own distance still yields the edge and a radius
-    # a hair smaller does not. A strict comparison would answer "isolated" here.
-    assert interaction_edges(sites, interaction_radius=4.0) == ((0, 1),)
-
-    profile_at_boundary = neutral_atom_backend_profile(
-        {"name": "aquila", "sites": [list(site) for site in sites]},
-        interaction_radius=4.0,
-    )
-    assert profile_at_boundary.coupling_map is not None
-    assert profile_at_boundary.coupling_map.edges == ((0, 1),)
-
-    # A non-positive radius is refused rather than read as "no interactions",
-    # which would report a connected register as isolated.
-    with pytest.raises(ValueError, match="must be positive and finite"):
-        interaction_edges(sites, interaction_radius=0.0)
-
-
-def test_the_neutral_atom_adapter_declares_the_submission_it_cannot_emit() -> None:
-    """The absent analog path is a declared refusal, not a silent gap.
-
-    The refusal has to survive the run, not merely appear in the source: the
-    blocker is read off ``dry_run``'s own preview and the format it names is
-    read off the same preview, so dropping the blocker from the returned tuple
-    is a different measurement from deleting the constant.
-    """
-
-    sites = [[0.0, 0.0], [4.0, 0.0]]
-    provider = qpu.NeutralAtomProvider(
-        register={"sites": sites}, interaction_radius=5.0
-    )
-    profile = neutral_atom_backend_profile(
-        {"name": "aquila", "sites": sites}, interaction_radius=5.0
-    )
-    preview = provider.dry_run(
-        DeploymentPackage(
-            name="roster",
-            ir=fq.Circuit(1).h(0).to_ir(),
-            qasm="OPENQASM 3.0;\nqubit[1] q;\nh q[0];\n",
-            shots=100,
-            qasm_version=3.0,
-            backend=profile,
-        )
-    )
-    assert preview.compatible is False
-    assert preview.program_format == "analog_register_schedule"
-    assert "neutral_atom_submission_requires_an_analog_program_schedule" in (
-        preview.blockers
-    )
-
-    with pytest.raises(RuntimeError, match="analog program schedule"):
-        provider.submit(object())  # type: ignore[arg-type]
-
-
 def test_no_photonic_or_control_system_adapter_is_exported() -> None:
     """The two absent provider families are absent from the exported surface.
 
@@ -309,4 +214,4 @@ def test_the_row_still_names_the_roster_and_cites_this_test() -> None:
     reason = row["reason"]
     for absent in ("photonic", "quantum-control-system", "analog-schedule"):
         assert absent in reason, absent
-    assert "eight" in reason.lower()
+    assert "seven" in reason.lower()
