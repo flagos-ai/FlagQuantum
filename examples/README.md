@@ -552,3 +552,56 @@ Circuit route: refused; use flagquantum.lindblad for native evolution
 This is the Core construction slice of proposal 081. Commanded positions are
 not evidence of physical atom presence. Use the moving-atom example above for
 native numerical evolution; detector events and hardware submission remain open.
+
+## Train native moving-atom controls
+
+Run `python -m examples.train_rydberg_controls --steps 40 --intervals 128` on CPU.
+The source declares a moving atom pair and one named pulse amplitude. Two
+per-interval amplitude bindings train through the existing Lindblad planner,
+Runge-Kutta integrator and PyTorch Adam; geometry, C6, loss and time boundaries
+remain fixed. Every optimizer step rebuilds its live plan. Expected output:
+
+```text
+Runtime: CPU, two actors, interval_midpoint
+Initial unconditional RR: 0.04305292
+Initial amplitude gradient: [0.07881346, 0.07879645]
+Training reduced loss: True
+Final unconditional RR: 0.12278807
+Survival-conditioned RR: 0.14997368
+No-flag-selected RR: 0.14385816
+Exact numeric replay: True
+```
+
+Survival conditioning and no-flag selection use different explicit denominators;
+no detector events are sampled. Detached plan replay preserves numbers rather
+than a training graph. The 128-interval default meets the existing 1e-10 frozen
+unitary/gradient reference budget for this fixture. At 64 intervals one gradient
+differed by 2.28e-10 and failed that unchanged budget; refinement fixes the
+integration error. Imposed-path midpoint convergence remains a separate check.
+The finite-dimensional example is not heating, hardware or scalability evidence.
+
+## Native transport geometry and schedule view
+
+Install the existing `flagquantum[viz]` extra and run:
+
+```bash
+MPLBACKEND=Agg python -m examples.visualize_rydberg_transport --output transport.svg
+```
+
+Expected output:
+
+```text
+Commanded b at t=0.5: (3.0, 0.0)
+Schedule: move b (aod); pulse a,b (laser)
+Saved: transport.svg
+```
+
+Use --output transport.png for a raster image and --samples 101 for a finer
+**display** sampling. The two panels show declared sites/commanded paths and
+source operation durations/channels. Positions call Core's commanded_position;
+the renderer does not duplicate interpolation or infer presence, trap activity,
+heating or gate fidelity. Pulse bars show duration, not amplitude: the named
+omega control is bound per interval by the training example. Display samples
+are not the numerical integration grid. This example reuses the moving-pair
+source from train_rydberg_controls and adds no public drawing API or renderer
+registry. The exported SVG/PNG is suitable for inspection without a GUI.

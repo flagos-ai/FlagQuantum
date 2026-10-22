@@ -100,6 +100,19 @@ def test_seeded_dynamic_execution_is_reproducible_across_processes() -> None:
     assert outputs[0] == outputs[1]
 
 
+def test_seeded_dynamic_execution_is_reproducible_in_one_process() -> None:
+    circuit = DynamicCircuit(2)
+    circuit.h(0)
+    circuit.measure(0, classical_bit=0)
+    circuit.conditional("x", 1, classical_bit=0)
+
+    first = fq.experimental.dynamic.run_dynamic(circuit, shots=64, seed=29)
+    second = fq.experimental.dynamic.run_dynamic(circuit, shots=64, seed=29)
+
+    assert torch.equal(first.classical_bits, second.classical_bits)
+    assert torch.equal(first.samples, second.samples)
+
+
 def test_local_dynamic_feedback_example_is_executable() -> None:
     completed = subprocess.run(
         [sys.executable, "-m", "examples.local.dynamic_feedback"],

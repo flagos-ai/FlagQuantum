@@ -406,8 +406,8 @@ def test_the_fold_is_what_moved_the_round_18_pipeline_rows() -> None:
     #: says the further reach is still theirs.
     expected = {
         "two_wire_rotations": ((245, 245), (201, 201)),
-        "mixed": ((406, 391), (393, 383)),
-        "mixed_with_mid_circuit_measures": ((511, 498), (499, 492)),
+        "mixed": ((418, 432), (406, 423)),
+        "mixed_with_mid_circuit_measures": ((518, 540), (506, 534)),
     }
     #: Populations the fold has no reach in, whose rows must therefore not move.
     untouched = {label for label, _ in IDENTITY_POPULATIONS if label not in expected}

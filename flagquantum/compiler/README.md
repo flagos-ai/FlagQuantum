@@ -8,6 +8,16 @@ Compiler owns program transformations over Core semantics. Runtime chooses
 execution; Simulation supplies numerical kernels; Compute and Remote adapt
 resources. Compiler does not run the program.
 
+## Exact identity removal and small components
+
+Submitted nonzero angles are not deleted by a near-zero cutoff. Identity removal
+requires a zero scalar or an exactly zero folded residue. Tolerance-based matrix
+folds conservatively retain supplied small components, including tiny phases;
+this can cost gates relative to the former lossy policy. Numerical target-basis
+synthesis retains its separately declared residual tolerances. See
+[the precision-policy benchmark note](../../benchmarks/notes/exact_identity_policy.md)
+for the current measurements and limits; archived measurements are not rewritten.
+
 ## Start here
 
 From the repository root:

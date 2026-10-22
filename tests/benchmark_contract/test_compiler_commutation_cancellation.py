@@ -649,12 +649,12 @@ def test_the_anchor_asks_qiskit_the_rotation_question_too(payload: dict) -> None
 #: instrument the two-qubit contract uses for the fold, pointed at the other pass.
 _ROTATION_MERGE_IDENTITY_REACH = {
     "parameter_free_gates": ((167, 167), (167, 167)),
-    "zero_angle_rotations": ((162, 162), (162, 162)),
+    "zero_angle_rotations": ((162, 286), (162, 282)),
     "full_turn_rotations": ((139, 150), (139, 150)),
     "zero_polar_u3": ((176, 176), (176, 176)),
     "two_wire_rotations": ((245, 245), (244, 244)),
-    "mixed": ((406, 391), (404, 390)),
-    "mixed_with_mid_circuit_measures": ((511, 498), (510, 497)),
+    "mixed": ((418, 432), (416, 430)),
+    "mixed_with_mid_circuit_measures": ((518, 540), (517, 538)),
 }
 #: The same seven rows with the fold as shipped, which is the pipeline those rows
 #: actually describe and therefore the pair of numbers the identity benchmark's own
@@ -664,17 +664,18 @@ _ROTATION_MERGE_IDENTITY_REACH = {
 #: of a co-owned row rather than a re-baselining of the table.
 _ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD = {
     "parameter_free_gates": ((167, 167), (167, 167)),
-    "zero_angle_rotations": ((162, 162), (162, 162)),
+    "zero_angle_rotations": ((162, 286), (162, 282)),
     "full_turn_rotations": ((139, 150), (139, 150)),
     "zero_polar_u3": ((176, 176), (176, 176)),
     "two_wire_rotations": ((201, 201), (200, 200)),
-    "mixed": ((393, 383), (392, 382)),
-    "mixed_with_mid_circuit_measures": ((499, 492), (498, 491)),
+    "mixed": ((406, 423), (405, 421)),
+    "mixed_with_mid_circuit_measures": ((506, 534), (505, 532)),
 }
-#: The rows this pass moves, which are exactly the three the fold also co-owns. That
-#: the sets coincide is the point rather than a coincidence of naming: both passes
-#: compose rotations, so both have reach in the populations built out of them.
+#: Exact-zero preservation exposes the zero-angle-labelled population too:
+#: its nonzero 1e-13 inputs remain available for exact inverse merging. The
+#: current four-row attribution differs from the historical three-row result.
 _ROTATION_MERGE_IDENTITY_ROWS_MOVED = (
+    "zero_angle_rotations",
     "two_wire_rotations",
     "mixed",
     "mixed_with_mid_circuit_measures",
@@ -695,14 +696,16 @@ _ROTATION_MERGE_IDENTITY_ROWS_MOVED = (
 #: rule that would no longer describe either pipeline.
 _ROTATION_MERGE_DELTA = {
     "fold_out": {
+        "zero_angle_rotations": (0, 4),
         "two_wire_rotations": (1, 1),
-        "mixed": (2, 1),
-        "mixed_with_mid_circuit_measures": (1, 1),
+        "mixed": (2, 2),
+        "mixed_with_mid_circuit_measures": (1, 2),
     },
     "fold_in": {
+        "zero_angle_rotations": (0, 4),
         "two_wire_rotations": (1, 1),
-        "mixed": (1, 1),
-        "mixed_with_mid_circuit_measures": (1, 1),
+        "mixed": (1, 2),
+        "mixed_with_mid_circuit_measures": (1, 2),
     },
 }
 
@@ -716,9 +719,9 @@ def test_the_identity_rows_the_rotation_merge_moved_are_attributed() -> None:
     own module, so without this one its contribution to those rows would be inferred
     from arithmetic over two numbers, neither of which it owns.
 
-    Pausing it moves exactly the three rows the fold also moves, by the same amount in
-    both fold positions, one instruction off the optimized pipeline and never a
-    lengthening. Pinning the whole four-cell table rather than the delta alone is
+    Pausing it moves four current-policy rows, including the near-zero population
+    newly exposed by exact-zero preservation. The fold independently reaches
+    three of these rows; the full table keeps both effects attributable. Pinning the whole four-cell table rather than the delta alone is
     deliberate: the delta is the claim, and the table is what keeps the claim auditable
     when either pass changes.
     """
@@ -759,7 +762,7 @@ def test_the_identity_rows_the_rotation_merge_moved_are_attributed() -> None:
         if paused != active
     }
     assert moved == set(_ROTATION_MERGE_IDENTITY_ROWS_MOVED)
-    # Under the fold out it is the same three rows, so the two passes are not silently
+    # Under the fold out it is the same four rows, so the two passes are not silently
     # trading the reach between them.
     assert {
         label
@@ -780,6 +783,6 @@ def test_the_identity_rows_the_rotation_merge_moved_are_attributed() -> None:
                 paused_superseded - active_superseded,
                 paused_shipped - active_shipped,
             ) == _ROTATION_MERGE_DELTA[name][label], (name, label)
-    # Non-vacuity: four of the seven rows are populations this pass cannot reach at
-    # all, so the table is not three measurements of one behaviour.
-    assert len(_ROTATION_MERGE_IDENTITY_REACH) - len(moved) == 4
+    # Non-vacuity: three control populations remain unchanged. Retaining tiny
+    # nonzero rotations exposes a fourth population to exact inverse merging.
+    assert len(_ROTATION_MERGE_IDENTITY_REACH) - len(moved) == 3

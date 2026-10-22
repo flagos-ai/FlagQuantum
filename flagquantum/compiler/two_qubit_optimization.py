@@ -540,6 +540,13 @@ def _replacement(
     declared gate as an equal-length one is not a win and would not terminate.
     """
 
+    from .one_qubit_synthesis import _has_small_component
+
+    # Preserve small supplied components before tolerance-based replacement.
+    # Matrix readers and exact factorization remain available to other passes.
+    if any(_has_small_component(item) for item in instructions):
+        return None
+
     product = _block_product(instructions, pair)
     if product is None:  # pragma: no cover - guarded by the caller
         return None

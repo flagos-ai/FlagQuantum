@@ -236,12 +236,10 @@ def test_a_registered_opcode_still_needs_its_matrix_in_the_ir() -> None:
 
 
 def test_the_registration_and_the_emission_are_two_steps_a_user_can_see() -> None:
-    registry = register_operator(
-        "cphase_quarter",
-        arity=2,
-        adjoint="self_inverse",
-        qubit_convention=("control", "target"),
-    )
+    # The declaration is the one the rest of this module uses, because a spelling
+    # installed on Circuit is process-global: the same shape is idempotent, a
+    # different one is refused, and that refusal is pinned further down.
+    registry = register_operator("cphase_quarter", arity=2)
     lowerings = DEFAULT_LOWERING_REGISTRY.with_operator(
         registry.schemas["cphase_quarter"]
     ).with_capability(
@@ -276,3 +274,104 @@ def test_the_new_names_stay_in_their_namespace_and_out_of_the_root() -> None:
     assert not hasattr(fq, "OperatorRegistry")
     assert "register_operator" not in fq.__all__
     assert "OperatorRegistry" not in fq.__all__
+
+
+def test_a_registered_operator_is_written_the_way_a_built_in_one_is() -> None:
+    """The declaration installs the spelling, so the call site looks ordinary.
+
+    The declared qubit names are the keywords, which is the part a user notices:
+    this operator is written ``control=``/``target=`` because that is what it
+    declared, not because a built-in happens to use those words.
+    """
+
+    register_operator(
+        "cphase_octant",
+        arity=2,
+        adjoint="self_inverse",
+        qubit_convention=("control", "target"),
+    )
+    matrix = _cphase_quarter_matrix()
+
+    circuit = fq.Circuit(2).cphase_octant(control=0, target=1, matrix=matrix)
+    instruction = circuit.to_ir().instructions[-1]
+    assert instruction.name == "cphase_octant"
+    assert instruction.wires == (0, 1)
+
+    # The method and the long form are the same instruction, in either case.
+    long_form = fq.Circuit(2).gate("cphase_octant", (0, 1), matrix=matrix)
+    assert circuit.to_ir().instructions == long_form.to_ir().instructions
+    assert fq.Circuit(2).CPHASE_OCTANT(0, 1, matrix=matrix).to_ir() == circuit.to_ir()
+
+    # And the declaration is enforced rather than a hint: arity comes from it.
+    with pytest.raises(TypeError) as caught:
+        fq.Circuit(3).cphase_octant(0)
+    assert (
+        str(caught.value) == "cphase_octant requires qubit arguments: control, target"
+    )
+    with pytest.raises(TypeError) as caught:
+        fq.Circuit(3).cphase_octant(0, 1, 2, matrix=matrix)
+    assert str(caught.value) == "cphase_octant accepts 2 qubit(s) and 0 parameter(s)"
+
+
+def test_an_alias_is_a_spelling_of_the_opcode_rather_than_a_second_name() -> None:
+    register_operator("cphase_sixteenth", arity=2, aliases=("cp16",))
+    matrix = _cphase_quarter_matrix()
+
+    spelled = fq.Circuit(2).cp16(0, 1, matrix=matrix).to_ir().instructions[-1]
+    canonical = (
+        fq.Circuit(2).cphase_sixteenth(0, 1, matrix=matrix).to_ir().instructions[-1]
+    )
+
+    assert spelled.name == "cphase_sixteenth"
+    assert spelled == canonical
+
+
+def test_a_declared_parameter_reaches_the_instruction_under_its_declared_name() -> None:
+    import torch
+
+    register_operator(
+        "shifted_phase",
+        arity=1,
+        parameters=("theta",),
+        adjoint="negate_parameters",
+        qubit_convention=("target",),
+    )
+    matrix = torch.diag(torch.tensor([1, 1j], dtype=torch.complex128))
+
+    positional = fq.Circuit(1).shifted_phase(0, 0.5, matrix=matrix)
+    keyword = fq.Circuit(1).shifted_phase(target=0, theta=0.5, matrix=matrix)
+
+    assert positional.to_ir().instructions[-1].params == {"theta": 0.5}
+    assert keyword.to_ir().instructions == positional.to_ir().instructions
+
+
+def test_a_spelling_is_installed_once_and_its_calling_surface_is_not_replaced() -> None:
+    first = register_operator("cphase_thirtysecond", arity=2, adjoint="self_inverse")
+    again = register_operator("cphase_thirtysecond", arity=2, adjoint="self_inverse")
+    assert first.schemas["cphase_thirtysecond"] == again.schemas["cphase_thirtysecond"]
+
+    # The installed method binds an arity, a parameter list and a set of qubit
+    # keywords, and emits the opcode; `adjoint` is none of those, so a second
+    # declaration that differs only there installs the same method and is a no-op.
+    # Without this, the documented example and a slightly different declaration of
+    # the same name could not both run in one process.
+    other_adjoint = register_operator("cphase_thirtysecond", arity=2)
+    assert other_adjoint.schemas["cphase_thirtysecond"].adjoint == "matrix_adjoint"
+
+    with pytest.raises(ValueError) as caught:
+        register_operator("cphase_thirtysecond", arity=1)
+    assert str(caught.value) == (
+        "operator 'cphase_thirtysecond' is already installed on Circuit as "
+        "'cphase_thirtysecond' with a different arity, parameter list or qubit "
+        "names; declare it once, or give this operator a name of its own"
+    )
+
+
+def test_a_declaration_cannot_shadow_an_ordinary_circuit_attribute() -> None:
+    with pytest.raises(ValueError) as caught:
+        register_operator("run", arity=1)
+
+    assert str(caught.value) == (
+        "operator 'run' cannot be registered: Circuit already carries 'run', and a "
+        "declaration does not replace an existing Circuit attribute"
+    )

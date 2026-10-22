@@ -438,3 +438,51 @@ def test_compiler_self_inverse_transform_agrees_with_the_schema_declaration() ->
         if schema.adjoint == "self_inverse"
     }
     assert declared >= _SELF_INVERSE, sorted(_SELF_INVERSE - declared)
+
+
+@pytest.mark.parametrize("kind", ["projector", "scaled", "nan", "inf"])
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_adjoint_rejects_nonunitary_custom_matrices(
+    kind: str, dtype: torch.dtype
+) -> None:
+    matrix = torch.eye(2, dtype=dtype)
+    if kind == "projector":
+        matrix[1, 1] = 0
+    elif kind == "scaled":
+        matrix *= 1.01
+    else:
+        matrix[0, 0] = float(kind)
+    circuit = fq.Circuit(1, dtype=dtype).any(0, matrix=matrix)
+    with pytest.raises(CapabilityError, match="finite unitary"):
+        circuit.adjoint()
+    assert circuit.to_ir().instructions[0].matrix is matrix
+
+
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_custom_adjoint_preserves_phase_and_autograd(dtype: torch.dtype) -> None:
+    real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
+    angle = torch.tensor(0.37, dtype=real_dtype, requires_grad=True)
+    phase = torch.exp(1j * angle)
+    matrix = phase * torch.tensor([[0, -1j], [1j, 0]], dtype=dtype)
+    circuit = fq.Circuit(1, dtype=dtype).any(0, matrix=matrix)
+    inverse = circuit.adjoint().to_ir().instructions[0].matrix
+    torch.testing.assert_close(inverse, matrix.mH, atol=0, rtol=0)
+    torch.testing.assert_close(inverse @ matrix, torch.eye(2, dtype=dtype))
+    inverse[0, 1].real.backward()
+    torch.testing.assert_close(angle.grad, -torch.cos(angle.detach()))
+
+
+@pytest.mark.parametrize("shape", [(4, 4), (2, 2, 2, 2), (16,)])
+def test_custom_adjoint_uses_operator_shape_not_storage_shape(
+    shape: tuple[int, ...],
+) -> None:
+    matrix = torch.eye(4, dtype=torch.complex128).reshape(shape)
+    circuit = fq.Circuit(2, dtype=torch.complex128).any(0, 1, matrix=matrix)
+    inverse = circuit.adjoint().to_ir().instructions[0].matrix
+    torch.testing.assert_close(inverse, torch.eye(4, dtype=torch.complex128))
+
+
+def test_custom_adjoint_accepts_an_integer_permutation_matrix() -> None:
+    matrix = torch.tensor([[0, 1], [1, 0]])
+    inverse = fq.Circuit(1).any(0, matrix=matrix).adjoint()
+    torch.testing.assert_close(inverse.to_ir().instructions[0].matrix, matrix)

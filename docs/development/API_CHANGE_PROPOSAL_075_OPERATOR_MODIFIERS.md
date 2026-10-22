@@ -51,6 +51,29 @@ measurements, each produced by the shipped code:
   41. The two new names are in `flagquantum.operators` and not at the root, so
   `test_migrated_exports_are_not_discoverable_at_root` covers them.
 
+**Revision 4 adds the spelling install, which is the one process-global effect
+Decision 6 now names.** Registration used to leave `Circuit` unable to spell the
+declared name, so the registry and the `Circuit` surface disagreed for every name
+added after import -- the constraint proposal 071 "Problem" section 13 measured.
+`register_operator` now installs the opcode and each alias as a `Circuit` method
+that takes the declared arity, the declared qubit names as keywords and the
+declared parameter names, and that emits the canonical opcode. This is an
+API-owner decision taken after the authorized half landed, not a weakening of
+Decision 6's refusals: the returned table is still a new frozen value, the
+built-in `OPERATOR_SCHEMAS` is still never written, no process-global *registry*
+exists, and the checked-in artefacts are still independent of which registrations
+a process ran -- `tools/operator_manifest.py` and `tools/docs_source_of_truth.py`
+regenerate with no diff after a registration, because the installed method is not
+a schema entry. What does become order-sensitive is the spelling, so it is pinned
+rather than left implicit: redeclaring the same calling surface is a no-op even
+when an unrelated field such as the adjoint rule differs, a declaration that would
+change what the method binds is refused with
+`operator 'x' is already installed on Circuit as 'x' with a different arity,
+parameter list or qubit names`, and a name `Circuit` already carries is refused with
+`operator 'run' cannot be registered: Circuit already carries 'run'`. The declared
+operand question Decision 7 leaves open is untouched: the installed method still
+needs an explicit matrix per call.
+
 **Decisions 1, 2 and 3 are not merely unapproved: they have been superseded by an
 approved, landed design.** The control modifier shipped as
 `Circuit.control(n_controls, ctrl_qubits)` in
@@ -909,6 +932,17 @@ Refused explicitly:
 - Redefining an existing opcode. `with_operator` already refuses this with
   `operator schema 'h' is already registered`, and the refusal is kept rather
   than relaxed to an override.
+
+One effect is process-global and is admitted on purpose: the *spelling*. That
+`Circuit` can write the declared name is a property of the `Circuit` class, which
+installs its method table once at import, so a registration made after import
+either installs the method itself or leaves the registry and the `Circuit` surface
+disagreeing. The install therefore happens in `register_operator`, and it is
+bounded so it cannot become the mutable registry this decision refuses: it holds
+no table, it is idempotent for an identical declaration, it refuses a different
+declaration under an installed name, and it refuses a name `Circuit` already
+carries. The manifest and the capability document stay independent of it because
+the installed method is not a schema entry.
 
 ### 7. A registered operator enters the IR only with an explicit matrix
 
