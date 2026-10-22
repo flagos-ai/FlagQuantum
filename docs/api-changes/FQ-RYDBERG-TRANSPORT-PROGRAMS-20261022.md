@@ -63,7 +63,10 @@ in `tests/fixtures/lindblad_output_plan_compatibility.json` are reused unchanged
 not copied or regenerated; their established consumers still check exact bytes,
 identity and numeric replay. Do not regenerate either fixture to hide a failure.
 
-## Runnable user reference
+## Historical runnable baseline reference
+
+The fixed adapter below was run for the baseline and is retired by native
+replacement; use examples.rydberg_native_dynamics for the current workflow.
 
 ```bash
 python -m examples.rydberg_transport_reference
@@ -208,3 +211,29 @@ normalizer for both old schedules and native controls, retaining Core binding.
 No new IR, scheduler, binder, solver, registry or result fields are admitted.
 Native-only plan 1.7 and invalid_native_request are already approved in 081;
 old numerical/source fixtures and all physical/gradient/replay budgets stay.
+
+## Simulation replacement evidence
+
+The three baseline fixtures now construct actual native programs. Their physical,
+gradient, optimizer, discrete-adjoint and replay consumer functions and decorators
+are unchanged, checked by AST comparison against main f187adbb. The redundant
+fixed matrix adapter is removed; the separate neutral_atom_pair_reference remains
+an independently used numerical/detection reference. Existing source and old-plan
+fixture files are not regenerated.
+
+Run `python -m examples.rydberg_native_dynamics`: version 1.7, survival 0.81873075,
+unconditional RR 0.40936538, no-flag 0.85353566 and exact numeric replay True.
+The 40 unchanged physics consumers and 36 native consistency/gradient/refusal
+cases pass locally. Three-parameter controls are compared to an independent dense
+unitary for all three integrators. Full verification remains a PR acceptance gate.
+
+The initial physics run had eight failures: Python scalar bindings were first
+converted using Torch's default float32 before requested-precision conversion.
+Direct conversion at the requested precision fixed the drift; all original
+assertions and budgets were retained. This is not evidence of stronger solver
+accuracy. No event, motion-heating, cloud or scalability claim is introduced.
+
+The integration evidence update records this bounded experimental consumer in
+the existing continuous_time_lindblad capability limitations and regenerates its
+documentation. It does not add a registry entry, raise maturity, change governance
+snapshots or promote the frontend to Stable Core.
