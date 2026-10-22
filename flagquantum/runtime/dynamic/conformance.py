@@ -153,6 +153,10 @@ def dynamic_conformance_cases() -> tuple[DynamicConformanceCase, ...]:
     feedback.gate("x", 0)
     feedback.measure(0, classical_bit=0)
     feedback.conditional("x", 1, classical_bit=0)
+    repeated_measurement = DynamicCircuit(1)
+    repeated_measurement.gate("x", 0)
+    repeated_measurement.measure(0, classical_bit=0)
+    repeated_measurement.measure(0, classical_bit=1)
     repeated = DynamicCircuit(1)
     repeated.gate("x", 0)
     repeated.measure(0, classical_bit=0)
@@ -160,6 +164,12 @@ def dynamic_conformance_cases() -> tuple[DynamicConformanceCase, ...]:
     return (
         DynamicConformanceCase("active_reset", reset, (0,), ()),
         DynamicConformanceCase("conditional_flip", feedback, (1, 1), (1,)),
+        DynamicConformanceCase(
+            "repeated_measurement",
+            repeated_measurement,
+            (1,),
+            (1, 1),
+        ),
         DynamicConformanceCase("qubit_reuse", repeated, (0,), (0,)),
     )
 
@@ -175,7 +185,7 @@ def run_dynamic_conformance(
     outcomes = []
     for index, case in enumerate(dynamic_conformance_cases()):
         result = executor(case.circuit, shots=shots, seed=100 + index)
-        samples = result.samples.reshape(-1, case.circuit.n_wires)
+        samples = result.samples.reshape(-1, case.circuit.n_qubits)
         width = _classical_width(case.circuit)
         classical = (
             result.classical_bits.reshape(-1, width)

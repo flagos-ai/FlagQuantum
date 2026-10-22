@@ -111,6 +111,18 @@ def test_local_dynamic_feedback_example_is_executable() -> None:
     assert "local_statevector_trajectory" in completed.stdout
 
 
+def test_local_dynamic_repeated_measurement_example_is_executable() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "examples.local.dynamic_repeated_measurement"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "repeated measurement preserved collapse: True" in completed.stdout
+    assert "reset returned the qubit to zero: True" in completed.stdout
+
+
 def test_local_dynamic_validation_example_is_executable() -> None:
     completed = subprocess.run(
         [sys.executable, "-m", "examples.local.dynamic_validation"],
