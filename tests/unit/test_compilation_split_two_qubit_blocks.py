@@ -316,12 +316,12 @@ def test_the_pipeline_can_read_the_wire_after_the_split_and_not_before() -> None
     second has had its two ``rz`` gates on wire 0 merged with the factor between
     them, which is exactly the reach the split adds.
 
-    The factor is chosen to be a ``z`` rotation so the merged run is a declared
-    opcode the runtime can also execute, which is what makes the statevector
-    assertion at the end an independent check of the merge.
+    The factor uses exactly represented S entries so the split introduces no
+    ambiguous tiny component. The merged run remains executable by the runtime,
+    making the statevector assertion an independent check of the merge.
     """
 
-    product = _product(_one_qubit_matrix("rz"), _one_qubit_matrix("rz"))
+    product = _product(_one_qubit_matrix("s"), _one_qubit_matrix("s"))
     source = CircuitIR(
         2,
         (
@@ -389,3 +389,24 @@ def test_the_split_is_idempotent_and_leaves_a_native_program_alone() -> None:
         dtype="complex128",
     )
     assert split_two_qubit_blocks(native) is native
+
+
+def test_a_split_factor_with_small_components_is_preserved() -> None:
+    """A numerical factor with tiny entries must not be rounded during folding."""
+    product = _product(_one_qubit_matrix("rz"), _one_qubit_matrix("rz"))
+    source = CircuitIR(
+        2,
+        (
+            Instruction("rz", (0,), params={"theta": 0.3}),
+            Instruction("blob", (0, 1), matrix=product),
+            Instruction("rz", (0,), params={"theta": 0.4}),
+        ),
+        dtype="complex128",
+    )
+    split = split_two_qubit_blocks(source)
+    folded = optimize(split)
+    # Unlike the exact-S fixture above, this floating-point factor carries a
+    # nonzero component below the fold's resolution. Keep all four operations.
+    assert folded.instructions == split.instructions
+    assert len(folded.instructions) == 4
+    assert float(torch.max(torch.abs(_state(source) - _state(folded))).item()) < 1e-13

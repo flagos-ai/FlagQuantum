@@ -65,8 +65,8 @@ _MEAN_OPTIMIZED_LENGTH = {
 #: so the direction is what is asserted, with the folded side bounded by ratio.
 _LEGAL_GATES_DECLINING = 771
 _OPTIMIZED_GATES_DECLINING = 771
-_OPTIMIZED_GATES_NOT_DECLINING = 384
-_LEGAL_GATES_NOT_DECLINING_LOCAL = 907
+_OPTIMIZED_GATES_NOT_DECLINING = 386
+_LEGAL_GATES_NOT_DECLINING_LOCAL = 909
 _LEGAL_GATES_NOT_DECLINING_SPREAD = 30
 _REFUSING_BASIS = "clifford-t"
 
@@ -181,7 +181,7 @@ def test_the_vocabulary_decline_saves_gates_after_lowering(payload: dict) -> Non
     """The measurement that makes the decline a rule rather than a preference.
 
     Without the decline the fold is strictly shorter on the intermediate program
-    (384 against 771) and strictly longer after the target's own lowering (907
+    (386 against 771) and strictly longer after the target's own lowering (909
     against 771 here). Both halves have to hold, or the rule is not justified.
 
     The ``shipped`` arm is in the table because the rule now has an exemption, and

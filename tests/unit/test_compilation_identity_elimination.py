@@ -26,9 +26,9 @@ identity; `CircuitIR` has no field in which to record a global phase; and
 programs. So the fold is `4*pi`, a half turn stays, and the price is a named set of
 refusals rather than a silent sign.
 
-The **band** claim is that the tolerance is the shipped `1e-12` applied to the
-angle's residue modulo `4*pi`, and nothing looser: a target's error rate is not
-consulted, so an angle merely near a multiple stays.
+The **zero** claim is that only an exactly zero residue modulo `4*pi` is
+removed. A nonzero residue remains even below `1e-12`; an exact pass has no
+permission to discard a user-supplied small rotation.
 
 The **loop** claim is that the verdicts survive `optimize` end to end, which is
 where a removal can still be undone by a later pass. The fold limit is pinned too,
@@ -630,16 +630,22 @@ def test_declared_refusals(name: str, params: dict[str, float]) -> None:
     assert not _pass_says_identity(name, (0,), **params)
 
 
-def test_the_tolerance_band_is_the_shipped_one_and_both_of_its_edges_hold() -> None:
-    """`1e-12` on the residue modulo `4*pi`, checked from inside and outside the band."""
+def test_only_exact_zero_residues_are_removed() -> None:
+    """Adjacent representable angles and tiny nonzero residues must survive."""
 
-    inside = (0.0, 1e-13, -1e-13, 1e-12, _FOUR_PI - 1e-13, -_FOUR_PI + 1e-13)
+    inside = (0.0, _FOUR_PI, -_FOUR_PI)
     for residue in inside:
         assert _pass_says_identity("rz", (0,), theta=residue), residue
         assert _pass_says_identity("u3", (0,), theta=0.0, phi=residue, lbd=0.0), residue
     # `2*pi` and `2*pi + 1e-13` are *outside* this band: they are exact multiples of
     # `2*pi` and not of `4*pi`, and that is the whole point of the fold.
     outside = (
+        1e-14,
+        -1e-14,
+        1e-13,
+        1e-12,
+        math.nextafter(_FOUR_PI, math.inf),
+        math.nextafter(_FOUR_PI, -math.inf),
         1e-11,
         -1e-11,
         1e-8,
