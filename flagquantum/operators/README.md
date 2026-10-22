@@ -15,16 +15,35 @@ import `flagquantum.simulation`.
 `flagquantum.core.operator_schema.OPERATOR_SCHEMAS`, which is a read-only mapping:
 
 ```python
+import torch
+
+from flagquantum import Circuit
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.operators import register_operator
 
-registry = register_operator(
+register_operator(
     "cphase_quarter", arity=2, adjoint="self_inverse",
     qubit_convention=("control", "target"),
 )
-print(registry.schemas["cphase_quarter"].arity)  # 2
 print("cphase_quarter" in OPERATOR_SCHEMAS)      # False
+
+quarter = torch.diag(torch.tensor([1, 1, 1, 1j], dtype=torch.complex128))
+circuit = Circuit(2).h(0).h(1).cphase_quarter(control=0, target=1, matrix=quarter)
+print([(item.name, item.wires) for item in circuit.to_ir().instructions])
+# [('h', (0,)), ('h', (1,)), ('cphase_quarter', (0, 1))]
 ```
+
+The declaration installs the spelling, so the call site has the same shape as a
+built-in gate: the method takes the declared number of qubits, the declared qubit
+names as keywords, and the declared parameter names, and it emits the canonical
+opcode, so an alias produces the same instruction as the name it aliases. The
+installation is process-global and happens once per declaration; redeclaring the
+same calling surface is a no-op even if an unrelated field such as `adjoint`
+differs, a declaration that would change what the method binds is refused with
+`operator 'cphase_quarter' is already installed on Circuit as 'cphase_quarter'
+with a different arity, parameter list or qubit names`, and a spelling `Circuit`
+already carries — a built-in gate, an alias of one, or an ordinary attribute such
+as `run` — is refused rather than overwritten.
 
 Two consequences are contracts rather than omissions, and both have a test:
 
