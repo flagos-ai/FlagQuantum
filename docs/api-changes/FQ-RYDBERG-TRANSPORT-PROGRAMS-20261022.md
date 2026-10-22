@@ -105,3 +105,48 @@ It does not claim native motion from matrix assembly.
    full CI/GPU gates. Each PR includes runnable user code and expected results,
    and requires its own merge authorization. Native success does not close the
    remaining event, motional, hardware or scalability gates.
+
+## Core implementation admission
+
+After baseline #698 merged at `acc420c258042de5189a6edf934efdd8e2d25ec9`,
+the Core delivery owns `core/rydberg.py` (frontend), `core/geometry.py` (finite
+Cartesian validation), and `core/ir/program/physical.py` (typed records and
+physical verification). The existing ProgramRecord/Operation gain only the two
+approved optional fields. The existing level verifier/dispatcher and circuit
+normalizer consume them; the global circuit opcode manifest stays unchanged.
+
+The existing experimental surface candidate admits exactly RydbergProgram under
+experimental.simulation, with no root export or change to its frozen governance
+baseline. The existing internal-level candidate admits the six approved
+physical diagnostic codes and the one typed profile; its existing checker must
+read that admission. This is not a second profile registry or a new IR hierarchy.
+Core's local README owns the shortest construction/verification change path.
+
+Numerical native consumption, native plan 1.7 and the Remote adapter replacement
+remain subsequent domain deliveries. Core tensor helpers construct small CPU
+mathematical inputs; they do not execute the program or certify full M3.
+
+The root run composition calls the same Core-owned native-input guard before
+choosing any local or remote route. This closes the pre-existing path that
+type-checked in Runtime before reaching Core normalization. Runtime and provider
+implementations remain unchanged; there is no provider-specific native check.
+
+Core also owns the native source encoding under
+`core/ir/program/physical_codec.py`. It serializes the actual functions, blocks,
+operations and typed context using the existing scalar codec, with strict
+unknown-field and canonical-round-trip checks. It adds no artifact kind or
+public frontend method. Simulation will consume this boundary for plan 1.7;
+the source codec itself does not assemble or validate numeric Hamiltonians.
+
+### Core-stage scope and remaining consumer checks
+
+The Core delivery proves source construction, typed identity, continuous path
+safety, scalar/source encoding, tensor inputs and refusal through Core
+normalization and root plan/run/compile composition. It does not yet prove
+every direct deployment/provider/client intake path. In particular, the legacy
+deployment package builder performs its own inline to_ir conversion and needs
+a domain-owned guard delegation before the complete front-door gate closes.
+Keep that preparation separate from Core semantics and from numerical assembly.
+The existing Remote coordinate replacement and consumer-intake evidence remain
+subsequent domain-owned work. Native numerical enablement must retain the full
+front-door/refusal gate; this source-only delivery does not close it or M3.

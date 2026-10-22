@@ -99,6 +99,30 @@ def lower_to_level(program: Any, target_level: str) -> LevelConversion:
                 ),
             ),
         )
+    from ..rydberg import RydbergProgram
+    from .program.physical import is_physical_record
+
+    native_record = program._record if isinstance(program, RydbergProgram) else program
+    if isinstance(native_record, ProgramRecord) and is_physical_record(native_record):
+        diagnostics = verify_program_record(native_record)
+        if diagnostics:
+            state = (
+                UNSUPPORTED_WITH_DIAGNOSTICS
+                if all(
+                    item.code == "physical.unsupported_structure"
+                    for item in diagnostics
+                )
+                else INVALID_INPUT
+            )
+            return LevelConversion(
+                state=state, level=LEVEL_PROGRAM, diagnostics=diagnostics
+            )
+        if target_level in REALIZED_EXITS:
+            return LevelConversion(
+                state=SUPPORTED_EXACT, level=LEVEL_PROGRAM, record=native_record
+            )
+        if target_level == PUBLIC_LEVEL:
+            return program_to_circuit(native_record)
     if target_level in REALIZED_EXITS:
         return circuit_to_program(program)
     if target_level == PUBLIC_LEVEL:

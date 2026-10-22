@@ -104,6 +104,7 @@ def run(
         torch.Size([1, 4])
     """
 
+    import_module(".core.ir", __package__)._reject_native_circuit_input(program_or_plan)
     from .runtime.execution_plan import ExecutionPlan
 
     remote_requested = (

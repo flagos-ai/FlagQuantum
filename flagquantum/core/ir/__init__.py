@@ -754,11 +754,28 @@ def from_engine_qir(n_qubits: int, qir: Sequence[Mapping[str, Any]]) -> CircuitI
     return CircuitIR(n_wires=int(n_qubits), instructions=tuple(instructions))
 
 
+def _reject_native_circuit_input(program: Any) -> None:
+    """Keep native-program refusal in Core for circuit workflow consumers."""
+    from ...errors import CapabilityError
+    from ..rydberg import RydbergProgram
+    from .program.model import ProgramRecord
+    from .program.physical import is_physical_record
+
+    if isinstance(program, RydbergProgram) or (
+        isinstance(program, ProgramRecord) and is_physical_record(program)
+    ):
+        raise CapabilityError(
+            "native Rydberg timelines cannot execute as circuits; use flagquantum.lindblad"
+        )
+
+
 def ensure_circuit_ir(program: Any) -> CircuitIR:
     """Return validated canonical IR or reject an unsupported executor input."""
 
+    _reject_native_circuit_input(program)
     candidate = program.to_ir() if hasattr(program, "to_ir") else program
     if not isinstance(candidate, CircuitIR):
+        _reject_native_circuit_input(candidate)
         raise TypeError(
             "FlagQuantum executors require CircuitIR or an object exposing to_ir()"
         )

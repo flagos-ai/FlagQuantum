@@ -18,14 +18,17 @@ control-flow graph.
 - `levels.py`: the internal boundary. It states the vocabulary the internal
   level contract is written in and delegates the two conversions. It is not
   exported from `flagquantum` and does not appear in `docs/public_api_v1.json`.
-- `diagnostics.py`: the refusal vocabulary -- the 28 diagnostic codes, the four
+- `diagnostics.py`: the refusal vocabulary -- the 39 diagnostic codes, the four
   level literals, `LevelContractError`, and `LevelDiagnostic`. One code is
   declared in exactly one place.
 - `program/`: the program level, one file per responsibility. `model.py` is the
   datatype set (blocks, terminators, edges, value references, operations,
   records, conversions, opcode signatures). `verifier.py` is the type and
   control-flow rules. `lowering.py` is the two conversions. `__init__.py`
-  re-exports the four.
+  re-exports the common graph types and conversions. `physical.py` adds the
+  approved typed Rydberg profile and its geometry/resource checks on that same
+  graph; `physical_codec.py` encodes its actual source through the existing
+  scalar codec. These are not another IR hierarchy or numerical engine.
 
 ## What this package must not own
 
@@ -34,7 +37,10 @@ control-flow graph.
   package that is public.
 - No second operator vocabulary. Opcode names, arities, and parameter names come
   from `flagquantum/core/operator_schema.py`; the program level derives its
-  signatures from that schema rather than restating it.
+  signatures from that schema rather than restating it. The approved Rydberg
+  controls acquire meaning only under their typed physical context. They are
+  not global circuit opcodes, and a custom matrix gate using the same spelling
+  keeps its circuit meaning.
 - No pass infrastructure. There is one pass manager and it lives in
   `flagquantum/compiler/pass_manager.py`; nothing here defines a pass, a pass
   registry, an analysis manager, or a second artifact boundary.

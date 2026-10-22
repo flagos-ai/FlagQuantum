@@ -500,3 +500,21 @@ Native transport API: pending implementation
 This is a reference for replacing contract consumers, not native transport,
 calibrated motion, sampled detection or hardware support. See the
 [authorization record](../docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md).
+
+## Native Rydberg program geometry
+
+Run `python -m examples.rydberg_program_geometry` to construct a real native
+RydbergProgram, append named moves and pulses, and query verified commanded
+positions. Expected output:
+
+```text
+Atom order: ('a', 'b')
+Product dimensions: (3, 3)
+Commanded b position at t=0.25: (3.0, 0.0)
+Survival effect shape: (9, 9)
+Circuit route: refused; native evolution awaits Simulation integration
+```
+
+This is the Core construction slice of proposal 081. Commanded positions are
+not evidence of physical atom presence. Native numerical evolution, detector
+events and hardware submission retain their separate delivery gates.
