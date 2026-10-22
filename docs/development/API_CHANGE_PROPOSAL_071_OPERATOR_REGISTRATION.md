@@ -1383,10 +1383,22 @@ records each one that moves.
   is the same asymmetry "Problem" section 10 measures, stated a second time in
   the maturity matrix.
 
-- **A registered operation still cannot be spelled on `Circuit` after import**
-  until the install-loop constraint of Decision 8 is addressed. That is not a
-  regression introduced here; it is a measured property of `circuit.py:972` that
-  this proposal records so that 075's acceptance list can carry it.
+- **A registered operation could not be spelled on `Circuit` after import**, and
+  it now can. This bullet recorded the install-loop constraint of Decision 8 as an
+  open item; `register_operator` now passes its own declaration to
+  `flagquantum/circuit.py`'s `_install_gate_method`, so a declaration installs the
+  opcode and each alias as a bound method that takes the declared arity, the
+  declared qubit names as keywords and the declared parameter names, and that
+  emits the canonical opcode. What Decision 8 records is unchanged -- the install
+  loop still runs once at import, so the registration is what installs the method
+  -- and the measurement recorded here is replaced by the one that closes it:
+  `Circuit(2).cphase_quarter(control=0, target=1, matrix=...)` emits
+  `('cphase_quarter', (0, 1))`, `Circuit(2).CPHASE_QUARTER(0, 1, matrix=...)`
+  emits the same instruction, and an alias emits the canonical name rather than
+  itself. Two limits of the install are deliberate and pinned: a declaration that
+  carries no operand of its own still needs an explicit matrix per call, which is
+  the operator-value question this proposal shares with 075, and a spelling
+  `Circuit` already carries is refused rather than overwritten.
 
 ## Required evidence before this proposal can be accepted
 

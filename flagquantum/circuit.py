@@ -20,6 +20,7 @@ from .core._composition import (
     inverted_instruction,
     powered_instructions,
 )
+from .core._gate_methods import install_gate_method
 from .core.ir import CircuitIR, Instruction
 from .core.operator_schema import (
     MAX_POWER_REPEATS,
@@ -1163,88 +1164,8 @@ def expectation(*ops: tuple[Any, Sequence[int]], ket: torch.Tensor) -> torch.Ten
     return _expectation_from_operators(*ops, ket=ket)
 
 
-_CONTROLLED_TWO_QUBIT_GATES = {
-    "cx",
-    "cy",
-    "cz",
-    "crx",
-    "cry",
-    "crz",
-    "cphase",
-}
-
-
-def _public_qubit_keywords(opcode: str, arity: int) -> tuple[tuple[str, ...], ...]:
-    """Return public keyword aliases without changing internal qubit vocabulary."""
-
-    if arity == 1:
-        return (("qubit", "target"),)
-    if arity == 2 and opcode in _CONTROLLED_TWO_QUBIT_GATES:
-        return (("control",), ("target",))
-    if arity == 2:
-        return (("qubit1", "left"), ("qubit2", "right"))
-    if opcode == "ccx":
-        return (("control1",), ("control2",), ("target",))
-    if opcode == "cswap":
-        return (("control",), ("target1",), ("target2",))
-    return tuple((f"qubit{index + 1}",) for index in range(arity))
-
-
-def _install_gate_method(name: str) -> None:
-    schema = get_operator_schema(name)
-
-    def method(self: Circuit, *args: Any, **kwargs: Any) -> Circuit:
-        arity = schema.arity if schema is not None else len(args)
-        positional = list(args)
-        qubits: list[Any | None] = [None] * arity
-        if schema is not None:
-            for index, aliases in enumerate(
-                _public_qubit_keywords(schema.opcode, schema.arity)
-            ):
-                supplied = [alias for alias in aliases if alias in kwargs]
-                if len(supplied) > 1:
-                    rendered = ", ".join(supplied)
-                    raise TypeError(
-                        f"{name} got multiple names for qubit {index}: {rendered}"
-                    )
-                if supplied:
-                    qubits[index] = kwargs.pop(supplied[0])
-        for index, qubit in enumerate(qubits):
-            if qubit is None and positional:
-                qubits[index] = positional.pop(0)
-        resolved_qubits = []
-        for qubit in qubits:
-            if qubit is None:
-                expected = ", ".join(
-                    aliases[0] for aliases in _public_qubit_keywords(name, arity)
-                )
-                raise TypeError(f"{name} requires qubit arguments: {expected}")
-            resolved_qubits.append(qubit)
-
-        values = positional
-        parameter_names = schema.parameters if schema is not None else ()
-        if len(values) > len(parameter_names):
-            raise TypeError(
-                f"{name} accepts {arity} qubit(s) and "
-                f"{len(parameter_names)} parameter(s)"
-            )
-        # Positional values may cover only a prefix of the schema: the remaining
-        # parameters are allowed to arrive as keywords, as in `rx(0, theta=0.5)`.
-        # A short `values` is therefore expected here, and the missing names are
-        # caught by `IRValidationError` below rather than by `strict=True`.
-        for parameter_name, value in zip(parameter_names, values, strict=False):
-            if parameter_name in kwargs:
-                raise TypeError(f"{name} got multiple values for {parameter_name!r}")
-            kwargs[parameter_name] = value
-        return self.gate(name, resolved_qubits, **kwargs)
-
-    method.__name__ = name
-    setattr(Circuit, name, method)
-    setattr(Circuit, name.upper(), method)
-
-
 for _gate_name in sorted(set(OPERATOR_SCHEMAS) | set(OPERATOR_ALIASES)):
-    _install_gate_method(_gate_name)
+    install_gate_method(Circuit, _gate_name)
 
 
 __all__ = ["Circuit", "expectation"]

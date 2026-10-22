@@ -117,7 +117,9 @@ print(info.parameter_shapes) # each parameter is scalar: ()
 ```
 
 An operator that is not built in is declared once, in a value that is readable
-and never mutates the built-in table, and it still runs as the matrix it carries:
+and never mutates the built-in table, and it still runs as the matrix it carries.
+The declaration also installs the spelling, so the call site reads like a
+built-in gate and accepts the qubit names the declaration chose:
 
 ```python
 import torch
@@ -125,15 +127,14 @@ import flagquantum as fq
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.operators import register_operator
 
-registry = register_operator(
+register_operator(
     "cphase_quarter", arity=2, adjoint="self_inverse",
     qubit_convention=("control", "target"),
 )
-print(registry.canonical("CPHASE_QUARTER"))   # cphase_quarter
 print("cphase_quarter" in OPERATOR_SCHEMAS)   # False
 
 matrix = torch.diag(torch.tensor([1, 1, 1, 1j], dtype=torch.complex128))
-circuit = fq.Circuit(2).h(0).h(1).gate("cphase_quarter", (0, 1), matrix=matrix)
+circuit = fq.Circuit(2).h(0).h(1).cphase_quarter(control=0, target=1, matrix=matrix)
 print([round(float(abs(value)), 4) for value in circuit.state().reshape(-1)])
 # [0.5, 0.5, 0.5, 0.5]
 ```
