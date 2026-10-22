@@ -91,6 +91,58 @@ failure and the eight-GPU `capacity_gate` remains blocked. Select and freeze a
 larger matched workload before collecting promotion evidence; never edit a
 measured artifact into an expected OOM.
 
+### Capacity versus ranks
+
+The commands above measure one rank count. To measure how the achievable
+capacity moves as ranks are added, hold the workload fixed and vary only
+`WORLD_SIZE`.
+
+`--target-world` is the frozen geometry the circuit's gates are laid out for:
+one `ry` per slice and one two-qubit gate per interior slice boundary. It is
+workload identity, not deployment, and it travels into `topology_fingerprint`.
+So every leg of one series passes the **same** `--target-world` while the
+launcher's rank count changes. A leg run at a different `--target-world` trained
+a different circuit and is refused when it is offered as a baseline for this
+one.
+
+```bash
+# One series at the geometry frozen for sixteen slices. Each leg is a fresh
+# torchrun: continuing after a CUDA OOM can leave NCCL unreliable.
+for ranks in 1 2 4 8; do
+  timeout --signal=TERM --kill-after=30s 2h \
+    torchrun --standalone --nproc-per-node=$ranks \
+    benchmarks/internal/evidence/general_mps_capacity.py \
+    --profile a800_capacity --target-world 16 \
+    --output /tmp/issue708-capacity-world$ranks.json
+done
+
+# The completion at the frozen geometry, pairing the baselines the gate names.
+timeout --signal=TERM --kill-after=30s 2h \
+  torchrun --standalone --nproc-per-node=16 \
+  benchmarks/internal/evidence/general_mps_capacity.py \
+  --profile a800_capacity --target-world 16 \
+  --single-gpu-artifact /tmp/issue708-capacity-world1.json \
+  --four-gpu-artifact /tmp/issue708-capacity-world8.json \
+  --raw-log /tmp/issue708-capacity-world16.log \
+  --gpu-samples /tmp/issue708-capacity-world16-samples.csv \
+  --output /tmp/issue708-capacity-world16.json
+```
+
+Because the rank boundaries nest -- every cut a narrower world makes is also a
+cut a wider one makes -- the legs differ in how many pieces the chain is in and
+not in where it is divided, which is what lets the series be read as one
+workload against a varying rank count.
+
+Each leg below the completion is a measured baseline and seals with
+`scalability_claim_allowed: false`. Adding intermediate legs does not add gate
+conditions: `capacity_gate.required_failure_world_sizes` stays one rank plus
+half the completion's ranks, so sealing a richer series never retroactively
+blocks a completion that already paired those two.
+
+`--four-gpu-artifact` keeps its name for compatibility with the eight-rank
+runbook above; it carries the widest baseline below the completion, which is
+eight ranks in a sixteen-rank series.
+
 ## Scientific VQE limit probe
 
 `benchmarks/distributed_mps_heisenberg_vqe.py` trains an open-boundary

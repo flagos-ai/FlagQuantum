@@ -41,9 +41,57 @@ PROFILES = {
     # retaining roughly 13.48 GiB of rank-owned state on eight GPUs.
     "a800_capacity": (12_288, 768, 768),
 }
+#: Frozen geometry of the entangling workload: how many slices its gates are
+#: laid out for. This is workload identity, not deployment -- the circuit places
+#: one ``ry`` per slice and one two-qubit gate per interior slice boundary, so a
+#: run at a different value trains a different circuit. ``mps_release_evidence``
+#: patches this module constant from the manifest's ``target_world_size`` for
+#: exactly that reason, and the value travels into ``topology_fingerprint`` so
+#: that two runs of different geometry can never be paired as one claim.
 TARGET_WORLD = 8
 TRUNCATION_BUDGET = ISSUE091_TRUNCATION_BUDGET
-CAPACITY_BASELINE_WORLDS = (1, 4)
+
+
+def capacity_baseline_worlds(target_world: int) -> tuple[int, ...]:
+    """Return the rank counts below ``target_world`` a baseline may be run at.
+
+    These are the powers of two under the completion: one rank always, then each
+    halving up to it. The rank boundaries nest -- the cuts of a narrower world
+    are a subset of a wider one's -- so each point shards the identical frozen
+    circuit rather than a rescaled variant, which is what lets a series of them
+    be read as one workload against a varying rank count.
+
+    Every point here may be measured and sealed. Which of them the release gate
+    *requires* is the narrower question ``capacity_gate_failure_worlds`` answers.
+    """
+    if target_world <= 0:
+        raise ValueError("target_world must be positive")
+    worlds, world = [1], 2
+    while world < target_world:
+        worlds.append(world)
+        world *= 2
+    return tuple(worlds)
+
+
+def capacity_gate_failure_worlds(target_world: int) -> tuple[int, ...]:
+    """Return the rank counts whose measured failure the capacity gate requires.
+
+    The gate asks for one rank and for half the completion's ranks: the first
+    shows the workload needs sharding at all, the second shows it still does not
+    fit at half the width it completed on. The intermediate points of a series
+    are evidence about how capacity moves, not additional conditions, so adding
+    them to a series must not retroactively block a completion that already
+    paired the two the gate names.
+    """
+    baselines = capacity_baseline_worlds(target_world)
+    if len(baselines) == 1:
+        return baselines
+    return (1, baselines[-1])
+
+
+#: Baselines for the default frozen geometry, kept as a module constant because
+#: the launcher and the pairing tests both read it.
+CAPACITY_BASELINE_WORLDS = capacity_baseline_worlds(TARGET_WORLD)
 
 
 def reverse_checkpoint_capacity_bytes(logical_bytes: int, world_size: int) -> int:
@@ -57,16 +105,29 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def target_boundaries(n_sites: int) -> tuple[int, ...]:
-    return tuple((rank + 1) * n_sites // TARGET_WORLD - 1 for rank in range(7))
+def target_boundaries(
+    n_sites: int, target_world: int = TARGET_WORLD
+) -> tuple[int, ...]:
+    """Return the interior site cuts of the frozen geometry.
+
+    These are the left sites of the ``target_world - 1`` interior boundaries, so
+    a geometry of one slice has none.
+    """
+    if target_world <= 0:
+        raise ValueError("target_world must be positive")
+    return tuple(
+        (rank + 1) * n_sites // target_world - 1 for rank in range(target_world - 1)
+    )
 
 
-def build_entangling_workload(n_sites: int, theta, phi) -> fq.Circuit:
+def build_entangling_workload(
+    n_sites: int, theta, phi, target_world: int = TARGET_WORLD
+) -> fq.Circuit:
     circuit = fq.Circuit(n_sites, device=theta.device)
-    for rank in range(TARGET_WORLD):
-        wire = (2 * rank + 1) * n_sites // (2 * TARGET_WORLD)
-        circuit.ry(wire, theta if rank % 2 == 0 else phi)
-    for index, left in enumerate(target_boundaries(n_sites)):
+    for rank in range(target_world):
+        qubit = (2 * rank + 1) * n_sites // (2 * target_world)
+        circuit.ry(qubit, theta if rank % 2 == 0 else phi)
+    for index, left in enumerate(target_boundaries(n_sites, target_world)):
         if index % 2 == 0:
             circuit.rxx(left, left + 1, phi)
         else:
@@ -89,12 +150,21 @@ def cleanup_within_budget(
     return allocated_bytes <= limit, limit
 
 
-def topology_fingerprint(n_sites: int, max_bond: int) -> str:
+def topology_fingerprint(
+    n_sites: int, max_bond: int, target_world: int = TARGET_WORLD
+) -> str:
+    """Identify the frozen workload, including the geometry its gates follow.
+
+    The geometry is part of the identity so that a baseline and a completion can
+    only be paired when they sharded the same circuit: a run laid out for a
+    different slice count carries different gates and must not be divided into
+    one capacity claim.
+    """
     content = {
         "n_sites": n_sites,
         "bonds": bond_dimensions(n_sites, max_bond),
-        "target_world_size": TARGET_WORLD,
-        "target_boundaries": target_boundaries(n_sites),
+        "target_world_size": target_world,
+        "target_boundaries": target_boundaries(n_sites, target_world),
     }
     return hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
 
@@ -108,10 +178,15 @@ def capacity_baseline_payload(
     trained_bond: int,
     logical_bytes: int,
     rank_records: list[dict],
+    target_world: int = TARGET_WORLD,
 ) -> dict:
     """Build a measured capacity baseline without promoting an expected OOM."""
-    if world_size not in CAPACITY_BASELINE_WORLDS:
-        raise ValueError("capacity baseline world size must be one or four")
+    baselines = capacity_baseline_worlds(target_world)
+    if world_size not in baselines:
+        raise ValueError(
+            f"capacity baseline world size must be one of {baselines}, "
+            f"got {world_size}"
+        )
     statuses = tuple(record.get("status") for record in rank_records)
     failed_from_capacity = (
         "cuda_oom" in statuses
@@ -134,7 +209,10 @@ def capacity_baseline_payload(
         "device_total_memory_bytes": rank_records[0].get(
             "device_total_memory_bytes", 0
         ),
-        "topology_fingerprint": topology_fingerprint(n_sites, initial_bond),
+        "target_world_size": target_world,
+        "topology_fingerprint": topology_fingerprint(
+            n_sites, initial_bond, target_world
+        ),
         "capacity_failure": failed_from_capacity,
         "single_gpu_capacity_failure": (
             failed_from_capacity if world_size == 1 else False
@@ -153,6 +231,7 @@ def validate_capacity_baseline(
     n_sites: int,
     initial_bond: int,
     logical_bytes: int,
+    target_world: int = TARGET_WORLD,
 ) -> None:
     """Reject unmatched, synthetic, or non-capacity baseline artifacts."""
     schema = baseline.get("schema")
@@ -169,7 +248,7 @@ def validate_capacity_baseline(
         or int(baseline.get("world_size", expected_world_size)) != expected_world_size
         or capacity_failure is not True
         or baseline.get("topology_fingerprint")
-        != topology_fingerprint(n_sites, initial_bond)
+        != topology_fingerprint(n_sites, initial_bond, target_world)
         or int(baseline.get("logical_mps_bytes", 0)) != logical_bytes
     ):
         raise ValueError(
@@ -208,20 +287,41 @@ def main():
     parser.add_argument("--raw-log", type=Path)
     parser.add_argument("--gpu-samples", type=Path)
     parser.add_argument("--steps", type=int, default=1)
+    parser.add_argument(
+        "--target-world",
+        type=int,
+        default=TARGET_WORLD,
+        help=(
+            "frozen geometry the workload's gates are laid out for; this is "
+            "workload identity, so every leg of one capacity series must pass "
+            "the same value while WORLD_SIZE varies"
+        ),
+    )
     args = parser.parse_args()
     n_sites, initial_bond, trained_bond = PROFILES[args.profile]
+    target_world = args.target_world
+    if target_world <= 0:
+        raise SystemExit("--target-world must be positive")
+    baseline_worlds = capacity_baseline_worlds(target_world)
     world = int(os.environ.get("WORLD_SIZE", "1"))
     rank = int(os.environ.get("RANK", "0"))
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
     capacity_profile = args.profile in {"capacity", "a800_capacity"}
-    if capacity_profile and world not in {1, 4, 8}:
-        raise SystemExit("capacity profile requires one, four, or eight ranks")
-    if capacity_profile and world == 8 and args.single_gpu_artifact is None:
-        raise SystemExit("eight-rank run requires --single-gpu-artifact")
-    if capacity_profile and world == 8 and (
-        args.raw_log is None or args.gpu_samples is None
-    ):
-        raise SystemExit("eight-rank run requires --raw-log and --gpu-samples")
+    allowed_worlds = (*baseline_worlds, target_world)
+    if capacity_profile and world not in allowed_worlds:
+        raise SystemExit(
+            f"capacity profile at target world {target_world} requires one of "
+            f"{allowed_worlds} ranks"
+        )
+    completion_run = capacity_profile and world == target_world
+    if completion_run and args.single_gpu_artifact is None:
+        raise SystemExit(
+            f"{target_world}-rank completion requires --single-gpu-artifact"
+        )
+    if completion_run and (args.raw_log is None or args.gpu_samples is None):
+        raise SystemExit(
+            f"{target_world}-rank completion requires --raw-log and --gpu-samples"
+        )
     torch.cuda.set_device(local_rank)
     device = torch.device("cuda", local_rank)
     dist.init_process_group("nccl")
@@ -239,7 +339,7 @@ def main():
         theta = torch.tensor(0.07 * angle_scale, device=device, requires_grad=True)
         phi = torch.tensor(-0.11 * angle_scale, device=device, requires_grad=True)
         result = fqxd.train_distributed_mps(
-            build_entangling_workload(n_sites, theta, phi),
+            build_entangling_workload(n_sites, theta, phi, target_world),
             steps=args.steps,
             observable={n_sites // 2: "z"},
             optimizer="adam",
@@ -325,7 +425,7 @@ def main():
         records = [None] * world
         dist.all_gather_object(records, local)
     if rank == 0:
-        if world in CAPACITY_BASELINE_WORLDS:
+        if world in baseline_worlds:
             payload = capacity_baseline_payload(
                 world_size=world,
                 status=status,
@@ -334,6 +434,7 @@ def main():
                 trained_bond=trained_bond,
                 logical_bytes=logical_bytes,
                 rank_records=records,
+                target_world=target_world,
             )
         else:
             baseline = (
@@ -348,19 +449,25 @@ def main():
                     n_sites=n_sites,
                     initial_bond=initial_bond,
                     logical_bytes=logical_bytes,
+                    target_world=target_world,
                 )
             except ValueError as exc:
                 raise SystemExit(str(exc)) from exc
+            # The widest baseline below the completion. It is the one that shows
+            # the workload still does not fit at half the ranks, so the gate
+            # stays blocked until it is attached.
+            paired_world = baseline_worlds[-1] if len(baseline_worlds) > 1 else None
             four_gpu_baseline = None
             if args.four_gpu_artifact is not None:
                 four_gpu_baseline = json.loads(args.four_gpu_artifact.read_text())
                 try:
                     validate_capacity_baseline(
                         four_gpu_baseline,
-                        expected_world_size=4,
+                        expected_world_size=paired_world,
                         n_sites=n_sites,
                         initial_bond=initial_bond,
                         logical_bytes=logical_bytes,
+                        target_world=target_world,
                     )
                 except ValueError as exc:
                     raise SystemExit(str(exc)) from exc
@@ -373,8 +480,9 @@ def main():
                     "initial_max_bond": initial_bond,
                     "trained_max_bond": trained_bond,
                     "logical_mps_bytes": logical_bytes,
+                    "target_world_size": target_world,
                     "topology_fingerprint": topology_fingerprint(
-                        n_sites, initial_bond
+                        n_sites, initial_bond, target_world
                     ),
                     "rank_records": records,
                     "sharded_completion": False,
@@ -422,7 +530,9 @@ def main():
                         {},
                     ),
                 }
-                for index, left in enumerate(target_boundaries(n_sites))
+                for index, left in enumerate(
+                    target_boundaries(n_sites, target_world)
+                )
             ]
             discarded = sum(update["discarded_weight"] for update in unique_updates)
             payload = {
@@ -436,22 +546,30 @@ def main():
                 "initial_max_bond": initial_bond,
                 "trained_max_bond": trained_bond,
                 "logical_mps_bytes": logical_bytes,
-                "topology_fingerprint": topology_fingerprint(n_sites, initial_bond),
+                "target_world_size": target_world,
+                "topology_fingerprint": topology_fingerprint(
+                    n_sites, initial_bond, target_world
+                ),
                 "world_size": world,
                 "distribution_semantics": "sharded_across_ranks",
                 "single_gpu_capacity_failure": True,
                 "four_gpu_capacity_failure": four_gpu_baseline is not None,
                 "matched_capacity_failure_world_sizes": (
-                    [1, 4] if four_gpu_baseline is not None else [1]
+                    [1, paired_world] if four_gpu_baseline is not None else [1]
                 ),
                 "capacity_gate": {
                     "passed": four_gpu_baseline is not None,
-                    "required_failure_world_sizes": [1, 4],
-                    "completion_world_size": 8,
+                    "required_failure_world_sizes": list(
+                        capacity_gate_failure_worlds(target_world)
+                    ),
+                    "completion_world_size": target_world,
                     "blockers": (
                         []
                         if four_gpu_baseline is not None
-                        else ["matched_four_gpu_capacity_failure_not_attached"]
+                        else [
+                            "matched_capacity_failure_not_attached_at_world_"
+                            f"{paired_world}"
+                        ]
                     ),
                 },
                 "single_gpu_peak_memory_bytes": baseline["rank_record"]["peak_memory_bytes"],
