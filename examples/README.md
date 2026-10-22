@@ -12,6 +12,8 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
+  commanded positions and the existing optional Matplotlib visualization extra.
 - [`boson_interference.py`](boson_interference.py) — it uses the existing
   `flagquantum.lindblad` namespace and boson algebra for two-photon interference
   and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
