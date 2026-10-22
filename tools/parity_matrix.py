@@ -419,6 +419,34 @@ def validate_contract(contract: dict[str, Any], maturity: dict[str, Any]) -> lis
                     f"{where}: 'excluded' priority requires 'out_of_scope' status"
                 )
 
+            # A row leaves scope by decision, so the decision must be a document that
+            # names it. Without this the token is a status edit, which is how an open
+            # gap becomes invisible instead of closed.
+            if row.get("status") == "out_of_scope":
+                if row.get("priority") != "excluded":
+                    problems.append(
+                        f"{where}: 'out_of_scope' requires 'excluded' priority, "
+                        "because a declined capability is not also scheduled"
+                    )
+                decision_ref = row.get("decision_ref")
+                if not decision_ref:
+                    problems.append(
+                        f"{where}: 'out_of_scope' requires a decision_ref, because a "
+                        "capability the programme declines must name the record that "
+                        "declines it"
+                    )
+                elif not (REPO_ROOT / decision_ref).is_file():
+                    problems.append(
+                        f"{where}: decision_ref does not exist: {decision_ref}"
+                    )
+                elif f"`{row['id']}`" not in (REPO_ROOT / decision_ref).read_text(
+                    encoding="utf-8"
+                ):
+                    problems.append(
+                        f"{where}: decision_ref does not name this row, so the record "
+                        "and the row have drifted apart"
+                    )
+
             # Evidence is required per row and may be declared once per domain.
             evidence = row.get("evidence", domain.get("evidence", ()))
             if not evidence:
