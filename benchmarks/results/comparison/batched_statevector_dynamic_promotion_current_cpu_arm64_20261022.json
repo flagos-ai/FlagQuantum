@@ -453,7 +453,7 @@
     "torch": "2.13.0",
     "torch_threads": 1
   },
-  "hostname": "baaideMacBook-Pro-8.local",
+  "hostname": "redacted",
   "methodology": {
     "circuit_construction_in_peak_rss": true,
     "circuit_construction_in_timing": false,
