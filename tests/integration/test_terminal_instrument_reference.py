@@ -33,6 +33,7 @@ def test_presence_instrument_is_complete_and_preserves_the_declared_backaction()
 
 def test_finite_fock_instrument_has_number_statistics_and_a_dephasing_channel() -> None:
     rho, branches = fock_reference()
+    assert tuple(branches) == ("0", "1", "2")
     states = [SuperOperator.from_kraus(k).apply(rho) for k in branches.values()]
     actual = torch.stack([torch.trace(s).real for s in states])
     torch.testing.assert_close(
@@ -41,3 +42,16 @@ def test_finite_fock_instrument_has_number_statistics_and_a_dephasing_channel() 
     torch.testing.assert_close(
         sum(states), torch.diag(torch.diagonal(rho)), atol=1e-10, rtol=0
     )
+
+
+def test_fock_labels_survive_roundoff_below_integer_eigenvalues(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    eigh = torch.linalg.eigh
+
+    def rounded_eigh(matrix: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        values, vectors = eigh(matrix)
+        return torch.nextafter(values, torch.full_like(values, -torch.inf)), vectors
+
+    monkeypatch.setattr(torch.linalg, "eigh", rounded_eigh)
+    test_finite_fock_instrument_has_number_statistics_and_a_dephasing_channel()

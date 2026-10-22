@@ -29,7 +29,7 @@ def fock_reference() -> tuple[torch.Tensor, dict[str, tuple[torch.Tensor, ...]]]
     )
     values, vectors = torch.linalg.eigh(number(0).to_matrix({0: 3}))
     branches = {
-        str(int(value.item())): (torch.outer(vector, vector.conj()),)
+        str(round(value.item())): (torch.outer(vector, vector.conj()),)
         for value, vector in zip(values, vectors.unbind(-1), strict=True)
     }
     return torch.outer(state, state.conj()), branches
