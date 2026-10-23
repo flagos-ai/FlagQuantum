@@ -1451,7 +1451,6 @@ jobs:
           retention-days: 7
 
   coverage-shard:
-    name: coverage-shard (${{ matrix.shard }})
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 30
