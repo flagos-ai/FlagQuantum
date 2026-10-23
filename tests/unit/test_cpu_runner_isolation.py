@@ -292,11 +292,23 @@ def test_jax_launcher_coverage_uses_actual_two_rank_topology() -> None:
 def test_package_indexes_match_routing_before_runner_assignment(job: str) -> None:
     document = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())
     # Job env is evaluated before runner assignment; runner context is unavailable.
-    assert document["jobs"][job]["env"]["PIP_INDEX_URL"] == (
-        "${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && "
-        "github.event.pull_request.head.repo.full_name == github.repository)) && "
+    trusted = (
+        "(github.event_name != 'pull_request' || "
+        "github.event.pull_request.head.repo.full_name == github.repository)"
+    )
+    selected = document["jobs"][job]
+    assert selected["env"]["PIP_INDEX_URL"] == (
+        "${{ " + trusted + " && "
         "'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}"
     )
+    # Manual validation is trusted too; fork PRs retain the hosted fallback.
+    assert selected["runs-on"] == (
+        "${{ fromJSON(" + trusted + " && "
+        '\'["self-hosted","linux","x64","flagquantum-cpu"]\' || '
+        "'[\"ubuntu-latest\"]') }}"
+    )
+    assert trusted in selected["concurrency"]["group"]
+    assert "github.run_id" in selected["concurrency"]["group"]
 
 
 @pytest.mark.parametrize(

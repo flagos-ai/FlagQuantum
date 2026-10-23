@@ -591,8 +591,13 @@ developer still gets those checks before pushing.
 
 The CPU core and runtime tiers use the dedicated A800 CPU runners with up to
 16 xdist workers, bounded by measured affinity, nested cgroup CPU quotas and
-memory limits, and isolated per-job environments. Fork PRs run these tiers on
-GitHub-hosted Ubuntu with at most two workers. Trusted quality, optional SDK,
+memory limits, and isolated per-job environments. Trusted manual validation uses
+the same A800 route as same-repository PRs, rather than the two-worker hosted
+fallback. Each A800 host runs six independent CPU services, each capped at
+16 logical CPU time units, 64 GiB memory and 4096 tasks. The combined CPU ceiling
+remains 96 units per host; memory ceilings are limits, not reservations. Existing
+GPU services are unchanged. Fork PRs run these tiers on GitHub-hosted Ubuntu with
+at most two workers. Trusted quality, optional SDK,
 distributed CPU, coverage and dependency-bound jobs use the A100 CPU pool;
 fork pull requests use GitHub-hosted Ubuntu. The manual source-hygiene job
 also uses A100, while the short PR hygiene job retains its hosted budget. See
