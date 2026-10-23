@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import re
 import subprocess
 import sys
@@ -38,6 +39,17 @@ def _run() -> str:
 def _value(stdout: str, label: str) -> float:
     line = next(line for line in stdout.splitlines() if line.startswith(label))
     return float(line.split(":", 1)[1].strip())
+
+
+def _reported_angles(stdout: str) -> tuple[list[float], list[float]]:
+    line = next(
+        line for line in stdout.splitlines() if line.startswith("optimized_parameters:")
+    )
+    parameters = [float(value) for value in ast.literal_eval(line.split(":", 1)[1])]
+    exported = [
+        float(value) for value in re.findall(r"r[xyz]\(([^()]+)\) q\[\d\];", stdout)
+    ]
+    return parameters, exported
 
 
 def test_train_then_deploy_user_example_runs_end_to_end() -> None:
@@ -106,12 +118,37 @@ def test_the_exported_program_carries_the_trained_angles() -> None:
 
     # Each rotation in the export must carry one of the optimized parameters,
     # so the angles are read from both places and compared rather than pinned.
-    parameters_line = next(
-        line for line in stdout.splitlines() if line.startswith("optimized_parameters:")
-    )
-    parameters = [float(value) for value in re.findall(r"-?\d+\.\d+", parameters_line)]
-    exported = [
-        float(match) for match in re.findall(r"r[xyz]\((-?\d+\.\d+)\) q\[\d\];", stdout)
-    ]
+    parameters, exported = _reported_angles(stdout)
     assert len(exported) == len(parameters), (exported, parameters)
     assert exported == pytest.approx(parameters, abs=1e-6)
+
+
+@pytest.mark.parametrize("small_angle", [7.816013749106787e-6, -2.5e-8])
+def test_the_angle_readback_retains_small_exported_parameters(
+    small_angle: float,
+) -> None:
+    from examples.train_parameterized_circuit_then_deploy import (
+        PARAMETERS,
+        circuit_template,
+    )
+    from flagquantum.compiler import CouplingMap
+    from flagquantum.deployment import CloudBackendProfile, create_deployment_package
+
+    parameters = [3.1416854858398438, -3.141693115234375, small_angle]
+    circuit = circuit_template().bind_parameters(
+        dict(zip(PARAMETERS, parameters, strict=True))
+    )
+    backend = CloudBackendProfile(
+        provider="local",
+        name="small-angle-readback",
+        n_qubits=2,
+        coupling_map=CouplingMap.line(2),
+        is_simulator=True,
+    )
+    package = create_deployment_package(circuit, backend=backend, shots=1024)
+    stdout = f"optimized_parameters: {parameters}\n{package.qasm}"
+
+    reported, exported = _reported_angles(stdout)
+
+    assert reported == parameters
+    assert exported == parameters
