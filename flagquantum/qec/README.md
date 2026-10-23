@@ -93,7 +93,7 @@ it.
 
 ## Decode a detection-event syndrome
 
-`decoding_graph.py` turns a detector error model into a weighted graph and
+`dem/graph.py` turns a detector error model into a weighted graph and
 `matching.py` decodes a syndrome on it. This is the code-independent decoder: it
 reads the model's mechanisms and nothing about the code that produced them.
 `belief_propagation.py` is the second decoder over the same model, for the
@@ -814,7 +814,7 @@ Every mechanism in a model is an independent fault unless it carries an
 `error_id`, and mechanisms sharing one are mutually exclusive: at most one of
 them fires in a shot. This is the one statement the parity matrices cannot carry,
 because two columns of a parity matrix are independent by construction.
-`dem_alternatives.py` owns its arithmetic:
+`dem/alternatives.py` owns its arithmetic:
 
 ```python
 from flagquantum.qec import DemError, DetectorErrorModel
@@ -1150,7 +1150,7 @@ covers it instead.
 
 ## Move between a model and a realization
 
-`dem_circuit.py` goes the other way from construction: a model is written as the
+`dem/circuit.py` goes the other way from construction: a model is written as the
 circuit it already is — one wire per detector, one per observable, one
 Pauli-frame channel per fault — and read back. That makes a model something a
 simulator can draw from, on the stabilizer engine, without a statevector.
@@ -1220,7 +1220,7 @@ block, and `from_stim_text` interprets the block rather than refusing it, so the
 unflattened text is read directly and `.flattened()` is the form the guide's own
 fences use rather than the only form this reader accepts. An earlier revision of
 this section recorded the block as refused by name, which was true until
-[dem_text.py](dem_text.py) read blocks; the section above states what the reader
+[dem/text.py](dem/text.py) read blocks; the section above states what the reader
 does with one. The other refusals, the two readings of the `^` separator and the
 observable marginal each one implies, and what this route does not cover are in
 [Migrating a Stim workflow](../../docs/guides/STIM_USER_MIGRATION.md); that guide
@@ -1231,21 +1231,21 @@ is the runnable form of the same route.
 ## Change and verify
 
 Use [repetition.py](execution/repetition.py) for experiment composition,
-[decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
+[decoders.py](decoders.py) for decoding, [dem/graph.py](dem/graph.py)
 and [matching.py](matching.py) for the detector-error-model matcher, which is the
 authority decoder this layer ships, [belief_propagation.py](belief_propagation.py)
 for the decoder that reads the hyperedges the matcher refuses,
 [bposd.py](bposd.py) for the belief-propagation-and-ordered-statistics decoder
-reached by name, [chunks.py](chunks.py) for the round-window decomposition,
+reached by name, [dem/chunks.py](dem/chunks.py) for the round-window decomposition,
 [sliding_window.py](sliding_window.py) for the same decoder over a band of detectors
 at a time and for the projections those windows are read through,
 [registry.py](registry.py) for reaching a decoder by name,
 [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](execution/sampling.py) for sampling detection events from a memory circuit,
-[dem_circuit.py](dem_circuit.py) for writing a model as a circuit and reading it
+[dem/circuit.py](dem/circuit.py) for writing a model as a circuit and reading it
 back, [noise.py](noise.py) for code-specific noise profiles, [codes/README.md](codes/README.md)
 for code records and family ownership, [codes/css.py](codes/css.py) for a code record built from
-parity-check matrices, [dem_text.py](dem_text.py) for the stim text reader,
+parity-check matrices, [dem/text.py](dem/text.py) for the stim text reader,
 [circuit.py](circuits/memory.py) for detector and observable layouts, and
 [types.py](types.py) for records. Run from the repository root:
 

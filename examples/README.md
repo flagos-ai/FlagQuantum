@@ -105,6 +105,9 @@ These examples do not use that alias:
 - [`qec/memory_layout_and_sampling.py`](qec/memory_layout_and_sampling.py)
   imports QEC declarations, maps and sampling directly, then runs all three
   existing feedback modes; actual measurement sampling requires the Stim extra.
+- [`qec/dem_model_and_chunks.py`](qec/dem_model_and_chunks.py) uses the QEC
+  public imports to read exact rates, build a decoding graph, close a complete
+  chunk and verify the historical pickle class; no optional SDK is required.
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.

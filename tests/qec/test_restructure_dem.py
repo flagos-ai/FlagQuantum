@@ -159,3 +159,60 @@ def test_both_rotated_identities_and_registries_survive_dem_package_imports() ->
         "pymatching",
         "sliding_window_matching",
     )
+
+
+def test_historical_dem_imports_resolve_the_canonical_definitions() -> None:
+    expected = json.loads((_FIXTURES / "restructure_005_metadata.json").read_text())
+    for path in expected["definitions"]:
+        parts = path.split(".")
+        if len(parts) != 4:
+            continue
+        owner = importlib.import_module("flagquantum.qec.dem." + _OWNERS[parts[2]])
+        assert _resolve(path) is getattr(owner, parts[3]), path
+
+
+def test_model_factories_do_not_import_execution_after_legacy_bootstrap() -> None:
+    # The root keeps its historical eager facade. Verify the new model boundary
+    # after that bootstrap, in a fresh process without changing caller state.
+    import subprocess
+    import sys
+
+    script = r"""
+import importlib
+import importlib.abc
+import sys
+import flagquantum.qec
+
+blocked = (
+    "flagquantum.compiler", "flagquantum.runtime",
+    "flagquantum.qec.execution", "flagquantum.qec.dem.construction",
+    "flagquantum.qec.dem_construction",
+)
+reload = (
+    "flagquantum.qec.dem.model", "flagquantum.qec.dem.text",
+    "flagquantum.qec.dem.alternatives", "flagquantum.qec.dem.matrices",
+)
+for name in tuple(sys.modules):
+    if name in reload or any(name == p or name.startswith(p + ".") for p in blocked):
+        del sys.modules[name]
+
+class RefuseExecution(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if any(fullname == p or fullname.startswith(p + ".") for p in blocked):
+            raise AssertionError("model crossed the execution boundary: " + fullname)
+        return None
+
+sys.meta_path.insert(0, RefuseExecution())
+owner = importlib.import_module("flagquantum.qec.dem.model")
+from flagquantum.qec.codes import SteaneCode
+from flagquantum.qec.noise import PhenomenologicalNoise
+text = "error(0.125) D0 L0\ndetector D0\nlogical_observable L0\n"
+model = owner.DetectorErrorModel.from_stim_text(text)
+assert model.detector_rates().tolist() == [0.125]
+capacity = owner.DetectorErrorModel.from_code(
+    SteaneCode(), noise=PhenomenologicalNoise(data_flip=0.125), num_rounds=2,
+)
+assert capacity.num_detectors == 12
+assert not any(n == p or n.startswith(p + ".") for n in sys.modules for p in blocked)
+"""
+    subprocess.run([sys.executable, "-c", script], check=True, timeout=30)

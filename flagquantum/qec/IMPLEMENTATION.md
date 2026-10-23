@@ -320,7 +320,7 @@ The layer declares codes, detectors, and detector error models. It does not
 decode, and it makes no threshold, logical-suppression, real-time, or
 fault-tolerance claim.
 
-`dem.py` adds a detector error model over that layer, and `PhenomenologicalNoise`
+`dem/model.py` adds a detector error model over that layer, and `PhenomenologicalNoise`
 in `noise.py` is the noise record it consumes. A `DemError` is one independent
 physical error mechanism, named by the detectors and the logical observables it
 flips; `DetectorErrorModel` is a set of them over a fixed detector and observable
@@ -331,7 +331,7 @@ per check measurement per round, minus the locations whose probability is zero,
 with the mechanisms that flip the same detectors and observables merged. The
 model is exact for Pauli noise in the reference gate set.
 
-`dem_construction.py` owns where those mechanisms come from, and it knows two
+`dem/construction.py` owns where those mechanisms come from, and it knows two
 descriptions of an experiment. `_memory_circuit_entries` is the **forced** route
 `from_memory_circuit` calls: it enumerates the locations a noise record
 configures, injects one at a time into the source program the circuit carries,
@@ -472,7 +472,7 @@ factors leaves every detector rate and every observable rate unchanged. The sum
 rule does not preserve them, and is offered for the caller who means it.
 
 A model can also state that mechanisms are alternatives rather than independent,
-and `dem_alternatives.py` owns that reading. `DemError.error_id` is an optional
+and `dem/alternatives.py` owns that reading. `DemError.error_id` is an optional
 non-negative label; the mechanisms sharing one are mutually exclusive, so at most
 one of them fires in a shot, which is how a correlated or decomposed fault is
 stated. It is the one statement the parity matrices cannot carry, because two
@@ -660,7 +660,7 @@ a distance-2 one. The two routes answer different questions and their geometries
 are allowed to differ, which is why the difference is pinned rather than glossed.
 
 The stim interchange is a text format, not a package dependency: nothing in
-`dem.py` imports `stim`, and the reader is exercised against real stim output by
+`dem/model.py` imports `stim`, and the reader is exercised against real stim output by
 `tests/qec/test_dem_stim_interop.py`, which skips when the optional distribution
 is absent. `to_stim_text()` emits valid stim text, verified against stim 1.16.0.
 `from_stim_text()` reads the format `to_stim_text()` emits and hand-written text
@@ -913,8 +913,8 @@ the docstring gate.
 
 ## Reading a model back
 
-`dem_construction.py` answers what model a circuit and a noise record define.
-`dem_circuit.py` answers the other direction, and it can, because a model is
+`dem/construction.py` answers what model a circuit and a noise record define.
+`dem/circuit.py` answers the other direction, and it can, because a model is
 already a circuit's worth of arithmetic stated in another vocabulary: a mechanism
 is a set of detectors and observables it flips together with a probability, and
 mechanisms are independent unless an error id says otherwise, so a model is a
@@ -982,7 +982,7 @@ fewer mechanisms than the one it was read from, so `circuit_from_detector_error_
 names the mechanism and refuses. And exclusivity is executable rather than
 merely stated: the members of an id-carrying group are the branches of one
 channel, so a realization draws at most one of them per shot, which is the same
-statement `dem_alternatives.py` makes in the model's own arithmetic. The
+statement `dem/alternatives.py` makes in the model's own arithmetic. The
 realization does not make a correlated model transcribable -- `to_stim_text()`
 refuses an id-carrying model here exactly as it does anywhere else, because the
 format reads every error instruction as an independent mechanism.
@@ -1131,9 +1131,9 @@ the raw rate as the decoded one fails by name rather than passing quietly.
 
 ## A decoder over the detector error model
 
-`decoding_graph.py` and `matching.py` add the first decoder in this layer that
+`dem/graph.py` and `matching.py` add the first decoder in this layer that
 reads a detector error model rather than a repetition-code syndrome history. The
-split is by responsibility: `decoding_graph.py` states what a model graphs to,
+split is by responsibility: `dem/graph.py` states what a model graphs to,
 and `matching.py` searches that graph.
 
 A `DecodingGraphEdge` connects exactly two nodes and carries a probability and a
@@ -1710,7 +1710,7 @@ happens to be installed; the cross-check is never reached by accident.
 
 ## Cutting a model into rounds
 
-`chunks.py` is the substrate a sliding-window decoder slides over, and it is
+`dem/chunks.py` is the substrate a sliding-window decoder slides over, and it is
 deliberately only the substrate: nothing in it decodes, and a window's matrices
 are not produced, because those are the input shape of the decoder that reads a
 window rather than of the model record.
