@@ -216,6 +216,9 @@ def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
             for step in steps[:bootstrap]
         )
         assert steps[bootstrap + 1]["uses"].startswith("actions/setup-python@")
+        assert steps[bootstrap + 1]["if"] == (
+            "${{ !startsWith(runner.name, 'flagcicd-r300-') }}"
+        )
         assert steps[bootstrap + 2]["uses"] == "./.github/actions/isolated-python"
 
 

@@ -26,8 +26,16 @@ shared host visibility; they are not per-job reservations and must not be added
 across scale-set names to claim aggregate capacity.
 
 The Ubuntu 24.04 base image has Git but lacks GCC and G++. The
-`prepare-r300-cpu` action installs `build-essential` with bounded, non-interactive
-sudo commands before Python setup. Compilation uses at most two processes.
+`prepare-r300-cpu` action installs `build-essential`, Python 3.12, its headers
+and venv support from the Tsinghua Ubuntu mirror with bounded, non-interactive
+sudo commands. A job-local DEB822 source uses the official Ubuntu archive keyring;
+signature verification remains enabled. If mirror metadata cannot be fetched,
+a warning records a bounded retry against the image's configured Ubuntu sources.
+The three SDK jobs use this distribution Python instead of downloading a GitHub
+Python tarball; hosted fork jobs retain `setup-python`. Compilation uses at most
+two processes. The cross-version manual probes still use `setup-python`.
+Python packages use the existing Tsinghua pip index, while CPU PyTorch uses the
+existing Aliyun wheel mirror and official fallback.
 Each job keeps a private virtual environment through `isolated-python`, CPU-only
 PyTorch through `install-cpu-torch`, and a writable temporary pip cache.
 

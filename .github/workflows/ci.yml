@@ -902,6 +902,7 @@ jobs:
       - uses: ./.github/actions/prepare-r300-cpu
         if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
+        if: ${{ !startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
@@ -1002,6 +1003,7 @@ jobs:
       - uses: ./.github/actions/prepare-r300-cpu
         if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
+        if: ${{ !startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
@@ -1086,6 +1088,7 @@ jobs:
       - uses: ./.github/actions/prepare-r300-cpu
         if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
+        if: ${{ !startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python

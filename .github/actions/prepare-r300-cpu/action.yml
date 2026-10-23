@@ -1,13 +1,32 @@
 name: Prepare R300 CPU runner
-description: Install the native compiler missing from the ephemeral R300 image
+description: Install Python 3.12 and native build tools from the signed Ubuntu mirror
 runs:
   using: composite
   steps:
     - shell: bash
       run: |
-        if ! command -v gcc || ! command -v g++; then
-          sudo -n timeout --kill-after=10s 240s apt-get update
-          sudo -n timeout --kill-after=10s 240s apt-get install -y --no-install-recommends build-essential
+        . /etc/os-release
+        test "$ID" = ubuntu && test "$VERSION_ID" = 24.04
+        test "$(dpkg --print-architecture)" = amd64
+        apt_dir="$(mktemp -d "$RUNNER_TEMP/fq-apt.XXXXXX")"
+        cat > "$apt_dir/ubuntu.sources" <<'SOURCES'
+        Types: deb
+        URIs: https://mirrors.tuna.tsinghua.edu.cn/ubuntu/
+        Suites: noble noble-updates noble-backports noble-security
+        Components: main universe
+        Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+        SOURCES
+        apt_options=(-o "Dir::Etc::sourcelist=$apt_dir/ubuntu.sources" -o 'Dir::Etc::sourceparts=-' -o APT::Update::Error-Mode=any -o Acquire::Retries=1 -o Acquire::https::Timeout=30)
+        if ! sudo -n timeout --kill-after=10s 240s apt-get "${apt_options[@]}" update; then
+          echo '::warning::Tsinghua Ubuntu mirror unavailable; retrying the configured Ubuntu sources.'
+          apt_options=(-o APT::Update::Error-Mode=any -o Acquire::Retries=1 -o Acquire::https::Timeout=30)
+          sudo -n timeout --kill-after=10s 240s apt-get "${apt_options[@]}" update
         fi
+        sudo -n timeout --kill-after=10s 240s apt-get "${apt_options[@]}" install -y --no-install-recommends build-essential python3.12 python3.12-venv python3.12-dev
+        /usr/bin/python3.12 -c 'import sys; assert sys.version_info[:2] == (3, 12)'
+        python_bin="$(mktemp -d "$RUNNER_TEMP/fq-python-bin.XXXXXX")"
+        ln -s /usr/bin/python3.12 "$python_bin/python"
+        ln -s /usr/bin/python3.12 "$python_bin/python3"
+        echo "$python_bin" >> "$GITHUB_PATH"
         echo "MAX_JOBS=2" >> "$GITHUB_ENV"
         echo "PIP_CACHE_DIR=$RUNNER_TEMP/fq-pip-cache" >> "$GITHUB_ENV"
