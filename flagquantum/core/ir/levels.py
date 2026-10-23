@@ -99,10 +99,15 @@ def lower_to_level(program: Any, target_level: str) -> LevelConversion:
                 ),
             ),
         )
+    from ..ising import IsingBraidProgram
     from ..rydberg import RydbergProgram
     from .program.physical import is_physical_record
 
-    native_record = program._record if isinstance(program, RydbergProgram) else program
+    native_record = (
+        program._record
+        if isinstance(program, (RydbergProgram, IsingBraidProgram))
+        else program
+    )
     if isinstance(native_record, ProgramRecord) and is_physical_record(native_record):
         diagnostics = verify_program_record(native_record)
         if diagnostics:

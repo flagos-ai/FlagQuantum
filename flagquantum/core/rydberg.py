@@ -126,7 +126,7 @@ class RydbergProgram:
 
     @property
     def _context(self) -> RydbergContext:
-        assert self._record.physical_context is not None
+        assert isinstance(self._record.physical_context, RydbergContext)
         return self._record.physical_context
 
     def _append(

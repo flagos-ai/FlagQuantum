@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.multi_level_ir_internal_contract",
-  "version": "0.4",
+  "version": "0.5",
   "status": "implementation_authorized",
   "owner": "core",
   "approval_basis": "docs/development/API_CHANGE_IMPLEMENTATION_076_DYNAMIC_PROGRAM_IR_LOWERING.md",
@@ -289,16 +289,29 @@
     "no textual internal IR as a compatibility surface",
     "no fq.AncillaQubit or other new public qubit type"
   ],
-  "physical_profile": {
-    "kind": "rydberg",
-    "approval_basis": "docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md",
-    "context_type": "flagquantum.core.ir.program.physical.RydbergContext",
-    "operation_types": [
-      "flagquantum.core.ir.program.physical.RydbergTransport",
-      "flagquantum.core.ir.program.physical.RydbergPulse"
-    ],
-    "frontend": "flagquantum.experimental.simulation.RydbergProgram",
-    "operation_field": "physical_data",
-    "program_field": "physical_context"
-  }
+  "physical_profiles": [
+    {
+      "kind": "rydberg",
+      "approval_basis": "docs/api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md",
+      "context_type": "flagquantum.core.ir.program.physical.RydbergContext",
+      "operation_types": [
+        "flagquantum.core.ir.program.physical.RydbergTransport",
+        "flagquantum.core.ir.program.physical.RydbergPulse"
+      ],
+      "frontend": "flagquantum.experimental.simulation.RydbergProgram",
+      "operation_field": "physical_data",
+      "program_field": "physical_context"
+    },
+    {
+      "kind": "ising_braid",
+      "approval_basis": "docs/api-changes/FQ-ISING-BRAID-PROGRAMS-20261023.md",
+      "context_type": "flagquantum.core.ir.program.physical.IsingContext",
+      "operation_types": [
+        "flagquantum.core.ir.program.physical.IsingExchange"
+      ],
+      "frontend": "flagquantum.experimental.simulation.IsingBraidProgram",
+      "operation_field": "physical_data",
+      "program_field": "physical_context"
+    }
+  ]
 }

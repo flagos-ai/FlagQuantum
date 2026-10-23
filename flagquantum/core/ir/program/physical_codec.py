@@ -1,7 +1,7 @@
 """Strict source encoding for the native physical ProgramRecord profile.
 
-The containing numerical plan remains owned by Lindblad. This module only owns
-the actual Core graph/context and reuses the established Core scalar JSON codec.
+Containing execution plans remain outside Core. This module only owns the
+actual Core graph/context and reuses the established Core scalar JSON codec.
 """
 
 from __future__ import annotations
@@ -15,7 +15,15 @@ from ....errors import SerializationError
 from ...geometry import cartesian_pair, finite_real
 from .. import _decode_value, _encode_value
 from .model import BlockRecord, FunctionRecord, Operation, ProgramRecord
-from .physical import RydbergContext, RydbergPulse, RydbergTransport, control_scalar
+from .physical import (
+    IsingContext,
+    IsingExchange,
+    RydbergContext,
+    RydbergPulse,
+    RydbergTransport,
+    check_ising_exchange,
+    control_scalar,
+)
 from .verifier import verify_program_record
 
 
@@ -45,7 +53,15 @@ def _checked(record: ProgramRecord) -> None:
         )
 
 
-def _context_payload(context: RydbergContext) -> dict[str, Any]:
+def _context_payload(context: RydbergContext | IsingContext) -> dict[str, Any]:
+    if isinstance(context, IsingContext):
+        return {
+            **{
+                field.name: _encode_value(getattr(context, field.name))
+                for field in fields(context)
+            },
+            "kind": "ising_braid",
+        }
     payload = {
         field.name: _encode_value(getattr(context, field.name))
         for field in fields(context)
@@ -67,7 +83,11 @@ def _context_payload(context: RydbergContext) -> dict[str, Any]:
     return payload
 
 
-def _control_payload(data: RydbergTransport | RydbergPulse) -> dict[str, Any]:
+def _control_payload(
+    data: RydbergTransport | RydbergPulse | IsingExchange,
+) -> dict[str, Any]:
+    if isinstance(data, IsingExchange):
+        return {"kind": "exchange", "left": data.left, "clockwise": data.clockwise}
     payload = {
         field.name: _encode_value(getattr(data, field.name)) for field in fields(data)
     }
@@ -116,13 +136,28 @@ def native_program_to_dict(record: ProgramRecord) -> dict[str, Any]:
         )
     return {
         "schema": "flagquantum.program_ir",
-        "version": "1.0",
+        "version": (
+            "1.1" if isinstance(record.physical_context, IsingContext) else "1.0"
+        ),
         "functions": functions,
         "physical_context": _context_payload(record.physical_context),
     }
 
 
-def _context_from_dict(value: object) -> RydbergContext:
+def _context_from_dict(value: object) -> RydbergContext | IsingContext:
+    if isinstance(value, Mapping) and value.get("kind") == "ising_braid":
+        payload = _keys(
+            value,
+            {field.name for field in fields(IsingContext)} | {"kind"},
+            "physical_context",
+        )
+        return IsingContext(
+            tuple(_array(payload["anyon_ids"], "anyon_ids")),
+            payload["total_charge"],
+            payload["fusion_tree"],
+            payload["gauge"],
+            payload["initial_channel"],
+        )
     payload = _keys(
         value,
         {field.name for field in fields(RydbergContext)} | {"kind"},
@@ -159,10 +194,17 @@ def _context_from_dict(value: object) -> RydbergContext:
     )
 
 
-def _control_from_dict(value: object) -> RydbergTransport | RydbergPulse:
+def _control_from_dict(
+    value: object,
+) -> RydbergTransport | RydbergPulse | IsingExchange:
     if not isinstance(value, Mapping):
         raise SerializationError("physical_data must be an object")
     kind = value.get("kind")
+    if kind == "exchange":
+        payload = _keys(value, {"kind", "left", "clockwise"}, "physical_data")
+        data = IsingExchange(payload["left"], payload["clockwise"])
+        check_ising_exchange(data)
+        return data
     if kind not in ("transport", "pulse"):
         raise SerializationError("unknown physical_data kind")
     record_type = RydbergTransport if kind == "transport" else RydbergPulse
@@ -262,7 +304,10 @@ def native_program_from_dict(value: Mapping[str, Any]) -> ProgramRecord:
         payload = _keys(
             value, {"schema", "version", "functions", "physical_context"}, "program"
         )
-        if payload["schema"] != "flagquantum.program_ir" or payload["version"] != "1.0":
+        if payload["schema"] != "flagquantum.program_ir" or payload["version"] not in (
+            "1.0",
+            "1.1",
+        ):
             raise SerializationError("unsupported native Program IR schema/version")
         context = _context_from_dict(payload["physical_context"])
         functions = []

@@ -54,6 +54,7 @@
     ],
     "planning": [],
     "simulation": [
+      "IsingBraidProgram",
       "RydbergProgram",
       "run_tebd"
     ]
@@ -79,9 +80,14 @@
       "proposal": "docs/development/API_CHANGE_PROPOSAL_081_RYDBERG_TRANSPORT_PROGRAMS.md",
       "namespace": "simulation",
       "discoverable_feature_exports": 1
+    },
+    {
+      "proposal": "docs/development/API_CHANGE_PROPOSAL_085_ISING_BRAID_PROGRAMS.md",
+      "namespace": "simulation",
+      "discoverable_feature_exports": 1
     }
   ],
-  "current_total_discoverable_feature_exports": 20,
+  "current_total_discoverable_feature_exports": 21,
   "surface_metrics": {
     "previous_discoverable_feature_exports": 114,
     "current_discoverable_feature_exports": 10,
