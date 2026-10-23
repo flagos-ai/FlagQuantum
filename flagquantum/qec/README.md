@@ -28,7 +28,7 @@ print(result.logical_error_rate)
 
 ## Declare a code and its detection layout
 
-`codes.py` holds the code records and `circuit.py` turns one into a memory
+The `codes` package holds the code records and `circuit.py` turns one into a memory
 experiment. This is the code-independent layer beside the frozen repetition
 profile:
 
@@ -512,11 +512,11 @@ and `ZxxzSurfaceCode` is the first one.
 
 Two classes rather than one, and the split is the correction this section needs:
 the four blocks a caller writes, and the code algebra they are held to, belong to
-`CssCodeMatrices` in [dem_construction.py](dem_construction.py), while the record
-is [CssCode](css_code.py), which wraps a `CssCodeMatrices` with a **stated**
+`CssCodeMatrices` in [codes/matrices.py](codes/matrices.py), while the record
+is [CssCode](codes/css.py), which wraps a `CssCodeMatrices` with a **stated**
 distance -- the shape the section above uses. The distance search described earlier
 in this section is what the declared and derived families go through in
-[codes.py](codes.py) rather than what this route does, so the paragraphs above
+[codes/_css_helpers.py](codes/_css_helpers.py) rather than what this route does, so the paragraphs above
 stand as written about the families and about the bound, and what changes is which
 class the four blocks are handed to. The eight declared records are the set this
 section names; `get_code` reaches three of them by name.
@@ -796,7 +796,7 @@ Two sentences in the paragraphs above are earlier readings, corrected here rathe
 than left standing, and both corrections were read off the tree. The engine does
 execute one channel, but the merged sampler does not conjugate it:
 [channels.py](../noise/channels.py) declares `y_flip_channel`, and
-[sampling.py](sampling.py) places each of the three data families as its own channel
+[sampling.py](execution/sampling.py) places each of the three data families as its own channel
 at the one data location, which is the reading the paragraph before this one states
 and the reason a pair rate is one draw at one family's rate rather than a
 conjugation around the engine's flip. And a fault placed after a named gate does
@@ -1230,7 +1230,7 @@ is the runnable form of the same route.
 
 ## Change and verify
 
-Use [repetition.py](repetition.py) for experiment composition,
+Use [repetition.py](execution/repetition.py) for experiment composition,
 [decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
 and [matching.py](matching.py) for the detector-error-model matcher, which is the
 authority decoder this layer ships, [belief_propagation.py](belief_propagation.py)
@@ -1241,12 +1241,12 @@ reached by name, [chunks.py](chunks.py) for the round-window decomposition,
 at a time and for the projections those windows are read through,
 [registry.py](registry.py) for reaching a decoder by name,
 [adapters.py](adapters.py) for the PyMatching cross-check,
-[sampling.py](sampling.py) for sampling detection events from a memory circuit,
+[sampling.py](execution/sampling.py) for sampling detection events from a memory circuit,
 [dem_circuit.py](dem_circuit.py) for writing a model as a circuit and reading it
-back, [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py)
-for code records, [css_code.py](css_code.py) for a code record built from
+back, [noise.py](noise.py) for code-specific noise profiles, [codes/README.md](codes/README.md)
+for code records and family ownership, [codes/css.py](codes/css.py) for a code record built from
 parity-check matrices, [dem_text.py](dem_text.py) for the stim text reader,
-[circuit.py](circuit.py) for detector and observable layouts, and
+[circuit.py](circuits/memory.py) for detector and observable layouts, and
 [types.py](types.py) for records. Run from the repository root:
 
 ```bash

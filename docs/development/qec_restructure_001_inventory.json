@@ -1,0 +1,4058 @@
+{
+  "source_commit": "ff69b2526",
+  "method": "Python AST; imports include function-local and TYPE_CHECKING imports, not only eager runtime edges. Consumer list is textual and not an external ecosystem census.",
+  "modules": [
+    {
+      "path": "flagquantum/qec/__init__.py",
+      "lines": 239,
+      "imports": [
+        {
+          "line": 3,
+          "module": ".adapters",
+          "names": [
+            "MatchingDependencyError",
+            "PyMatchingDecoder"
+          ]
+        },
+        {
+          "line": 4,
+          "module": ".belief_propagation",
+          "names": [
+            "BeliefPropagationDecoder",
+            "BeliefPropagationDecodeResult"
+          ]
+        },
+        {
+          "line": 8,
+          "module": ".bicycle",
+          "names": [
+            "bivariate_bicycle_code"
+          ]
+        },
+        {
+          "line": 9,
+          "module": ".bposd",
+          "names": [
+            "BeliefPropagationOsdDecoder",
+            "BeliefPropagationOsdDecodeResult"
+          ]
+        },
+        {
+          "line": 13,
+          "module": ".chunks",
+          "names": [
+            "ChunkLayout",
+            "DemChunk",
+            "DemChunkSpec",
+            "DemChunksSpec",
+            "DemSeam",
+            "PhaseId",
+            "SeamId",
+            "dem_chunk_from_spec",
+            "dem_chunks_from_spec",
+            "dem_close",
+            "dem_close_all",
+            "dem_stitch",
+            "dem_stitch_all",
+            "dem_stitch_merged"
+          ]
+        },
+        {
+          "line": 29,
+          "module": ".circuit",
+          "names": [
+            "Detector",
+            "DetectorLayout",
+            "LogicalObservable",
+            "MeasurementRef",
+            "MemoryCircuit",
+            "ObservableLayout",
+            "build_memory_circuit"
+          ]
+        },
+        {
+          "line": 38,
+          "module": ".codes",
+          "names": [
+            "CodeCheck",
+            "RepetitionCode",
+            "RotatedSurfaceCode",
+            "StabilizerCode",
+            "SteaneCode",
+            "ancilla_bands",
+            "code_names",
+            "get_code",
+            "register_code",
+            "toric_code",
+            "triangular_colour_code"
+          ]
+        },
+        {
+          "line": 51,
+          "module": ".context",
+          "names": [
+            "DecoderContext",
+            "DecoderInputs",
+            "MeasurementMap",
+            "decoder_context_from_memory_circuit"
+          ]
+        },
+        {
+          "line": 57,
+          "module": ".css_code",
+          "names": [
+            "CssCode"
+          ]
+        },
+        {
+          "line": 58,
+          "module": ".decoders",
+          "names": [
+            "Decoder",
+            "RepetitionLookupDecoder",
+            "RepetitionStreamingLookupDecoder",
+            "RepetitionTemporalDecoder",
+            "StreamingDecoder"
+          ]
+        },
+        {
+          "line": 65,
+          "module": ".decoding_graph",
+          "names": [
+            "DecodingGraph",
+            "DecodingGraphEdge"
+          ]
+        },
+        {
+          "line": 66,
+          "module": ".dem",
+          "names": [
+            "DemError",
+            "DemMergeRule",
+            "DemSample",
+            "DetectorErrorModel"
+          ]
+        },
+        {
+          "line": 67,
+          "module": ".dem_circuit",
+          "names": [
+            "circuit_from_detector_error_model",
+            "detector_error_model_from_circuit"
+          ]
+        },
+        {
+          "line": 71,
+          "module": ".dem_construction",
+          "names": [
+            "CssCodeMatrices",
+            "css_code_matrices"
+          ]
+        },
+        {
+          "line": 72,
+          "module": ".floquet",
+          "names": [
+            "FloquetCode",
+            "MeasurementPhase",
+            "ring_floquet_code"
+          ]
+        },
+        {
+          "line": 73,
+          "module": ".logical",
+          "names": [
+            "certify_logical_product",
+            "derive_anticommuting_logical_product"
+          ]
+        },
+        {
+          "line": 74,
+          "module": ".matching",
+          "names": [
+            "MatchingDecodeResult",
+            "MinimumWeightMatchingDecoder"
+          ]
+        },
+        {
+          "line": 75,
+          "module": ".noise",
+          "names": [
+            "PhenomenologicalNoise",
+            "RepetitionNoiseProfile",
+            "run_repetition_memory_noise_sweep"
+          ]
+        },
+        {
+          "line": 80,
+          "module": ".pauli",
+          "names": [
+            "Pauli"
+          ]
+        },
+        {
+          "line": 81,
+          "module": ".qldpc",
+          "names": [
+            "qldpc_code"
+          ]
+        },
+        {
+          "line": 82,
+          "module": ".reed_muller",
+          "names": [
+            "reed_muller_code"
+          ]
+        },
+        {
+          "line": 83,
+          "module": ".registry",
+          "names": [
+            "AUTHORITY_NAME",
+            "BELIEF_PROPAGATION_NAME",
+            "BELIEF_PROPAGATION_OSD_NAME",
+            "CROSS_CHECK_NAME",
+            "SLIDING_WINDOW_NAME",
+            "DetectorErrorModelDecoder",
+            "DetectorErrorModelDecodeResult",
+            "GraphlikeDetectorErrorModelDecoder",
+            "decoder_names",
+            "get_decoder",
+            "register_decoder"
+          ]
+        },
+        {
+          "line": 96,
+          "module": ".repetition",
+          "names": [
+            "run_repetition_memory_experiment"
+          ]
+        },
+        {
+          "line": 97,
+          "module": ".sampling",
+          "names": [
+            "MeasurementSamples",
+            "sample_memory_circuit",
+            "sample_memory_measurements"
+          ]
+        },
+        {
+          "line": 102,
+          "module": ".sliding_window",
+          "names": [
+            "SlidingWindowDecoder",
+            "SlidingWindowDecodeResult",
+            "SlidingWindowMatchingDecoder",
+            "dem_chunks_to_d_sparse",
+            "dem_chunks_to_o_sparse",
+            "dem_chunks_to_pcm"
+          ]
+        },
+        {
+          "line": 110,
+          "module": ".subsystem",
+          "names": [
+            "SubsystemCode",
+            "tesseract_code",
+            "tesseract_column_swap",
+            "tesseract_free_cnot_pairs"
+          ]
+        },
+        {
+          "line": 116,
+          "module": ".surface",
+          "names": [
+            "ZxxzSurfaceCode"
+          ]
+        },
+        {
+          "line": 117,
+          "module": ".types",
+          "names": [
+            "Correction",
+            "DecodeResult",
+            "DetectionEvent",
+            "ErrorEvent",
+            "ErrorSchedule",
+            "NoiseSweepPoint",
+            "PauliFrame",
+            "RepetitionMemoryResult",
+            "RepetitionMemoryShot",
+            "SyndromeRound"
+          ]
+        }
+      ],
+      "definitions": []
+    },
+    {
+      "path": "flagquantum/qec/adapters.py",
+      "lines": 301,
+      "imports": [
+        {
+          "line": 70,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 72,
+          "module": "collections.abc",
+          "names": [
+            "Iterable"
+          ]
+        },
+        {
+          "line": 73,
+          "module": "dataclasses",
+          "names": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "line": 74,
+          "module": "importlib",
+          "names": [
+            "import_module"
+          ]
+        },
+        {
+          "line": 75,
+          "module": "types",
+          "names": [
+            "ModuleType"
+          ]
+        },
+        {
+          "line": 76,
+          "module": "typing",
+          "names": [
+            "Any"
+          ]
+        },
+        {
+          "line": 78,
+          "module": "..errors",
+          "names": [
+            "CapabilityError"
+          ]
+        },
+        {
+          "line": 79,
+          "module": ".decoding_graph",
+          "names": [
+            "DecodingGraph",
+            "DecodingGraphEdge"
+          ]
+        },
+        {
+          "line": 80,
+          "module": ".dem",
+          "names": [
+            "DetectorErrorModel"
+          ]
+        },
+        {
+          "line": 81,
+          "module": ".matching",
+          "names": [
+            "MatchingDecodeResult",
+            "_defects"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "MatchingDependencyError",
+          "line": 89,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_pymatching",
+          "line": 93,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_translate",
+          "line": 105,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "PyMatchingDecoder",
+          "line": 172,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/belief_propagation.py",
+      "lines": 646,
+      "imports": [
+        {
+          "line": 66,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 68,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 69,
+          "module": "collections.abc",
+          "names": [
+            "Iterable"
+          ]
+        },
+        {
+          "line": 70,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 71,
+          "module": "numbers",
+          "names": [
+            "Integral",
+            "Real"
+          ]
+        },
+        {
+          "line": 73,
+          "module": "..errors",
+          "names": [
+            "CapabilityError"
+          ]
+        },
+        {
+          "line": 74,
+          "module": ".decoding_graph",
+          "names": [
+            "DecodingGraph"
+          ]
+        },
+        {
+          "line": 75,
+          "module": ".dem",
+          "names": [
+            "DemError",
+            "DetectorErrorModel",
+            "_count",
+            "_normalized_indices"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_syndrome_mask",
+          "line": 94,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_FactorGraph",
+          "line": 118,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_factor_graph",
+          "line": 147,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_clip",
+          "line": 203,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_check_messages",
+          "line": 209,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_variable_messages",
+          "line": 258,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_posteriors",
+          "line": 282,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_decision",
+          "line": 292,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_flips",
+          "line": 302,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_explains",
+          "line": 313,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_weight",
+          "line": 319,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_ordered_statistics",
+          "line": 329,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_pivot_mask",
+          "line": 391,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_model_from_graph",
+          "line": 400,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "BeliefPropagationDecodeResult",
+          "line": 435,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "BeliefPropagationDecoder",
+          "line": 482,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/bicycle.py",
+      "lines": 227,
+      "imports": [
+        {
+          "line": 43,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 45,
+          "module": "collections.abc",
+          "names": [
+            "Sequence"
+          ]
+        },
+        {
+          "line": 46,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 48,
+          "module": ".codes",
+          "names": [
+            "_DISTANCE_SEARCH_WEIGHT",
+            "CssCode"
+          ]
+        },
+        {
+          "line": 49,
+          "module": ".qldpc",
+          "names": [
+            "_logical_basis",
+            "_paired_basis",
+            "_rows"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_monomial_exponents",
+          "line": 54,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_polynomial_masks",
+          "line": 77,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_transpose",
+          "line": 110,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "bivariate_bicycle_code",
+          "line": 121,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/bposd.py",
+      "lines": 401,
+      "imports": [
+        {
+          "line": 30,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 32,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 33,
+          "module": "collections.abc",
+          "names": [
+            "Iterable"
+          ]
+        },
+        {
+          "line": 34,
+          "module": "dataclasses",
+          "names": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "line": 35,
+          "module": "numbers",
+          "names": [
+            "Integral",
+            "Real"
+          ]
+        },
+        {
+          "line": 37,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 39,
+          "module": "..errors",
+          "names": [
+            "CapabilityError"
+          ]
+        },
+        {
+          "line": 40,
+          "module": ".dem",
+          "names": [
+            "DetectorErrorModel"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_indices",
+          "line": 54,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_syndrome",
+          "line": 69,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "BeliefPropagationOsdDecodeResult",
+          "line": 89,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "BeliefPropagationOsdDecoder",
+          "line": 132,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/chunks.py",
+      "lines": 1011,
+      "imports": [
+        {
+          "line": 96,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 98,
+          "module": "collections.abc",
+          "names": [
+            "Sequence"
+          ]
+        },
+        {
+          "line": 99,
+          "module": "dataclasses",
+          "names": [
+            "dataclass",
+            "field",
+            "replace"
+          ]
+        },
+        {
+          "line": 100,
+          "module": "typing",
+          "names": [
+            "ClassVar"
+          ]
+        },
+        {
+          "line": 102,
+          "module": ".circuit",
+          "names": [
+            "MemoryCircuit"
+          ]
+        },
+        {
+          "line": 103,
+          "module": ".dem",
+          "names": [
+            "DemError",
+            "DemMergeRule",
+            "DetectorErrorModel",
+            "_count"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "SeamId",
+          "line": 124,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "PhaseId",
+          "line": 160,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DemSeam",
+          "line": 197,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "ChunkLayout",
+          "line": 234,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DemChunk",
+          "line": 398,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DemChunkSpec",
+          "line": 511,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_cut",
+          "line": 549,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_chunk_from_spec",
+          "line": 619,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "DemChunksSpec",
+          "line": 634,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "dem_chunks_from_spec",
+          "line": 742,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_stitch",
+          "line": 782,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_stitch_all",
+          "line": 881,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_stitch_merged",
+          "line": 902,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_close",
+          "line": 921,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_close_all",
+          "line": 949,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/circuit.py",
+      "lines": 706,
+      "imports": [
+        {
+          "line": 28,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 30,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 31,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 32,
+          "module": "typing",
+          "names": [
+            "Literal"
+          ]
+        },
+        {
+          "line": 34,
+          "module": ".codes",
+          "names": [
+            "StabilizerCode",
+            "ancilla_band_counts"
+          ]
+        },
+        {
+          "line": 35,
+          "module": ".logical",
+          "names": [
+            "certify_logical_product"
+          ]
+        },
+        {
+          "line": 36,
+          "module": ".pauli",
+          "names": [
+            "Pauli"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_checked_basis",
+          "line": 46,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_readout_basis_of",
+          "line": 58,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_declared_readout",
+          "line": 66,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_readout_observables",
+          "line": 76,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_pinned_checks",
+          "line": 103,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "MeasurementRef",
+          "line": 135,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "Detector",
+          "line": 163,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DetectorLayout",
+          "line": 184,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "LogicalObservable",
+          "line": 201,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "ObservableLayout",
+          "line": 247,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "MemoryCircuit",
+          "line": 264,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_require_ancilla_bands",
+          "line": 430,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_detector_count",
+          "line": 460,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_check_source",
+          "line": 481,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_detector_layout",
+          "line": 525,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_observable_layout",
+          "line": 549,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "build_memory_circuit",
+          "line": 592,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/codes.py",
+      "lines": 1206,
+      "imports": [
+        {
+          "line": 29,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 31,
+          "module": "inspect",
+          "names": []
+        },
+        {
+          "line": 32,
+          "module": "itertools",
+          "names": []
+        },
+        {
+          "line": 33,
+          "module": "collections.abc",
+          "names": [
+            "Callable",
+            "Sequence"
+          ]
+        },
+        {
+          "line": 34,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 35,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 36,
+          "module": "typing",
+          "names": [
+            "TYPE_CHECKING",
+            "Any",
+            "Protocol",
+            "TypeVar",
+            "cast",
+            "runtime_checkable"
+          ]
+        },
+        {
+          "line": 45,
+          "module": ".gf2",
+          "names": [
+            "in_span",
+            "reduce_rows",
+            "reduce_vector"
+          ]
+        },
+        {
+          "line": 46,
+          "module": ".pauli",
+          "names": [
+            "Pauli"
+          ]
+        },
+        {
+          "line": 52,
+          "module": ".css_code",
+          "names": [
+            "CssCode"
+          ]
+        },
+        {
+          "line": 874,
+          "module": ".css_code",
+          "names": [
+            "CssCode"
+          ]
+        },
+        {
+          "line": 1003,
+          "module": ".css_code",
+          "names": [
+            "CssCode"
+          ]
+        },
+        {
+          "line": 1199,
+          "module": ".css_code",
+          "names": [
+            "CssCode"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "ancilla_bands",
+          "line": 55,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "ancilla_band_counts",
+          "line": 95,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "CodeCheck",
+          "line": 130,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "StabilizerCode",
+          "line": 240,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "RepetitionCode",
+          "line": 303,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_surface_ancilla_sites",
+          "line": 377,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "RotatedSurfaceCode",
+          "line": 402,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "SteaneCode",
+          "line": 514,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_block_width",
+          "line": 631,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_matrix_rows",
+          "line": 650,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_mask",
+          "line": 681,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_supports",
+          "line": 691,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_odd_overlap",
+          "line": 699,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_minimum_logical_weight",
+          "line": 705,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_refuse_non_logicals",
+          "line": 737,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "triangular_colour_code",
+          "line": 765,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "toric_code",
+          "line": 885,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "register_code",
+          "line": 1034,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "code_names",
+          "line": 1100,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "get_code",
+          "line": 1106,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "__getattr__",
+          "line": 1189,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "__dir__",
+          "line": 1205,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/context.py",
+      "lines": 564,
+      "imports": [
+        {
+          "line": 45,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 47,
+          "module": "collections.abc",
+          "names": [
+            "Iterable"
+          ]
+        },
+        {
+          "line": 48,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 49,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 51,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 53,
+          "module": "..noise",
+          "names": [
+            "NoiseModel"
+          ]
+        },
+        {
+          "line": 54,
+          "module": ".circuit",
+          "names": [
+            "MeasurementRef",
+            "MemoryCircuit"
+          ]
+        },
+        {
+          "line": 55,
+          "module": ".codes",
+          "names": [
+            "CodeCheck"
+          ]
+        },
+        {
+          "line": 56,
+          "module": ".dem",
+          "names": [
+            "DetectorErrorModel"
+          ]
+        },
+        {
+          "line": 57,
+          "module": ".noise",
+          "names": [
+            "PhenomenologicalNoise"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_measurement_row",
+          "line": 67,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "MeasurementMap",
+          "line": 102,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DecoderInputs",
+          "line": 180,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_measurement_columns",
+          "line": 229,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_measurement_index",
+          "line": 259,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_parity_row",
+          "line": 283,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_detector_checks",
+          "line": 295,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_projected",
+          "line": 331,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "DecoderContext",
+          "line": 377,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "decoder_context_from_memory_circuit",
+          "line": 536,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/css_code.py",
+      "lines": 643,
+      "imports": [
+        {
+          "line": 37,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 39,
+          "module": "dataclasses",
+          "names": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "line": 40,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 42,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 44,
+          "module": ".codes",
+          "names": [
+            "_DISTANCE_SEARCH_WEIGHT",
+            "BinaryMatrix",
+            "CodeCheck",
+            "_block_width",
+            "_mask",
+            "_matrix_rows",
+            "_minimum_logical_weight",
+            "_refuse_non_logicals",
+            "_supports",
+            "ancilla_band_counts"
+          ]
+        },
+        {
+          "line": 56,
+          "module": ".dem_construction",
+          "names": [
+            "CssCodeMatrices"
+          ]
+        },
+        {
+          "line": 57,
+          "module": ".gf2",
+          "names": [
+            "rank"
+          ]
+        },
+        {
+          "line": 58,
+          "module": ".pauli",
+          "names": [
+            "Pauli"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_row_masks",
+          "line": 63,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_support",
+          "line": 82,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_row_basis",
+          "line": 96,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_in_span",
+          "line": 111,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_stated",
+          "line": 123,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "CssCode",
+          "line": 137,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/decoders.py",
+      "lines": 123,
+      "imports": [
+        {
+          "line": 3,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 5,
+          "module": "collections.abc",
+          "names": [
+            "Sequence"
+          ]
+        },
+        {
+          "line": 6,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 7,
+          "module": "typing",
+          "names": [
+            "Protocol",
+            "runtime_checkable"
+          ]
+        },
+        {
+          "line": 9,
+          "module": ".types",
+          "names": [
+            "Correction",
+            "DecodeResult",
+            "PauliFrame",
+            "SyndromeRound"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_repetition_wire",
+          "line": 12,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_validate_repetition_history",
+          "line": 23,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "Decoder",
+          "line": 37,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "StreamingDecoder",
+          "line": 44,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "RepetitionLookupDecoder",
+          "line": 51,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "RepetitionStreamingLookupDecoder",
+          "line": 67,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "RepetitionTemporalDecoder",
+          "line": 77,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/decoding_graph.py",
+      "lines": 234,
+      "imports": [
+        {
+          "line": 32,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 34,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 35,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 36,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 38,
+          "module": "..errors",
+          "names": [
+            "CapabilityError"
+          ]
+        },
+        {
+          "line": 39,
+          "module": ".dem",
+          "names": [
+            "DetectorErrorModel",
+            "_count",
+            "_normalized_indices",
+            "_probability"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "DecodingGraphEdge",
+          "line": 47,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DecodingGraph",
+          "line": 101,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/dem.py",
+      "lines": 987,
+      "imports": [
+        {
+          "line": 49,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 51,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 52,
+          "module": "collections.abc",
+          "names": [
+            "Callable",
+            "Iterable"
+          ]
+        },
+        {
+          "line": 53,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 54,
+          "module": "enum",
+          "names": [
+            "Enum"
+          ]
+        },
+        {
+          "line": 55,
+          "module": "numbers",
+          "names": [
+            "Integral",
+            "Real"
+          ]
+        },
+        {
+          "line": 56,
+          "module": "typing",
+          "names": [
+            "Any"
+          ]
+        },
+        {
+          "line": 58,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 60,
+          "module": "..noise",
+          "names": [
+            "NoiseModel"
+          ]
+        },
+        {
+          "line": 61,
+          "module": ".circuit",
+          "names": [
+            "MemoryCircuit"
+          ]
+        },
+        {
+          "line": 62,
+          "module": ".codes",
+          "names": [
+            "StabilizerCode"
+          ]
+        },
+        {
+          "line": 63,
+          "module": ".dem_alternatives",
+          "names": [
+            "alternative_groups",
+            "fold_marginals",
+            "projected_ids",
+            "require_groups_fit",
+            "sample_groups",
+            "stated_ids"
+          ]
+        },
+        {
+          "line": 71,
+          "module": ".dem_construction",
+          "names": [
+            "CssCodeMatrices",
+            "_code_matrix_entries",
+            "_memory_circuit_entries",
+            "css_code_matrices"
+          ]
+        },
+        {
+          "line": 77,
+          "module": ".dem_text",
+          "names": [
+            "_DETECTOR_PREFIX",
+            "_OBSERVABLE_PREFIX",
+            "_parse_stim_text"
+          ]
+        },
+        {
+          "line": 78,
+          "module": ".noise",
+          "names": [
+            "PhenomenologicalNoise"
+          ]
+        },
+        {
+          "line": 924,
+          "module": ".dem_circuit",
+          "names": [
+            "detector_error_model_from_circuit"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "DemMergeRule",
+          "line": 81,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_combine_two",
+          "line": 111,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_probability",
+          "line": 126,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_count",
+          "line": 135,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_error_id",
+          "line": 143,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_normalized_indices",
+          "line": 156,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "DemError",
+          "line": 169,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DemSample",
+          "line": 212,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DetectorErrorModel",
+          "line": 238,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/dem_alternatives.py",
+      "lines": 247,
+      "imports": [
+        {
+          "line": 28,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 30,
+          "module": "collections.abc",
+          "names": [
+            "Callable",
+            "Sequence"
+          ]
+        },
+        {
+          "line": 31,
+          "module": "typing",
+          "names": [
+            "TYPE_CHECKING"
+          ]
+        },
+        {
+          "line": 33,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 36,
+          "module": "flagquantum.qec.dem",
+          "names": [
+            "DemError"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "stated_ids",
+          "line": 49,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "projected_ids",
+          "line": 63,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "fault_groups",
+          "line": 95,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "alternative_groups",
+          "line": 112,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "require_groups_fit",
+          "line": 128,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "fold_marginals",
+          "line": 162,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "sample_groups",
+          "line": 207,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/dem_circuit.py",
+      "lines": 530,
+      "imports": [
+        {
+          "line": 79,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 81,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 82,
+          "module": "collections.abc",
+          "names": [
+            "Iterable",
+            "Sequence"
+          ]
+        },
+        {
+          "line": 83,
+          "module": "numbers",
+          "names": [
+            "Integral",
+            "Real"
+          ]
+        },
+        {
+          "line": 84,
+          "module": "typing",
+          "names": [
+            "TYPE_CHECKING",
+            "Any"
+          ]
+        },
+        {
+          "line": 86,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 88,
+          "module": "..core.ir",
+          "names": [
+            "CircuitIR",
+            "Instruction",
+            "ensure_circuit_ir"
+          ]
+        },
+        {
+          "line": 89,
+          "module": "..core.operator_schema",
+          "names": [
+            "canonical_opcode"
+          ]
+        },
+        {
+          "line": 90,
+          "module": ".dem_alternatives",
+          "names": [
+            "fault_groups"
+          ]
+        },
+        {
+          "line": 93,
+          "module": ".dem",
+          "names": [
+            "DemError",
+            "DetectorErrorModel"
+          ]
+        },
+        {
+          "line": 283,
+          "module": ".dem",
+          "names": [
+            "DetectorErrorModel"
+          ]
+        },
+        {
+          "line": 320,
+          "module": ".dem",
+          "names": [
+            "DemError"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "circuit_from_detector_error_model",
+          "line": 122,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "detector_error_model_from_circuit",
+          "line": 199,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_require_every_mechanism_fires",
+          "line": 292,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_mechanisms",
+          "line": 317,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_operators",
+          "line": 368,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_declared_probabilities",
+          "line": 402,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_error_id",
+          "line": 444,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_support",
+          "line": 458,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_frame",
+          "line": 466,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_scale",
+          "line": 483,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_frame_support",
+          "line": 495,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_count",
+          "line": 523,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/dem_construction.py",
+      "lines": 1102,
+      "imports": [
+        {
+          "line": 71,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 73,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 74,
+          "module": "collections.abc",
+          "names": [
+            "Mapping"
+          ]
+        },
+        {
+          "line": 75,
+          "module": "dataclasses",
+          "names": [
+            "dataclass",
+            "replace"
+          ]
+        },
+        {
+          "line": 76,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 77,
+          "module": "types",
+          "names": [
+            "MappingProxyType"
+          ]
+        },
+        {
+          "line": 78,
+          "module": "typing",
+          "names": [
+            "Literal"
+          ]
+        },
+        {
+          "line": 80,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 82,
+          "module": "..compiler._hybrid",
+          "names": [
+            "INDEX",
+            "capture_source",
+            "lower_dynamic_program"
+          ]
+        },
+        {
+          "line": 83,
+          "module": "..core.ir",
+          "names": [
+            "CircuitIR",
+            "Instruction"
+          ]
+        },
+        {
+          "line": 84,
+          "module": "..errors",
+          "names": [
+            "CapabilityError",
+            "ValidationError"
+          ]
+        },
+        {
+          "line": 85,
+          "module": "..noise",
+          "names": [
+            "NoiseModel"
+          ]
+        },
+        {
+          "line": 86,
+          "module": "..noise.channels",
+          "names": [
+            "KrausChannel"
+          ]
+        },
+        {
+          "line": 87,
+          "module": "..runtime.dynamic.hybrid_session",
+          "names": [
+            "execute_hybrid_dynamic_session"
+          ]
+        },
+        {
+          "line": 88,
+          "module": ".circuit",
+          "names": [
+            "MeasurementRef",
+            "MemoryCircuit"
+          ]
+        },
+        {
+          "line": 89,
+          "module": ".codes",
+          "names": [
+            "CodeCheck"
+          ]
+        },
+        {
+          "line": 93,
+          "module": ".codes",
+          "names": [
+            "StabilizerCode"
+          ]
+        },
+        {
+          "line": 94,
+          "module": ".dem_matrices",
+          "names": [
+            "CssCodeMatrices"
+          ]
+        },
+        {
+          "line": 95,
+          "module": ".dem_matrices",
+          "names": [
+            "Entry"
+          ]
+        },
+        {
+          "line": 96,
+          "module": ".dem_matrices",
+          "names": [
+            "_binary_matrix"
+          ]
+        },
+        {
+          "line": 97,
+          "module": ".dem_matrices",
+          "names": [
+            "_code_matrix_entries"
+          ]
+        },
+        {
+          "line": 98,
+          "module": ".dem_matrices",
+          "names": [
+            "_column_supports"
+          ]
+        },
+        {
+          "line": 99,
+          "module": ".dem_matrices",
+          "names": [
+            "css_code_matrices"
+          ]
+        },
+        {
+          "line": 100,
+          "module": ".noise",
+          "names": [
+            "PhenomenologicalNoise"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_data_family_rates",
+          "line": 110,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_require_source_anchors",
+          "line": 130,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_require_owned_syndrome_references",
+          "line": 156,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_flipped_measurements",
+          "line": 178,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_layout_signature",
+          "line": 241,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_memory_circuit_entries",
+          "line": 281,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_Mechanism",
+          "line": 429,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_GateBoundMechanism",
+          "line": 505,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_lowered_program",
+          "line": 522,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_pauli_fault",
+          "line": 537,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_gate_bound_mechanisms",
+          "line": 582,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_spliced_fault",
+          "line": 648,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_check_rate_order",
+          "line": 674,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_mechanisms",
+          "line": 720,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_checked_round",
+          "line": 830,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_checked_wire",
+          "line": 843,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_single_anchor",
+          "line": 853,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_forced_flip",
+          "line": 868,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_inject_data_flip",
+          "line": 893,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_inject_measurement_flip",
+          "line": 952,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_forced_signature",
+          "line": 980,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_lowered_source",
+          "line": 996,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_executed_flip_set",
+          "line": 1014,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/dem_matrices.py",
+      "lines": 429,
+      "imports": [
+        {
+          "line": 34,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 36,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 37,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 39,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 41,
+          "module": ".codes",
+          "names": [
+            "StabilizerCode"
+          ]
+        },
+        {
+          "line": 42,
+          "module": ".noise",
+          "names": [
+            "PhenomenologicalNoise"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_binary_matrix",
+          "line": 50,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_column_supports",
+          "line": 76,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_code_matrix_entries",
+          "line": 88,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "CssCodeMatrices",
+          "line": 219,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "css_code_matrices",
+          "line": 336,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/dem_text.py",
+      "lines": 500,
+      "imports": [
+        {
+          "line": 47,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 49,
+          "module": "collections.abc",
+          "names": [
+            "Iterator"
+          ]
+        },
+        {
+          "line": 50,
+          "module": "typing",
+          "names": [
+            "TypeAlias"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_target_index",
+          "line": 75,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_parse_shift_detectors",
+          "line": 89,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_toggle",
+          "line": 124,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_parse_error_line",
+          "line": 133,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_parse_declaration_line",
+          "line": 252,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_declared_count",
+          "line": 289,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_instructions",
+          "line": 303,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_repeat_count",
+          "line": 321,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_structure",
+          "line": 345,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_unroll_stim_text",
+          "line": 381,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_parse_stim_text",
+          "line": 418,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/floquet.py",
+      "lines": 676,
+      "imports": [
+        {
+          "line": 45,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 47,
+          "module": "itertools",
+          "names": []
+        },
+        {
+          "line": 48,
+          "module": "dataclasses",
+          "names": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "line": 49,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 51,
+          "module": ".codes",
+          "names": [
+            "_DISTANCE_SEARCH_WEIGHT"
+          ]
+        },
+        {
+          "line": 52,
+          "module": ".gf2",
+          "names": [
+            "in_span",
+            "nullspace",
+            "rank",
+            "reduce_rows"
+          ]
+        },
+        {
+          "line": 53,
+          "module": ".logical",
+          "names": [
+            "_symplectic_mask"
+          ]
+        },
+        {
+          "line": 54,
+          "module": ".pauli",
+          "names": [
+            "Pauli"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_phase_rows",
+          "line": 61,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_combination",
+          "line": 70,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_same_span",
+          "line": 80,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_surviving",
+          "line": 91,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_commutes",
+          "line": 114,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_advance",
+          "line": 124,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_centralizer",
+          "line": 132,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_quotient_basis",
+          "line": 147,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_least_logical_weight",
+          "line": 157,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_support",
+          "line": 190,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_to_pauli",
+          "line": 198,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_settle",
+          "line": 207,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "MeasurementPhase",
+          "line": 234,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "FloquetCode",
+          "line": 313,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_ring_edges",
+          "line": 594,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "ring_floquet_code",
+          "line": 611,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/gf2.py",
+      "lines": 166,
+      "imports": [
+        {
+          "line": 40,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 42,
+          "module": "collections.abc",
+          "names": [
+            "Sequence"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "reduce_rows",
+          "line": 47,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "reduce_vector",
+          "line": 77,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "rank",
+          "line": 96,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "in_span",
+          "line": 102,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "nullspace",
+          "line": 108,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/logical.py",
+      "lines": 218,
+      "imports": [
+        {
+          "line": 16,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 18,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 19,
+          "module": "typing",
+          "names": [
+            "TYPE_CHECKING"
+          ]
+        },
+        {
+          "line": 21,
+          "module": ".gf2",
+          "names": [
+            "in_span"
+          ]
+        },
+        {
+          "line": 22,
+          "module": ".pauli",
+          "names": [
+            "Pauli"
+          ]
+        },
+        {
+          "line": 25,
+          "module": ".codes",
+          "names": [
+            "StabilizerCode"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_symplectic_mask",
+          "line": 28,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_z_part_mask",
+          "line": 48,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_solve",
+          "line": 64,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "certify_logical_product",
+          "line": 93,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "derive_anticommuting_logical_product",
+          "line": 157,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/matching.py",
+      "lines": 471,
+      "imports": [
+        {
+          "line": 41,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 43,
+          "module": "heapq",
+          "names": []
+        },
+        {
+          "line": 44,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 45,
+          "module": "collections.abc",
+          "names": [
+            "Iterable"
+          ]
+        },
+        {
+          "line": 46,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 47,
+          "module": "numbers",
+          "names": [
+            "Integral",
+            "Real"
+          ]
+        },
+        {
+          "line": 49,
+          "module": "..errors",
+          "names": [
+            "CapabilityError"
+          ]
+        },
+        {
+          "line": 50,
+          "module": ".decoding_graph",
+          "names": [
+            "DecodingGraph",
+            "DecodingGraphEdge"
+          ]
+        },
+        {
+          "line": 51,
+          "module": ".dem",
+          "names": [
+            "DetectorErrorModel"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_SearchTree",
+          "line": 67,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "MatchingDecodeResult",
+          "line": 75,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "MinimumWeightMatchingDecoder",
+          "line": 117,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_toggle",
+          "line": 304,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_defects",
+          "line": 322,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_detector_adjacency",
+          "line": 342,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_search",
+          "line": 365,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_pair_weights",
+          "line": 394,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_boundary_weights",
+          "line": 402,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_pairing",
+          "line": 425,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/noise.py",
+      "lines": 290,
+      "imports": [
+        {
+          "line": 3,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 5,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 6,
+          "module": "collections.abc",
+          "names": [
+            "Iterable"
+          ]
+        },
+        {
+          "line": 7,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 8,
+          "module": "numbers",
+          "names": [
+            "Integral",
+            "Real"
+          ]
+        },
+        {
+          "line": 10,
+          "module": "..noise",
+          "names": [
+            "NoiseModel",
+            "ReadoutError",
+            "bit_flip_channel"
+          ]
+        },
+        {
+          "line": 11,
+          "module": ".repetition",
+          "names": [
+            "run_repetition_memory_experiment"
+          ]
+        },
+        {
+          "line": 12,
+          "module": ".types",
+          "names": [
+            "NoiseSweepPoint"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_probability",
+          "line": 15,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_rate_vector",
+          "line": 24,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_resolved_rates",
+          "line": 40,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_symmetric_readout_error",
+          "line": 73,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "RepetitionNoiseProfile",
+          "line": 80,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "PhenomenologicalNoise",
+          "line": 117,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "run_repetition_memory_noise_sweep",
+          "line": 240,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/pauli.py",
+      "lines": 148,
+      "imports": [
+        {
+          "line": 9,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 11,
+          "module": "collections.abc",
+          "names": [
+            "Iterable"
+          ]
+        },
+        {
+          "line": 12,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 13,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_wire_tuple",
+          "line": 18,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "Pauli",
+          "line": 35,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/qldpc.py",
+      "lines": 224,
+      "imports": [
+        {
+          "line": 21,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 23,
+          "module": "collections.abc",
+          "names": [
+            "Sequence"
+          ]
+        },
+        {
+          "line": 25,
+          "module": ".codes",
+          "names": [
+            "_DISTANCE_SEARCH_WEIGHT",
+            "BinaryMatrix",
+            "CssCode",
+            "_block_width",
+            "_matrix_rows"
+          ]
+        },
+        {
+          "line": 32,
+          "module": ".gf2",
+          "names": [
+            "in_span",
+            "nullspace",
+            "reduce_rows"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_rows",
+          "line": 37,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_masks",
+          "line": 45,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_logical_basis",
+          "line": 51,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_paired_basis",
+          "line": 87,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "qldpc_code",
+          "line": 145,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/reed_muller.py",
+      "lines": 195,
+      "imports": [
+        {
+          "line": 51,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 53,
+          "module": "itertools",
+          "names": []
+        },
+        {
+          "line": 54,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 56,
+          "module": ".codes",
+          "names": [
+            "CssCode"
+          ]
+        },
+        {
+          "line": 57,
+          "module": ".gf2",
+          "names": [
+            "nullspace"
+          ]
+        },
+        {
+          "line": 58,
+          "module": ".qldpc",
+          "names": [
+            "_logical_basis",
+            "_paired_basis",
+            "_rows"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_monomial_rows",
+          "line": 72,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_punctured",
+          "line": 94,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "reed_muller_code",
+          "line": 120,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/registry.py",
+      "lines": 450,
+      "imports": [
+        {
+          "line": 97,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 99,
+          "module": "inspect",
+          "names": []
+        },
+        {
+          "line": 100,
+          "module": "collections.abc",
+          "names": [
+            "Callable",
+            "Iterable"
+          ]
+        },
+        {
+          "line": 101,
+          "module": "typing",
+          "names": [
+            "Any",
+            "Protocol",
+            "TypeVar",
+            "runtime_checkable"
+          ]
+        },
+        {
+          "line": 103,
+          "module": "..errors",
+          "names": [
+            "CapabilityError"
+          ]
+        },
+        {
+          "line": 104,
+          "module": ".adapters",
+          "names": [
+            "PyMatchingDecoder"
+          ]
+        },
+        {
+          "line": 105,
+          "module": ".belief_propagation",
+          "names": [
+            "BeliefPropagationDecoder"
+          ]
+        },
+        {
+          "line": 106,
+          "module": ".bposd",
+          "names": [
+            "BeliefPropagationOsdDecoder"
+          ]
+        },
+        {
+          "line": 107,
+          "module": ".decoding_graph",
+          "names": [
+            "DecodingGraph"
+          ]
+        },
+        {
+          "line": 108,
+          "module": ".dem",
+          "names": [
+            "DetectorErrorModel"
+          ]
+        },
+        {
+          "line": 109,
+          "module": ".matching",
+          "names": [
+            "MinimumWeightMatchingDecoder"
+          ]
+        },
+        {
+          "line": 434,
+          "module": ".sliding_window",
+          "names": [
+            "SlidingWindowMatchingDecoder"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "DetectorErrorModelDecodeResult",
+          "line": 126,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DetectorErrorModelDecoder",
+          "line": 148,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "GraphlikeDetectorErrorModelDecoder",
+          "line": 173,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "register_decoder",
+          "line": 203,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "decoder_names",
+          "line": 274,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "get_decoder",
+          "line": 281,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_declares_a_graph_carrier",
+          "line": 383,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_takes_a_graph",
+          "line": 397,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_register_windowed_decoder",
+          "line": 416,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/repetition.py",
+      "lines": 329,
+      "imports": [
+        {
+          "line": 3,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 5,
+          "module": "collections.abc",
+          "names": [
+            "Sequence"
+          ]
+        },
+        {
+          "line": 6,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 8,
+          "module": "..compiler._hybrid",
+          "names": [
+            "INDEX",
+            "capture_source",
+            "lower_dynamic_program"
+          ]
+        },
+        {
+          "line": 9,
+          "module": "..noise",
+          "names": [
+            "NoiseModel"
+          ]
+        },
+        {
+          "line": 10,
+          "module": "..runtime.dynamic._feedback",
+          "names": [
+            "DynamicFeedbackAction",
+            "DynamicFeedbackObservation",
+            "DynamicFeedbackPlan",
+            "DynamicFeedbackPoint"
+          ]
+        },
+        {
+          "line": 16,
+          "module": "..runtime.dynamic.hybrid_session",
+          "names": [
+            "execute_hybrid_dynamic_session"
+          ]
+        },
+        {
+          "line": 17,
+          "module": ".decoders",
+          "names": [
+            "Decoder",
+            "RepetitionLookupDecoder",
+            "RepetitionStreamingLookupDecoder",
+            "RepetitionTemporalDecoder",
+            "StreamingDecoder",
+            "_repetition_wire"
+          ]
+        },
+        {
+          "line": 25,
+          "module": ".types",
+          "names": [
+            "Correction",
+            "DecodeResult",
+            "DetectionEvent",
+            "ErrorSchedule",
+            "PauliFrame",
+            "RepetitionMemoryResult",
+            "RepetitionMemoryShot",
+            "SyndromeRound"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_adjust_for_frame",
+          "line": 46,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_RepetitionFeedbackController",
+          "line": 57,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_feedback_plan",
+          "line": 91,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_memory_source",
+          "line": 112,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_syndrome_rounds",
+          "line": 153,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_lookup_correction",
+          "line": 174,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "run_repetition_memory_experiment",
+          "line": 179,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/sampling.py",
+      "lines": 799,
+      "imports": [
+        {
+          "line": 43,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 45,
+          "module": "collections.abc",
+          "names": [
+            "Callable",
+            "Mapping",
+            "Sequence"
+          ]
+        },
+        {
+          "line": 46,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 47,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 48,
+          "module": "types",
+          "names": [
+            "MappingProxyType"
+          ]
+        },
+        {
+          "line": 49,
+          "module": "typing",
+          "names": [
+            "Literal"
+          ]
+        },
+        {
+          "line": 51,
+          "module": "torch",
+          "names": []
+        },
+        {
+          "line": 53,
+          "module": "..core.ir",
+          "names": [
+            "CircuitIR",
+            "Instruction"
+          ]
+        },
+        {
+          "line": 54,
+          "module": "..noise",
+          "names": [
+            "KrausChannel",
+            "NoiseModel",
+            "bit_flip_channel",
+            "phase_flip_channel",
+            "y_flip_channel"
+          ]
+        },
+        {
+          "line": 61,
+          "module": "..simulation.stabilizer",
+          "names": [
+            "sample_noisy_measurements"
+          ]
+        },
+        {
+          "line": 62,
+          "module": ".circuit",
+          "names": [
+            "MeasurementRef",
+            "MemoryCircuit"
+          ]
+        },
+        {
+          "line": 63,
+          "module": ".dem",
+          "names": [
+            "DemSample"
+          ]
+        },
+        {
+          "line": 64,
+          "module": ".dem_construction",
+          "names": [
+            "_check_rate_order",
+            "_data_family_rates",
+            "_gate_bound_mechanisms",
+            "_lowered_program",
+            "_MechanismKind"
+          ]
+        },
+        {
+          "line": 71,
+          "module": ".noise",
+          "names": [
+            "PhenomenologicalNoise"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_MeasurementPlan",
+          "line": 115,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "MeasurementSamples",
+          "line": 140,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_NoiseLocation",
+          "line": 251,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_checked_shots",
+          "line": 275,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_checked_seed",
+          "line": 283,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_rotation_template",
+          "line": 289,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_measurement_plan",
+          "line": 305,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_noise_locations",
+          "line": 398,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_gate_bound_locations",
+          "line": 426,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_round_boundary_locations",
+          "line": 459,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_noisy_program",
+          "line": 541,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_recorded_bits",
+          "line": 596,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_sample_record",
+          "line": 630,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_measurement_samples",
+          "line": 649,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "sample_memory_measurements",
+          "line": 677,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "sample_memory_circuit",
+          "line": 730,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/sliding_window.py",
+      "lines": 1130,
+      "imports": [
+        {
+          "line": 153,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 155,
+          "module": "math",
+          "names": []
+        },
+        {
+          "line": 156,
+          "module": "collections.abc",
+          "names": [
+            "Iterable",
+            "Sequence"
+          ]
+        },
+        {
+          "line": 157,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 158,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 159,
+          "module": "typing",
+          "names": [
+            "Any"
+          ]
+        },
+        {
+          "line": 161,
+          "module": "..errors",
+          "names": [
+            "CapabilityError"
+          ]
+        },
+        {
+          "line": 162,
+          "module": ".chunks",
+          "names": [
+            "DemChunk",
+            "DemChunksSpec",
+            "SeamId",
+            "dem_chunks_from_spec",
+            "dem_close_all"
+          ]
+        },
+        {
+          "line": 169,
+          "module": ".decoding_graph",
+          "names": [
+            "DecodingGraph",
+            "DecodingGraphEdge"
+          ]
+        },
+        {
+          "line": 170,
+          "module": ".dem",
+          "names": [
+            "DetectorErrorModel"
+          ]
+        },
+        {
+          "line": 171,
+          "module": ".matching",
+          "names": [
+            "_DEFAULT_DEFECT_BUDGET",
+            "MatchingDecodeResult",
+            "MinimumWeightMatchingDecoder",
+            "_defects"
+          ]
+        },
+        {
+          "line": 177,
+          "module": ".registry",
+          "names": [
+            "get_decoder"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_seam_width",
+          "line": 194,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_rounds_of",
+          "line": 205,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_round_sequence",
+          "line": 218,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_window_columns",
+          "line": 261,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_projected_columns",
+          "line": 301,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_chunks_to_d_sparse",
+          "line": 342,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_chunks_to_pcm",
+          "line": 407,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "dem_chunks_to_o_sparse",
+          "line": 434,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "SlidingWindowDecodeResult",
+          "line": 462,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "SlidingWindowDecoder",
+          "line": 504,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_mechanism_span",
+          "line": 883,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_window_graph",
+          "line": 901,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_ordering_key",
+          "line": 935,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "SlidingWindowMatchingDecoder",
+          "line": 944,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/subsystem.py",
+      "lines": 588,
+      "imports": [
+        {
+          "line": 46,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 48,
+          "module": "dataclasses",
+          "names": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "line": 49,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 51,
+          "module": ".codes",
+          "names": [
+            "_DISTANCE_SEARCH_WEIGHT",
+            "BinaryMatrix",
+            "_block_width",
+            "_mask",
+            "_matrix_rows",
+            "_minimum_logical_weight",
+            "_refuse_non_logicals",
+            "_supports"
+          ]
+        },
+        {
+          "line": 61,
+          "module": ".gf2",
+          "names": [
+            "rank"
+          ]
+        },
+        {
+          "line": 62,
+          "module": ".pauli",
+          "names": [
+            "Pauli"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "SubsystemCode",
+          "line": 73,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "tesseract_code",
+          "line": 452,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "tesseract_column_swap",
+          "line": 532,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "tesseract_free_cnot_pairs",
+          "line": 565,
+          "kind": "FunctionDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/surface.py",
+      "lines": 346,
+      "imports": [
+        {
+          "line": 31,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 33,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 34,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        },
+        {
+          "line": 36,
+          "module": ".codes",
+          "names": [
+            "CodeCheck",
+            "ancilla_band_counts"
+          ]
+        },
+        {
+          "line": 37,
+          "module": ".pauli",
+          "names": [
+            "Pauli"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_surface_ancilla_sites",
+          "line": 40,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "RotatedSurfaceCode",
+          "line": 65,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "_zxxz_checkerboard",
+          "line": 168,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "_conjugate_by_checkerboard",
+          "line": 191,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "ZxxzSurfaceCode",
+          "line": 209,
+          "kind": "ClassDef"
+        }
+      ]
+    },
+    {
+      "path": "flagquantum/qec/types.py",
+      "lines": 326,
+      "imports": [
+        {
+          "line": 3,
+          "module": "__future__",
+          "names": [
+            "annotations"
+          ]
+        },
+        {
+          "line": 5,
+          "module": "collections.abc",
+          "names": [
+            "Sequence"
+          ]
+        },
+        {
+          "line": 6,
+          "module": "dataclasses",
+          "names": [
+            "dataclass"
+          ]
+        },
+        {
+          "line": 7,
+          "module": "numbers",
+          "names": [
+            "Integral"
+          ]
+        }
+      ],
+      "definitions": [
+        {
+          "name": "_binary_tuple",
+          "line": 10,
+          "kind": "FunctionDef"
+        },
+        {
+          "name": "ErrorEvent",
+          "line": 20,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "ErrorSchedule",
+          "line": 37,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DetectionEvent",
+          "line": 58,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "SyndromeRound",
+          "line": 70,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "Correction",
+          "line": 95,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "PauliFrame",
+          "line": 116,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "DecodeResult",
+          "line": 150,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "RepetitionMemoryShot",
+          "line": 170,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "RepetitionMemoryResult",
+          "line": 212,
+          "kind": "ClassDef"
+        },
+        {
+          "name": "NoiseSweepPoint",
+          "line": 294,
+          "kind": "ClassDef"
+        }
+      ]
+    }
+  ],
+  "consumers": [
+    "capability-maturity.toml",
+    "contracts/cudaq-parity-matrix.toml",
+    "contracts/hybrid-compilation-private-v0-candidate.json",
+    "contracts/qec-cudaq-alignment-checklist.toml",
+    "docs/api-changes/FQ-QUBIT-TERMINOLOGY-COMPLETION-20261002.md",
+    "docs/api-changes/FQ-QUBIT-VOCABULARY-INTEGRAL-20261005.md",
+    "docs/development/API_CHANGE_PROPOSAL_048_QEC_DETECTOR_ERROR_MODEL.md",
+    "docs/development/API_CHANGE_PROPOSAL_048_STAGE1_IMPLEMENTATION_PLAN.md",
+    "docs/development/API_CHANGE_PROPOSAL_048_STAGE2A_IMPLEMENTATION_PLAN.md",
+    "docs/development/API_CHANGE_PROPOSAL_065_QUBIT_VOCABULARY.md",
+    "docs/development/HYBRID_COMPILATION_PHASE16_EVIDENCE.md",
+    "docs/development/HYBRID_COMPILATION_PRIVATE_CONTRACT.md",
+    "docs/development/QEC_CUDAQ_ALIGNMENT.md",
+    "docs/generated/CAPABILITIES.md",
+    "docs/guides/STIM_USER_MIGRATION.md",
+    "docs/reference/CUDAQ_PARITY_MATRIX.md",
+    "docs/reference/KNOWN_LIMITATIONS.md",
+    "docs/roadmap/PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md",
+    "examples/qec/css_code_from_matrices.py",
+    "examples/qec/mixed_check_code.py",
+    "examples/qec/stim_user_migration.py",
+    "tests/api_contract/test_public_docstring_examples.py",
+    "tests/benchmark_contract/test_qec_memory_logical_error_rate.py",
+    "tests/qec/test_adapters_pymatching.py",
+    "tests/qec/test_belief_propagation.py",
+    "tests/qec/test_bicycle_code.py",
+    "tests/qec/test_binary_records.py",
+    "tests/qec/test_bposd_decoder.py",
+    "tests/qec/test_code_registry.py",
+    "tests/qec/test_codes.py",
+    "tests/qec/test_colour_code.py",
+    "tests/qec/test_colour_memory_execution.py",
+    "tests/qec/test_css_code.py",
+    "tests/qec/test_css_code_memory.py",
+    "tests/qec/test_data_fault_families.py",
+    "tests/qec/test_decoder_context.py",
+    "tests/qec/test_decoder_registry.py",
+    "tests/qec/test_decoding_graph.py",
+    "tests/qec/test_dem_chunks.py",
+    "tests/qec/test_dem_circuit_round_trip.py",
+    "tests/qec/test_dem_code_matrices.py",
+    "tests/qec/test_dem_code_matrices_stim.py",
+    "tests/qec/test_dem_cross_check.py",
+    "tests/qec/test_dem_error_ids.py",
+    "tests/qec/test_dem_from_memory_circuit.py",
+    "tests/qec/test_dem_merge.py",
+    "tests/qec/test_dem_public_surface.py",
+    "tests/qec/test_dem_rate_overrides.py",
+    "tests/qec/test_dem_rates.py",
+    "tests/qec/test_dem_records.py",
+    "tests/qec/test_dem_sampling.py",
+    "tests/qec/test_dem_signatures.py",
+    "tests/qec/test_dem_stim_interop.py",
+    "tests/qec/test_dem_stim_reference_rates.py",
+    "tests/qec/test_dem_stim_text.py",
+    "tests/qec/test_dem_stim_text_precision.py",
+    "tests/qec/test_floquet_code.py",
+    "tests/qec/test_gate_bound_noise.py",
+    "tests/qec/test_gf2.py",
+    "tests/qec/test_logical_product_rotation.py",
+    "tests/qec/test_matching_decoder.py",
+    "tests/qec/test_measurement_handles.py",
+    "tests/qec/test_memory_circuit.py",
+    "tests/qec/test_memory_circuit_execution.py",
+    "tests/qec/test_pauli.py",
+    "tests/qec/test_phenomenological_noise.py",
+    "tests/qec/test_qldpc_code.py",
+    "tests/qec/test_reed_muller_code.py",
+    "tests/qec/test_repetition_memory.py",
+    "tests/qec/test_sampling_memory_circuit.py",
+    "tests/qec/test_sliding_window.py",
+    "tests/qec/test_sliding_window_decoder.py",
+    "tests/qec/test_steane_code.py",
+    "tests/qec/test_steane_memory_execution.py",
+    "tests/qec/test_stim_user_migration.py",
+    "tests/qec/test_subsystem_code.py",
+    "tests/qec/test_surface_code.py",
+    "tests/qec/test_toric_code.py",
+    "tests/qec/test_toric_memory_execution.py",
+    "tests/qec/test_zxxz_code.py",
+    "tests/qec/test_zxxz_memory_execution.py",
+    "tests/unit/test_hybrid_compilation_private_contract.py",
+    "tests/unit/test_qec_cudaq_alignment_check.py"
+  ],
+  "validation": {
+    "default_tier": {
+      "passed": 14726,
+      "failed": 22,
+      "errors": 6,
+      "skipped": 278,
+      "deselected": 3486,
+      "seconds": 780.91
+    },
+    "unchanged_base_recheck": {
+      "source_commit": "ff69b2526809772b7fadde5bcb420f9f5899dcf6",
+      "failed": 22,
+      "errors": 6,
+      "seconds": 16.77,
+      "same_node_ids": true
+    },
+    "baseline_reproduced_issues": [
+      "FAILED tests/team/simulation/test_controlled_phase_graph.py::test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes[dtype0]",
+      "FAILED tests/team/simulation/test_controlled_phase_graph.py::test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes[dtype1]",
+      "FAILED tests/team/simulation/test_controlled_phase_graph.py::test_product_state_qft_uses_hadamard_phase_fusion",
+      "FAILED tests/team/simulation/test_statevector_ops_numerics.py::test_native_fused_rotation_layer_only_promotes_terminal_regions",
+      "FAILED tests/unit/test_evidence_provenance.py::test_each_gated_validator_rejects_an_undisclosed_pin[artifacts/flagos_cuda_reference_a800_20260824.json-evidence_errors]",
+      "FAILED tests/unit/test_evidence_provenance.py::test_each_gated_validator_rejects_an_undisclosed_pin[artifacts/split_real_imag_training_a800_20260824.json-evidence_errors]",
+      "FAILED tests/unit/test_evidence_provenance.py::test_each_gated_validator_rejects_an_undisclosed_pin[artifacts/split_real_imag_precision_a800_20260824.json-evidence_errors]",
+      "FAILED tests/unit/test_evidence_provenance.py::test_each_gated_validator_rejects_an_undisclosed_pin[artifacts/split_real_imag_double_single_a800_20260824.json-evidence_errors]",
+      "FAILED tests/unit/test_evidence_provenance.py::test_each_gated_validator_rejects_an_undisclosed_pin[artifacts/split_real_imag_device_double_single_a800_20260825.json-evidence_errors]",
+      "FAILED tests/unit/test_evidence_provenance.py::test_each_gated_validator_rejects_an_undisclosed_pin[artifacts/split_real_imag_optimizer_a800_20260825.json-evidence_errors]",
+      "FAILED tests/unit/test_evidence_revisions.py::test_checked_in_evidence_accounts_for_every_recorded_revision",
+      "FAILED tests/unit/test_multinode_launch_plan.py::test_an_automatic_master_port_is_free_when_it_is_handed_over",
+      "FAILED tests/unit/test_multinode_launch_plan.py::test_preflight_asks_every_question_it_is_meant_to_ask",
+      "FAILED tests/unit/test_multinode_launch_plan.py::test_preflight_checks_each_device_a_lane_pinned_on_both_nodes",
+      "FAILED tests/unit/test_multinode_launch_plan.py::test_preflight_refuses_a_pinned_device_that_is_not_usable[answer0-1: 1 process(es) 35856]",
+      "FAILED tests/unit/test_multinode_launch_plan.py::test_preflight_refuses_a_pinned_device_that_is_not_usable[answer1-absent]",
+      "FAILED tests/unit/test_multinode_launch_plan.py::test_preflight_refuses_when_the_interface_is_missing_on_the_launch_host",
+      "FAILED tests/unit/test_native_cpu_adjoint.py::test_compact_cx_runtime_threshold_and_rollback",
+      "FAILED tests/unit/test_statevector_batch_chunking.py::test_chunked_native_layer_initializes_final_slices_directly[dtype0]",
+      "FAILED tests/unit/test_statevector_batch_chunking.py::test_chunked_native_layer_initializes_final_slices_directly[dtype1]",
+      "FAILED tests/unit/test_statevector_batch_chunking.py::test_chunked_static_clifford_layer_initializes_final_slices_directly[dtype0]",
+      "FAILED tests/unit/test_statevector_batch_chunking.py::test_chunked_static_clifford_layer_initializes_final_slices_directly[dtype1]",
+      "ERROR tests/unit/test_mps_distribution_accounting.py::test_tensor_bytes_land_on_the_wire_that_owns_them",
+      "ERROR tests/unit/test_mps_distribution_accounting.py::test_an_unowned_wire_reports_no_bytes",
+      "ERROR tests/unit/test_mps_distribution_accounting.py::test_bond_dimensions_land_on_the_bond_that_owns_them",
+      "ERROR tests/unit/test_mps_distribution_accounting.py::test_an_unowned_site_reports_no_bond",
+      "ERROR tests/unit/test_mps_distribution_accounting.py::test_an_unbounded_threshold_does_not_rebalance",
+      "ERROR tests/unit/test_mps_distribution_accounting.py::test_canonicalization_reports_each_counter_in_its_own_column"
+    ]
+  }
+}

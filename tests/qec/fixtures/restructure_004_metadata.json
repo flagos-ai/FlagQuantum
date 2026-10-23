@@ -1,0 +1,790 @@
+{
+  "flagquantum.qec.circuit._checked_basis": [
+    "flagquantum.qec.circuit",
+    "_checked_basis"
+  ],
+  "flagquantum.qec.circuit._readout_basis_of": [
+    "flagquantum.qec.circuit",
+    "_readout_basis_of"
+  ],
+  "flagquantum.qec.circuit._declared_readout": [
+    "flagquantum.qec.circuit",
+    "_declared_readout"
+  ],
+  "flagquantum.qec.circuit._readout_observables": [
+    "flagquantum.qec.circuit",
+    "_readout_observables"
+  ],
+  "flagquantum.qec.circuit._pinned_checks": [
+    "flagquantum.qec.circuit",
+    "_pinned_checks"
+  ],
+  "flagquantum.qec.circuit.MeasurementRef": [
+    "flagquantum.qec.circuit",
+    "MeasurementRef"
+  ],
+  "flagquantum.qec.circuit.MeasurementRef.__post_init__": [
+    "flagquantum.qec.circuit",
+    "MeasurementRef.__post_init__"
+  ],
+  "flagquantum.qec.circuit.MeasurementRef.__init__": [
+    "flagquantum.qec.circuit",
+    "MeasurementRef.__init__"
+  ],
+  "flagquantum.qec.circuit.MeasurementRef.__repr__": [
+    "flagquantum.qec.circuit",
+    "MeasurementRef.__repr__"
+  ],
+  "flagquantum.qec.circuit.MeasurementRef.__eq__": [
+    "flagquantum.qec.circuit",
+    "MeasurementRef.__eq__"
+  ],
+  "flagquantum.qec.circuit.MeasurementRef.__setattr__": [
+    "flagquantum.qec.circuit",
+    "MeasurementRef.__setattr__"
+  ],
+  "flagquantum.qec.circuit.MeasurementRef.__delattr__": [
+    "flagquantum.qec.circuit",
+    "MeasurementRef.__delattr__"
+  ],
+  "flagquantum.qec.circuit.MeasurementRef.__hash__": [
+    "flagquantum.qec.circuit",
+    "MeasurementRef.__hash__"
+  ],
+  "flagquantum.qec.circuit.Detector": [
+    "flagquantum.qec.circuit",
+    "Detector"
+  ],
+  "flagquantum.qec.circuit.Detector.__post_init__": [
+    "flagquantum.qec.circuit",
+    "Detector.__post_init__"
+  ],
+  "flagquantum.qec.circuit.Detector.__init__": [
+    "flagquantum.qec.circuit",
+    "Detector.__init__"
+  ],
+  "flagquantum.qec.circuit.Detector.__repr__": [
+    "flagquantum.qec.circuit",
+    "Detector.__repr__"
+  ],
+  "flagquantum.qec.circuit.Detector.__eq__": [
+    "flagquantum.qec.circuit",
+    "Detector.__eq__"
+  ],
+  "flagquantum.qec.circuit.Detector.__setattr__": [
+    "flagquantum.qec.circuit",
+    "Detector.__setattr__"
+  ],
+  "flagquantum.qec.circuit.Detector.__delattr__": [
+    "flagquantum.qec.circuit",
+    "Detector.__delattr__"
+  ],
+  "flagquantum.qec.circuit.Detector.__hash__": [
+    "flagquantum.qec.circuit",
+    "Detector.__hash__"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout.__post_init__": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout.__post_init__"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout.__len__": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout.__len__"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout.__init__": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout.__init__"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout.__repr__": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout.__repr__"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout.__eq__": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout.__eq__"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout.__setattr__": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout.__setattr__"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout.__delattr__": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout.__delattr__"
+  ],
+  "flagquantum.qec.circuit.DetectorLayout.__hash__": [
+    "flagquantum.qec.circuit",
+    "DetectorLayout.__hash__"
+  ],
+  "flagquantum.qec.circuit.LogicalObservable": [
+    "flagquantum.qec.circuit",
+    "LogicalObservable"
+  ],
+  "flagquantum.qec.circuit.LogicalObservable.__post_init__": [
+    "flagquantum.qec.circuit",
+    "LogicalObservable.__post_init__"
+  ],
+  "flagquantum.qec.circuit.LogicalObservable.__init__": [
+    "flagquantum.qec.circuit",
+    "LogicalObservable.__init__"
+  ],
+  "flagquantum.qec.circuit.LogicalObservable.__repr__": [
+    "flagquantum.qec.circuit",
+    "LogicalObservable.__repr__"
+  ],
+  "flagquantum.qec.circuit.LogicalObservable.__eq__": [
+    "flagquantum.qec.circuit",
+    "LogicalObservable.__eq__"
+  ],
+  "flagquantum.qec.circuit.LogicalObservable.__setattr__": [
+    "flagquantum.qec.circuit",
+    "LogicalObservable.__setattr__"
+  ],
+  "flagquantum.qec.circuit.LogicalObservable.__delattr__": [
+    "flagquantum.qec.circuit",
+    "LogicalObservable.__delattr__"
+  ],
+  "flagquantum.qec.circuit.LogicalObservable.__hash__": [
+    "flagquantum.qec.circuit",
+    "LogicalObservable.__hash__"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout.__post_init__": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout.__post_init__"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout.__len__": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout.__len__"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout.__init__": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout.__init__"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout.__repr__": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout.__repr__"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout.__eq__": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout.__eq__"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout.__setattr__": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout.__setattr__"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout.__delattr__": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout.__delattr__"
+  ],
+  "flagquantum.qec.circuit.ObservableLayout.__hash__": [
+    "flagquantum.qec.circuit",
+    "ObservableLayout.__hash__"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.__post_init__": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.__post_init__"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.readout_basis": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.readout_basis"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.measurement_refs": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.measurement_refs"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit._validate_layout": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit._validate_layout"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit._validate_declared_observables": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit._validate_declared_observables"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit._validate_rotated_observable": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit._validate_rotated_observable"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.__init__": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.__init__"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.__repr__": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.__repr__"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.__eq__": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.__eq__"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.__setattr__": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.__setattr__"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.__delattr__": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.__delattr__"
+  ],
+  "flagquantum.qec.circuit.MemoryCircuit.__hash__": [
+    "flagquantum.qec.circuit",
+    "MemoryCircuit.__hash__"
+  ],
+  "flagquantum.qec.circuit._require_ancilla_bands": [
+    "flagquantum.qec.circuit",
+    "_require_ancilla_bands"
+  ],
+  "flagquantum.qec.circuit._detector_count": [
+    "flagquantum.qec.circuit",
+    "_detector_count"
+  ],
+  "flagquantum.qec.circuit._check_source": [
+    "flagquantum.qec.circuit",
+    "_check_source"
+  ],
+  "flagquantum.qec.circuit._detector_layout": [
+    "flagquantum.qec.circuit",
+    "_detector_layout"
+  ],
+  "flagquantum.qec.circuit._observable_layout": [
+    "flagquantum.qec.circuit",
+    "_observable_layout"
+  ],
+  "flagquantum.qec.circuit.build_memory_circuit": [
+    "flagquantum.qec.circuit",
+    "build_memory_circuit"
+  ],
+  "flagquantum.qec.context._measurement_row": [
+    "flagquantum.qec.context",
+    "_measurement_row"
+  ],
+  "flagquantum.qec.context.MeasurementMap": [
+    "flagquantum.qec.context",
+    "MeasurementMap"
+  ],
+  "flagquantum.qec.context.MeasurementMap.__post_init__": [
+    "flagquantum.qec.context",
+    "MeasurementMap.__post_init__"
+  ],
+  "flagquantum.qec.context.MeasurementMap.num_rows": [
+    "flagquantum.qec.context",
+    "MeasurementMap.num_rows"
+  ],
+  "flagquantum.qec.context.MeasurementMap.num_entries": [
+    "flagquantum.qec.context",
+    "MeasurementMap.num_entries"
+  ],
+  "flagquantum.qec.context.MeasurementMap.dense": [
+    "flagquantum.qec.context",
+    "MeasurementMap.dense"
+  ],
+  "flagquantum.qec.context.MeasurementMap.flattened": [
+    "flagquantum.qec.context",
+    "MeasurementMap.flattened"
+  ],
+  "flagquantum.qec.context.MeasurementMap.__init__": [
+    "flagquantum.qec.context",
+    "MeasurementMap.__init__"
+  ],
+  "flagquantum.qec.context.MeasurementMap.__repr__": [
+    "flagquantum.qec.context",
+    "MeasurementMap.__repr__"
+  ],
+  "flagquantum.qec.context.MeasurementMap.__eq__": [
+    "flagquantum.qec.context",
+    "MeasurementMap.__eq__"
+  ],
+  "flagquantum.qec.context.MeasurementMap.__setattr__": [
+    "flagquantum.qec.context",
+    "MeasurementMap.__setattr__"
+  ],
+  "flagquantum.qec.context.MeasurementMap.__delattr__": [
+    "flagquantum.qec.context",
+    "MeasurementMap.__delattr__"
+  ],
+  "flagquantum.qec.context.MeasurementMap.__hash__": [
+    "flagquantum.qec.context",
+    "MeasurementMap.__hash__"
+  ],
+  "flagquantum.qec.context.DecoderInputs": [
+    "flagquantum.qec.context",
+    "DecoderInputs"
+  ],
+  "flagquantum.qec.context.DecoderInputs.__post_init__": [
+    "flagquantum.qec.context",
+    "DecoderInputs.__post_init__"
+  ],
+  "flagquantum.qec.context.DecoderInputs.num_measurements": [
+    "flagquantum.qec.context",
+    "DecoderInputs.num_measurements"
+  ],
+  "flagquantum.qec.context.DecoderInputs.__init__": [
+    "flagquantum.qec.context",
+    "DecoderInputs.__init__"
+  ],
+  "flagquantum.qec.context.DecoderInputs.__repr__": [
+    "flagquantum.qec.context",
+    "DecoderInputs.__repr__"
+  ],
+  "flagquantum.qec.context.DecoderInputs.__eq__": [
+    "flagquantum.qec.context",
+    "DecoderInputs.__eq__"
+  ],
+  "flagquantum.qec.context.DecoderInputs.__setattr__": [
+    "flagquantum.qec.context",
+    "DecoderInputs.__setattr__"
+  ],
+  "flagquantum.qec.context.DecoderInputs.__delattr__": [
+    "flagquantum.qec.context",
+    "DecoderInputs.__delattr__"
+  ],
+  "flagquantum.qec.context.DecoderInputs.__hash__": [
+    "flagquantum.qec.context",
+    "DecoderInputs.__hash__"
+  ],
+  "flagquantum.qec.context._measurement_columns": [
+    "flagquantum.qec.context",
+    "_measurement_columns"
+  ],
+  "flagquantum.qec.context._measurement_index": [
+    "flagquantum.qec.context",
+    "_measurement_index"
+  ],
+  "flagquantum.qec.context._parity_row": [
+    "flagquantum.qec.context",
+    "_parity_row"
+  ],
+  "flagquantum.qec.context._detector_checks": [
+    "flagquantum.qec.context",
+    "_detector_checks"
+  ],
+  "flagquantum.qec.context._projected": [
+    "flagquantum.qec.context",
+    "_projected"
+  ],
+  "flagquantum.qec.context.DecoderContext": [
+    "flagquantum.qec.context",
+    "DecoderContext"
+  ],
+  "flagquantum.qec.context.DecoderContext.__post_init__": [
+    "flagquantum.qec.context",
+    "DecoderContext.__post_init__"
+  ],
+  "flagquantum.qec.context.DecoderContext.num_measurements": [
+    "flagquantum.qec.context",
+    "DecoderContext.num_measurements"
+  ],
+  "flagquantum.qec.context.DecoderContext.full_component": [
+    "flagquantum.qec.context",
+    "DecoderContext.full_component"
+  ],
+  "flagquantum.qec.context.DecoderContext.x_component": [
+    "flagquantum.qec.context",
+    "DecoderContext.x_component"
+  ],
+  "flagquantum.qec.context.DecoderContext.z_component": [
+    "flagquantum.qec.context",
+    "DecoderContext.z_component"
+  ],
+  "flagquantum.qec.context.DecoderContext._inputs": [
+    "flagquantum.qec.context",
+    "DecoderContext._inputs"
+  ],
+  "flagquantum.qec.context.DecoderContext._basis": [
+    "flagquantum.qec.context",
+    "DecoderContext._basis"
+  ],
+  "flagquantum.qec.context.DecoderContext.__init__": [
+    "flagquantum.qec.context",
+    "DecoderContext.__init__"
+  ],
+  "flagquantum.qec.context.DecoderContext.__repr__": [
+    "flagquantum.qec.context",
+    "DecoderContext.__repr__"
+  ],
+  "flagquantum.qec.context.DecoderContext.__eq__": [
+    "flagquantum.qec.context",
+    "DecoderContext.__eq__"
+  ],
+  "flagquantum.qec.context.DecoderContext.__setattr__": [
+    "flagquantum.qec.context",
+    "DecoderContext.__setattr__"
+  ],
+  "flagquantum.qec.context.DecoderContext.__delattr__": [
+    "flagquantum.qec.context",
+    "DecoderContext.__delattr__"
+  ],
+  "flagquantum.qec.context.DecoderContext.__hash__": [
+    "flagquantum.qec.context",
+    "DecoderContext.__hash__"
+  ],
+  "flagquantum.qec.context.decoder_context_from_memory_circuit": [
+    "flagquantum.qec.context",
+    "decoder_context_from_memory_circuit"
+  ],
+  "flagquantum.qec.sampling._MeasurementPlan": [
+    "flagquantum.qec.sampling",
+    "_MeasurementPlan"
+  ],
+  "flagquantum.qec.sampling._MeasurementPlan.__init__": [
+    "flagquantum.qec.sampling",
+    "_MeasurementPlan.__init__"
+  ],
+  "flagquantum.qec.sampling._MeasurementPlan.__repr__": [
+    "flagquantum.qec.sampling",
+    "_MeasurementPlan.__repr__"
+  ],
+  "flagquantum.qec.sampling._MeasurementPlan.__eq__": [
+    "flagquantum.qec.sampling",
+    "_MeasurementPlan.__eq__"
+  ],
+  "flagquantum.qec.sampling._MeasurementPlan.__setattr__": [
+    "flagquantum.qec.sampling",
+    "_MeasurementPlan.__setattr__"
+  ],
+  "flagquantum.qec.sampling._MeasurementPlan.__delattr__": [
+    "flagquantum.qec.sampling",
+    "_MeasurementPlan.__delattr__"
+  ],
+  "flagquantum.qec.sampling._MeasurementPlan.__hash__": [
+    "flagquantum.qec.sampling",
+    "_MeasurementPlan.__hash__"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.__post_init__": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.__post_init__"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.__eq__": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.__eq__"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.shots": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.shots"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.num_handles": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.num_handles"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples._columns": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples._columns"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.outcome": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.outcome"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.vector": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.vector"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.integer": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.integer"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.__init__": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.__init__"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.__repr__": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.__repr__"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.__setattr__": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.__setattr__"
+  ],
+  "flagquantum.qec.sampling.MeasurementSamples.__delattr__": [
+    "flagquantum.qec.sampling",
+    "MeasurementSamples.__delattr__"
+  ],
+  "flagquantum.qec.sampling._NoiseLocation": [
+    "flagquantum.qec.sampling",
+    "_NoiseLocation"
+  ],
+  "flagquantum.qec.sampling._NoiseLocation.__init__": [
+    "flagquantum.qec.sampling",
+    "_NoiseLocation.__init__"
+  ],
+  "flagquantum.qec.sampling._NoiseLocation.__repr__": [
+    "flagquantum.qec.sampling",
+    "_NoiseLocation.__repr__"
+  ],
+  "flagquantum.qec.sampling._NoiseLocation.__eq__": [
+    "flagquantum.qec.sampling",
+    "_NoiseLocation.__eq__"
+  ],
+  "flagquantum.qec.sampling._NoiseLocation.__setattr__": [
+    "flagquantum.qec.sampling",
+    "_NoiseLocation.__setattr__"
+  ],
+  "flagquantum.qec.sampling._NoiseLocation.__delattr__": [
+    "flagquantum.qec.sampling",
+    "_NoiseLocation.__delattr__"
+  ],
+  "flagquantum.qec.sampling._NoiseLocation.__hash__": [
+    "flagquantum.qec.sampling",
+    "_NoiseLocation.__hash__"
+  ],
+  "flagquantum.qec.sampling._checked_shots": [
+    "flagquantum.qec.sampling",
+    "_checked_shots"
+  ],
+  "flagquantum.qec.sampling._checked_seed": [
+    "flagquantum.qec.sampling",
+    "_checked_seed"
+  ],
+  "flagquantum.qec.sampling._rotation_template": [
+    "flagquantum.qec.sampling",
+    "_rotation_template"
+  ],
+  "flagquantum.qec.sampling._measurement_plan": [
+    "flagquantum.qec.sampling",
+    "_measurement_plan"
+  ],
+  "flagquantum.qec.sampling._noise_locations": [
+    "flagquantum.qec.sampling",
+    "_noise_locations"
+  ],
+  "flagquantum.qec.sampling._gate_bound_locations": [
+    "flagquantum.qec.sampling",
+    "_gate_bound_locations"
+  ],
+  "flagquantum.qec.sampling._round_boundary_locations": [
+    "flagquantum.qec.sampling",
+    "_round_boundary_locations"
+  ],
+  "flagquantum.qec.sampling._noisy_program": [
+    "flagquantum.qec.sampling",
+    "_noisy_program"
+  ],
+  "flagquantum.qec.sampling._recorded_bits": [
+    "flagquantum.qec.sampling",
+    "_recorded_bits"
+  ],
+  "flagquantum.qec.sampling._sample_record": [
+    "flagquantum.qec.sampling",
+    "_sample_record"
+  ],
+  "flagquantum.qec.sampling._measurement_samples": [
+    "flagquantum.qec.sampling",
+    "_measurement_samples"
+  ],
+  "flagquantum.qec.sampling.sample_memory_measurements": [
+    "flagquantum.qec.sampling",
+    "sample_memory_measurements"
+  ],
+  "flagquantum.qec.sampling.sample_memory_circuit": [
+    "flagquantum.qec.sampling",
+    "sample_memory_circuit"
+  ],
+  "flagquantum.qec.repetition._adjust_for_frame": [
+    "flagquantum.qec.repetition",
+    "_adjust_for_frame"
+  ],
+  "flagquantum.qec.repetition._RepetitionFeedbackController": [
+    "flagquantum.qec.repetition",
+    "_RepetitionFeedbackController"
+  ],
+  "flagquantum.qec.repetition._RepetitionFeedbackController.decide": [
+    "flagquantum.qec.repetition",
+    "_RepetitionFeedbackController.decide"
+  ],
+  "flagquantum.qec.repetition._RepetitionFeedbackController.__init__": [
+    "flagquantum.qec.repetition",
+    "_RepetitionFeedbackController.__init__"
+  ],
+  "flagquantum.qec.repetition._RepetitionFeedbackController.__repr__": [
+    "flagquantum.qec.repetition",
+    "_RepetitionFeedbackController.__repr__"
+  ],
+  "flagquantum.qec.repetition._RepetitionFeedbackController.__eq__": [
+    "flagquantum.qec.repetition",
+    "_RepetitionFeedbackController.__eq__"
+  ],
+  "flagquantum.qec.repetition._RepetitionFeedbackController.__setattr__": [
+    "flagquantum.qec.repetition",
+    "_RepetitionFeedbackController.__setattr__"
+  ],
+  "flagquantum.qec.repetition._RepetitionFeedbackController.__delattr__": [
+    "flagquantum.qec.repetition",
+    "_RepetitionFeedbackController.__delattr__"
+  ],
+  "flagquantum.qec.repetition._RepetitionFeedbackController.__hash__": [
+    "flagquantum.qec.repetition",
+    "_RepetitionFeedbackController.__hash__"
+  ],
+  "flagquantum.qec.repetition._feedback_plan": [
+    "flagquantum.qec.repetition",
+    "_feedback_plan"
+  ],
+  "flagquantum.qec.repetition._memory_source": [
+    "flagquantum.qec.repetition",
+    "_memory_source"
+  ],
+  "flagquantum.qec.repetition._syndrome_rounds": [
+    "flagquantum.qec.repetition",
+    "_syndrome_rounds"
+  ],
+  "flagquantum.qec.repetition._lookup_correction": [
+    "flagquantum.qec.repetition",
+    "_lookup_correction"
+  ],
+  "flagquantum.qec.repetition.run_repetition_memory_experiment": [
+    "flagquantum.qec.repetition",
+    "run_repetition_memory_experiment"
+  ],
+  "flagquantum.qec.dem_construction._data_family_rates": [
+    "flagquantum.qec.dem_construction",
+    "_data_family_rates"
+  ],
+  "flagquantum.qec.dem_construction._require_source_anchors": [
+    "flagquantum.qec.dem_construction",
+    "_require_source_anchors"
+  ],
+  "flagquantum.qec.dem_construction._require_owned_syndrome_references": [
+    "flagquantum.qec.dem_construction",
+    "_require_owned_syndrome_references"
+  ],
+  "flagquantum.qec.dem_construction._flipped_measurements": [
+    "flagquantum.qec.dem_construction",
+    "_flipped_measurements"
+  ],
+  "flagquantum.qec.dem_construction._layout_signature": [
+    "flagquantum.qec.dem_construction",
+    "_layout_signature"
+  ],
+  "flagquantum.qec.dem_construction._memory_circuit_entries": [
+    "flagquantum.qec.dem_construction",
+    "_memory_circuit_entries"
+  ],
+  "flagquantum.qec.dem_construction._Mechanism": [
+    "flagquantum.qec.dem_construction",
+    "_Mechanism"
+  ],
+  "flagquantum.qec.dem_construction._Mechanism.__init__": [
+    "flagquantum.qec.dem_construction",
+    "_Mechanism.__init__"
+  ],
+  "flagquantum.qec.dem_construction._Mechanism.__repr__": [
+    "flagquantum.qec.dem_construction",
+    "_Mechanism.__repr__"
+  ],
+  "flagquantum.qec.dem_construction._Mechanism.__eq__": [
+    "flagquantum.qec.dem_construction",
+    "_Mechanism.__eq__"
+  ],
+  "flagquantum.qec.dem_construction._Mechanism.__setattr__": [
+    "flagquantum.qec.dem_construction",
+    "_Mechanism.__setattr__"
+  ],
+  "flagquantum.qec.dem_construction._Mechanism.__delattr__": [
+    "flagquantum.qec.dem_construction",
+    "_Mechanism.__delattr__"
+  ],
+  "flagquantum.qec.dem_construction._Mechanism.__hash__": [
+    "flagquantum.qec.dem_construction",
+    "_Mechanism.__hash__"
+  ],
+  "flagquantum.qec.dem_construction._GateBoundMechanism": [
+    "flagquantum.qec.dem_construction",
+    "_GateBoundMechanism"
+  ],
+  "flagquantum.qec.dem_construction._GateBoundMechanism.__init__": [
+    "flagquantum.qec.dem_construction",
+    "_GateBoundMechanism.__init__"
+  ],
+  "flagquantum.qec.dem_construction._GateBoundMechanism.__repr__": [
+    "flagquantum.qec.dem_construction",
+    "_GateBoundMechanism.__repr__"
+  ],
+  "flagquantum.qec.dem_construction._GateBoundMechanism.__eq__": [
+    "flagquantum.qec.dem_construction",
+    "_GateBoundMechanism.__eq__"
+  ],
+  "flagquantum.qec.dem_construction._GateBoundMechanism.__setattr__": [
+    "flagquantum.qec.dem_construction",
+    "_GateBoundMechanism.__setattr__"
+  ],
+  "flagquantum.qec.dem_construction._GateBoundMechanism.__delattr__": [
+    "flagquantum.qec.dem_construction",
+    "_GateBoundMechanism.__delattr__"
+  ],
+  "flagquantum.qec.dem_construction._GateBoundMechanism.__hash__": [
+    "flagquantum.qec.dem_construction",
+    "_GateBoundMechanism.__hash__"
+  ],
+  "flagquantum.qec.dem_construction._lowered_program": [
+    "flagquantum.qec.dem_construction",
+    "_lowered_program"
+  ],
+  "flagquantum.qec.dem_construction._pauli_fault": [
+    "flagquantum.qec.dem_construction",
+    "_pauli_fault"
+  ],
+  "flagquantum.qec.dem_construction._gate_bound_mechanisms": [
+    "flagquantum.qec.dem_construction",
+    "_gate_bound_mechanisms"
+  ],
+  "flagquantum.qec.dem_construction._spliced_fault": [
+    "flagquantum.qec.dem_construction",
+    "_spliced_fault"
+  ],
+  "flagquantum.qec.dem_construction._check_rate_order": [
+    "flagquantum.qec.dem_construction",
+    "_check_rate_order"
+  ],
+  "flagquantum.qec.dem_construction._mechanisms": [
+    "flagquantum.qec.dem_construction",
+    "_mechanisms"
+  ],
+  "flagquantum.qec.dem_construction._checked_round": [
+    "flagquantum.qec.dem_construction",
+    "_checked_round"
+  ],
+  "flagquantum.qec.dem_construction._checked_wire": [
+    "flagquantum.qec.dem_construction",
+    "_checked_wire"
+  ],
+  "flagquantum.qec.dem_construction._single_anchor": [
+    "flagquantum.qec.dem_construction",
+    "_single_anchor"
+  ],
+  "flagquantum.qec.dem_construction._forced_flip": [
+    "flagquantum.qec.dem_construction",
+    "_forced_flip"
+  ],
+  "flagquantum.qec.dem_construction._inject_data_flip": [
+    "flagquantum.qec.dem_construction",
+    "_inject_data_flip"
+  ],
+  "flagquantum.qec.dem_construction._inject_measurement_flip": [
+    "flagquantum.qec.dem_construction",
+    "_inject_measurement_flip"
+  ],
+  "flagquantum.qec.dem_construction._forced_signature": [
+    "flagquantum.qec.dem_construction",
+    "_forced_signature"
+  ],
+  "flagquantum.qec.dem_construction._lowered_source": [
+    "flagquantum.qec.dem_construction",
+    "_lowered_source"
+  ],
+  "flagquantum.qec.dem_construction._executed_flip_set": [
+    "flagquantum.qec.dem_construction",
+    "_executed_flip_set"
+  ]
+}
