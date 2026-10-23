@@ -593,17 +593,25 @@ The CPU core and runtime tiers use the dedicated A800 CPU runners with up to
 16 xdist workers, bounded by measured affinity, nested cgroup CPU quotas and
 memory limits, and isolated per-job environments. Trusted manual validation uses
 the same A800 route as same-repository PRs, rather than the two-worker hosted
-fallback. Each A800 host runs six independent CPU services, each capped at
-16 logical CPU time units, 64 GiB memory and 4096 tasks. The combined CPU ceiling
+fallback. Each A800 host runs eight independent CPU services, each capped at
+12 logical CPU time units, 64 GiB memory and 4096 tasks. The combined CPU ceiling
 remains 96 units per host; memory ceilings are limits, not reservations. Existing
 GPU services are unchanged. Fork PRs run these tiers on GitHub-hosted Ubuntu with
-at most two workers. Trusted quality, optional SDK,
-distributed CPU, coverage and dependency-bound jobs use the A100 CPU pool;
-fork pull requests use GitHub-hosted Ubuntu. The manual source-hygiene job
+at most two workers. Coverage shards and distributed CPU contracts use the isolated A800 and
+MC550 service queue (`flagquantum-cpu`). MC550 services admit four coverage
+workers and one distributed launcher within their four-CPU/16-GiB limits. On
+A800: the deployed services admit twelve core/runtime workers, six coverage
+workers, or one distributed launcher with up to eight child ranks. The tool
+admits two distributed launchers only when a service exposes at least sixteen
+CPU time units and sufficient memory. Eight services per host reduce queues
+when the thirteen heavy CPU jobs of a full run become ready together.
+Portable optional SDK, dependency-bound and supply-chain checks retain the
+general CPU pool; full-history quality and coverage aggregation retain A100.
+Fork pull requests use GitHub-hosted Ubuntu. The manual source-hygiene job
 also uses A100, while the short PR hygiene job retains its hosted budget. See
 [A100 runner operation](A100_RUNNERS.md) for pool isolation and validation.
 Coverage uses the measured CPU/memory budget for work-stealing workers
-(four on the verified A100 slots, at most two on hosted runners).
+(six on the verified A800 services, four on MC550, at most two on hosted runners).
 Other measured CPU jobs retain resource and timing reports. The distributed
 CPU selector clears inherited platform rank variables before running and uses
 a separate budget for launchers that may spawn eight ranks; an explicit
@@ -613,7 +621,7 @@ versions and may run concurrently on separate A100 registrations. The private-en
 paths, retains the verified A100 bootstrap and CPU wheel cache, and bounds the
 domestic wheel download before falling back to the official CPU index. CPU jobs
 hide GPUs and verify dependency consistency and CPU-only framework selection.
-The eight coverage shards use checked-in duration hints from a cited CI run and a
+The sixteen coverage shards use checked-in duration hints from a cited CI run and a
 deterministic least-loaded assignment, then merge raw data before applying the
 unchanged coverage policy; their union is the former selection, not a reduced
 test set. Unmeasured tests receive a small default weight, so new tests remain

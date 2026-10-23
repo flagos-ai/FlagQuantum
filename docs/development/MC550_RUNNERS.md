@@ -4,7 +4,10 @@ The FlagQuantum repository uses sixteen CPU runners on each of `mc550-111`,
 `mc550-112`, `mc550-121`, and `mc550-122`. Runner names follow
 `fq-mc550-111-cpu01`; labels identify the pool, host, and exact slot.
 The `flagquantum-cpu-general` label admits a slot to existing trusted portable
-CPU jobs after acceptance. Fork pull requests retain the hosted-runner routes.
+CPU jobs after acceptance. The `flagquantum-cpu` label additionally admits accepted
+MC550 slots to the isolated-service queue used by coverage and distributed CPU
+contracts alongside A800. This excludes shared A100 registrations from these
+long suites. Fork pull requests retain the hosted-runner routes.
 
 ## Storage and service ownership
 
