@@ -852,9 +852,9 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
     assert "cuda" in triton.extras
     assert triton.expressions == ("triton",)
 
-    # `distributed-cpu` selects through a tier, not an inline expression, and a
+    # `distributed-cpu-shard` selects through a tier, not an inline expression, and a
     # job that installs Qiskit pins the distribution rather than the extra.
-    assert "distributed_cpu" in by_name["distributed-cpu"].expressions
+    assert "distributed_cpu" in by_name["distributed-cpu-shard"].expressions
     assert "qiskit" in by_name["qiskit-optional"].extras
 
     # Reading the whole shell block would credit this job with `dev`, because it

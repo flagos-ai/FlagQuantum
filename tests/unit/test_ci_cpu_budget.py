@@ -149,6 +149,58 @@ def test_launcher_budget_accounts_for_nested_eight_rank_processes(
 
 
 @pytest.mark.parametrize(
+    ("service", "quota", "memory_gib", "expected", "dedicated"),
+    [
+        ("fqmc-cpu01.service", "400000 100000", 16, 4, True),
+        ("fqmc-cpu16.service", "150000 100000", 16, 1, True),
+        ("fqmc-cpu08.service", "400000 100000", 4, 2, True),
+        ("fqmc-cpu99.service", "400000 100000", 16, 2, False),
+        ("shared-runner.service", "400000 100000", 16, 2, False),
+        ("fqmc-cpu01.service", "max 100000", 16, 4, False),
+    ],
+)
+def test_mc550_service_budget_uses_its_own_quota_without_double_reservation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    service: str,
+    quota: str,
+    memory_gib: int,
+    expected: int,
+    dedicated: bool,
+) -> None:
+    import json
+
+    from tools import ci_cpu_budget as budget
+
+    group = tmp_path / service
+    group.mkdir()
+    (group / "cpu.max").write_text(quota)
+    (group / "memory.max").write_text(str(memory_gib * GIB))
+    monkeypatch.setattr(
+        budget, "controller_directories", lambda: {"cpu": [group], "memory": [group]}
+    )
+    monkeypatch.setattr(
+        budget.os, "sched_getaffinity", lambda _: set(range(32)), raising=False
+    )
+    monkeypatch.setattr(
+        budget.os,
+        "sysconf",
+        lambda key: 4096 if key == "SC_PAGE_SIZE" else 128 * GIB // 4096,
+    )
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    monkeypatch.setenv("GITHUB_ENV", str(tmp_path / "env"))
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    budget.main()
+    report = json.loads(
+        next(tmp_path.glob("fq-ci-report-*/resources.json")).read_text()
+    )
+    assert report["workers"] == expected
+    assert report["dedicated_service"] is dedicated
+    assert report["shared_registrations_budgeted"] == (1 if dedicated else 2)
+
+
+@pytest.mark.parametrize(
     ("cpus", "memory_gib", "shared", "expected"),
     [
         (16, 64, True, 2),
