@@ -2,14 +2,19 @@
 
 ## Status
 
-**Proposed on 2026-10-23. This document is ready for API-owner review; it does
-not authorize implementation or change the current public behavior.**
+**Approved for staged implementation by the API owner on 2026-10-23 with the
+exact directive below.**
 
-The proposed authorization directive is:
+The recorded authorization directive is:
 
 ```text
 approve DYNAMIC-EXECUTION-UNIFIED-RUN-CONTRACT
 ```
+
+This proposal PR changes no public runtime behavior. The approval authorizes
+the delivery sequence defined here; protected contract and conformance work,
+planning support, execution activation, and performance validation remain
+separate reviewed changes.
 
 The approved stable construction contract remains
 [`contracts/dynamic-circuit-v1.json`](../../contracts/dynamic-circuit-v1.json).
@@ -222,7 +227,7 @@ the repository's integration workflow.
 
 ## Acceptance
 
-- [ ] API owner approves the exact decision with the recorded directive.
+- [x] API owner approves the exact decision with the recorded directive.
 - [ ] A target-branch-protected machine contract describes the additive behavior
       without replacing existing stable snapshots merely to pass CI.
 - [ ] `fq.run(circuit, options=options)` and
