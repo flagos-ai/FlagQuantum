@@ -141,6 +141,18 @@ def test_dynamic_planning_rejects_gradient_carrying_parameters() -> None:
         fq.plan(circuit, options=fq.ExecutionOptions(shots=8))
 
 
+def test_dynamic_planning_validates_classical_reads_before_option_resolution() -> None:
+    unread = DynamicCircuit.from_ir(
+        fq.CircuitIR(
+            1,
+            (fq.Instruction("x", (0,), metadata={"conditions": ((0, 1),)}),),
+        )
+    )
+
+    with pytest.raises(fqe.ValidationError, match="read before measurement"):
+        fq.plan(unread)
+
+
 def test_dynamic_planning_keeps_noise_closed_until_execution_support_lands() -> None:
     noise_model = fqn.NoiseModel().add("x", bit_flip_channel(0.1))
 

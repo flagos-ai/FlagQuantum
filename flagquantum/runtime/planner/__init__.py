@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from ...compiler import compile as compile_program
 from ...compiler import lower_noise_model as lower_noise_model
 from ...compiler import schedule_layers as schedule_layers
+from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, MeasurementNode
 from ...errors import CapabilityError, ValidationError
 from ..dynamic._conditions import instruction_is_dynamic
@@ -824,6 +825,7 @@ def _validate_dynamic_plan_request(
 ) -> None:
     """Validate the approved local planning slice before compilation."""
 
+    validate_classical_control(source_ir.instructions, n_qubits=source_ir.n_wires)
     if resolved.shots is None:
         raise ValidationError(
             "dynamic planning requires a positive shots value in ExecutionOptions"
