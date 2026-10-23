@@ -2,14 +2,18 @@
 
 ## Status
 
-**Frozen by API owner — candidate stable contract approved and frozen.**
+**Historical candidate freeze — superseded by the stable contract on
+2026-10-23.**
 
-- Candidate stable namespace: `flagquantum.dynamic`.
-- Candidate stable name: `DynamicCircuit` only.
+- Stable namespace: `flagquantum.dynamic`.
+- Stable name: `DynamicCircuit` only.
 - Root API changes: none.
-- Machine contract: `contracts/dynamic-circuit-v1-candidate.json`.
+- Machine contract: `contracts/dynamic-circuit-v1.json`.
 - `run_dynamic`, providers, dialects, and native results remain experimental.
 - Approval: `approve 008-010`, explicitly issued by the API owner on 2026-09-01.
+- Promotion: `approve DYNAMIC-CIRCUIT-STABLE-CONTRACT-PROMOTION`, explicitly
+  issued by the API owner on 2026-10-23 under
+  [`API_CHANGE_PROPOSAL_062`](API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md).
 - The aggregate API candidate inventory bound by review-packet hashes is unchanged.
 
 ## Decision
@@ -50,7 +54,7 @@ measurement, runtime, provenance, and mid-circuit data semantics of returning
 3. `state()` with dynamic instructions consistently raises `CapabilityError`.
 4. Adding dynamic instructions fully clears compilation and kernel caches.
 5. Move `DynamicCircuit` from experimental feature exports into its separate
-   candidate stable namespace.
+   namespace, which was candidate-stable in this round and is now stable.
 
 ## Acceptance Criteria
 

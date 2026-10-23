@@ -9,6 +9,9 @@ Implementation measurements, approval scope, and unresolved acceptance gaps are
 recorded in
 [`API_CHANGE_074_DYNAMIC_CIRCUIT_V1_IMPLEMENTATION.md`](API_CHANGE_074_DYNAMIC_CIRCUIT_V1_IMPLEMENTATION.md).
 This approval does not promote dynamic execution from experimental status.
+The construction API was subsequently promoted to stable on 2026-10-23 under
+[`API_CHANGE_PROPOSAL_062`](API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md);
+that later decision did not stabilize execution.
 
 One plan row names this document: `W5-10`, whose deliverable column is this file.
 The recorded critical-path block places the node `W5-10/11` after `W5-04` and

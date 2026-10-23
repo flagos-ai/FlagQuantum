@@ -223,9 +223,10 @@ The promotion criteria for `DynamicCircuit` are:
 | Serialization | round-trip through the internal program level preserves conditions and ordering |
 | Non-regression | static batched execution is unaffected |
 
-Until every criterion holds, `DynamicCircuit` remains candidate-stable and
-`run_dynamic` remains experimental. No Stable Core export is added by this
-proposal, and `docs/public_api_v1.json` is not modified.
+All criteria were later satisfied and `DynamicCircuit` was promoted under
+[`API_CHANGE_PROPOSAL_062`](API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md)
+on 2026-10-23. `run_dynamic` remains experimental. No Stable Core root export was
+added, and `docs/public_api_v1.json` was not modified.
 
 ## Compatibility
 

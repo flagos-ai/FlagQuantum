@@ -104,8 +104,9 @@ team implementation begins. This follows `docs/development/MULTI_TEAM_DEVELOPMEN
 
 ### 7. Public promotion is separate and narrow
 
-The only public surface Phase 4 may affect is the candidate-stable
-`flagquantum.dynamic` namespace, whose promotion is governed by
+The only public surface Phase 4 may affect is the stable
+`flagquantum.dynamic.DynamicCircuit` construction API, whose 2026-10-23
+promotion was governed by
 [`API_CHANGE_PROPOSAL_062`](../../development/API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md)
 rather than by this ADR. `run_dynamic`, providers, dialects, and native results
 remain experimental.
