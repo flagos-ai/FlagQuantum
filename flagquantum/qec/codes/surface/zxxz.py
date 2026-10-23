@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from numbers import Integral
 
 from ...pauli import Pauli
-from .._compat import _retain_module
 from ..checks import CodeCheck, ancilla_band_counts
-from ._rotated_frame import _surface_ancilla_sites
+from .rotated import _surface_ancilla_sites
 
 
 def _zxxz_checkerboard(distance: int) -> frozenset[int]:
@@ -184,11 +183,3 @@ class ZxxzSurfaceCode:
             row * (distance - 1) + (distance - 1) for row in range(distance)
         )
         return (Pauli(z_qubits=downward), Pauli(x_qubits=upward))
-
-
-_retain_module(
-    "flagquantum.qec.surface",
-    _zxxz_checkerboard,
-    _conjugate_by_checkerboard,
-    ZxxzSurfaceCode,
-)

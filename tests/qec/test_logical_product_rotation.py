@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from flagquantum.qec.circuit import (
+from flagquantum.qec.circuits.memory import (
     Detector,
     LogicalObservable,
     MeasurementRef,
@@ -24,12 +24,13 @@ from flagquantum.qec.circuit import (
     build_memory_circuit,
 )
 from flagquantum.qec.codes import RepetitionCode, SteaneCode
+from flagquantum.qec.codes.surface.rotated import RotatedSurfaceCode
+from flagquantum.qec.codes.surface.zxxz import ZxxzSurfaceCode
 from flagquantum.qec.logical import (
     certify_logical_product,
     derive_anticommuting_logical_product,
 )
 from flagquantum.qec.pauli import Pauli
-from flagquantum.qec.surface import RotatedSurfaceCode, ZxxzSurfaceCode
 
 pytestmark = pytest.mark.unit
 

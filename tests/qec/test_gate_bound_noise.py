@@ -37,12 +37,9 @@ from flagquantum.qec import (
     sample_memory_circuit,
     sample_memory_measurements,
 )
-from flagquantum.qec.dem_construction import (
-    _gate_bound_mechanisms,
-    _lowered_program,
-    _spliced_fault,
-)
-from flagquantum.qec.sampling import _measurement_plan, _noise_locations
+from flagquantum.qec.dem.construction import _gate_bound_mechanisms, _spliced_fault
+from flagquantum.qec.execution.sampling import _measurement_plan, _noise_locations
+from flagquantum.qec.execution.signatures import _lowered_program
 
 # Sampling executes the program through the stabilizer engine, which is an
 # optional distribution, so the file skips rather than failing to import when it

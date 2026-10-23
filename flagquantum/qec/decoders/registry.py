@@ -102,12 +102,11 @@ from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from flagquantum.errors import CapabilityError
 from flagquantum.qec.adapters.pymatching import PyMatchingDecoder
-from flagquantum.qec.codes._compat import _retain_module
 from flagquantum.qec.decoders.belief_propagation import BeliefPropagationDecoder
 from flagquantum.qec.decoders.bposd import BeliefPropagationOsdDecoder
 from flagquantum.qec.decoders.matching import MinimumWeightMatchingDecoder
-from flagquantum.qec.decoding_graph import DecodingGraph
 from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem.graph import DecodingGraph
 
 #: The name of the implementation this package is authoritative for.
 AUTHORITY_NAME = "minimum_weight_matching"
@@ -269,7 +268,6 @@ def register_decoder(
         _DECODERS[name] = candidate
         return candidate
 
-    decorate.__module__ = "flagquantum.qec.registry"
     return decorate
 
 
@@ -421,7 +419,7 @@ def _register_windowed_decoder() -> None:
     The windowed member is a decoder of this package, so it belongs in this table
     beside the others. It is registered on demand rather than at the end of this
     module because it is the one member that reads a decoder back out of this
-    registry while it decodes: :mod:`flagquantum.qec.sliding_window` imports
+    registry while it decodes: :mod:`flagquantum.qec.decoders.sliding_window` imports
     :func:`get_decoder` at its own import time, so importing it here at module
     level would close a cycle that only one of the two import orders survives.
     Reading the class inside this function keeps the edge one-way, and the first
@@ -450,19 +448,3 @@ register_decoder(BELIEF_PROPAGATION_NAME)(BeliefPropagationDecoder)
 register_decoder(BELIEF_PROPAGATION_OSD_NAME, graph_route=False)(
     BeliefPropagationOsdDecoder
 )
-
-
-_retain_module(
-    "flagquantum.qec.registry",
-    DetectorErrorModelDecodeResult,
-    DetectorErrorModelDecoder,
-    GraphlikeDetectorErrorModelDecoder,
-    register_decoder,
-    decoder_names,
-    get_decoder,
-    _declares_a_graph_carrier,
-    _takes_a_graph,
-    _register_windowed_decoder,
-)
-
-_DecoderT.__module__ = "flagquantum.qec.registry"

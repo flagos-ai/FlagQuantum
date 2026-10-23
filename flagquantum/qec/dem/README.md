@@ -20,14 +20,11 @@ The legacy QEC root remains eager; package conversion does not change its import
 behavior. Public users can keep importing `DetectorErrorModel`, `DemError`,
 `DecodingGraph` and the chunk operations from `flagquantum.qec`.
 
-`dem/__init__.py` and the former flat modules are explicit compatibility aliases.
-They reference the canonical definitions, including historical helper imports;
-they define no replacement classes or registries. Classes, methods and functions
-retain their historical `__module__` and qualified names for pickle and existing
-caller-owned safe-global lists. Core owns these paths. No removal release is
-approved; removal requires an approved API/deprecation and artifact migration plan.
-Source-inspection tools must use the physical owner or a method's code filename.
-Private instrumentation that replaces module globals must target that owner.
+`dem/__init__.py` retains the surviving `qec.dem` model aliases and pickle
+metadata. The approved 0.4.0 retirement removes flat DEM modules and their pickle
+lookups. Other definitions use their canonical module metadata; root exports
+still refer to those same objects. No replacement class or registry is added.
+Source inspection and private instrumentation target the physical owner.
 
 For a ten-minute change, run `PYTHONPATH=. python
 examples/qec/dem_model_and_chunks.py`, then edit the module owning the behavior and

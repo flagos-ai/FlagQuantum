@@ -16,7 +16,6 @@ from ...compiler._hybrid import INDEX, capture_source, lower_dynamic_program
 from ...core.ir import CircuitIR
 from ...runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 from ..circuits.memory import MeasurementRef, MemoryCircuit
-from ..codes._compat import _retain_module
 
 # One shared vocabulary for the physical fault families enumerated by both routes.
 _DataFaultFamily = Literal["data", "phase", "both"]
@@ -352,18 +351,3 @@ def _executed_flip_set(
             "in the reference gate set"
         )
     return signature
-
-
-_retain_module(
-    "flagquantum.qec.dem_construction",
-    _lowered_program,
-    _checked_round,
-    _checked_wire,
-    _single_anchor,
-    _forced_flip,
-    _inject_data_flip,
-    _inject_measurement_flip,
-    _forced_signature,
-    _lowered_source,
-    _executed_flip_set,
-)

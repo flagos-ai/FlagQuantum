@@ -100,12 +100,12 @@ import pytest
 
 from flagquantum.errors import CapabilityError
 from flagquantum.qec import RotatedSurfaceCode, ZxxzSurfaceCode
-from flagquantum.qec.circuit import MemoryCircuit, build_memory_circuit
-from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
+from flagquantum.qec.circuits.memory import MemoryCircuit, build_memory_circuit
+from flagquantum.qec.decoders.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.dem import DetectorErrorModel
-from flagquantum.qec.matching import MinimumWeightMatchingDecoder
+from flagquantum.qec.dem.graph import DecodingGraph, DecodingGraphEdge
+from flagquantum.qec.execution.sampling import sample_memory_circuit
 from flagquantum.qec.noise import PhenomenologicalNoise
-from flagquantum.qec.sampling import sample_memory_circuit
 
 pytestmark = pytest.mark.integration
 

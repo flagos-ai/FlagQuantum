@@ -14,7 +14,6 @@ from ...runtime.dynamic._feedback import (
     DynamicFeedbackPoint,
 )
 from ...runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
-from ..codes._compat import _retain_module
 from ..decoders import (
     Decoder,
     RepetitionLookupDecoder,
@@ -328,15 +327,3 @@ def run_repetition_memory_experiment(
 
 
 __all__ = ("run_repetition_memory_experiment",)
-
-
-_retain_module(
-    "flagquantum.qec.repetition",
-    _adjust_for_frame,
-    _RepetitionFeedbackController,
-    _feedback_plan,
-    _memory_source,
-    _syndrome_rounds,
-    _lookup_correction,
-    run_repetition_memory_experiment,
-)

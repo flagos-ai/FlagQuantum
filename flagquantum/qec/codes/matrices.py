@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from types import FunctionType
 
 import torch
 
@@ -250,17 +249,3 @@ def css_code_matrices(code: StabilizerCode) -> CssCodeMatrices:
         )
     )
     return CssCodeMatrices(hz=hz, hx=hx, lz=lz, lx=lx)
-
-
-# Existing checkpoints and function pickles name the historical module. Its
-# re-exports below resolve these same objects; no replacement class is created.
-CssCodeMatrices.__module__ = "flagquantum.qec.dem_matrices"
-# Constructors and dataclass methods can themselves be pickled. Only this
-# relocated class's own functions/accessors retain their historical module.
-for _member in vars(CssCodeMatrices).values():
-    if isinstance(_member, property):
-        _member = _member.fget
-    if isinstance(_member, FunctionType):
-        _member.__module__ = CssCodeMatrices.__module__
-del _member
-css_code_matrices.__module__ = "flagquantum.qec.dem_matrices"

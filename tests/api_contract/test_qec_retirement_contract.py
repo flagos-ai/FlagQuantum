@@ -1,4 +1,4 @@
-"""Prepare the approved 0.4.0 break without activating it or refreshing fixtures."""
+"""Verify the approved 0.4.0 retirement against unchanged pre-retirement fixtures."""
 
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ RETIRED = tuple(CONTRACT["module_replacements"])
 def test_contract_limits_the_authorized_break_and_records_single_class_amendment() -> (
     None
 ):
-    assert CONTRACT["status"] == "approved_contract_before_implementation"
-    assert CONTRACT["current_phase"] == "prepare"
+    assert CONTRACT["status"] == "implemented_pending_release"
+    assert CONTRACT["current_phase"] == "retired"
     assert CONTRACT["target_version"] == "0.4.0"
     assert CONTRACT["proposal"]["pull_request"] == 757
     assert CONTRACT["proposal"]["head"] == "ed0b572657c8249c1d7fe605e8d0b05cdd74fc7b"
@@ -112,20 +112,18 @@ def test_fixture_gate_rejects_a_missing_or_changed_artifact(tmp_path: Path) -> N
     )
 
 
-def test_current_implementation_passes_preparation_but_not_retirement() -> None:
-    assert gate.check("prepare") == []
-    errors = gate.check("retired")
+def test_current_implementation_passes_retirement_and_refuses_preparation() -> None:
+    assert gate.check("retired") == []
+    errors = gate.check("prepare")
     for name in RETIRED:
-        assert f"{name}: retired module is still importable" in errors
-    assert "RotatedSurfaceCode: duplicate implementation remains" in errors
-    assert any("expected one definition" in error for error in errors)
+        assert f"{name}: unexpected missing module {name}" in errors
     with pytest.raises(ValueError, match="phase must be"):
         gate.check("automatic")
 
 
 def test_gate_rejects_reordered_root_exports(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(qec, "__all__", tuple(reversed(qec.__all__)))
-    assert "flagquantum.qec: ordered 108 root exports changed" in gate.check("prepare")
+    assert "flagquantum.qec: ordered 108 root exports changed" in gate.check("retired")
 
 
 @pytest.mark.parametrize("name", RETIRED)
@@ -181,35 +179,27 @@ def test_root_workflow_and_registered_class_remain_authoritative() -> None:
 
 
 @pytest.mark.parametrize("distance", (3, 5, 7))
-def test_single_class_decision_preserves_both_current_records_numerically(
-    distance: int,
-) -> None:
-    from flagquantum.qec.surface import RotatedSurfaceCode as Historical
+def test_single_class_serves_all_supported_surface_workflows(distance: int) -> None:
+    from flagquantum.qec.codes.surface import RotatedSurfaceCode
 
     registered = qec.get_code("rotated_surface", distance=distance)
-    historical = Historical(distance)
-    assert type(registered) is not type(historical)
-    for name in (
-        "checks",
-        "stabilizers",
-        "logical_observables",
-        "data_qubits",
-        "ancilla_qubits",
-        "num_data_qubits",
-        "num_ancilla_qubits",
-        "num_ancilla_x_qubits",
-        "num_ancilla_z_qubits",
-    ):
-        assert getattr(registered, name) == getattr(historical, name), name
+    direct = RotatedSurfaceCode(distance)
+    assert type(registered) is type(direct) is qec.RotatedSurfaceCode
+    assert direct.num_data_qubits == distance**2
+    assert len(direct.checks) == distance**2 - 1
+    assert direct == registered
     noise = qec.PhenomenologicalNoise(data_flip=0.125, measurement_flip=0.25)
     assert (
         qec.DetectorErrorModel.from_code(
             registered, noise=noise, num_rounds=2
         ).to_stim_text()
         == qec.DetectorErrorModel.from_code(
-            historical, noise=noise, num_rounds=2
+            direct, noise=noise, num_rounds=2
         ).to_stim_text()
     )
+    with pytest.raises(ModuleNotFoundError) as caught:
+        importlib.import_module("flagquantum.qec.surface")
+    assert caught.value.name == "flagquantum.qec.surface"
 
 
 def test_plugins_use_the_same_authorities_and_keep_duplicate_rejection(
@@ -251,27 +241,34 @@ def test_surviving_and_retiring_pickle_lookups_are_classified_without_rewriting_
     retiring, surviving = [], []
     for name, encoded in baseline["pickles"].items():
         module, attribute = name.rsplit(".", 1)
-        value = pickle.loads(base64.b64decode(encoded))
-        assert type(value) is getattr(importlib.import_module(module), attribute)
-        (retiring if module in RETIRED else surviving).append(name)
+        payload = base64.b64decode(encoded)
+        if module in RETIRED:
+            with pytest.raises(ModuleNotFoundError) as caught:
+                pickle.loads(payload)
+            assert caught.value.name == module
+            retiring.append(name)
+        else:
+            value = pickle.loads(payload)
+            assert type(value) is getattr(importlib.import_module(module), attribute)
+            assert pickle.dumps(value, protocol=4) == payload
+            surviving.append(name)
     assert retiring == [
         "flagquantum.qec.surface.ZxxzSurfaceCode",
         "flagquantum.qec.circuit.MeasurementRef",
         "flagquantum.qec.surface.RotatedSurfaceCode",
     ]
     assert len(surviving) == 10
-    assert "flagquantum.qec.surface.RotatedSurfaceCode" in retiring
     assert "flagquantum.qec.codes.RotatedSurfaceCode" in surviving
-    assert gate._pickle_errors(baseline, set(RETIRED), active=False) == []
-    errors = gate._pickle_errors(baseline, set(RETIRED), active=True)
-    assert errors == [
-        f"{name}: retired pickle lookup still succeeds" for name in retiring
+    assert gate._pickle_errors(baseline, set(RETIRED), active=True) == []
+    assert gate._pickle_errors(baseline, set(RETIRED), active=False) == [
+        f"{name}: unexpected pickle lookup failure {name.rsplit('.', 1)[0]}"
+        for name in retiring
     ]
 
 
 @pytest.mark.integration
-def test_phase_commands_are_bounded_and_retirement_does_not_claim_completion() -> None:
-    for phase, returncode in (("prepare", 0), ("retired", 1)):
+def test_phase_commands_validate_the_active_retirement_boundary() -> None:
+    for phase, returncode in (("prepare", 1), ("retired", 0)):
         result = subprocess.run(
             [
                 sys.executable,
@@ -286,7 +283,7 @@ def test_phase_commands_are_bounded_and_retirement_does_not_claim_completion() -
         )
         assert result.returncode == returncode, result.stdout + result.stderr
         assert (
-            "passed: prepare, 23 modules, 108 exports"
+            "unexpected missing module flagquantum.qec."
             if phase == "prepare"
-            else "retired module is still importable"
+            else "passed: retired, 23 modules, 108 exports"
         ) in result.stdout

@@ -35,11 +35,8 @@ from flagquantum.qec import (
     build_memory_circuit,
     css_code_matrices,
 )
-from flagquantum.qec.dem_construction import (
-    _check_rate_order,
-    _code_matrix_entries,
-    _mechanisms,
-)
+from flagquantum.qec.dem.construction import _check_rate_order, _mechanisms
+from flagquantum.qec.dem.matrices import _code_matrix_entries
 
 pytestmark = pytest.mark.unit
 

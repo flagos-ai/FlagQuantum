@@ -31,7 +31,7 @@ print(
     len(memory.observables),
 )
 print("Detector map shape:", tuple(inputs.measurement_to_detectors.dense().shape))
-print("Historical pickle class:", type(pickle.loads(pickle.dumps(memory))).__module__)
+print("Pickle class:", type(pickle.loads(pickle.dumps(memory))).__module__)
 measurements = sample_memory_measurements(
     memory, noise=PhenomenologicalNoise(), shots=4, seed=53
 )

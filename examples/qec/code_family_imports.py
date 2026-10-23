@@ -1,4 +1,4 @@
-"""Run the existing code-family workflow through historical and package imports."""
+"""Run the existing code-family workflow through root and responsibility-package imports."""
 
 import pickle
 
@@ -10,15 +10,15 @@ from flagquantum.qec import (
     run_repetition_memory_noise_sweep,
 )
 from flagquantum.qec.codes.surface import RotatedSurfaceCode as SurfaceFamily
-from flagquantum.qec.surface import RotatedSurfaceCode as SurfaceFrame
+from flagquantum.qec.codes.surface.rotated import RotatedSurfaceCode as Owner
 
 registered = get_code("rotated_surface", distance=3)
-frame = SurfaceFrame(3)
+direct = Owner(3)
 print("Registered family:", type(registered) is RotatedSurfaceCode is SurfaceFamily)
-print("Independent frame:", RotatedSurfaceCode is not SurfaceFrame)
-print("Equivalent checks:", registered.checks == frame.checks)
-print("Pickle paths:", type(registered).__module__, type(frame).__module__)
-print("Pickle identity:", type(pickle.loads(pickle.dumps(frame))) is SurfaceFrame)
+print("Single class:", RotatedSurfaceCode is SurfaceFamily is Owner)
+print("Equivalent checks:", registered.checks == direct.checks)
+print("Pickle path:", type(registered).__module__)
+print("Pickle identity:", type(pickle.loads(pickle.dumps(direct))) is Owner)
 matrices = css_code_matrices(SteaneCode())
 print(
     "Steane matrices:",

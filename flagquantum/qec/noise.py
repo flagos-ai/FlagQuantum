@@ -253,7 +253,9 @@ def __getattr__(name: str) -> Any:
 
         return run_repetition_memory_noise_sweep
     if name == "run_repetition_memory_experiment":
-        from .repetition import run_repetition_memory_experiment
+        from flagquantum.qec.execution.repetition import (
+            run_repetition_memory_experiment,
+        )
 
         return run_repetition_memory_experiment
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

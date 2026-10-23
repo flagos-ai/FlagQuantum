@@ -18,8 +18,8 @@ the same classes and helpers, with historical class/method/function pickle paths
 The SDK's native graph remains non-pickleable in the verified PyMatching 2.4.0
 profile; relocation adds no reducer or new serialized representation.
 
-Core owns compatibility paths. No removal release is approved; removal requires
-an approved API/deprecation and artifact migration plan. Source-inspection tools
+Core retains these surviving `qec.adapters` identifiers under the approved
+0.4.0 contract; this package is outside the 23 retired flat module paths. Source-inspection tools
 should follow `pymatching.py`, not infer a source filename from retained metadata.
 
 For a ten-minute change, install the declared `pymatching` extra, then run

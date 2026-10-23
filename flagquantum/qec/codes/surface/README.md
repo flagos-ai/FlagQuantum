@@ -1,25 +1,23 @@
 # Surface code families
 
-Core owns these layouts and their Pauli checks. Allowed dependencies are the
-standard library, `codes.checks`, the narrow historical-metadata helper and QEC
-Pauli algebra. Circuit generation, detector models, decoding and execution belong
-to their own layers.
+Core owns these layouts and Pauli checks. Allowed dependencies are the standard
+library, `codes.checks`, retained code metadata and QEC Pauli algebra. Circuit
+generation, detector models, decoding and execution belong to their own layers.
 
-`rotated.py` defines the registered `flagquantum.qec.RotatedSurfaceCode`, whose
-historical module is `flagquantum.qec.codes`. `_rotated_frame.py` defines the
-independent class still imported from `flagquantum.qec.surface`. They have equal
-check layouts and different class identities. `zxxz.py` owns checkerboard
-conjugation and `ZxxzSurfaceCode`, retaining `flagquantum.qec.surface` identifiers.
-The package facade exports the registered rotated family and the ZXXZ family;
-the historical flat module continues exporting its independent frame class.
+`rotated.py` defines the only `RotatedSurfaceCode`: the original registered
+`flagquantum.qec.RotatedSurfaceCode`. Root, `qec.codes`, `codes.surface`, the owner
+module and `get_code("rotated_surface", ...)` select this same class. Its pickle
+module remains `flagquantum.qec.codes`. `zxxz.py` owns checkerboard conjugation
+and `ZxxzSurfaceCode`; its canonical pickle path is now in this module.
 
-Keep both rotated definitions until a separately approved public-API and pickle
-migration permits unification. Core owns the aliases; no removal release is
-approved. The two lattice helpers remain beside their respective definitions to
-preserve historical function identity and avoid changing numerical algorithms.
+The approved 0.4.0 retirement removes `qec.surface` and `_rotated_frame.py`.
+Old surface imports and their pickle lookups fail; no `rotated_frame` public
+replacement, subclass, alias module or unpickling bridge is added. ZXXZ uses the
+existing rotated lattice helpers. Checks, lattice order and logicals stay equal
+to the frozen numerical evidence.
 
-A typical layout change starts in the responsible family file. Run
+For a typical change, edit the family owner, run
 `PYTHONPATH=. python examples/qec/code_family_imports.py`, then
 `python -m pytest tests/qec/test_surface_code.py tests/qec/test_mixed_check_code.py tests/qec/test_restructure_code_families.py -q`.
-Compare lattice order, CNOT order, logical representatives and both historical
-pickle identities; agreement only on qubit counts is insufficient.
+Compare lattice order, CNOT order, logical representatives, canonical checkpoint
+round-trips and surviving registered-class identifiers. Keep original fixtures.
