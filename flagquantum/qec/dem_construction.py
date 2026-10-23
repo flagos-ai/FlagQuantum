@@ -79,6 +79,13 @@ from typing import Literal
 
 import torch
 
+from flagquantum.compiler._hybrid import INDEX as INDEX
+from flagquantum.compiler._hybrid import capture_source as capture_source
+from flagquantum.compiler._hybrid import lower_dynamic_program as lower_dynamic_program
+from flagquantum.runtime.dynamic.hybrid_session import (
+    execute_hybrid_dynamic_session as execute_hybrid_dynamic_session,
+)
+
 from ..core.ir import CircuitIR, Instruction
 from ..errors import CapabilityError, ValidationError
 from ..noise import NoiseModel
@@ -101,7 +108,6 @@ from .execution.signatures import _FAULT_KIND_BY_LETTER as _FAULT_KIND_BY_LETTER
 from .execution.signatures import _FAULT_LETTER_BY_KIND as _FAULT_LETTER_BY_KIND
 from .execution.signatures import _FLIP_INDENT as _FLIP_INDENT
 from .execution.signatures import _ROUND_LOOP_ANCHOR as _ROUND_LOOP_ANCHOR
-from .execution.signatures import INDEX as INDEX
 from .execution.signatures import _checked_round as _checked_round
 from .execution.signatures import _checked_wire as _checked_wire
 from .execution.signatures import _DataFaultFamily as _DataFaultFamily
@@ -114,11 +120,6 @@ from .execution.signatures import _lowered_program as _lowered_program
 from .execution.signatures import _lowered_source as _lowered_source
 from .execution.signatures import _MechanismKind as _MechanismKind
 from .execution.signatures import _single_anchor as _single_anchor
-from .execution.signatures import capture_source as capture_source
-from .execution.signatures import (
-    execute_hybrid_dynamic_session as execute_hybrid_dynamic_session,
-)
-from .execution.signatures import lower_dynamic_program as lower_dynamic_program
 from .noise import PhenomenologicalNoise
 
 __all__ = ("CssCodeMatrices", "css_code_matrices")
