@@ -9,10 +9,10 @@
     "approved_scope": "staged local DynamicCircuit planning and execution through fq.plan and fq.run"
   },
   "delivery_stage": {
-    "name": "contract_and_conformance_baseline",
-    "runtime_activation": false,
-    "public_behavior_change": false,
-    "successor": "dynamic_planning"
+    "name": "local_run_activation",
+    "runtime_activation": true,
+    "public_behavior_change": true,
+    "successor": "performance_and_non_regression"
   },
   "compatibility": {
     "additive_behavior_only": true,

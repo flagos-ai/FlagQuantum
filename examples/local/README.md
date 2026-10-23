@@ -15,9 +15,9 @@ python -m examples.local.dynamic_validation
 - `simulate.py` builds a Bell circuit and checks its statevector.
 - `measure.py` requests probabilities, a Pauli expectation, and sampled counts.
 - `train.py` optimizes an `fq.Module` with a standard PyTorch optimizer.
-- `dynamic_feedback.py` uses the candidate-stable `DynamicCircuit` builder and
-  experimental local executor for mid-circuit measurement, conditional feedback,
-  reset, and projection to the canonical execution result.
+- `dynamic_feedback.py` plans and executes the stable `DynamicCircuit` builder
+  through `fq.plan` and `fq.run`, covering mid-circuit measurement, conditional
+  feedback, reset, and the canonical execution result.
 - `dynamic_validation.py` shows the supported local execution path, build-time
   def-use validation, and the explicit refusal of dynamic feedback on the
   distributed statevector path.

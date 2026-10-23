@@ -126,9 +126,8 @@ These examples do not use that alias:
   root-level `fq.` name.
 - [`dynamic_density_matrix.py`](dynamic_density_matrix.py) — it imports
   `flagquantum.dynamic` and `flagquantum.simulation.density_matrix`, because the
-  exact route for a mid-circuit measurement is reached through
-  `DynamicCircuit.density_matrix()` and `fq.run` still refuses a dynamic program
-  by name.
+  exact mixed-state route for a mid-circuit measurement is reached through
+  `DynamicCircuit.density_matrix()`, while `fq.run` returns sampled trajectories.
 - [`dynamic_disjunctive_condition.py`](dynamic_disjunctive_condition.py) — it
   imports `flagquantum.dynamic` and `flagquantum.experimental.dynamic`, because a
   disjunctive condition is a `DynamicCircuit.conditional` keyword, and the two

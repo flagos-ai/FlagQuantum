@@ -14,7 +14,6 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.errors as fqe
 from flagquantum.dynamic import DynamicCircuit
 
 pytestmark = pytest.mark.unit
@@ -32,7 +31,7 @@ def _feedback_program() -> DynamicCircuit:
     return circuit.conditional("x", 1, classical_bit=0)
 
 
-def test_contract_records_exact_approval_and_staged_activation() -> None:
+def test_contract_records_exact_approval_and_local_activation() -> None:
     contract = _contract()
 
     assert contract["status"] == "approved_for_staged_implementation"
@@ -46,10 +45,10 @@ def test_contract_records_exact_approval_and_staged_activation() -> None:
         ),
     }
     assert contract["delivery_stage"] == {
-        "name": "contract_and_conformance_baseline",
-        "runtime_activation": False,
-        "public_behavior_change": False,
-        "successor": "dynamic_planning",
+        "name": "local_run_activation",
+        "runtime_activation": True,
+        "public_behavior_change": True,
+        "successor": "performance_and_non_regression",
     }
 
 
@@ -136,19 +135,76 @@ def test_current_dynamic_oracle_proves_the_result_projection() -> None:
     assert torch.equal(native.samples[:, 1], native.classical_bits[:, 0])
 
 
-def test_stable_execution_remains_closed_after_dynamic_planning_lands() -> None:
+def test_stable_execution_uses_one_plan_for_automatic_and_explicit_runs() -> None:
     contract = _contract()
 
-    assert contract["delivery_stage"]["runtime_activation"] is False
+    assert contract["delivery_stage"]["runtime_activation"] is True
+    circuit = _feedback_program()
+    options = fq.ExecutionOptions(shots=32, seed=7)
     plan = fq.plan(
-        _feedback_program(),
-        options=fq.ExecutionOptions(shots=32, seed=7),
+        circuit,
+        options=options,
     )
-    with pytest.raises(
-        fqe.CapabilityError,
-        match="dynamic ExecutionPlan is valid.*run_dynamic",
-    ):
-        fq.run(plan)
+    restored = type(plan).from_json(plan.to_json())
+
+    explicit = fq.run(restored)
+    automatic = fq.run(circuit, options=options)
+
+    assert explicit.plan is restored
+    assert automatic.plan is not None
+    assert explicit.plan.identity == automatic.plan.identity == plan.identity
+    assert torch.equal(explicit.samples, automatic.samples)
+    assert tuple(item.kind for item in explicit.measurements) == (
+        "sample",
+        "mid_circuit_measurement",
+    )
+    assert explicit.state is None
+    assert explicit.value is None
+    assert explicit.provenance == {}
+    assert not hasattr(explicit, "final_states")
+    assert not hasattr(explicit, "feedback_traces")
+
+
+def test_direct_shots_keyword_reaches_dynamic_execution_only() -> None:
+    result = fq.run(_feedback_program(), shots=16)
+
+    assert isinstance(result, fq.ExecutionResult)
+    assert result.samples is not None
+    assert result.samples.shape == (16, 2)
+    assert result.runtime["shots"] == 16
+
+    with pytest.raises(TypeError, match="requires fq.samples"):
+        fq.run(fq.Circuit(1), shots=16)
+
+
+def test_direct_shots_composes_with_seed_options_without_duplication() -> None:
+    circuit = _feedback_program()
+
+    direct = fq.run(circuit, shots=32, options=fq.ExecutionOptions(seed=11))
+    explicit = fq.run(
+        circuit,
+        options=fq.ExecutionOptions(shots=32, seed=11),
+    )
+
+    assert torch.equal(direct.samples, explicit.samples)
+    assert direct.plan is not None
+    assert explicit.plan is not None
+    assert direct.plan.identity == explicit.plan.identity
+
+
+def test_restored_plan_preserves_batch_and_precision_constraints() -> None:
+    circuit = DynamicCircuit(1, bsz=2, dtype=torch.complex128)
+    circuit.x(0).measure(0, classical_bit=0)
+    plan = fq.plan(circuit, options=fq.ExecutionOptions(shots=8, seed=3))
+
+    result = fq.run(type(plan).from_json(plan.to_json()))
+
+    assert result.samples is not None
+    assert result.samples.shape == (2, 8, 1)
+    assert torch.all(result.samples == 1)
+    assert result.plan is not None
+    assert result.plan.batch_size == 2
+    assert result.plan.precision == "complex128"
 
 
 def test_static_planning_and_execution_are_unchanged() -> None:
