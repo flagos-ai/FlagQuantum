@@ -279,6 +279,17 @@ separate check. This supplies the bounded photonic reference scenario below
 through existing shared capabilities, without promoting a Gaussian backend or
 native optical-program frontend.
 
+[Proposal 085](../development/API_CHANGE_PROPOSAL_085_ISING_BRAID_PROGRAMS.md)
+was explicitly approved on 2026-10-23 for baseline-first staged implementation.
+It specifies a fixed-charge Ising braid frontend on the same
+Core ProgramRecord, exact existing operator actions, shared root planning and
+results, and explicit terminal QND charge instruments. Its native-only plan
+admission must preserve old circuit and Lindblad plans without reporting fusion
+coordinates as qubits or braid ordinals as physical time. The runnable
+current-API matrix probe establishes reuse only, not native support. The
+replaceable baseline must precede domain implementations, and each later PR
+retains its own merge and complete-verification gates.
+
 ### Reference scenarios
 
 | Scenario | Shared capability under test | Additional acceptance |
