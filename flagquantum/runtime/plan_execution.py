@@ -7,7 +7,7 @@ from dataclasses import replace
 from datetime import datetime
 from functools import lru_cache
 from math import isqrt
-from typing import Any
+from typing import Any, cast
 
 import torch
 
@@ -321,24 +321,26 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                 "options_fingerprint_mismatch",
                 "dynamic ExecutionPlan seed must be null or a non-negative integer",
             )
-        program = DynamicCircuit.from_ir(
-            source_ir,
-            bsz=batch_size,
-            device=str(decision["device"]),
-            dtype=getattr(torch, str(decision["precision"])),
+        program = cast(
+            DynamicCircuit,
+            DynamicCircuit.from_ir(
+                source_ir,
+                bsz=batch_size,
+                device=str(decision["device"]),
+                dtype=getattr(torch, str(decision["precision"])),
+            ),
         )
+        memory_limit_bytes = cast(int | None, decision["memory_limit_bytes"])
         native = run_dynamic(
             program,
             shots=shots,
             seed=seed,
             max_batched_bytes=(
-                int(decision["memory_limit_bytes"])
-                if decision["memory_limit_bytes"] is not None
-                else 256 * 1024**2
+                memory_limit_bytes if memory_limit_bytes is not None else 256 * 1024**2
             ),
         )
         return replace(
-            native.to_execution_result(),
+            cast(ExecutionResult, native.to_execution_result()),
             plan=execution_plan,
             provenance={},
         )
