@@ -1131,10 +1131,10 @@ the raw rate as the decoded one fails by name rather than passing quietly.
 
 ## A decoder over the detector error model
 
-`dem/graph.py` and `matching.py` add the first decoder in this layer that
+`dem/graph.py` and `decoders/matching.py` add the first decoder in this layer that
 reads a detector error model rather than a repetition-code syndrome history. The
 split is by responsibility: `dem/graph.py` states what a model graphs to,
-and `matching.py` searches that graph.
+and `decoders/matching.py` searches that graph.
 
 A `DecodingGraphEdge` connects exactly two nodes and carries a probability and a
 tuple of observable labels. A `DecodingGraph` states a detector count, an
@@ -1286,7 +1286,7 @@ express a surface-code correction over `distance**2` data qubits in the Z basis.
 The result states the predicted observables, the mechanisms selected in graph
 order, and their total weight, and the decoder therefore does not implement the
 repetition-only `Decoder` protocol either. The one thing built on this result is
-the windowed decoder in `sliding_window.py`, whose own section follows: it returns
+the windowed decoder in `decoders/sliding_window.py`, whose own section follows: it returns
 this record unchanged, because a band's answer is the same kind of answer as the
 whole graph's. Nothing else is: there is no logical-error-rate estimator, no
 threshold scan, and no connection to the memory-experiment result records. The
@@ -1294,14 +1294,14 @@ implementation imports `heapq`, `math`, `dataclasses`, and `numbers` and nothing
 else, so no new dependency is introduced; `stim` and `pymatching` are not imported
 by it, and the cross-check against `pymatching` is a separate module behind the
 `pymatching` extra rather than a build dependency. That cross-check is
-`flagquantum/qec/adapters.py`, and what it established is stated there rather
+`flagquantum/qec/adapters/pymatching.py`, and what it established is stated there rather
 than here: the two decoders agree on the cheapest weight of every syndrome and on
 the observables wherever the cheapest explanation is unique, and a tie is
 uncomparable because PyMatching's own arithmetic is narrower than this module's.
 
 ## Deciding a history a band at a time
 
-`sliding_window.py` exists for the one thing the exact matcher above cannot do,
+`decoders/sliding_window.py` exists for the one thing the exact matcher above cannot do,
 and the reason is the budget rather than the model. The matcher enumerates the
 ways to pair the defective detectors, so its cost is exponential in the defect
 count and its `max_defects` is what bounds the patch a decode can cover. A
@@ -1408,7 +1408,7 @@ beyond the matcher calls it makes.
 
 ## A decoder for the hyperedge
 
-`bposd.py` is the second decoder in this layer and the first one that answers a
+`decoders/bposd.py` is the second decoder in this layer and the first one that answers a
 model the matcher refuses. The refusal it exists for is structural rather than
 numerical: a mechanism that flips three or more detectors has no pair-graph, so
 `from_detector_error_model` raises a `CapabilityError` naming the detectors, and
@@ -1460,7 +1460,7 @@ of those numbers, checks the syndrome-consistency invariant on every result, and
 uses brute force over the model's own mechanism sets as the independent reference
 for both the least weight and the most likely observable.
 
-It is deliberately not registered in `registry.py`, and the reason is a protocol
+It is deliberately not registered in `decoders/registry.py`, and the reason is a protocol
 promise rather than an unimplemented constructor. `DetectorErrorModelDecoder`
 says that a decoder can be built from a model and exposes the `DecodingGraph` it
 built, and a model carrying a three-detector mechanism has no such graph:
@@ -1485,16 +1485,16 @@ test starts a fresh interpreter and measures that. It is a decoder for one model
 at a time: there is no batching, no streaming and no logical-error-rate estimator
 and no threshold sweep, and it is not wired to the stim sampling path, so a
 syndrome it decodes comes from the caller rather than from this package's
-sampler. The sliding window is the windowed route in `sliding_window.py` and not
+sampler. The sliding window is the windowed route in `decoders/sliding_window.py` and not
 this decoder: this one answers a hyperedge model a matcher cannot graph, and that
 one bands a graph the matcher can search.
 
 The section below is the other decoder in this layer that answers a model the
 matcher refuses, and reading it needs one correction to the two paragraphs above.
-The exclusion those paragraphs record was true and is kept: `matching.py` and its
+The exclusion those paragraphs record was true and is kept: `decoders/matching.py` and its
 windowed reading promise the `DecodingGraph` they built, and a model carrying a
 three-detector mechanism has no pair graph for this class to expose. What changed is
-which protocol states that promise. `registry.py` now states two of them --
+which protocol states that promise. `decoders/registry.py` now states two of them --
 `DetectorErrorModelDecoder` for `decode` and
 `GraphlikeDetectorErrorModelDecoder` for `graph` -- so this class satisfies the
 family protocol and **is** registered, as `belief_propagation_osd`, with its graph
@@ -1508,7 +1508,7 @@ the narrower protocol.
 
 ## A second decoder, for the models the matcher cannot read
 
-`belief_propagation.py` is the other half of that decoder family, and the reason
+`decoders/belief_propagation.py` is the other half of that decoder family, and the reason
 it is a family rather than a setting is the shape of the input. A matcher needs a
 graphlike model, so a mechanism touching three or more detectors has no edge to
 become and is refused. A factor graph has no such limit: a mechanism is one
@@ -1560,12 +1560,12 @@ mechanisms, the logical observables they flip, the total weight and the iteratio
 count. It is deliberately not the baseline's `DecoderResult`: there is no batch
 form, no async form and no optional-results channel here. The module imports
 `math`, `dataclasses` and `numbers` and nothing else, and it does not implement
-the sliding window, which lives in [sliding_window.py](sliding_window.py) because
+the sliding window, which lives in [decoders/sliding_window.py](decoders/sliding_window.py) because
 it needs the chunk seams this layer does not have.
 
 ## Reaching a decoder by name
 
-`registry.py` is the factory half of the CUDA-Q QEC decoder surface: upstream
+`decoders/registry.py` is the factory half of the CUDA-Q QEC decoder surface: upstream
 reaches a decoder through `get_decoder(name, H_or_dem_text_or_sparse_matrix,
 **options)` and registers one with a decorator, and this module offers
 `get_decoder(name, source, **options)`, `register_decoder(name, *,
@@ -1623,7 +1623,7 @@ model and a round count rather than defaulting them, so a factory that lifted a
 matrix would also be choosing the noise the caller decodes against. The caller
 who holds the matrix and the noise together does the lifting.
 
-`registry.py` accepts either carrier rather than only the classmethod: a
+`decoders/registry.py` accepts either carrier rather than only the classmethod: a
 `from_decoding_graph` constructor where the class states one, and a `graph`
 constructor parameter where the class searches the graph as it stands, which is what
 `_declares_a_graph_carrier` measures. A name registered with `graph_route=False`
@@ -1783,7 +1783,7 @@ Upstream `cudaq-qec` ships a `sliding_window` decoder over its extended detector
 error model: it cuts the model into round windows, hands each window its own
 matrices and its own inner decoder, commits the part of a window the window that
 follows cannot revise, and folds the committed corrections into a logical-frame
-prediction. [sliding_window.py](sliding_window.py) is that decoder over the
+prediction. [decoders/sliding_window.py](decoders/sliding_window.py) is that decoder over the
 windows above, plus the three chunk-scoped projections the same baseline lists.
 `dem_chunks_to_pcm` and `dem_chunks_to_o_sparse` are projections of the whole
 sequence, and `dem_chunks_to_d_sparse` is the memory XOR map that pairs a

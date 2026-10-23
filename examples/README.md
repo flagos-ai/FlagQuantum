@@ -108,6 +108,9 @@ These examples do not use that alias:
 - [`qec/dem_model_and_chunks.py`](qec/dem_model_and_chunks.py) uses the QEC
   public imports to read exact rates, build a decoding graph, close a complete
   chunk and verify the historical pickle class; no optional SDK is required.
+- [`qec/decoder_registry_and_pickle.py`](qec/decoder_registry_and_pickle.py)
+  uses QEC registry imports to compare three in-tree decoders and verify the
+  historical matcher pickle class, without an optional SDK.
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.

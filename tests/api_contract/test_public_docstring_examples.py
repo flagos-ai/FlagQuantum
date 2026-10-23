@@ -351,6 +351,19 @@ def test_every_module_with_examples_is_covered() -> None:
             == Path(owner.__file__).resolve()
         )
         covered.add(owner.__name__)
+    entry = BeliefPropagationOsdDecoder.from_detector_error_model
+    assert entry in ENTRIES
+    owner = importlib.import_module("flagquantum.qec.decoders.bposd")
+    assert owner.BeliefPropagationOsdDecoder is BeliefPropagationOsdDecoder
+    assert (
+        entry.__func__
+        is owner.BeliefPropagationOsdDecoder.from_detector_error_model.__func__
+    )
+    assert (
+        Path(entry.__func__.__code__.co_filename).resolve()
+        == Path(owner.__file__).resolve()
+    )
+    covered.add(owner.__name__)
     uncovered = sorted(_modules_with_examples() - covered)
 
     assert uncovered == [], (

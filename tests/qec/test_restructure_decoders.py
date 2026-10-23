@@ -217,3 +217,50 @@ def test_old_decoder_instances_resume_with_the_same_classes_and_results() -> Non
                 _model(),
             )
             assert _plain(value.decode((0,))) == _plain(original.decode((0,)))
+
+
+def test_historical_decoder_imports_are_canonical_aliases() -> None:
+    owners = {
+        "decoders": "decoders.repetition",
+        "registry": "decoders.registry",
+        "matching": "decoders.matching",
+        "belief_propagation": "decoders.belief_propagation",
+        "bposd": "decoders.bposd",
+        "sliding_window": "decoders.sliding_window",
+        "adapters": "adapters.pymatching",
+    }
+    expected = json.loads((_FIXTURES / "restructure_006_metadata.json").read_text())
+    for path in expected["definitions"]:
+        parts = path.split(".")
+        if len(parts) != 4:
+            continue
+        owner = importlib.import_module("flagquantum.qec." + owners[parts[2]])
+        assert _resolve(path) is getattr(owner, parts[3]), path
+
+
+def test_one_registry_serves_old_root_and_canonical_plugin_imports() -> None:
+    from flagquantum.qec import registry as historical
+    from flagquantum.qec.decoders import registry as owner
+
+    qec.decoder_names()
+    table = owner._DECODERS
+    assert historical._DECODERS is table
+    assert historical.register_decoder is qec.register_decoder is owner.register_decoder
+    original = dict(table)
+    try:
+        assert (
+            historical.register_decoder("package_identity_probe")(
+                qec.MinimumWeightMatchingDecoder
+            )
+            is qec.MinimumWeightMatchingDecoder
+        )
+        for get in (historical.get_decoder, qec.get_decoder, owner.get_decoder):
+            assert (
+                type(get("package_identity_probe", _model()))
+                is qec.MinimumWeightMatchingDecoder
+            )
+        with pytest.raises(ValueError, match="already registered"):
+            owner.register_decoder("package_identity_probe")
+    finally:
+        table.clear()
+        table.update(original)

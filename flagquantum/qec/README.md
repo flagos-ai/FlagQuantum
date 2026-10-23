@@ -94,9 +94,9 @@ it.
 ## Decode a detection-event syndrome
 
 `dem/graph.py` turns a detector error model into a weighted graph and
-`matching.py` decodes a syndrome on it. This is the code-independent decoder: it
+`decoders/matching.py` decodes a syndrome on it. This is the code-independent decoder: it
 reads the model's mechanisms and nothing about the code that produced them.
-`belief_propagation.py` is the second decoder over the same model, for the
+`decoders/belief_propagation.py` is the second decoder over the same model, for the
 mechanisms a matcher has no edge for.
 
 ```python
@@ -126,7 +126,7 @@ projected onto a pair. The matcher enumerates the ways to pair the defective
 detectors, so it refuses a syndrome larger than its defect budget instead of
 returning a pairing that only looks cheapest.
 
-A syndrome the budget refuses is the case `sliding_window.py` exists for. A
+A syndrome the budget refuses is the case `decoders/sliding_window.py` exists for. A
 memory experiment's defect count grows with its rounds, so a long history is
 exactly where the exact matcher stops answering; the windowed decoder answers it
 by deciding a band of detectors at a time against a window of them, with the
@@ -190,7 +190,7 @@ the refusal.
 ## Decode a model the matcher refuses
 
 A matcher needs one edge per mechanism, so a mechanism that flips three or more
-detectors is a hyperedge and `matching.py` refuses it. `belief_propagation.py`
+detectors is a hyperedge and `decoders/matching.py` refuses it. `decoders/belief_propagation.py`
 reads exactly that model: a mechanism is one variable, a detector is one check,
 and a mechanism touching three detectors joins three checks, so the graph is the
 model as written rather than a projection of it.
@@ -224,7 +224,7 @@ rather than approximating any of the three.
 
 The matcher is the authority, and its evidence cannot come from itself. Brute
 force over enumerable syndromes is independent of the implementation but not of
-the detector error model both read, so `adapters.py` adds the one check that is:
+the detector error model both read, so `adapters/pymatching.py` adds the one check that is:
 a second decoder, over the same decoding graph, behind the optional `pymatching`
 extra.
 
@@ -1231,16 +1231,16 @@ is the runnable form of the same route.
 ## Change and verify
 
 Use [repetition.py](execution/repetition.py) for experiment composition,
-[decoders.py](decoders.py) for decoding, [dem/graph.py](dem/graph.py)
-and [matching.py](matching.py) for the detector-error-model matcher, which is the
-authority decoder this layer ships, [belief_propagation.py](belief_propagation.py)
+[decoders/repetition.py](decoders/repetition.py) for decoding, [dem/graph.py](dem/graph.py)
+and [decoders/matching.py](decoders/matching.py) for the detector-error-model matcher, which is the
+authority decoder this layer ships, [decoders/belief_propagation.py](decoders/belief_propagation.py)
 for the decoder that reads the hyperedges the matcher refuses,
-[bposd.py](bposd.py) for the belief-propagation-and-ordered-statistics decoder
+[decoders/bposd.py](decoders/bposd.py) for the belief-propagation-and-ordered-statistics decoder
 reached by name, [dem/chunks.py](dem/chunks.py) for the round-window decomposition,
-[sliding_window.py](sliding_window.py) for the same decoder over a band of detectors
+[decoders/sliding_window.py](decoders/sliding_window.py) for the same decoder over a band of detectors
 at a time and for the projections those windows are read through,
-[registry.py](registry.py) for reaching a decoder by name,
-[adapters.py](adapters.py) for the PyMatching cross-check,
+[decoders/registry.py](decoders/registry.py) for reaching a decoder by name,
+[adapters/pymatching.py](adapters/pymatching.py) for the PyMatching cross-check,
 [sampling.py](execution/sampling.py) for sampling detection events from a memory circuit,
 [dem/circuit.py](dem/circuit.py) for writing a model as a circuit and reading it
 back, [noise.py](noise.py) for code-specific noise profiles, [codes/README.md](codes/README.md)
