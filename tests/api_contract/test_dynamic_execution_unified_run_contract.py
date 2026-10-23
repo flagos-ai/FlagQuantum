@@ -114,9 +114,7 @@ def test_contract_fixes_one_plan_and_result_model() -> None:
 
 
 def test_current_dynamic_oracle_proves_the_result_projection() -> None:
-    native = fq.experimental.dynamic.run_dynamic(
-        _feedback_program(), shots=32, seed=7
-    )
+    native = fq.experimental.dynamic.run_dynamic(_feedback_program(), shots=32, seed=7)
     projected = native.to_execution_result()
 
     assert isinstance(projected, fq.ExecutionResult)
