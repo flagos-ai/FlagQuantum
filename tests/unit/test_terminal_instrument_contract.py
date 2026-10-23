@@ -285,6 +285,34 @@ def test_pair_flag_order_is_not_hidden_loss_or_actor_reindexing(
     )
 
 
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_fock_probabilities_are_covariant_under_a_complex_basis_change(
+    terminal_sampler: TerminalSampler,
+    fock_instrument: Callable[[torch.dtype], Instrument],
+    dtype: torch.dtype,
+) -> None:
+    rho = density((0.6, 0.3, 0.1), dtype, True)
+    coordinates = torch.arange(3, dtype=rho.real.dtype)
+    phase = 2 * math.pi * torch.outer(coordinates, coordinates) / 3
+    unitary = torch.polar(torch.full_like(phase, 1 / math.sqrt(3)), phase).to(dtype)
+    branches = {
+        label: tuple(unitary @ k @ unitary.mH for k in operators)
+        for label, operators in fock_instrument(dtype).items()
+    }
+    rotated = unitary @ rho @ unitary.mH
+    result = terminal_sampler(rotated, branches, shots=20_000, seed=7)
+    expected = torch.tensor([0.6, 0.3, 0.1], dtype=rho.real.dtype)
+    assert (rotated.diagonal().real - expected).abs().max() > 0.1
+    assert_draws(result, expected)
+    unread = sum(SuperOperator.from_kraus(k).apply(rotated) for k in branches.values())
+    torch.testing.assert_close(
+        unread,
+        unitary @ torch.diag(expected).to(dtype) @ unitary.mH,
+        atol=1e-10 if dtype == torch.complex128 else 2e-5,
+        rtol=0,
+    )
+
+
 def test_equal_effects_do_not_choose_the_instrument_backaction(
     terminal_sampler: TerminalSampler,
     fock_instrument: Callable[[torch.dtype], Instrument],
@@ -296,6 +324,13 @@ def test_equal_effects_do_not_choose_the_instrument_backaction(
     for branches in (resolved, coherent):
         result = terminal_sampler(rho, branches, shots=20_000, seed=7)
         assert_draws(result, torch.tensor([0.7, 0.3], dtype=torch.float64))
+        captured = result.metadata["terminal_instrument"]["branches"]
+        for record, (label, operators) in zip(captured, branches.items(), strict=True):
+            assert record["label"] == label and len(record["kraus"]) == len(operators)
+            for encoded, operator in zip(record["kraus"], operators, strict=True):
+                torch.testing.assert_close(
+                    _decode_value(encoded), operator, atol=0, rtol=0
+                )
     a = sum(SuperOperator.from_kraus(k).apply(rho) for k in resolved.values())
     b = sum(SuperOperator.from_kraus(k).apply(rho) for k in coherent.values())
     assert a[0, 2].abs().item() < 1e-10

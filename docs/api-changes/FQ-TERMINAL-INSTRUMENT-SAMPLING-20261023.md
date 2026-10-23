@@ -32,7 +32,8 @@ It is not an input validator, capability checker or Runtime dispatch path.
 
 The consumers exercise both complex dtypes; efficiencies 0/0.8/1; ground,
 Rydberg, lost, mixed and coherent inputs; ordered pair flags; finite-Fock QND
-statistics and unread dephasing; distinct instruments sharing effects; B=1/B=2;
+statistics and unread dephasing, including a complex basis change that forbids a
+diagonal-only sampling shortcut; distinct instruments sharing effects; B=1/B=2;
 zero-probability outcomes; fixed/default seeds; capture, JSON-compatible metadata
 and global RNG isolation. Physical budgets remain 1e-10 and 2e-5. Empirical draws
 use the separately declared six-binomial-standard-error plus 2/shots bound.
