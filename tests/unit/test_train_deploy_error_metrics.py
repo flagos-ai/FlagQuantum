@@ -54,7 +54,9 @@ def test_example_sampling_is_replayable_without_changing_the_callers_rng(
     observations = []
     with torch.random.fork_rng(devices=[]):
         for caller_seed in (91, 92):
-            torch.manual_seed(caller_seed)
+            torch.random.set_rng_state(
+                torch.Generator(device="cpu").manual_seed(caller_seed).get_state()
+            )
             before = torch.random.get_rng_state().clone()
             example.main()
             assert torch.equal(before, torch.random.get_rng_state())
@@ -67,3 +69,14 @@ def test_example_sampling_is_replayable_without_changing_the_callers_rng(
                 )
             )
     assert observations[0] == observations[1]
+
+
+def test_local_sampling_does_not_reseed_accelerators(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    accelerator_seeds: list[int] = []
+    monkeypatch.setattr(torch.cuda, "manual_seed_all", accelerator_seeds.append)
+
+    example.main()
+
+    assert accelerator_seeds == []

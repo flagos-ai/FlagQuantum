@@ -7,7 +7,7 @@ This example shows the intended FlagQuantum train-to-deploy flow:
 3. Compile/package the bound circuit for a quantum-cloud target.
 4. Execute it through the in-memory provider contract for inference.
 
-The local sampling draw is reproducible. Its finite-shot energy estimate is
+The local CPU sampling draw is reproducible. Its finite-shot energy estimate is
 reported separately from the variational energy used to assess training.
 """
 
@@ -96,8 +96,9 @@ def main() -> None:
             "training_energy": float(training_result.energy),
         },
     )
+    sampling_generator = torch.Generator(device="cpu").manual_seed(7)
     with torch.random.fork_rng(devices=[]):
-        torch.manual_seed(7)
+        torch.random.set_rng_state(sampling_generator.get_state())
         inference_result = provider.run(package)
     deployed_energy = hamiltonian_expectation_from_counts(
         inference_result.counts,
