@@ -5,6 +5,12 @@ models and decoders. The package keeps its 108 ordered public exports, original
 signatures/defaults, numerical behavior and code/decoder registration policy.
 The responsibility split changes where contributors edit implementations.
 
+The API owner has authorized direct retirement of 23 historical submodules.
+[Proposal 085](../development/API_CHANGE_PROPOSAL_085_QEC_HISTORICAL_IMPORT_RETIREMENT.md)
+lists every replacement and targets **0.4.0**. It is a separate breaking change;
+the current 0.3.1 implementation still retains all historical imports and pickle
+paths described below. The proposal does not remove any implementation.
+
 ## Find the implementation
 
 ```text
