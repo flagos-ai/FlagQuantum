@@ -9,10 +9,10 @@
     "approved_scope": "staged local DynamicCircuit planning and execution through fq.plan and fq.run"
   },
   "delivery_stage": {
-    "name": "local_run_activation",
+    "name": "performance_and_non_regression",
     "runtime_activation": true,
-    "public_behavior_change": true,
-    "successor": "performance_and_non_regression"
+    "public_behavior_change": false,
+    "successor": "remote_capability_proposal"
   },
   "compatibility": {
     "additive_behavior_only": true,
@@ -147,5 +147,24 @@
     "unsupported local and remote capabilities fail before execution or submission",
     "static planning and execution remain unchanged",
     "performance budgets pass"
-  ]
+  ],
+  "performance_evidence": {
+    "runner": "flagquantum-benchmark run dynamic_unified_run",
+    "schema": "flagquantum.dynamic_unified_run.local_performance.v1",
+    "artifact": "benchmarks/results/comparison/dynamic_unified_run_cpu_arm64_20261023.json",
+    "classification": "measured local single-process performance only",
+    "budgets": {
+      "planning_p95_seconds": 0.05,
+      "explicit_over_native_median": 3.0,
+      "automatic_over_explicit_median": 2.0,
+      "static_automatic_over_explicit_median": 2.0
+    },
+    "non_regression_sentinel": "stable static sampling through the unchanged fq.plan/fq.run path",
+    "claim_exclusions": [
+      "distributed scalability",
+      "accelerator performance",
+      "QPU performance",
+      "release performance"
+    ]
+  }
 }

@@ -225,6 +225,41 @@ Each implementation step is a separately reviewed PR with a runnable user-facing
 example. Protected-contract changes land before Runtime implementation, following
 the repository's integration workflow.
 
+### Local performance budget
+
+Stage 4 uses the maintained `dynamic_unified_run` benchmark. It separately
+measures planning, execution of an existing plan, automatic planning plus
+execution, the existing native dynamic oracle, both memory-selected local
+trajectory strategies, and a static sampling sentinel. The gate requires:
+
+- planning p95 no greater than 50 ms;
+- stable explicit-plan median no greater than 3.0 times the native oracle;
+- automatic plan-and-run median no greater than 2.0 times explicit-plan run;
+- static automatic median no greater than 2.0 times static explicit-plan run.
+
+These deliberately bounded wrapper budgets detect routing and serialization
+regressions without claiming kernel parity. The payload is classified as local
+single-process evidence and explicitly forbids distributed, accelerator, QPU,
+and release-performance claims. Reproduce it with:
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+flagquantum-benchmark run dynamic_unified_run \
+  --batched-shots 4096 --trajectory-shots 64 --static-shots 4096 \
+  --warmup 2 --iterations 9 --planning-iterations 25 \
+  --json-output \
+  benchmarks/results/comparison/dynamic_unified_run_cpu_arm64_20261023.json
+```
+
+The recorded macOS arm64 observation used Python 3.12.14, PyTorch 2.14.1,
+FlagQuantum 0.3.1, one process, and one CPU thread. Planning p95 was 0.347 ms.
+Stable explicit-plan/native median ratios were 1.123 for the batched strategy and
+1.099 for the memory-forced trajectory strategy. Automatic/explicit ratios were
+0.982 and 0.988, and the static sentinel ratio was 1.441. All four budgets
+passed. These values characterize that observation only; the versioned runner
+and budget verdict, rather than the numbers themselves, are the regression
+mechanism.
+
 ## Acceptance
 
 - [x] API owner approves the exact decision with the recorded directive.

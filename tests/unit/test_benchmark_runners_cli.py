@@ -95,6 +95,7 @@ def test_runner_registry_is_lazy_and_sorted() -> None:
         "batched_statevector_memory",
         "cpu_performance_gate",
         "differentiable_simulator_corpus",
+        "dynamic_unified_run",
         "environment_probe",
         "numa_memory_traffic",
         "simulator_compare",

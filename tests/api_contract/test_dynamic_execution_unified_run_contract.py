@@ -1,7 +1,7 @@
-"""Approved baseline for executing DynamicCircuit through the stable entry.
+"""Approved contract for executing DynamicCircuit through the stable entry.
 
-This stage records the additive behavior before Runtime activates it. The native
-dynamic executor is the numerical oracle; it is not promoted by these tests.
+The native dynamic executor remains the numerical and performance oracle; these
+tests do not promote it or expose its result type through the stable API.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ def _feedback_program() -> DynamicCircuit:
     return circuit.conditional("x", 1, classical_bit=0)
 
 
-def test_contract_records_exact_approval_and_local_activation() -> None:
+def test_contract_records_exact_approval_and_performance_stage() -> None:
     contract = _contract()
 
     assert contract["status"] == "approved_for_staged_implementation"
@@ -45,11 +45,39 @@ def test_contract_records_exact_approval_and_local_activation() -> None:
         ),
     }
     assert contract["delivery_stage"] == {
-        "name": "local_run_activation",
+        "name": "performance_and_non_regression",
         "runtime_activation": True,
-        "public_behavior_change": True,
-        "successor": "performance_and_non_regression",
+        "public_behavior_change": False,
+        "successor": "remote_capability_proposal",
     }
+
+
+def test_contract_records_bounded_local_performance_evidence() -> None:
+    evidence = _contract()["performance_evidence"]
+
+    assert evidence["runner"] == "flagquantum-benchmark run dynamic_unified_run"
+    assert evidence["schema"] == (
+        "flagquantum.dynamic_unified_run.local_performance.v1"
+    )
+    assert evidence["budgets"] == {
+        "planning_p95_seconds": 0.05,
+        "explicit_over_native_median": 3.0,
+        "automatic_over_explicit_median": 2.0,
+        "static_automatic_over_explicit_median": 2.0,
+    }
+    assert evidence["claim_exclusions"] == [
+        "distributed scalability",
+        "accelerator performance",
+        "QPU performance",
+        "release performance",
+    ]
+    artifact = json.loads((ROOT / evidence["artifact"]).read_text(encoding="utf-8"))
+    assert artifact["schema"] == evidence["schema"]
+    assert artifact["budgets"] == evidence["budgets"]
+    assert artifact["budget_passed"] is True
+    assert artifact["distribution_semantics"] == "single_process"
+    assert artifact["scalability_claim_allowed"] is False
+    assert artifact["release_gate_allowed"] is False
 
 
 def test_contract_is_additive_and_reuses_stable_authorities() -> None:
@@ -207,7 +235,16 @@ def test_restored_plan_preserves_batch_and_precision_constraints() -> None:
     assert result.plan.precision == "complex128"
 
 
-def test_static_planning_and_execution_are_unchanged() -> None:
+def test_static_planning_and_execution_are_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def reject_dynamic_execution(*args: object, **kwargs: object) -> None:
+        raise AssertionError("static execution entered the dynamic executor")
+
+    monkeypatch.setattr(
+        "flagquantum.runtime.dynamic.execution.run_dynamic",
+        reject_dynamic_execution,
+    )
     circuit = fq.Circuit(1).x(0)
     options = fq.ExecutionOptions(target="samples", shots=8, seed=3)
     plan = fq.plan(circuit, options=options)

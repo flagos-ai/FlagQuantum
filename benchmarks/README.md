@@ -25,10 +25,20 @@ flagquantum-benchmark run statevector_local \
   --warmup 1 --iterations 3 \
   --json-output benchmarks/results/local/statevector_cpu.json
 
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  flagquantum-benchmark run dynamic_unified_run \
+  --batched-shots 4096 --trajectory-shots 64 --iterations 9 \
+  --json-output benchmarks/results/comparison/dynamic-unified-run.json
+
 python benchmarks/dynamic_trajectory.py \
   --shots 100 1000 --mid-circuit-measurements 1 2 4 \
   --json-output benchmarks/results/smoke/dynamic-trajectory.json
 ```
+
+`dynamic_unified_run` measures the stable `fq.plan` / `fq.run` boundary, the
+existing native dynamic oracle, both local trajectory strategies, and a static
+sampling sentinel. Its payload is local single-process evidence only; it is not
+a distributed, accelerator, QPU, or release-performance claim.
 
 The flagship MPS training runner executes on the JAX kernel backend, so it
 needs the `jax` extra and exits with `JAX backend unavailable` without it:

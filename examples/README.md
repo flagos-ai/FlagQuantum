@@ -199,6 +199,7 @@ python -m examples.local.simulate
 python -m examples.local.measure
 python -m examples.local.train
 python -m examples.local.dynamic_feedback
+python -m examples.local.dynamic_many_shots
 ```
 
 They cover local statevector simulation, exact and sampled measurements,
