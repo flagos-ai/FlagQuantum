@@ -117,6 +117,7 @@ def worker(args: argparse.Namespace) -> int:
         NCCL_DEBUG="INFO",
         NCCL_IB_DISABLE="0",
         TORCH_NCCL_ASYNC_ERROR_HANDLING="1",
+        PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True",
     )
     process = subprocess.Popen(
         command, cwd=args.staging, env=env, start_new_session=True
@@ -204,6 +205,7 @@ def campaign(args: argparse.Namespace) -> int:
                 "hosts": inventory,
                 "launch_address": args.address,
                 "peer": args.peer,
+                "cuda_allocator_policy": "expandable_segments:True",
                 "topology": [
                     _run(["nvidia-smi", "topo", "-m"]),
                     _run(ssh_argv(args.peer, ["nvidia-smi", "topo", "-m"])),
