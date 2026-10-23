@@ -250,7 +250,7 @@ self-implemented minimum-weight matcher, then the optional PyMatching adapter as
 the independent cross-check." All three are now in the repository:
 `flagquantum/qec/decoding_graph.py` turns a detector error model into a graph
 whose boundary node is one past the last detector, and
-`flagquantum/qec/matching.py` decodes a syndrome exactly by enumerating the ways
+`flagquantum/qec/decoders/matching.py` decodes a syndrome exactly by enumerating the ways
 to pair its defective detectors and to route any number of them to that
 boundary. Neither imports `stim`, `pymatching`, `networkx` or `scipy`; the graph
 carries the observable labels a prediction needs, which is the part the
@@ -266,7 +266,7 @@ cheapest. Both are the fail-closed convention, not stubs.
 
 The third item in that order — PyMatching as an independent cross-check behind
 the `pymatching` extra — is now in the repository as
-`flagquantum/qec/adapters.py`, and what it established is narrower than "the two
+`flagquantum/qec/adapters/pymatching.py`, and what it established is narrower than "the two
 decoders agree", because the two instruments are not equal. PyMatching reports
 `3.9020747171643912` for a mechanism this package states as
 `3.9020746947749574`, so the graph PyMatching minimizes over is not exactly this
@@ -284,7 +284,7 @@ PyMatching cannot represent because it infers its detector count from its edges.
 The row named a fourth item after those three — a registry, so that
 `get_decoder(name, ...)` reaches a decoder and a call site holding a model does
 not have to know which class implements it — and that has since landed as
-`flagquantum/qec/registry.py`. It is the factory half of the baseline's decoder
+`flagquantum/qec/decoders/registry.py`. It is the factory half of the baseline's decoder
 surface and deliberately not more.
 
 The registry's source argument is a *carrier* and not a decoder setting, which is
@@ -370,7 +370,7 @@ graphlike exactly where the corresponding single-Pauli fault at that location is
 and no further. A hyperedge from any other source is still refused by name.
 
 The second decoder that registry holds is the one the matcher's own scope left
-out, and it is `flagquantum/qec/belief_propagation.py`, registered under
+out, and it is `flagquantum/qec/decoders/belief_propagation.py`, registered under
 `belief_propagation`. The row named "belief propagation with ordered statistics
 decoding" as one of the two families the matcher does not cover, and the reason
 it is a family rather than a setting is the shape of the input: a matcher needs a
@@ -439,7 +439,7 @@ explain what it was asked about.
 
 **How the sliding window landed, and the one narrowing it states.** The row's
 last unbuilt decoder half was the sliding window, and it is now
-`flagquantum/qec/sliding_window.py`, built on the chunk seams that
+`flagquantum/qec/decoders/sliding_window.py`, built on the chunk seams that
 `flagquantum/qec/chunks.py` states and that `qec_dem_chunking` records. The
 reshape is that a window's matrices are already cut. Upstream slices detector rows
 and error columns out of one flat matrix to build a window and re-indexes both,

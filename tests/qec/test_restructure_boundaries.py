@@ -121,7 +121,8 @@ blocked = ("flagquantum.compiler", "flagquantum.runtime",
            "flagquantum.qec.repetition", "flagquantum.qec.execution")
 for name in list(sys.modules):
     if name.startswith(blocked) or name in (
-        "flagquantum.qec.codes.matrices", "flagquantum.qec.css_code", "flagquantum.qec.noise"
+        "flagquantum.qec.codes.matrices", "flagquantum.qec.codes.css",
+        "flagquantum.qec.css_code", "flagquantum.qec.noise"
     ):
         del sys.modules[name]
 class NoExecution(importlib.abc.MetaPathFinder):

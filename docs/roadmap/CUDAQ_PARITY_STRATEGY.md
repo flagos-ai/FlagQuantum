@@ -349,7 +349,7 @@ package owns and which stay Stim's. The guide names the boundary rather than
 crossing it -- nothing under `flagquantum/` imports `stim`, so the extra is needed
 only by the half that generates circuits -- and then says what a migrating script
 actually meets. A multi-round circuit's model text carries a `repeat` block that
-[the reader](../../flagquantum/qec/dem.py) refuses by name instead of expanding,
+[the reader](../../flagquantum/qec/dem/model.py) refuses by name instead of expanding,
 `stim.DetectorErrorModel.flattened()` is the whole repair, and the three other
 refusals are tabled with theirs. The row stays `partial` for the reason the
 document exists, and the guide states it in the place a reader will hit it: the
