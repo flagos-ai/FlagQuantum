@@ -10,9 +10,10 @@ The implementation initially started at fetched `origin/main`
 `398765f7a886e6eea356eea00e830ca399834635` as a stacked prerequisite.
 After audit PR #735 merged, PR #737 was retargeted to `main` and integrated main
 revision `d658df0dfea36fe9ae9929c9f5715f617e74461e`. This enables the ordinary
-main-target pull-request CI and its required `CI complete` check. The diff
-against main remains batch 002 only; compiler, runtime and Core implementations
-match main. PR #731 is not edited or merged by this work.
+main-target pull-request CI and its required `CI complete` check. The QEC implementation diff against main remains batch 002 only; compiler,
+runtime and Core implementations match main. CI integration also enables the
+same complete automatic workflow on QEC stack bases and fixes one negative
+permission fixture so it remains public under either umask 022 or 077. PR #731 is not edited or merged by this work.
 
 ## Implemented boundaries
 
@@ -186,5 +187,6 @@ and its required single-GPU and two-GPU jobs passed under the unchanged
 performance thresholds. After integrating current main, the new head must pass
 normal main-target pull-request CI and hardware checks again. Historical green
 runs are retained as evidence for their own revisions; they do not substitute
-for the new integration's required checks. Workflow definitions and branch
-protection remain unchanged by this PR.
+for the new integration's required checks. The CI job graph, test selections, thresholds and branch protection remain
+unchanged. Only the existing full-CI trigger range expands to QEC stack bases,
+with the workflow policy test asserting both main and the exact QEC pattern.
