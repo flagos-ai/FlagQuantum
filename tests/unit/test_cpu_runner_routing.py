@@ -10,12 +10,9 @@ pytestmark = pytest.mark.unit
 WORKFLOWS = Path(__file__).resolve().parents[2] / ".github/workflows"
 
 
-def _validated_r300_labels() -> set[str]:
+def _inventoried_r300_labels() -> set[str]:
     validation = yaml.safe_load((WORKFLOWS / "r300-validation.yml").read_text())
-    return {
-        row["scale_set"]
-        for row in validation["jobs"]["cpu-workload"]["strategy"]["matrix"]["include"]
-    }
+    return set(validation["jobs"]["resources"]["strategy"]["matrix"]["scale_set"])
 
 
 @pytest.mark.parametrize("workflow", ["ci.yml", "pre-commit.yaml"])
@@ -45,7 +42,7 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
             expected.replace("flagquantum-a100-cpu", "flagquantum-cpu-general"),
             *(
                 expected.replace("flagquantum-a100-cpu", label)
-                for label in _validated_r300_labels()
+                for label in _inventoried_r300_labels()
             ),
         )
         steps = job["steps"]
@@ -164,13 +161,14 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
         job = jobs[name]
         assert any(
             f"'{label}'" in job["runs-on"]
-            for label in {"flagquantum-cpu-general", *_validated_r300_labels()}
+            for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
         ), name
         assert "flagquantum-a100-cpu" not in job["runs-on"], name
-        assert not any(
-            str(step.get("uses", "")).startswith("actions/checkout@")
-            for step in job["steps"]
-        ), f"{name} must not need A800's unavailable HTTPS checkout"
+        if "flagcicd-r300-" not in job["runs-on"]:
+            assert not any(
+                str(step.get("uses", "")).startswith("actions/checkout@")
+                for step in job["steps"]
+            ), f"{name} must not need A800's unavailable HTTPS checkout"
     # CUDA-Q stays hosted because cold SDK downloads time out on the shared pool.
     assert jobs["cudaq-optional"]["runs-on"] == "ubuntu-latest"
     assert "'flagquantum-a100-cpu'" in jobs["quality"]["runs-on"]
@@ -203,3 +201,51 @@ def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
         )
         assert steps[bootstrap + 1]["uses"].startswith("actions/setup-python@")
         assert steps[bootstrap + 2]["uses"] == "./.github/actions/isolated-python"
+
+
+def test_r300_sdk_jobs_spread_across_distinct_inventory_targets() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    routes = [
+        jobs[name]["runs-on"]
+        for name in ("qiskit-optional", "cirq-optional", "braket-optional")
+    ]
+    assert len(set(routes)) == 3
+
+
+def test_r300_source_failover_is_bounded_and_verifies_the_same_commit() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    for name in ("qiskit-optional", "cirq-optional", "braket-optional"):
+        steps = jobs[name]["steps"]
+        source = next(step for step in steps if step.get("id") == "source")
+        assert source["timeout-minutes"] == 3
+        assert (
+            source["continue-on-error"]
+            == "${{ startsWith(runner.name, 'flagcicd-r300-') }}"
+        )
+        restore = next(
+            step
+            for step in steps
+            if step.get("name") == "Restore and verify this run's exact source commit"
+        )
+        assert restore["if"] == "steps.source.outcome == 'success'"
+        checkout = next(
+            step
+            for step in steps
+            if str(step.get("uses", "")).startswith("actions/checkout@")
+        )
+        assert (
+            checkout["if"]
+            == "startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'"
+        )
+        assert checkout["timeout-minutes"] == 5
+        assert checkout["with"] == {
+            "ref": "${{ github.sha }}",
+            "persist-credentials": False,
+        }
+        verify = next(
+            step
+            for step in steps
+            if step.get("name") == "Verify the checked-out fallback commit"
+        )
+        assert verify["if"] == "steps.source.outcome == 'failure'"
+        assert verify["run"] == 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"'

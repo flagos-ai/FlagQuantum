@@ -1,7 +1,10 @@
 # R300 CPU CI runners
 
-The initial R300 routing moves the Qiskit and Braket compatibility jobs to
-`flagcicd-r300-cpu01`, and Cirq compatibility to `flagcicd-r300-cpu16`.
+The initial R300 routing spreads Qiskit compatibility onto
+`flagcicd-r300-cpu05`, Braket onto `flagcicd-r300-cpu03`, and Cirq onto
+`flagcicd-r300-cpu16`. Each set has completed resource inventory; each migrated
+job must pass native CPU preflight and both certified SDK versions before the
+pull request can be integrated.
 Same-repository pull requests and manual CI runs use these targets. Fork pull
 requests retain `ubuntu-latest` and its existing hosted concurrency buckets.
 The two certified SDK versions in each compatibility job remain unchanged.
@@ -38,11 +41,17 @@ Live native-build checks and 296 representative regressions passed on:
   the complete representative workload job succeeded.
 
 Direct GitHub checkout and some artifact downloads showed long delays on other
-attempts. The first migration therefore uses only cpu01 and cpu16. In particular,
-cpu08 is not admitted by a successful resource inventory alone. The migrated
-jobs retain the existing exact-commit artifact transfer, SHA verification and
-source restoration; their full SDK tests remain required CI checks. Each job
-has a 30-minute timeout. GPU, A800 CPU/runtime, full-history quality and fixed-host
+attempts. Source artifact transfer on R300 is therefore bounded to three minutes.
+If transfer fails, an explicit warning records the alternate GitHub checkout;
+that checkout is bounded to five minutes, uses the same `github.sha`, does not
+persist credentials, and verifies HEAD before installing anything. Artifact
+checksum failures remain errors for hosted fork jobs. Source transport never
+changes the tested commit.
+
+The three SDK jobs use distinct scale sets so one set's occupied slots do not
+serialize unrelated compatibility checks. The native CPU tests execute before
+the SDK matrix on every migrated job. Their full SDK tests remain required CI
+checks, and every job has a 30-minute timeout. GPU, A800 CPU/runtime, full-history quality and fixed-host
 performance jobs retain their existing routes.
 
 ## Repeat the checks
@@ -53,7 +62,9 @@ After this workflow is merged, run:
 gh workflow run r300-validation.yml --repo flagos-ai/FlagQuantum --ref main
 ```
 
-Inspect all resource inventory jobs, the three Python workload probes and the
+This diagnostic workflow is manually dispatched; ordinary pull requests use the
+real SDK CI checks without repeating the entire pool inventory. Inspect all
+resource inventory jobs, the three Python workload probes and the
 `r300-workload-*` resource artifacts. The Python 3.12 probe also runs the default
 PR tier with a measured, bounded number of pytest workers. A new target should
 pass both inventory and the relevant native/SDK workload before receiving CI.

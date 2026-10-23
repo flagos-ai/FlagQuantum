@@ -1,9 +1,6 @@
 name: R300 scale set validation
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/r300-validation.yml
   workflow_dispatch:
 
 permissions:
