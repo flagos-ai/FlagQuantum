@@ -15,7 +15,7 @@ on:
 #
 # CPU smoke/unit, runtime, coverage and distributed suites use A800 CPU runners.
 # Portable trusted Ubuntu checks share the general CPU runner pool.
-# Qiskit, Cirq and Braket compatibility checks use validated R300 scale sets.
+# Qiskit, Cirq and Braket read one workflow plan of qualified R300 scale sets.
 # Full-history quality checks retain A100; fork jobs use hosted runners.
 # Trusted manual validation uses the same A800 routing as same-repository PRs.
 # A800 jobs use up to 16 quota-aware workers and a private environment per run.
@@ -48,6 +48,7 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
+      r300-routes: ${{ steps.r300-pool.outputs.r300-routes }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -75,6 +76,9 @@ jobs:
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
           } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
+      - name: Plan distinct routes from the qualified R300 pool
+        id: r300-pool
+        run: python3 tools/ci/r300_pool.py --seed "$GITHUB_RUN_ID" --github-output "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
@@ -835,7 +839,7 @@ jobs:
 
   qiskit-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu05' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(needs.prepare-source.outputs.r300-routes)['qiskit-optional'] || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
@@ -936,7 +940,7 @@ jobs:
 
   cirq-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu04' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(needs.prepare-source.outputs.r300-routes)['cirq-optional'] || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
@@ -1021,7 +1025,7 @@ jobs:
 
   braket-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu03' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON(needs.prepare-source.outputs.r300-routes)['braket-optional'] || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
