@@ -8,11 +8,14 @@ over a small grid so CI enforces the invariant across a regime rather than at a
 point.
 
 The subgrid is deliberately small: the checked-in artifact under
-``benchmarks/results/representation_agreement/`` carries the full grid, and this
+``artifacts/development/representation_agreement_precision/`` carries the full grid, and this
 file's job is to fail when the invariant breaks, not to reproduce the payload.
 """
 
 from __future__ import annotations
+
+import json
+from pathlib import Path
 
 import pytest
 import torch
@@ -53,8 +56,9 @@ def _cell(**overrides: object) -> dict:
 
 @pytest.mark.parametrize("n_qubits", [4, 6, 8])
 @pytest.mark.parametrize("structure", ["nearest_neighbour", "all_to_all"])
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
 def test_representations_agree_where_the_state_is_held_exactly(
-    n_qubits: int, structure: str
+    n_qubits: int, structure: str, dtype: torch.dtype
 ) -> None:
     """With a cap no narrower than the chain needs, all three paths must agree.
 
@@ -63,14 +67,18 @@ def test_representations_agree_where_the_state_is_held_exactly(
     not compute the same program.
     """
     cell = _cell(
-        n_qubits=n_qubits, structure=structure, max_bond=exact_max_bond(n_qubits)
+        n_qubits=n_qubits,
+        structure=structure,
+        max_bond=exact_max_bond(n_qubits),
+        dtype=dtype,
     )
 
     assert "failures" not in cell, cell.get("failures")
     assert set(cell["energies"]) == set(MODES)
     assert cell["mps_truncated"] is False
     assert cell["spread_relative"] is not None
-    assert cell["spread_relative"] < UNTRUNCATED_RELATIVE_BOUND, cell
+    bound = 1e-12 if dtype == torch.complex128 else UNTRUNCATED_RELATIVE_BOUND
+    assert cell["spread_relative"] < bound, cell
 
 
 @pytest.mark.parametrize("depth", [2, 6])
@@ -217,3 +225,39 @@ def test_a_failed_headroom_probe_is_incomplete_evidence(
     assert cell["mps_truncated"] is None
     assert "headroom_probe" in cell["failures"]
     assert len(summarize([cell])["incomplete_cells"]) == 1
+
+
+def test_recorded_precision_grids_compare_the_same_complete_workload() -> None:
+    """The published comparison separates arithmetic from bond truncation."""
+    root = (
+        Path(__file__).resolve().parents[2]
+        / "artifacts/development/representation_agreement_precision"
+    )
+    records = [
+        json.loads((root / f"{dtype}.json").read_text())
+        for dtype in ("complex64", "complex128")
+    ]
+    single, double = records
+    for field in (
+        "grid",
+        "seed",
+        "observable",
+        "parameter_initialization",
+        "source_commit",
+    ):
+        assert single[field] == double[field]
+    for record, bound in zip(records, (1e-4, 1e-12), strict=True):
+        assert record["measuring_source_committed"] is True
+        assert record["summary"]["cells_total"] == 28
+        assert record["summary"]["incomplete_cells"] == []
+        assert record["summary"]["untruncated"]["cells"] == 22
+        assert record["summary"]["truncated"]["cells"] == 6
+        assert record["summary"]["untruncated"]["max_spread_relative"] < bound
+        assert record["summary"]["truncated"]["max_spread_relative"] > 0.1
+        assert record["release_gate_allowed"] is False
+        assert record["scalability_claim_allowed"] is False
+        assert all(set(cell["energies"]) == set(MODES) for cell in record["cells"])
+    fields = ("n_qubits", "depth", "structure", "max_bond_cutoff", "mps_truncated")
+    assert [tuple(c[f] for f in fields) for c in single["cells"]] == [
+        tuple(c[f] for f in fields) for c in double["cells"]
+    ]

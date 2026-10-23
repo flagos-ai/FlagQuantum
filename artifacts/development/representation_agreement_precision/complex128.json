@@ -1,0 +1,545 @@
+{
+  "schema": "flagquantum.representation_agreement_sweep.v1",
+  "benchmark": "representation_agreement_sweep",
+  "artifact_class": "measured_local_run",
+  "claim": "backend selection changes execution but not the result contract; this payload states the regime that was measured and the bound the spread held to inside it",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "single-process CPU agreement measurement across representations; it shards no workload and is not distributed scalability evidence"
+  ],
+  "modes": [
+    "statevector",
+    "mps",
+    "tensor_network"
+  ],
+  "grid": {
+    "widths": [
+      4,
+      8,
+      12,
+      16,
+      20
+    ],
+    "depths": [
+      2,
+      4
+    ],
+    "structures": [
+      "nearest_neighbour",
+      "all_to_all"
+    ],
+    "max_bond_cutoffs": [
+      4,
+      16
+    ]
+  },
+  "observable": "open-boundary transverse-field Ising, h=0.7",
+  "parameter_initialization": "0.05 * float32 randn, one seeded draw shared per cell; complex128 widens the same float32 angles exactly",
+  "seed": 260720,
+  "device": "cpu",
+  "dtype": "complex128",
+  "summary": {
+    "cells_total": 28,
+    "truncated": {
+      "cells": 6,
+      "max_spread_relative": 0.28199,
+      "max_spread_absolute": 1.55869,
+      "worst_cell": {
+        "n_qubits": 8,
+        "depth": 4,
+        "structure": "all_to_all",
+        "max_bond_cutoff": 4
+      }
+    },
+    "untruncated": {
+      "cells": 22,
+      "max_spread_relative": 1.10583e-14,
+      "max_spread_absolute": 6.03961e-14,
+      "worst_cell": {
+        "n_qubits": 8,
+        "depth": 2,
+        "structure": "all_to_all",
+        "max_bond_cutoff": 16
+      }
+    },
+    "incomplete_cells": []
+  },
+  "skipped_configurations": [
+    {
+      "structure": "all_to_all",
+      "n_qubits": 12,
+      "reason": "all-to-all tensor-network contraction exceeds the CPU budget above width 8"
+    },
+    {
+      "structure": "all_to_all",
+      "n_qubits": 16,
+      "reason": "all-to-all tensor-network contraction exceeds the CPU budget above width 8"
+    },
+    {
+      "structure": "all_to_all",
+      "n_qubits": 20,
+      "reason": "all-to-all tensor-network contraction exceeds the CPU budget above width 8"
+    }
+  ],
+  "cells": [
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.7396088509579513,
+        "mps": -2.7396088509579464,
+        "tensor_network": -2.7396088509579517
+      },
+      "spread_absolute": 5.32907e-15,
+      "spread_relative": 1.94519e-15
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.7396088509579513,
+        "mps": -2.7396088509579464,
+        "tensor_network": -2.7396088509579517
+      },
+      "spread_absolute": 5.32907e-15,
+      "spread_relative": 1.94519e-15
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.717406592428641,
+        "mps": -2.7174065924286355,
+        "tensor_network": -2.7174065924286426
+      },
+      "spread_absolute": 7.10543e-15,
+      "spread_relative": 2.61478e-15
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.717406592428641,
+        "mps": -2.7174065924286355,
+        "tensor_network": -2.7174065924286426
+      },
+      "spread_absolute": 7.10543e-15,
+      "spread_relative": 2.61478e-15
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.386434669198964,
+        "mps": -5.386434669198961,
+        "tensor_network": -5.386434669198966
+      },
+      "spread_absolute": 5.32907e-15,
+      "spread_relative": 9.8935e-16
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.386434669198964,
+        "mps": -5.386434669198961,
+        "tensor_network": -5.386434669198966
+      },
+      "spread_absolute": 5.32907e-15,
+      "spread_relative": 9.8935e-16
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.577808329051574,
+        "mps": -5.569001087362569,
+        "tensor_network": -5.577808329051576
+      },
+      "spread_absolute": 0.00880724,
+      "spread_relative": 0.00157898
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.577808329051574,
+        "mps": -5.577808329051566,
+        "tensor_network": -5.577808329051576
+      },
+      "spread_absolute": 1.06581e-14,
+      "spread_relative": 1.91081e-15
+    },
+    {
+      "n_qubits": 12,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -7.795760988145709,
+        "mps": -7.7957609881457035,
+        "tensor_network": -7.795760988145712
+      },
+      "spread_absolute": 8.88178e-15,
+      "spread_relative": 1.13931e-15
+    },
+    {
+      "n_qubits": 12,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -7.795760988145709,
+        "mps": -7.7957609881457035,
+        "tensor_network": -7.795760988145712
+      },
+      "spread_absolute": 8.88178e-15,
+      "spread_relative": 1.13931e-15
+    },
+    {
+      "n_qubits": 12,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -8.118417587419774,
+        "mps": -8.056433157790332,
+        "tensor_network": -8.11841758741978
+      },
+      "spread_absolute": 0.0619844,
+      "spread_relative": 0.00763504
+    },
+    {
+      "n_qubits": 12,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -8.118417587419774,
+        "mps": -8.118417587419742,
+        "tensor_network": -8.11841758741978
+      },
+      "spread_absolute": 3.73035e-14,
+      "spread_relative": 4.59492e-15
+    },
+    {
+      "n_qubits": 16,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -10.91814497400447,
+        "mps": -10.918144974004473,
+        "tensor_network": -10.918144974004472
+      },
+      "spread_absolute": 3.55271e-15,
+      "spread_relative": 3.25395e-16
+    },
+    {
+      "n_qubits": 16,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -10.91814497400447,
+        "mps": -10.918144974004473,
+        "tensor_network": -10.918144974004472
+      },
+      "spread_absolute": 3.55271e-15,
+      "spread_relative": 3.25395e-16
+    },
+    {
+      "n_qubits": 16,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -10.549762607882759,
+        "mps": -10.388165951928213,
+        "tensor_network": -10.54976260788276
+      },
+      "spread_absolute": 0.161597,
+      "spread_relative": 0.0153176
+    },
+    {
+      "n_qubits": 16,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -10.549762607882759,
+        "mps": -10.549762607882714,
+        "tensor_network": -10.54976260788276
+      },
+      "spread_absolute": 4.61853e-14,
+      "spread_relative": 4.37785e-15
+    },
+    {
+      "n_qubits": 20,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -13.712070338325724,
+        "mps": -13.712070338325749,
+        "tensor_network": -13.712070338325729
+      },
+      "spread_absolute": 2.4869e-14,
+      "spread_relative": 1.81366e-15
+    },
+    {
+      "n_qubits": 20,
+      "depth": 2,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -13.712070338325724,
+        "mps": -13.712070338325749,
+        "tensor_network": -13.712070338325729
+      },
+      "spread_absolute": 2.4869e-14,
+      "spread_relative": 1.81366e-15
+    },
+    {
+      "n_qubits": 20,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -13.52285825464925,
+        "mps": -13.257070299550278,
+        "tensor_network": -13.522858254649263
+      },
+      "spread_absolute": 0.265788,
+      "spread_relative": 0.0196547
+    },
+    {
+      "n_qubits": 20,
+      "depth": 4,
+      "structure": "nearest_neighbour",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -13.52285825464925,
+        "mps": -13.522858254649313,
+        "tensor_network": -13.522858254649263
+      },
+      "spread_absolute": 6.21725e-14,
+      "spread_relative": 4.59758e-15
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.861102316788385,
+        "mps": -2.861102316788396,
+        "tensor_network": -2.861102316788385
+      },
+      "spread_absolute": 1.11022e-14,
+      "spread_relative": 3.8804e-15
+    },
+    {
+      "n_qubits": 4,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.861102316788385,
+        "mps": -2.861102316788396,
+        "tensor_network": -2.861102316788385
+      },
+      "spread_absolute": 1.11022e-14,
+      "spread_relative": 3.8804e-15
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.631277751004392,
+        "mps": -2.6312777510044034,
+        "tensor_network": -2.6312777510043928
+      },
+      "spread_absolute": 1.15463e-14,
+      "spread_relative": 4.3881e-15
+    },
+    {
+      "n_qubits": 4,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 4,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -2.631277751004392,
+        "mps": -2.6312777510044034,
+        "tensor_network": -2.6312777510043928
+      },
+      "spread_absolute": 1.15463e-14,
+      "spread_relative": 4.3881e-15
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.461618159983908,
+        "mps": -4.626991607326758,
+        "tensor_network": -5.461618159983911
+      },
+      "spread_absolute": 0.834627,
+      "spread_relative": 0.152817
+    },
+    {
+      "n_qubits": 8,
+      "depth": 2,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.461618159983908,
+        "mps": -5.461618159983969,
+        "tensor_network": -5.461618159983911
+      },
+      "spread_absolute": 6.03961e-14,
+      "spread_relative": 1.10583e-14
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 4,
+      "observed_max_bond": 4,
+      "headroom_max_bond": 8,
+      "mps_truncated": true,
+      "energies": {
+        "statevector": -5.527462728909482,
+        "mps": -3.96877493116523,
+        "tensor_network": -5.527462728909485
+      },
+      "spread_absolute": 1.55869,
+      "spread_relative": 0.28199
+    },
+    {
+      "n_qubits": 8,
+      "depth": 4,
+      "structure": "all_to_all",
+      "max_bond_cutoff": 16,
+      "observed_max_bond": 16,
+      "headroom_max_bond": 16,
+      "mps_truncated": false,
+      "energies": {
+        "statevector": -5.527462728909482,
+        "mps": -5.527462728909521,
+        "tensor_network": -5.527462728909485
+      },
+      "spread_absolute": 3.90799e-14,
+      "spread_relative": 7.07012e-15
+    }
+  ],
+  "elapsed_seconds": 342.014,
+  "command": "benchmarks/representation_agreement_sweep.py --dtype complex128 --output /Users/baai/Documents/liuwei/FlagQuantum-issues-708-709/artifacts/development/representation_agreement_precision/complex128.json",
+  "python": "3.12.14",
+  "torch": "2.14.1",
+  "base_commit": "71ef9a57258babe0506c9ba0ae99a76923e0d60f",
+  "source_commit": "4446d1a7c4baa39f5db6e14861b67fd236ac873f",
+  "measuring_source_committed": true
+}
