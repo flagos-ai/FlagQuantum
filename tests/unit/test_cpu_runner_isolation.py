@@ -304,7 +304,7 @@ def test_package_indexes_match_routing_before_runner_assignment(job: str) -> Non
     # Manual validation is trusted too; fork PRs retain the hosted fallback.
     assert selected["runs-on"] == (
         "${{ fromJSON(" + trusted + " && "
-        '\'["self-hosted","linux","x64","flagquantum-cpu"]\' || '
+        '\'["self-hosted","linux","x64","flagquantum-a800-cpu"]\' || '
         "'[\"ubuntu-latest\"]') }}"
     )
     assert trusted in selected["concurrency"]["group"]
