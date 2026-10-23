@@ -974,8 +974,10 @@ def plan(
         "amplitudes": "few_amplitudes",
     }
     measurements = tuple(source_ir.measurements)
-    if not is_dynamic and not measurements and (
-        resolved.target == "samples" or resolved.shots is not None
+    if (
+        not is_dynamic
+        and not measurements
+        and (resolved.target == "samples" or resolved.shots is not None)
     ):
         if resolved.shots is None:
             raise ValidationError("target='samples' requires shots")

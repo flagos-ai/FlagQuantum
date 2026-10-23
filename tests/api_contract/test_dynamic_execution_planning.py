@@ -69,9 +69,7 @@ def test_dynamic_plan_round_trip_preserves_program_options_and_identity() -> Non
 
 
 def test_dynamic_plan_tampering_still_fails_under_plan_v1() -> None:
-    plan = fq.plan(
-        _feedback_program(), options=fq.ExecutionOptions(shots=16, seed=3)
-    )
+    plan = fq.plan(_feedback_program(), options=fq.ExecutionOptions(shots=16, seed=3))
     payload = copy.deepcopy(plan.to_dict())
     payload["program"]["instructions"][1]["metadata"]["classical_bit"] = 1
 
