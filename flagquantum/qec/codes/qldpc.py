@@ -14,7 +14,7 @@ not lie in the span of the Z-type checks, so they are a complement of that span
 inside that null space, and the X-type family is the mirror image. Nothing about
 the derivation names a lattice, a family, or a generator: a family whose own rule
 already fixes its logical operators, such as the bivariate-bicycle family in
-:mod:`flagquantum.qec.bicycle`, arrives at the same two helpers and gets the same
+:mod:`flagquantum.qec.codes.bicycle`, arrives at the same two helpers and gets the same
 answer.
 """
 
@@ -23,7 +23,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from ..gf2 import in_span, nullspace, reduce_rows
-from ._compat import _retain_module
 from ._css_helpers import (
     _DISTANCE_SEARCH_WEIGHT,
     BinaryMatrix,
@@ -223,8 +222,3 @@ def qldpc_code(
         lx=_rows(x_logicals, width),
         distance_search_weight=distance_search_weight,
     )
-
-
-_retain_module(
-    "flagquantum.qec.qldpc", _rows, _masks, _logical_basis, _paired_basis, qldpc_code
-)

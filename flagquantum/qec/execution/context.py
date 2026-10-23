@@ -53,7 +53,6 @@ import torch
 from ...noise import NoiseModel
 from ..circuits.memory import MeasurementRef, MemoryCircuit
 from ..codes import CodeCheck
-from ..codes._compat import _retain_module
 from ..dem import DetectorErrorModel
 from ..noise import PhenomenologicalNoise
 
@@ -563,18 +562,3 @@ def decoder_context_from_memory_circuit(
         circuit=circuit,
         dem=DetectorErrorModel.from_memory_circuit(circuit, noise=noise),
     )
-
-
-_retain_module(
-    "flagquantum.qec.context",
-    _measurement_row,
-    MeasurementMap,
-    DecoderInputs,
-    _measurement_columns,
-    _measurement_index,
-    _parity_row,
-    _detector_checks,
-    _projected,
-    DecoderContext,
-    decoder_context_from_memory_circuit,
-)

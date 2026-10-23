@@ -5,7 +5,7 @@ observables each mechanism flips. This module owns the mechanisms an experiment'
 **circuit** describes, in the two grammars the record the caller states selects
 between. The other description this package reads -- a code's parity-check and
 logical-operator matrices -- belongs to
-:mod:`flagquantum.qec.dem_matrices`, whose names are re-exported here so that an
+:mod:`flagquantum.qec.codes.matrices`, whose names are re-exported here so that an
 importer of this module keeps reaching them.
 
 A **circuit** description is derived. :func:`_memory_circuit_entries` enumerates
@@ -35,7 +35,7 @@ views of one description.
 
 A **matrix** description is read, and it is read next door: this module's
 :func:`_memory_circuit_entries` derives a circuit's mechanisms, and
-:mod:`flagquantum.qec.dem_matrices` derives a code's from its parity-check and
+:mod:`flagquantum.qec.codes.matrices` derives a code's from its parity-check and
 logical-operator matrices. Its detector geometry is consequently the
 code-capacity one -- ``num_rounds * num_checks`` detectors, each round compared
 against the round before it, with no terminal data readout -- which is
@@ -93,7 +93,6 @@ from flagquantum.qec.codes import CodeCheck
 # The code record a matrix description is read from stays reachable here, because
 # that name reached callers of this module before the matrix route moved next door.
 from flagquantum.qec.codes import StabilizerCode as StabilizerCode
-from flagquantum.qec.codes._compat import _retain_module
 from flagquantum.qec.dem.matrices import CssCodeMatrices as CssCodeMatrices
 from flagquantum.qec.dem.matrices import Entry
 from flagquantum.qec.dem.matrices import _binary_matrix as _binary_matrix
@@ -805,21 +804,3 @@ def _mechanisms(
                     )
                 )
     return tuple(mechanisms)
-
-
-_retain_module(
-    "flagquantum.qec.dem_construction",
-    _data_family_rates,
-    _require_source_anchors,
-    _require_owned_syndrome_references,
-    _flipped_measurements,
-    _layout_signature,
-    _memory_circuit_entries,
-    _Mechanism,
-    _GateBoundMechanism,
-    _pauli_fault,
-    _gate_bound_mechanisms,
-    _spliced_fault,
-    _check_rate_order,
-    _mechanisms,
-)

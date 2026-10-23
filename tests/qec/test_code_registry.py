@@ -448,7 +448,7 @@ def test_builder_rejects_a_record_whose_stated_bands_disagree_with_its_checks() 
         def distance(self) -> int:
             return self.num_data_qubits
 
-    from flagquantum.qec.circuit import build_memory_circuit
+    from flagquantum.qec.circuits.memory import build_memory_circuit
 
     with pytest.raises(ValueError, match="the two bands it states and the two bands"):
         build_memory_circuit(_Contradictory(), rounds=2)
@@ -465,7 +465,7 @@ def test_builder_accepts_a_record_whose_bands_its_checks_define() -> None:
     declares an X-type observable.
     """
 
-    from flagquantum.qec.circuit import build_memory_circuit
+    from flagquantum.qec.circuits.memory import build_memory_circuit
 
     for record in (RepetitionCode(3), RotatedSurfaceCode(3), SteaneCode()):
         built = build_memory_circuit(record, rounds=2)

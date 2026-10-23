@@ -1,6 +1,6 @@
 """Belief propagation with ordered-statistics post-processing.
 
-The minimum-weight matcher in :mod:`flagquantum.qec.matching` needs a graphlike
+The minimum-weight matcher in :mod:`flagquantum.qec.decoders.matching` needs a graphlike
 detector error model, so a mechanism that flips three detectors is refused rather
 than decoded. This module decodes the same model without that restriction: a
 belief-propagation pass estimates one log-likelihood ratio per mechanism from the
@@ -37,7 +37,6 @@ from numbers import Integral, Real
 import torch
 
 from ...errors import CapabilityError
-from ..codes._compat import _retain_module
 from ..dem.model import DetectorErrorModel
 
 __all__ = (
@@ -200,7 +199,7 @@ class BeliefPropagationOsdDecoder:
         """Build the decoder for one detector error model.
 
         The model route exists so this decoder is reachable through the
-        name-keyed registry in :mod:`flagquantum.qec.registry`, whose family
+        name-keyed registry in :mod:`flagquantum.qec.decoders.registry`, whose family
         contract is a model in and a decoded syndrome out. There is deliberately
         no graph route beside it: a graph is a pair-graph view of a model, and
         the model this decoder answers is one the graphlike scope refuses, so a
@@ -400,12 +399,3 @@ class BeliefPropagationOsdDecoder:
         flipped = matrix[:, selected].sum(dim=1).remainder(2) > 0
         indices = torch.nonzero(flipped, as_tuple=False).flatten()
         return tuple(int(index) for index in indices)
-
-
-_retain_module(
-    "flagquantum.qec.bposd",
-    _indices,
-    _syndrome,
-    BeliefPropagationOsdDecodeResult,
-    BeliefPropagationOsdDecoder,
-)

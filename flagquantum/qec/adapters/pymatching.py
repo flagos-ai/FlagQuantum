@@ -1,6 +1,6 @@
 """Cross-check the self-implemented matcher against PyMatching.
 
-:mod:`flagquantum.qec.matching` is the authority for a decoded syndrome, and its
+:mod:`flagquantum.qec.decoders.matching` is the authority for a decoded syndrome, and its
 correctness evidence is deliberately independent of the implementation: brute
 force over the syndromes small enough to enumerate, and the exhaustive
 enumeration of a model's own mechanism distribution. Neither of those is
@@ -78,8 +78,8 @@ from typing import Any
 from flagquantum.errors import CapabilityError
 from flagquantum.qec.codes._compat import _retain_module
 from flagquantum.qec.decoders.matching import MatchingDecodeResult, _defects
-from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
 from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem.graph import DecodingGraph, DecodingGraphEdge
 
 _EXTRA_NAME = "pymatching"
 # PyMatching reports the step from a detector to its virtual boundary as an edge

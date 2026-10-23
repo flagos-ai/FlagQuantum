@@ -21,7 +21,7 @@ a small torus can be written down by hand. A pair of polynomials names no such
 curve, so the Z-type logical operators are taken to be what the X-type checks leave
 at zero, modulo the Z-type stabilizer span, and the X-type ones are the mirror of
 that. That reading names no polynomial and needs none, so it is not stated here:
-:mod:`flagquantum.qec.qldpc` owns it as a route a caller can also reach directly,
+:mod:`flagquantum.qec.codes.qldpc` owns it as a route a caller can also reach directly,
 and this module calls those two helpers rather than carrying a second copy of them.
 
 **The two bases are then changed into the one the record states.** A code's logical
@@ -45,7 +45,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from numbers import Integral
 
-from ._compat import _retain_module
 from ._css_helpers import _DISTANCE_SEARCH_WEIGHT
 from .css import CssCode
 from .qldpc import _logical_basis, _paired_basis, _rows
@@ -227,12 +226,3 @@ def bivariate_bicycle_code(
         lx=_rows(x_logicals, total),
         distance_search_weight=int(distance_search_weight),
     )
-
-
-_retain_module(
-    "flagquantum.qec.bicycle",
-    _monomial_exponents,
-    _polynomial_masks,
-    _transpose,
-    bivariate_bicycle_code,
-)

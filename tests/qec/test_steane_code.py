@@ -17,7 +17,7 @@ import itertools
 
 import pytest
 
-from flagquantum.qec.circuit import build_memory_circuit
+from flagquantum.qec.circuits.memory import build_memory_circuit
 from flagquantum.qec.codes import StabilizerCode, SteaneCode
 from flagquantum.qec.pauli import Pauli
 

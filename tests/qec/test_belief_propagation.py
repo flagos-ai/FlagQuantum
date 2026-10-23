@@ -26,13 +26,13 @@ import math
 import pytest
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.belief_propagation import (
+from flagquantum.qec.decoders.belief_propagation import (
     BeliefPropagationDecoder,
     BeliefPropagationDecodeResult,
 )
-from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
+from flagquantum.qec.decoders.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.dem import DemError, DetectorErrorModel
-from flagquantum.qec.matching import MinimumWeightMatchingDecoder
+from flagquantum.qec.dem.graph import DecodingGraph, DecodingGraphEdge
 
 pytestmark = pytest.mark.unit
 
@@ -568,7 +568,7 @@ def test_the_import_time_refusal_is_the_family_contract() -> None:
     family the registry already holds is unchanged by it.
     """
 
-    from flagquantum.qec.registry import decoder_names, register_decoder
+    from flagquantum.qec.decoders.registry import decoder_names, register_decoder
 
     class _Partial:
         def decode(self, detection_events: object) -> None: ...
@@ -587,7 +587,7 @@ def test_the_import_time_refusal_is_the_family_contract() -> None:
 def test_the_registry_builds_the_decoder_from_each_carrier() -> None:
     """A name reaches this decoder from a model, from text, and from a graph."""
 
-    from flagquantum.qec.registry import BELIEF_PROPAGATION_NAME, get_decoder
+    from flagquantum.qec.decoders.registry import BELIEF_PROPAGATION_NAME, get_decoder
 
     model = _chain()
     from_model = get_decoder(BELIEF_PROPAGATION_NAME, model)
@@ -645,7 +645,7 @@ def test_every_sampled_syndrome_of_a_repetition_model_agrees_with_the_matcher() 
     one of the two weights is not the quantity it claims to be.
     """
 
-    from flagquantum.qec.circuit import build_memory_circuit
+    from flagquantum.qec.circuits.memory import build_memory_circuit
     from flagquantum.qec.codes import RepetitionCode
     from flagquantum.qec.noise import PhenomenologicalNoise
 

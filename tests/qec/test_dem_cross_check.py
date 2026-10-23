@@ -80,20 +80,19 @@ from dataclasses import dataclass, replace
 import pytest
 
 from flagquantum.compiler._hybrid import INDEX, capture_source, lower_dynamic_program
-from flagquantum.qec.circuit import (
+from flagquantum.qec.circuits.memory import (
     MeasurementRef,
     MemoryCircuit,
     build_memory_circuit,
 )
 from flagquantum.qec.codes import CodeCheck, RepetitionCode, ancilla_bands
 from flagquantum.qec.dem import DetectorErrorModel
-from flagquantum.qec.dem_construction import (
+from flagquantum.qec.dem.construction import _Mechanism, _mechanisms
+from flagquantum.qec.execution.signatures import (
     _FAULT_GATES,
     _forced_signature,
     _inject_data_flip,
     _inject_measurement_flip,
-    _Mechanism,
-    _mechanisms,
 )
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.pauli import Pauli

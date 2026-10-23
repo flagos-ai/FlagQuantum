@@ -42,6 +42,7 @@ import math
 
 import pytest
 
+import flagquantum.qec.decoders.sliding_window as sliding_window_module
 from flagquantum.errors import CapabilityError
 from flagquantum.qec import (
     SLIDING_WINDOW_NAME,
@@ -56,11 +57,10 @@ from flagquantum.qec import (
     decoder_names,
     get_decoder,
 )
-from flagquantum.qec import sliding_window as sliding_window_module
 from flagquantum.qec.codes import RepetitionCode
+from flagquantum.qec.decoders.sliding_window import _mechanism_span, _window_graph
 from flagquantum.qec.dem import DemError
 from flagquantum.qec.noise import PhenomenologicalNoise
-from flagquantum.qec.sliding_window import _mechanism_span, _window_graph
 
 pytestmark = pytest.mark.unit
 

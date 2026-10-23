@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check the preparation or 0.4.0 retirement boundary without changing QEC.
 
-The retired phase intentionally fails on the preparation implementation. CI
-exercises that refusal as well as the current compatibility phase. This tool
+The retired phase is the active 0.4.0 boundary. The preparation phase remains
+available to diagnose pre-retirement installations and must now refuse this tree. This tool
 checks import/serialization boundaries; existing QEC tests own numerical,
 signature, streaming and registry conformance against immutable fixtures.
 """
@@ -124,6 +124,8 @@ def check(phase: str) -> list[str]:
     if list(qec.__all__) != baseline["exports"] or len(qec.__all__) != 108:
         errors.append("flagquantum.qec: ordered 108 root exports changed")
     errors += import_errors(tuple(modules), absent=active)
+    if not active and errors:
+        return errors
     for name, replacements in modules.items():
         errors += import_errors(replacements, absent=False)
         path = ROOT / "flagquantum/qec" / (name.rsplit(".", 1)[1] + ".py")
@@ -202,7 +204,7 @@ def check(phase: str) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--phase", choices=("prepare", "retired"), default="prepare")
+    parser.add_argument("--phase", choices=("prepare", "retired"), default="retired")
     args = parser.parse_args()
     errors = check(args.phase)
     if errors:

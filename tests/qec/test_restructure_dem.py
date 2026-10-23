@@ -11,6 +11,12 @@ from pathlib import Path
 
 import pytest
 import torch
+from _retirement import (
+    assert_metadata,
+    assert_namespace,
+    assert_retired_payload,
+    resolve,
+)
 
 import flagquantum.qec as qec
 
@@ -110,35 +116,27 @@ def _scenarios() -> dict[str, object]:
 
 
 def _resolve(path: str) -> object:
-    parts = path.split(".")
-    value = importlib.import_module(".".join(parts[:3]))
-    for part in parts[3:]:
-        value = getattr(value, part)
-    return value
+    return resolve(path)
 
 
-def test_trusted_old_dem_pickles_keep_exact_objects() -> None:
-    # Repository-owned fixture captured before relocation; never external input.
-    restored = pickle.loads((_FIXTURES / "restructure_005_globals.pkl").read_bytes())
-    for path, value in restored["globals"].items():
-        assert value is _resolve(path), path
-        assert pickle.loads(pickle.dumps(value, protocol=4)) is value, path
-    for path, value in restored["instances"].items():
-        assert type(value) is _resolve(path)
-        assert type(pickle.loads(pickle.dumps(value))) is type(value)
+def test_original_dem_compound_pickle_refuses_only_the_retired_namespace() -> None:
+    assert_retired_payload("restructure_005_globals.pkl")
+    model = qec.DetectorErrorModel.from_stim_text(
+        "error(0.125) D0 L0\ndetector D0\nlogical_observable L0\n"
+    )
+    graph = qec.DecodingGraph.from_detector_error_model(model)
+    for value in (model, graph, model.dem_sampling(shots=4, seed=57)):
+        restored = pickle.loads(pickle.dumps(value, protocol=4))
+        assert type(restored) is type(value)
+        assert _plain(restored) == _plain(value)
 
 
-def test_dem_metadata_and_historical_namespace_remain_identical() -> None:
+def test_dem_metadata_and_surviving_namespace_remain_compatible() -> None:
     expected = json.loads((_FIXTURES / "restructure_005_metadata.json").read_text())
     for path, metadata in expected["definitions"].items():
-        value = _resolve(path)
-        if isinstance(value, property):
-            value = value.fget
-        assert [value.__module__, value.__qualname__] == metadata, path
+        assert_metadata(path, metadata[0], metadata[1])
     for old, names in expected["namespaces"].items():
-        historical = importlib.import_module("flagquantum.qec." + old)
-        for name in names:
-            assert hasattr(historical, name), (old, name)
+        assert_namespace(old, names)
 
 
 def test_dem_numerical_serialization_and_seam_baseline() -> None:
@@ -146,11 +144,15 @@ def test_dem_numerical_serialization_and_seam_baseline() -> None:
     assert _scenarios() == expected
 
 
-def test_both_rotated_identities_and_registries_survive_dem_package_imports() -> None:
-    from flagquantum.qec import codes, surface
+def test_registered_rotated_identity_and_registries_survive_dem_package_imports() -> (
+    None
+):
+    from flagquantum.qec import codes
+    from flagquantum.qec.codes import surface
 
-    assert qec.RotatedSurfaceCode is codes.RotatedSurfaceCode
-    assert qec.RotatedSurfaceCode is not surface.RotatedSurfaceCode
+    assert (
+        qec.RotatedSurfaceCode is codes.RotatedSurfaceCode is surface.RotatedSurfaceCode
+    )
     assert type(qec.get_code("rotated_surface", distance=3)) is qec.RotatedSurfaceCode
     assert qec.decoder_names() == (
         "belief_propagation",

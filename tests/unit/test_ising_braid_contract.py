@@ -25,6 +25,7 @@ from flagquantum.errors import CapabilityError
 from flagquantum.experimental.simulation import RydbergProgram
 from flagquantum.observables import OutputRequest
 from flagquantum.operators import SuperOperator
+from flagquantum.runtime import execution_plan_contract as plan_contract
 from flagquantum.runtime import sample_terminal
 from flagquantum.runtime.execution_plan import CircuitAnalysis
 from flagquantum.runtime.execution_plan_contract import canonical_hash, canonical_json
@@ -452,9 +453,14 @@ def _legacy_plans() -> dict[str, fq.ExecutionPlan | fql.LindbladPlan]:
     }
 
 
-def test_old_execution_and_native_rydberg_plans_keep_captured_bytes() -> None:
+def test_old_execution_and_native_rydberg_plans_keep_captured_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     path = Path(__file__).parents[1] / "fixtures/ising_braid_legacy_plans.json"
     captures = json.loads(path.read_text())["plans"]
+    # Circuit compiler identity includes the producer release. Replay the
+    # archived 0.3.1 environment without rewriting the captured plan bytes.
+    monkeypatch.setattr(plan_contract, "__version__", "0.3.1")
     for name, plan in _legacy_plans().items():
         assert plan.to_json() == canonical_json(captures[name])
         reader = (
@@ -465,3 +471,15 @@ def test_old_execution_and_native_rydberg_plans_keep_captured_bytes() -> None:
         assert reader(plan.to_json()).to_json() == plan.to_json()
     assert captures["native_rydberg"]["version"] == "1.7"
     assert captures["native_rydberg"]["program"]["version"] == "1.0"
+
+
+def test_archived_circuit_plans_reject_a_different_compiler_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = Path(__file__).parents[1] / "fixtures/ising_braid_legacy_plans.json"
+    captures = json.loads(path.read_text())["plans"]
+    monkeypatch.setattr(plan_contract, "__version__", "different-producer-release")
+    for name in ("circuit_h", "circuit_bell"):
+        with pytest.raises(plan_contract.ExecutionPlanContractError) as caught:
+            fq.ExecutionPlan.from_json(canonical_json(captures[name]))
+        assert caught.value.reason_code == "compiler_incompatible"

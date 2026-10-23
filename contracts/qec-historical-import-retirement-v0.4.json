@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "approved_contract_before_implementation",
+  "status": "implemented_pending_release",
   "proposal": {
     "pull_request": 757,
     "head": "ed0b572657c8249c1d7fe605e8d0b05cdd74fc7b",
@@ -13,7 +13,7 @@
     "rotated_surface_amendment": "Explicit follow-up selection: unify into one registered class. Supersedes the two-independent-classes requirement and the planned rotated_frame public module in proposal 085."
   },
   "target_version": "0.4.0",
-  "current_phase": "prepare",
+  "current_phase": "retired",
   "module_replacements": {
     "flagquantum.qec.belief_propagation": [
       "flagquantum.qec.decoders.belief_propagation"
