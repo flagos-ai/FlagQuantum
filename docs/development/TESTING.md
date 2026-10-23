@@ -493,7 +493,7 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-three jobs:
+The checked-in `ci.yml` defines twenty-four jobs:
 
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
@@ -548,9 +548,9 @@ The checked-in `ci.yml` defines twenty-three jobs:
 - `release-wheel-platform`: the exact release-wheel route on macOS arm64 and
   Windows amd64, including native compilation, runtime smoke tests, repaired
   wheel inspection, and uploadable-artifact verification;
-- `distributed-cpu`: the `pr-distributed` tier — CPU distributed semantics and
-  release-contract checks — run separately from the core matrix;
-- `coverage-shard`: eight deterministic, duration-balanced partitions of the
+- `distributed-cpu-shard`: partitions of the `pr-distributed` tier — CPU
+  distributed semantics and release-contract checks — run separately from the core matrix;
+- `coverage-shard`: sixteen deterministic, duration-balanced partitions of the
   maintained package measured under the same marker expression on separate
   runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
@@ -831,8 +831,9 @@ XML report.
 ### Partitioning the distributed CPU lane
 
 `pr-distributed` still runs both complete marker selections locally. In CI the
-`distributed_cpu` command is partitioned across four independent runners and the
-`benchmark_contract or release_gate` command across two. Each node ID belongs to
+`distributed-cpu-shard` matrix partitions the `distributed_cpu` command across
+four independent runners and the `benchmark_contract or release_gate` command
+across two. Each node ID belongs to
 exactly one partition of its original selection. The two-rank JAX probe runs once
 after the first distributed partition. Hosted fork jobs keep the same shared
 concurrency bucket; trusted CPU registrations can run the six partitions together.
@@ -847,3 +848,6 @@ one shared tensor-network bra/ket, instead of contracting it separately per term
 The circuit grid, precisions, truncation probes and numerical assertions remain
 unchanged. Batched energies and gradients are checked against the termwise
 contractions, with dense-state materialization explicitly refused.
+
+The stable `distributed-cpu` check aggregates every `distributed-cpu-shard` job
+and rejects a failed, cancelled or skipped partition.

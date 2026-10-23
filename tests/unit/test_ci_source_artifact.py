@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("ci.yml", "cudaq-optional"),
         ("ci.yml", "pennylane-optional"),
         ("ci.yml", "dependency-bounds"),
-        ("ci.yml", "distributed-cpu"),
+        pytest.param("ci.yml", "distributed-cpu-shard", id="ci.yml-distributed-cpu"),
         ("ci.yml", "coverage-shard"),
         ("ci.yml", "supply-chain"),
         ("local-gpu.yml", "one-gpu-local"),
@@ -160,7 +160,12 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
 
 
 @pytest.mark.parametrize(
-    "job", ["distributed-cpu", "coverage-shard", "dependency-bounds"]
+    "job",
+    [
+        pytest.param("distributed-cpu-shard", id="distributed-cpu"),
+        "coverage-shard",
+        "dependency-bounds",
+    ],
 )
 def test_checkout_jobs_use_the_exact_workflow_revision(job: str) -> None:
     jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
