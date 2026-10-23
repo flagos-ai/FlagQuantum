@@ -1,0 +1,60 @@
+{
+  "source_commit": "398765f7a886e6eea356eea00e830ca399834635",
+  "sweeps": {
+    "compiled_lookup": [
+      {
+        "probability": 0.0,
+        "shots": 32,
+        "logical_failures": 0,
+        "logical_error_rate": 0.0,
+        "bit_flip_events": 0,
+        "readout_errors": 0
+      },
+      {
+        "probability": 0.125,
+        "shots": 32,
+        "logical_failures": 16,
+        "logical_error_rate": 0.5,
+        "bit_flip_events": 48,
+        "readout_errors": 0
+      }
+    ],
+    "offline_pauli_frame": [
+      {
+        "probability": 0.0,
+        "shots": 32,
+        "logical_failures": 0,
+        "logical_error_rate": 0.0,
+        "bit_flip_events": 0,
+        "readout_errors": 0
+      },
+      {
+        "probability": 0.125,
+        "shots": 32,
+        "logical_failures": 10,
+        "logical_error_rate": 0.3125,
+        "bit_flip_events": 48,
+        "readout_errors": 0
+      }
+    ],
+    "runtime_decoder": [
+      {
+        "probability": 0.0,
+        "shots": 32,
+        "logical_failures": 0,
+        "logical_error_rate": 0.0,
+        "bit_flip_events": 0,
+        "readout_errors": 0
+      },
+      {
+        "probability": 0.125,
+        "shots": 32,
+        "logical_failures": 16,
+        "logical_error_rate": 0.5,
+        "bit_flip_events": 48,
+        "readout_errors": 0
+      }
+    ]
+  },
+  "noise_identity": "837624c5a5fe7c3791bb19a8949fad0b7a00626781f1ac0e0a265da92bcc2626"
+}
