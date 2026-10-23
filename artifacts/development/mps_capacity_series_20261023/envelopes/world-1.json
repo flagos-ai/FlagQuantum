@@ -1,0 +1,99 @@
+{
+  "artifact_class": "measured_production_run",
+  "evidence": {
+    "acceptance_case": "single_gpu_capacity_failure",
+    "batch_size": 1,
+    "blockers": [
+      "measured single-device capacity failure is baseline provenance only"
+    ],
+    "capacity_baseline_device": "NVIDIA A800-SXM4-80GB",
+    "capacity_failure_reason": "CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 16.88 MiB is free. Including non-PyTorch memory, this process has 79.22 GiB memory in use. Of the allocated memory 78.27 GiB is allocated by PyTorch, and 10.98 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+    "device_total_memory_bytes": 85093777408,
+    "distribution_semantics": "single_device_fast_path",
+    "dtype": "complex64",
+    "elapsed_seconds": 3.7656987980008125,
+    "failure_elapsed_seconds": 3.7656987980008125,
+    "initial_max_bond": 768,
+    "local_world_size": 1,
+    "logical_mps_bytes": 1236780012864,
+    "max_bond_dimension": 768,
+    "measured_peak_memory_bytes": 84046531584,
+    "mps_forward_distribution_semantics": "single_device_fast_path",
+    "n_sites": 131072,
+    "node_count": 1,
+    "parameter_count": 31,
+    "publication": {
+      "note": "Scientific values and source revisions are unchanged; provenance raw_log_sha256 binds the available deidentified log.",
+      "original_log_sha256": "989b109800f683a8c400aae4f862a09d89058dad60f6c01bb02974ee664edb04",
+      "original_measurements_sha256": "4f2b96a65bb36da83caaaff968297b6bfc686960fde24dfb61e52f6987957358",
+      "public_measurements_path": "measurements/world-1.json",
+      "public_measurements_sha256": "1b4cba06473501ce2241a9e4644c81d7da208af7816a3859c9d81af5276e3981",
+      "redactions": "node aliases and tools.sanitize_public_evidence.sanitize_text before sealing"
+    },
+    "release_gate_allowed": false,
+    "release_payload": false,
+    "scalability_claim_allowed": false,
+    "single_device_oom_observed": true,
+    "single_gpu_expected_oom": true,
+    "site_ownership": {
+      "policy": "single_device_owns_every_site",
+      "sharded": false,
+      "site_count": 131072
+    },
+    "state_mode": "mps",
+    "workload_body_sha256": "05ec5746166182a93d9b6f46d50931b91158b46bb839d0870f30b179df07c662",
+    "workload_definition_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
+    "workload_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
+    "world_size": 1
+  },
+  "evidence_scope": "one_gpu_local",
+  "integrity": {
+    "algorithm": "sha256",
+    "content_sha256": "aed632725100c70b68b0653f48e7f0e5373728102abd07a71b9f200402843529"
+  },
+  "provenance": {
+    "collective_backend": "nccl",
+    "command": [
+      "<redacted-path>",
+      "/nfs/fq-mps-capacity-39895451311-1/tools/run_mps_capacity_series.py",
+      "--worker",
+      "--staging",
+      "/nfs/fq-mps-capacity-39895451311-1",
+      "--output",
+      "/nfs/fq-mps-capacity-39895451311-1-out",
+      "--world",
+      "1",
+      "--node",
+      "0",
+      "--pid-file",
+      "/nfs/fq-mps-capacity-39895451311-1-out/world-1-node-0.pid",
+      "--address",
+      "<redacted-private-address>",
+      "--port",
+      "29641",
+      "--interface",
+      "ens22f0",
+      "--timeout",
+      "1200",
+      "--infiniband-hcas",
+      "mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108"
+    ],
+    "commit": "4f23154fe9d944ce3f1e801701d59150138b3bd0",
+    "devices": [
+      "GPU-1ffa16a6-3917-0c8d-2460-b360464eae49"
+    ],
+    "fallback_events": [],
+    "iterations": 1,
+    "rank_mapping": [
+      "rank=0:node=0:device_uuid=GPU-1ffa16a6-3917-0c8d-2460-b360464eae49"
+    ],
+    "raw_log_sha256": "c38d0da4c327eb80d6eb0553a6e74bf1cb6726ccdf6e4c7d64d7f3428b0e8036",
+    "seeds": [
+      520052
+    ],
+    "topology": "node-0:\n\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tNIC7\tNIC8\tNIC9\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU1\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU2\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU3\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU4\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU5\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU6\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nGPU7\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nNIC0\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\t\t\t\t\nNIC1\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC3\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC4\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tNODE\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tNODE\t\t\t\t\nNIC7\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPXB\tNODE\t\t\t\t\nNIC8\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\t X \tNODE\t\t\t\t\nNIC9\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_101\n  NIC2: mlx5_102\n  NIC3: mlx5_103\n  NIC4: mlx5_104\n  NIC5: mlx5_105\n  NIC6: mlx5_106\n  NIC7: mlx5_107\n  NIC8: mlx5_108\n  NIC9: mlx5_201",
+    "warmup": 0,
+    "workload_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae"
+  },
+  "schema": "flagquantum_runtime_evidence_v2"
+}

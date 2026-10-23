@@ -1,0 +1,108 @@
+=== world-1.log ===
+node-0:2247638:2247638 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2247638:2247638 [0] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2247638:2247638 [0] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2247638:2247638 [0] NCCL INFO cudaDriverVersion 13000
+node-0:2247638:2247638 [0] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2247638:2247638 [0] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2247638:2247638 [0] NCCL INFO Comm config Blocking set to 1
+node-0:2247638:2247638 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2247638:2247638 [0] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2247638:2247638 [0] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2247638:2247638 [0] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2247638:2247638 [0] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2247638:2247638 [0] NCCL INFO Initialized NET plugin IB
+node-0:2247638:2247638 [0] NCCL INFO Assigned NET plugin IB to comm
+node-0:2247638:2247638 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2247638:2247638 [0] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2247638:2247638 [0] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2247638:2247638 [0] NCCL INFO Using network IB
+node-0:2247638:2247638 [0] NCCL INFO [Rank 0] ncclCommInitRankConfig comm 0x563bd457eed0 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 10000 commId 0x2ab9c574e92fb75e - Init START
+node-0:2247638:2247638 [0] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2247638:2247638 [0] NCCL INFO Bootstrap timings total 0.000807 (create 0.000022, send 0.000134, recv 0.000433, ring 0.000001, delay 0.000001)
+node-0:2247638:2247638 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is 0-31,64-95. (GPU affinity = 0-31,64-95 ; CPU affinity = 0-127).
+node-0:2247638:2247638 [0] NCCL INFO comm 0x563bd457eed0 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 00/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 01/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 02/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 03/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 04/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 05/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 06/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 07/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 08/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 09/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 10/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 11/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 12/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 13/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 14/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 15/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 16/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 17/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 18/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 19/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 20/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 21/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 22/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 23/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 24/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 25/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 26/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 27/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 28/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 29/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 30/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 31/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 32/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 33/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 34/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 35/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 36/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 37/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 38/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 39/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 40/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 41/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 42/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 43/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 44/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 45/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 46/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 47/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 48/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 49/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 50/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 51/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 52/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 53/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 54/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 55/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 56/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 57/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 58/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 59/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 60/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 61/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 62/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Channel 63/64 : 0
+node-0:2247638:2247638 [0] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0->-1 [47] -1/-1/-1->0->-1 [48] -1/-1/-1->0->-1 [4
+node-0:2247638:2247638 [0] NCCL INFO P2P Chunksize set to 524288
+node-0:2247638:2247638 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2247638:2247638 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2247638:2247676 [0] NCCL INFO [Proxy Service] Device 0 CPU core 31
+node-0:2247638:2247677 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 64
+node-0:2247638:2247638 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2247638:2247638 [0] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+node-0:2247638:2247638 [0] NCCL INFO Symmetric VA size=80GB
+node-0:2247638:2247638 [0] NCCL INFO CC Off, workFifoBytes 1048576
+node-0:2247638:2247638 [0] NCCL INFO ncclCommInitRankConfig comm 0x563bd457eed0 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 10000 commId 0x2ab9c574e92fb75e - Init COMPLETE
+node-0:2247638:2247638 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 1 total 0.39 (kernels 0.13, alloc 0.21, bootstrap 0.00, allgathers 0.00, topo 0.02, graphs 0.00, connections 0.02, rest 0.00)
+[rank0]:[W1023 11:32:44.618541941 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 15597568, total: 85093777408).
+[rank0]:[W1023 11:32:44.624049228 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 17694720, total: 85093777408).
+wrote /nfs/fq-mps-capacity-39895451311-1-out/world-1.json
+[rank0]:[W1023 11:32:44.023704378 ProcessGroupNCCL.cpp:1624] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+node-0:2247638:2247743 [0] NCCL INFO comm 0x563bd457eed0 rank 0 nRanks 1 cudaDev 0 busId 10000 - Abort START
+node-0:2247638:2247743 [0] NCCL INFO comm 0x563bd457eed0 rank 0 nranks 1 cudaDev 0 busId 10000 - Abort COMPLETE
+node-0:2247638:2247638 [0] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+

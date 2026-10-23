@@ -1,0 +1,27 @@
+{
+  "schema": "flagquantum.multinode_watchdog.v1",
+  "status": "passed",
+  "reason": "completed",
+  "first_failure_job": null,
+  "elapsed_seconds": 27.63087521120906,
+  "failure_detected_seconds": null,
+  "cleanup_elapsed_seconds": 0.0,
+  "cleanup_required": false,
+  "cleanup_results": {},
+  "cleanup_verified": true,
+  "cleanup_failures": [],
+  "cleanup_logs": {},
+  "jobs": [
+    {
+      "name": "node-0",
+      "returncode": 0,
+      "log": "/nfs/fq-mps-capacity-39895451311-1-out/transport-check-logs/node-0.log"
+    },
+    {
+      "name": "node-1",
+      "returncode": 0,
+      "log": "/nfs/fq-mps-capacity-39895451311-1-out/transport-check-logs/node-1.log"
+    }
+  ],
+  "all_launchers_exited": true
+}

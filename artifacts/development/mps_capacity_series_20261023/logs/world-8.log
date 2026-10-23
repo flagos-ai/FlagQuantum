@@ -1,0 +1,730 @@
+=== world-8.log ===
+node-0:2248423:2248423 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2248423:2248423 [0] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248423:2248423 [0] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2248423:2248423 [0] NCCL INFO cudaDriverVersion 13000
+node-0:2248423:2248423 [0] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2248423:2248423 [0] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2248427:2248427 [4] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2248425:2248425 [2] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2248427:2248427 [4] NCCL INFO cudaDriverVersion 13000
+node-0:2248425:2248425 [2] NCCL INFO cudaDriverVersion 13000
+node-0:2248426:2248426 [3] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2248426:2248426 [3] NCCL INFO cudaDriverVersion 13000
+node-0:2248424:2248424 [1] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2248424:2248424 [1] NCCL INFO cudaDriverVersion 13000
+node-0:2248430:2248430 [7] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2248429:2248429 [6] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2248430:2248430 [7] NCCL INFO cudaDriverVersion 13000
+node-0:2248428:2248428 [5] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+node-0:2248429:2248429 [6] NCCL INFO cudaDriverVersion 13000
+node-0:2248428:2248428 [5] NCCL INFO cudaDriverVersion 13000
+node-0:2248430:2248430 [7] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248425:2248425 [2] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248424:2248424 [1] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248427:2248427 [4] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248429:2248429 [6] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248426:2248426 [3] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248423:2248423 [0] NCCL INFO Comm config Blocking set to 1
+node-0:2248428:2248428 [5] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248430:2248430 [7] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2248430:2248430 [7] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2248430:2248430 [7] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2248425:2248425 [2] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2248425:2248425 [2] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2248425:2248425 [2] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2248424:2248424 [1] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2248424:2248424 [1] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2248424:2248424 [1] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2248426:2248426 [3] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2248429:2248429 [6] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2248428:2248428 [5] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2248426:2248426 [3] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2248429:2248429 [6] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2248427:2248427 [4] NCCL INFO Bootstrap: Using ens22f0:<redacted-private-address><0>
+node-0:2248426:2248426 [3] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2248428:2248428 [5] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2248429:2248429 [6] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2248428:2248428 [5] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2248427:2248427 [4] NCCL INFO NCCL version 2.29.7+cuda13.2
+node-0:2248427:2248427 [4] NCCL INFO NCCL git version stable b81d6a5a3
+node-0:2248430:2248430 [7] NCCL INFO Comm config Blocking set to 1
+node-0:2248428:2248428 [5] NCCL INFO Comm config Blocking set to 1
+node-0:2248424:2248424 [1] NCCL INFO Comm config Blocking set to 1
+node-0:2248429:2248429 [6] NCCL INFO Comm config Blocking set to 1
+node-0:2248425:2248425 [2] NCCL INFO Comm config Blocking set to 1
+node-0:2248426:2248426 [3] NCCL INFO Comm config Blocking set to 1
+node-0:2248427:2248427 [4] NCCL INFO Comm config Blocking set to 1
+node-0:2248423:2248423 [0] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2248423:2248423 [0] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2248423:2248423 [0] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248423:2248423 [0] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2248427:2248427 [4] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2248427:2248427 [4] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2248429:2248429 [6] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2248429:2248429 [6] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2248427:2248427 [4] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248426:2248426 [3] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2248426:2248426 [3] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2248429:2248429 [6] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248428:2248428 [5] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2248428:2248428 [5] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2248426:2248426 [3] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248430:2248430 [7] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2248430:2248430 [7] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2248428:2248428 [5] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248430:2248430 [7] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248425:2248425 [2] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2248425:2248425 [2] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2248425:2248425 [2] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248427:2248427 [4] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2248429:2248429 [6] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2248426:2248426 [3] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2248428:2248428 [5] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2248430:2248430 [7] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2248425:2248425 [2] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2248424:2248424 [1] NCCL INFO NET/Plugin: Could not find: libnccl-net.so
+node-0:2248424:2248424 [1] NCCL INFO NCCL_IB_DISABLE set by environment to 0.
+node-0:2248424:2248424 [1] NCCL INFO NCCL_SOCKET_IFNAME set by environment to ens22f0
+node-0:2248424:2248424 [1] NCCL INFO NCCL_IB_HCA set to mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108
+node-0:2248429:2248429 [6] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2248429:2248429 [6] NCCL INFO Initialized NET plugin IB
+node-0:2248429:2248429 [6] NCCL INFO Assigned NET plugin IB to comm
+node-0:2248429:2248429 [6] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2248429:2248429 [6] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2248429:2248429 [6] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2248429:2248429 [6] NCCL INFO Using network IB
+node-0:2248424:2248424 [1] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2248424:2248424 [1] NCCL INFO Initialized NET plugin IB
+node-0:2248424:2248424 [1] NCCL INFO Assigned NET plugin IB to comm
+node-0:2248424:2248424 [1] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2248424:2248424 [1] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2248424:2248424 [1] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2248424:2248424 [1] NCCL INFO Using network IB
+node-0:2248426:2248426 [3] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2248426:2248426 [3] NCCL INFO Initialized NET plugin IB
+node-0:2248426:2248426 [3] NCCL INFO Assigned NET plugin IB to comm
+node-0:2248426:2248426 [3] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2248426:2248426 [3] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2248426:2248426 [3] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2248426:2248426 [3] NCCL INFO Using network IB
+node-0:2248428:2248428 [5] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2248428:2248428 [5] NCCL INFO Initialized NET plugin IB
+node-0:2248428:2248428 [5] NCCL INFO Assigned NET plugin IB to comm
+node-0:2248428:2248428 [5] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2248428:2248428 [5] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2248428:2248428 [5] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2248428:2248428 [5] NCCL INFO Using network IB
+node-0:2248423:2248423 [0] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2248423:2248423 [0] NCCL INFO Initialized NET plugin IB
+node-0:2248423:2248423 [0] NCCL INFO Assigned NET plugin IB to comm
+node-0:2248423:2248423 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2248423:2248423 [0] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2248423:2248423 [0] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2248423:2248423 [0] NCCL INFO Using network IB
+node-0:2248427:2248427 [4] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2248427:2248427 [4] NCCL INFO Initialized NET plugin IB
+node-0:2248427:2248427 [4] NCCL INFO Assigned NET plugin IB to comm
+node-0:2248427:2248427 [4] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2248427:2248427 [4] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2248427:2248427 [4] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2248427:2248427 [4] NCCL INFO Using network IB
+node-0:2248425:2248425 [2] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2248425:2248425 [2] NCCL INFO Initialized NET plugin IB
+node-0:2248425:2248425 [2] NCCL INFO Assigned NET plugin IB to comm
+node-0:2248425:2248425 [2] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2248425:2248425 [2] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2248425:2248425 [2] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2248425:2248425 [2] NCCL INFO Using network IB
+node-0:2248430:2248430 [7] NCCL INFO NET/IB : Using [0]mlx5_101:1/RoCE [1]mlx5_102:1/RoCE [2]mlx5_103:1/RoCE [3]mlx5_104:1/RoCE [4]mlx5_105:1/RoCE [5]mlx5_106:1/RoCE [6]mlx5_107:1/RoCE [7]mlx5_108:1/RoCE [RO]; OOB ens22f0:<redacted-private-address><0>
+node-0:2248430:2248430 [7] NCCL INFO Initialized NET plugin IB
+node-0:2248430:2248430 [7] NCCL INFO Assigned NET plugin IB to comm
+node-0:2248430:2248430 [7] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+node-0:2248430:2248430 [7] NCCL INFO Assigned GIN plugin GIN_IB_GDAKI to comm
+node-0:2248430:2248430 [7] NCCL INFO Assigned RMA plugin GIN_IB_PROXY to comm
+node-0:2248430:2248430 [7] NCCL INFO Using network IB
+node-0:2248424:2248424 [1] NCCL INFO [Rank 1] ncclCommInitRankConfig comm 0x564cafdf9a60 rank 1 nranks 8 cudaDev 1 nvmlDev 1 busId 16000 commId 0xb2907ea789ac6e6e - Init START
+node-0:2248426:2248426 [3] NCCL INFO [Rank 3] ncclCommInitRankConfig comm 0x561b4782d120 rank 3 nranks 8 cudaDev 3 nvmlDev 3 busId 4d000 commId 0xb2907ea789ac6e6e - Init START
+node-0:2248428:2248428 [5] NCCL INFO [Rank 5] ncclCommInitRankConfig comm 0x560f2fbcd710 rank 5 nranks 8 cudaDev 5 nvmlDev 5 busId 8f000 commId 0xb2907ea789ac6e6e - Init START
+node-0:2248429:2248429 [6] NCCL INFO [Rank 6] ncclCommInitRankConfig comm 0x558b59a23c30 rank 6 nranks 8 cudaDev 6 nvmlDev 6 busId c6000 commId 0xb2907ea789ac6e6e - Init START
+node-0:2248425:2248425 [2] NCCL INFO [Rank 2] ncclCommInitRankConfig comm 0x564ef81d19c0 rank 2 nranks 8 cudaDev 2 nvmlDev 2 busId 49000 commId 0xb2907ea789ac6e6e - Init START
+node-0:2248425:2248425 [2] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2248423:2248423 [0] NCCL INFO [Rank 0] ncclCommInitRankConfig comm 0x5560abd44e30 rank 0 nranks 8 cudaDev 0 nvmlDev 0 busId 10000 commId 0xb2907ea789ac6e6e - Init START
+node-0:2248424:2248424 [1] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2248427:2248427 [4] NCCL INFO [Rank 4] ncclCommInitRankConfig comm 0x5608a1e74ed0 rank 4 nranks 8 cudaDev 4 nvmlDev 4 busId 8a000 commId 0xb2907ea789ac6e6e - Init START
+node-0:2248428:2248428 [5] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2248426:2248426 [3] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2248427:2248427 [4] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2248430:2248430 [7] NCCL INFO [Rank 7] ncclCommInitRankConfig comm 0x563fd3df3a20 rank 7 nranks 8 cudaDev 7 nvmlDev 7 busId ca000 commId 0xb2907ea789ac6e6e - Init START
+node-0:2248429:2248429 [6] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2248423:2248423 [0] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2248430:2248430 [7] NCCL INFO RAS client listening socket at <redacted-private-address><28028>
+node-0:2248429:2248429 [6] NCCL INFO Bootstrap timings total 0.013993 (create 0.000037, send 0.000169, recv 0.013097, ring 0.000381, delay 0.000001)
+node-0:2248428:2248428 [5] NCCL INFO Bootstrap timings total 0.024311 (create 0.000045, send 0.000244, recv 0.010522, ring 0.001398, delay 0.000001)
+node-0:2248427:2248427 [4] NCCL INFO Bootstrap timings total 0.002493 (create 0.000036, send 0.000162, recv 0.000358, ring 0.001353, delay 0.000001)
+node-0:2248430:2248430 [7] NCCL INFO Bootstrap timings total 0.001127 (create 0.000034, send 0.000184, recv 0.000326, ring 0.000211, delay 0.000001)
+node-0:2248426:2248426 [3] NCCL INFO Bootstrap timings total 0.029899 (create 0.000048, send 0.000268, recv 0.027872, ring 0.001429, delay 0.000001)
+node-0:2248423:2248423 [0] NCCL INFO Bootstrap timings total 0.005295 (create 0.000039, send 0.000219, recv 0.000187, ring 0.000267, delay 0.000001)
+node-0:2248425:2248425 [2] NCCL INFO Bootstrap timings total 0.008092 (create 0.000042, send 0.000210, recv 0.000363, ring 0.006953, delay 0.000001)
+node-0:2248424:2248424 [1] NCCL INFO Bootstrap timings total 0.052134 (create 0.000048, send 0.000270, recv 0.044241, ring 0.004240, delay 0.000001)
+node-0:2248430:2248430 [7] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 7 is 32-63,96-127. (GPU affinity = 32-63,96-127 ; CPU affinity = 0-127).
+node-0:2248430:2248430 [7] NCCL INFO NVLS multicast support is not available on dev 7 (NVLS_NCHANNELS 0)
+node-0:2248423:2248423 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is 0-31,64-95. (GPU affinity = 0-31,64-95 ; CPU affinity = 0-127).
+node-0:2248423:2248423 [0] NCCL INFO NVLS multicast support is not available on dev 0 (NVLS_NCHANNELS 0)
+node-0:2248428:2248428 [5] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 5 is 32-63,96-127. (GPU affinity = 32-63,96-127 ; CPU affinity = 0-127).
+node-0:2248428:2248428 [5] NCCL INFO NVLS multicast support is not available on dev 5 (NVLS_NCHANNELS 0)
+node-0:2248424:2248424 [1] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 1 is 0-31,64-95. (GPU affinity = 0-31,64-95 ; CPU affinity = 0-127).
+node-0:2248424:2248424 [1] NCCL INFO NVLS multicast support is not available on dev 1 (NVLS_NCHANNELS 0)
+node-0:2248426:2248426 [3] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 3 is 0-31,64-95. (GPU affinity = 0-31,64-95 ; CPU affinity = 0-127).
+node-0:2248426:2248426 [3] NCCL INFO NVLS multicast support is not available on dev 3 (NVLS_NCHANNELS 0)
+node-0:2248429:2248429 [6] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 6 is 32-63,96-127. (GPU affinity = 32-63,96-127 ; CPU affinity = 0-127).
+node-0:2248429:2248429 [6] NCCL INFO NVLS multicast support is not available on dev 6 (NVLS_NCHANNELS 0)
+node-0:2248425:2248425 [2] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 2 is 0-31,64-95. (GPU affinity = 0-31,64-95 ; CPU affinity = 0-127).
+node-0:2248425:2248425 [2] NCCL INFO NVLS multicast support is not available on dev 2 (NVLS_NCHANNELS 0)
+node-0:2248427:2248427 [4] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 4 is 32-63,96-127. (GPU affinity = 32-63,96-127 ; CPU affinity = 0-127).
+node-0:2248427:2248427 [4] NCCL INFO NVLS multicast support is not available on dev 4 (NVLS_NCHANNELS 0)
+node-0:2248429:2248429 [6] NCCL INFO comm 0x558b59a23c30 rank 6 nRanks 8 nNodes 1 localRanks 8 localRank 6 MNNVL 0
+node-0:2248429:2248429 [6] NCCL INFO Trees [0] 7/-1/-1->6->5 [1] 7/-1/-1->6->5 [2] 7/-1/-1->6->5 [3] 7/-1/-1->6->5 [4] 7/-1/-1->6->5 [5] 7/-1/-1->6->5 [6] 7/-1/-1->6->5 [7] 7/-1/-1->6->5 [8] 7/-1/-1->6->5 [9] 7/-1/-1->6->5 [10] 7/-1/-1->6->5 [11] 7/-1/-1->6->5 [12] 7/-1/-1->6->5 [13] 7/-1/-1->6->5 [14] 7/-1/-1->6->5 [15] 7/-1/-1->6->5
+node-0:2248429:2248429 [6] NCCL INFO P2P Chunksize set to 524288
+node-0:2248430:2248430 [7] NCCL INFO comm 0x563fd3df3a20 rank 7 nRanks 8 nNodes 1 localRanks 8 localRank 7 MNNVL 0
+node-0:2248428:2248428 [5] NCCL INFO comm 0x560f2fbcd710 rank 5 nRanks 8 nNodes 1 localRanks 8 localRank 5 MNNVL 0
+node-0:2248430:2248430 [7] NCCL INFO Trees [0] -1/-1/-1->7->6 [1] -1/-1/-1->7->6 [2] -1/-1/-1->7->6 [3] -1/-1/-1->7->6 [4] -1/-1/-1->7->6 [5] -1/-1/-1->7->6 [6] -1/-1/-1->7->6 [7] -1/-1/-1->7->6 [8] -1/-1/-1->7->6 [9] -1/-1/-1->7->6 [10] -1/-1/-1->7->6 [11] -1/-1/-1->7->6 [12] -1/-1/-1->7->6 [13] -1/-1/-1->7->6 [14] -1/-1/-1->7->6 [15] -1/-1/-1->7->6
+node-0:2248428:2248428 [5] NCCL INFO Trees [0] 6/-1/-1->5->4 [1] 6/-1/-1->5->4 [2] 6/-1/-1->5->4 [3] 6/-1/-1->5->4 [4] 6/-1/-1->5->4 [5] 6/-1/-1->5->4 [6] 6/-1/-1->5->4 [7] 6/-1/-1->5->4 [8] 6/-1/-1->5->4 [9] 6/-1/-1->5->4 [10] 6/-1/-1->5->4 [11] 6/-1/-1->5->4 [12] 6/-1/-1->5->4 [13] 6/-1/-1->5->4 [14] 6/-1/-1->5->4 [15] 6/-1/-1->5->4
+node-0:2248430:2248430 [7] NCCL INFO P2P Chunksize set to 524288
+node-0:2248428:2248428 [5] NCCL INFO P2P Chunksize set to 524288
+node-0:2248427:2248427 [4] NCCL INFO comm 0x5608a1e74ed0 rank 4 nRanks 8 nNodes 1 localRanks 8 localRank 4 MNNVL 0
+node-0:2248424:2248424 [1] NCCL INFO comm 0x564cafdf9a60 rank 1 nRanks 8 nNodes 1 localRanks 8 localRank 1 MNNVL 0
+node-0:2248426:2248426 [3] NCCL INFO comm 0x561b4782d120 rank 3 nRanks 8 nNodes 1 localRanks 8 localRank 3 MNNVL 0
+node-0:2248423:2248423 [0] NCCL INFO comm 0x5560abd44e30 rank 0 nRanks 8 nNodes 1 localRanks 8 localRank 0 MNNVL 0
+node-0:2248425:2248425 [2] NCCL INFO comm 0x564ef81d19c0 rank 2 nRanks 8 nNodes 1 localRanks 8 localRank 2 MNNVL 0
+node-0:2248426:2248426 [3] NCCL INFO Trees [0] 4/-1/-1->3->2 [1] 4/-1/-1->3->2 [2] 4/-1/-1->3->2 [3] 4/-1/-1->3->2 [4] 4/-1/-1->3->2 [5] 4/-1/-1->3->2 [6] 4/-1/-1->3->2 [7] 4/-1/-1->3->2 [8] 4/-1/-1->3->2 [9] 4/-1/-1->3->2 [10] 4/-1/-1->3->2 [11] 4/-1/-1->3->2 [12] 4/-1/-1->3->2 [13] 4/-1/-1->3->2 [14] 4/-1/-1->3->2 [15] 4/-1/-1->3->2
+node-0:2248424:2248424 [1] NCCL INFO Trees [0] 2/-1/-1->1->0 [1] 2/-1/-1->1->0 [2] 2/-1/-1->1->0 [3] 2/-1/-1->1->0 [4] 2/-1/-1->1->0 [5] 2/-1/-1->1->0 [6] 2/-1/-1->1->0 [7] 2/-1/-1->1->0 [8] 2/-1/-1->1->0 [9] 2/-1/-1->1->0 [10] 2/-1/-1->1->0 [11] 2/-1/-1->1->0 [12] 2/-1/-1->1->0 [13] 2/-1/-1->1->0 [14] 2/-1/-1->1->0 [15] 2/-1/-1->1->0
+node-0:2248426:2248426 [3] NCCL INFO P2P Chunksize set to 524288
+node-0:2248424:2248424 [1] NCCL INFO P2P Chunksize set to 524288
+node-0:2248427:2248427 [4] NCCL INFO Trees [0] 5/-1/-1->4->3 [1] 5/-1/-1->4->3 [2] 5/-1/-1->4->3 [3] 5/-1/-1->4->3 [4] 5/-1/-1->4->3 [5] 5/-1/-1->4->3 [6] 5/-1/-1->4->3 [7] 5/-1/-1->4->3 [8] 5/-1/-1->4->3 [9] 5/-1/-1->4->3 [10] 5/-1/-1->4->3 [11] 5/-1/-1->4->3 [12] 5/-1/-1->4->3 [13] 5/-1/-1->4->3 [14] 5/-1/-1->4->3 [15] 5/-1/-1->4->3
+node-0:2248427:2248427 [4] NCCL INFO P2P Chunksize set to 524288
+node-0:2248429:2248429 [6] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2248428:2248428 [5] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2248430:2248430 [7] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2248429:2248429 [6] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2248423:2248423 [0] NCCL INFO Channel 00/16 : 0 1 2 3 4 5 6 7
+node-0:2248428:2248428 [5] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2248430:2248430 [7] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2248423:2248423 [0] NCCL INFO Channel 01/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 02/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 03/16 : 0 1 2 3 4 5 6 7
+node-0:2248425:2248425 [2] NCCL INFO Trees [0] 3/-1/-1->2->1 [1] 3/-1/-1->2->1 [2] 3/-1/-1->2->1 [3] 3/-1/-1->2->1 [4] 3/-1/-1->2->1 [5] 3/-1/-1->2->1 [6] 3/-1/-1->2->1 [7] 3/-1/-1->2->1 [8] 3/-1/-1->2->1 [9] 3/-1/-1->2->1 [10] 3/-1/-1->2->1 [11] 3/-1/-1->2->1 [12] 3/-1/-1->2->1 [13] 3/-1/-1->2->1 [14] 3/-1/-1->2->1 [15] 3/-1/-1->2->1
+node-0:2248423:2248423 [0] NCCL INFO Channel 04/16 : 0 1 2 3 4 5 6 7
+node-0:2248425:2248425 [2] NCCL INFO P2P Chunksize set to 524288
+node-0:2248426:2248426 [3] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2248424:2248424 [1] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2248423:2248423 [0] NCCL INFO Channel 05/16 : 0 1 2 3 4 5 6 7
+node-0:2248426:2248426 [3] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2248424:2248424 [1] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2248423:2248423 [0] NCCL INFO Channel 06/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 07/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 08/16 : 0 1 2 3 4 5 6 7
+node-0:2248427:2248427 [4] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2248423:2248423 [0] NCCL INFO Channel 09/16 : 0 1 2 3 4 5 6 7
+node-0:2248427:2248427 [4] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2248423:2248423 [0] NCCL INFO Channel 10/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 11/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 12/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 13/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 14/16 : 0 1 2 3 4 5 6 7
+node-0:2248423:2248423 [0] NCCL INFO Channel 15/16 : 0 1 2 3 4 5 6 7
+node-0:2248428:2248670 [0] NCCL INFO [Proxy Service UDS] Device 5 CPU core 32
+node-0:2248423:2248423 [0] NCCL INFO Trees [0] 1/-1/-1->0->-1 [1] 1/-1/-1->0->-1 [2] 1/-1/-1->0->-1 [3] 1/-1/-1->0->-1 [4] 1/-1/-1->0->-1 [5] 1/-1/-1->0->-1 [6] 1/-1/-1->0->-1 [7] 1/-1/-1->0->-1 [8] 1/-1/-1->0->-1 [9] 1/-1/-1->0->-1 [10] 1/-1/-1->0->-1 [11] 1/-1/-1->0->-1 [12] 1/-1/-1->0->-1 [13] 1/-1/-1->0->-1 [14] 1/-1/-1->0->-1 [15] 1/-1/-1->0->-1
+node-0:2248429:2248668 [0] NCCL INFO [Proxy Service UDS] Device 6 CPU core 34
+node-0:2248423:2248423 [0] NCCL INFO P2P Chunksize set to 524288
+node-0:2248425:2248425 [2] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2248430:2248663 [0] NCCL INFO [Proxy Service] Device 7 CPU core 56
+node-0:2248425:2248425 [2] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2248426:2248673 [0] NCCL INFO [Proxy Service UDS] Device 3 CPU core 14
+node-0:2248428:2248666 [0] NCCL INFO [Proxy Service] Device 5 CPU core 100
+node-0:2248429:2248665 [0] NCCL INFO [Proxy Service] Device 6 CPU core 63
+node-0:2248424:2248672 [0] NCCL INFO [Proxy Service] Device 1 CPU core 29
+node-0:2248430:2248667 [0] NCCL INFO [Proxy Service UDS] Device 7 CPU core 57
+node-0:2248427:2248676 [0] NCCL INFO [Proxy Service UDS] Device 4 CPU core 104
+node-0:2248426:2248671 [0] NCCL INFO [Proxy Service] Device 3 CPU core 75
+node-0:2248424:2248674 [0] NCCL INFO [Proxy Service UDS] Device 1 CPU core 95
+node-0:2248427:2248675 [0] NCCL INFO [Proxy Service] Device 4 CPU core 38
+node-0:2248423:2248423 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+node-0:2248423:2248423 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+node-0:2248425:2248677 [0] NCCL INFO [Proxy Service] Device 2 CPU core 1
+node-0:2248425:2248678 [0] NCCL INFO [Proxy Service UDS] Device 2 CPU core 66
+node-0:2248423:2248679 [0] NCCL INFO [Proxy Service] Device 0 CPU core 3
+node-0:2248423:2248680 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 4
+node-0:2248425:2248425 [2] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2248425:2248425 [2] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+node-0:2248425:2248425 [2] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 16 p2p channels per peer
+node-0:2248425:2248425 [2] NCCL INFO Symmetric VA size=80GB
+node-0:2248429:2248429 [6] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2248429:2248429 [6] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+node-0:2248429:2248429 [6] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 16 p2p channels per peer
+node-0:2248429:2248429 [6] NCCL INFO Symmetric VA size=80GB
+node-0:2248426:2248426 [3] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2248426:2248426 [3] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+node-0:2248426:2248426 [3] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 16 p2p channels per peer
+node-0:2248426:2248426 [3] NCCL INFO Symmetric VA size=80GB
+node-0:2248424:2248424 [1] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2248424:2248424 [1] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+node-0:2248424:2248424 [1] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 16 p2p channels per peer
+node-0:2248424:2248424 [1] NCCL INFO Symmetric VA size=80GB
+node-0:2248423:2248423 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2248430:2248430 [7] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2248430:2248430 [7] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+node-0:2248430:2248430 [7] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 16 p2p channels per peer
+node-0:2248430:2248430 [7] NCCL INFO Symmetric VA size=80GB
+node-0:2248428:2248428 [5] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2248423:2248423 [0] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+node-0:2248428:2248428 [5] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+node-0:2248423:2248423 [0] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 16 p2p channels per peer
+node-0:2248428:2248428 [5] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 16 p2p channels per peer
+node-0:2248423:2248423 [0] NCCL INFO Symmetric VA size=80GB
+node-0:2248428:2248428 [5] NCCL INFO Symmetric VA size=80GB
+node-0:2248427:2248427 [4] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+node-0:2248427:2248427 [4] NCCL INFO threadThresholds 8/8/64 | 64/8/64 | 512 | 512
+node-0:2248427:2248427 [4] NCCL INFO 16 coll channels, 16 collnet channels, 0 nvls channels, 16 p2p channels, 16 p2p channels per peer
+node-0:2248427:2248427 [4] NCCL INFO Symmetric VA size=80GB
+node-0:2248423:2248423 [0] NCCL INFO CC Off, workFifoBytes 1048576
+node-0:2248426:2248426 [3] NCCL INFO ncclCommInitRankConfig comm 0x561b4782d120 rank 3 nranks 8 cudaDev 3 nvmlDev 3 busId 4d000 commId 0xb2907ea789ac6e6e - Init COMPLETE
+node-0:2248430:2248430 [7] NCCL INFO ncclCommInitRankConfig comm 0x563fd3df3a20 rank 7 nranks 8 cudaDev 7 nvmlDev 7 busId ca000 commId 0xb2907ea789ac6e6e - Init COMPLETE
+node-0:2248424:2248424 [1] NCCL INFO ncclCommInitRankConfig comm 0x564cafdf9a60 rank 1 nranks 8 cudaDev 1 nvmlDev 1 busId 16000 commId 0xb2907ea789ac6e6e - Init COMPLETE
+node-0:2248426:2248426 [3] NCCL INFO Init timings - ncclCommInitRankConfig: rank 3 nranks 8 total 0.60 (kernels 0.13, alloc 0.31, bootstrap 0.03, allgathers 0.00, topo 0.07, graphs 0.00, connections 0.05, rest 0.00)
+node-0:2248430:2248430 [7] NCCL INFO Init timings - ncclCommInitRankConfig: rank 7 nranks 8 total 0.60 (kernels 0.13, alloc 0.34, bootstrap 0.00, allgathers 0.00, topo 0.07, graphs 0.00, connections 0.05, rest 0.00)
+node-0:2248424:2248424 [1] NCCL INFO Init timings - ncclCommInitRankConfig: rank 1 nranks 8 total 0.60 (kernels 0.15, alloc 0.27, bootstrap 0.05, allgathers 0.00, topo 0.07, graphs 0.00, connections 0.05, rest 0.00)
+node-0:2248425:2248425 [2] NCCL INFO ncclCommInitRankConfig comm 0x564ef81d19c0 rank 2 nranks 8 cudaDev 2 nvmlDev 2 busId 49000 commId 0xb2907ea789ac6e6e - Init COMPLETE
+node-0:2248423:2248423 [0] NCCL INFO ncclCommInitRankConfig comm 0x5560abd44e30 rank 0 nranks 8 cudaDev 0 nvmlDev 0 busId 10000 commId 0xb2907ea789ac6e6e - Init COMPLETE
+node-0:2248425:2248425 [2] NCCL INFO Init timings - ncclCommInitRankConfig: rank 2 nranks 8 total 0.60 (kernels 0.13, alloc 0.33, bootstrap 0.01, allgathers 0.00, topo 0.08, graphs 0.00, connections 0.04, rest 0.01)
+node-0:2248423:2248423 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 8 total 0.61 (kernels 0.14, alloc 0.34, bootstrap 0.01, allgathers 0.00, topo 0.07, graphs 0.00, connections 0.05, rest 0.00)
+node-0:2248429:2248429 [6] NCCL INFO ncclCommInitRankConfig comm 0x558b59a23c30 rank 6 nranks 8 cudaDev 6 nvmlDev 6 busId c6000 commId 0xb2907ea789ac6e6e - Init COMPLETE
+node-0:2248427:2248427 [4] NCCL INFO ncclCommInitRankConfig comm 0x5608a1e74ed0 rank 4 nranks 8 cudaDev 4 nvmlDev 4 busId 8a000 commId 0xb2907ea789ac6e6e - Init COMPLETE
+node-0:2248428:2248428 [5] NCCL INFO ncclCommInitRankConfig comm 0x560f2fbcd710 rank 5 nranks 8 cudaDev 5 nvmlDev 5 busId 8f000 commId 0xb2907ea789ac6e6e - Init COMPLETE
+node-0:2248429:2248429 [6] NCCL INFO Init timings - ncclCommInitRankConfig: rank 6 nranks 8 total 0.60 (kernels 0.13, alloc 0.33, bootstrap 0.01, allgathers 0.00, topo 0.08, graphs 0.00, connections 0.05, rest 0.00)
+node-0:2248427:2248427 [4] NCCL INFO Init timings - ncclCommInitRankConfig: rank 4 nranks 8 total 0.60 (kernels 0.13, alloc 0.34, bootstrap 0.00, allgathers 0.00, topo 0.08, graphs 0.00, connections 0.05, rest 0.00)
+node-0:2248428:2248428 [5] NCCL INFO Init timings - ncclCommInitRankConfig: rank 5 nranks 8 total 0.60 (kernels 0.13, alloc 0.32, bootstrap 0.02, allgathers 0.00, topo 0.07, graphs 0.00, connections 0.05, rest 0.00)
+{"phase": "capacity_series_training", "rank": 4, "world_size": 8}
+{"phase": "capacity_series_training", "rank": 5, "world_size": 8}
+{"phase": "capacity_series_training", "rank": 6, "world_size": 8}
+{"phase": "capacity_series_training", "rank": 3, "world_size": 8}
+{"phase": "capacity_series_training", "rank": 7, "world_size": 8}
+{"phase": "capacity_series_training", "rank": 1, "world_size": 8}
+{"phase": "capacity_series_training", "rank": 0, "world_size": 8}
+{"phase": "capacity_series_training", "rank": 2, "world_size": 8}
+node-0:2248429:2248429 [6] NCCL INFO Symmetric VA size=80GB
+node-0:2248427:2248427 [4] NCCL INFO Symmetric VA size=80GB
+node-0:2248428:2248428 [5] NCCL INFO Symmetric VA size=80GB
+node-0:2248429:2248429 [6] NCCL INFO Channel 00/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 00/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 01/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 01/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 02/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 02/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 03/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 03/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 04/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 04/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 05/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 05/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 06/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 06/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 07/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 07/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 08/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 00/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Symmetric VA size=80GB
+node-0:2248427:2248427 [4] NCCL INFO Channel 08/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 09/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 01/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 09/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 10/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 02/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 10/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 11/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 03/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 12/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 11/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 04/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 12/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 13/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 05/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 13/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 06/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 14/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 14/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 15/0 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 07/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 15/0 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 08/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 09/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 10/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 11/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 12/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 13/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 14/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 15/0 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 00/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 01/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 02/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 03/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 04/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 05/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 06/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 07/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 08/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 09/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 10/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 11/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 12/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 13/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 14/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 15/0 : 7[7] -> 0[0] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Symmetric VA size=80GB
+node-0:2248424:2248424 [1] NCCL INFO Channel 00/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 01/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 02/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 03/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 04/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 05/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 06/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 07/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 08/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 09/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 10/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 11/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 12/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 13/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 14/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 15/0 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Symmetric VA size=80GB
+node-0:2248426:2248426 [3] NCCL INFO Channel 00/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 01/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 02/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 03/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 04/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 05/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 06/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 07/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 08/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 09/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 10/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 11/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 12/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 13/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 14/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 15/0 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Symmetric VA size=80GB
+node-0:2248423:2248423 [0] NCCL INFO Symmetric VA size=80GB
+node-0:2248425:2248425 [2] NCCL INFO Channel 00/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 01/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 02/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 03/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 04/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 05/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 06/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 07/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 08/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 00/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 09/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 01/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 02/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 10/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 11/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 03/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 12/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 13/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 04/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 14/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 05/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 15/0 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 06/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 07/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 08/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 09/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 10/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 11/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 12/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 13/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 14/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 15/0 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+node-0:2248424:2248424 [1] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+node-0:2248425:2248425 [2] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+node-0:2248430:2248430 [7] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+node-0:2248429:2248429 [6] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+node-0:2248426:2248426 [3] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+node-0:2248427:2248427 [4] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+node-0:2248428:2248428 [5] NCCL INFO Connected all rings, use ring PXN 0 GDR 1
+node-0:2248423:2248423 [0] NCCL INFO Channel 00/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 00/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 01/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 01/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 02/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 02/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 03/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 03/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 00/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 04/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 01/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 05/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 02/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 04/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 03/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 05/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 06/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 04/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 06/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 05/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 07/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 07/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 06/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 07/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 08/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 08/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 09/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 08/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 09/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 10/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 10/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 00/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 09/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 01/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 11/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 00/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 02/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 12/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 10/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 11/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 01/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 03/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 13/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 04/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 12/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 02/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 00/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 14/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 11/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 05/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 03/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 13/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 04/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 12/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 14/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 06/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 01/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248423:2248423 [0] NCCL INFO Channel 15/1 : 0[0] -> 1[1] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 13/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 07/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 05/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 15/1 : 1[1] -> 2[2] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 02/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 14/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 08/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 06/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 15/1 : 4[4] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 07/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 09/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 03/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 04/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 08/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 10/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 11/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 09/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 05/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 06/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 10/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 12/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 07/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 11/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 13/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 08/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 12/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 14/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 13/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 09/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 15/1 : 5[5] -> 6[6] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 10/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 11/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 14/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 12/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 15/1 : 6[6] -> 7[7] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 13/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 14/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 00/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 15/1 : 3[3] -> 4[4] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 01/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 02/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 03/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 04/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 00/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 01/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 05/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 02/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 03/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 06/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 04/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 07/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 05/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 08/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 06/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 09/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 07/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 10/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 08/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 11/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 09/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 10/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 12/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 11/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 13/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 12/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 13/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 00/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 14/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 00/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 14/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 15/1 : 2[2] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 01/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 01/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248430:2248430 [7] NCCL INFO Channel 15/1 : 7[7] -> 6[6] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 02/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 02/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 03/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 03/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 04/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 04/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 00/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 05/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 05/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 06/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 01/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 02/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 07/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 06/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 08/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 03/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 07/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 04/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 09/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 08/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 05/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 10/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 06/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 09/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 11/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 07/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 12/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 10/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 08/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 13/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 11/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 09/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 14/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 12/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 13/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 10/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248428:2248428 [5] NCCL INFO Channel 15/1 : 5[5] -> 4[4] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 14/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 11/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248429:2248429 [6] NCCL INFO Channel 15/1 : 6[6] -> 5[5] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 12/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 13/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 14/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 00/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248427:2248427 [4] NCCL INFO Channel 15/1 : 4[4] -> 3[3] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 00/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 01/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 02/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 01/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 03/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 02/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 04/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 00/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 03/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 05/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 06/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 01/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 04/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 07/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 02/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 05/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 03/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 08/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 06/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 04/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 09/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 10/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 07/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 05/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 11/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 08/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 06/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 12/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 09/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 07/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 10/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 13/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 08/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 11/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 09/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 14/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 12/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 10/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248426:2248426 [3] NCCL INFO Channel 15/1 : 3[3] -> 2[2] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 13/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 11/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 14/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 12/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248425:2248425 [2] NCCL INFO Channel 15/1 : 2[2] -> 1[1] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 13/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 14/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+node-0:2248424:2248424 [1] NCCL INFO Channel 15/1 : 1[1] -> 0[0] via P2P/CUMEM/read
+[rank3]:[W1023 11:33:24.641734633 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 3 while trying to map 20971520 bytes (free: 19660800, total: 85093777408).
+[rank3]:[W1023 11:33:24.645713199 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 3 while trying to map 20971520 bytes (free: 2883584, total: 85093777408).
+[rank3]:[W1023 11:33:24.646714953 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 3 while trying to map 20971520 bytes (free: 2883584, total: 85093777408).
+[rank2]:[W1023 11:33:24.671764320 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 19660800, total: 85093777408).
+[rank2]:[W1023 11:33:24.676366004 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 2883584, total: 85093777408).
+[rank2]:[W1023 11:33:24.677220700 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 2 while trying to map 20971520 bytes (free: 2883584, total: 85093777408).
+[rank5]:[W1023 11:33:24.732669118 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 5 while trying to map 20971520 bytes (free: 19726336, total: 85093777408).
+[rank5]:[W1023 11:33:24.735903704 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 5 while trying to map 20971520 bytes (free: 2949120, total: 85093777408).
+[rank5]:[W1023 11:33:24.736561043 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 5 while trying to map 20971520 bytes (free: 2949120, total: 85093777408).
+[rank0]:[W1023 11:33:24.750313418 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 11272192, total: 85093777408).
+[rank0]:[W1023 11:33:24.752199856 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 0 while trying to map 20971520 bytes (free: 15466496, total: 85093777408).
+[rank1]:[W1023 11:33:24.766940616 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 1 while trying to map 20971520 bytes (free: 19660800, total: 85093777408).
+[rank1]:[W1023 11:33:24.769012559 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 1 while trying to map 20971520 bytes (free: 2883584, total: 85093777408).
+[rank1]:[W1023 11:33:24.769294359 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 1 while trying to map 20971520 bytes (free: 2883584, total: 85093777408).
+[rank6]:[W1023 11:33:24.777265035 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 6 while trying to map 20971520 bytes (free: 19726336, total: 85093777408).
+[rank4]:[W1023 11:33:24.778696883 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 4 while trying to map 20971520 bytes (free: 19726336, total: 85093777408).
+[rank6]:[W1023 11:33:24.778971977 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 6 while trying to map 20971520 bytes (free: 2949120, total: 85093777408).
+[rank6]:[W1023 11:33:24.779182309 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 6 while trying to map 20971520 bytes (free: 2949120, total: 85093777408).
+[rank4]:[W1023 11:33:24.788543111 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 4 while trying to map 20971520 bytes (free: 2949120, total: 85093777408).
+[rank4]:[W1023 11:33:24.788652254 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 4 while trying to map 20971520 bytes (free: 2949120, total: 85093777408).
+[rank7]:[W1023 11:33:24.795361763 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 7 while trying to map 20971520 bytes (free: 11337728, total: 85093777408).
+[rank7]:[W1023 11:33:24.796009304 CUDACachingAllocator.cpp:508] expandable_segments: memory mapping failed with OOM on device 7 while trying to map 20971520 bytes (free: 15532032, total: 85093777408).
+{"phase": "capacity_series_gather", "rank": 3, "status": "cuda_oom", "peak_memory_bytes": 83641778688, "cleanup_allocated_bytes": 15872}
+{"phase": "capacity_series_gather", "rank": 2, "status": "cuda_oom", "peak_memory_bytes": 83641778688, "cleanup_allocated_bytes": 15872}
+{"phase": "capacity_series_gather", "rank": 5, "status": "cuda_oom", "peak_memory_bytes": 83641778688, "cleanup_allocated_bytes": 15872}
+{"phase": "capacity_series_gather", "rank": 7, "status": "cuda_oom", "peak_memory_bytes": 83830173696, "cleanup_allocated_bytes": 15872}
+{"phase": "capacity_series_gather", "rank": 1, "status": "cuda_oom", "peak_memory_bytes": 83641778688, "cleanup_allocated_bytes": 15872}
+{"phase": "capacity_series_gather", "rank": 4, "status": "cuda_oom", "peak_memory_bytes": 83641778688, "cleanup_allocated_bytes": 15872}
+{"phase": "capacity_series_gather", "rank": 6, "status": "cuda_oom", "peak_memory_bytes": 83641778688, "cleanup_allocated_bytes": 15872}
+{"phase": "capacity_series_gather", "rank": 0, "status": "cuda_oom", "peak_memory_bytes": 83829825024, "cleanup_allocated_bytes": 15872}
+node-0:2248430:2248430 [7] NCCL INFO comm 0x563fd3df3a20 rank 7 nranks 8 cudaDev 7 busId ca000 - Destroy COMPLETE
+node-0:2248423:2248423 [0] NCCL INFO comm 0x5560abd44e30 rank 0 nranks 8 cudaDev 0 busId 10000 - Destroy COMPLETE
+wrote /nfs/fq-mps-capacity-39895451311-1-out/world-8.json
+node-0:2248429:2248429 [6] NCCL INFO comm 0x558b59a23c30 rank 6 nranks 8 cudaDev 6 busId c6000 - Destroy COMPLETE
+node-0:2248428:2248428 [5] NCCL INFO comm 0x560f2fbcd710 rank 5 nranks 8 cudaDev 5 busId 8f000 - Destroy COMPLETE
+node-0:2248424:2248424 [1] NCCL INFO comm 0x564cafdf9a60 rank 1 nranks 8 cudaDev 1 busId 16000 - Destroy COMPLETE
+node-0:2248425:2248425 [2] NCCL INFO comm 0x564ef81d19c0 rank 2 nranks 8 cudaDev 2 busId 49000 - Destroy COMPLETE
+node-0:2248427:2248427 [4] NCCL INFO comm 0x5608a1e74ed0 rank 4 nranks 8 cudaDev 4 busId 8a000 - Destroy COMPLETE
+node-0:2248426:2248426 [3] NCCL INFO comm 0x561b4782d120 rank 3 nranks 8 cudaDev 3 busId 4d000 - Destroy COMPLETE
+node-0:2248430:2248430 [7] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+node-0:2248428:2248428 [5] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+node-0:2248427:2248427 [4] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+node-0:2248429:2248429 [6] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+node-0:2248423:2248423 [0] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+node-0:2248424:2248424 [1] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+node-0:2248425:2248425 [2] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+node-0:2248426:2248426 [3] NCCL INFO ENV/Plugin: Closing env plugin ncclEnvDefault
+

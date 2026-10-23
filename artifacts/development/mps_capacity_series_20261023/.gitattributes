@@ -1,0 +1,4 @@
+*.json text eol=lf
+*.jsonl text eol=lf
+*.log text eol=lf
+*.gz binary
