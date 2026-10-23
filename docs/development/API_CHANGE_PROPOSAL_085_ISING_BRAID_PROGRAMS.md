@@ -1,15 +1,21 @@
 # Proposal 085: Native Ising braid programs through shared planning and execution
 
-## Status and requested decisions
+## Status and approved decisions
 
-**Proposed; not approved for implementation.** This document changes no API,
-IR profile, serialized schema, numerical behavior or capability status.
+**Approved for staged implementation on 2026-10-23.** The owner
+explicitly replied "Approve the contract and conditional merge of the
+documentation" (English rendering) to the five-decision request for PR #758.
+This authorizes the decisions and baseline-first delivery below. It separately
+authorizes normal merge of #758 only after its latest applicable checks,
+complete CI/GPU workflows and repository rules pass; later PRs retain their own
+merge-authorization gates. This document changes no API, IR profile, serialized
+schema, numerical behavior or capability status.
 The inspected baseline is main `d658df0dfea36fe9ae9929c9f5715f617e74461e`.
 Proposals 079 and 083 authorize ordered matrix coordinates and terminal
 instruments; they do not authorize a native anyon program or changes to
 `fq.plan`, `fq.run` or `ExecutionPlan`.
 
-The requested decisions are:
+The approved decisions are:
 
 1. Add an experimental, Core-owned `IsingBraidProgram` for four sigma anyons
    with fixed total vacuum charge, one explicit fusion tree and gauge, and
@@ -29,7 +35,8 @@ The requested decisions are:
    Runtime implementations. Each PR requires its own merge authorization,
    runnable example and complete applicable verification.
 
-Document review or merge is not implementation approval. Follow
+The explicit owner decision above supplies implementation approval; document
+review or merge alone would not supply it. Follow
 [public API protection](PUBLIC_API_PROTECTION.md) and the
 [shared M0-M4 roadmap](../roadmap/FLAGOS_ALIGNED_RELEASE_TRAIN.md).
 
@@ -149,6 +156,11 @@ a service. Add refusal consumers to the Integration baseline and retain any
 existing generic native-source refusal that already satisfies them. If an
 owner needs a profile-admission change, deliver that change in its own domain
 PR before enabling the affected path, not as an unreviewed Runtime dependency.
+The existing Lindblad facades also refuse this discrete frontend or its source
+with CapabilityError before Rydberg-specific field access: the Ising profile is
+not a Hamiltonian input. Preserve existing malformed-source IR diagnostics.
+Include these refusal consumers before activating the new frontend, rather
+than letting a newly valid physical context reach Rydberg-only assumptions.
 
 The native route accepts the following ExecutionOptions values. Existing
 malformed-option validation remains unchanged. A valid unsupported choice raises
