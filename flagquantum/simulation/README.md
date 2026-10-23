@@ -574,3 +574,21 @@ consumers in test_rydberg_transport_contract.py now use native fixtures;
 test_native_rydberg_dynamics.py covers source-aware replay, controls and refusals.
 Keep both sets when changing assembly. No quantum motion, heating, sampled events,
 feedback, GPU/distributed native dynamics or hardware control is implemented.
+
+## Fixed Ising braid actions
+
+`ising_braid.py` consumes Core's approved four-sigma, total-vacuum source. Its
+internal `evolve_ising_braid` entry applies each ordered F/R generator through
+the existing `SuperOperator.left_right_multiply(...).apply(...)` algebra and
+returns one CPU complex128 density matrix in the declared fusion coordinates.
+It introduces no numerical time, Hamiltonian, integrator, backend or result
+wrapper. Clockwise exchanges use the adjoints with their full complex phases.
+
+`tests/unit/test_ising_braid_actions.py` uses independent closed-form complex
+generators and vector evolution to check both braid relations, distant
+commutation, inverses and complete density matrices, all at atol=1e-12, rtol=0.
+Global unitary phase and phase-invariant density action have separate checks.
+The source is validated by Core before numerical work; other profiles are
+refused. This internal kernel does not activate native `fq.plan`/`fq.run` or
+change executable schemas. Runtime admission and replacement of the four
+Integration baseline factories remain separate proposal 085 gates.
