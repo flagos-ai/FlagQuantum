@@ -499,6 +499,125 @@ def _validate_authorized_execution_result(contract: dict[str, Any]) -> list[str]
         errors.append("ExecutionResult summary schema changed")
     if summary.get("version") != result_contract["summary_version"]:
         errors.append("ExecutionResult summary version changed")
+    errors.extend(
+        _validate_terminal_instrument_admission(
+            contract.get("terminal_instrument_sampling")
+        )
+    )
+    return errors
+
+
+def _validate_terminal_instrument_admission(admission: Any) -> list[str]:
+    """Protect the approved Runtime-only entry without exposing a pending stub."""
+
+    import flagquantum as fq
+    import flagquantum.runtime as runtime
+
+    fields = {
+        "proposal",
+        "approval_record",
+        "namespace",
+        "entry",
+        "signature",
+        "implementation_required",
+        "namespace_prefix",
+        "result",
+        "result_metadata",
+    }
+    if not isinstance(admission, dict) or set(admission) != fields:
+        return ["terminal instrument admission fields differ from proposal 083"]
+    errors: list[str] = []
+    if (
+        admission["namespace"] != "flagquantum.runtime"
+        or admission["entry"] != "sample_terminal"
+        or admission["proposal"]
+        != "docs/development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md"
+        or admission["approval_record"]
+        != "docs/api-changes/FQ-TERMINAL-INSTRUMENT-SAMPLING-20261023.md"
+    ):
+        errors.append(
+            "terminal instrument admission must retain its approved owner and decision"
+        )
+    required = admission["implementation_required"]
+    if type(required) is not bool or not isinstance(admission["signature"], str):
+        return [*errors, "terminal instrument activation/signature has an invalid type"]
+    prefix = admission["namespace_prefix"]
+    if not isinstance(prefix, list) or not all(isinstance(x, str) for x in prefix):
+        return [*errors, "terminal instrument Runtime prefix must be a name list"]
+    entry = "sample_terminal"
+    expected = tuple(prefix) + ((entry,) if required else ())
+    if entry in prefix or tuple(runtime.__all__) != expected:
+        errors.append(
+            "Runtime exports differ from the approved terminal instrument stage"
+        )
+    if entry in fq.__all__ or hasattr(fq, entry):
+        errors.append("terminal instrument sampling must not enter the stable root")
+    present = hasattr(runtime, entry)
+    function = getattr(runtime, entry, None)
+    if required:
+        if not callable(function):
+            errors.append("activated terminal instrument Runtime entry is missing")
+        elif str(inspect.signature(function, eval_str=False)) != admission["signature"]:
+            errors.append(
+                "terminal instrument Runtime signature differs from proposal 083"
+            )
+    elif present:
+        errors.append(
+            "pending terminal instrument admission must not publish an API stub"
+        )
+    if admission["result"] != {
+        "kind": "sample",
+        "qubits": [],
+        "value_dtype": "int64",
+        "value_device": "cpu",
+        "statistics": {},
+    }:
+        errors.append(
+            "terminal instrument result must reuse the approved MeasurementResult shape"
+        )
+    metadata = admission["result_metadata"]
+    expected_fields = {
+        "fields": {
+            "outcome_labels",
+            "probabilities",
+            "probability_correction",
+            "terminal_instrument",
+        },
+        "instrument_fields": {
+            "schema",
+            "version",
+            "dimension",
+            "dtype",
+            "branches",
+            "requested_seed",
+            "effective_seed",
+            "torch_version",
+        },
+        "branch_fields": {"label", "kraus"},
+    }
+    if not isinstance(metadata, dict) or set(metadata) != {
+        *expected_fields,
+        "schema",
+        "version",
+    }:
+        errors.append("terminal instrument metadata descriptor has unapproved fields")
+        return errors
+    if (
+        metadata["schema"] != "flagquantum.terminal_instrument"
+        or metadata["version"] != "1.0"
+    ):
+        errors.append("terminal instrument metadata identity differs from proposal 083")
+    for name, approved in expected_fields.items():
+        value = metadata[name]
+        if (
+            not isinstance(value, list)
+            or not all(isinstance(x, str) for x in value)
+            or len(value) != len(approved)
+            or set(value) != approved
+        ):
+            errors.append(
+                f"terminal instrument metadata {name} differs from proposal 083"
+            )
     return errors
 
 

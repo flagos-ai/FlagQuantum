@@ -59,6 +59,36 @@
     "native_output_stability": "none",
     "tensor_payload_serialization": "not_promised"
   },
+  "terminal_instrument_sampling": {
+    "proposal": "docs/development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md",
+    "approval_record": "docs/api-changes/FQ-TERMINAL-INSTRUMENT-SAMPLING-20261023.md",
+    "namespace": "flagquantum.runtime",
+    "entry": "sample_terminal",
+    "signature": "(density_matrix: 'torch.Tensor', instrument: 'Mapping[str, Sequence[torch.Tensor]]', *, shots: 'int', seed: 'int | None' = None) -> 'MeasurementResult'",
+    "implementation_required": false,
+    "namespace_prefix": [
+      "ExecutionOptions", "ExecutionResult", "MeasurementResult", "Module",
+      "RuntimePolicy", "TrainingResult", "run", "run_native", "run_distributed",
+      "run_noisy_mps", "run_noisy_statevector", "run_target", "train",
+      "get_backend", "set_backend", "runtime_backend", "get_dtype", "set_dtype",
+      "resolve_device", "FallbackPolicy", "FallbackEvent", "RouteCategory",
+      "RouteExplanation", "StrictExecutionScope"
+    ],
+    "result": {
+      "kind": "sample",
+      "qubits": [],
+      "value_dtype": "int64",
+      "value_device": "cpu",
+      "statistics": {}
+    },
+    "result_metadata": {
+      "fields": ["outcome_labels", "probabilities", "probability_correction", "terminal_instrument"],
+      "schema": "flagquantum.terminal_instrument",
+      "version": "1.0",
+      "instrument_fields": ["schema", "version", "dimension", "dtype", "branches", "requested_seed", "effective_seed", "torch_version"],
+      "branch_fields": ["label", "kraus"]
+    }
+  },
   "rules": {
     "candidate_is_frozen_contract": true,
     "whole_api_freeze_implied": false,

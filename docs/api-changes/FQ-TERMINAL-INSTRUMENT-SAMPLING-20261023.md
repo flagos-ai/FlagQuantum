@@ -64,10 +64,48 @@ presence [0.68, 0.32] and Fock [0.6, 0.3, 0.1], with reproducible seeded draws,
 no-flag conditional ground 0.88235294 and a changed unread coherence. The final
 line states "Framework terminal instrument API: approved, not implemented".
 
+## Baseline integration evidence
+
+PR #726 landed as `81f817efe234c35dee47cf7e6b002c543655f51a`.
+Its final head `cdcb8d7017cd90e4db5ce22b5dab9c6c484602f9` passed all
+41 applicable checks; two manual GPU-pool checks retained their existing skips.
+The complete [CI run](https://github.com/flagos-ai/FlagQuantum/actions/runs/39889495855)
+and [GPU run](https://github.com/flagos-ai/FlagQuantum/actions/runs/39889495864)
+succeeded before merge. The resulting
+[main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/39892408347)
+also succeeded. GitHub recorded the merge externally; this record does not
+reinterpret implementation approval as an agent merge grant.
+
+## Runtime interface admission
+
+The next integration change extends the existing
+`contracts/execution-result-v1-candidate.json` and
+`tools/public_api_snapshot.py`; it creates no separate manifest or checker.
+The admission records the approved Runtime-only signature, retained Runtime
+export prefix and exact result metadata fields. Metadata object key order is
+not a new promise. Existing MeasurementResult fields and schema version remain
+protected by the same checker; old snapshots and plan fixtures stay unchanged.
+
+The candidate's implementation_required value records the delivery stage, not a
+user-facing option. While false, the checker requires the existing Runtime
+exports and refuses even a non-exported placeholder attribute. The real Runtime
+implementation must change it to true in the same delivery: thereafter the
+checker requires the appended export and exact signature, and removal fails.
+Runtime owns that transition after the admission lands. Returning it to false
+to conceal removal requires a new explicit contract decision. Neither admission
+nor a passing signature inspection establishes the sampling semantics.
+
+Admission tests exercise both stages using isolated namespace mutations and
+verify the actual namespace against the recorded current stage. The numerical
+baseline remains unchanged. The real implementation must replace only its
+terminal_sampler fixture and satisfy the same numerical consumers plus the
+production refusal/resource tests. Until then the runnable reference below
+continues to report that the framework API is not implemented.
+
 ## Remaining delivery gates
 
-1. Verify and land this baseline only after its own explicit merge grant and
-   latest complete applicable CI/GPU success under repository rules.
+1. The replaceable baseline has landed with the evidence above; retain its
+   independent consumers through the remaining stages.
 2. Admit the approved Runtime export/metadata surface in a separate integration
    change. Preserve MeasurementResult fields, schema_version and existing export
    prefixes; do not regenerate unrelated snapshots or old fixtures.
