@@ -1,6 +1,8 @@
 # QEC-RESTRUCTURE-007: documentation and installation closure
 
-Status: prepared for review under the approved final batch.
+Status: delivered to `main` through PR #749 on 2026-10-23.
+See [mainline acceptance](QEC_RESTRUCTURE_ACCEPTANCE.md) for post-merge CI,
+installed-artifact verification and temporary branch/worktree cleanup.
 Owner: Core. Classification: `single_device_fast_path` compatibility evidence;
 no new numerical, accelerator or scalability claim.
 
@@ -122,5 +124,5 @@ remain unchanged in this batch. Documentation/source links, example registration
 Stable Core snapshot, architecture, complete vocabulary ledgers, parity rendering
 and all 499 QEC alignment checks remain required. No threshold is lowered.
 
-This closes the approved structural plan for review. Merging and any future
-public API evolution remain separate maintainer decisions.
+The approved structural plan is delivered to main. Future public API evolution
+and retirement of historical imports remain separate maintainer decisions.

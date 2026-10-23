@@ -23,6 +23,14 @@ remain shared leaves. They are active responsibilities, not unfinished moves.
 Core owns QEC. Each responsibility directory has a README describing allowed
 dependencies, exclusions, public entry points and a ten-minute edit/test path.
 
+At the accepted mainline merge, the QEC root still contains 29 Python files:
+23 historical import facades, five retained implementation leaves and the root
+API facade. The historical facades contain no own class/function definitions.
+Their objects live in the responsibility packages below. The
+[mainline acceptance record](../development/QEC_RESTRUCTURE_ACCEPTANCE.md) lists
+the remaining files, their purposes and post-merge evidence. Removing historical
+imports is a separate compatibility change, outside this structural delivery.
+
 | Existing import or responsibility | Physical owner |
 | --- | --- |
 | `qec.codes` protocols/checks | `codes/checks.py` |
