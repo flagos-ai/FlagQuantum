@@ -1,7 +1,7 @@
 """Reading a detector error model back into a circuit, and running that circuit.
 
 `flagquantum/qec/dem.py` writes a model out as stim text and reads stim text back
-in; `flagquantum/qec/dem_construction.py` derives a model from a circuit and a
+in; `flagquantum/qec/dem/construction.py` derives a model from a circuit and a
 noise record. Neither is a route *from* a model *to* something executable, and
 that is the gap this file closes. `circuit_from_detector_error_model` returns a
 circuit whose channels are the model's own mechanisms, and

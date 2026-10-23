@@ -251,9 +251,9 @@ fails closed on a use before definition or a duplicate definition, branches on `
 both at compile time and on a measurement result, and unrolls `for` over `range`,
 `enumerate`, and a statically ranked tensor under an explicit ceiling while
 carrying outer names through region results. Three
-[QEC](../../flagquantum/qec/sampling.py)
-[entry](../../flagquantum/qec/repetition.py)
-[points](../../flagquantum/qec/dem_construction.py) execute it in production, and
+[QEC](../../flagquantum/qec/execution/sampling.py)
+[entry](../../flagquantum/qec/execution/repetition.py)
+[points](../../flagquantum/qec/dem/construction.py) execute it in production, and
 `while`, `break`, `continue`, and `for-else` are refused with an exact diagnostic.
 So the row's old reason -- classical values "designed but not implemented" -- was
 not incomplete, it was false, and the row is `partial` rather than `supported`

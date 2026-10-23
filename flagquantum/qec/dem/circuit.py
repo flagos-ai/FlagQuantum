@@ -71,7 +71,7 @@ root, and squaring a square root is not the identity on a double: it disagrees
 with ``p`` for roughly half of all doubles, ``0.01`` and ``0.5`` among them. The
 declared parameter is therefore the probability, the matrix is checked against it,
 and a program whose two halves disagree is refused rather than averaged. This is
-the same division ``flagquantum/qec/sampling.py`` writes its noise instructions
+the same division ``flagquantum/qec/execution/sampling.py`` writes its noise instructions
 with: a channel states its rates and carries the operators those rates were turned
 into.
 """
