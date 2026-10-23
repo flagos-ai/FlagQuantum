@@ -236,8 +236,8 @@ identifier = [
 reason = "the package still reads it and warns, so the docstring that explains the compatibility promise has to be able to say the name"
 [[docstring.keep]]
 identifier = [
-    "flagquantum/qec/dem_construction.py::_Mechanism::wire",
-    "flagquantum/qec/dem_construction.py::_Mechanism::wire",
+    "flagquantum/qec/dem/construction.py::_Mechanism::wire",
+    "flagquantum/qec/dem/construction.py::_Mechanism::wire",
     "flagquantum/qec/execution/signatures.py::_checked_wire::wire",
     "flagquantum/qec/execution/signatures.py::_forced_flip::wire",
 ]
