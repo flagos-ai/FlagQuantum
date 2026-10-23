@@ -9,6 +9,7 @@ python -m examples.local.simulate
 python -m examples.local.measure
 python -m examples.local.train
 python -m examples.local.dynamic_feedback
+python -m examples.local.dynamic_many_shots
 python -m examples.local.dynamic_validation
 ```
 
@@ -18,6 +19,9 @@ python -m examples.local.dynamic_validation
 - `dynamic_feedback.py` plans and executes the stable `DynamicCircuit` builder
   through `fq.plan` and `fq.run`, covering mid-circuit measurement, conditional
   feedback, reset, and the canonical execution result.
+- `dynamic_many_shots.py` runs 4,096 dynamic shots through the same stable path
+  under an explicit local memory budget; Runtime chooses the supported execution
+  strategy without adding a user-facing strategy switch.
 - `dynamic_validation.py` shows the supported local execution path, build-time
   def-use validation, and the explicit refusal of dynamic feedback on the
   distributed statevector path.

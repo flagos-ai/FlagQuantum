@@ -62,6 +62,19 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--json-output results/environment.json"
         ),
     ),
+    "dynamic_unified_run": RunnerSpec(
+        name="dynamic_unified_run",
+        module="flagquantum.benchmarking.dynamic_unified_run",
+        attribute="main",
+        category="runtime",
+        summary="Measure stable local DynamicCircuit planning and execution overhead.",
+        hardware="CPU only",
+        example=(
+            "flagquantum-benchmark run dynamic_unified_run "
+            "--batched-shots 4096 --trajectory-shots 64 --iterations 9 "
+            "--json-output results/dynamic-unified-run.json"
+        ),
+    ),
     "statevector_local": RunnerSpec(
         name="statevector_local",
         module="flagquantum.benchmarking.statevector_local",
