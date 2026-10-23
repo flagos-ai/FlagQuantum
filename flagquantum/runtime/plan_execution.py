@@ -28,6 +28,7 @@ from ..core.target_capabilities import (
     TargetIdentity,
 )
 from ..errors import CapabilityError, ExecutionError, FlagQuantumError
+from .dynamic._conditions import instruction_is_dynamic
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
     ExecutionPlanContractError,
@@ -294,12 +295,19 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         raise ExecutionPlanContractError(
             "identity_mismatch", "decision batch_size must be a positive integer"
         )
+    source_ir = plan_program(execution_plan)
+    if any(
+        instruction_is_dynamic(instruction) for instruction in source_ir.instructions
+    ):
+        raise CapabilityError(
+            "dynamic ExecutionPlan is valid but stable execution is not active yet; "
+            "use fq.experimental.dynamic.run_dynamic(..., shots=...)"
+        )
     if decision["device"] == "cpu" and decision["backend"] == "pytorch":
         _require_local_cpu_capabilities(
             str(decision["backend"]),
             str(decision["precision"]),
         )
-    source_ir = plan_program(execution_plan)
     execution_ir = plan_execution_program(execution_plan)
     noise_model = plan_noise_model(execution_plan)
     requests = tuple(source_ir.measurements)

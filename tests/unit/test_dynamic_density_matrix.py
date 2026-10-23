@@ -353,7 +353,7 @@ def test_the_trajectory_entry_still_refuses_a_density_readout() -> None:
     program = _bell_with_feedback()
     with pytest.raises(CapabilityError, match="run_dynamic"):
         program.state()
-    with pytest.raises(CapabilityError, match="run_dynamic"):
+    with pytest.raises(CapabilityError, match="mode='auto' only"):
         fq.run(program, options=fq.ExecutionOptions(mode="density_matrix"))
 
 
