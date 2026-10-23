@@ -1,0 +1,164 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_contract_before_implementation",
+  "proposal": {
+    "pull_request": 757,
+    "head": "ed0b572657c8249c1d7fe605e8d0b05cdd74fc7b",
+    "url": "https://github.com/flagos-ai/FlagQuantum/pull/757"
+  },
+  "approval": {
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-10-23",
+    "scope": "Direct retirement of 23 historical modules in 0.4.0; contract and acceptance tests before implementation.",
+    "rotated_surface_amendment": "Explicit follow-up selection: unify into one registered class. Supersedes the two-independent-classes requirement and the planned rotated_frame public module in proposal 085."
+  },
+  "target_version": "0.4.0",
+  "current_phase": "prepare",
+  "module_replacements": {
+    "flagquantum.qec.belief_propagation": [
+      "flagquantum.qec.decoders.belief_propagation"
+    ],
+    "flagquantum.qec.bicycle": [
+      "flagquantum.qec.codes.bicycle"
+    ],
+    "flagquantum.qec.bposd": [
+      "flagquantum.qec.decoders.bposd"
+    ],
+    "flagquantum.qec.chunks": [
+      "flagquantum.qec.dem.chunks"
+    ],
+    "flagquantum.qec.circuit": [
+      "flagquantum.qec.circuits.memory"
+    ],
+    "flagquantum.qec.context": [
+      "flagquantum.qec.execution.context"
+    ],
+    "flagquantum.qec.css_code": [
+      "flagquantum.qec.codes.css"
+    ],
+    "flagquantum.qec.decoding_graph": [
+      "flagquantum.qec.dem.graph"
+    ],
+    "flagquantum.qec.dem_alternatives": [
+      "flagquantum.qec.dem.alternatives"
+    ],
+    "flagquantum.qec.dem_circuit": [
+      "flagquantum.qec.dem.circuit"
+    ],
+    "flagquantum.qec.dem_construction": [
+      "flagquantum.qec.dem.construction"
+    ],
+    "flagquantum.qec.dem_matrices": [
+      "flagquantum.qec.codes.matrices",
+      "flagquantum.qec.dem.matrices"
+    ],
+    "flagquantum.qec.dem_text": [
+      "flagquantum.qec.dem.text"
+    ],
+    "flagquantum.qec.floquet": [
+      "flagquantum.qec.codes.floquet"
+    ],
+    "flagquantum.qec.matching": [
+      "flagquantum.qec.decoders.matching"
+    ],
+    "flagquantum.qec.qldpc": [
+      "flagquantum.qec.codes.qldpc"
+    ],
+    "flagquantum.qec.reed_muller": [
+      "flagquantum.qec.codes.reed_muller"
+    ],
+    "flagquantum.qec.registry": [
+      "flagquantum.qec.decoders.registry"
+    ],
+    "flagquantum.qec.repetition": [
+      "flagquantum.qec.execution.repetition",
+      "flagquantum.qec.decoders.repetition",
+      "flagquantum.qec.types"
+    ],
+    "flagquantum.qec.sampling": [
+      "flagquantum.qec.execution.sampling"
+    ],
+    "flagquantum.qec.sliding_window": [
+      "flagquantum.qec.decoders.sliding_window"
+    ],
+    "flagquantum.qec.subsystem": [
+      "flagquantum.qec.codes.subsystem"
+    ],
+    "flagquantum.qec.surface": [
+      "flagquantum.qec.codes.surface.rotated",
+      "flagquantum.qec.codes.surface.zxxz"
+    ]
+  },
+  "rotated_surface": {
+    "decision": "single_registered_class",
+    "authority": "flagquantum.qec.codes.surface.rotated.RotatedSurfaceCode",
+    "root_export": "flagquantum.qec.RotatedSurfaceCode",
+    "factory_key": "rotated_surface",
+    "retired_class": "flagquantum.qec.surface.RotatedSurfaceCode",
+    "retired_implementation": "flagquantum/qec/codes/surface/_rotated_frame.py",
+    "forbidden_new_public_module": "flagquantum.qec.codes.surface.rotated_frame",
+    "registered_pickle_module": "flagquantum.qec.codes",
+    "old_class_identity_guarantee": false,
+    "numerical_equivalence_required": true
+  },
+  "preserved": {
+    "ordered_root_export_count": 108,
+    "root_api_fixture": "tests/qec/fixtures/restructure_001_api.json",
+    "code_registry": "flagquantum.qec.codes",
+    "decoder_registry": "flagquantum.qec.decoders.registry",
+    "root_signatures_defaults_fields_and_exceptions": true,
+    "numerical_results_and_streaming_state": true,
+    "registration_keys_duplicate_rejection_and_plugin_identity": true,
+    "surviving_module_pickle_compatibility": true,
+    "shared_leaves": [
+      "gf2",
+      "pauli",
+      "logical",
+      "noise",
+      "types"
+    ]
+  },
+  "accepted_break": {
+    "old_imports": "ModuleNotFoundError for each exact retired module; no alias or import hook bridge",
+    "old_pickles": "No backward-read guarantee for globals referencing retired modules, including nested checkpoints",
+    "new_pickles": "Canonical owner module for retired-path definitions; surviving metadata pins retained",
+    "surface_identity": "Remove duplicate class; surviving imports and factory resolve to the original registered class",
+    "deprecation_window": "Direct removal approved; no 0.3.x patch retirement"
+  },
+  "frozen_fixture_sha256": {
+    "tests/qec/fixtures/restructure_001_api.json": "8e612389160ae32220e79644ffdd263db564b71044926db44be59d85f55c40d0",
+    "tests/qec/fixtures/restructure_002_matrices.pkl": "648c27b2c180cdbdfec4f2b96c23b6c02940bc1155142a3145b27d4fbd6ac9da",
+    "tests/qec/fixtures/restructure_002_sweep.json": "c46c3d364d8478d5c12a551a0a15521a60ab9fed5fc7e4dae7f4d7e9bc9d4ee7",
+    "tests/qec/fixtures/restructure_003_codes.pkl": "f81a544ad236e440a62e836fddee5648736246aa9efa57875ec91fdabbb470be",
+    "tests/qec/fixtures/restructure_003_metadata.json": "5e815b6fc4fc3502e39f2ad2009ccd40cd8d8c1bdf6cc8650435c0533ab1aedc",
+    "tests/qec/fixtures/restructure_004_execution.json": "ad69c8647e94c1813c5cfd74559f91dcdd080cbe053efd5005e49d735efa137e",
+    "tests/qec/fixtures/restructure_004_globals.pkl": "06c5df0140ca97dfcdc547dd3d20989151bc9ab689dc25ae72caf3c67cc318c3",
+    "tests/qec/fixtures/restructure_004_metadata.json": "5e1b6e27790308d3151ec9fbcb9ddd8e70a4f569d8354babafad5a148b58b5b4",
+    "tests/qec/fixtures/restructure_005_globals.pkl": "71ac181d8c19d16f86da9c0b083d92801bda4405407fdad5d8fd405686371bde",
+    "tests/qec/fixtures/restructure_005_metadata.json": "6c4941e94811a87f8d6b9ac66ba6df65130b64f4ac5c373e8e1398f7f899c0bb",
+    "tests/qec/fixtures/restructure_005_results.json": "58bdfe0d5ffdf002d254e03abf6fceb43bb8a76f64d066fd3ab06824fd3398b7",
+    "tests/qec/fixtures/restructure_006_globals.pkl": "25b5fff96a7785b3b1038dce3327f88dd85870418666e5a97011c60eeb1c99c8",
+    "tests/qec/fixtures/restructure_006_instances.pkl": "0c8f6354844bebe0df35d28554c557d1cae1b9ee813d2a89c4c4373e57a13b6a",
+    "tests/qec/fixtures/restructure_006_metadata.json": "38c238588b6a89baeec972c22e69d522b2e6eed2ac400e35dc5e836e2e875147",
+    "tests/qec/fixtures/restructure_006_results.json": "ceef8ff4ef8fd47c79462ca53b79bc838ed82871bf015a51f677ea9fb7ec5c37"
+  },
+  "verification": {
+    "gate": "tools/check_qec_retirement.py",
+    "tests": "tests/api_contract/test_qec_retirement_contract.py",
+    "prepare_command": "PYTHONPATH=. python tools/check_qec_retirement.py --phase prepare",
+    "retired_command": "PYTHONPATH=. python tools/check_qec_retirement.py --phase retired",
+    "retired_gate_must_fail_before_implementation": true,
+    "fixture_regeneration_skip_xfail_or_threshold_changes": false,
+    "release_profiles": [
+      "3.10",
+      "3.11",
+      "3.12"
+    ],
+    "optional_profiles": [
+      "core",
+      "stim",
+      "pymatching",
+      "both"
+    ]
+  }
+}
