@@ -43,7 +43,8 @@ def _declarations() -> dict[str, object]:
         ("surface", qec.RotatedSurfaceCode()),
         ("steane", qec.SteaneCode()),
     ):
-        for basis in (("x", "z") if name == "steane" else ("z",)):
+        bases = ("x", "z") if name == "steane" else ("z",)
+        for basis in bases:
             memory = qec.build_memory_circuit(code, rounds=2, readout_basis=basis)
             noise = qec.PhenomenologicalNoise(data_flip=0.125, measurement_flip=0.25)
             context = qec.decoder_context_from_memory_circuit(memory, noise=noise)
@@ -71,7 +72,8 @@ def _samples() -> dict[str, object]:
         ("surface", qec.RotatedSurfaceCode()),
         ("steane", qec.SteaneCode()),
     ):
-        for basis in (("x", "z") if name == "steane" else ("z",)):
+        bases = ("x", "z") if name == "steane" else ("z",)
+        for basis in bases:
             memory = qec.build_memory_circuit(code, rounds=2, readout_basis=basis)
             for rate in (0.0, 0.125, 1.0):
                 noise = qec.PhenomenologicalNoise(data_flip=rate, measurement_flip=rate)
