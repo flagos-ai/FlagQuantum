@@ -42,14 +42,14 @@ from typing import (
     runtime_checkable,
 )
 
-from .gf2 import in_span, reduce_rows, reduce_vector
-from .pauli import Pauli
+from ..gf2 import in_span, reduce_rows, reduce_vector
+from ..pauli import Pauli
 
 if TYPE_CHECKING:
     # The matrix route's record, which this module's derived families build and
     # which is not imported at run time: it rests on this module's protocol, so a
     # module-level import here would close a cycle between the two.
-    from .css_code import CssCode
+    from ..css_code import CssCode
 
 
 def ancilla_bands(
@@ -871,7 +871,7 @@ def triangular_colour_code(distance: int) -> CssCode:
     logical = (tuple(1 if wire in side else 0 for wire in range(width)),)
     # The record is built on this module's protocol, so it is imported here rather
     # than at module level, where it would close a cycle between the two modules.
-    from .css_code import CssCode
+    from ..css_code import CssCode
 
     return CssCode(
         hz=checks,
@@ -1000,7 +1000,7 @@ def toric_code(linear_size: int) -> CssCode:
     row_cut = frozenset(edge(1, 0, column) for column in range(size))
     # The record is built on this module's protocol, so it is imported here rather
     # than at module level, where it would close a cycle between the two modules.
-    from .css_code import CssCode
+    from ..css_code import CssCode
 
     return CssCode(
         hz=faces,
@@ -1196,7 +1196,7 @@ def __getattr__(name: str) -> Any:
     """
 
     if name == "CssCode":
-        from .css_code import CssCode
+        from ..css_code import CssCode
 
         return CssCode
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
