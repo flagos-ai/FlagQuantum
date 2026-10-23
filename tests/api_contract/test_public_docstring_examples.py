@@ -331,18 +331,19 @@ def test_every_module_with_examples_is_covered() -> None:
     # Historical pickle modules differ from physical owners after relocation.
     # Map only existing executable entries, checking their actual source files.
     for entry, owner_name in (
-        (CssCodeMatrices, "matrices"),
-        (CssCode, "css"),
-        (FloquetCode, "floquet"),
-        (SubsystemCode, "subsystem"),
-        (bivariate_bicycle_code, "bicycle"),
-        (qldpc_code, "qldpc"),
-        (reed_muller_code, "reed_muller"),
-        (toric_code, "toric"),
-        (triangular_colour_code, "colour"),
+        (build_memory_circuit, "circuits.memory"),
+        (CssCodeMatrices, "codes.matrices"),
+        (CssCode, "codes.css"),
+        (FloquetCode, "codes.floquet"),
+        (SubsystemCode, "codes.subsystem"),
+        (bivariate_bicycle_code, "codes.bicycle"),
+        (qldpc_code, "codes.qldpc"),
+        (reed_muller_code, "codes.reed_muller"),
+        (toric_code, "codes.toric"),
+        (triangular_colour_code, "codes.colour"),
     ):
         assert entry in ENTRIES
-        owner = importlib.import_module("flagquantum.qec.codes." + owner_name)
+        owner = importlib.import_module("flagquantum.qec." + owner_name)
         assert getattr(owner, entry.__name__) is entry
         definition = entry.__post_init__ if inspect.isclass(entry) else entry
         assert (
