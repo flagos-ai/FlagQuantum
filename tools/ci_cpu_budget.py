@@ -1,4 +1,4 @@
-"""Measure Linux runner limits and budget pytest for two shared registrations."""
+"""Budget Linux CI within isolated service or shared registration limits."""
 
 from __future__ import annotations
 
@@ -92,13 +92,15 @@ def select_workers(
     return max(1, min(8, math.floor(cpu / 2), memory // (2 * 2 * GIB)))
 
 
-def select_distributed_workers(cpu: float, memory: int, shared: bool) -> int:
-    """Budget up to eight child ranks per launcher, with at most two launchers."""
+def select_distributed_workers(
+    cpu: float, memory: int, shared: bool, dedicated: bool = False
+) -> int:
+    """Bound eight child ranks per launcher by service CPU and memory limits."""
     if not shared:
         return 1
-    return max(
-        1, min(2, math.floor(math.ceil(cpu / 2) / 8), memory // (2 * 8 * 2 * GIB))
-    )
+    cpu_share = cpu if dedicated else math.ceil(cpu / 2)
+    memory_share = memory if dedicated else memory // 2
+    return max(1, min(2, math.floor(cpu_share / 8), memory_share // (8 * 2 * GIB)))
 
 
 def main(*, dedicated: bool = False) -> None:
@@ -116,7 +118,7 @@ def main(*, dedicated: bool = False) -> None:
     cpu = min([float(len(affinity)), *quotas])
     memory = min([physical_memory, *memory_limits])
     workers = select_workers(cpu, memory, shared, dedicated)
-    distributed_workers = select_distributed_workers(cpu, memory, shared)
+    distributed_workers = select_distributed_workers(cpu, memory, shared, dedicated)
     report = {
         "runner": os.environ.get("RUNNER_NAME"),
         "hostname": os.uname().nodename,
