@@ -101,6 +101,8 @@ also embeds its runnable Python and expected output.
   excluding import placement. Mathematical expressions and control flow match.
 - Strict mypy checks all 820 package source files. Black 24.1 and Ruff 0.2 check
   the changed Python files; no suppression is added.
+- All 184 contract/maturity/documentation tests pass, including all 35
+  alignment-checker mutations; their existing-file proof names the new model file.
 - The 499-check alignment gate, complete vocabulary ledgers, parity renderer,
   architecture boundaries, Stable Core API snapshot, documentation source of
   truth, public doctests and example registration are checked without relaxing
