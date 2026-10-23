@@ -306,6 +306,11 @@ def test_every_workflow_event_is_attributed() -> None:
 
 
 def test_pull_requests_only_reach_provisioned_or_guarded_jobs() -> None:
+    manual_pool_inputs = {
+        "validate-cpu-pool": "validate_pool",
+        "validate-eight-gpus": "validate_pool",
+        "validate-mc550-pool": "validate_mc550_pool",
+    }
     allowed = {
         ("local-gpu.yml", "one-gpu-local"): "a800-171",
         ("local-gpu.yml", "two-gpu-distributed-required"): "a800-172",
@@ -316,16 +321,14 @@ def test_pull_requests_only_reach_provisioned_or_guarded_jobs() -> None:
             if _is_self_hosted(definition):
                 if not _allows_untrusted_code(definition, reaching):
                     continue
-                if name == "local-gpu.yml" and job in {
-                    "validate-cpu-pool",
-                    "validate-eight-gpus",
-                }:
-                    assert definition.get("if") == "${{ inputs.validate_pool }}"
+                if name == "local-gpu.yml" and job in manual_pool_inputs:
+                    pool_input = manual_pool_inputs[job]
+                    assert definition.get("if") == "${{ inputs." + pool_input + " }}"
                     inputs = yaml.safe_load(path.read_text())[True][
                         "workflow_dispatch"
                     ]["inputs"]
-                    assert inputs["validate_pool"]["type"] == "boolean"
-                    assert inputs["validate_pool"]["default"] is False
+                    assert inputs[pool_input]["type"] == "boolean"
+                    assert inputs[pool_input]["default"] is False
                     continue
                 key = (name, job)
                 assert key in allowed, f"unexpected self-hosted PR job: {key}"

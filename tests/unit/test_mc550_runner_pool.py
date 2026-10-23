@@ -49,7 +49,11 @@ def test_mc550_validation_targets_every_exact_slot_only_when_requested() -> None
     assert "${{ matrix.slot }}" in job["runs-on"]
     assert job["needs"] == "prepare-source"
     assert job["steps"][0]["with"]["digest-mismatch"] == "error"
-    restore = job["steps"][1]["run"]
+    restore = next(
+        step["run"]
+        for step in job["steps"]
+        if step.get("name") == "Restore and verify this run's exact source commit"
+    )
     assert 'test "$sha" = "$GITHUB_SHA"' in restore
     assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in restore
     events = document.get("on", document.get(True))

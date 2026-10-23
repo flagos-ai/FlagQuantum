@@ -63,7 +63,9 @@ gh workflow run local-gpu.yml --repo flagos-ai/FlagQuantum \
 ```
 
 The 4-by-16 matrix selects every exact runner. It reuses the workflow's verified
-source artifact and checks the restored commit against `GITHUB_SHA`, avoiding
+source artifacts, tries the incremental pack against existing Git objects first,
+and downloads the complete pack when any required object is missing. It checks
+the restored commit against `GITHUB_SHA`, avoiding
 sixty-four simultaneous HTTPS Git fetches on the unreliable Git transport.
 It verifies cgroup limits and
 filesystem/device boundary from inside the actual service, installs the project
