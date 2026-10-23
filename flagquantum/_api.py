@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
     from .circuit import Circuit
     from .core.ir import CircuitIR
+    from .core.ising import IsingBraidProgram
     from .gradients import GradientResult
     from .noise import NoiseModel
     from .observables import OutputRequest
@@ -85,7 +86,7 @@ def compile(
 
 
 def run(
-    program_or_plan: Circuit | CircuitIR | ExecutionPlan,
+    program_or_plan: Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram,
     *,
     options: ExecutionOptions | None = None,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
@@ -113,8 +114,32 @@ def run(
         torch.Size([8, 2])
     """
 
-    import_module(".core.ir", __package__)._reject_native_circuit_input(program_or_plan)
+    from .core.ising import IsingBraidProgram
     from .runtime.execution_plan import ExecutionPlan
+
+    if isinstance(program_or_plan, IsingBraidProgram) or (
+        isinstance(program_or_plan, ExecutionPlan) and program_or_plan.analysis is None
+    ):
+        from .errors import CapabilityError
+        from .runtime.execution import run as run_local
+
+        if any(
+            value is not None
+            for value in (compiler, target, target_qubits, shots, name)
+        ):
+            raise CapabilityError(
+                "native Ising execution has no remote or direct-shot route"
+            )
+        if isinstance(program_or_plan, ExecutionPlan):
+            if outputs is not None:
+                raise TypeError("outputs must be None when executing an ExecutionPlan")
+            return run_local(program_or_plan, options=options, noise_model=noise_model)
+        if noise_model is not None:
+            raise CapabilityError("native Ising execution has no noise-model route")
+        from .runtime._ising_plan import plan_ising
+
+        return run_local(plan_ising(program_or_plan, options=options, outputs=outputs))
+    import_module(".core.ir", __package__)._reject_native_circuit_input(program_or_plan)
 
     remote_requested = (
         compiler is not None or target is not None or target_qubits is not None
@@ -470,7 +495,7 @@ def vjp(
 
 
 def plan(
-    program: Circuit | CircuitIR,
+    program: Circuit | CircuitIR | IsingBraidProgram,
     *,
     options: ExecutionOptions | None = None,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
@@ -484,6 +509,16 @@ def plan(
         'statevector'
     """
 
+    from .core.ising import IsingBraidProgram
+
+    if isinstance(program, IsingBraidProgram):
+        if noise_model is not None:
+            from .errors import CapabilityError
+
+            raise CapabilityError("native Ising planning has no noise-model route")
+        from .runtime._ising_plan import plan_ising
+
+        return plan_ising(program, options=options, outputs=outputs)
     ir = import_module(".core.ir", __package__).ensure_circuit_ir(program)
     measurements = import_module(".observables", __package__).lower_outputs(
         outputs,

@@ -295,9 +295,17 @@ experimental IsingBraidProgram, immutable four-sigma context/exchanges and
 native-source encoding 1.1 through existing ProgramRecord authorities. It
 preserves Rydberg source 1.0 and old plan bytes. Run
 `python -m examples.ising_braid_source` for source snapshots, fusion coordinates
-and shared matrix outputs. Root planning and numerical braid execution remain
-refused until their separate Simulation/Runtime admission; source construction
-alone does not complete M3 or certify a native anyon backend.
+and shared matrix outputs. The subsequent Simulation and Runtime deliveries add
+finite F/R actions through existing SuperOperator algebra and the same root
+plan/run, ExecutionPlan and ExecutionResult. Native-only plan 1.1 seals Core
+source 1.1 and ordered matrix outputs, with null circuit analysis and unchanged
+old circuit/Lindblad payloads. The four baseline factories now use the real
+source/planner/executor/reader while their independent physical assertions stay
+fixed. `python -m examples.ising_braid_execution` exercises exact JSON replay and
+explicit terminal pair-charge QND observations. Full applicable remote gates
+remain required before each authorized merge. This is only the fixed four-sigma
+vacuum CPU slice; it does not certify full M3, other anyon sectors, physical
+hardware, gradients or universal anyon computation.
 
 ### Reference scenarios
 

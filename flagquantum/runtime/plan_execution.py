@@ -32,7 +32,7 @@ from .dynamic._conditions import instruction_is_dynamic
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
     ExecutionPlanContractError,
-    plan_decision,
+    _require_mapping,
     plan_execution_program,
     plan_noise_model,
     plan_program,
@@ -277,7 +277,20 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     from .execution import _normalize_execution_output, run_native
 
     validate_plan_environment(execution_plan)
-    decision = plan_decision(execution_plan)
+    payload = execution_plan.to_dict()
+    native_profile = payload["version"] == "1.1"
+    if native_profile != (execution_plan.analysis is None):
+        raise ExecutionPlanContractError(
+            "identity_mismatch", "plan analysis contradicts its sealed program profile"
+        )
+    if native_profile:
+        from ._ising_plan import execute_ising_plan
+
+        _require_local_cpu_capabilities(
+            execution_plan.backend, execution_plan.precision
+        )
+        return execute_ising_plan(execution_plan)
+    decision = _require_mapping("decision", payload["decision"])
     world_size = decision["world_size"]
     batch_size = decision["batch_size"]
     if (

@@ -1,9 +1,9 @@
 """Replaceable bounded consumers for approved proposal 085.
 
-The test-local plans are mathematical fixtures, not executable-plan 1.1
-producers or public Core records. Replace the four fixtures with admitted
-production entries without changing consumer assertions. Full source/schema,
-resource, environment and malformed-input admission remain implementation gates.
+The four factories now use the real Core source, root planning/execution and
+executable-plan reader. The original independent mathematical oracles and
+consumer assertions remain unchanged. Source/schema, resource, environment and
+malformed-input admission have additional Runtime tests.
 """
 
 from __future__ import annotations
@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import math
 from collections.abc import Callable, Hashable, Sequence
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Protocol
 
@@ -20,15 +19,17 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from flagquantum.core.ir import _decode_value, _encode_value
+from flagquantum._api import plan as plan_native
+from flagquantum._api import run as run_native
+from flagquantum.core.ising import IsingBraidProgram
 from flagquantum.errors import CapabilityError
 from flagquantum.experimental.simulation import RydbergProgram
 from flagquantum.observables import OutputRequest
 from flagquantum.operators import SuperOperator
 from flagquantum.runtime import sample_terminal
-from flagquantum.runtime.execution_plan import CircuitAnalysis
-from flagquantum.runtime.execution_plan_contract import canonical_hash, canonical_json
-from flagquantum.runtime.result import ExecutionResult, MeasurementResult
+from flagquantum.runtime.execution_plan import CircuitAnalysis, ExecutionPlan
+from flagquantum.runtime.execution_plan_contract import canonical_json
+from flagquantum.runtime.result import ExecutionResult
 
 pytestmark = pytest.mark.unit
 Channel = Literal["1", "psi"]
@@ -82,155 +83,46 @@ class Runner(Protocol):
     ) -> ExecutionResult: ...
 
 
-@dataclass(frozen=True)
-class _WordSnapshot:
-    initial: Channel
-    exchanges: Word
-
-
-class _ProgramReference:
-    """Only the fixed Ising fixture's source construction and tensor helpers."""
-
-    def __init__(self, *, initial_channel: Channel = "1") -> None:
-        self._initial = initial_channel
-        self._word: list[tuple[int, bool]] = []
-
-    @property
-    def basis_labels(self) -> tuple[tuple[str, ...], ...]:
-        return LABELS
-
-    def exchange(self, left: int, *, clockwise: bool = False) -> _ProgramReference:
-        assert type(left) is int and left in (0, 1, 2)
-        assert type(clockwise) is bool
-        self._word.append((left, clockwise))
-        return self
-
-    def projector(self, channel: Channel) -> torch.Tensor:
-        return torch.diag(torch.tensor([channel == "1", channel == "psi"], dtype=DTYPE))
-
-    def to_ir(self) -> _WordSnapshot:
-        return _WordSnapshot(self._initial, tuple(self._word))
-
-
-@dataclass(frozen=True)
-class _PlanReference:
-    """Valid-fixture capture only; deliberately not a native plan-schema reader."""
-
-    source: _WordSnapshot
-    outputs: tuple[tuple[str | None, torch.Tensor], ...]
-    analysis: None = None
-
-    @property
-    def identity(self) -> str:
-        return canonical_hash(json.loads(self.to_json()))
-
-    def to_json(self, *, indent: int | None = None) -> str:
-        fixture = [self.source.initial, self.source.exchanges, self.outputs]
-        return canonical_json(_encode_value(fixture), indent=indent)
-
-
-def _plan_reference(
+def _plan_native(
     program: BraidProgram,
     *,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
     options: fq.ExecutionOptions | None = None,
 ) -> BraidPlan:
-    assert isinstance(program, _ProgramReference)
-    if options is not None and options.require_gradients:
-        raise CapabilityError("discrete braid words have no control gradient")
-    matrices: list[tuple[str | None, torch.Tensor]] = []
-    requests = (
-        ()
-        if outputs is None
-        else (outputs,) if isinstance(outputs, OutputRequest) else tuple(outputs)
-    )
-    for output in requests:
-        if output.kind != "expectation" or not isinstance(
-            output.observable, torch.Tensor
-        ):
-            raise CapabilityError("this fixture only supports matrix expectations")
-        matrices.append((output.name, output.observable.detach().clone()))
-    return _PlanReference(program.to_ir(), tuple(matrices))
+    assert isinstance(program, IsingBraidProgram)
+    return plan_native(program, outputs=outputs, options=options)
 
 
-def _read_reference(text: str) -> BraidPlan:
-    initial, word, outputs = _decode_value(json.loads(text))
-    assert initial in ("1", "psi")
-    assert all(
-        type(left) is int and type(clockwise) is bool for left, clockwise in word
-    )
-    assert all(
-        (name is None or isinstance(name, str)) and isinstance(matrix, torch.Tensor)
-        for name, matrix in outputs
-    )
-    channel: Channel = "1" if initial == "1" else "psi"
-    exchanges: Word = tuple((left, clockwise) for left, clockwise in word)
-    matrices = tuple((name, matrix) for name, matrix in outputs)
-    return _PlanReference(_WordSnapshot(channel, exchanges), matrices)
-
-
-def _run_reference(
+def _run_native(
     plan: BraidProgram | BraidPlan,
     *,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
     options: fq.ExecutionOptions | None = None,
 ) -> ExecutionResult:
-    if isinstance(plan, _ProgramReference):
-        plan = _plan_reference(plan, outputs=outputs, options=options)
-    assert isinstance(plan, _PlanReference)
-    # Independent closed-form central exchange; consumers below use F^dag R F.
-    phase = complex(math.cos(math.pi / 8), math.sin(math.pi / 8))
-    middle = phase / math.sqrt(2) * torch.tensor([[1, -1j], [-1j, 1]], dtype=DTYPE)
-    outer = torch.diag(torch.exp(torch.tensor([-1j, 3j], dtype=DTYPE) * math.pi / 8))
-    state = torch.diag(
-        torch.tensor(
-            [plan.source.initial == "1", plan.source.initial == "psi"], dtype=DTYPE
-        )
-    )
-    for position, clockwise in plan.source.exchanges:
-        unitary = middle if position == 1 else outer
-        state = SuperOperator.from_kraus([unitary.mH if clockwise else unitary]).apply(
-            state
-        )
-    expectations = tuple(
-        torch.trace(matrix @ state).real.reshape(1) for _, matrix in plan.outputs
-    )
-    measurements = tuple(
-        MeasurementResult(
-            "expectation",
-            (),
-            value,
-            metadata={"name": name, "fq_output_name": name, "fq_output_index": index},
-        )
-        for index, ((name, _), value) in enumerate(
-            zip(plan.outputs, expectations, strict=True)
-        )
-    )
-    value = torch.stack(expectations, dim=-1) if expectations else None
-    # The reference does not attach a fabricated public ExecutionPlan.
-    return ExecutionResult(
-        value=value, state=state.unsqueeze(0), measurements=measurements
-    )
+    assert isinstance(plan, (IsingBraidProgram, ExecutionPlan))
+    return run_native(plan, outputs=outputs, options=options)
 
 
 @pytest.fixture
 def program_factory() -> ProgramFactory:
-    return _ProgramReference
+    return IsingBraidProgram
 
 
 @pytest.fixture
 def braid_planner() -> Planner:
-    return _plan_reference
+    assert fq.plan is plan_native
+    return _plan_native
 
 
 @pytest.fixture
 def braid_runner() -> Runner:
-    return _run_reference
+    assert fq.run is run_native
+    return _run_native
 
 
 @pytest.fixture
 def plan_reader() -> Callable[[str], BraidPlan]:
-    return _read_reference
+    return ExecutionPlan.from_json
 
 
 def _program(

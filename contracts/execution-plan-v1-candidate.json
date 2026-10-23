@@ -7,8 +7,8 @@
   "implementation_authorized": true,
   "root_manifest_authorized": true,
   "proposed_signatures": {
-    "plan": "(program: 'Circuit | CircuitIR', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
-    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
+    "plan": "(program: 'Circuit | CircuitIR | IsingBraidProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
   },
   "contract": {
     "kind": "immutable_factory_value",
@@ -129,5 +129,13 @@
     "root_manifest_requires_separate_approval": true,
     "measurement_noise_result_semantics_deferred": false,
     "measurement_noise_result_contract": "contracts/execution-result-v1-candidate.json"
+  },
+  "native_ising_admission": {
+    "proposal": "docs/development/API_CHANGE_PROPOSAL_085_ISING_BRAID_PROGRAMS.md",
+    "record": "docs/api-changes/FQ-ISING-BRAID-PROGRAMS-20261023.md",
+    "frontend": "flagquantum.experimental.simulation.IsingBraidProgram",
+    "plan_version": "1.1",
+    "analysis_annotation": "CircuitAnalysis | None",
+    "additional_payload_field": "outputs"
   }
 }

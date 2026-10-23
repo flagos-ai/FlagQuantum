@@ -374,9 +374,13 @@ def test_existing_level_boundary_refuses_circuit_and_unbuilt_levels(
     for level in ("quantum", "target"):
         assert lower_to_level(source, level).state == UNSUPPORTED_WITH_DIAGNOSTICS
     assert program_to_circuit(program.to_ir()).state == UNSUPPORTED_WITH_DIAGNOSTICS
-    for entry in (ensure_circuit_ir, fq.plan, fq.run, compile_program, emit_openqasm):
+    for entry in (ensure_circuit_ir, compile_program, emit_openqasm):
         with pytest.raises(CapabilityError, match="Ising"):
             entry(source)
+    if as_record:
+        for entry in (fq.plan, fq.run):
+            with pytest.raises(CapabilityError, match="Ising"):
+                entry(source)
 
 
 @pytest.mark.parametrize("as_record", [False, True])
