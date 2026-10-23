@@ -27,7 +27,10 @@ CONTRACT = ROOT / "contracts/qec-historical-import-retirement-v0.4.json"
 
 def load_contract() -> dict[str, Any]:
     # JSON is the external data boundary. Contract tests validate its exact scope.
-    return json.loads(CONTRACT.read_text(encoding="utf-8"))
+    raw = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise ValueError("QEC retirement contract must be a JSON object")
+    return raw
 
 
 def import_errors(modules: Sequence[str], *, absent: bool) -> list[str]:

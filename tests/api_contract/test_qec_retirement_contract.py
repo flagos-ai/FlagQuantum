@@ -81,6 +81,16 @@ def test_contract_limits_the_authorized_break_and_records_single_class_amendment
     )
 
 
+def test_contract_loader_rejects_a_non_object(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "contract.json"
+    path.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(gate, "CONTRACT", path)
+    with pytest.raises(ValueError, match="must be a JSON object"):
+        gate.load_contract()
+
+
 def test_all_frozen_fixture_bytes_are_protected() -> None:
     actual = {
         path.relative_to(ROOT).as_posix()
