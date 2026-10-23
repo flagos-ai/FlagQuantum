@@ -1,6 +1,7 @@
 # QEC-RESTRUCTURE-001: package audit and migration proposal
 
-Status: **proposal awaiting user approval; implementation migration is not authorized**.
+Status: **plan and compatibility strategy approved by the user on 2026-10-23;
+QEC-RESTRUCTURE-002 authorized as a separate PR**.
 Audit base: `ff69b2526809772b7fadde5bcb420f9f5899dcf6` (`origin/main`, fetched
 2026-10-23). Branch: `refactor/qec-restructure-001`. Owner: Core team;
 serialization and public compatibility require API-maintainer review.
@@ -10,7 +11,9 @@ This change adds documentation, compatibility fixtures, tests, and an executable
 example only. It changes no `flagquantum/qec` implementation, package layout,
 registry, dependency manifest, or Stable Core contract. DynamicCircuit PR #731
 is outside its scope: do not modify, merge, or use its branch as a dependency.
-Future migration work starts only after explicit approval of this proposal.
+Implementation begins with the separately reviewed
+[QEC-RESTRUCTURE-002](QEC_RESTRUCTURE_002.md). The audit evidence below remains
+the original 001 record; its compatibility fixtures must not be refreshed.
 
 ## Evidence and existing surface
 
