@@ -68,9 +68,10 @@ captured on 2026-09-30, is:
 
 | Status | Rows |
 | --- | ---: |
-| `supported` | 12 |
-| `partial` | 58 |
+| `supported` | 13 |
+| `partial` | 56 |
 | `unsupported` | 25 |
+| `out_of_scope` | 1 |
 
 `super_operator_algebra` moved from `partial` to `supported` in wave 7, and it is
 the first move in this document that changed nothing but the traceability of the
@@ -109,6 +110,29 @@ operand route. The change is
 [the operand control record](../api-changes/FQ-CIRCUIT-CONTROL-OPERAND-20261022.md),
 and it is a relaxation of a frozen refusal, which is why it is a record rather than an
 edit.
+
+Two rows moved in opposite directions on a single owner decision, and the pair is the
+first use of `out_of_scope` in this matrix. `kraus_channel_algebra` moved from `partial`
+to `supported`, and `matrix_and_custom_operator` moved from `partial` to `out_of_scope`
+with priority `excluded`. The decision is
+[the operator-algebra scope record](OPERATOR_ALGEBRA_SCOPE_DECISION.md), and it is a
+scope record rather than an API change because it adds no surface: it declines a
+matrix-valued operator type from joining the operator algebra. The two rows had been
+blocked on the same question and needed opposite answers from it. The Kraus row's reason
+named one absence -- "no matrix-valued operator participates in operator algebra" -- and
+deferred to the other row for it, so declining the type removes its only recorded gap
+and leaves the surface it was describing intact: ten validated channel factories, a
+completeness relation compared at `atol = rtol = 1e-6`, a versioned payload, the
+unitary-mixture classification, and two simulation routes, one of which produces `<Z> =
+-0.4` for amplitude damping at `p = 0.3` applied to an excited qubit, which is the
+analytic answer. The matrix row's reason named only the declined type, so the same
+decision closes it without work. That direction is the one that needs saying out loud:
+the row set shrank, and the generator counts `unsupported` and `partial` only, so the
+open-gap totals in the scoreboard fall by one for a reason that is a decision rather
+than a delivery. What keeps that honest is that `out_of_scope` is not available to a hard
+row: the token means capability the programme has decided not to owe, the replacement
+obligation in § 3 is carried by the nine `A_nvidia_proprietary` rows and is unchanged by
+this, and the record names the concrete caller that would reopen it.
 
 `local_emulation` moved from `unsupported` to `supported` in wave 6, when
 `flagquantum.remote.emulation.emulate` landed as a target-directed local entry
@@ -706,6 +730,14 @@ than an omission.
   not allowed.
 - **Do not close a row by editing its status.** The scoreboard is generated, and a
   hand edit to it is a defect.
+- **Do not decline a row silently.** `out_of_scope` is a decision and not a status
+  edit, so `tools/parity_matrix.py` refuses the token without an `excluded` priority
+  and a `decision_ref` to a record that exists and names the row by id, and
+  [`test_parity_scope_rows.py`](../../tests/unit/test_parity_scope_rows.py) fails if a
+  declined type reappears in the tree. The token means capability the programme has
+  decided not to owe; capability it still owes is `unsupported`, whatever it costs.
+  [`OPERATOR_ALGEBRA_SCOPE_DECISION.md`](OPERATOR_ALGEBRA_SCOPE_DECISION.md) is the
+  first record of the kind and the template for the next.
 
 ## 7. How progress is governed
 

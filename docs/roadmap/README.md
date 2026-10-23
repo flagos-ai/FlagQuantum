@@ -17,3 +17,4 @@ targets.
 - [Python-first hybrid quantum-classical compilation execution plan](PYTHON_HYBRID_COMPILATION_EXECUTION_PLAN.md)
 - [Unified heterogeneous execution and cloud ecosystem roadmap](UNIFIED_HYBRID_EXECUTION_ROADMAP.md)
 - [CUDA-Q parity strategy](CUDAQ_PARITY_STRATEGY.md)
+- [Operator-algebra scope decision](OPERATOR_ALGEBRA_SCOPE_DECISION.md)
