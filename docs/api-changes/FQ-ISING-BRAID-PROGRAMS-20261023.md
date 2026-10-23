@@ -189,3 +189,74 @@ complete Runtime integration tier passed 1,860 cases with 125 original skips in
 165.42 seconds, also with zero XML failures/errors. Both use unchanged tests and
 assertions. Remote latest-head CI/GPU remain separate gates, and this PR has no
 inherited merge authorization.
+
+## Simulation finite-action delivery
+
+The Simulation delivery is stacked on the Core source PR #767. It adds the
+internal `simulation/ising_braid.py` action; no public export, IR field, plan
+schema or result type changes. Core's existing verifier admits the exact native
+profile before numerical work. F/R matrices use the reviewed complex gauge;
+each clockwise generator is its adjoint. Ordered actions reuse SuperOperator's
+left/right multiplication, with no dense superoperator allocation, matrix
+exponential, Hamiltonian logarithm or numerical-time interpretation.
+
+The independent tests use literal complex R entries and the closed form of B1,
+rather than repeating the implementation's F-dagger R F construction. They check
+both adjacent braid relations, distant commutation, all three generator
+inverses, both initial charges, complex coherences, and a 100-exchange word at
+atol=1e-12, rtol=0. Four outer exchanges yield the unitary -i I while leaving a
+coherent density unchanged; the source words remain distinct. Fresh matrices,
+independent results, CPU placement under a foreign default device and unchanged
+random-generator state are also checked. Root execution remains explicitly
+refused pending Runtime admission, and the baseline consumer factories remain
+unchanged.
+
+The following runnable public mathematical probe illustrates the same finite
+action and the expected charge probability. It is a caller-owned matrix
+reference, not an activated native execution frontend:
+
+```python
+import math
+import torch
+from flagquantum.experimental.simulation import IsingBraidProgram
+from flagquantum.operators import SuperOperator
+
+program = IsingBraidProgram().exchange(1)
+fusion = torch.tensor([[1, 1], [1, -1]], dtype=torch.complex128) / math.sqrt(2)
+exchange = torch.diag(torch.exp(torch.tensor(
+    [-1j * math.pi / 8, 3j * math.pi / 8], dtype=torch.complex128
+)))
+middle = fusion.mH @ exchange @ fusion
+state = SuperOperator.left_right_multiply(middle, middle.mH).apply(
+    program.projector("1")
+)
+probability = torch.trace(program.projector("psi") @ state).real.item()
+print(tuple(state.shape), state.dtype)
+print(round(probability, 12))
+```
+
+Expected output:
+
+```text
+(2, 2) torch.complex128
+0.5
+```
+
+The initial 50-test run had one invalid other-profile fixture: its Rydberg
+minimum separation was zero, so Core correctly refused it before the intended
+Ising admission assertion. The fixture now uses a valid positive separation;
+no production validation, scientific tolerance or assertion was weakened. A
+typing failure in deliberate malformed-context construction was corrected by
+using an explicitly arbitrary-argument test callable. Final local verification
+passes 51 new action cases and a combined 136-case source/kernel/baseline
+selection on each of Python 3.10, 3.11 and 3.12. Strict CI-targeted mypy passes
+831 files (830 package files plus the new test), floor/current Black and Ruff
+pass, and all twelve repository checks pass. The complete default tier passes
+15,107 cases with 168 original skips in 279.43 seconds; Runtime integration
+passes 1,860 cases with 125 original skips in 147.38 seconds. Both XML reports
+have zero failures/errors, with local Gloo sockets allowed and no test changes.
+The public mathematical probe above was executed with the quoted output.
+
+Remote latest-head applicable checks and complete CI/GPU remain separate gates.
+The owner separately authorized #767's normal merge only after all such checks
+and repository rules pass; that grant does not cover this Simulation PR.
