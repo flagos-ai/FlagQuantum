@@ -18,18 +18,19 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.qec.circuit import build_memory_circuit
+from flagquantum.qec.circuits.memory import build_memory_circuit
 from flagquantum.qec.codes import RepetitionCode
-from flagquantum.qec.context import (
+from flagquantum.qec.codes.surface.rotated import RotatedSurfaceCode
+from flagquantum.qec.codes.surface.zxxz import ZxxzSurfaceCode
+from flagquantum.qec.dem import DemError, DetectorErrorModel
+from flagquantum.qec.execution.context import (
     DecoderContext,
     DecoderInputs,
     MeasurementMap,
     decoder_context_from_memory_circuit,
 )
-from flagquantum.qec.dem import DemError, DetectorErrorModel
+from flagquantum.qec.execution.sampling import _measurement_plan
 from flagquantum.qec.noise import PhenomenologicalNoise
-from flagquantum.qec.sampling import _measurement_plan
-from flagquantum.qec.surface import RotatedSurfaceCode, ZxxzSurfaceCode
 
 pytestmark = pytest.mark.unit
 

@@ -13,9 +13,12 @@ from types import FunctionType
 
 import pytest
 import torch
+from _retirement import (
+    assert_retired_payload,
+)
 
 import flagquantum.qec as qec
-from flagquantum.qec import dem_construction, dem_matrices, noise
+from flagquantum.qec import noise
 from flagquantum.qec.codes import matrices
 from flagquantum.qec.execution.noise_sweep import run_repetition_memory_noise_sweep
 
@@ -23,22 +26,23 @@ _FIXTURES = Path(__file__).with_name("fixtures")
 
 
 @pytest.mark.unit
-def test_matrix_and_sweep_aliases_preserve_historical_identity() -> None:
-    assert matrices.CssCodeMatrices is dem_matrices.CssCodeMatrices
-    assert matrices.CssCodeMatrices is dem_construction.CssCodeMatrices
+def test_matrix_and_sweep_owners_preserve_root_identity() -> None:
+    from flagquantum.qec import noise
+
     assert matrices.CssCodeMatrices is qec.CssCodeMatrices
-    assert matrices.css_code_matrices is dem_matrices.css_code_matrices
-    assert matrices.css_code_matrices is dem_construction.css_code_matrices
     assert matrices.css_code_matrices is qec.css_code_matrices
-    assert qec.CssCodeMatrices.__module__ == "flagquantum.qec.dem_matrices"
+    assert qec.CssCodeMatrices.__module__ == "flagquantum.qec.codes.matrices"
     for member in vars(qec.CssCodeMatrices).values():
         if isinstance(member, property):
             member = member.fget
         if isinstance(member, FunctionType):
-            assert member.__module__ == "flagquantum.qec.dem_matrices"
-    assert qec.css_code_matrices.__module__ == "flagquantum.qec.dem_matrices"
-    assert run_repetition_memory_noise_sweep is noise.run_repetition_memory_noise_sweep
-    assert run_repetition_memory_noise_sweep is qec.run_repetition_memory_noise_sweep
+            assert member.__module__ == "flagquantum.qec.codes.matrices"
+    assert qec.css_code_matrices.__module__ == "flagquantum.qec.codes.matrices"
+    assert (
+        run_repetition_memory_noise_sweep
+        is noise.run_repetition_memory_noise_sweep
+        is qec.run_repetition_memory_noise_sweep
+    )
     assert run_repetition_memory_noise_sweep.__module__ == "flagquantum.qec.noise"
     assert (
         noise.run_repetition_memory_experiment is qec.run_repetition_memory_experiment
@@ -49,46 +53,47 @@ def test_matrix_and_sweep_aliases_preserve_historical_identity() -> None:
 
 
 @pytest.mark.integration
-def test_pre_move_tensor_pickle_loads_and_new_checkpoints_keep_the_old_path() -> None:
-    # This repository-owned protocol-4 fixture was written by the unchanged 001 code.
-    saved = pickle.loads((_FIXTURES / "restructure_002_matrices.pkl").read_bytes())
-    assert type(saved["matrices"]) is qec.CssCodeMatrices
-    for name, method in saved["methods"].items():
-        assert method is getattr(qec.CssCodeMatrices, name)
-        assert pickle.loads(pickle.dumps(method, protocol=4)) is method
-    assert saved["extract"] is qec.css_code_matrices
-    assert saved["sweep"] is qec.run_repetition_memory_noise_sweep
-    expected = qec.css_code_matrices(qec.SteaneCode())
-    for field in ("hz", "hx", "lz", "lx"):
-        assert torch.equal(getattr(saved["matrices"], field), getattr(expected, field))
-    stream = io.BytesIO()
-    torch.save(saved, stream)
-    stream.seek(0)
-    restored = torch.load(stream, weights_only=False)
+def test_retired_matrix_pickle_and_canonical_tensor_checkpoints() -> None:
+    assert_retired_payload("restructure_002_matrices.pkl")
+    expected = json.loads(
+        (
+            Path(__file__).with_name("retirement_fixtures")
+            / "pre_retirement_matrices.json"
+        ).read_text()
+    )
+    matrices = qec.css_code_matrices(qec.SteaneCode())
+    for field, record in expected.items():
+        value = getattr(matrices, field)
+        assert str(value.dtype) == record["dtype"]
+        assert value.tolist() == record["values"]
+    survivors = pickle.loads(
+        (
+            Path(__file__).with_name("retirement_fixtures") / "surviving_instances.pkl"
+        ).read_bytes()
+    )
+    values = (matrices, survivors["restructure_002_matrices.pkl"]["noise"])
     records = io.BytesIO()
-    torch.save((saved["matrices"], saved["noise"]), records)
+    torch.save(values, records)
     records.seek(0)
     with torch.serialization.safe_globals(
         [qec.CssCodeMatrices, qec.RepetitionNoiseProfile]
     ):
-        allowed = torch.load(records, weights_only=True)
-    assert type(allowed[0]) is qec.CssCodeMatrices
-    assert type(restored["matrices"]) is qec.CssCodeMatrices
-    assert restored["extract"] is qec.css_code_matrices
-    assert restored["sweep"] is qec.run_repetition_memory_noise_sweep
-    assert pickle.dumps(restored["extract"], protocol=4) == pickle.dumps(
-        saved["extract"], protocol=4
-    )
-    for field in ("hz", "hx", "lz", "lx"):
-        assert torch.equal(
-            getattr(restored["matrices"], field), getattr(expected, field)
-        )
+        restored = torch.load(records, weights_only=True)
+    assert type(restored[0]) is qec.CssCodeMatrices
+    for field in expected:
+        assert torch.equal(getattr(restored[0], field), getattr(matrices, field))
     assert (
-        restored["noise"].to_noise_model().identity
+        restored[1].to_noise_model().identity
         == json.loads((_FIXTURES / "restructure_002_sweep.json").read_text())[
             "noise_identity"
         ]
     )
+    for value in (
+        qec.CssCodeMatrices,
+        qec.css_code_matrices,
+        qec.run_repetition_memory_noise_sweep,
+    ):
+        assert pickle.loads(pickle.dumps(value, protocol=4)) is value
 
 
 @pytest.mark.integration
@@ -132,7 +137,7 @@ class NoExecution(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, NoExecution())
 from flagquantum.qec.codes import SteaneCode
 from flagquantum.qec.codes.matrices import css_code_matrices
-from flagquantum.qec.css_code import CssCode
+from flagquantum.qec.codes.css import CssCode
 from flagquantum.qec.noise import PhenomenologicalNoise, RepetitionNoiseProfile
 code = CssCode(matrices=css_code_matrices(SteaneCode()), distance=3)
 assert code.num_data_qubits == 7

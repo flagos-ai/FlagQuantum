@@ -32,7 +32,6 @@ from numbers import Integral
 from typing import Literal
 
 from ..codes import StabilizerCode, ancilla_band_counts
-from ..codes._compat import _retain_module
 from ..logical import certify_logical_product
 from ..pauli import Pauli
 
@@ -704,26 +703,4 @@ __all__ = (
     "MemoryCircuit",
     "ObservableLayout",
     "build_memory_circuit",
-)
-
-
-_retain_module(
-    "flagquantum.qec.circuit",
-    _checked_basis,
-    _readout_basis_of,
-    _declared_readout,
-    _readout_observables,
-    _pinned_checks,
-    MeasurementRef,
-    Detector,
-    DetectorLayout,
-    LogicalObservable,
-    ObservableLayout,
-    MemoryCircuit,
-    _require_ancilla_bands,
-    _detector_count,
-    _check_source,
-    _detector_layout,
-    _observable_layout,
-    build_memory_circuit,
 )

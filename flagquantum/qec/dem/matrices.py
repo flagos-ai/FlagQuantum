@@ -1,6 +1,6 @@
 """The code-capacity description: a CSS code's matrices and the faults they imply.
 
-:mod:`flagquantum.qec.dem_construction` derives the mechanisms a detector error
+:mod:`flagquantum.qec.dem.construction` derives the mechanisms a detector error
 model states from the circuit an experiment runs. This module derives them from a
 **matrix** description instead, and owns the mechanisms those matrices imply.
 The code-owned record, validation and extraction live in
@@ -40,7 +40,6 @@ from numbers import Integral
 import torch
 
 from flagquantum.qec.codes import StabilizerCode as StabilizerCode
-from flagquantum.qec.codes._compat import _retain_module
 from flagquantum.qec.codes.matrices import CssCodeMatrices as CssCodeMatrices
 from flagquantum.qec.codes.matrices import _binary_matrix as _binary_matrix
 from flagquantum.qec.codes.matrices import css_code_matrices as css_code_matrices
@@ -192,6 +191,3 @@ def _code_matrix_entries(
                 detectors.append(following + check)
             entries.append((measurement_rate, tuple(detectors), ()))
     return rounds * num_checks, matrices.num_observables, tuple(entries)
-
-
-_retain_module("flagquantum.qec.dem_matrices", _column_supports, _code_matrix_entries)

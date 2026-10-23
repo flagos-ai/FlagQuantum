@@ -93,9 +93,9 @@ from typing import TYPE_CHECKING
 import pytest
 import torch
 
-from flagquantum.qec.circuit import build_memory_circuit
+from flagquantum.qec.circuits.memory import build_memory_circuit
+from flagquantum.qec.codes.surface.rotated import RotatedSurfaceCode
 from flagquantum.qec.dem import DemError, DetectorErrorModel
-from flagquantum.qec.surface import RotatedSurfaceCode
 
 if TYPE_CHECKING:
     import stim

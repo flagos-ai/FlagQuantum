@@ -99,8 +99,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from typing import ClassVar
 
-from flagquantum.qec.circuit import MemoryCircuit
-from flagquantum.qec.codes._compat import _retain_module
+from flagquantum.qec.circuits.memory import MemoryCircuit
 from flagquantum.qec.dem.model import DemError, DemMergeRule, DetectorErrorModel, _count
 
 __all__ = (
@@ -1010,23 +1009,3 @@ def dem_close_all(chunks: Sequence[DemChunk]) -> DetectorErrorModel:
         num_observables=observables,
         errors=tuple(errors),
     )
-
-
-_retain_module(
-    "flagquantum.qec.chunks",
-    SeamId,
-    PhaseId,
-    DemSeam,
-    ChunkLayout,
-    DemChunk,
-    DemChunkSpec,
-    _cut,
-    dem_chunk_from_spec,
-    DemChunksSpec,
-    dem_chunks_from_spec,
-    dem_stitch,
-    dem_stitch_all,
-    dem_stitch_merged,
-    dem_close,
-    dem_close_all,
-)

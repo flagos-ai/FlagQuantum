@@ -21,7 +21,7 @@ and the least Z-type one has weight three, so the code's distance is three; with
 two blocks exchanged the two numbers exchange with them and the code's distance is
 again three. This module states the first reading, which is the one
 ``contracts/cudaq-parity-matrix.toml`` names, and a caller who wants the mirror has
-it directly: that pair of blocks through :func:`~flagquantum.qec.qldpc.qldpc_code`
+it directly: that pair of blocks through :func:`~flagquantum.qec.codes.qldpc.qldpc_code`
 is the same code with the two families labelled the other way round.
 
 **The search bound is the family's cost, and it bounds this route to two
@@ -54,7 +54,6 @@ import itertools
 from numbers import Integral
 
 from ..gf2 import nullspace
-from ._compat import _retain_module
 from .css import CssCode
 from .qldpc import _logical_basis, _paired_basis, _rows
 
@@ -127,7 +126,7 @@ def reed_muller_code(m: int, *, distance_search_weight: int = _SEARCH_BOUND) -> 
     dual states the X-type checks and the lower-degree block's dual states the Z-type
     ones, which is the convention the module docstring measures; the two logical
     families are then derived from those matrices rather than declared, by the same
-    quotient :func:`~flagquantum.qec.qldpc.qldpc_code` computes.
+    quotient :func:`~flagquantum.qec.codes.qldpc.qldpc_code` computes.
 
     Args:
         m: The cube width, an integer of four or five.
@@ -194,8 +193,3 @@ def reed_muller_code(m: int, *, distance_search_weight: int = _SEARCH_BOUND) -> 
         lx=_rows(x_logicals, width),
         distance_search_weight=int(distance_search_weight),
     )
-
-
-_retain_module(
-    "flagquantum.qec.reed_muller", _monomial_rows, _punctured, reed_muller_code
-)

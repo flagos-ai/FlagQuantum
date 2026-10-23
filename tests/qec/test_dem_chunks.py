@@ -6,7 +6,10 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.qec.chunks import (
+from flagquantum.qec.circuits.memory import build_memory_circuit
+from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode
+from flagquantum.qec.dem import DemError, DetectorErrorModel
+from flagquantum.qec.dem.chunks import (
     ChunkLayout,
     DemChunk,
     DemChunkSpec,
@@ -22,9 +25,6 @@ from flagquantum.qec.chunks import (
     dem_stitch_all,
     dem_stitch_merged,
 )
-from flagquantum.qec.circuit import build_memory_circuit
-from flagquantum.qec.codes import RepetitionCode, RotatedSurfaceCode
-from flagquantum.qec.dem import DemError, DetectorErrorModel
 
 pytestmark = pytest.mark.unit
 

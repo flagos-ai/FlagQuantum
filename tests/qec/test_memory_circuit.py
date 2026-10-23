@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from flagquantum.qec.circuit import (
+from flagquantum.qec.circuits.memory import (
     Detector,
     DetectorLayout,
     LogicalObservable,

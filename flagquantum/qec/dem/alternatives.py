@@ -32,8 +32,6 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from flagquantum.qec.codes._compat import _retain_module
-
 if TYPE_CHECKING:  # pragma: no cover - import cycle broken for typing only
     from flagquantum.qec.dem.model import DemError
 
@@ -247,15 +245,3 @@ def sample_groups(
                 detector_bits[:, index] ^= bits
             for index in member.observables:
                 observable_bits[:, index] ^= bits
-
-
-_retain_module(
-    "flagquantum.qec.dem_alternatives",
-    stated_ids,
-    projected_ids,
-    fault_groups,
-    alternative_groups,
-    require_groups_fit,
-    fold_marginals,
-    sample_groups,
-)

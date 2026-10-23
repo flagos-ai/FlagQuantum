@@ -50,6 +50,13 @@ from typing import Literal
 
 import torch
 
+from flagquantum.qec.dem.construction import (
+    _check_rate_order,
+    _data_family_rates,
+    _gate_bound_mechanisms,
+)
+from flagquantum.qec.execution.signatures import _MechanismKind
+
 from ...core.ir import CircuitIR, Instruction
 from ...noise import (
     KrausChannel,
@@ -60,14 +67,7 @@ from ...noise import (
 )
 from ...simulation.stabilizer import sample_noisy_measurements
 from ..circuits.memory import MeasurementRef, MemoryCircuit
-from ..codes._compat import _retain_module
 from ..dem import DemSample
-from ..dem_construction import (
-    _check_rate_order,
-    _data_family_rates,
-    _gate_bound_mechanisms,
-    _MechanismKind,
-)
 from ..noise import PhenomenologicalNoise
 from .signatures import _lowered_program
 
@@ -92,7 +92,7 @@ _DATA_FAULT_CHANNELS: Mapping[_ChannelName, Callable[[float], KrausChannel]] = (
 
 # The one lowered opcode a memory experiment's readout-basis rotation is a
 # sequence of. The rotation itself is built once, in
-# :func:`~flagquantum.qec.circuit.build_memory_circuit`, as one gate per data
+# :func:`~flagquantum.qec.circuits.memory.build_memory_circuit`, as one gate per data
 # qubit; naming the opcode here is what lets the plan recognise it in the lowered
 # program without re-deriving the experiment's basis semantics.
 _ROTATION_OPCODE = "h"
@@ -258,7 +258,7 @@ class _NoiseLocation:
     channel rather than the family's scalar.
 
     ``kind`` names the noise record's own field, as
-    :class:`~flagquantum.qec.dem_construction._Mechanism` does, so the two routes
+    :class:`~flagquantum.qec.dem.construction._Mechanism` does, so the two routes
     enumerate the same families under the same names, and ``channel`` names the
     channel that family is placed as. A family's fault *is* one Pauli, so a
     location states which of the three channels carries it rather than leaving
@@ -430,7 +430,7 @@ def _gate_bound_locations(
     """Return every location a gate-bound record places, in placement order.
 
     The faults and the instruction each one follows come from
-    :func:`~flagquantum.qec.dem_construction._gate_bound_mechanisms`, the walk the
+    :func:`~flagquantum.qec.dem.construction._gate_bound_mechanisms`, the walk the
     model's own route splices with, so a fault cannot be placed at one position
     here and read at another there. The position a location is placed at is the
     instruction *after* the gate the rule matched, because a channel bound to a
@@ -438,7 +438,7 @@ def _gate_bound_locations(
     reported in is the round that gate is in, which is what ``plan``'s block
     length converts an instruction index into.
 
-    Every channel :func:`~flagquantum.qec.dem_construction._gate_bound_mechanisms`
+    Every channel :func:`~flagquantum.qec.dem.construction._gate_bound_mechanisms`
     accepts is a single-qubit Pauli fault, so every one of them is one of the
     three channels :data:`_DATA_FAULT_CHANNELS` holds and no location reaches the
     engine as a channel it would refuse.
@@ -476,7 +476,7 @@ def _round_boundary_locations(
     before that round's parity-check CNOTs", so the three differ in which channel
     is placed and not in where it goes. A round's three families are one group
     before that round's first gate, one pass per family in the order
-    :func:`~flagquantum.qec.dem_construction._data_family_rates` states them, so a
+    :func:`~flagquantum.qec.dem.construction._data_family_rates` states them, so a
     family cannot be placed under one name here and recorded under another there.
     The three channels are the three Pauli faults, and the Z fault propagates to
     the X-type checks the way the X fault propagates to the Z-type ones, which is
@@ -487,7 +487,7 @@ def _round_boundary_locations(
 
     The per-check vector is indexed in the matrix row order, Z-type checks first,
     which is not the declaration order the plan's offsets are in; the two are
-    related by :func:`~flagquantum.qec.dem_construction._check_rate_order`, the
+    related by :func:`~flagquantum.qec.dem.construction._check_rate_order`, the
     same translation the construction routes use, so a rate cannot name one check
     here and another there.
 
@@ -798,24 +798,3 @@ def sample_memory_circuit(
 
 
 __all__ = ("MeasurementSamples", "sample_memory_circuit", "sample_memory_measurements")
-
-
-_retain_module(
-    "flagquantum.qec.sampling",
-    _MeasurementPlan,
-    MeasurementSamples,
-    _NoiseLocation,
-    _checked_shots,
-    _checked_seed,
-    _rotation_template,
-    _measurement_plan,
-    _noise_locations,
-    _gate_bound_locations,
-    _round_boundary_locations,
-    _noisy_program,
-    _recorded_bits,
-    _sample_record,
-    _measurement_samples,
-    sample_memory_measurements,
-    sample_memory_circuit,
-)

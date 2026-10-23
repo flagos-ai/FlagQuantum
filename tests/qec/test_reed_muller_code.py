@@ -54,7 +54,7 @@ def _bits(rows: list[list[int]]) -> list[int]:
     """Pack each 0/1 row into one integer, column ``i`` becoming bit ``i``.
 
     Bit ``i`` of a mask is column ``i`` of the row, which is the order the masks in
-    :mod:`flagquantum.qec.reed_muller` carry and the order the GF(2) helpers here
+    :mod:`flagquantum.qec.codes.reed_muller` carry and the order the GF(2) helpers here
     take. The library's own record states its matrices as rows of 0s and 1s, so this
     is the one place the two representations meet.
     """

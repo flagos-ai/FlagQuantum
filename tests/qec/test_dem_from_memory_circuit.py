@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 import pytest
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.circuit import (
+from flagquantum.qec.circuits.memory import (
     Detector,
     DetectorLayout,
     MeasurementRef,
@@ -23,17 +23,16 @@ from flagquantum.qec.codes import (
     SteaneCode,
     ancilla_bands,
 )
+from flagquantum.qec.decoders.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.dem import DetectorErrorModel
 from flagquantum.qec.dem import construction as dem_module
-from flagquantum.qec.dem_construction import (
+from flagquantum.qec.dem.construction import _Mechanism, _mechanisms
+from flagquantum.qec.execution.signatures import (
     _forced_signature,
     _inject_data_flip,
     _inject_measurement_flip,
-    _Mechanism,
-    _mechanisms,
 )
 from flagquantum.qec.logical import derive_anticommuting_logical_product
-from flagquantum.qec.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.noise import PhenomenologicalNoise
 from flagquantum.qec.pauli import Pauli
 
