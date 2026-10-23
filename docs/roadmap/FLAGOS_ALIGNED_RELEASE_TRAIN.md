@@ -269,6 +269,16 @@ shot-frequency uncertainty is separate from solver error. Physical survival,
 observed no-flag selection and unconditional RR remain distinct. This closes a
 user-workflow composition gap without a new API or an event/feedback claim.
 
+The existing two-mode boson-interference example also feeds its replayed density
+into the same Runtime number-instrument sampler. Run
+`python -m examples.boson_interference` for balanced two-photon bunching, uniform
+loss and unconditional QND count outcomes including vacuum and one photon.
+Independent closed-form density matrices and a three-/four-level embedding
+check coherence, loss and truncation closure; finite-shot uncertainty remains a
+separate check. This supplies the bounded photonic reference scenario below
+through existing shared capabilities, without promoting a Gaussian backend or
+native optical-program frontend.
+
 ### Reference scenarios
 
 | Scenario | Shared capability under test | Additional acceptance |
