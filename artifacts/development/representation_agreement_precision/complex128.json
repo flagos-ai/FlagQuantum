@@ -536,7 +536,7 @@
     }
   ],
   "elapsed_seconds": 342.014,
-  "command": "benchmarks/representation_agreement_sweep.py --dtype complex128 --output /Users/baai/Documents/liuwei/FlagQuantum-issues-708-709/artifacts/development/representation_agreement_precision/complex128.json",
+  "command": "benchmarks/representation_agreement_sweep.py --dtype complex128 --output <redacted-path>",
   "python": "3.12.14",
   "torch": "2.14.1",
   "base_commit": "71ef9a57258babe0506c9ba0ae99a76923e0d60f",

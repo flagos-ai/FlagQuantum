@@ -6,6 +6,9 @@ one CPU thread, seed 260720 and the same angles drawn in float32, then exactly
 widened for complex128. Each JSON records the executed command, source revision,
 environment, per-cell energies, bond headroom, spreads and explicit exclusions.
 The earlier complex64 artifact is unchanged.
+The repository's existing public-evidence sanitizer redacts the personal output
+path in each recorded command. All numerical values and source revisions are
+unchanged; the commands below provide reproducible output paths.
 
 | Regime | Cells per precision | complex64 maximum relative spread | complex128 maximum relative spread |
 | --- | --- | --- | --- |
