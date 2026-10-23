@@ -127,6 +127,11 @@ the initially attempted dedicated environment hit the disk limit and was removed
   logical failures on the recorded environment. This is not a zero-error-rate
   or performance claim.
 
+The required `pr-default` tier was attempted but stopped during collection: the
+reused environment lacks setuptools in two unrelated installation/benchmark
+imports. It did not execute the selected 15,203 tests and is not a passing gate.
+No tests were excluded and no frozen fixtures were updated.
+
 The new example still recompiles sampling per chunk and loops over single-shot
 decodes. Those limitations are deliberately exposed until the reviewed batch and
 sampling-lifecycle work is implemented.
