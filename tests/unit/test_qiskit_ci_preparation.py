@@ -30,7 +30,7 @@ def test_qiskit_gate_requires_both_complete_certified_lanes(result: str) -> None
         if s.get("name") == "Verify this certified Qiskit and Aer pair"
     )
     assert commands["env"]["PYTEST_ADDOPTS"] == (
-        "-n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50"
+        "-n ${{ env.FQ_PYTEST_WORKERS }} --dist=loadfile --durations=50"
     )
     assert (
         "tests/benchmark_contract/test_compiler_*.py -m benchmark_contract -q"

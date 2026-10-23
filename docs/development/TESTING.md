@@ -539,7 +539,8 @@ The checked-in `ci.yml` defines twenty-five jobs:
   Qiskit IR, statevector, wire-order, classical-bit, fixed-seed bidirectional
   differential programs, and local Aer conformance on the certified Qiskit
   2.0.x and 2.5.x lanes, isolated from the core environment. Both original test
-  commands run on each version with quota-aware pytest workers. Verified Git
+  commands run on each version with quota-aware pytest workers, grouped by file
+  so module-scoped benchmark fixtures are built once per file. Verified Git
   objects avoid downloading the complete source tree when the incremental pack
   is sufficient; an incomplete cache still triggers the full verified pack.
   Each account retains only private wheel bytes, and hosted jobs cache wheel

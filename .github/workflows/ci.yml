@@ -924,8 +924,9 @@ jobs:
           key: qiskit-wheels-${{ runner.os }}-${{ runner.arch }}-py312-${{ matrix.qiskit }}-${{ hashFiles('dependency-policy.toml', '.github/actions/prepare-qiskit-wheels/action.yml') }}
       - uses: ./.github/actions/prepare-qiskit-wheels
       - name: Verify this certified Qiskit and Aer pair
+        # Keep module-scoped benchmark fixtures on one worker per file.
         env:
-          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
+          PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=loadfile --durations=50
         run: |
           set -euxo pipefail
           version="$QISKIT_VERSION"
