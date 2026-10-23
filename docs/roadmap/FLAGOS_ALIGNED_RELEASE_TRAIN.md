@@ -290,6 +290,15 @@ current-API matrix probe establishes reuse only, not native support. The
 replaceable baseline must precede domain implementations, and each later PR
 retains its own merge and complete-verification gates.
 
+The replaceable baseline landed in #761. The Core source delivery adds the
+experimental IsingBraidProgram, immutable four-sigma context/exchanges and
+native-source encoding 1.1 through existing ProgramRecord authorities. It
+preserves Rydberg source 1.0 and old plan bytes. Run
+`python -m examples.ising_braid_source` for source snapshots, fusion coordinates
+and shared matrix outputs. Root planning and numerical braid execution remain
+refused until their separate Simulation/Runtime admission; source construction
+alone does not complete M3 or certify a native anyon backend.
+
 ### Reference scenarios
 
 | Scenario | Shared capability under test | Additional acceptance |

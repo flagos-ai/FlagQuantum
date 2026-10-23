@@ -61,6 +61,7 @@ from flagquantum.compiler.openqasm_import import (
 )
 from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.compiler.translate import translate
+from flagquantum.core.ising import IsingBraidProgram
 from flagquantum.drawer import ClassicalLayer, LatexFigure, draw_hybrid, draw_latex
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.ecosystem.cirq import run as run_cirq
@@ -208,6 +209,7 @@ ENTRIES = (
     FloquetCode,
     Hamiltonian,
     HartreeFockSolution,
+    IsingBraidProgram,
     Layout,
     LinkErrorRates,
     MeasurementPhase,

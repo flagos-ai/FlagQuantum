@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import torch
 
 from ..core.ir.program.model import ProgramRecord
+from ..core.ir.program.physical import RydbergContext
 from ..core.ir.program.physical_codec import (
     native_program_from_dict,
     native_program_to_dict,
@@ -48,7 +49,8 @@ def native_request(
                 "invalid_native_request", f"native programs own {field}", field
             )
     context = record.physical_context
-    assert context is not None
+    if not isinstance(context, RydbergContext):
+        raise CapabilityError("native Lindblad plans require timed Rydberg sources")
     expected = (3,) * len(context.atoms)
     if dimensions is not None:
         try:

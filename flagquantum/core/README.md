@@ -27,6 +27,11 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   scalar codec; the numerical plan stays outside Core.
   `geometry.py` owns finite Cartesian pairs for this profile and the separately
   scheduled Remote normalizer replacement. Neither file executes dynamics.
+- `ising.py`: the experimental four-sigma, total-vacuum Ising source builder.
+  It reuses the same ProgramRecord, typed physical profiles and source codec.
+  Source version 1.1 applies only to Ising; Rydberg source 1.0 is unchanged.
+  Charge projectors are CPU mathematical inputs. Native braid execution,
+  executable plan 1.1 and numerical F/R actions remain outside this source gate.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.
 - `contracts.py`: versioned cross-domain execution and evidence records.
@@ -72,3 +77,16 @@ python -m pytest tests/unit/test_rydberg_program.py \
 A typical geometry change belongs in the typed profile and its consumer tests;
 numerical evolution belongs in Simulation. Do not reserve physical opcode names
 globally or modify old plan fixtures to hide a failure.
+
+For discrete braid source construction and its admission/refusal boundaries:
+
+```bash
+python -m examples.ising_braid_source
+python -m pytest tests/unit/test_ising_braid_source.py \
+  tests/unit/test_ising_braid_contract.py \
+  tests/unit/test_rydberg_program_compatibility.py -q
+```
+
+Append order is braid order, never a timestamp. Keep typed source verification
+in the existing physical-profile boundary and exact serialization in its codec;
+do not introduce circuit lowering, a Hamiltonian logarithm or another executor.
