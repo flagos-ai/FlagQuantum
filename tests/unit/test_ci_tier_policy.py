@@ -156,3 +156,48 @@ def test_ci_tier_cli_lists_and_dry_runs_without_executing(capsys):
         "+ PYTHON_EXE -m pytest -m benchmark_contract or release_gate -q"
         in dry_run_output
     )
+
+
+@pytest.mark.parametrize(
+    ("index", "marker", "shards"),
+    [(0, "distributed_cpu", 4), (1, "benchmark_contract or release_gate", 2)],
+)
+def test_ci_tier_partitions_preserve_the_original_selection(
+    index: int, marker: str, shards: int, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert (
+        main(
+            [
+                "pr-distributed",
+                "--dry-run",
+                "--python",
+                "PYTHON_EXE",
+                "--command-index",
+                str(index),
+                "--shard-count",
+                str(shards),
+                "--shard-index",
+                "1",
+            ]
+        )
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert output.count("+ PYTHON_EXE -m pytest") == 1
+    assert f"-m {marker} -q" in output
+    assert (
+        f"-p tools.pytest_shard --fq-shard-count {shards} --fq-shard-index 1" in output
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["pr-distributed", "--command-index", "2"],
+        ["pr-distributed", "--shard-count", "0"],
+        ["pr-distributed", "--shard-count", "2", "--shard-index", "2"],
+        ["release", "--command-index", "1", "--shard-count", "2"],
+    ],
+)
+def test_ci_tier_rejects_invalid_partitions(arguments: list[str]) -> None:
+    assert main(arguments) == 2

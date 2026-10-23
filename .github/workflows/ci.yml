@@ -1384,11 +1384,21 @@ jobs:
           name: flagquantum-${{ matrix.artifact }}-${{ github.sha }}
           path: wheelhouse/
 
-  distributed-cpu:
+  distributed-cpu-shard:
     needs: prepare-source
     runs-on: >-
       ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {command: 0, shard: 0, shards: 4}
+          - {command: 0, shard: 1, shards: 4}
+          - {command: 0, shard: 2, shards: 4}
+          - {command: 0, shard: 3, shards: 4}
+          - {command: 1, shard: 0, shards: 2}
+          - {command: 1, shard: 1, shards: 2}
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -1396,10 +1406,32 @@ jobs:
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-distributed-cpu-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-distributed
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-distributed-cpu-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-distributed
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Check whether cached Git objects complete the source tree
+        id: source-cache
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          complete=false
+          if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
+            if ! printf '%s\n' "$objects" | grep -q '^?'; then
+              complete=true
+            fi
+          fi
+          echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v8.0.2
+        if: steps.source-cache.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -1425,7 +1457,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
-      - name: Budget launchers for this isolated A800 service
+      - name: Budget launchers for this isolated CPU service
         run: python -I tools/ci_cpu_budget.py --dedicated
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev,jax]'
@@ -1434,15 +1466,16 @@ jobs:
           python -m pip check
           python -c "import torch; assert torch.version.cuda is None"
           python -c "import jax; assert jax.default_backend() == 'cpu'"
-      - name: Run both complete distributed CPU contract selections
+      - name: Run this partition of the complete distributed CPU contract selections
         env:
           PYTEST_ADDOPTS: -vv -n ${{ env.FQ_DISTRIBUTED_WORKERS }} --dist=worksteal --durations=50
         run: |
           # The shared platform may set RANK=0 for its own one-process job.
           # Only an explicit torchrun child may define the tested rank topology.
           unset RANK WORLD_SIZE LOCAL_RANK LOCAL_WORLD_SIZE MASTER_ADDR MASTER_PORT GROUP_RANK NODE_RANK
-          python tools/ci_tier.py pr-distributed
+          python tools/ci_tier.py pr-distributed --command-index ${{ matrix.command }} --shard-count ${{ matrix.shards }} --shard-index ${{ matrix.shard }}
       - name: Verify the JAX rank-local gradient contract under two actual ranks
+        if: matrix.command == 0 && matrix.shard == 0
         timeout-minutes: 10
         run: torchrun --standalone --nproc-per-node=2 -m pytest tests/distributed/test_hybrid_jax_runtime.py -q
       - name: Retain resource limits and pytest timing reports
@@ -1452,6 +1485,19 @@ jobs:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
+
+
+  distributed-cpu:
+    if: ${{ always() }}
+    needs: distributed-cpu-shard
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    concurrency:
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-distributed-cpu-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-distributed
+      queue: max
+    steps:
+      - name: Require every partition and the two-rank probe to pass
+        run: test '${{ needs.distributed-cpu-shard.result }}' = success
 
   coverage-shard:
     needs: prepare-source
@@ -1466,12 +1512,29 @@ jobs:
       JAX_PLATFORMS: cpu
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        # Reuse eight hosted buckets; trusted CPU slots remain independent.
+        include:
+          - {shard: 0, hosted-bucket: 0}
+          - {shard: 1, hosted-bucket: 1}
+          - {shard: 2, hosted-bucket: 2}
+          - {shard: 3, hosted-bucket: 3}
+          - {shard: 4, hosted-bucket: 4}
+          - {shard: 5, hosted-bucket: 5}
+          - {shard: 6, hosted-bucket: 6}
+          - {shard: 7, hosted-bucket: 7}
+          - {shard: 8, hosted-bucket: 0}
+          - {shard: 9, hosted-bucket: 1}
+          - {shard: 10, hosted-bucket: 2}
+          - {shard: 11, hosted-bucket: 3}
+          - {shard: 12, hosted-bucket: 4}
+          - {shard: 13, hosted-bucket: 5}
+          - {shard: 14, hosted-bucket: 6}
+          - {shard: 15, hosted-bucket: 7}
     steps:
       # Reuse the runner's verified Git objects before transferring a full tree.
       - uses: actions/download-artifact@v8.0.2
@@ -1538,7 +1601,7 @@ jobs:
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
           -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
           -p tools.pytest_shard
-          --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
+          --fq-shard-count 16 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
       - name: Run complete maintained-runtime tests with coverage on integration revisions
@@ -1547,7 +1610,7 @@ jobs:
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
           -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
           -p tools.pytest_shard
-          --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
+          --fq-shard-count 16 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
       - uses: actions/upload-artifact@v4
@@ -1697,6 +1760,7 @@ jobs:
       - package
       - release-wheel-platform
       - distributed-cpu
+      - distributed-cpu-shard
       - coverage-shard
       - coverage
       - supply-chain

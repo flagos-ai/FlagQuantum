@@ -261,3 +261,60 @@ def test_recorded_precision_grids_compare_the_same_complete_workload() -> None:
     assert [tuple(c[f] for f in fields) for c in single["cells"]] == [
         tuple(c[f] for f in fields) for c in double["cells"]
     ]
+
+
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+@pytest.mark.parametrize("structure", ["nearest_neighbour", "all_to_all"])
+def test_batched_ising_energy_preserves_term_values_and_gradients(
+    dtype: torch.dtype, structure: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from flagquantum.runtime import run_native
+
+    real_dtype = torch.float64 if dtype == torch.complex128 else torch.float32
+    parameters = (
+        (0.05 * torch.randn(2, 4, 2, generator=torch.Generator().manual_seed(19)))
+        .to(real_dtype)
+        .requires_grad_()
+    )
+    target = run_native(
+        sweep.build_ansatz(parameters, structure), mode="tensor_network"
+    )
+
+    def refuse_dense_state(*args: object, **kwargs: object) -> None:
+        raise AssertionError("energy must remain a tensor-network contraction")
+
+    monkeypatch.setattr(target, "state", refuse_dense_state)
+    batched = sweep.energy(target, 4)
+    termwise = sum(-target.expectation_ps(z=(q, q + 1)).sum() for q in range(3))
+    termwise += sum(-0.7 * target.expectation_ps(x=(q,)).sum() for q in range(4))
+    tolerance = 1e-11 if dtype == torch.complex128 else 1e-5
+    torch.testing.assert_close(batched, termwise, atol=tolerance, rtol=tolerance)
+    actual = torch.autograd.grad(batched, parameters, retain_graph=True)[0]
+    expected = torch.autograd.grad(termwise, parameters)[0]
+    torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
+
+
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
+def test_deep_batched_ising_energy_agrees_with_independent_dense_reference(
+    dtype: torch.dtype, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from flagquantum.runtime import run_native
+
+    parameters = (
+        0.05 * torch.randn(8, 8, 2, generator=torch.Generator().manual_seed(260720))
+    ).to(torch.float64 if dtype == torch.complex128 else torch.float32)
+    circuit = sweep.build_ansatz(parameters, "nearest_neighbour")
+    network = run_native(circuit, mode="tensor_network")
+    dense_reference = run_native(circuit, mode="statevector")
+
+    def refuse_dense_state(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the tensor-network result must not materialize a state")
+
+    monkeypatch.setattr(network, "state", refuse_dense_state)
+    tolerance = 1e-11 if dtype == torch.complex128 else 1e-5
+    torch.testing.assert_close(
+        sweep.energy(network, 8),
+        sweep.energy(dense_reference, 8),
+        atol=tolerance,
+        rtol=tolerance,
+    )

@@ -493,7 +493,7 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-three jobs:
+The checked-in `ci.yml` defines twenty-four jobs:
 
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
@@ -548,9 +548,9 @@ The checked-in `ci.yml` defines twenty-three jobs:
 - `release-wheel-platform`: the exact release-wheel route on macOS arm64 and
   Windows amd64, including native compilation, runtime smoke tests, repaired
   wheel inspection, and uploadable-artifact verification;
-- `distributed-cpu`: the `pr-distributed` tier — CPU distributed semantics and
-  release-contract checks — run separately from the core matrix;
-- `coverage-shard`: eight deterministic, duration-balanced partitions of the
+- `distributed-cpu-shard`: partitions of the `pr-distributed` tier — CPU
+  distributed semantics and release-contract checks — run separately from the core matrix;
+- `coverage-shard`: sixteen deterministic, duration-balanced partitions of the
   maintained package measured under the same marker expression on separate
   runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
@@ -597,7 +597,9 @@ fallback. Each A800 host runs eight independent CPU services, each capped at
 12 logical CPU time units, 64 GiB memory and 4096 tasks. The combined CPU ceiling
 remains 96 units per host; memory ceilings are limits, not reservations. Existing
 GPU services are unchanged. Fork PRs run these tiers on GitHub-hosted Ubuntu with
-at most two workers. Coverage shards and distributed CPU contracts also use
+at most two workers. Coverage shards and distributed CPU contracts use the isolated A800 and
+MC550 service queue (`flagquantum-cpu`). MC550 services admit four coverage
+workers and one distributed launcher within their four-CPU/16-GiB limits. On
 A800: the deployed services admit twelve core/runtime workers, six coverage
 workers, or one distributed launcher with up to eight child ranks. The tool
 admits two distributed launchers only when a service exposes at least sixteen
@@ -609,7 +611,7 @@ Fork pull requests use GitHub-hosted Ubuntu. The manual source-hygiene job
 also uses A100, while the short PR hygiene job retains its hosted budget. See
 [A100 runner operation](A100_RUNNERS.md) for pool isolation and validation.
 Coverage uses the measured CPU/memory budget for work-stealing workers
-(six on the verified A800 services, at most two on hosted runners).
+(six on the verified A800 services, four on MC550, at most two on hosted runners).
 Other measured CPU jobs retain resource and timing reports. The distributed
 CPU selector clears inherited platform rank variables before running and uses
 a separate budget for launchers that may spawn eight ranks; an explicit
@@ -619,7 +621,7 @@ versions and may run concurrently on separate A100 registrations. The private-en
 paths, retains the verified A100 bootstrap and CPU wheel cache, and bounds the
 domestic wheel download before falling back to the official CPU index. CPU jobs
 hide GPUs and verify dependency consistency and CPU-only framework selection.
-The eight coverage shards use checked-in duration hints from a cited CI run and a
+The sixteen coverage shards use checked-in duration hints from a cited CI run and a
 deterministic least-loaded assignment, then merge raw data before applying the
 unchanged coverage policy; their union is the former selection, not a reduced
 test set. Unmeasured tests receive a small default weight, so new tests remain
@@ -833,3 +835,27 @@ nothing keeping it true. Benchmark tooling and GPU-only Triton kernels are owned
 by their dedicated benchmark and hardware gates; backend-independent runtime,
 accelerator orchestration, and multi-node control paths remain visible in the
 XML report.
+
+### Partitioning the distributed CPU lane
+
+`pr-distributed` still runs both complete marker selections locally. In CI the
+`distributed-cpu-shard` matrix partitions the `distributed_cpu` command across
+four independent runners and the `benchmark_contract or release_gate` command
+across two. Each node ID belongs to
+exactly one partition of its original selection. The two-rank JAX probe runs once
+after the first distributed partition. Hosted fork jobs keep the same shared
+concurrency bucket; trusted CPU registrations can run the six partitions together.
+
+```bash
+python tools/ci_tier.py pr-distributed --command-index 0 --shard-count 4 --shard-index 0
+python tools/ci_tier.py pr-distributed --command-index 1 --shard-count 2 --shard-index 0
+```
+
+The representation-agreement sweep computes the full Ising observable batch on
+one shared tensor-network bra/ket, instead of contracting it separately per term.
+The circuit grid, precisions, truncation probes and numerical assertions remain
+unchanged. Batched energies and gradients are checked against the termwise
+contractions, with dense-state materialization explicitly refused.
+
+The stable `distributed-cpu` check aggregates every `distributed-cpu-shard` job
+and rejects a failed, cancelled or skipped partition.
