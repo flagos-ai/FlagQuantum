@@ -235,13 +235,13 @@ jobs:
           (async () => {
             const version = await request('/version');
             if (version) emit('kubernetes', {version: version.gitVersion});
-            const deployments = await request('/apis/apps/v1/deployments');
+            const deployments = await request(`/apis/apps/v1/namespaces/${encodeURIComponent(namespace)}/deployments`);
             for (const item of deployments?.items || []) {
               if (!/arc|runner-scale-set/.test(item.metadata.name)) continue;
               emit('controller', {name: item.metadata.name, namespace: item.metadata.namespace,
                 chart: item.metadata.labels?.['helm.sh/chart'], images: item.spec.template.spec.containers.map((c) => c.image)});
             }
-            const sets = await request('/apis/actions.github.com/v1alpha1/autoscalingrunnersets');
+            const sets = await request(`/apis/actions.github.com/v1alpha1/namespaces/${encodeURIComponent(namespace)}/autoscalingrunnersets`);
             for (const item of sets?.items || []) {
               if (!String(item.spec.runnerScaleSetName || item.metadata.name).startsWith('flagcicd-r300-')) continue;
               emit('scaleSet', {name: item.metadata.name, namespace: item.metadata.namespace, chart: item.metadata.labels?.['helm.sh/chart'],
@@ -251,6 +251,15 @@ jobs:
             }
             const pod = await request(`/api/v1/namespaces/${encodeURIComponent(namespace)}/pods/${encodeURIComponent(os.hostname())}`);
             if (pod) emit('pod', {node: pod.spec.nodeName, serviceAccount: pod.spec.serviceAccountName,
+              chart: pod.metadata.labels?.['helm.sh/chart'], appVersion: pod.metadata.labels?.['app.kubernetes.io/version'],
               containers: pod.spec.containers.map((c) => ({name: c.name, image: c.image, resources: c.resources}))});
+            const pods = await request(`/api/v1/namespaces/${encodeURIComponent(namespace)}/pods`);
+            for (const item of pods?.items || []) {
+              if (!item.metadata.name.startsWith('flagcicd-r300-')) continue;
+              emit('r300Pod', {name: item.metadata.name, phase: item.status.phase,
+                chart: item.metadata.labels?.['helm.sh/chart'], appVersion: item.metadata.labels?.['app.kubernetes.io/version'],
+                ownerKinds: item.metadata.ownerReferences?.map((owner) => owner.kind),
+                containers: item.spec.containers.map((c) => ({name: c.name, image: c.image, resources: c.resources}))});
+            }
           })().catch(() => {emit('clusterRead', {error: 'audit_failed'}); process.exitCode = 1;});
           JS
