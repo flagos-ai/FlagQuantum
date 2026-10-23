@@ -11,7 +11,7 @@ models, and Remote hardware interfaces.
 
 ## Package responsibilities and compatibility
 
-The [package layout guide](../../docs/guides/QEC_PACKAGE_LAYOUT.md) maps historical
+The [package layout guide](../../docs/guides/QEC_PACKAGE_LAYOUT.md) maps canonical
 imports to their current implementation owners and explains pickle, source-tool,
 plugin and installed-package compatibility. Existing `flagquantum.qec` imports
 remain the user entry points; both rotated surface classes remain independent.

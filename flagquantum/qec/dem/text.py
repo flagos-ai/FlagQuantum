@@ -49,8 +49,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import TypeAlias
 
-from flagquantum.qec.codes._compat import _retain_module
-
 _DETECTOR_PREFIX = "D"
 _OBSERVABLE_PREFIX = "L"
 _SEPARATOR = "^"
@@ -500,19 +498,3 @@ def _parse_stim_text(
         else (max(referenced_observables) + 1 if referenced_observables else 0)
     )
     return num_detectors, num_observables, tuple(entries)
-
-
-_retain_module(
-    "flagquantum.qec.dem_text",
-    _target_index,
-    _parse_shift_detectors,
-    _toggle,
-    _parse_error_line,
-    _parse_declaration_line,
-    _declared_count,
-    _instructions,
-    _repeat_count,
-    _structure,
-    _unroll_stim_text,
-    _parse_stim_text,
-)

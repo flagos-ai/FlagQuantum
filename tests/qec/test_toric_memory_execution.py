@@ -125,13 +125,17 @@ from flagquantum.qec import (
     get_decoder,
     toric_code,
 )
-from flagquantum.qec.circuit import MeasurementRef, MemoryCircuit, build_memory_circuit
+from flagquantum.qec.circuits.memory import (
+    MeasurementRef,
+    MemoryCircuit,
+    build_memory_circuit,
+)
 from flagquantum.qec.codes import CssCode
-from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
+from flagquantum.qec.decoders.matching import MinimumWeightMatchingDecoder
 from flagquantum.qec.dem import DetectorErrorModel
-from flagquantum.qec.matching import MinimumWeightMatchingDecoder
+from flagquantum.qec.dem.graph import DecodingGraph, DecodingGraphEdge
+from flagquantum.qec.execution.sampling import sample_memory_circuit
 from flagquantum.qec.noise import PhenomenologicalNoise
-from flagquantum.qec.sampling import sample_memory_circuit
 from flagquantum.runtime.dynamic.hybrid_session import execute_hybrid_dynamic_session
 
 pytestmark = pytest.mark.integration

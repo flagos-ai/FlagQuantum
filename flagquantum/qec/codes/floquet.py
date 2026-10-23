@@ -51,7 +51,6 @@ from numbers import Integral
 from ..gf2 import in_span, nullspace, rank, reduce_rows
 from ..logical import _symplectic_mask
 from ..pauli import Pauli
-from ._compat import _retain_module
 from ._css_helpers import _DISTANCE_SEARCH_WEIGHT
 
 __all__ = ("MeasurementPhase", "FloquetCode", "ring_floquet_code")
@@ -675,24 +674,3 @@ def ring_floquet_code(num_qubits: int) -> FloquetCode:
         ),
     )
     return FloquetCode(name="two-phase ring", num_qubits=num_qubits, phases=phases)
-
-
-_retain_module(
-    "flagquantum.qec.floquet",
-    _phase_rows,
-    _combination,
-    _same_span,
-    _surviving,
-    _commutes,
-    _advance,
-    _centralizer,
-    _quotient_basis,
-    _least_logical_weight,
-    _support,
-    _to_pauli,
-    _settle,
-    MeasurementPhase,
-    FloquetCode,
-    _ring_edges,
-    ring_floquet_code,
-)

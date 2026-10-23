@@ -45,11 +45,15 @@ from flagquantum.qec import (
     build_memory_circuit,
     sample_memory_circuit,
 )
-from flagquantum.qec.circuit import MeasurementRef
+from flagquantum.qec.circuits.memory import MeasurementRef
 from flagquantum.qec.codes import CodeCheck, ancilla_bands
-from flagquantum.qec.dem_construction import _check_rate_order
+from flagquantum.qec.dem.construction import _check_rate_order
+from flagquantum.qec.execution.sampling import (
+    _measurement_plan,
+    _noise_locations,
+    _noisy_program,
+)
 from flagquantum.qec.pauli import Pauli
-from flagquantum.qec.sampling import _measurement_plan, _noise_locations, _noisy_program
 from flagquantum.simulation.stabilizer import StabilizerDependencyError
 
 # Sampling executes the program through the stabilizer engine, which is an

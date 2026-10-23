@@ -2,7 +2,7 @@
 
 A detector error model states, for every independent physical error mechanism,
 which detectors that mechanism flips. The matcher in
-:mod:`flagquantum.qec.matching` reads a model only when every mechanism flips one
+:mod:`flagquantum.qec.decoders.matching` reads a model only when every mechanism flips one
 or two detectors, because it inverts the model by pairing defective detectors
 along edges. This module reads the model as it is written -- one variable per
 mechanism, one parity check per detector -- and estimates which mechanisms fired
@@ -59,7 +59,7 @@ one signature twice is refused by the matcher and accepted here, which is not a
 disagreement: the matcher minimizes over a graph whose edges *are* signatures, so
 two mechanisms of one signature are one fault carrying two weights to it, while
 here they are two variables, which is what "two independent faults that look the
-same" means. Both families are registered in :mod:`flagquantum.qec.registry`, each
+same" means. Both families are registered in :mod:`flagquantum.qec.decoders.registry`, each
 returns its own result record, and neither name is preferred over the other.
 """
 
@@ -71,14 +71,13 @@ from dataclasses import dataclass
 from numbers import Integral, Real
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.codes._compat import _retain_module
-from flagquantum.qec.decoding_graph import DecodingGraph
 from flagquantum.qec.dem import (
     DemError,
     DetectorErrorModel,
     _count,
     _normalized_indices,
 )
+from flagquantum.qec.dem.graph import DecodingGraph
 
 __all__ = ("BeliefPropagationDecodeResult", "BeliefPropagationDecoder")
 
@@ -650,24 +649,3 @@ class BeliefPropagationDecoder:
             weight=_weight(graph, selected),
             iterations=iterations,
         )
-
-
-_retain_module(
-    "flagquantum.qec.belief_propagation",
-    _syndrome_mask,
-    _FactorGraph,
-    _factor_graph,
-    _clip,
-    _check_messages,
-    _variable_messages,
-    _posteriors,
-    _decision,
-    _flips,
-    _explains,
-    _weight,
-    _ordered_statistics,
-    _pivot_mask,
-    _model_from_graph,
-    BeliefPropagationDecodeResult,
-    BeliefPropagationDecoder,
-)

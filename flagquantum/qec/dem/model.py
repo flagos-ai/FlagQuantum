@@ -287,7 +287,7 @@ class DetectorErrorModel:
 
         The reading of a group, and why a group that does not fit one shot is
         refused rather than renormalized, is
-        :func:`flagquantum.qec.dem_alternatives.require_groups_fit`.
+        :func:`flagquantum.qec.dem.alternatives.require_groups_fit`.
         """
 
         require_groups_fit(self.errors)
@@ -303,7 +303,7 @@ class DetectorErrorModel:
         route here produces and the state stim's text always describes. The
         values are opaque labels and the vector is a numbering of them, so what
         is a fact about the model is the partition the vector induces;
-        :func:`flagquantum.qec.dem_alternatives.projected_ids` states the rule.
+        :func:`flagquantum.qec.dem.alternatives.projected_ids` states the rule.
         """
 
         return projected_ids(self.errors)
@@ -505,7 +505,7 @@ class DetectorErrorModel:
     ) -> torch.Tensor:
         """Return the exact marginal flip probability of ``count`` targets.
 
-        :func:`flagquantum.qec.dem_alternatives.fold_marginals` states the
+        :func:`flagquantum.qec.dem.alternatives.fold_marginals` states the
         arithmetic and why a group of alternatives is summed rather than composed
         by parity; this method only supplies the model's own fields.
         """
@@ -581,7 +581,7 @@ class DetectorErrorModel:
     ) -> DemSample:
         """Sample one fault per group of alternatives.
 
-        :func:`flagquantum.qec.dem_alternatives.sample_groups` draws a group once
+        :func:`flagquantum.qec.dem.alternatives.sample_groups` draws a group once
         and lands the shot in one member's interval or in the left-over mass; this
         method only wraps the two bit tensors the caller owns. The id-free path
         stays in :meth:`dem_sampling`, because a model with no ids is the state
@@ -809,7 +809,7 @@ class DetectorErrorModel:
         same choice as ``dem_from_memory_circuit(..., decompose_errors=False)`` and
         documents it as handing the model to Stim, which is why no pairing rule
         exists in its sources to read. The rule here is read off the program
-        instead; see :func:`~flagquantum.qec.dem_construction._memory_circuit_entries`
+        instead; see :func:`~flagquantum.qec.dem.construction._memory_circuit_entries`
         for how a part is forced and why it is graphlike exactly where the
         single-Pauli fault at that location is. The two readings are not two
         encodings of one distribution, and the second is not offered as an
@@ -852,7 +852,7 @@ class DetectorErrorModel:
         reaches a model without a circuit record standing for it: a code whose
         checks and logical operators are known as matrices needs no gadget, no
         qubit layout, and no statevector. See
-        :func:`~flagquantum.qec.dem_construction._code_matrix_entries` for the row
+        :func:`~flagquantum.qec.dem.construction._code_matrix_entries` for the row
         and column conventions and for the detector geometry, which is the
         code-capacity one and not the geometry
         :meth:`from_memory_circuit` reads off a circuit.
@@ -906,12 +906,12 @@ class DetectorErrorModel:
         """Read a realization back into the model it stands for.
 
         This is the inverse of
-        :func:`~flagquantum.qec.dem_circuit.circuit_from_detector_error_model`, and
+        :func:`~flagquantum.qec.dem.circuit.circuit_from_detector_error_model`, and
         the two readings divide the work rather than duplicating it: a frame's
         branches say which detectors and observables a fault flips, and the
         masses the instruction declares say how often. The reading itself and its
         refusals live in
-        :mod:`flagquantum.qec.dem_circuit`, which is where the meaning of a
+        :mod:`flagquantum.qec.dem.circuit`, which is where the meaning of a
         realization is stated; this method is the route to it from the class, so a
         model can be read back the way it was built.
 

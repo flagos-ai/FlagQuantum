@@ -211,9 +211,16 @@ def steane_section() -> None:
         lx=[STEANE_LOGICAL],
     )
     declared = SteaneCode()
-    report("data qubits / ancillas", f"{code.num_data_qubits} / {code.num_ancilla_qubits}")
-    report("Z-type checks / X-type checks", " / ".join(str(n) for n in check_counts(code)))
-    report("distance / x_distance / z_distance", f"{code.distance} / {code.x_distance} / {code.z_distance}")
+    report(
+        "data qubits / ancillas", f"{code.num_data_qubits} / {code.num_ancilla_qubits}"
+    )
+    report(
+        "Z-type checks / X-type checks", " / ".join(str(n) for n in check_counts(code))
+    )
+    report(
+        "distance / x_distance / z_distance",
+        f"{code.distance} / {code.x_distance} / {code.z_distance}",
+    )
     report("checks match the shipped record", code.checks == declared.checks)
     report(
         "stabilizer group matches",
@@ -243,8 +250,13 @@ def steane_section() -> None:
     # Reading the record back into the package's matrix record closes the loop: the
     # published matrices and the matrices written here describe one code.
     lifted = css_code_matrices(declared)
-    report("shipped hz rows equal written hz", lifted.hz.tolist() == [list(row) for row in STEANE_CHECKS])
-    report("shipped lz row equal written lz", lifted.lz.tolist() == [list(STEANE_LOGICAL)])
+    report(
+        "shipped hz rows equal written hz",
+        lifted.hz.tolist() == [list(row) for row in STEANE_CHECKS],
+    )
+    report(
+        "shipped lz row equal written lz", lifted.lz.tolist() == [list(STEANE_LOGICAL)]
+    )
 
 
 def weight_histogram(model: DetectorErrorModel) -> dict[int, int]:
@@ -267,10 +279,20 @@ def toric_section(lattice: int, shots: int) -> None:
     code = toric(lattice)
     declared = toric_code(lattice)
     print()
-    print(f"the toric code on a {lattice}-by-{lattice} torus: written here, and shipped")
-    report("data qubits / ancillas", f"{code.num_data_qubits} / {code.num_ancilla_qubits}")
-    report("checks / logical observables", f"{len(code.checks)} / {len(code.logical_observables)}")
-    report("data qubits per check", sorted({check.stabilizer.weight for check in code.checks}))
+    print(
+        f"the toric code on a {lattice}-by-{lattice} torus: written here, and shipped"
+    )
+    report(
+        "data qubits / ancillas", f"{code.num_data_qubits} / {code.num_ancilla_qubits}"
+    )
+    report(
+        "checks / logical observables",
+        f"{len(code.checks)} / {len(code.logical_observables)}",
+    )
+    report(
+        "data qubits per check",
+        sorted({check.stabilizer.weight for check in code.checks}),
+    )
     report(
         "distance / x_distance / z_distance",
         f"{code.distance} / {code.x_distance} / {code.z_distance}",
@@ -311,13 +333,19 @@ def toric_section(lattice: int, shots: int) -> None:
         build_memory_circuit(declared, rounds=1), noise=noise
     )
     widest = max(len(error.detectors) for error in model.errors)
-    report("detectors / observables", f"{model.num_detectors} / {model.num_observables}")
+    report(
+        "detectors / observables", f"{model.num_detectors} / {model.num_observables}"
+    )
     report("mechanisms", len(model.errors))
     report("most detectors one fault flips", widest)
     report("matching decoder", "accepted" if widest <= 2 else "refused: hyperedge")
     report(
         "shipped model agrees mechanism for mechanism",
-        (shipped_model.num_detectors, shipped_model.num_observables, weight_histogram(shipped_model))
+        (
+            shipped_model.num_detectors,
+            shipped_model.num_observables,
+            weight_histogram(shipped_model),
+        )
         == (model.num_detectors, model.num_observables, weight_histogram(model)),
     )
 

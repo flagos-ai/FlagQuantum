@@ -71,7 +71,7 @@ from flagquantum.qec import (
     circuit_from_detector_error_model,
     detector_error_model_from_circuit,
 )
-from flagquantum.qec.dem_alternatives import fault_groups
+from flagquantum.qec.dem.alternatives import fault_groups
 from flagquantum.simulation.stabilizer import sample_noisy_measurements
 
 pytest.importorskip("stim")

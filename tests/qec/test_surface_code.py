@@ -13,7 +13,7 @@ from collections import Counter
 
 import pytest
 
-from flagquantum.qec.circuit import MeasurementRef, build_memory_circuit
+from flagquantum.qec.circuits.memory import MeasurementRef, build_memory_circuit
 from flagquantum.qec.codes import (
     CodeCheck,
     RepetitionCode,

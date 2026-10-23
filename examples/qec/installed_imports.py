@@ -3,14 +3,12 @@
 import pickle
 
 import flagquantum.qec as qec
-from flagquantum.qec.surface import RotatedSurfaceCode as RotatedFrame
+from flagquantum.qec.codes.surface import RotatedSurfaceCode
 
 code = qec.get_code("rotated_surface", distance=3)
-frame = RotatedFrame(3)
 print("Public exports:", len(qec.__all__))
-print("Independent rotated classes:", qec.RotatedSurfaceCode is not RotatedFrame)
+print("Registered class:", type(code) is qec.RotatedSurfaceCode is RotatedSurfaceCode)
 print("Code pickle path:", type(pickle.loads(pickle.dumps(code))).__module__)
-print("Frame pickle path:", type(pickle.loads(pickle.dumps(frame))).__module__)
 model = qec.DetectorErrorModel.from_stim_text(
     "error(0.125) D0 L0\ndetector D0\nlogical_observable L0\n"
 )

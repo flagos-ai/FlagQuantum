@@ -43,7 +43,7 @@ from functools import lru_cache
 import pytest
 
 from flagquantum.qec import DetectorErrorModel, RotatedSurfaceCode, build_memory_circuit
-from flagquantum.qec.circuit import MemoryCircuit
+from flagquantum.qec.circuits.memory import MemoryCircuit
 from flagquantum.qec.dem import DemError
 from flagquantum.qec.noise import PhenomenologicalNoise
 

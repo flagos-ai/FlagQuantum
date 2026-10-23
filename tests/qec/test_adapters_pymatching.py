@@ -61,8 +61,8 @@ from flagquantum.qec import (
     css_code_matrices,
 )
 from flagquantum.qec.adapters import _BOUNDARY, _pymatching, _translate
-from flagquantum.qec.decoding_graph import DecodingGraph
-from flagquantum.qec.matching import MatchingDecodeResult
+from flagquantum.qec.decoders.matching import MatchingDecodeResult
+from flagquantum.qec.dem.graph import DecodingGraph
 
 # The cross-check needs its reference implementation, which is an optional
 # distribution, so the file skips rather than failing to import when it is

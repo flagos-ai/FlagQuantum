@@ -17,6 +17,19 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Target QEC retirement for **0.4.0**: remove the 23 approved historical flat
+  module imports and their pickle lookup paths. Keep all 108 ordered
+  `flagquantum.qec` exports, signatures, numerical results and registration
+  behavior. Use root imports or the canonical responsibility packages listed in
+  the [migration guide](../guides/QEC_PACKAGE_LAYOUT.md).
+- Keep only the original registered `RotatedSurfaceCode`; root, `qec.codes`,
+  `codes.surface` and the factory use that same class. Its existing
+  `flagquantum.qec.codes` pickle identifier survives. The historical
+  `qec.surface` class and private duplicate are removed without a replacement
+  frame class. Artifacts referencing retired paths must be loaded/exported
+  using the pre-retirement version before upgrading; no compatibility
+  unpickler is provided. Original frozen restructuring fixtures remain unchanged.
+
 - Promote the completed local DynamicCircuit execution contract to stable.
   `fq.plan(...)` and `fq.run(...)` remain the single planning and execution
   entries, return `fq.ExecutionResult`, and preserve plan identity. This is a

@@ -1,7 +1,7 @@
 """Window-scoped projections of a chunked model, and the decoder that reads them.
 
 Upstream `cudaq-qec` ships a ``sliding_window`` decoder over the extended DEM
-that :mod:`flagquantum.qec.chunks` reshapes: it cuts a model into round windows,
+that :mod:`flagquantum.qec.dem.chunks` reshapes: it cuts a model into round windows,
 hands each window its own matrices and its own inner decoder, commits the part of
 a window the window that follows cannot revise, and folds the committed
 corrections into a logical-frame prediction. This module is that decoder, over
@@ -64,7 +64,7 @@ of this module is scoped by a decoding graph, and it is the one the registry
 holds. It is described here in its own terms.
 
 A syndrome is the set of detectors that flipped, and a graphlike detector error
-model explains one with a minimum-weight T-join. :mod:`flagquantum.qec.matching`
+model explains one with a minimum-weight T-join. :mod:`flagquantum.qec.decoders.matching`
 computes that join exactly by enumerating the ways to pair the defective
 detectors, and it therefore refuses a syndrome whose defect count exceeds its
 budget. That budget is what a long-lived memory experiment runs into: the
@@ -159,14 +159,6 @@ from numbers import Integral
 from typing import Any
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.chunks import (
-    DemChunk,
-    DemChunksSpec,
-    SeamId,
-    dem_chunks_from_spec,
-    dem_close_all,
-)
-from flagquantum.qec.codes._compat import _retain_module
 from flagquantum.qec.decoders.matching import (
     _DEFAULT_DEFECT_BUDGET,
     MatchingDecodeResult,
@@ -174,8 +166,15 @@ from flagquantum.qec.decoders.matching import (
     _defects,
 )
 from flagquantum.qec.decoders.registry import get_decoder
-from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
 from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem.chunks import (
+    DemChunk,
+    DemChunksSpec,
+    SeamId,
+    dem_chunks_from_spec,
+    dem_close_all,
+)
+from flagquantum.qec.dem.graph import DecodingGraph, DecodingGraphEdge
 
 __all__ = (
     "SlidingWindowDecodeResult",
@@ -1129,22 +1128,3 @@ class SlidingWindowMatchingDecoder:
             error_edges=selected,
             weight=math.fsum(edge.weight for edge in selected),
         )
-
-
-_retain_module(
-    "flagquantum.qec.sliding_window",
-    _seam_width,
-    _rounds_of,
-    _round_sequence,
-    _window_columns,
-    _projected_columns,
-    dem_chunks_to_d_sparse,
-    dem_chunks_to_pcm,
-    dem_chunks_to_o_sparse,
-    SlidingWindowDecodeResult,
-    SlidingWindowDecoder,
-    _mechanism_span,
-    _window_graph,
-    _ordering_key,
-    SlidingWindowMatchingDecoder,
-)

@@ -40,16 +40,13 @@ from flagquantum.qec import (
     build_memory_circuit,
     sample_memory_circuit,
 )
-from flagquantum.qec.dem_construction import (
-    _forced_signature,
-    _inject_data_flip,
-    _mechanisms,
-)
-from flagquantum.qec.sampling import (
+from flagquantum.qec.dem.construction import _mechanisms
+from flagquantum.qec.execution.sampling import (
     _measurement_plan,
     _noise_locations,
     _noisy_program,
 )
+from flagquantum.qec.execution.signatures import _forced_signature, _inject_data_flip
 
 pytestmark = pytest.mark.integration
 

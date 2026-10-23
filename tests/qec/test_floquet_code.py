@@ -86,7 +86,7 @@ import itertools
 
 import pytest
 
-from flagquantum.qec.floquet import (
+from flagquantum.qec.codes.floquet import (
     FloquetCode,
     MeasurementPhase,
     _advance,

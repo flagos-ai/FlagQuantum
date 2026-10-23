@@ -6,7 +6,7 @@ mechanism flips one or two detectors, those mechanisms are the edges of a graph
 whose vertices are the detectors, and inverting the model becomes a problem of
 pairing up defective detectors along the cheapest edges. This module derives
 that graph from a model; the matcher in
-:mod:`flagquantum.qec.matching` consumes it and nothing else.
+:mod:`flagquantum.qec.decoders.matching` consumes it and nothing else.
 
 An edge is weighted by the negative log-likelihood ratio ``log((1 - p) / p)`` of
 the mechanism it comes from, so the weight of a set of edges is the negative log
@@ -36,7 +36,6 @@ from dataclasses import dataclass
 from numbers import Integral
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.codes._compat import _retain_module
 from flagquantum.qec.dem.model import (
     DetectorErrorModel,
     _count,
@@ -238,6 +237,3 @@ class DecodingGraph:
             num_observables=model.num_observables,
             edges=tuple(edges),
         )
-
-
-_retain_module("flagquantum.qec.decoding_graph", DecodingGraphEdge, DecodingGraph)
