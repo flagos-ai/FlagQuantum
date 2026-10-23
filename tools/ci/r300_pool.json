@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "jobs": [
+    "qiskit-optional",
+    "cirq-optional",
+    "braket-optional"
+  ],
+  "members": [
+    {
+      "label": "flagcicd-r300-cpu01",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu02",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu03",
+      "state": "qualified",
+      "evidence": "https://github.com/flagos-ai/FlagQuantum/actions/runs/39954879147/job/120418539531"
+    },
+    {
+      "label": "flagcicd-r300-cpu04",
+      "state": "qualified",
+      "evidence": "https://github.com/flagos-ai/FlagQuantum/actions/runs/39954879147/job/120418539386"
+    },
+    {
+      "label": "flagcicd-r300-cpu05",
+      "state": "qualified",
+      "evidence": "https://github.com/flagos-ai/FlagQuantum/actions/runs/39954879147/job/120418539240"
+    },
+    {
+      "label": "flagcicd-r300-cpu06",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu07",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu08",
+      "state": "quarantined",
+      "reason": "Repeated or incomplete source/download qualification; revalidate before admission."
+    },
+    {
+      "label": "flagcicd-r300-cpu09",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu10",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu11",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu12",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu13",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu14",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu15",
+      "state": "candidate"
+    },
+    {
+      "label": "flagcicd-r300-cpu16",
+      "state": "quarantined",
+      "reason": "Repeated or incomplete source/download qualification; revalidate before admission."
+    },
+    {
+      "label": "flagcicd-r300-cpu115",
+      "state": "candidate"
+    }
+  ]
+}
