@@ -96,6 +96,15 @@ These examples do not use that alias:
   a channel between two programs rather than a program to run.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
+- [`qec/restructure_compatibility.py`](qec/restructure_compatibility.py) imports
+  the QEC public surface to run the existing repetition-memory feedback workflow
+  and check its correction, logical error rate and decoded bits.
+- [`qec/code_family_imports.py`](qec/code_family_imports.py) imports QEC code
+  records and historical aliases to check independent surface identities, pickle
+  paths, Steane matrices and the existing memory noise sweep.
+- [`qec/memory_layout_and_sampling.py`](qec/memory_layout_and_sampling.py)
+  imports QEC declarations, maps and sampling directly, then runs all three
+  existing feedback modes; actual measurement sampling requires the Stim extra.
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.
