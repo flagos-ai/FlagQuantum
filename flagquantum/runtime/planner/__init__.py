@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from ...compiler import compile as compile_program
 from ...compiler import lower_noise_model as lower_noise_model
 from ...compiler import schedule_layers as schedule_layers
+from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, MeasurementNode
 from ...errors import CapabilityError, ValidationError
 from ..dynamic._conditions import instruction_is_dynamic
@@ -86,6 +87,7 @@ if TYPE_CHECKING:
     from ...circuit import Circuit
     from ...noise import NoiseModel
     from ..options import ExecutionOptions
+    from ..options_resolver import ResolvedExecutionOptions
 
 
 def analyze(ir: CircuitIR) -> CircuitAnalysis:
@@ -775,7 +777,15 @@ def _validated_plan_program(
     source_ir = program.to_ir() if hasattr(program, "to_ir") else program
     if not isinstance(source_ir, CircuitIR):
         raise TypeError("program must be a Circuit or CircuitIR")
+    is_dynamic = any(
+        instruction_is_dynamic(instruction) for instruction in source_ir.instructions
+    )
     if measurements is not None:
+        if is_dynamic:
+            raise CapabilityError(
+                "dynamic planning does not accept outputs; measurements and final "
+                "samples are defined by the DynamicCircuit"
+            )
         if source_ir.measurements:
             raise ValidationError(
                 "measurements cannot be supplied when the program already contains "
@@ -791,14 +801,62 @@ def _validated_plan_program(
             raise TypeError(
                 "noise_model must be a flagquantum.noise.NoiseModel or None"
             )
-    if any(
-        instruction_is_dynamic(instruction) for instruction in source_ir.instructions
-    ):
-        raise CapabilityError(
-            "fq.run does not execute dynamic trajectories; use "
-            "fq.experimental.dynamic.run_dynamic(..., shots=...)"
-        )
     return source_ir
+
+
+def _requires_dynamic_gradients(program: object, source_ir: CircuitIR) -> bool:
+    inputs = getattr(program, "inputs", None)
+    if getattr(inputs, "requires_grad", False) is True:
+        return True
+    return any(
+        getattr(value, "requires_grad", False) is True
+        for instruction in source_ir.instructions
+        for value in instruction.params.values()
+    )
+
+
+def _validate_dynamic_plan_request(
+    program: object,
+    source_ir: CircuitIR,
+    *,
+    resolved: ResolvedExecutionOptions,
+    noise_model: NoiseModel | None,
+    world_size: int,
+) -> None:
+    """Validate the approved local planning slice before compilation."""
+
+    validate_classical_control(source_ir.instructions, n_qubits=source_ir.n_wires)
+    if resolved.mode != "auto":
+        raise CapabilityError("dynamic planning supports mode='auto' only")
+    if resolved.backend not in {"auto", "pytorch"}:
+        raise CapabilityError(
+            "dynamic planning supports backend='auto' or backend='pytorch' only"
+        )
+    if str(resolved.device).split(":", 1)[0] not in {"auto", "cpu"}:
+        raise CapabilityError("dynamic planning supports a local CPU device only")
+    if resolved.target not in {"auto", "samples"}:
+        raise CapabilityError(
+            "dynamic planning supports target='auto' or target='samples' only"
+        )
+    if resolved.shots is None:
+        raise ValidationError(
+            "dynamic planning requires a positive shots value in ExecutionOptions"
+        )
+    if resolved.require_gradients or _requires_dynamic_gradients(program, source_ir):
+        raise CapabilityError("dynamic planning does not support gradients")
+    if resolved.allow_approximate:
+        raise CapabilityError("dynamic planning does not allow approximation")
+    if resolved.allow_backend_fallback:
+        raise CapabilityError("dynamic planning does not allow backend fallback")
+    if world_size > 1:
+        raise CapabilityError(
+            "dynamic_conditional_execution_unsupported: dynamic planning requires "
+            "world_size=1"
+        )
+    if noise_model is not None or carries_noise_channels(source_ir):
+        raise CapabilityError(
+            "dynamic planning does not yet support noise through the stable path"
+        )
 
 
 def plan(
@@ -835,12 +893,34 @@ def plan(
         measurements=measurements,
         noise_model=noise_model,
     )
+    is_dynamic = any(
+        instruction_is_dynamic(instruction) for instruction in source_ir.instructions
+    )
+    if is_dynamic and options is not None and options.batch_size is not None:
+        raise ValidationError(
+            "dynamic planning takes batch size from DynamicCircuit; "
+            "ExecutionOptions.batch_size must be None"
+        )
+    if is_dynamic and options is not None and options.precision is not None:
+        raise ValidationError(
+            "dynamic planning takes precision from DynamicCircuit; "
+            "ExecutionOptions.precision must be None"
+        )
     runtime_config = getattr(program, "runtime_config", None)
     resolved = resolve_execution_options(
         options,
         program_constraints=circuit_execution_constraints(program),
         runtime_config=runtime_config,
     )
+    world_size = resolve_distributed_backend_policy().effective_world_size
+    if is_dynamic:
+        _validate_dynamic_plan_request(
+            program,
+            source_ir,
+            resolved=resolved,
+            noise_model=noise_model,
+            world_size=world_size,
+        )
     if resolved.backend == "auto":
         backend_name = "pytorch"
     else:
@@ -848,7 +928,7 @@ def plan(
     _require_executable_backend(
         backend_name,
         mode=resolved.mode,
-        world_size=resolve_distributed_backend_policy().effective_world_size,
+        world_size=world_size,
         require_gradients=bool(resolved.require_gradients),
     )
     # The model is one of two ways channel instructions reach the program; the
@@ -896,8 +976,10 @@ def plan(
         "amplitudes": "few_amplitudes",
     }
     measurements = tuple(source_ir.measurements)
-    if not measurements and (
-        resolved.target == "samples" or resolved.shots is not None
+    if (
+        not is_dynamic
+        and not measurements
+        and (resolved.target == "samples" or resolved.shots is not None)
     ):
         if resolved.shots is None:
             raise ValidationError("target='samples' requires shots")
@@ -914,7 +996,6 @@ def plan(
         raise CapabilityError(
             f"target={resolved.target!r} requires a measurement embedded in the program"
         )
-    world_size = resolve_distributed_backend_policy().effective_world_size
     stable_trajectory_count = 32
     stable_mps_max_bond: int | None = None
     complex_bytes = 16 if resolved.precision == "complex128" else 8
@@ -947,13 +1028,14 @@ def plan(
         world_size=world_size,
         complex_bytes=complex_bytes,
         memory_limit_bytes=resolved.memory_limit_bytes,
-        state_mode=resolved.mode,
+        state_mode="statevector" if is_dynamic else resolved.mode,
         noise_model=noise_model,
         max_bond=stable_mps_max_bond,
-        target=targets[resolved.target],
+        target="samples" if is_dynamic else targets[resolved.target],
         require_gradients=resolved.require_gradients,
         allow_approximate=resolved.allow_approximate,
         config=selected_config,
+        optimize=not is_dynamic,
     )
     if has_noise:
         noisy_mps = internal_plan.state_mode == "mps"
@@ -998,7 +1080,7 @@ def plan(
         requested_options=options or ExecutionOptions(),
         resolved_options=resolved,
         noise_model=noise_model,
-        preserve_program_instructions=has_noise,
+        preserve_program_instructions=has_noise or is_dynamic,
     )
 
 
