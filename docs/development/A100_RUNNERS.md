@@ -5,8 +5,7 @@ The dedicated A100 node serves this repository with sixteen CPU runners named
 `fq-a100-gpu08`. The CPU pool has the `flagquantum-a100-cpu` label. The GPU runner
 has `gpu`, `flagquantum-local`, `flagquantum-a100`, and `a100-8gpu` labels.
 
-Portable CPU coverage, optional-dependency, distributed CPU, dependency-bound
-and supply-chain checks use `flagquantum-cpu-general`, registered on all sixteen
+Portable optional-dependency, dependency-bound and supply-chain checks use `flagquantum-cpu-general`, registered on all sixteen
 A100 and twelve A800 CPU runners, alongside other accepted general-pool hosts. GitHub can assign the same PR's ready jobs to
 both hosts' pools without an A100-only backlog while A800 slots are idle. Each
 job restores the producer's digest-verified source artifact and checks its exact
@@ -16,8 +15,11 @@ sparse checkout state, dirty files and files left by preceding jobs.
 
 Quality checks need full Git history for evidence provenance and retain the A100
 pool's existing authenticated Git transport. Manual pre-commit and coverage
-aggregation also retain that pool. A800 CPU compatibility, smoke/unit and runtime
-jobs retain their dedicated label, source transport and configuration. macOS,
+aggregation also retain that pool. A800 CPU compatibility, smoke/unit, runtime, coverage and distributed contract
+jobs retain their dedicated label and verified source transport. The long suites
+use the measured A800 service budget rather than a two-worker general-pool slot;
+coverage uses at most eight workers, while distributed contracts admit at most
+two independent eight-rank launchers within a 16-CPU / 64-GiB service. macOS,
 Windows, Linux wheel-container builds and container publishing retain their
 existing runners. Fork pull requests use GitHub-hosted fallback.
 
