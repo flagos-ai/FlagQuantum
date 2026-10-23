@@ -203,6 +203,13 @@ def test_sdk_jobs_use_accepted_fixed_capacity() -> None:
         assert "'flagquantum-cpu-general'" in job["runs-on"]
         assert "'ubuntu-latest'" in job["runs-on"]
         assert job["timeout-minutes"] == 30
+        assert job["env"]["MAX_JOBS"] == "2"
+        installer = next(
+            step
+            for step in job["steps"]
+            if step.get("uses") == "./.github/actions/install-cpu-torch"
+        )
+        assert installer["timeout-minutes"] == 8
         assert not any(
             step.get("continue-on-error") for step in job["steps"]
         ), "SDK preparation must fail closed"
@@ -234,6 +241,20 @@ def test_r300_manual_diagnostics_remain_available() -> None:
     assert len(_inventoried_r300_labels()) == 17
     assert workflow["jobs"]["resources"]["strategy"]["max-parallel"] == 17
     assert workflow["jobs"]["resources"]["timeout-minutes"] == 5
+
+
+def test_r300_is_not_a_dependency_of_pr_source_preparation() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    assert "r300-routes" not in jobs["prepare-source"]["outputs"]
+    assert not any(
+        "r300_pool.py" in step.get("run", "")
+        for step in jobs["prepare-source"]["steps"]
+    )
+    assert all(
+        "flagcicd-r300-" not in str(job.get("runs-on", ""))
+        and "outputs.r300-routes" not in str(job.get("runs-on", ""))
+        for job in jobs.values()
+    )
 
 
 @pytest.mark.parametrize("job", ["cpu-core", "cpu-core-3-12-tests", "cpu-runtime"])

@@ -917,6 +917,7 @@ jobs:
       matrix:
         qiskit: ["2.0", "2.5"]
     env:
+      MAX_JOBS: "2"
       QISKIT_VERSION: ${{ matrix.qiskit }}.*
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -969,6 +970,7 @@ jobs:
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Validate the CPU runtime before SDK certification
         run: |
@@ -1035,6 +1037,7 @@ jobs:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
+      MAX_JOBS: "2"
       OPTIONAL_VERSIONS: "1.6.1 1.7.0"
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -1087,6 +1090,7 @@ jobs:
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Validate the CPU runtime before SDK certification
         run: |
@@ -1117,6 +1121,7 @@ jobs:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
+      MAX_JOBS: "2"
       OPTIONAL_VERSIONS: "1.117.0 1.127.1"
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -1169,6 +1174,7 @@ jobs:
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Validate the CPU runtime before SDK certification
         run: |

@@ -1,5 +1,9 @@
 # R300 CPU CI runners
 
+R300 PR scheduling is paused; qualification remains manual-only. Ordinary PRs
+do not start R300 jobs or depend on an experimental pool plan. SDK checks retain
+all certified versions, native CPU preflight and required test selections.
+
 Qiskit, Cirq and Braket compatibility use the accepted fixed CPU pool for
 latency and source-transport reliability. Same-repository pull requests and
 manual CI runs use this pool; fork pull requests retain `ubuntu-latest` and the
