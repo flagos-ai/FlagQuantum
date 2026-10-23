@@ -1,0 +1,3209 @@
+{
+  "source_commit": "ff69b2526",
+  "exports": [
+    "AUTHORITY_NAME",
+    "BELIEF_PROPAGATION_NAME",
+    "BELIEF_PROPAGATION_OSD_NAME",
+    "CROSS_CHECK_NAME",
+    "SLIDING_WINDOW_NAME",
+    "BeliefPropagationDecodeResult",
+    "BeliefPropagationDecoder",
+    "BeliefPropagationOsdDecodeResult",
+    "BeliefPropagationOsdDecoder",
+    "ChunkLayout",
+    "CodeCheck",
+    "Correction",
+    "CssCode",
+    "CssCodeMatrices",
+    "DecodeResult",
+    "Decoder",
+    "DecoderContext",
+    "DecoderInputs",
+    "DecodingGraph",
+    "DecodingGraphEdge",
+    "DemChunk",
+    "DemChunkSpec",
+    "DemChunksSpec",
+    "DemError",
+    "DemMergeRule",
+    "DemSample",
+    "DemSeam",
+    "DetectionEvent",
+    "Detector",
+    "DetectorErrorModel",
+    "DetectorErrorModelDecodeResult",
+    "DetectorErrorModelDecoder",
+    "DetectorLayout",
+    "ErrorEvent",
+    "ErrorSchedule",
+    "FloquetCode",
+    "GraphlikeDetectorErrorModelDecoder",
+    "LogicalObservable",
+    "MatchingDecodeResult",
+    "MatchingDependencyError",
+    "MeasurementMap",
+    "MeasurementPhase",
+    "MeasurementRef",
+    "MeasurementSamples",
+    "MemoryCircuit",
+    "MinimumWeightMatchingDecoder",
+    "NoiseSweepPoint",
+    "ObservableLayout",
+    "Pauli",
+    "PauliFrame",
+    "PhaseId",
+    "PhenomenologicalNoise",
+    "PyMatchingDecoder",
+    "RepetitionCode",
+    "RepetitionLookupDecoder",
+    "RepetitionMemoryResult",
+    "RepetitionMemoryShot",
+    "RepetitionNoiseProfile",
+    "RepetitionStreamingLookupDecoder",
+    "RepetitionTemporalDecoder",
+    "RotatedSurfaceCode",
+    "SeamId",
+    "SlidingWindowDecodeResult",
+    "SlidingWindowDecoder",
+    "SlidingWindowMatchingDecoder",
+    "StabilizerCode",
+    "SteaneCode",
+    "StreamingDecoder",
+    "SubsystemCode",
+    "SyndromeRound",
+    "ZxxzSurfaceCode",
+    "ancilla_bands",
+    "bivariate_bicycle_code",
+    "build_memory_circuit",
+    "certify_logical_product",
+    "circuit_from_detector_error_model",
+    "code_names",
+    "css_code_matrices",
+    "decoder_context_from_memory_circuit",
+    "decoder_names",
+    "dem_chunk_from_spec",
+    "dem_chunks_from_spec",
+    "dem_chunks_to_d_sparse",
+    "dem_chunks_to_o_sparse",
+    "dem_chunks_to_pcm",
+    "dem_close",
+    "dem_close_all",
+    "dem_stitch",
+    "dem_stitch_all",
+    "dem_stitch_merged",
+    "derive_anticommuting_logical_product",
+    "detector_error_model_from_circuit",
+    "get_code",
+    "get_decoder",
+    "qldpc_code",
+    "reed_muller_code",
+    "register_code",
+    "register_decoder",
+    "ring_floquet_code",
+    "run_repetition_memory_experiment",
+    "run_repetition_memory_noise_sweep",
+    "sample_memory_circuit",
+    "sample_memory_measurements",
+    "tesseract_code",
+    "tesseract_column_swap",
+    "tesseract_free_cnot_pairs",
+    "toric_code",
+    "triangular_colour_code"
+  ],
+  "origins": {
+    "BeliefPropagationDecodeResult": "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult",
+    "BeliefPropagationDecoder": "flagquantum.qec.belief_propagation.BeliefPropagationDecoder",
+    "BeliefPropagationOsdDecodeResult": "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult",
+    "BeliefPropagationOsdDecoder": "flagquantum.qec.bposd.BeliefPropagationOsdDecoder",
+    "ChunkLayout": "flagquantum.qec.chunks.ChunkLayout",
+    "CodeCheck": "flagquantum.qec.codes.CodeCheck",
+    "Correction": "flagquantum.qec.types.Correction",
+    "CssCode": "flagquantum.qec.css_code.CssCode",
+    "CssCodeMatrices": "flagquantum.qec.dem_matrices.CssCodeMatrices",
+    "DecodeResult": "flagquantum.qec.types.DecodeResult",
+    "Decoder": "flagquantum.qec.decoders.Decoder",
+    "DecoderContext": "flagquantum.qec.context.DecoderContext",
+    "DecoderInputs": "flagquantum.qec.context.DecoderInputs",
+    "DecodingGraph": "flagquantum.qec.decoding_graph.DecodingGraph",
+    "DecodingGraphEdge": "flagquantum.qec.decoding_graph.DecodingGraphEdge",
+    "DemChunk": "flagquantum.qec.chunks.DemChunk",
+    "DemChunkSpec": "flagquantum.qec.chunks.DemChunkSpec",
+    "DemChunksSpec": "flagquantum.qec.chunks.DemChunksSpec",
+    "DemError": "flagquantum.qec.dem.DemError",
+    "DemMergeRule": "flagquantum.qec.dem.DemMergeRule",
+    "DemSample": "flagquantum.qec.dem.DemSample",
+    "DemSeam": "flagquantum.qec.chunks.DemSeam",
+    "DetectionEvent": "flagquantum.qec.types.DetectionEvent",
+    "Detector": "flagquantum.qec.circuit.Detector",
+    "DetectorErrorModel": "flagquantum.qec.dem.DetectorErrorModel",
+    "DetectorErrorModelDecodeResult": "flagquantum.qec.registry.DetectorErrorModelDecodeResult",
+    "DetectorErrorModelDecoder": "flagquantum.qec.registry.DetectorErrorModelDecoder",
+    "DetectorLayout": "flagquantum.qec.circuit.DetectorLayout",
+    "ErrorEvent": "flagquantum.qec.types.ErrorEvent",
+    "ErrorSchedule": "flagquantum.qec.types.ErrorSchedule",
+    "FloquetCode": "flagquantum.qec.floquet.FloquetCode",
+    "GraphlikeDetectorErrorModelDecoder": "flagquantum.qec.registry.GraphlikeDetectorErrorModelDecoder",
+    "LogicalObservable": "flagquantum.qec.circuit.LogicalObservable",
+    "MatchingDecodeResult": "flagquantum.qec.matching.MatchingDecodeResult",
+    "MatchingDependencyError": "flagquantum.qec.adapters.MatchingDependencyError",
+    "MeasurementMap": "flagquantum.qec.context.MeasurementMap",
+    "MeasurementPhase": "flagquantum.qec.floquet.MeasurementPhase",
+    "MeasurementRef": "flagquantum.qec.circuit.MeasurementRef",
+    "MeasurementSamples": "flagquantum.qec.sampling.MeasurementSamples",
+    "MemoryCircuit": "flagquantum.qec.circuit.MemoryCircuit",
+    "MinimumWeightMatchingDecoder": "flagquantum.qec.matching.MinimumWeightMatchingDecoder",
+    "NoiseSweepPoint": "flagquantum.qec.types.NoiseSweepPoint",
+    "ObservableLayout": "flagquantum.qec.circuit.ObservableLayout",
+    "Pauli": "flagquantum.qec.pauli.Pauli",
+    "PauliFrame": "flagquantum.qec.types.PauliFrame",
+    "PhaseId": "flagquantum.qec.chunks.PhaseId",
+    "PhenomenologicalNoise": "flagquantum.qec.noise.PhenomenologicalNoise",
+    "PyMatchingDecoder": "flagquantum.qec.adapters.PyMatchingDecoder",
+    "RepetitionCode": "flagquantum.qec.codes.RepetitionCode",
+    "RepetitionLookupDecoder": "flagquantum.qec.decoders.RepetitionLookupDecoder",
+    "RepetitionMemoryResult": "flagquantum.qec.types.RepetitionMemoryResult",
+    "RepetitionMemoryShot": "flagquantum.qec.types.RepetitionMemoryShot",
+    "RepetitionNoiseProfile": "flagquantum.qec.noise.RepetitionNoiseProfile",
+    "RepetitionStreamingLookupDecoder": "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder",
+    "RepetitionTemporalDecoder": "flagquantum.qec.decoders.RepetitionTemporalDecoder",
+    "RotatedSurfaceCode": "flagquantum.qec.codes.RotatedSurfaceCode",
+    "SeamId": "flagquantum.qec.chunks.SeamId",
+    "SlidingWindowDecodeResult": "flagquantum.qec.sliding_window.SlidingWindowDecodeResult",
+    "SlidingWindowDecoder": "flagquantum.qec.sliding_window.SlidingWindowDecoder",
+    "SlidingWindowMatchingDecoder": "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder",
+    "StabilizerCode": "flagquantum.qec.codes.StabilizerCode",
+    "SteaneCode": "flagquantum.qec.codes.SteaneCode",
+    "StreamingDecoder": "flagquantum.qec.decoders.StreamingDecoder",
+    "SubsystemCode": "flagquantum.qec.subsystem.SubsystemCode",
+    "SyndromeRound": "flagquantum.qec.types.SyndromeRound",
+    "ZxxzSurfaceCode": "flagquantum.qec.surface.ZxxzSurfaceCode",
+    "ancilla_bands": "flagquantum.qec.codes.ancilla_bands",
+    "bivariate_bicycle_code": "flagquantum.qec.bicycle.bivariate_bicycle_code",
+    "build_memory_circuit": "flagquantum.qec.circuit.build_memory_circuit",
+    "certify_logical_product": "flagquantum.qec.logical.certify_logical_product",
+    "circuit_from_detector_error_model": "flagquantum.qec.dem_circuit.circuit_from_detector_error_model",
+    "code_names": "flagquantum.qec.codes.code_names",
+    "css_code_matrices": "flagquantum.qec.dem_matrices.css_code_matrices",
+    "decoder_context_from_memory_circuit": "flagquantum.qec.context.decoder_context_from_memory_circuit",
+    "decoder_names": "flagquantum.qec.registry.decoder_names",
+    "dem_chunk_from_spec": "flagquantum.qec.chunks.dem_chunk_from_spec",
+    "dem_chunks_from_spec": "flagquantum.qec.chunks.dem_chunks_from_spec",
+    "dem_chunks_to_d_sparse": "flagquantum.qec.sliding_window.dem_chunks_to_d_sparse",
+    "dem_chunks_to_o_sparse": "flagquantum.qec.sliding_window.dem_chunks_to_o_sparse",
+    "dem_chunks_to_pcm": "flagquantum.qec.sliding_window.dem_chunks_to_pcm",
+    "dem_close": "flagquantum.qec.chunks.dem_close",
+    "dem_close_all": "flagquantum.qec.chunks.dem_close_all",
+    "dem_stitch": "flagquantum.qec.chunks.dem_stitch",
+    "dem_stitch_all": "flagquantum.qec.chunks.dem_stitch_all",
+    "dem_stitch_merged": "flagquantum.qec.chunks.dem_stitch_merged",
+    "derive_anticommuting_logical_product": "flagquantum.qec.logical.derive_anticommuting_logical_product",
+    "detector_error_model_from_circuit": "flagquantum.qec.dem_circuit.detector_error_model_from_circuit",
+    "get_code": "flagquantum.qec.codes.get_code",
+    "get_decoder": "flagquantum.qec.registry.get_decoder",
+    "qldpc_code": "flagquantum.qec.qldpc.qldpc_code",
+    "reed_muller_code": "flagquantum.qec.reed_muller.reed_muller_code",
+    "register_code": "flagquantum.qec.codes.register_code",
+    "register_decoder": "flagquantum.qec.registry.register_decoder",
+    "ring_floquet_code": "flagquantum.qec.floquet.ring_floquet_code",
+    "run_repetition_memory_experiment": "flagquantum.qec.repetition.run_repetition_memory_experiment",
+    "run_repetition_memory_noise_sweep": "flagquantum.qec.noise.run_repetition_memory_noise_sweep",
+    "sample_memory_circuit": "flagquantum.qec.sampling.sample_memory_circuit",
+    "sample_memory_measurements": "flagquantum.qec.sampling.sample_memory_measurements",
+    "tesseract_code": "flagquantum.qec.subsystem.tesseract_code",
+    "tesseract_column_swap": "flagquantum.qec.subsystem.tesseract_column_swap",
+    "tesseract_free_cnot_pairs": "flagquantum.qec.subsystem.tesseract_free_cnot_pairs",
+    "toric_code": "flagquantum.qec.codes.toric_code",
+    "triangular_colour_code": "flagquantum.qec.codes.triangular_colour_code"
+  },
+  "api": {
+    "AUTHORITY_NAME": {
+      "value": "minimum_weight_matching"
+    },
+    "BELIEF_PROPAGATION_NAME": {
+      "value": "belief_propagation"
+    },
+    "BELIEF_PROPAGATION_OSD_NAME": {
+      "value": "belief_propagation_osd"
+    },
+    "CROSS_CHECK_NAME": {
+      "value": "pymatching"
+    },
+    "SLIDING_WINDOW_NAME": {
+      "value": "sliding_window_matching"
+    },
+    "BeliefPropagationDecodeResult": {
+      "signature": "(converged: 'bool', observables: 'tuple[int, ...]', mechanisms: 'tuple[int, ...]', weight: 'float', iterations: 'int') -> None",
+      "fields": [
+        {
+          "name": "converged",
+          "type": "bool",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "observables",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "mechanisms",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "weight",
+          "type": "float",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "iterations",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "BeliefPropagationDecoder": {
+      "signature": "(model: 'DetectorErrorModel', max_iterations: 'int' = 64, osd: 'bool' = True) -> None",
+      "fields": [
+        {
+          "name": "model",
+          "type": "DetectorErrorModel",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "max_iterations",
+          "type": "int",
+          "init": true,
+          "default": "64",
+          "factory": null
+        },
+        {
+          "name": "osd",
+          "type": "bool",
+          "init": true,
+          "default": "True",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "decode": "(self, detection_events: 'Iterable[int]') -> 'BeliefPropagationDecodeResult'",
+        "from_decoding_graph": "(graph: 'DecodingGraph', *, max_iterations: 'int' = 64, osd: 'bool' = True) -> 'BeliefPropagationDecoder'",
+        "from_detector_error_model": "(model: 'DetectorErrorModel', *, max_iterations: 'int' = 64, osd: 'bool' = True) -> 'BeliefPropagationDecoder'"
+      },
+      "properties": [
+        "factor_graph"
+      ]
+    },
+    "BeliefPropagationOsdDecodeResult": {
+      "signature": "(observables: 'tuple[int, ...]', mechanisms: 'tuple[int, ...]', weight: 'float', converged: 'bool', iterations: 'int') -> None",
+      "fields": [
+        {
+          "name": "observables",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "mechanisms",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "weight",
+          "type": "float",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "converged",
+          "type": "bool",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "iterations",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "BeliefPropagationOsdDecoder": {
+      "signature": "(model: 'DetectorErrorModel', max_iterations: 'int' = 30, scaling: 'float' = 0.75) -> None",
+      "fields": [
+        {
+          "name": "model",
+          "type": "DetectorErrorModel",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "max_iterations",
+          "type": "int",
+          "init": true,
+          "default": "30",
+          "factory": null
+        },
+        {
+          "name": "scaling",
+          "type": "float",
+          "init": true,
+          "default": "0.75",
+          "factory": null
+        },
+        {
+          "name": "_flips",
+          "type": "torch.Tensor",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_observable_flips",
+          "type": "torch.Tensor",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_prior",
+          "type": "torch.Tensor",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_decodable",
+          "type": "torch.Tensor",
+          "init": false,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "decode": "(self, detection_events: 'Iterable[int]') -> 'BeliefPropagationOsdDecodeResult'",
+        "from_detector_error_model": "(model: 'DetectorErrorModel', *, max_iterations: 'int' = 30, scaling: 'float' = 0.75) -> 'BeliefPropagationOsdDecoder'"
+      },
+      "properties": []
+    },
+    "ChunkLayout": {
+      "signature": "(model: 'DetectorErrorModel', widths: 'tuple[int, ...]') -> None",
+      "fields": [
+        {
+          "name": "model",
+          "type": "DetectorErrorModel",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "widths",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_first_row",
+          "type": "tuple[int, ...]",
+          "init": false,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "first_row_of": "(self, layer: 'int') -> 'int'",
+        "from_memory_circuit": "(model: 'DetectorErrorModel', circuit: 'MemoryCircuit') -> \"'ChunkLayout'\"",
+        "layer_of": "(self, row: 'int') -> 'int'",
+        "rows_for": "(self, first_layer: 'int', last_layer: 'int') -> 'range'",
+        "width_of": "(self, layer: 'int') -> 'int'"
+      },
+      "properties": [
+        "num_detectors",
+        "num_layers",
+        "rows"
+      ]
+    },
+    "CodeCheck": {
+      "signature": "(index: 'int', stabilizer: 'Pauli', ancilla_qubit: 'int', cnot_qubits: 'tuple[tuple[int, int], ...]') -> None",
+      "fields": [
+        {
+          "name": "index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "stabilizer",
+          "type": "Pauli",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "ancilla_qubit",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "cnot_qubits",
+          "type": "tuple[tuple[int, int], ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "Correction": {
+      "signature": "(round_index: 'int', qubit: 'int | None', pauli: 'str' = 'x') -> None",
+      "fields": [
+        {
+          "name": "round_index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "qubit",
+          "type": "int | None",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "pauli",
+          "type": "str",
+          "init": true,
+          "default": "'x'",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "applied"
+      ]
+    },
+    "CssCode": {
+      "signature": "(matrices: 'CssCodeMatrices | None' = None, distance: 'int | None' = None, hz: 'BinaryMatrix' = (), hx: 'BinaryMatrix' = (), lz: 'BinaryMatrix' = (), lx: 'BinaryMatrix' = (), distance_search_weight: 'int' = 3) -> None",
+      "fields": [
+        {
+          "name": "matrices",
+          "type": "CssCodeMatrices | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        },
+        {
+          "name": "distance",
+          "type": "int | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        },
+        {
+          "name": "hz",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "hx",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "lz",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "lx",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "distance_search_weight",
+          "type": "int",
+          "init": true,
+          "default": "3",
+          "factory": null
+        },
+        {
+          "name": "_width",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_z_checks",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_x_checks",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_z_logicals",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_x_logicals",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_x_distance",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_z_distance",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "ancilla_qubits",
+        "checks",
+        "data_qubits",
+        "logical_observables",
+        "num_ancilla_qubits",
+        "num_ancilla_x_qubits",
+        "num_ancilla_z_qubits",
+        "num_data_qubits",
+        "num_x_stabilizers",
+        "num_z_stabilizers",
+        "stabilizers",
+        "x_distance",
+        "z_distance"
+      ]
+    },
+    "CssCodeMatrices": {
+      "signature": "(hz: 'torch.Tensor', hx: 'torch.Tensor | None' = None, lz: 'torch.Tensor | None' = None, lx: 'torch.Tensor | None' = None) -> None",
+      "fields": [
+        {
+          "name": "hz",
+          "type": "torch.Tensor",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "hx",
+          "type": "torch.Tensor | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        },
+        {
+          "name": "lz",
+          "type": "torch.Tensor | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        },
+        {
+          "name": "lx",
+          "type": "torch.Tensor | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "num_checks",
+        "num_observables",
+        "num_qubits",
+        "num_x_checks",
+        "num_x_logicals",
+        "num_z_checks",
+        "num_z_logicals"
+      ]
+    },
+    "DecodeResult": {
+      "signature": "(consumed_rounds: 'int', corrections: 'tuple[Correction, ...]', pauli_frame: 'PauliFrame') -> None",
+      "fields": [
+        {
+          "name": "consumed_rounds",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "corrections",
+          "type": "tuple[Correction, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "pauli_frame",
+          "type": "PauliFrame",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "Decoder": {
+      "signature": "(*args, **kwargs)",
+      "methods": {
+        "decode": "(self, syndrome_history: 'Sequence[SyndromeRound]') -> 'DecodeResult'"
+      },
+      "properties": []
+    },
+    "DecoderContext": {
+      "signature": "(circuit: 'MemoryCircuit', dem: 'DetectorErrorModel') -> None",
+      "fields": [
+        {
+          "name": "circuit",
+          "type": "MemoryCircuit",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "dem",
+          "type": "DetectorErrorModel",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "full_component": "(self) -> 'DecoderInputs'",
+        "num_measurements": "(self) -> 'int'",
+        "x_component": "(self) -> 'DecoderInputs'",
+        "z_component": "(self) -> 'DecoderInputs'"
+      },
+      "properties": []
+    },
+    "DecoderInputs": {
+      "signature": "(dem: 'DetectorErrorModel', measurement_to_detectors: 'MeasurementMap', measurement_to_observables: 'MeasurementMap') -> None",
+      "fields": [
+        {
+          "name": "dem",
+          "type": "DetectorErrorModel",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "measurement_to_detectors",
+          "type": "MeasurementMap",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "measurement_to_observables",
+          "type": "MeasurementMap",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "num_measurements"
+      ]
+    },
+    "DecodingGraph": {
+      "signature": "(num_detectors: 'int', num_observables: 'int', edges: 'tuple[DecodingGraphEdge, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "num_detectors",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "num_observables",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "edges",
+          "type": "tuple[DecodingGraphEdge, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "from_detector_error_model": "(model: 'DetectorErrorModel') -> 'DecodingGraph'"
+      },
+      "properties": [
+        "boundary_node",
+        "num_edges"
+      ]
+    },
+    "DecodingGraphEdge": {
+      "signature": "(detectors: 'tuple[int, int]', probability: 'float', observables: 'tuple[int, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "detectors",
+          "type": "tuple[int, int]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "probability",
+          "type": "float",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "observables",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "weight"
+      ]
+    },
+    "DemChunk": {
+      "signature": "(model: 'DetectorErrorModel', first_row: 'int', seams: 'tuple[DemSeam, ...]', first_layer: 'int', last_layer: 'int') -> None",
+      "fields": [
+        {
+          "name": "model",
+          "type": "DetectorErrorModel",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "first_row",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "seams",
+          "type": "tuple[DemSeam, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "first_layer",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "last_layer",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "get_seam": "(self, seam_id: 'SeamId') -> 'DemSeam'",
+        "has_seam": "(self, seam_id: 'SeamId') -> 'bool'",
+        "interior_rows": "(self) -> 'tuple[int, ...]'",
+        "seam_rows": "(self, seam_id: 'SeamId') -> 'tuple[int, ...]'"
+      },
+      "properties": [
+        "num_layers",
+        "rows"
+      ]
+    },
+    "DemChunkSpec": {
+      "signature": "(layout: 'ChunkLayout', first_layer: 'int', last_layer: 'int', phase: 'PhaseId') -> None",
+      "fields": [
+        {
+          "name": "layout",
+          "type": "ChunkLayout",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "first_layer",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "last_layer",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "phase",
+          "type": "PhaseId",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "num_layers"
+      ]
+    },
+    "DemChunksSpec": {
+      "signature": "(layout: 'ChunkLayout', window: 'int', phases: 'tuple[PhaseId, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "layout",
+          "type": "ChunkLayout",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "phases",
+          "type": "tuple[PhaseId, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "chunk_specs": "(self) -> 'tuple[DemChunkSpec, ...]'",
+        "phase_sequence": "(self) -> 'tuple[PhaseId, ...]'"
+      },
+      "properties": [
+        "layer_ranges",
+        "num_windows",
+        "stride"
+      ]
+    },
+    "DemError": {
+      "signature": "(probability: 'float', detectors: 'tuple[int, ...]' = (), observables: 'tuple[int, ...]' = (), error_id: 'int | None' = None) -> None",
+      "fields": [
+        {
+          "name": "probability",
+          "type": "float",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "detectors",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "observables",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "error_id",
+          "type": "int | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "DemMergeRule": {
+      "members": {
+        "INDEPENDENT_PARITY": "independent_parity",
+        "CLAMPED_LINEAR_SUM": "clamped_linear_sum"
+      },
+      "methods": {},
+      "properties": []
+    },
+    "DemSample": {
+      "signature": "(detectors: 'torch.Tensor', observables: 'torch.Tensor') -> None",
+      "fields": [
+        {
+          "name": "detectors",
+          "type": "torch.Tensor",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "observables",
+          "type": "torch.Tensor",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "shots"
+      ]
+    },
+    "DemSeam": {
+      "signature": "(seam_id: 'SeamId', row_begin: 'int', row_end: 'int') -> None",
+      "fields": [
+        {
+          "name": "seam_id",
+          "type": "SeamId",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "row_begin",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "row_end",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "rows",
+        "width"
+      ]
+    },
+    "DetectionEvent": {
+      "signature": "(round_index: 'int', check_index: 'int') -> None",
+      "fields": [
+        {
+          "name": "round_index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "check_index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "Detector": {
+      "signature": "(index: 'int', parity: 'tuple[MeasurementRef, ...]') -> None",
+      "fields": [
+        {
+          "name": "index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "parity",
+          "type": "tuple[MeasurementRef, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "DetectorErrorModel": {
+      "signature": "(num_detectors: 'int', num_observables: 'int', errors: 'tuple[DemError, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "num_detectors",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "num_observables",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "errors",
+          "type": "tuple[DemError, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "dem_sampling": "(self, *, shots: 'int', seed: 'int | None' = None) -> 'DemSample'",
+        "detector_error_matrix": "(self) -> 'torch.Tensor'",
+        "detector_rates": "(self) -> 'torch.Tensor'",
+        "exclusive_groups": "(self) -> 'tuple[tuple[int, ...], ...]'",
+        "from_circuit": "(circuit: 'Any', *, num_detectors: 'int') -> 'DetectorErrorModel'",
+        "from_code": "(code: 'StabilizerCode', *, noise: 'PhenomenologicalNoise', num_rounds: 'int' = 1) -> 'DetectorErrorModel'",
+        "from_code_matrices": "(matrices: 'CssCodeMatrices', *, noise: 'PhenomenologicalNoise', num_rounds: 'int' = 1) -> 'DetectorErrorModel'",
+        "from_memory_circuit": "(circuit: 'MemoryCircuit', *, noise: 'PhenomenologicalNoise | NoiseModel', decompose_composite_faults: 'bool' = False) -> 'DetectorErrorModel'",
+        "from_stim_text": "(text: 'str', *, use_decomp_suggestions: 'bool' = False) -> 'DetectorErrorModel'",
+        "mechanisms_are_unique": "(self) -> 'bool'",
+        "merge_duplicate_mechanisms": "(self, *, rule: 'DemMergeRule | str' = <DemMergeRule.INDEPENDENT_PARITY: 'independent_parity'>) -> 'DetectorErrorModel'",
+        "observable_rates": "(self) -> 'torch.Tensor'",
+        "observables_flips_matrix": "(self) -> 'torch.Tensor'",
+        "require_unique_mechanisms": "(self) -> 'None'",
+        "stated_error_ids": "(self) -> 'tuple[int, ...]'",
+        "to_stim_text": "(self) -> 'str'"
+      },
+      "properties": [
+        "error_ids",
+        "error_rates",
+        "num_errors"
+      ]
+    },
+    "DetectorErrorModelDecodeResult": {
+      "signature": "(*args, **kwargs)",
+      "methods": {},
+      "properties": [
+        "observables"
+      ]
+    },
+    "DetectorErrorModelDecoder": {
+      "signature": "(*args, **kwargs)",
+      "methods": {
+        "decode": "(self, detection_events: 'Iterable[int]') -> 'DetectorErrorModelDecodeResult'"
+      },
+      "properties": []
+    },
+    "DetectorLayout": {
+      "signature": "(detectors: 'tuple[Detector, ...]') -> None",
+      "fields": [
+        {
+          "name": "detectors",
+          "type": "tuple[Detector, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "ErrorEvent": {
+      "signature": "(round_index: 'int', qubit: 'int', pauli: 'str' = 'x') -> None",
+      "fields": [
+        {
+          "name": "round_index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "qubit",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "pauli",
+          "type": "str",
+          "init": true,
+          "default": "'x'",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "ErrorSchedule": {
+      "signature": "(events: 'tuple[ErrorEvent, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "events",
+          "type": "tuple[ErrorEvent, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "for_round": "(self, round_index: 'int') -> 'tuple[ErrorEvent, ...]'"
+      },
+      "properties": []
+    },
+    "FloquetCode": {
+      "signature": "(name: 'str', num_qubits: 'int', phases: 'tuple[MeasurementPhase, ...]', max_rounds: 'int' = 64, distance_search_weight: 'int' = 3) -> None",
+      "fields": [
+        {
+          "name": "name",
+          "type": "str",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "num_qubits",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "phases",
+          "type": "tuple[MeasurementPhase, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "max_rounds",
+          "type": "int",
+          "init": true,
+          "default": "64",
+          "factory": null
+        },
+        {
+          "name": "distance_search_weight",
+          "type": "int",
+          "init": true,
+          "default": "3",
+          "factory": null
+        },
+        {
+          "name": "_rounds_to_steady",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_period",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_steady_groups",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_reading",
+          "type": "tuple[int, ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_logical_basis",
+          "type": "tuple[int, ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_least_logical_weight",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "steady_stabilizer_groups": "(self) -> 'tuple[tuple[Pauli, ...], ...]'"
+      },
+      "properties": [
+        "data_qubits",
+        "least_logical_weight",
+        "logical_operators",
+        "num_data_qubits",
+        "num_logical_qubits",
+        "num_phases",
+        "num_stabilizer_generators",
+        "num_transient_rounds",
+        "period",
+        "stabilizer_generators"
+      ]
+    },
+    "GraphlikeDetectorErrorModelDecoder": {
+      "signature": "(*args, **kwargs)",
+      "methods": {
+        "decode": "(self, detection_events: 'Iterable[int]') -> 'DetectorErrorModelDecodeResult'"
+      },
+      "properties": [
+        "graph"
+      ]
+    },
+    "LogicalObservable": {
+      "signature": "(index: 'int', pauli: 'Pauli', measurement_parity: 'tuple[MeasurementRef, ...]') -> None",
+      "fields": [
+        {
+          "name": "index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "pauli",
+          "type": "Pauli",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "measurement_parity",
+          "type": "tuple[MeasurementRef, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "MatchingDecodeResult": {
+      "signature": "(observables: 'tuple[int, ...]', error_edges: 'tuple[DecodingGraphEdge, ...]', weight: 'float') -> None",
+      "fields": [
+        {
+          "name": "observables",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "error_edges",
+          "type": "tuple[DecodingGraphEdge, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "weight",
+          "type": "float",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "MatchingDependencyError": {
+      "exception_bases": [
+        "CapabilityError",
+        "NotImplementedError",
+        "RuntimeError",
+        "FlagQuantumError",
+        "ImportError",
+        "Exception",
+        "BaseException",
+        "object"
+      ],
+      "methods": {},
+      "properties": []
+    },
+    "MeasurementMap": {
+      "signature": "(num_measurements: 'int', rows: 'tuple[tuple[int, ...], ...]') -> None",
+      "fields": [
+        {
+          "name": "num_measurements",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "rows",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "dense": "(self) -> 'torch.Tensor'",
+        "flattened": "(self) -> 'tuple[int, ...]'"
+      },
+      "properties": [
+        "num_entries",
+        "num_rows"
+      ]
+    },
+    "MeasurementPhase": {
+      "signature": "(name: 'str', operators: 'tuple[Pauli, ...]') -> None",
+      "fields": [
+        {
+          "name": "name",
+          "type": "str",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "operators",
+          "type": "tuple[Pauli, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "num_independent_operators",
+        "num_operators"
+      ]
+    },
+    "MeasurementRef": {
+      "signature": "(round_index: 'int | None', qubit: 'int') -> None",
+      "fields": [
+        {
+          "name": "round_index",
+          "type": "int | None",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "qubit",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "MeasurementSamples": {
+      "signature": "(refs: 'tuple[MeasurementRef, ...]', outcomes: 'torch.Tensor') -> None",
+      "fields": [
+        {
+          "name": "refs",
+          "type": "tuple[MeasurementRef, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "outcomes",
+          "type": "torch.Tensor",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "integer": "(self, references: 'Sequence[MeasurementRef]') -> 'torch.Tensor'",
+        "outcome": "(self, reference: 'MeasurementRef') -> 'torch.Tensor'",
+        "vector": "(self, references: 'Sequence[MeasurementRef]') -> 'torch.Tensor'"
+      },
+      "properties": [
+        "num_handles",
+        "shots"
+      ]
+    },
+    "MemoryCircuit": {
+      "signature": "(code: 'StabilizerCode', rounds: 'int', source: 'str', detectors: 'DetectorLayout', observables: 'ObservableLayout', x_readout_qubits: 'tuple[int, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "code",
+          "type": "StabilizerCode",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "rounds",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "source",
+          "type": "str",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "detectors",
+          "type": "DetectorLayout",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "observables",
+          "type": "ObservableLayout",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "x_readout_qubits",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "measurement_refs",
+        "readout_basis"
+      ]
+    },
+    "MinimumWeightMatchingDecoder": {
+      "signature": "(graph: 'DecodingGraph', max_defects: 'int' = 20) -> None",
+      "fields": [
+        {
+          "name": "graph",
+          "type": "DecodingGraph",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "max_defects",
+          "type": "int",
+          "init": true,
+          "default": "20",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "decode": "(self, detection_events: 'Iterable[int]') -> 'MatchingDecodeResult'",
+        "from_decoding_graph": "(graph: 'DecodingGraph', *, max_defects: 'int' = 20) -> 'MinimumWeightMatchingDecoder'",
+        "from_detector_error_model": "(model: 'DetectorErrorModel', *, max_defects: 'int' = 20) -> 'MinimumWeightMatchingDecoder'"
+      },
+      "properties": []
+    },
+    "NoiseSweepPoint": {
+      "signature": "(probability: 'float', shots: 'int', logical_failures: 'int', logical_error_rate: 'float', bit_flip_events: 'int', readout_errors: 'int') -> None",
+      "fields": [
+        {
+          "name": "probability",
+          "type": "float",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "shots",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "logical_failures",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "logical_error_rate",
+          "type": "float",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "bit_flip_events",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "readout_errors",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "ObservableLayout": {
+      "signature": "(observables: 'tuple[LogicalObservable, ...]') -> None",
+      "fields": [
+        {
+          "name": "observables",
+          "type": "tuple[LogicalObservable, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "Pauli": {
+      "signature": "(x_qubits: 'tuple[int, ...]' = (), z_qubits: 'tuple[int, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "x_qubits",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "z_qubits",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "commutes_with": "(self, other: 'Pauli') -> 'bool'",
+        "from_label": "(label: 'str', qubit: 'int') -> 'Pauli'",
+        "from_text": "(text: 'str') -> 'Pauli'",
+        "to_text": "(self) -> 'str'"
+      },
+      "properties": [
+        "is_identity",
+        "support",
+        "weight"
+      ]
+    },
+    "PauliFrame": {
+      "signature": "(x_qubits: 'tuple[int, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "x_qubits",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "apply": "(self, bits: 'Sequence[int]') -> 'tuple[int, int, int]'",
+        "from_corrections": "(corrections: 'Sequence[Correction]') -> \"'PauliFrame'\""
+      },
+      "properties": []
+    },
+    "PhaseId": {
+      "signature": "(name: 'str') -> None",
+      "fields": [
+        {
+          "name": "name",
+          "type": "str",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "PhenomenologicalNoise": {
+      "signature": "(data_flip: 'float' = 0.0, phase_flip: 'float' = 0.0, both_flip: 'float' = 0.0, measurement_flip: 'float' = 0.0, data_flip_per_qubit: 'tuple[float, ...]' = (), phase_flip_per_qubit: 'tuple[float, ...]' = (), both_flip_per_qubit: 'tuple[float, ...]' = (), measurement_flip_per_check: 'tuple[float, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "data_flip",
+          "type": "float",
+          "init": true,
+          "default": "0.0",
+          "factory": null
+        },
+        {
+          "name": "phase_flip",
+          "type": "float",
+          "init": true,
+          "default": "0.0",
+          "factory": null
+        },
+        {
+          "name": "both_flip",
+          "type": "float",
+          "init": true,
+          "default": "0.0",
+          "factory": null
+        },
+        {
+          "name": "measurement_flip",
+          "type": "float",
+          "init": true,
+          "default": "0.0",
+          "factory": null
+        },
+        {
+          "name": "data_flip_per_qubit",
+          "type": "tuple[float, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "phase_flip_per_qubit",
+          "type": "tuple[float, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "both_flip_per_qubit",
+          "type": "tuple[float, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "measurement_flip_per_check",
+          "type": "tuple[float, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "both_flip_rates": "(self, *, num_qubits: 'int') -> 'tuple[float, ...]'",
+        "data_flip_rates": "(self, *, num_qubits: 'int') -> 'tuple[float, ...]'",
+        "measurement_flip_rates": "(self, *, num_checks: 'int') -> 'tuple[float, ...]'",
+        "phase_flip_rates": "(self, *, num_qubits: 'int') -> 'tuple[float, ...]'"
+      },
+      "properties": []
+    },
+    "PyMatchingDecoder": {
+      "signature": "(graph: 'DecodingGraph') -> None",
+      "fields": [
+        {
+          "name": "graph",
+          "type": "DecodingGraph",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_matching",
+          "type": "Any",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_edges",
+          "type": "dict[tuple[int, int], DecodingGraphEdge]",
+          "init": false,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "decode": "(self, detection_events: 'Iterable[int]') -> 'MatchingDecodeResult'",
+        "from_decoding_graph": "(graph: 'DecodingGraph') -> 'PyMatchingDecoder'",
+        "from_detector_error_model": "(model: 'DetectorErrorModel') -> 'PyMatchingDecoder'"
+      },
+      "properties": []
+    },
+    "RepetitionCode": {
+      "signature": "(distance: 'int' = 3) -> None",
+      "fields": [
+        {
+          "name": "distance",
+          "type": "int",
+          "init": true,
+          "default": "3",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "ancilla_qubits",
+        "checks",
+        "data_qubits",
+        "logical_observables",
+        "num_ancilla_qubits",
+        "num_ancilla_x_qubits",
+        "num_ancilla_z_qubits",
+        "num_data_qubits",
+        "num_x_stabilizers",
+        "num_z_stabilizers",
+        "stabilizers"
+      ]
+    },
+    "RepetitionLookupDecoder": {
+      "signature": "() -> None",
+      "fields": [],
+      "frozen": true,
+      "methods": {
+        "decode": "(self, syndrome_history: 'Sequence[SyndromeRound]') -> 'DecodeResult'"
+      },
+      "properties": []
+    },
+    "RepetitionMemoryResult": {
+      "signature": "(rounds: 'int', error_schedule: 'ErrorSchedule', feedback_mode: 'str', shot_records: 'tuple[RepetitionMemoryShot, ...]', execution_semantics: 'str', noise_model_identity: 'str | None' = None, bit_flip_events: 'int' = 0, readout_errors: 'int' = 0) -> None",
+      "fields": [
+        {
+          "name": "rounds",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "error_schedule",
+          "type": "ErrorSchedule",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "feedback_mode",
+          "type": "str",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "shot_records",
+          "type": "tuple[RepetitionMemoryShot, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "execution_semantics",
+          "type": "str",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "noise_model_identity",
+          "type": "str | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        },
+        {
+          "name": "bit_flip_events",
+          "type": "int",
+          "init": true,
+          "default": "0",
+          "factory": null
+        },
+        {
+          "name": "readout_errors",
+          "type": "int",
+          "init": true,
+          "default": "0",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "logical_error_rate",
+        "logical_failures",
+        "shot_count"
+      ]
+    },
+    "RepetitionMemoryShot": {
+      "signature": "(shot_index: 'int', syndrome_rounds: 'tuple[SyndromeRound, ...]', executed_feedback: 'tuple[Correction, ...]', decode_result: 'DecodeResult', raw_final_data_bits: 'tuple[int, int, int]', decoded_data_bits: 'tuple[int, int, int]', logical_bit: 'int', logical_failure: 'bool') -> None",
+      "fields": [
+        {
+          "name": "shot_index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "syndrome_rounds",
+          "type": "tuple[SyndromeRound, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "executed_feedback",
+          "type": "tuple[Correction, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "decode_result",
+          "type": "DecodeResult",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "raw_final_data_bits",
+          "type": "tuple[int, int, int]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "decoded_data_bits",
+          "type": "tuple[int, int, int]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "logical_bit",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "logical_failure",
+          "type": "bool",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "RepetitionNoiseProfile": {
+      "signature": "(data_bit_flip_probability: 'float' = 0.0, syndrome_readout_error_probability: 'float' = 0.0, final_readout_error_probability: 'float' = 0.0) -> None",
+      "fields": [
+        {
+          "name": "data_bit_flip_probability",
+          "type": "float",
+          "init": true,
+          "default": "0.0",
+          "factory": null
+        },
+        {
+          "name": "syndrome_readout_error_probability",
+          "type": "float",
+          "init": true,
+          "default": "0.0",
+          "factory": null
+        },
+        {
+          "name": "final_readout_error_probability",
+          "type": "float",
+          "init": true,
+          "default": "0.0",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "to_noise_model": "(self) -> 'NoiseModel'"
+      },
+      "properties": []
+    },
+    "RepetitionStreamingLookupDecoder": {
+      "signature": "() -> None",
+      "fields": [],
+      "frozen": true,
+      "methods": {
+        "decode_round": "(self, syndrome_history: 'Sequence[SyndromeRound]') -> 'Correction'"
+      },
+      "properties": []
+    },
+    "RepetitionTemporalDecoder": {
+      "signature": "() -> None",
+      "fields": [],
+      "frozen": true,
+      "methods": {
+        "decode_round": "(self, syndrome_history: 'Sequence[SyndromeRound]') -> 'Correction'"
+      },
+      "properties": []
+    },
+    "RotatedSurfaceCode": {
+      "signature": "(distance: 'int' = 3) -> None",
+      "fields": [
+        {
+          "name": "distance",
+          "type": "int",
+          "init": true,
+          "default": "3",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "ancilla_qubits",
+        "checks",
+        "data_qubits",
+        "logical_observables",
+        "num_ancilla_qubits",
+        "num_ancilla_x_qubits",
+        "num_ancilla_z_qubits",
+        "num_data_qubits",
+        "num_x_stabilizers",
+        "num_z_stabilizers",
+        "stabilizers"
+      ]
+    },
+    "SeamId": {
+      "signature": "(name: 'str') -> None",
+      "fields": [
+        {
+          "name": "name",
+          "type": "str",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "SlidingWindowDecodeResult": {
+      "signature": "(observables: 'tuple[int, ...]', faults: 'tuple[int, ...]', windows_decoded: 'int', complete: 'bool', converged: 'bool | None') -> None",
+      "fields": [
+        {
+          "name": "observables",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "faults",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "windows_decoded",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "complete",
+          "type": "bool",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "converged",
+          "type": "bool | None",
+          "init": true,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "SlidingWindowDecoder": {
+      "signature": "(spec: 'DemChunksSpec', inner_decoder: 'str', **options: 'Any') -> 'None'",
+      "methods": {
+        "decode": "(self, detection_events: 'Iterable[int]') -> 'SlidingWindowDecodeResult'",
+        "decode_round": "(self, detection_events: 'Iterable[int]') -> 'SlidingWindowDecodeResult | None'",
+        "reset_stream": "(self) -> 'None'"
+      },
+      "properties": [
+        "chunks",
+        "model",
+        "num_windows",
+        "spec",
+        "windows_decoded"
+      ]
+    },
+    "SlidingWindowMatchingDecoder": {
+      "signature": "(graph: 'DecodingGraph', commit: 'int | None' = None, window: 'int | None' = None, max_defects: 'int' = 20) -> None",
+      "fields": [
+        {
+          "name": "graph",
+          "type": "DecodingGraph",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "commit",
+          "type": "int | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        },
+        {
+          "name": "window",
+          "type": "int | None",
+          "init": true,
+          "default": "None",
+          "factory": null
+        },
+        {
+          "name": "max_defects",
+          "type": "int",
+          "init": true,
+          "default": "20",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {
+        "decode": "(self, detection_events: 'Iterable[int]') -> 'MatchingDecodeResult'",
+        "from_detector_error_model": "(model: 'DetectorErrorModel', *, commit: 'int | None' = None, window: 'int | None' = None, max_defects: 'int' = 20) -> 'SlidingWindowMatchingDecoder'"
+      },
+      "properties": [
+        "mechanism_span"
+      ]
+    },
+    "StabilizerCode": {
+      "signature": "(*args, **kwargs)",
+      "methods": {},
+      "properties": [
+        "ancilla_qubits",
+        "checks",
+        "data_qubits",
+        "distance",
+        "logical_observables",
+        "num_ancilla_qubits",
+        "num_ancilla_x_qubits",
+        "num_ancilla_z_qubits",
+        "num_data_qubits",
+        "num_x_stabilizers",
+        "num_z_stabilizers",
+        "stabilizers"
+      ]
+    },
+    "SteaneCode": {
+      "signature": "() -> None",
+      "fields": [],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "ancilla_qubits",
+        "checks",
+        "data_qubits",
+        "distance",
+        "logical_observables",
+        "num_ancilla_qubits",
+        "num_ancilla_x_qubits",
+        "num_ancilla_z_qubits",
+        "num_data_qubits",
+        "num_x_stabilizers",
+        "num_z_stabilizers",
+        "stabilizers"
+      ]
+    },
+    "StreamingDecoder": {
+      "signature": "(*args, **kwargs)",
+      "methods": {
+        "decode_round": "(self, syndrome_history: 'Sequence[SyndromeRound]') -> 'Correction'"
+      },
+      "properties": []
+    },
+    "SubsystemCode": {
+      "signature": "(hz: 'BinaryMatrix', hx: 'BinaryMatrix', lz: 'BinaryMatrix' = (), lx: 'BinaryMatrix' = (), gz: 'BinaryMatrix' = (), gx: 'BinaryMatrix' = (), distance_search_weight: 'int' = 3) -> None",
+      "fields": [
+        {
+          "name": "hz",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "hx",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "lz",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "lx",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "gz",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "gx",
+          "type": "BinaryMatrix",
+          "init": true,
+          "default": "()",
+          "factory": null
+        },
+        {
+          "name": "distance_search_weight",
+          "type": "int",
+          "init": true,
+          "default": "3",
+          "factory": null
+        },
+        {
+          "name": "_width",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_z_checks",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_x_checks",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_z_logicals",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_x_logicals",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_z_gauges",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_x_gauges",
+          "type": "tuple[tuple[int, ...], ...]",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_stabilizer_generators",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_gauge_qubits",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_x_distance",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "_z_distance",
+          "type": "int",
+          "init": false,
+          "default": null,
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "data_qubits",
+        "distance",
+        "gauge_generators",
+        "logical_operators",
+        "num_data_qubits",
+        "num_gauge_qubits",
+        "num_logical_qubits",
+        "num_stabilizer_generators",
+        "stabilizer_generators",
+        "x_distance",
+        "z_distance"
+      ]
+    },
+    "SyndromeRound": {
+      "signature": "(round_index: 'int', bits: 'tuple[int, ...]', detection_events: 'tuple[DetectionEvent, ...]' = ()) -> None",
+      "fields": [
+        {
+          "name": "round_index",
+          "type": "int",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "bits",
+          "type": "tuple[int, ...]",
+          "init": true,
+          "default": null,
+          "factory": null
+        },
+        {
+          "name": "detection_events",
+          "type": "tuple[DetectionEvent, ...]",
+          "init": true,
+          "default": "()",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": []
+    },
+    "ZxxzSurfaceCode": {
+      "signature": "(distance: 'int' = 3) -> None",
+      "fields": [
+        {
+          "name": "distance",
+          "type": "int",
+          "init": true,
+          "default": "3",
+          "factory": null
+        }
+      ],
+      "frozen": true,
+      "methods": {},
+      "properties": [
+        "ancilla_qubits",
+        "checks",
+        "data_qubits",
+        "logical_observables",
+        "num_ancilla_qubits",
+        "num_ancilla_x_qubits",
+        "num_ancilla_z_qubits",
+        "num_data_qubits",
+        "num_x_stabilizers",
+        "num_z_stabilizers",
+        "stabilizers"
+      ]
+    },
+    "ancilla_bands": {
+      "signature": "(checks: 'tuple[CodeCheck, ...] | list[CodeCheck]') -> 'tuple[tuple[int, ...], tuple[int, ...]]'"
+    },
+    "bivariate_bicycle_code": {
+      "signature": "(x_period: 'int', y_period: 'int', a_terms: 'Sequence[Sequence[int]]', b_terms: 'Sequence[Sequence[int]]', *, distance_search_weight: 'int' = 3) -> 'CssCode'"
+    },
+    "build_memory_circuit": {
+      "signature": "(code: 'StabilizerCode', *, rounds: 'int', product: 'Pauli | None' = None, readout_basis: 'ReadoutBasis' = 'z') -> 'MemoryCircuit'"
+    },
+    "certify_logical_product": {
+      "signature": "(code: 'StabilizerCode', product: 'Pauli') -> 'Pauli'"
+    },
+    "circuit_from_detector_error_model": {
+      "signature": "(model: 'DetectorErrorModel') -> 'CircuitIR'"
+    },
+    "code_names": {
+      "signature": "() -> 'tuple[str, ...]'"
+    },
+    "css_code_matrices": {
+      "signature": "(code: 'StabilizerCode') -> 'CssCodeMatrices'"
+    },
+    "decoder_context_from_memory_circuit": {
+      "signature": "(circuit: 'MemoryCircuit', *, noise: 'PhenomenologicalNoise | NoiseModel') -> 'DecoderContext'"
+    },
+    "decoder_names": {
+      "signature": "() -> 'tuple[str, ...]'"
+    },
+    "dem_chunk_from_spec": {
+      "signature": "(spec: 'DemChunkSpec') -> 'DemChunk'"
+    },
+    "dem_chunks_from_spec": {
+      "signature": "(spec: 'DemChunksSpec') -> 'tuple[DemChunk, ...]'"
+    },
+    "dem_chunks_to_d_sparse": {
+      "signature": "(chunks: 'Sequence[DemChunk]', *, from_seam: 'SeamId' = SeamId(name='next_round'), to_seam: 'SeamId' = SeamId(name='prev_round')) -> 'tuple[tuple[int, ...], ...]'"
+    },
+    "dem_chunks_to_o_sparse": {
+      "signature": "(chunks: 'Sequence[DemChunk]') -> 'tuple[tuple[int, ...], ...]'"
+    },
+    "dem_chunks_to_pcm": {
+      "signature": "(chunks: 'Sequence[DemChunk]') -> 'tuple[tuple[int, ...], ...]'"
+    },
+    "dem_close": {
+      "signature": "(chunk: 'DemChunk') -> 'DetectorErrorModel'"
+    },
+    "dem_close_all": {
+      "signature": "(chunks: 'Sequence[DemChunk]') -> 'DetectorErrorModel'"
+    },
+    "dem_stitch": {
+      "signature": "(left: 'DemChunk', right: 'DemChunk', from_seam: 'SeamId' = SeamId(name='next_round'), to_seam: 'SeamId' = SeamId(name='prev_round')) -> 'DemChunk'"
+    },
+    "dem_stitch_all": {
+      "signature": "(chunks: 'Sequence[DemChunk]', from_seam: 'SeamId' = SeamId(name='next_round'), to_seam: 'SeamId' = SeamId(name='prev_round')) -> 'DemChunk'"
+    },
+    "dem_stitch_merged": {
+      "signature": "(chunks: 'Sequence[DemChunk]', *, rule: 'DemMergeRule | str' = <DemMergeRule.INDEPENDENT_PARITY: 'independent_parity'>, from_seam: 'SeamId' = SeamId(name='next_round'), to_seam: 'SeamId' = SeamId(name='prev_round')) -> 'DemChunk'"
+    },
+    "derive_anticommuting_logical_product": {
+      "signature": "(code: 'StabilizerCode', index: 'int' = 0) -> 'Pauli'"
+    },
+    "detector_error_model_from_circuit": {
+      "signature": "(circuit: 'Any', *, num_detectors: 'int') -> 'DetectorErrorModel'"
+    },
+    "get_code": {
+      "signature": "(name: 'str', **options: 'Any') -> 'StabilizerCode'"
+    },
+    "get_decoder": {
+      "signature": "(name: 'str', source: 'str | DecodingGraph | DetectorErrorModel', **options: 'Any') -> 'DetectorErrorModelDecoder'"
+    },
+    "qldpc_code": {
+      "signature": "(hz: 'BinaryMatrix', hx: 'BinaryMatrix', *, distance_search_weight: 'int' = 3) -> 'CssCode'"
+    },
+    "reed_muller_code": {
+      "signature": "(m: 'int', *, distance_search_weight: 'int' = 7) -> 'CssCode'"
+    },
+    "register_code": {
+      "signature": "(name: 'str', *, replace: 'bool' = False) -> 'Callable[[_CodeT], _CodeT]'"
+    },
+    "register_decoder": {
+      "signature": "(name: 'str', *, replace: 'bool' = False, graph_route: 'bool' = True) -> 'Callable[[type[_DecoderT]], type[_DecoderT]]'"
+    },
+    "ring_floquet_code": {
+      "signature": "(num_qubits: 'int') -> 'FloquetCode'"
+    },
+    "run_repetition_memory_experiment": {
+      "signature": "(*, error_schedule: 'ErrorSchedule | None' = None, rounds: 'int' = 3, shots: 'int' = 128, seed: 'int | None' = 0, strategy: 'str' = 'auto', feedback_mode: 'str' = 'compiled_lookup', decoder: 'Decoder | None' = None, feedback_decoder: 'StreamingDecoder | None' = None, noise_model: 'NoiseModel | None' = None) -> 'RepetitionMemoryResult'"
+    },
+    "run_repetition_memory_noise_sweep": {
+      "signature": "(probabilities: 'Iterable[float]', *, rounds: 'int' = 3, shots: 'int' = 1024, seed: 'int | None' = 0, strategy: 'str' = 'auto', feedback_mode: 'str' = 'compiled_lookup', syndrome_readout_error_probability: 'float' = 0.0, final_readout_error_probability: 'float' = 0.0) -> 'tuple[NoiseSweepPoint, ...]'"
+    },
+    "sample_memory_circuit": {
+      "signature": "(circuit: 'MemoryCircuit', *, noise: 'PhenomenologicalNoise | NoiseModel', shots: 'int', seed: 'int | None' = None) -> 'DemSample'"
+    },
+    "sample_memory_measurements": {
+      "signature": "(circuit: 'MemoryCircuit', *, noise: 'PhenomenologicalNoise | NoiseModel', shots: 'int', seed: 'int | None' = None) -> 'MeasurementSamples'"
+    },
+    "tesseract_code": {
+      "signature": "() -> 'SubsystemCode'"
+    },
+    "tesseract_column_swap": {
+      "signature": "() -> 'tuple[int, ...]'"
+    },
+    "tesseract_free_cnot_pairs": {
+      "signature": "() -> 'tuple[tuple[int, int], ...]'"
+    },
+    "toric_code": {
+      "signature": "(linear_size: 'int') -> 'CssCode'"
+    },
+    "triangular_colour_code": {
+      "signature": "(distance: 'int') -> 'CssCode'"
+    }
+  },
+  "code_names": [
+    "repetition",
+    "rotated_surface",
+    "steane"
+  ],
+  "decoder_names": [
+    "belief_propagation",
+    "belief_propagation_osd",
+    "minimum_weight_matching",
+    "pymatching",
+    "sliding_window_matching"
+  ],
+  "pickles": {
+    "flagquantum.qec.pauli.Pauli": "gASVSQAAAAAAAACMFWZsYWdxdWFudHVtLnFlYy5wYXVsaZSMBVBhdWxplJOUKYGUfZQojAh4X3F1Yml0c5RLAYWUjAh6X3F1Yml0c5RLAoWUdWIu",
+    "flagquantum.qec.codes.RepetitionCode": "gASVQAAAAAAAAACMFWZsYWdxdWFudHVtLnFlYy5jb2Rlc5SMDlJlcGV0aXRpb25Db2RllJOUKYGUfZSMCGRpc3RhbmNllEsDc2Iu",
+    "flagquantum.qec.codes.RotatedSurfaceCode": "gASVRAAAAAAAAACMFWZsYWdxdWFudHVtLnFlYy5jb2Rlc5SMElJvdGF0ZWRTdXJmYWNlQ29kZZSTlCmBlH2UjAhkaXN0YW5jZZRLA3NiLg==",
+    "flagquantum.qec.codes.SteaneCode": "gASVKwAAAAAAAACMFWZsYWdxdWFudHVtLnFlYy5jb2Rlc5SMClN0ZWFuZUNvZGWUk5QpgZQu",
+    "flagquantum.qec.surface.ZxxzSurfaceCode": "gASVQwAAAAAAAACMF2ZsYWdxdWFudHVtLnFlYy5zdXJmYWNllIwPWnh4elN1cmZhY2VDb2RllJOUKYGUfZSMCGRpc3RhbmNllEsDc2Iu",
+    "flagquantum.qec.circuit.MeasurementRef": "gASVUAAAAAAAAACMF2ZsYWdxdWFudHVtLnFlYy5jaXJjdWl0lIwOTWVhc3VyZW1lbnRSZWaUk5QpgZR9lCiMC3JvdW5kX2luZGV4lEsAjAVxdWJpdJRLA3ViLg==",
+    "flagquantum.qec.types.Correction": "gASVVgAAAAAAAACMFWZsYWdxdWFudHVtLnFlYy50eXBlc5SMCkNvcnJlY3Rpb26Uk5QpgZR9lCiMC3JvdW5kX2luZGV4lEsBjAVxdWJpdJRLAYwFcGF1bGmUjAF4lHViLg==",
+    "flagquantum.qec.types.ErrorEvent": "gASVVgAAAAAAAACMFWZsYWdxdWFudHVtLnFlYy50eXBlc5SMCkVycm9yRXZlbnSUk5QpgZR9lCiMC3JvdW5kX2luZGV4lEsBjAVxdWJpdJRLAYwFcGF1bGmUjAF4lHViLg==",
+    "flagquantum.qec.dem.DemError": "gASVcQAAAAAAAACME2ZsYWdxdWFudHVtLnFlYy5kZW2UjAhEZW1FcnJvcpSTlCmBlH2UKIwLcHJvYmFiaWxpdHmURz/AAAAAAAAAjAlkZXRlY3RvcnOUSwCFlIwLb2JzZXJ2YWJsZXOUSwCFlIwIZXJyb3JfaWSUTnViLg==",
+    "flagquantum.qec.dem.DetectorErrorModel": "gASVwwAAAAAAAACME2ZsYWdxdWFudHVtLnFlYy5kZW2UjBJEZXRlY3RvckVycm9yTW9kZWyUk5QpgZR9lCiMDW51bV9kZXRlY3RvcnOUSwGMD251bV9vYnNlcnZhYmxlc5RLAYwGZXJyb3JzlGgAjAhEZW1FcnJvcpSTlCmBlH2UKIwLcHJvYmFiaWxpdHmURz/AAAAAAAAAjAlkZXRlY3RvcnOUSwCFlIwLb2JzZXJ2YWJsZXOUSwCFlIwIZXJyb3JfaWSUTnVihZR1Yi4=",
+    "flagquantum.qec.noise.PhenomenologicalNoise": "gASV+wAAAAAAAACMFWZsYWdxdWFudHVtLnFlYy5ub2lzZZSMFVBoZW5vbWVub2xvZ2ljYWxOb2lzZZSTlCmBlH2UKIwJZGF0YV9mbGlwlEc/wAAAAAAAAIwKcGhhc2VfZmxpcJRHAAAAAAAAAACMCWJvdGhfZmxpcJRHAAAAAAAAAACMEG1lYXN1cmVtZW50X2ZsaXCURwAAAAAAAAAAjBNkYXRhX2ZsaXBfcGVyX3F1Yml0lCmMFHBoYXNlX2ZsaXBfcGVyX3F1Yml0lCmME2JvdGhfZmxpcF9wZXJfcXViaXSUKYwabWVhc3VyZW1lbnRfZmxpcF9wZXJfY2hlY2uUKXViLg==",
+    "flagquantum.qec.dem.DemMergeRule": "gASVQQAAAAAAAACME2ZsYWdxdWFudHVtLnFlYy5kZW2UjAxEZW1NZXJnZVJ1bGWUk5SMEmluZGVwZW5kZW50X3Bhcml0eZSFlFKULg==",
+    "flagquantum.qec.surface.RotatedSurfaceCode": "gASVRgAAAAAAAACMF2ZsYWdxdWFudHVtLnFlYy5zdXJmYWNllIwSUm90YXRlZFN1cmZhY2VDb2RllJOUKYGUfZSMCGRpc3RhbmNllEsDc2Iu"
+  },
+  "environment": {
+    "python": "3.12.14",
+    "torch": "2.13.0",
+    "device": "cpu",
+    "pickle_protocol": 4
+  },
+  "module_api": {
+    "flagquantum.qec.adapters": {
+      "exports": [
+        "MatchingDependencyError",
+        "PyMatchingDecoder"
+      ],
+      "root_aliases": {
+        "MatchingDependencyError": "MatchingDependencyError",
+        "PyMatchingDecoder": "PyMatchingDecoder"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.belief_propagation": {
+      "exports": [
+        "BeliefPropagationDecodeResult",
+        "BeliefPropagationDecoder"
+      ],
+      "root_aliases": {
+        "BeliefPropagationDecodeResult": "BeliefPropagationDecodeResult",
+        "BeliefPropagationDecoder": "BeliefPropagationDecoder"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.bicycle": {
+      "exports": [
+        "bivariate_bicycle_code"
+      ],
+      "root_aliases": {
+        "bivariate_bicycle_code": "bivariate_bicycle_code"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.bposd": {
+      "exports": [
+        "BeliefPropagationOsdDecodeResult",
+        "BeliefPropagationOsdDecoder"
+      ],
+      "root_aliases": {
+        "BeliefPropagationOsdDecodeResult": "BeliefPropagationOsdDecodeResult",
+        "BeliefPropagationOsdDecoder": "BeliefPropagationOsdDecoder"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.chunks": {
+      "exports": [
+        "ChunkLayout",
+        "DemChunk",
+        "DemChunkSpec",
+        "DemChunksSpec",
+        "DemSeam",
+        "PhaseId",
+        "SeamId",
+        "dem_chunk_from_spec",
+        "dem_chunks_from_spec",
+        "dem_close",
+        "dem_close_all",
+        "dem_stitch",
+        "dem_stitch_all",
+        "dem_stitch_merged"
+      ],
+      "root_aliases": {
+        "ChunkLayout": "ChunkLayout",
+        "DemChunk": "DemChunk",
+        "DemChunkSpec": "DemChunkSpec",
+        "DemChunksSpec": "DemChunksSpec",
+        "DemSeam": "DemSeam",
+        "PhaseId": "PhaseId",
+        "SeamId": "SeamId",
+        "dem_chunk_from_spec": "dem_chunk_from_spec",
+        "dem_chunks_from_spec": "dem_chunks_from_spec",
+        "dem_close": "dem_close",
+        "dem_close_all": "dem_close_all",
+        "dem_stitch": "dem_stitch",
+        "dem_stitch_all": "dem_stitch_all",
+        "dem_stitch_merged": "dem_stitch_merged"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.circuit": {
+      "exports": [
+        "Detector",
+        "DetectorLayout",
+        "LogicalObservable",
+        "MeasurementRef",
+        "MemoryCircuit",
+        "ObservableLayout",
+        "build_memory_circuit"
+      ],
+      "root_aliases": {
+        "Detector": "Detector",
+        "DetectorLayout": "DetectorLayout",
+        "LogicalObservable": "LogicalObservable",
+        "MeasurementRef": "MeasurementRef",
+        "MemoryCircuit": "MemoryCircuit",
+        "ObservableLayout": "ObservableLayout",
+        "build_memory_circuit": "build_memory_circuit"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.codes": {
+      "exports": [
+        "CssCode",
+        "CodeCheck",
+        "RepetitionCode",
+        "RotatedSurfaceCode",
+        "StabilizerCode",
+        "SteaneCode",
+        "ancilla_band_counts",
+        "ancilla_bands",
+        "code_names",
+        "get_code",
+        "register_code",
+        "toric_code",
+        "triangular_colour_code"
+      ],
+      "root_aliases": {
+        "CodeCheck": "CodeCheck",
+        "CssCode": "CssCode",
+        "RepetitionCode": "RepetitionCode",
+        "RotatedSurfaceCode": "RotatedSurfaceCode",
+        "StabilizerCode": "StabilizerCode",
+        "SteaneCode": "SteaneCode",
+        "ancilla_bands": "ancilla_bands",
+        "code_names": "code_names",
+        "get_code": "get_code",
+        "register_code": "register_code",
+        "toric_code": "toric_code",
+        "triangular_colour_code": "triangular_colour_code"
+      },
+      "symbols": {
+        "ancilla_band_counts": {
+          "signature": "(checks: 'tuple[CodeCheck, ...] | list[CodeCheck]') -> 'tuple[int, int]'"
+        }
+      }
+    },
+    "flagquantum.qec.context": {
+      "exports": [
+        "DecoderContext",
+        "DecoderInputs",
+        "MeasurementMap",
+        "decoder_context_from_memory_circuit"
+      ],
+      "root_aliases": {
+        "DecoderContext": "DecoderContext",
+        "DecoderInputs": "DecoderInputs",
+        "MeasurementMap": "MeasurementMap",
+        "decoder_context_from_memory_circuit": "decoder_context_from_memory_circuit"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.css_code": {
+      "exports": [
+        "CssCode"
+      ],
+      "root_aliases": {
+        "CssCode": "CssCode"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.decoders": {
+      "exports": [
+        "Decoder",
+        "RepetitionLookupDecoder",
+        "RepetitionStreamingLookupDecoder",
+        "RepetitionTemporalDecoder",
+        "StreamingDecoder"
+      ],
+      "root_aliases": {
+        "Decoder": "Decoder",
+        "RepetitionLookupDecoder": "RepetitionLookupDecoder",
+        "RepetitionStreamingLookupDecoder": "RepetitionStreamingLookupDecoder",
+        "RepetitionTemporalDecoder": "RepetitionTemporalDecoder",
+        "StreamingDecoder": "StreamingDecoder"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.decoding_graph": {
+      "exports": [
+        "DecodingGraph",
+        "DecodingGraphEdge"
+      ],
+      "root_aliases": {
+        "DecodingGraph": "DecodingGraph",
+        "DecodingGraphEdge": "DecodingGraphEdge"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.dem": {
+      "exports": [
+        "DemError",
+        "DemSample",
+        "DetectorErrorModel"
+      ],
+      "root_aliases": {
+        "DemError": "DemError",
+        "DemMergeRule": "DemMergeRule",
+        "DemSample": "DemSample",
+        "DetectorErrorModel": "DetectorErrorModel"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.dem_alternatives": {
+      "exports": [
+        "alternative_groups",
+        "fault_groups",
+        "fold_marginals",
+        "projected_ids",
+        "require_groups_fit",
+        "sample_groups",
+        "stated_ids"
+      ],
+      "root_aliases": {},
+      "symbols": {
+        "alternative_groups": {
+          "signature": "(errors: 'Sequence[DemError]') -> 'tuple[tuple[int, ...], ...]'"
+        },
+        "fault_groups": {
+          "signature": "(errors: 'Sequence[DemError]') -> 'tuple[tuple[int, ...], ...]'"
+        },
+        "fold_marginals": {
+          "signature": "(errors: 'Sequence[DemError]', count: 'int', select: 'Callable[[DemError], tuple[int, ...]]') -> 'torch.Tensor'"
+        },
+        "projected_ids": {
+          "signature": "(errors: 'Sequence[DemError]') -> 'tuple[int, ...] | None'"
+        },
+        "require_groups_fit": {
+          "signature": "(errors: 'Sequence[DemError]') -> 'None'"
+        },
+        "sample_groups": {
+          "signature": "(errors: 'Sequence[DemError]', *, generator: 'torch.Generator', detector_bits: 'torch.Tensor', observable_bits: 'torch.Tensor') -> 'None'"
+        },
+        "stated_ids": {
+          "signature": "(errors: 'Sequence[DemError]') -> 'tuple[int, ...]'"
+        }
+      }
+    },
+    "flagquantum.qec.dem_circuit": {
+      "exports": [
+        "circuit_from_detector_error_model",
+        "detector_error_model_from_circuit"
+      ],
+      "root_aliases": {
+        "circuit_from_detector_error_model": "circuit_from_detector_error_model",
+        "detector_error_model_from_circuit": "detector_error_model_from_circuit"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.dem_construction": {
+      "exports": [
+        "CssCodeMatrices",
+        "css_code_matrices"
+      ],
+      "root_aliases": {
+        "CssCodeMatrices": "CssCodeMatrices",
+        "css_code_matrices": "css_code_matrices"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.dem_matrices": {
+      "exports": [
+        "CssCodeMatrices",
+        "css_code_matrices"
+      ],
+      "root_aliases": {
+        "CssCodeMatrices": "CssCodeMatrices",
+        "css_code_matrices": "css_code_matrices"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.dem_text": {
+      "exports": [],
+      "root_aliases": {},
+      "symbols": {}
+    },
+    "flagquantum.qec.floquet": {
+      "exports": [
+        "MeasurementPhase",
+        "FloquetCode",
+        "ring_floquet_code"
+      ],
+      "root_aliases": {
+        "FloquetCode": "FloquetCode",
+        "MeasurementPhase": "MeasurementPhase",
+        "ring_floquet_code": "ring_floquet_code"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.gf2": {
+      "exports": [
+        "in_span",
+        "nullspace",
+        "rank",
+        "reduce_rows",
+        "reduce_vector"
+      ],
+      "root_aliases": {},
+      "symbols": {
+        "in_span": {
+          "signature": "(vector: 'int', rows: 'Sequence[int]') -> 'bool'"
+        },
+        "nullspace": {
+          "signature": "(rows: 'Sequence[int]', width: 'int') -> 'tuple[int, ...]'"
+        },
+        "rank": {
+          "signature": "(rows: 'Sequence[int]') -> 'int'"
+        },
+        "reduce_rows": {
+          "signature": "(rows: 'Sequence[int]') -> 'tuple[int, ...]'"
+        },
+        "reduce_vector": {
+          "signature": "(vector: 'int', pivots: 'Sequence[int]') -> 'int'"
+        }
+      }
+    },
+    "flagquantum.qec.logical": {
+      "exports": [
+        "certify_logical_product",
+        "derive_anticommuting_logical_product"
+      ],
+      "root_aliases": {
+        "certify_logical_product": "certify_logical_product",
+        "derive_anticommuting_logical_product": "derive_anticommuting_logical_product"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.matching": {
+      "exports": [
+        "MatchingDecodeResult",
+        "MinimumWeightMatchingDecoder"
+      ],
+      "root_aliases": {
+        "MatchingDecodeResult": "MatchingDecodeResult",
+        "MinimumWeightMatchingDecoder": "MinimumWeightMatchingDecoder"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.noise": {
+      "exports": [
+        "PhenomenologicalNoise",
+        "RepetitionNoiseProfile",
+        "run_repetition_memory_noise_sweep"
+      ],
+      "root_aliases": {
+        "PhenomenologicalNoise": "PhenomenologicalNoise",
+        "RepetitionNoiseProfile": "RepetitionNoiseProfile",
+        "run_repetition_memory_noise_sweep": "run_repetition_memory_noise_sweep"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.pauli": {
+      "exports": [
+        "Pauli"
+      ],
+      "root_aliases": {
+        "Pauli": "Pauli"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.qldpc": {
+      "exports": [
+        "qldpc_code"
+      ],
+      "root_aliases": {
+        "qldpc_code": "qldpc_code"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.reed_muller": {
+      "exports": [
+        "reed_muller_code"
+      ],
+      "root_aliases": {
+        "reed_muller_code": "reed_muller_code"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.registry": {
+      "exports": [],
+      "root_aliases": {
+        "DetectorErrorModelDecodeResult": "DetectorErrorModelDecodeResult",
+        "DetectorErrorModelDecoder": "DetectorErrorModelDecoder",
+        "GraphlikeDetectorErrorModelDecoder": "GraphlikeDetectorErrorModelDecoder",
+        "decoder_names": "decoder_names",
+        "get_decoder": "get_decoder",
+        "register_decoder": "register_decoder"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.repetition": {
+      "exports": [
+        "run_repetition_memory_experiment"
+      ],
+      "root_aliases": {
+        "run_repetition_memory_experiment": "run_repetition_memory_experiment"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.sampling": {
+      "exports": [
+        "MeasurementSamples",
+        "sample_memory_circuit",
+        "sample_memory_measurements"
+      ],
+      "root_aliases": {
+        "MeasurementSamples": "MeasurementSamples",
+        "sample_memory_circuit": "sample_memory_circuit",
+        "sample_memory_measurements": "sample_memory_measurements"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.sliding_window": {
+      "exports": [
+        "SlidingWindowDecodeResult",
+        "SlidingWindowDecoder",
+        "SlidingWindowMatchingDecoder",
+        "dem_chunks_to_d_sparse",
+        "dem_chunks_to_o_sparse",
+        "dem_chunks_to_pcm"
+      ],
+      "root_aliases": {
+        "SlidingWindowDecodeResult": "SlidingWindowDecodeResult",
+        "SlidingWindowDecoder": "SlidingWindowDecoder",
+        "SlidingWindowMatchingDecoder": "SlidingWindowMatchingDecoder",
+        "dem_chunks_to_d_sparse": "dem_chunks_to_d_sparse",
+        "dem_chunks_to_o_sparse": "dem_chunks_to_o_sparse",
+        "dem_chunks_to_pcm": "dem_chunks_to_pcm"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.subsystem": {
+      "exports": [
+        "SubsystemCode",
+        "tesseract_code",
+        "tesseract_column_swap",
+        "tesseract_free_cnot_pairs"
+      ],
+      "root_aliases": {
+        "SubsystemCode": "SubsystemCode",
+        "tesseract_code": "tesseract_code",
+        "tesseract_column_swap": "tesseract_column_swap",
+        "tesseract_free_cnot_pairs": "tesseract_free_cnot_pairs"
+      },
+      "symbols": {}
+    },
+    "flagquantum.qec.surface": {
+      "exports": [
+        "RotatedSurfaceCode",
+        "ZxxzSurfaceCode"
+      ],
+      "root_aliases": {
+        "ZxxzSurfaceCode": "ZxxzSurfaceCode"
+      },
+      "symbols": {
+        "RotatedSurfaceCode": {
+          "signature": "(distance: 'int' = 3) -> None",
+          "fields": [
+            {
+              "name": "distance",
+              "type": "int",
+              "init": true,
+              "default": "3",
+              "factory": null
+            }
+          ],
+          "frozen": true,
+          "methods": {},
+          "properties": [
+            "ancilla_qubits",
+            "checks",
+            "data_qubits",
+            "logical_observables",
+            "num_ancilla_qubits",
+            "num_ancilla_x_qubits",
+            "num_ancilla_z_qubits",
+            "num_data_qubits",
+            "num_x_stabilizers",
+            "num_z_stabilizers",
+            "stabilizers"
+          ]
+        }
+      }
+    },
+    "flagquantum.qec.types": {
+      "exports": [
+        "Correction",
+        "DecodeResult",
+        "DetectionEvent",
+        "ErrorEvent",
+        "ErrorSchedule",
+        "NoiseSweepPoint",
+        "PauliFrame",
+        "RepetitionMemoryResult",
+        "RepetitionMemoryShot",
+        "SyndromeRound"
+      ],
+      "root_aliases": {
+        "Correction": "Correction",
+        "DecodeResult": "DecodeResult",
+        "DetectionEvent": "DetectionEvent",
+        "ErrorEvent": "ErrorEvent",
+        "ErrorSchedule": "ErrorSchedule",
+        "NoiseSweepPoint": "NoiseSweepPoint",
+        "PauliFrame": "PauliFrame",
+        "RepetitionMemoryResult": "RepetitionMemoryResult",
+        "RepetitionMemoryShot": "RepetitionMemoryShot",
+        "SyndromeRound": "SyndromeRound"
+      },
+      "symbols": {}
+    }
+  },
+  "seeded_dem": {
+    "detectors": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "observables": [
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        0
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ],
+      [
+        0
+      ]
+    ]
+  }
+}
