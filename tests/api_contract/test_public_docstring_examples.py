@@ -2,6 +2,8 @@
 
 import ast
 import doctest
+import importlib
+import inspect
 from pathlib import Path
 
 import pytest
@@ -94,7 +96,6 @@ from flagquantum.qec import (
     toric_code,
     triangular_colour_code,
 )
-from flagquantum.qec.codes import matrices as code_matrices
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -327,15 +328,28 @@ def test_every_module_with_examples_is_covered() -> None:
     nothing ran it. Adding the module's public entry to ``ENTRIES`` is the fix.
     """
     covered = {entry.__module__ for entry in ENTRIES}
-    # The class retains its pickle module while its existing tested example is
-    # physically declared in codes.matrices. Verify that source-to-entry mapping.
-    assert CssCodeMatrices in ENTRIES
-    assert code_matrices.CssCodeMatrices is CssCodeMatrices
-    assert (
-        Path(CssCodeMatrices.__post_init__.__code__.co_filename).resolve()
-        == Path(code_matrices.__file__).resolve()
-    )
-    covered.add(code_matrices.__name__)
+    # Historical pickle modules differ from physical owners after relocation.
+    # Map only existing executable entries, checking their actual source files.
+    for entry, owner_name in (
+        (CssCodeMatrices, "matrices"),
+        (CssCode, "css"),
+        (FloquetCode, "floquet"),
+        (SubsystemCode, "subsystem"),
+        (bivariate_bicycle_code, "bicycle"),
+        (qldpc_code, "qldpc"),
+        (reed_muller_code, "reed_muller"),
+        (toric_code, "toric"),
+        (triangular_colour_code, "colour"),
+    ):
+        assert entry in ENTRIES
+        owner = importlib.import_module("flagquantum.qec.codes." + owner_name)
+        assert getattr(owner, entry.__name__) is entry
+        definition = entry.__post_init__ if inspect.isclass(entry) else entry
+        assert (
+            Path(definition.__code__.co_filename).resolve()
+            == Path(owner.__file__).resolve()
+        )
+        covered.add(owner.__name__)
     uncovered = sorted(_modules_with_examples() - covered)
 
     assert uncovered == [], (
