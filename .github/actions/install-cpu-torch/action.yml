@@ -32,11 +32,11 @@ runs:
             echo "CPU PyTorch installed through the domestic mirror"
           else
             echo "::warning::CPU mirror installation failed; retrying the official CPU index"
-            python -m pip install --no-deps "$FQ_TORCH_SPEC" \
+            timeout --kill-after=10s 300s python -m pip install --no-deps "$FQ_TORCH_SPEC" \
               --index-url https://download.pytorch.org/whl/cpu
           fi
         else
-          python -m pip install --no-deps "$FQ_TORCH_SPEC" \
+          timeout --kill-after=10s 300s python -m pip install --no-deps "$FQ_TORCH_SPEC" \
             --index-url https://download.pytorch.org/whl/cpu
         fi
         python -m pip install "$FQ_TORCH_SPEC"

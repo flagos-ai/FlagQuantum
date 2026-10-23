@@ -633,6 +633,10 @@ versions and may run concurrently on separate A100 registrations. The private-en
 paths, retains the verified A100 bootstrap and CPU wheel cache, and bounds the
 domestic wheel download before falling back to the official CPU index. CPU jobs
 hide GPUs and verify dependency consistency and CPU-only framework selection.
+Core tiers use the same CPU installer while retaining their empty private
+virtual environments: the installer reads each host's configured wheel cache,
+uses the bounded domestic fallback, and caps official CPU downloads at five
+minutes. The no-NumPy and no-optional-framework checks remain unchanged.
 The sixteen coverage shards use checked-in duration hints from a cited CI run and a
 deterministic least-loaded assignment, then merge raw data before applying the
 unchanged coverage policy; their union is the former selection, not a reduced
