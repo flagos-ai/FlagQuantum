@@ -1,0 +1,51 @@
+{
+  "commit": "4f23154fe9d944ce3f1e801701d59150138b3bd0",
+  "device_name": "NVIDIA A800-SXM4-80GB",
+  "hostname": "redacted",
+  "local_world_size": 1,
+  "measurements": {
+    "acceptance_case": "single_gpu_capacity_failure",
+    "batch_size": 1,
+    "blockers": [
+      "measured single-device capacity failure is baseline provenance only"
+    ],
+    "capacity_baseline_device": "NVIDIA A800-SXM4-80GB",
+    "capacity_failure_reason": "CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 79.25 GiB of which 16.88 MiB is free. Including non-PyTorch memory, this process has 79.22 GiB memory in use. Of the allocated memory 78.27 GiB is allocated by PyTorch, and 10.98 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)",
+    "device_total_memory_bytes": 85093777408,
+    "distribution_semantics": "single_device_fast_path",
+    "dtype": "complex64",
+    "elapsed_seconds": 3.7656987980008125,
+    "failure_elapsed_seconds": 3.7656987980008125,
+    "initial_max_bond": 768,
+    "local_world_size": 1,
+    "logical_mps_bytes": 1236780012864,
+    "max_bond_dimension": 768,
+    "measured_peak_memory_bytes": 84046531584,
+    "mps_forward_distribution_semantics": "single_device_fast_path",
+    "n_sites": 131072,
+    "node_count": 1,
+    "parameter_count": 31,
+    "single_device_oom_observed": true,
+    "single_gpu_expected_oom": true,
+    "site_ownership": {
+      "policy": "single_device_owns_every_site",
+      "sharded": false,
+      "site_count": 131072
+    },
+    "state_mode": "mps",
+    "workload_body_sha256": "05ec5746166182a93d9b6f46d50931b91158b46bb839d0870f30b179df07c662",
+    "workload_definition_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
+    "workload_sha256": "6cfbd603ae08cc77a323e4c136eff0390e7758cb1ed2845c55f93b644d1a04ae",
+    "world_size": 1
+  },
+  "node_count": 1,
+  "rank": 0,
+  "role": "capacity-series-point",
+  "schema": "flagquantum.mps_release_measurements.v1",
+  "software": {
+    "cuda": "13.0",
+    "python": "3.12.13",
+    "torch": "2.13.0+cu130"
+  },
+  "world_size": 1
+}

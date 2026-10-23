@@ -1,0 +1,30 @@
+{
+  "benchmark": "scalability_results_audit",
+  "claimable_count": 1,
+  "claimable_paths": [
+    "<redacted-path>"
+  ],
+  "file_count": 1,
+  "invalid_count": 0,
+  "invalid_paths": [],
+  "records": [
+    {
+      "benchmark": null,
+      "claim_evidence_type": "production_training_benchmark",
+      "distribution_semantics": "sharded_across_ranks",
+      "path": "<redacted-path>",
+      "release_gate_allowed": true,
+      "scalability_audit": {
+        "claim_evidence_type": "production_training_benchmark",
+        "distribution_semantics": "sharded_across_ranks",
+        "errors": [],
+        "release_gate_allowed": true,
+        "scalability_claim_allowed": true,
+        "valid": true,
+        "warnings": []
+      },
+      "scalability_claim_allowed": true,
+      "status": "ok"
+    }
+  ]
+}

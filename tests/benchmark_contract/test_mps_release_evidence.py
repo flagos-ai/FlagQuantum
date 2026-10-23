@@ -20,6 +20,7 @@ import hashlib
 import importlib
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 import torch
@@ -177,10 +178,111 @@ def test_the_producer_and_the_gate_freeze_the_same_manifest() -> None:
     assert set(producer.ROLES) == {
         "capacity-failure",
         "capacity-completion",
+        "capacity-series-point",
         "matched-speed",
         "speed-summary",
         "release-payload",
     }
+
+
+@pytest.mark.parametrize("world", [2, 4, 8])
+@pytest.mark.parametrize("status", ["passed", "cuda_oom", "runtime_error"])
+def test_intermediate_capacity_points_keep_outcomes_without_promoting_them(
+    world: int, status: str
+) -> None:
+    records = [
+        {"rank": rank, "status": status, "peak_memory_bytes": 1024 + rank}
+        for rank in range(world)
+    ]
+    measured = producer._capacity_series_measurements(
+        _contract(), records, local_world=world, node_count=1
+    )
+    assert measured["world_size"] == world
+    assert measured["status"] == status
+    assert measured["capacity_failure"] is (status == "cuda_oom")
+    assert measured["single_device_oom_observed"] is False
+    assert measured["rank_records"] == records
+    assert measured["logical_mps_bytes"] == CAPACITY["logical_mps_bytes"]
+    assert measured["workload_sha256"] == CAPACITY["workload_sha256"]
+    assert measured["release_gate_allowed"] is False
+    assert measured["scalability_claim_allowed"] is False
+    passed, blockers = gate.evaluate_mps_release(
+        [{"artifact_class": "measured_production_run", "evidence": measured}],
+        FROZEN,
+    )
+    assert passed is False, blockers
+
+
+def test_a_capacity_series_cannot_hide_a_missing_or_duplicate_rank() -> None:
+    records = [{"rank": 0, "status": "cuda_oom", "peak_memory_bytes": 1024}] * 2
+    with pytest.raises(ValueError, match="exactly one record per rank"):
+        producer._capacity_series_measurements(
+            _contract(), records, local_world=2, node_count=1
+        )
+
+
+@pytest.mark.parametrize("world", [0, 3, 32])
+def test_capacity_series_refuses_an_unfrozen_rank_count(
+    monkeypatch: pytest.MonkeyPatch, world: int
+) -> None:
+    monkeypatch.setenv("WORLD_SIZE", str(world))
+    with pytest.raises(SystemExit, match="power of two"):
+        producer.main(["--role", "capacity-series-point"])
+
+
+@pytest.mark.parametrize(
+    "world, role", [(1, "_role_capacity_failure"), (16, "_role_capacity_completion")]
+)
+def test_capacity_series_preserves_the_existing_certification_roles(
+    monkeypatch: pytest.MonkeyPatch, world: int, role: str
+) -> None:
+    monkeypatch.setenv("WORLD_SIZE", str(world))
+    calls: list[str] = []
+
+    def delegated(arguments: argparse.Namespace) -> int:
+        calls.append(arguments.role)
+        return 7
+
+    monkeypatch.setattr(producer, role, delegated)
+    assert producer.main(["--role", "capacity-series-point"]) == 7
+    assert calls == ["capacity-series-point"]
+
+
+def test_single_step_capacity_preserves_the_frozen_compiled_kernel_protocol(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A new runtime default must not silently change the measured protocol."""
+    contract = _contract()
+    workload = producer._frozen_workload(contract)
+    monkeypatch.setattr(workload, "rank_owned_initial_mps", lambda *args: {})
+    captured: dict[str, Any] = {}
+    result = object()
+
+    def train(circuit: object, **options: Any) -> object:
+        captured.update(options)
+        return result
+
+    monkeypatch.setattr(producer.fqxd, "train_distributed_mps", train)
+    device = torch.device("cpu")
+    assert (
+        producer._train_capacity(
+            workload, contract, device, 16, workload.frozen_parameters(device)
+        )
+        is result
+    )
+    body = ast.parse(Path(producer._workload_body_source(contract)["path"]).read_text())
+    frozen = [
+        ast.literal_eval(keyword.value)
+        for node in ast.walk(body)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "train_distributed_mps"
+        for keyword in node.keywords
+        if keyword.arg == "compile_site_kernels"
+    ]
+    assert frozen == [True]
+    assert captured["steps"] == 1
+    assert captured["compile_site_kernels"] is frozen[0]
 
 
 def test_the_producer_states_every_field_the_release_contract_requires() -> None:

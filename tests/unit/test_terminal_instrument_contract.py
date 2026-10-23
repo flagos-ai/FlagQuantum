@@ -1,9 +1,8 @@
 """Replaceable valid-input consumers for approved proposal 083.
 
-The sampler fixture delegates to existing map algebra, Torch and result/codec
-owners. It is a mathematical reference, not a request validator or Runtime API.
-Replace that fixture with the real entry after its separate admission; retain
-the consumers and their independent physical and statistical assertions.
+The sampler fixture now consumes the admitted Runtime implementation. The
+independent consumers and their physical/statistical assertions are retained
+unchanged from the mathematical baseline.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ import pytest
 import torch
 
 from examples.terminal_instrument_reference import fock_reference
-from flagquantum.core.ir import _decode_value, _encode_value
+from flagquantum.core.ir import _decode_value
 from flagquantum.operators import SuperOperator
 from flagquantum.runtime.measurements import _DensityMatrixTarget
 from flagquantum.runtime.result import MeasurementResult
@@ -39,58 +38,9 @@ class TerminalSampler(Protocol):
 
 @pytest.fixture
 def terminal_sampler() -> TerminalSampler:
-    def reference(
-        density_matrix: torch.Tensor,
-        instrument: Mapping[str, Sequence[torch.Tensor]],
-        *,
-        shots: int,
-        seed: int | None = None,
-    ) -> MeasurementResult:
-        # Only valid bounded fixtures are admitted here. Production validation,
-        # capability checks and resource ceilings belong to the later delivery.
-        assert density_matrix.shape[-1] in (3, 9)
-        states = [
-            SuperOperator.from_kraus(operators).apply(density_matrix)
-            for operators in instrument.values()
-        ]
-        weights = torch.stack(
-            [torch.diagonal(state, dim1=-2, dim2=-1).sum(-1).real for state in states],
-            dim=-1,
-        )
-        probabilities = weights.clamp(min=0)
-        probabilities = probabilities / probabilities.sum(-1, keepdim=True)
-        generator = torch.Generator(device="cpu")
-        effective_seed = generator.seed() if seed is None else seed
-        generator.manual_seed(effective_seed)
-        metadata = {
-            "outcome_labels": list(instrument),
-            "probabilities": weights.tolist(),
-            "probability_correction": float((probabilities - weights).abs().max()),
-            "terminal_instrument": {
-                "schema": "flagquantum.terminal_instrument",
-                "version": "1.0",
-                "dimension": density_matrix.shape[-1],
-                "dtype": str(density_matrix.dtype).removeprefix("torch."),
-                "branches": [
-                    {"label": label, "kraus": [_encode_value(k) for k in operators]}
-                    for label, operators in instrument.items()
-                ],
-                "requested_seed": seed,
-                "effective_seed": effective_seed,
-                "torch_version": str(torch.__version__),
-            },
-        }
-        return MeasurementResult(
-            kind="sample",
-            qubits=(),
-            value=torch.multinomial(
-                probabilities, shots, replacement=True, generator=generator
-            ),
-            shots=shots,
-            metadata=metadata,
-        )
+    from flagquantum.runtime import sample_terminal
 
-    return reference
+    return sample_terminal
 
 
 @pytest.fixture

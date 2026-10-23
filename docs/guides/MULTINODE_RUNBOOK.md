@@ -1119,3 +1119,29 @@ A multi-node scalability result must still satisfy the repository contracts:
 The recorded artifacts above satisfy the first four. None is a scalability
 claim; promoting one requires the audited benchmark payload the release gate
 validates.
+## Fixed-workload MPS capacity series
+
+The manual Scheduled hardware workflow can reserve the A800 pair exclusively
+and run the frozen capacity program at 1/2/4/8/16 ranks:
+
+```bash
+gh workflow run scheduled-hardware.yml --ref main \
+  -f run_capacity_series=true -f run_multinode=false
+```
+
+The driver first runs the existing small MPS training regression at sixteen
+ranks, then measures each deployment without changing the manifest's circuit
+geometry. It stages one exact source commit on the shared filesystem, records
+the device inventory and GPU telemetry, and supervises only its own process
+groups. The capacity producer explicitly retains the frozen body's compiled
+site-kernel setting; a single-step automatic runtime policy must not replace it
+with eager execution. The recorded long-phase budget remains bounded by the
+outer watchdog.
+
+The measured series in
+`artifacts/development/mps_capacity_series_20261023/README.md` records actual OOMs
+through eight ranks and completion at sixteen. OOM envelopes are baseline
+provenance, never completed scalability claims. New evidence can use keyless
+SHA-256 v2 integrity; historical HMAC v1 files and their verification rules remain
+unchanged. The passing sixteen-rank per-artifact audit does not by itself replace
+the frozen baseline and matched-speed requirements for full MPS promotion.

@@ -249,11 +249,35 @@ detector events, feedback, motional heating or full M3 completion follows.
 
 [Proposal 083](../development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md)
 was explicitly approved on 2026-10-23 for staged terminal instrument sampling.
-Its document merge #716 was not that approval. The current delivery establishes
-two-model replaceable consumers before separate Runtime export/metadata admission
-and implementation. It reuses MeasurementResult and the existing map algebra;
-it adds no public sampling entry in this baseline. This CPU terminal slice does
-not provide a timestamped detector trajectory, feedback or erasure-decoder record.
+Its document merge #716 was not that approval. The replaceable baseline #726
+and separate Runtime export/metadata admission #730 are on main with their
+full applicable CI/GPU and post-merge evidence. The Runtime delivery binds the
+unchanged two-model consumers to sample_terminal, reusing MeasurementResult,
+SuperOperator, Lindblad density checks, Core encoding and the shared private
+probability draw. It retains existing plan/IR versions and qubit sampling
+behavior. This CPU terminal slice does not provide a timestamped detector
+trajectory, feedback or erasure-decoder record. The
+[delivery record](../api-changes/FQ-TERMINAL-INSTRUMENT-SAMPLING-20261023.md)
+retains independent merge and validation gates for the implementation.
+
+The native control-training example now composes the delivered primitives:
+analytic PyTorch optimization, detached native plan 1.7 replay, then explicit
+terminal a/b presence-instrument samples. Run
+`python -m examples.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`.
+Its observed probabilities are checked against independent exponential loss;
+shot-frequency uncertainty is separate from solver error. Physical survival,
+observed no-flag selection and unconditional RR remain distinct. This closes a
+user-workflow composition gap without a new API or an event/feedback claim.
+
+The existing two-mode boson-interference example also feeds its replayed density
+into the same Runtime number-instrument sampler. Run
+`python -m examples.boson_interference` for balanced two-photon bunching, uniform
+loss and unconditional QND count outcomes including vacuum and one photon.
+Independent closed-form density matrices and a three-/four-level embedding
+check coherence, loss and truncation closure; finite-shot uncertainty remains a
+separate check. This supplies the bounded photonic reference scenario below
+through existing shared capabilities, without promoting a Gaussian backend or
+native optical-program frontend.
 
 ### Reference scenarios
 

@@ -1,0 +1,115 @@
+{
+  "commit": "4f23154fe9d944ce3f1e801701d59150138b3bd0",
+  "hosts": [
+    [
+      {
+        "uuid": "GPU-1ffa16a6-3917-0c8d-2460-b360464eae49",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-948facc4-5ae3-21d5-4f91-987e5ee9841f",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-443ad877-b56d-e051-955a-3696fdde6996",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-04773e19-49e0-8bb4-9db9-08a1578bab32",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-0aa1d13e-2001-cbbb-63bd-ef7aa9fb204b",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "0",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-b469d6b6-d352-2492-853a-a67ff1d76dcf",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "0",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-da4f000a-b842-20eb-b53b-78d47a488c9c",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "0",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-302577c3-ae00-57fe-558e-e67cd1d95297",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "0",
+        "utilization": "0"
+      }
+    ],
+    [
+      {
+        "uuid": "GPU-dd0e4377-e2a5-f437-cdd8-d9a7a16e18c9",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-d86297e1-24d6-9833-1caf-22d6b0badb63",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-8fbd86fe-b873-557d-bd88-369d63ffe37d",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-5f46d96f-f2b0-e24b-6f52-47c2c9ffbef8",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-e7b3c219-e1af-e348-d950-4ebce6989e99",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-a5d9767c-6fe6-624c-468f-fb650d0a7072",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-bc6dff03-0a8c-8d5f-4d96-73749d06c6e0",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      },
+      {
+        "uuid": "GPU-8d4625ed-afbf-f128-b129-41d820bbaa03",
+        "name": "NVIDIA A800-SXM4-80GB",
+        "memory_mib": "4",
+        "utilization": "0"
+      }
+    ]
+  ],
+  "launch_address": "<redacted-private-address>",
+  "peer": "jp-a800-171",
+  "cuda_allocator_policy": "expandable_segments:True",
+  "infiniband_hcas": "mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108",
+  "p2p_timeout_seconds": 1200,
+  "capacity_site_kernels": "explicit_compiled_from_frozen_workload_body",
+  "topology": [
+    "\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tNIC7\tNIC8\tNIC9\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU1\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU2\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU3\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU4\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU5\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU6\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nGPU7\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nNIC0\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\t\t\t\t\nNIC1\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC3\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC4\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tNODE\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tNODE\t\t\t\t\nNIC7\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPXB\tNODE\t\t\t\t\nNIC8\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\t X \tNODE\t\t\t\t\nNIC9\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_101\n  NIC2: mlx5_102\n  NIC3: mlx5_103\n  NIC4: mlx5_104\n  NIC5: mlx5_105\n  NIC6: mlx5_106\n  NIC7: mlx5_107\n  NIC8: mlx5_108\n  NIC9: mlx5_201",
+    "\u001b[4mGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tNIC7\tNIC8\tNIC9\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU1\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU2\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU3\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNV8\tSYS\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\t0-31,64-95\t0\t\tN/A\nGPU4\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU5\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\t32-63,96-127\t1\t\tN/A\nGPU6\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNV8\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nGPU7\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\tNV8\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\t32-63,96-127\t1\t\tN/A\nNIC0\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\t\t\t\t\nNIC1\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tPXB\tPXB\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC3\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC4\tNODE\tNODE\tPXB\tPXB\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\t X \tPIX\tNODE\tNODE\tNODE\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tPXB\tPXB\tNODE\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tPIX\t X \tNODE\tNODE\tNODE\t\t\t\t\nNIC7\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tPXB\tNODE\t\t\t\t\nNIC8\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\tPXB\tNODE\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPXB\t X \tNODE\t\t\t\t\nNIC9\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tNODE\tNODE\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_101\n  NIC2: mlx5_102\n  NIC3: mlx5_103\n  NIC4: mlx5_104\n  NIC5: mlx5_105\n  NIC6: mlx5_106\n  NIC7: mlx5_107\n  NIC8: mlx5_108\n  NIC9: mlx5_201"
+  ]
+}

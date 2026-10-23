@@ -166,7 +166,7 @@ def test_dynamic_execution_rejects_unmeasured_classical_reads_and_gradients() ->
     )
     with pytest.raises(fqe.ValidationError, match="read before measurement"):
         fq.experimental.dynamic.run_dynamic(unread, shots=1, seed=1)
-    with pytest.raises(fqe.CapabilityError, match="run_dynamic"):
+    with pytest.raises(fqe.ValidationError, match="read before measurement"):
         fq.run(unread)
 
     theta = torch.tensor(0.2, requires_grad=True)
@@ -177,7 +177,7 @@ def test_dynamic_execution_rejects_unmeasured_classical_reads_and_gradients() ->
 
     with pytest.raises(fqe.CapabilityError, match="run_dynamic"):
         differentiable.state()
-    with pytest.raises(NotImplementedError, match="experimental.dynamic.run_dynamic"):
+    with pytest.raises(fqe.ValidationError, match="requires a positive shots"):
         fq.run(differentiable)
     with pytest.raises(ValueError, match="outside the circuit"):
         DynamicCircuit(1).measure(1)
@@ -229,7 +229,7 @@ def test_disjunctive_condition_runs_the_gate_on_either_conjunction() -> None:
     assert abs(ran_shots / 20_000 - either) < 0.02
 
 
-def test_planner_refuses_every_condition_spelling_with_one_message() -> None:
+def test_planner_requires_shots_for_every_condition_spelling_with_one_message() -> None:
     conjunction = DynamicCircuit(2)
     conjunction.measure(0, classical_bit=0)
     conjunction.conditional("x", 1, classical_bit=0)
@@ -239,15 +239,22 @@ def test_planner_refuses_every_condition_spelling_with_one_message() -> None:
     disjunctive.measure(1, classical_bit=1)
     disjunctive.conditional("x", 1, any_of=({0: 1}, {1: 1}))
 
-    # Every program the builder produces carries a measurement, and a measurement
-    # carries is_dynamic, so the two above reach the guard through that key as
-    # well. This one reaches it through the condition key alone: a program read
-    # from IR need not have been built here, and a measurement is what would
-    # otherwise be covering for the condition.
+    # A program loaded from IR need not have been built here, so keep the
+    # disjunctive spelling in raw metadata while still satisfying the stable
+    # plan-time rule that every read follows a measurement.
     from_ir = CircuitIR(
         2,
         (
-            Instruction("h", (0,)),
+            Instruction(
+                "measure",
+                (0,),
+                metadata={"is_dynamic": True, "classical_bit": 0},
+            ),
+            Instruction(
+                "measure",
+                (1,),
+                metadata={"is_dynamic": True, "classical_bit": 1},
+            ),
             Instruction(
                 "x", (1,), metadata={"condition_clauses": (((0, 1),), ((1, 0),))}
             ),
@@ -256,12 +263,14 @@ def test_planner_refuses_every_condition_spelling_with_one_message() -> None:
 
     messages = []
     for program in (conjunction, disjunctive, from_ir):
-        with pytest.raises(fqe.CapabilityError, match="run_dynamic") as caught:
+        with pytest.raises(
+            fqe.ValidationError, match="requires a positive shots"
+        ) as caught:
             fq.plan(program)
         messages.append(str(caught.value))
 
-    # One guard reads every condition spelling, so the three spellings get one
-    # explanation rather than one per spelling.
+    # One dynamic-planning contract reads every condition spelling, so all three
+    # require the same explicit shot-count input.
     assert len(set(messages)) == 1
 
 

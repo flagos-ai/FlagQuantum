@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ast
+import json
 import re
 from pathlib import Path
 
@@ -32,6 +34,37 @@ def _code_blocks(path: Path) -> tuple[str, ...]:
     return tuple(FENCE.findall(path.read_text(encoding="utf-8")))
 
 
+def _approved_terminal_imports(code: str) -> bool:
+    """Allow only the Runtime entry admitted by the existing 083 contract."""
+
+    contract = json.loads(
+        (ROOT / "contracts" / "execution-result-v1-candidate.json").read_text()
+    )["terminal_instrument_sampling"]
+    if contract["implementation_required"] is not True:
+        return False
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return False
+    imports = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        and node.module is not None
+        and node.module.startswith("flagquantum.runtime")
+    ]
+    matches = LEGACY_CODE_PATTERNS["internal runtime import"].findall(code)
+    return (
+        bool(imports)
+        and len(imports) == len(matches)
+        and all(
+            node.module == contract["namespace"]
+            and all(name.name == contract["entry"] for name in node.names)
+            for node in imports
+        )
+    )
+
+
 @pytest.mark.unit
 def test_user_markdown_code_uses_current_public_api() -> None:
     violations: list[str] = []
@@ -40,10 +73,39 @@ def test_user_markdown_code_uses_current_public_api() -> None:
         for index, code in enumerate(_code_blocks(path), start=1):
             for label, pattern in LEGACY_CODE_PATTERNS.items():
                 if pattern.search(code):
+                    if (
+                        label == "internal runtime import"
+                        and _approved_terminal_imports(code)
+                    ):
+                        continue
                     violations.append(
                         f"{path.relative_to(ROOT)} code block {index}: {label}"
                     )
     assert not violations, "\n".join(violations)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "code,allowed",
+    [
+        ("from flagquantum.runtime import sample_terminal", True),
+        ("from flagquantum.runtime import sample_terminal as sample", True),
+        ("from flagquantum.runtime import (\n    sample_terminal,\n)", True),
+        ("from flagquantum.runtime import run_native", False),
+        ("from flagquantum.runtime import sample_terminal, run_native", False),
+        ("from flagquantum.runtime import *", False),
+        (
+            "from flagquantum.runtime._terminal_instruments import sample_terminal",
+            False,
+        ),
+        ("'from flagquantum.runtime import sample_terminal'", False),
+        ("from flagquantum.runtime import sample_terminal\nnot valid python!", False),
+    ],
+)
+def test_terminal_admission_does_not_allow_arbitrary_runtime_imports(
+    code: str, allowed: bool
+) -> None:
+    assert _approved_terminal_imports(code) is allowed
 
 
 @pytest.mark.unit

@@ -14,13 +14,15 @@ These examples do not use that alias:
 
 - [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
   commanded positions and the existing optional Matplotlib visualization extra.
+- [`terminal_instrument_sampling.py`](terminal_instrument_sampling.py) samples
+  explicit presence and finite-Fock instruments through the CPU Runtime API.
 - [`terminal_instrument_reference.py`](terminal_instrument_reference.py) uses
   existing SuperOperator maps and illustrative Torch draws for proposal 083.
 - [`boson_interference.py`](boson_interference.py) — it uses the existing
   `flagquantum.lindblad` namespace and boson algebra for two-photon interference
   and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
-  Unconditional output probabilities, survival, and plan serialization share the
-  existing dynamics path; this is a bounded CPU model.
+  Unconditional probabilities, survival, plan replay and explicit QND number
+  samples share the existing dynamics and Runtime paths; this is a bounded CPU model.
 - [`superoperator_channel_algebra.py`](superoperator_channel_algebra.py) — it
   reads one amplitude-damping channel as a superoperator through
   `flagquantum.operators.SuperOperator`: the action, the dense map, the Choi
@@ -510,18 +512,89 @@ Unread measurement changes coherence: True
 fock labels: ('0', '1', '2')
 fock probabilities: [0.6, 0.3, 0.1]
 fock Torch draw replay: True
-Framework terminal instrument API: approved, not implemented
+Framework terminal instrument API: flagquantum.runtime.sample_terminal
 ```
 
 The coherent g/lost example distinguishes physical loss from observed flags and
 shows that an unread instrument can change coherence. The finite three-level
 Fock example explicitly models QND number projection. Neither is a calibrated
-photodetector or framework event API. The proposed terminal sampling entry and
-its metadata/result behavior require approval of
+photodetector or framework event API. The approved
 [proposal 083](../docs/development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md)
-before implementation. No public exports, Program IR fields, plan formats,
-result types, sampling validators or framework execution paths change here.
+is implemented by the Runtime-only sample_terminal primitive. Existing Program
+IR fields, plan formats and MeasurementResult fields remain unchanged.
 
+Run `python -m examples.terminal_instrument_sampling` for real Runtime samples:
+
+```text
+presence labels: ('no_flag', 'flag')
+presence probabilities: [0.68, 0.32]
+presence indices shape: (4096,)
+presence private-seed replay: True
+fock labels: ('0', '1', '2')
+fock probabilities: [0.6, 0.3, 0.1]
+fock indices shape: (4096,)
+fock private-seed replay: True
+global RNG unchanged: True
+```
+
+```python
+from examples.terminal_instrument_reference import presence_reference
+from flagquantum.runtime import sample_terminal
+
+rho, instrument = presence_reference()
+result = sample_terminal(rho, instrument, shots=4096, seed=7)
+print(tuple(result.metadata["outcome_labels"]))  # ('no_flag', 'flag')
+print(result.value.shape)  # torch.Size([4096])
+```
+
+The caller declares the complete Kraus instrument and its coordinate basis.
+Sampling is CPU-only and does not carry gradients; use analytic evolution
+probabilities and expectations for training. With identical inputs, effective
+seed, Torch version and CPU runtime, samples replay. No cross-version bitwise
+replay, feedback, detector trajectory or hardware submission is implied.
+
+
+## Two-mode interference and number counting
+
+Run `python -m examples.boson_interference` on CPU. The existing boson algebra
+builds the passive coupling `0.7 * (a0_dagger * a1 + a1_dagger * a0)` from
+`|1, 1>`, for duration `T = pi / (4 * 0.7)`. Each mode has three levels.
+The same Lindblad plan supports uniform pure loss with rate 0 or 0.2 per mode;
+the Runtime terminal primitive samples the tensor product of the declared
+three-level QND number projectors. There is no second evolution or sampling engine.
+
+Expected analytic outputs:
+
+| Loss rate | P(0,2) | P(2,0) | P(1,1) | Two-photon survival |
+| --- | --- | --- | --- | --- |
+| 0.0 | 0.50000000 | 0.50000000 | 0.00000000 | 1.00000000 |
+| 0.2 | 0.31919722 | 0.31919722 | 0.00000000 | 0.63839443 |
+
+The subsequent lines print number labels in mode-0/mode-1 order:
+`['0/0', '0/1', '0/2', '1/0', '1/1', '1/2', '2/0', '2/1', '2/2']`.
+Each nine-element count vector sums to `4096`, followed by `Shots: 4096`
+and `Number sample replay: True`. In Python 3.12 / Torch 2.13 CPU, seed 7 gave
+`[0, 0, 2035, 0, 0, 0, 2061, 0, 0]` without loss and
+`[174, 659, 1281, 705, 0, 0, 1277, 0, 0]` with loss. The exact count vectors
+are not a cross-version guarantee. Vacuum and one-photon outcomes are retained;
+two-photon survival is not an implicit postselection step.
+
+An independent closed form uses transmission `eta = exp(-rate * T)`:
+vacuum probability `(1-eta)^2`, each one-photon probability `eta*(1-eta)`,
+each bunched probability `eta^2/2`, and zero coincidence probability.
+The two bunched states retain coherence `eta^2/2` before measurement. The
+unread QND instrument removes it, which distinguishes the declared measurement
+backaction from merely reporting populations or assuming a destructive detector.
+
+Integration tests compare the full complex density matrix with this formula and
+embed the three-level result in a four-level calculation at absolute error
+`1e-10`. For this fixture the passive coupling preserves total photon number
+and loss only lowers it; the initial total is two, so occupation above two is
+unreachable. This explains the exact truncation closure for this input, rather
+than certifying a general infinite-Fock simulation. Shot-frequency uncertainty
+is checked separately with binomial standard errors. This finite CPU reference
+does not provide a Gaussian backend, optical program frontend, destructive
+photodetection, event timestamps or hardware submission.
 
 ## Native moving-atom dynamics
 
@@ -565,7 +638,8 @@ native numerical evolution; detector events and hardware submission remain open.
 
 ## Train native moving-atom controls
 
-Run `python -m examples.train_rydberg_controls --steps 40 --intervals 128` on CPU.
+Run `python -m examples.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`
+on CPU.
 The source declares a moving atom pair and one named pulse amplitude. Two
 per-interval amplitude bindings train through the existing Lindblad planner,
 Runge-Kutta integrator and PyTorch Adam; geometry, C6, loss and time boundaries
@@ -580,11 +654,27 @@ Final unconditional RR: 0.12278807
 Survival-conditioned RR: 0.14997368
 No-flag-selected RR: 0.14385816
 Exact numeric replay: True
+Observed flag labels: ['no_flag/no_flag', 'no_flag/flag', 'flag/no_flag', 'flag/flag']
+Observed flag probabilities: [0.85353566, 0.07033428, 0.07033428, 0.00579579]
 ```
 
-Survival conditioning and no-flag selection use different explicit denominators;
-no detector events are sampled. Detached plan replay preserves numbers rather
-than a training graph. The 128-interval default meets the existing 1e-10 frozen
+The remaining lines report four observed counts summing to `4096`,
+`Detection shots: 4096`, and `Detection replay: True`. Counts depend on the Torch
+version; seed 7 replays in the same CPU environment. Each frequency has binomial
+standard error `sqrt(p * (1 - p) / shots)`, separate from integration error.
+
+Survival conditioning and no-flag selection use different explicit denominators.
+Training uses analytic expectations; only the detached final plan requests dense
+states for Runtime terminal sampling. Detection uses the declared efficiency 0.8
+and zero false positives, with outcome order following atoms a/b. With equal
+g/r loss rates, each observed flag has probability `0.8 * (1 - exp(-0.1))`,
+independent of the optimized amplitudes. Consequently, a no-flag result includes
+undetected physical loss and is not a survival certificate. The no-flag RR ratio
+matches conditioning with the declared square-root Kraus branch. This is one
+terminal measurement, without timestamps or feedback.
+
+Detached plan replay preserves numbers rather than a training graph. The
+128-interval default meets the existing 1e-10 frozen
 unitary/gradient reference budget for this fixture. At 64 intervals one gradient
 differed by 2.28e-10 and failed that unchanged budget; refinement fixes the
 integration error. Imposed-path midpoint convergence remains a separate check.

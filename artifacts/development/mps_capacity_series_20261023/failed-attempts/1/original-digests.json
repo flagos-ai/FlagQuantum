@@ -1,0 +1,30 @@
+{
+  "commit": "257bef52ad88ae4a9eae658b2ba40d7f9f092729",
+  "sha256": {
+    "inventory.json": "ee4aefe18dddbc82603f4bce34538cfbad05848c2d01f3a0c4285d1bef23959a",
+    "world-1-launch.json": "c2ebd2fdcfdcc096b3aacc372462b48ee68c6779f8ce59c2250d8c02d0822239",
+    "world-1-telemetry.jsonl": "8b3133818979b6b5d0ffdecf512a2c5b3538d15f0a96803527247c6f4b2abf25",
+    "world-1.json": "bf7eebaa846073a292dcbc42f3533f19a0ce374d80a40b1bdc8388aaeb3798ab",
+    "world-1.log": "748a469b9aae92848c29b879ed0487cc93f39559268f7c94b1dd7c6d6188daa4",
+    "world-16-launch.json": "8acf8cb42983079eed79855b83433940850a4c6d7888af560e4357fbec90c518",
+    "world-16-logs/node-0.cleanup.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "world-16-logs/node-0.log": "50b10354504627959e333093f30224f815e4b6fd7e2c214b2db2e185d5acdc92",
+    "world-16-logs/node-1.cleanup.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "world-16-logs/node-1.log": "ca679f4d8fbc4c403f3af2c0e97d50c95bb4e0177ee6db8bc9f1e6afedea81a1",
+    "world-16-logs/watchdog.json": "44e5010998cb6ca1d27fecc85cb8c44a7b8b790aca89c53194e1a8d84b0ca5d4",
+    "world-16-telemetry.jsonl": "5733467ea59bf5b2bbd7f902173b79ef2af8bf6162919824bbdca4ed2e99954b",
+    "world-16-watchdog.json": "fb34ae52a0fa4b44cdcbefe0bd2fe528170872de5d2397d5725c6a6c6b6d603a",
+    "world-2-launch.json": "0e586caf1f63102f917182c21d6f835e00df07364248c10e1e63fbc53d4b02f2",
+    "world-2-telemetry.jsonl": "be17e09f28ce8daf726f8848079b393bef07938d77c4a21a9ed5202453cdb11c",
+    "world-2.json": "5b5595bc12665e8e08da36f82514bb97e894b930e412b46389746dddf1a61fe3",
+    "world-2.log": "5737e87eb7642597bc90d375738e9137cd7d69c1039160da82a3ed29f3dcc44f",
+    "world-4-launch.json": "f86d16b2e73839a16701479771ee19255b9636a8fe0dcc7160e9dab4f70d387b",
+    "world-4-telemetry.jsonl": "f5e710fbf398ed58eec158b5617125b453b4b53334fb61118c5765e38dc5b434",
+    "world-4.json": "c66179ac422128d0f04ebb181bf3b5e1fe27386891757b8801a51f8d34d71e57",
+    "world-4.log": "b2b53404b66fd7dd9459b4078fd8686c149f649a8bab34e5db00edf4e45bdb52",
+    "world-8-launch.json": "c058f602738d8f417563c4ffc13a047e2d724c602f4a2dbbe953616ed240188a",
+    "world-8-telemetry.jsonl": "eb0ea11491b8d0f3e5671b9a326ecb67ae2d361a3e24e8d3e8ba6efc5fed14e4",
+    "world-8.json": "b847f9d5f1b8229fc0f32f317c3cbd03ac013cd39fc71d354ea125503f5af40c",
+    "world-8.log": "7d4ad2c98723007ac4fabac96ec0e5b6c327de9f7a09e9d0e107c50070a30498"
+  }
+}

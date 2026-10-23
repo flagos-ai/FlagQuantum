@@ -69,7 +69,7 @@ def main() -> None:
                 "Unread measurement changes coherence:",
                 not torch.allclose(sum(states), rho, atol=1e-10, rtol=0),
             )
-    print("Framework terminal instrument API: approved, not implemented")
+    print("Framework terminal instrument API: flagquantum.runtime.sample_terminal")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 The output of this script is a *measurements document*, not a signed artifact: it
 reports what executed, and ``tools/seal_runtime_evidence.py`` reports what that is
-worth. Five roles are implemented.
+worth. Six roles are implemented.
 
 ``capacity-failure`` runs the frozen capacity workload on one device and records
 the exhaustion that makes the workload a capacity premise. ``capacity-completion``
@@ -10,6 +10,11 @@ runs the same workload across ranks, inherits the measured single-device failure
 from a validated ISSUE-092 capacity premise, and records the sharded training
 update that completes it. ``release-payload`` projects one role document onto the
 top-level contract the sealer reads.
+
+``capacity-series-point`` runs that same frozen workload at any power-of-two
+deployment up to its target. Intermediate OOMs or completions retain per-rank
+records but cannot extend the frozen certification topology. One device and the
+target topology use the existing failure and completion roles respectively.
 
 ``matched-speed`` times the frozen matched-speed ladder at the world it was
 launched at and records one entry per rung. ``speed-summary`` compares one
@@ -45,6 +50,7 @@ rather than of this script.
 from __future__ import annotations
 
 import argparse
+import gc
 import hashlib
 import importlib.util
 import json
@@ -85,6 +91,7 @@ from benchmarks.internal.evidence.speedup import (
 from flagquantum.runtime.audit.release_policy import (
     attach_sharded_optimizer_step_evidence,
 )
+from flagquantum.runtime.executors.mps.training_records import ShardedMPSTrainingResult
 from flagquantum.testing import (
     MPSCapacityCertificationError,
     require_general_mps_capacity,
@@ -95,6 +102,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ROLES = (
     "capacity-failure",
     "capacity-completion",
+    "capacity-series-point",
     "matched-speed",
     "speed-summary",
     "release-payload",
@@ -1409,6 +1417,42 @@ def _baseline_device_identity(record: Mapping[str, Any]) -> str:
     )
 
 
+def _train_capacity(
+    workload: Any,
+    contract: Mapping[str, Any],
+    device: torch.device,
+    world: int,
+    parameters: Sequence[torch.Tensor],
+) -> ShardedMPSTrainingResult:
+    """Train the one digest-bound capacity circuit at the deployment rank count."""
+    initial = workload.rank_owned_initial_mps(
+        workload.N_SITES, workload.MAX_BOND, device
+    )
+    return fqxd.train_distributed_mps(
+        workload.workload(parameters),
+        steps=int(contract["steps"]),
+        observable={workload.N_SITES // 2: "z"},
+        optimizer=str(contract["optimizer"]),
+        lr=float(contract["learning_rate"]),
+        device=device,
+        max_bond=int(contract["trained_max_bond"]),
+        gradient_policy=str(contract["gradient_policy"]),
+        gradient_tolerance=float(contract["truncation_error_budget"]),
+        initial_mps_tensors=initial,
+        initial_mps_left_canonical=bool(contract["initial_mps_left_canonical"]),
+        canonicalization_policy=str(contract["canonicalization_policy"]),
+        # The digest-bound capacity body explicitly compiles its site kernels.
+        # The runtime's one-step automatic policy otherwise selects eager.
+        compile_site_kernels=True,
+        svd_driver=str(contract["svd_driver"]),
+        reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
+            max_saved_bytes=workload.reverse_checkpoint_capacity_bytes(
+                int(contract["logical_mps_bytes"]), world
+            )
+        ),
+    )
+
+
 def _role_capacity_failure(arguments: argparse.Namespace) -> int:
     """Record the single-device exhaustion of the frozen capacity workload."""
 
@@ -1446,29 +1490,7 @@ def _role_capacity_failure(arguments: argparse.Namespace) -> int:
     parameters = workload.frozen_parameters(device)
     started = time.perf_counter()
     try:
-        initial = workload.rank_owned_initial_mps(
-            workload.N_SITES, workload.MAX_BOND, device
-        )
-        fqxd.train_distributed_mps(
-            workload.workload(parameters),
-            steps=int(contract["steps"]),
-            observable={workload.N_SITES // 2: "z"},
-            optimizer=str(contract["optimizer"]),
-            lr=float(contract["learning_rate"]),
-            device=device,
-            max_bond=int(contract["trained_max_bond"]),
-            gradient_policy=str(contract["gradient_policy"]),
-            gradient_tolerance=float(contract["truncation_error_budget"]),
-            initial_mps_tensors=initial,
-            initial_mps_left_canonical=bool(contract["initial_mps_left_canonical"]),
-            canonicalization_policy=str(contract["canonicalization_policy"]),
-            svd_driver=str(contract["svd_driver"]),
-            reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
-                max_saved_bytes=workload.reverse_checkpoint_capacity_bytes(
-                    int(contract["logical_mps_bytes"]), world
-                )
-            ),
-        )
+        _train_capacity(workload, contract, device, world, parameters)
         torch.cuda.synchronize(device)
     except torch.OutOfMemoryError as error:
         status = "cuda_oom"
@@ -1629,30 +1651,8 @@ def _role_capacity_completion(arguments: argparse.Namespace) -> int:
     outcomes: list[dict[str, Any]] = []
     status, failure_reason = "passed", ""
     try:
-        initial = workload.rank_owned_initial_mps(
-            workload.N_SITES, workload.MAX_BOND, device
-        )
         parameters = workload.frozen_parameters(device)
-        result = fqxd.train_distributed_mps(
-            workload.workload(parameters),
-            steps=int(contract["steps"]),
-            observable={workload.N_SITES // 2: "z"},
-            optimizer=str(contract["optimizer"]),
-            lr=float(contract["learning_rate"]),
-            device=device,
-            max_bond=int(contract["trained_max_bond"]),
-            gradient_policy=str(contract["gradient_policy"]),
-            gradient_tolerance=float(contract["truncation_error_budget"]),
-            initial_mps_tensors=initial,
-            initial_mps_left_canonical=bool(contract["initial_mps_left_canonical"]),
-            canonicalization_policy=str(contract["canonicalization_policy"]),
-            svd_driver=str(contract["svd_driver"]),
-            reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
-                max_saved_bytes=workload.reverse_checkpoint_capacity_bytes(
-                    int(contract["logical_mps_bytes"]), world
-                )
-            ),
-        )
+        result = _train_capacity(workload, contract, device, world, parameters)
         torch.cuda.synchronize(device)
         outcomes = _gather(result.summary(), world)
     except (torch.OutOfMemoryError, RuntimeError) as error:
@@ -1716,6 +1716,170 @@ def _role_capacity_completion(arguments: argparse.Namespace) -> int:
         },
     )
     return 0
+
+
+def _capacity_series_measurements(
+    contract: Mapping[str, Any],
+    records: Sequence[Mapping[str, Any]],
+    *,
+    local_world: int,
+    node_count: int,
+) -> dict[str, Any]:
+    """Keep measured intermediate capacity outcomes outside certification."""
+    world = local_world * node_count
+    if sorted(int(record["rank"]) for record in records) != list(range(world)):
+        raise ValueError("capacity series needs exactly one record per rank")
+    statuses = [str(record["status"]) for record in records]
+    capacity_failure = "cuda_oom" in statuses and all(
+        status in {"passed", "cuda_oom"} for status in statuses
+    )
+    return {
+        "acceptance_case": "capacity_series_baseline",
+        "state_mode": "mps",
+        "world_size": world,
+        "local_world_size": local_world,
+        "node_count": node_count,
+        "target_world_size": int(contract["target_world_size"]),
+        "distribution_semantics": "sharded_across_ranks",
+        "collective_backend": "nccl",
+        "status": (
+            "cuda_oom"
+            if capacity_failure
+            else (
+                "passed"
+                if all(status == "passed" for status in statuses)
+                else "runtime_error"
+            )
+        ),
+        "capacity_failure": capacity_failure,
+        "single_device_oom_observed": False,
+        "n_sites": int(contract["n_sites"]),
+        "batch_size": int(contract["batch_size"]),
+        "dtype": str(contract["dtype"]),
+        "initial_max_bond": int(contract["initial_max_bond"]),
+        "max_bond_dimension": int(contract["trained_max_bond"]),
+        "logical_mps_bytes": int(contract["logical_mps_bytes"]),
+        "workload_sha256": _workload_digest(contract),
+        "workload_body_sha256": _workload_body_digest(contract),
+        "measured_peak_memory_bytes": max(int(r["peak_memory_bytes"]) for r in records),
+        "measured_peak_memory_bytes_by_rank": [
+            int(r["peak_memory_bytes"]) for r in records
+        ],
+        "rank_records": [dict(record) for record in records],
+        "scalability_claim_allowed": False,
+        "release_gate_allowed": False,
+        "release_payload": False,
+        "blockers": [
+            "intermediate capacity measurements do not extend the frozen certification topology",
+            "an allocation failure is not completed forward, gradient or optimizer work",
+        ],
+    }
+
+
+def _role_capacity_series_point(arguments: argparse.Namespace) -> int:
+    """Measure one fixed workload at any power-of-two deployment up to its target."""
+    contract = _capacity_contract(arguments.release_manifest)
+    _require_frozen_shape(arguments, contract)
+    world = _env_int("WORLD_SIZE", 1)
+    target = int(contract["target_world_size"])
+    if world <= 0 or world > target or world & (world - 1):
+        raise SystemExit(
+            "capacity series world must be a power of two up to the frozen target"
+        )
+    if world == 1:
+        return _role_capacity_failure(arguments)
+    if world == target:
+        return _role_capacity_completion(arguments)
+    local_world, nodes = arguments.local_world_size, arguments.node_count
+    if local_world <= 0 or nodes <= 0 or local_world * nodes != world:
+        raise SystemExit("capacity series topology must place every rank exactly once")
+    if not torch.cuda.is_available():
+        raise SystemExit("capacity series needs measured CUDA devices")
+    workload = _frozen_workload(contract)
+    device = torch.device("cuda", _env_int("LOCAL_RANK", 0))
+    torch.cuda.set_device(device)
+    _initialize(device)
+    torch.cuda.empty_cache()
+    torch.cuda.reset_peak_memory_stats(device)
+    baseline = int(torch.cuda.memory_allocated(device))
+    rank = _env_int("RANK", 0)
+    status, error, summary = "passed", "", None
+    started = time.perf_counter()
+    print(
+        json.dumps(
+            {"phase": "capacity_series_training", "rank": rank, "world_size": world}
+        ),
+        flush=True,
+    )
+    try:
+        parameters = workload.frozen_parameters(device)
+        result = _train_capacity(workload, contract, device, world, parameters)
+        torch.cuda.synchronize(device)
+        summary = result.summary()
+        del result
+    except torch.OutOfMemoryError as exc:
+        status, error = "cuda_oom", str(exc).splitlines()[0]
+    except RuntimeError as exc:
+        status, error = "runtime_error", str(exc).splitlines()[0]
+    gc.collect()
+    torch.cuda.empty_cache()
+    properties = torch.cuda.get_device_properties(device)
+    record = {
+        "rank": rank,
+        "local_rank": _env_int("LOCAL_RANK", 0),
+        "hostname": socket.gethostname(),
+        "device_name": str(properties.name),
+        "device_total_memory_bytes": int(properties.total_memory),
+        "status": status,
+        "error": error,
+        "elapsed_seconds": time.perf_counter() - started,
+        "peak_memory_bytes": int(torch.cuda.max_memory_allocated(device)),
+        "cleanup_allocated_bytes": int(torch.cuda.memory_allocated(device)),
+        "baseline_allocated_bytes": baseline,
+        "intended_owned_wires": [
+            rank * workload.N_SITES // world,
+            (rank + 1) * workload.N_SITES // world,
+        ],
+        "training_summary": summary,
+    }
+    print(
+        json.dumps(
+            {
+                "phase": "capacity_series_gather",
+                **{
+                    k: record[k]
+                    for k in (
+                        "rank",
+                        "status",
+                        "peak_memory_bytes",
+                        "cleanup_allocated_bytes",
+                    )
+                },
+            }
+        ),
+        flush=True,
+    )
+    try:
+        records = _gather(record, world)
+    finally:
+        if dist.is_initialized():
+            dist.destroy_process_group()
+    if rank != 0:
+        return 2 if status == "runtime_error" else 0
+    measurements = _capacity_series_measurements(
+        contract, records, local_world=local_world, node_count=nodes
+    )
+    _write(
+        arguments,
+        {
+            "schema": SCHEMA,
+            "role": arguments.role,
+            "commit": _commit(),
+            "software": _software(),
+            "measurements": measurements,
+        },
+    )
+    return 2 if measurements["status"] == "runtime_error" else 0
 
 
 def _role_release_payload(arguments: argparse.Namespace) -> int:
@@ -2166,6 +2330,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _role_speed_summary(arguments)
     if arguments.role == "matched-speed":
         return _role_matched_speed(arguments)
+    if arguments.role == "capacity-series-point":
+        return _role_capacity_series_point(arguments)
     if arguments.role == "capacity-failure":
         return _role_capacity_failure(arguments)
     return _role_capacity_completion(arguments)

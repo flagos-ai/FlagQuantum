@@ -1,0 +1,42 @@
+{
+  "commit": "4f23154fe9d944ce3f1e801701d59150138b3bd0",
+  "world_size": 2,
+  "jobs": [
+    {
+      "name": "node-0",
+      "command": [
+        "<redacted-path>",
+        "/nfs/fq-mps-capacity-39895451311-1/tools/run_mps_capacity_series.py",
+        "--worker",
+        "--staging",
+        "/nfs/fq-mps-capacity-39895451311-1",
+        "--output",
+        "/nfs/fq-mps-capacity-39895451311-1-out",
+        "--world",
+        "2",
+        "--node",
+        "0",
+        "--pid-file",
+        "/nfs/fq-mps-capacity-39895451311-1-out/world-2-node-0.pid",
+        "--address",
+        "<redacted-private-address>",
+        "--port",
+        "29642",
+        "--interface",
+        "ens22f0",
+        "--timeout",
+        "1200",
+        "--infiniband-hcas",
+        "mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108"
+      ],
+      "cwd": "/nfs/fq-mps-capacity-39895451311-1",
+      "cleanup_command": [
+        "<redacted-path>",
+        "/nfs/fq-mps-capacity-39895451311-1/tools/run_mps_capacity_series.py",
+        "--stop-worker",
+        "--pid-file",
+        "/nfs/fq-mps-capacity-39895451311-1-out/world-2-node-0.pid"
+      ]
+    }
+  ]
+}

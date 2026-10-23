@@ -25,6 +25,15 @@ def admission(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     ]
     contract["implementation_required"] = False
     monkeypatch.setattr(runtime, "__all__", tuple(contract["namespace_prefix"]))
+    monkeypatch.setattr(
+        runtime,
+        "_EXPORTS",
+        {
+            name: target
+            for name, target in runtime._EXPORTS.items()
+            if name != "sample_terminal"
+        },
+    )
     monkeypatch.delattr(runtime, "sample_terminal", raising=False)
     return contract
 
