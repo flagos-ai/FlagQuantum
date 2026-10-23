@@ -1,3 +1,4 @@
+import contextlib
 import os
 import sys
 from pathlib import Path
@@ -227,28 +228,37 @@ def test_native_extension_avoids_compiler_specific_bit_builtins() -> None:
     assert "trailing_zero_count" in source
 
 
-def _build_ext_command(inplace: bool):
+def _build_ext_command(inplace: bool, torch_file: Path | None = None):
     """Return a configured `build_ext` command without running a build.
 
     `setup.py` cannot be imported, so it is executed with `setuptools.setup`
     replaced by a recorder. That yields the real command class and the real
     extension declarations, which is what the linker arguments are computed
-    from.
+    from. `torch_file` stands in for `torch.__file__` so a build environment
+    other than this one can be described without installing it.
     """
 
     captured: dict[str, object] = {}
     source = (ROOT / "setup.py").read_text(encoding="utf-8")
     namespace: dict[str, object] = {"__name__": "fq_setup_probe"}
-    with mock.patch.object(
-        setuptools, "setup", lambda **kwargs: captured.update(kwargs)
+    patched = (
+        mock.patch.object(torch, "__file__", str(torch_file))
+        if torch_file is not None
+        else contextlib.nullcontext()
+    )
+    with (
+        mock.patch.object(
+            setuptools, "setup", lambda **kwargs: captured.update(kwargs)
+        ),
+        patched,
     ):
         exec(compile(source, "setup.py", "exec"), namespace)
-    command = captured["cmdclass"]["build_ext"](
-        Distribution({"ext_modules": captured["ext_modules"]})
-    )
-    command.initialize_options()
-    command.inplace = inplace
-    command.finalize_options()
+        command = captured["cmdclass"]["build_ext"](
+            Distribution({"ext_modules": captured["ext_modules"]})
+        )
+        command.initialize_options()
+        command.inplace = inplace
+        command.finalize_options()
     return command
 
 
@@ -289,6 +299,56 @@ def test_a_distributed_build_keeps_only_the_relocatable_rpath() -> None:
     link_args = _build_ext_command(inplace=False).extensions[0].extra_link_args
 
     assert _torch_library_rpath() not in link_args
+
+
+def test_an_isolated_inplace_build_refuses_a_library_path_pip_deletes(
+    tmp_path: Path,
+) -> None:
+    """`pip install -e .` without `--no-build-isolation` cannot be made loadable.
+
+    The build requirements are installed into a throwaway environment under the
+    temporary directory, so the absolute library directory an in-place build
+    records is deleted when the install finishes. The load check cannot catch
+    it -- it opens the artifact while that environment still exists -- and the
+    artifact stops opening afterwards, leaving every native CPU path on the
+    PyTorch fallback without saying so.
+    """
+
+    if sys.platform != "darwin":
+        pytest.skip("the recorded absolute path is load-bearing on macOS")
+
+    build_environment = (
+        tmp_path / "pip-build-env-abc123" / "overlay" / "lib" / "torch" / "__init__.py"
+    )
+
+    with pytest.raises(RuntimeError, match="--no-build-isolation"):
+        _build_ext_command(inplace=True, torch_file=build_environment)
+
+
+def test_an_isolated_wheel_build_still_records_only_the_relocatable_rpath(
+    tmp_path: Path,
+) -> None:
+    """A wheel locates PyTorch relative to the installed package, so it survives.
+
+    Refusing the in-place case must not refuse packaging: the artifact is only
+    unloadable when it stays in the source tree.
+    """
+
+    if sys.platform != "darwin":
+        pytest.skip("the recorded absolute path is load-bearing on macOS")
+
+    build_environment = (
+        tmp_path / "pip-build-env-abc123" / "overlay" / "lib" / "torch" / "__init__.py"
+    )
+
+    link_args = (
+        _build_ext_command(inplace=False, torch_file=build_environment)
+        .extensions[0]
+        .extra_link_args
+    )
+
+    assert _relocatable_torch_rpath() in link_args
+    assert str(build_environment.parent / "lib") not in " ".join(link_args)
 
 
 def test_the_load_check_follows_the_inplace_flag(monkeypatch) -> None:

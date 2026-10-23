@@ -106,6 +106,19 @@ def _absolute_rpath_flag(directory: Path) -> str:
     return f"-Wl,-rpath,{directory}"
 
 
+#: Marks the throwaway environment a build frontend installs the build
+#: requirements into. `python -m pip install -e .` without
+#: `--no-build-isolation` builds in `.../pip-build-env-XXXX/overlay/...` under
+#: the system temporary directory and deletes it once the install finishes.
+BUILD_ENVIRONMENT_MARKER = "build-env"
+
+
+def _is_build_environment_directory(directory: Path) -> bool:
+    """Return whether a directory belongs to a frontend's throwaway environment."""
+
+    return any(BUILD_ENVIRONMENT_MARKER in part for part in directory.parts)
+
+
 class ReproducibleBuildExtension(BuildExtension):
     """Make the compiled operator loadable, and keep a wheel byte-reproducible.
 
@@ -129,9 +142,47 @@ class ReproducibleBuildExtension(BuildExtension):
         self.inplace_build = bool(self.inplace)
         if not self.inplace_build or os.name == "nt":
             return
-        flag = _absolute_rpath_flag(_torch_library_directory())
+        directory = _torch_library_directory()
+        self._require_durable_rpath(directory)
+        flag = _absolute_rpath_flag(directory)
         for extension in self.extensions:
             extension.extra_link_args = [*(extension.extra_link_args or ()), flag]
+
+    def _require_durable_rpath(self, directory: Path) -> None:
+        """Fail when the artifact would depend on a directory pip deletes.
+
+        An isolated build installs its build requirements into a throwaway
+        environment under the system temporary directory, so ``torch.__file__``
+        names that copy and the absolute library directory recorded here is
+        gone once the install finishes. The load check in `run` cannot see it:
+        it opens the artifact while the environment still exists, so it passes
+        and the artifact stops opening afterwards.
+
+        macOS is where that silent loss was measured, because it is the one
+        dependency that cannot survive it. PyTorch's own libraries are already
+        loaded underneath `_C` and their install names are ``@rpath/libc10.dylib``
+        and friends, so dyld matches them without any rpath. The OpenMP runtime
+        is the exception: torch ships it with a build-machine install name
+        (``/opt/llvm-openmp/lib/libomp.dylib``), the reference is rewritten to
+        ``@rpath/libomp.dylib`` so it can be relocated at all, and that string
+        matches nothing already open -- it resolves only through an rpath, which
+        is the one this build is about to record into a deleted directory.
+        Other platforms are not claimed to be unaffected; this check reports
+        only the failure it was measured against.
+        """
+
+        if sys.platform != "darwin" or not _is_build_environment_directory(directory):
+            return
+        raise RuntimeError(
+            "an editable build cannot record a library search path from an "
+            f"isolated build environment: {directory} belongs to the build "
+            "frontend and is deleted when the install finishes, so the operator "
+            "left in the source tree would stop opening and every native CPU "
+            "path would silently fall back to PyTorch. Install with "
+            "`python -m pip install --no-build-isolation -e .` as "
+            "CONTRIBUTING.md documents, or build a wheel, which locates the "
+            "libraries relative to the installed package."
+        )
 
     def run(self) -> None:
         super().run()
