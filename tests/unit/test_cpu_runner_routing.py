@@ -195,80 +195,64 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     ), "Evidence provenance still needs full Git history"
 
 
-def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
+def test_portable_sdk_jobs_use_general_cpu_pool_while_r300_is_paused() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    migrated = {
-        name: job
-        for name, job in jobs.items()
-        if "flagcicd-r300-" in str(job.get("runs-on", ""))
-    }
-    assert set(migrated) == {"qiskit-optional", "cirq-optional", "braket-optional"}
-    for job in migrated.values():
-        assert job["timeout-minutes"] == 30
-        steps = job["steps"]
-        bootstrap = next(
-            index
-            for index, step in enumerate(steps)
-            if step.get("uses") == "./.github/actions/prepare-r300-cpu"
-        )
-        assert steps[bootstrap]["if"] == "startsWith(runner.name, 'flagcicd-r300-')"
+    expected = (
+        "${{ (github.event_name != 'pull_request' || "
+        "github.event.pull_request.head.repo.full_name == github.repository) "
+        "&& 'flagquantum-cpu-general' || 'ubuntu-latest' }}"
+    )
+    for name in ("qiskit-optional", "cirq-optional", "braket-optional"):
+        assert jobs[name]["runs-on"] == expected
+        assert jobs[name]["timeout-minutes"] == 30
+        assert jobs[name]["env"]["MAX_JOBS"] == "2"
         assert any(
-            "git checkout --force --detach" in step.get("run", "")
-            for step in steps[:bootstrap]
+            step.get("name") == "Validate the CPU runtime before SDK certification"
+            for step in jobs[name]["steps"]
         )
-        assert steps[bootstrap + 1]["uses"].startswith("actions/setup-python@")
-        assert steps[bootstrap + 1]["if"] == (
-            "${{ !startsWith(runner.name, 'flagcicd-r300-') }}"
-        )
-        assert steps[bootstrap + 2]["uses"] == "./.github/actions/isolated-python"
 
 
-def test_r300_sdk_jobs_spread_across_distinct_inventory_targets() -> None:
+def test_r300_is_not_a_dependency_of_pr_source_preparation() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    routes = [
-        jobs[name]["runs-on"]
-        for name in ("qiskit-optional", "cirq-optional", "braket-optional")
-    ]
-    assert len(set(routes)) == 3
+    assert "r300-routes" not in jobs["prepare-source"]["outputs"]
+    assert not any(
+        "r300_pool.py" in step.get("run", "")
+        for step in jobs["prepare-source"]["steps"]
+    )
+    assert all(
+        "flagcicd-r300-" not in str(job.get("runs-on", ""))
+        and "outputs.r300-routes" not in str(job.get("runs-on", ""))
+        for job in jobs.values()
+    )
 
 
-def test_r300_source_failover_is_bounded_and_verifies_the_same_commit() -> None:
+def test_general_sdk_source_restoration_verifies_the_exact_commit() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     for name in ("qiskit-optional", "cirq-optional", "braket-optional"):
         steps = jobs[name]["steps"]
-        source = next(step for step in steps if step.get("id") == "source")
-        assert source["timeout-minutes"] == 3
-        assert (
-            source["continue-on-error"]
-            == "${{ startsWith(runner.name, 'flagcicd-r300-') }}"
+        source = next(
+            step
+            for step in steps
+            if str(step.get("uses", "")).startswith("actions/download-artifact@")
         )
+        assert source.get("continue-on-error", False) is False
+        assert source["with"]["digest-mismatch"] == "error"
         restore = next(
             step
             for step in steps
             if step.get("name") == "Restore and verify this run's exact source commit"
         )
-        assert restore["if"] == "steps.source.outcome == 'success'"
-        checkout = next(
+        assert 'test "$sha" = "$GITHUB_SHA"' in restore["run"]
+        assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in restore["run"]
+        assert not any(
+            str(step.get("uses", "")).startswith("actions/checkout@") for step in steps
+        )
+        installer = next(
             step
             for step in steps
-            if str(step.get("uses", "")).startswith("actions/checkout@")
+            if step.get("uses") == "./.github/actions/install-cpu-torch"
         )
-        assert (
-            checkout["if"]
-            == "startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'"
-        )
-        assert checkout["timeout-minutes"] == 5
-        assert checkout["with"] == {
-            "ref": "${{ github.sha }}",
-            "persist-credentials": False,
-        }
-        verify = next(
-            step
-            for step in steps
-            if step.get("name") == "Verify the checked-out fallback commit"
-        )
-        assert verify["if"] == "steps.source.outcome == 'failure'"
-        assert verify["run"] == 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"'
+        assert installer["timeout-minutes"] == 8
 
 
 @pytest.mark.parametrize("job", ["cpu-core", "cpu-core-3-12-tests", "cpu-runtime"])

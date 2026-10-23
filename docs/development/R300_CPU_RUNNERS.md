@@ -1,5 +1,14 @@
 # R300 CPU CI runners
 
+PR scheduling on R300 is temporarily paused because source transfer and cold
+Python/compiler installation repeatedly timed out. Qiskit, Cirq and Braket use
+`flagquantum-cpu-general` for trusted runs and `ubuntu-latest` for fork PRs.
+All existing SDK versions, native preflight and required test commands remain.
+R300 qualification is manual-only; ordinary PRs never start R300 jobs or depend
+on an experimental pool plan. Historical qualification and proposed pool design
+below do not imply that R300 PR scheduling is currently enabled.
+
+
 The initial R300 routing spreads Qiskit compatibility onto
 `flagcicd-r300-cpu05`, Braket onto `flagcicd-r300-cpu03`, and Cirq onto
 `flagcicd-r300-cpu04`. All three targets have completed resource inventory.

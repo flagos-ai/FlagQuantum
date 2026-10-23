@@ -15,7 +15,7 @@ on:
 #
 # CPU smoke/unit, runtime, coverage and distributed suites use A800 CPU runners.
 # Portable trusted Ubuntu checks share the general CPU runner pool.
-# Qiskit, Cirq and Braket compatibility checks use validated R300 scale sets.
+# R300 PR scheduling is paused; SDK checks use the existing general CPU pool.
 # Full-history quality checks retain A100; fork jobs use hosted runners.
 # Trusted manual validation uses the same A800 routing as same-repository PRs.
 # A800 jobs use up to 16 quota-aware workers and a private environment per run.
@@ -835,24 +835,21 @@ jobs:
 
   qiskit-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu05' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
+      MAX_JOBS: "2"
       OPTIONAL_VERSIONS: "2.0.* 2.5.*"
     steps:
       - uses: actions/download-artifact@v8.0.2
-        id: source
-        timeout-minutes: 3
-        continue-on-error: ${{ startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
-        if: steps.source.outcome == 'success'
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
@@ -869,33 +866,13 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - name: Prepare exact-commit checkout after an R300 artifact failure
-        if: startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'
-        run: |
-          echo "::warning::Source artifact transfer failed; fetching the same commit through GitHub checkout"
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
-          fi
-      - uses: actions/checkout@v4
-        if: startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'
-        timeout-minutes: 5
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: Verify the checked-out fallback commit
-        if: steps.source.outcome == 'failure'
-        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - uses: ./.github/actions/prepare-r300-cpu
-        if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
-        if: ${{ !startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Validate the CPU runtime before SDK certification
         run: |
@@ -936,24 +913,21 @@ jobs:
 
   cirq-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu04' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
+      MAX_JOBS: "2"
       OPTIONAL_VERSIONS: "1.6.1 1.7.0"
     steps:
       - uses: actions/download-artifact@v8.0.2
-        id: source
-        timeout-minutes: 3
-        continue-on-error: ${{ startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
-        if: steps.source.outcome == 'success'
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
@@ -970,33 +944,13 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - name: Prepare exact-commit checkout after an R300 artifact failure
-        if: startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'
-        run: |
-          echo "::warning::Source artifact transfer failed; fetching the same commit through GitHub checkout"
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
-          fi
-      - uses: actions/checkout@v4
-        if: startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'
-        timeout-minutes: 5
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: Verify the checked-out fallback commit
-        if: steps.source.outcome == 'failure'
-        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - uses: ./.github/actions/prepare-r300-cpu
-        if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
-        if: ${{ !startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Validate the CPU runtime before SDK certification
         run: |
@@ -1021,24 +975,21 @@ jobs:
 
   braket-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu03' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
+      MAX_JOBS: "2"
       OPTIONAL_VERSIONS: "1.117.0 1.127.1"
     steps:
       - uses: actions/download-artifact@v8.0.2
-        id: source
-        timeout-minutes: 3
-        continue-on-error: ${{ startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
       - name: Restore and verify this run's exact source commit
-        if: steps.source.outcome == 'success'
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
@@ -1055,33 +1006,13 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - name: Prepare exact-commit checkout after an R300 artifact failure
-        if: startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'
-        run: |
-          echo "::warning::Source artifact transfer failed; fetching the same commit through GitHub checkout"
-          if [ -d .git ]; then
-            git sparse-checkout disable
-            rm -f .git/info/sparse-checkout
-            git config --local --unset core.sparseCheckout || true
-          fi
-      - uses: actions/checkout@v4
-        if: startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'
-        timeout-minutes: 5
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: Verify the checked-out fallback commit
-        if: steps.source.outcome == 'failure'
-        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - uses: ./.github/actions/prepare-r300-cpu
-        if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
-        if: ${{ !startsWith(runner.name, 'flagcicd-r300-') }}
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Validate the CPU runtime before SDK certification
         run: |
