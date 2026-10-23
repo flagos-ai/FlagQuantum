@@ -1,0 +1,769 @@
+{
+  "independent": {
+    "model": {
+      "num_detectors": 3,
+      "num_observables": 1,
+      "errors": [
+        {
+          "probability": 0.125,
+          "detectors": [
+            0
+          ],
+          "observables": [
+            0
+          ],
+          "error_id": null
+        },
+        {
+          "probability": 0.25,
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "error_id": null
+        }
+      ]
+    },
+    "detectors": {
+      "dtype": "torch.int8",
+      "values": [
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    "observables": {
+      "dtype": "torch.int8",
+      "values": [
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    "detector_rates": {
+      "dtype": "torch.float64",
+      "values": [
+        0.3125,
+        0.25,
+        0.0
+      ]
+    },
+    "observable_rates": {
+      "dtype": "torch.float64",
+      "values": [
+        0.125
+      ]
+    },
+    "sample": {
+      "detectors": {
+        "dtype": "torch.int8",
+        "values": [
+          [
+            1,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "observables": {
+        "dtype": "torch.int8",
+        "values": [
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ]
+        ]
+      }
+    },
+    "ids": null,
+    "stated_ids": [],
+    "groups": []
+  },
+  "exclusive": {
+    "model": {
+      "num_detectors": 2,
+      "num_observables": 1,
+      "errors": [
+        {
+          "probability": 0.125,
+          "detectors": [
+            0
+          ],
+          "observables": [
+            0
+          ],
+          "error_id": 7
+        },
+        {
+          "probability": 0.0625,
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "error_id": null
+        },
+        {
+          "probability": 0.25,
+          "detectors": [
+            1
+          ],
+          "observables": [],
+          "error_id": 7
+        }
+      ]
+    },
+    "detectors": {
+      "dtype": "torch.int8",
+      "values": [
+        [
+          1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          1
+        ]
+      ]
+    },
+    "observables": {
+      "dtype": "torch.int8",
+      "values": [
+        [
+          1,
+          0,
+          0
+        ]
+      ]
+    },
+    "detector_rates": {
+      "dtype": "torch.float64",
+      "values": [
+        0.171875,
+        0.28125
+      ]
+    },
+    "observable_rates": {
+      "dtype": "torch.float64",
+      "values": [
+        0.125
+      ]
+    },
+    "sample": {
+      "detectors": {
+        "dtype": "torch.int8",
+        "values": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      },
+      "observables": {
+        "dtype": "torch.int8",
+        "values": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ],
+          [
+            0
+          ]
+        ]
+      }
+    },
+    "ids": [
+      7,
+      8,
+      7
+    ],
+    "stated_ids": [
+      7
+    ],
+    "groups": [
+      [
+        0,
+        2
+      ]
+    ]
+  },
+  "text": "error(0.125) D0 L0\nerror(0.25) D0 D1\ndetector D0\ndetector D1\ndetector D2\nlogical_observable L0\n",
+  "graph": {
+    "num_detectors": 3,
+    "num_observables": 1,
+    "edges": [
+      {
+        "detectors": [
+          0,
+          1
+        ],
+        "probability": 0.25,
+        "observables": []
+      },
+      {
+        "detectors": [
+          0,
+          3
+        ],
+        "probability": 0.125,
+        "observables": [
+          0
+        ]
+      }
+    ]
+  },
+  "realized": "error(0.125) D0 L0\nerror(0.25) D0 D1\ndetector D0\ndetector D1\ndetector D2\nlogical_observable L0\n",
+  "merge:independent_parity": {
+    "num_detectors": 1,
+    "num_observables": 0,
+    "errors": [
+      {
+        "probability": 0.3125,
+        "detectors": [
+          0
+        ],
+        "observables": [],
+        "error_id": null
+      }
+    ]
+  },
+  "merge:clamped_linear_sum": {
+    "num_detectors": 1,
+    "num_observables": 0,
+    "errors": [
+      {
+        "probability": 0.375,
+        "detectors": [
+          0
+        ],
+        "observables": [],
+        "error_id": null
+      }
+    ]
+  },
+  "repetition:matrices": "error(0.125) D0 D1 D2 D3 L0\nerror(0.25) D0 D2\nerror(0.125) D0 D2 L0\nerror(0.25) D1 D3\nerror(0.125) D1 D3 L0\nerror(0.25) D2\nerror(0.125) D2 L0\nerror(0.125) D2 D3 L0\nerror(0.25) D3\nerror(0.125) D3 L0\ndetector D0\ndetector D1\ndetector D2\ndetector D3\nlogical_observable L0\n",
+  "repetition:memory": "error(0.125) D0 L0\nerror(0.125) D0 D1 L0\nerror(0.25) D0 D2\nerror(0.125) D1 L0\nerror(0.25) D1 D3\nerror(0.125) D2 L0\nerror(0.125) D2 D3 L0\nerror(0.25) D2 D4\nerror(0.125) D3 L0\nerror(0.25) D3 D5\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\nlogical_observable L0\n",
+  "surface:matrices": "error(0.125) D0 D1 D8 D9\nerror(0.3125) D0 D8\nerror(0.125) D1 D2 D9 D10\nerror(0.25) D1 D9\nerror(0.21875) D1 D9 L0\nerror(0.125) D2 D3 D10 D11\nerror(0.359375) D2 D10\nerror(0.25) D3 D11\nerror(0.125) D3 D11 L0\nerror(0.25) D4 D12\nerror(0.25) D5 D13\nerror(0.25) D6 D14\nerror(0.25) D7 D15\nerror(0.3125) D8\nerror(0.125) D8 D9\nerror(0.25) D9\nerror(0.21875) D9 L0\nerror(0.125) D9 D10\nerror(0.359375) D10\nerror(0.125) D10 D11\nerror(0.25) D11\nerror(0.125) D11 L0\nerror(0.25) D12\nerror(0.25) D13\nerror(0.25) D14\nerror(0.25) D15\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\ndetector D6\ndetector D7\ndetector D8\ndetector D9\ndetector D10\ndetector D11\ndetector D12\ndetector D13\ndetector D14\ndetector D15\nlogical_observable L0\n",
+  "surface:memory": "error(0.125) D0\nerror(0.125) D0 D1\nerror(0.25) D0 D4\nerror(0.21875) D1 L0\nerror(0.125) D1 D2\nerror(0.25) D1 D6\nerror(0.21875) D2\nerror(0.125) D2 D3\nerror(0.25) D2 D9\nerror(0.125) D3 L0\nerror(0.25) D3 D11\nerror(0.125) D4\nerror(0.125) D4 D6\nerror(0.25) D4 D12\nerror(0.375) D5\nerror(0.21875) D6 L0\nerror(0.125) D6 D9\nerror(0.25) D6 D13\nerror(0.375) D7\nerror(0.375) D8\nerror(0.21875) D9\nerror(0.125) D9 D11\nerror(0.25) D9 D14\nerror(0.375) D10\nerror(0.125) D11 L0\nerror(0.25) D11 D15\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\ndetector D6\ndetector D7\ndetector D8\ndetector D9\ndetector D10\ndetector D11\ndetector D12\ndetector D13\ndetector D14\ndetector D15\nlogical_observable L0\n",
+  "chunks": [
+    {
+      "model": {
+        "num_detectors": 4,
+        "num_observables": 1,
+        "errors": [
+          {
+            "probability": 0.01,
+            "detectors": [
+              0,
+              1
+            ],
+            "observables": [],
+            "error_id": null
+          },
+          {
+            "probability": 0.02,
+            "detectors": [
+              1,
+              2
+            ],
+            "observables": [],
+            "error_id": null
+          },
+          {
+            "probability": 0.03,
+            "detectors": [
+              2,
+              3
+            ],
+            "observables": [],
+            "error_id": null
+          }
+        ]
+      },
+      "first_row": 0,
+      "seams": [
+        {
+          "seam_id": {
+            "name": "next_round"
+          },
+          "row_begin": 2,
+          "row_end": 4
+        }
+      ],
+      "first_layer": 0,
+      "last_layer": 1
+    },
+    {
+      "model": {
+        "num_detectors": 4,
+        "num_observables": 1,
+        "errors": [
+          {
+            "probability": 0.04,
+            "detectors": [
+              1,
+              2
+            ],
+            "observables": [],
+            "error_id": null
+          },
+          {
+            "probability": 0.05,
+            "detectors": [
+              2,
+              3
+            ],
+            "observables": [],
+            "error_id": null
+          }
+        ]
+      },
+      "first_row": 2,
+      "seams": [
+        {
+          "seam_id": {
+            "name": "prev_round"
+          },
+          "row_begin": 0,
+          "row_end": 2
+        },
+        {
+          "seam_id": {
+            "name": "next_round"
+          },
+          "row_begin": 2,
+          "row_end": 4
+        }
+      ],
+      "first_layer": 1,
+      "last_layer": 2
+    },
+    {
+      "model": {
+        "num_detectors": 4,
+        "num_observables": 1,
+        "errors": [
+          {
+            "probability": 0.06,
+            "detectors": [
+              1,
+              2
+            ],
+            "observables": [],
+            "error_id": null
+          },
+          {
+            "probability": 0.07,
+            "detectors": [
+              2,
+              3
+            ],
+            "observables": [],
+            "error_id": null
+          }
+        ]
+      },
+      "first_row": 4,
+      "seams": [
+        {
+          "seam_id": {
+            "name": "prev_round"
+          },
+          "row_begin": 0,
+          "row_end": 2
+        }
+      ],
+      "first_layer": 2,
+      "last_layer": 3
+    }
+  ],
+  "stitched": {
+    "model": {
+      "num_detectors": 8,
+      "num_observables": 1,
+      "errors": [
+        {
+          "probability": 0.01,
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "error_id": null
+        },
+        {
+          "probability": 0.02,
+          "detectors": [
+            1,
+            2
+          ],
+          "observables": [],
+          "error_id": null
+        },
+        {
+          "probability": 0.03,
+          "detectors": [
+            2,
+            3
+          ],
+          "observables": [],
+          "error_id": null
+        },
+        {
+          "probability": 0.04,
+          "detectors": [
+            3,
+            4
+          ],
+          "observables": [],
+          "error_id": null
+        },
+        {
+          "probability": 0.05,
+          "detectors": [
+            4,
+            5
+          ],
+          "observables": [],
+          "error_id": null
+        },
+        {
+          "probability": 0.06,
+          "detectors": [
+            5,
+            6
+          ],
+          "observables": [],
+          "error_id": null
+        },
+        {
+          "probability": 0.07,
+          "detectors": [
+            6,
+            7
+          ],
+          "observables": [],
+          "error_id": null
+        }
+      ]
+    },
+    "first_row": 0,
+    "seams": [],
+    "first_layer": 0,
+    "last_layer": 3
+  },
+  "closed": {
+    "num_detectors": 8,
+    "num_observables": 1,
+    "errors": [
+      {
+        "probability": 0.01,
+        "detectors": [
+          0,
+          1
+        ],
+        "observables": [],
+        "error_id": null
+      },
+      {
+        "probability": 0.02,
+        "detectors": [
+          1,
+          2
+        ],
+        "observables": [],
+        "error_id": null
+      },
+      {
+        "probability": 0.03,
+        "detectors": [
+          2,
+          3
+        ],
+        "observables": [],
+        "error_id": null
+      },
+      {
+        "probability": 0.04,
+        "detectors": [
+          3,
+          4
+        ],
+        "observables": [],
+        "error_id": null
+      },
+      {
+        "probability": 0.05,
+        "detectors": [
+          4,
+          5
+        ],
+        "observables": [],
+        "error_id": null
+      },
+      {
+        "probability": 0.06,
+        "detectors": [
+          5,
+          6
+        ],
+        "observables": [],
+        "error_id": null
+      },
+      {
+        "probability": 0.07,
+        "detectors": [
+          6,
+          7
+        ],
+        "observables": [],
+        "error_id": null
+      }
+    ]
+  },
+  "refusal:error(2) D0": [
+    "ValueError",
+    "error probability must be between zero and one"
+  ],
+  "refusal:error(0.1) BAD": [
+    "ValueError",
+    "error targets must be D or L indices, not 'BAD'"
+  ],
+  "refusal:repeat -1 { error(0.1) D0 }": [
+    "ValueError",
+    "a repeat block must open with a brace that ends its line and close on a line of its own, not 'repeat -1 { error(0.1) D0 }'"
+  ]
+}
