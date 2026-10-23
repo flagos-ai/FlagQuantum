@@ -49,7 +49,7 @@ def download(row: dict[str, str]) -> Path:
         )
     if digest != row["sha256"]:
         raise RuntimeError(f"Official SHA256 mismatch: {target.name}")
-    target.chown(0, 0)
+    os.chown(target, 0, 0)
     target.chmod(0o644)
     print("Verified", target.name, flush=True)
     return target

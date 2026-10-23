@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 from pathlib import Path
 
@@ -51,3 +52,28 @@ def test_mc550_validation_targets_every_exact_slot_only_when_requested() -> None
     assert (
         events["workflow_dispatch"]["inputs"]["validate_mc550_pool"]["default"] is False
     )
+
+
+def test_cached_archives_are_verified_before_the_installer_uses_them(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spec = importlib.util.spec_from_file_location(
+        "mc550_download", ROOT / "tools/ci/provision_mc550_runners.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.setattr(module.os, "chown", lambda *_: None)
+    directory = tmp_path / "packages"
+    directory.mkdir()
+    target = directory / "runtime.tar.gz"
+    target.write_bytes(b"verified public archive")
+    row = {
+        "filename": target.name,
+        "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+    }
+    assert module.download(row) == target
+    target.write_bytes(b"corrupted relay or cache content")
+    with pytest.raises(RuntimeError, match="Official SHA256 mismatch"):
+        module.download(row)
