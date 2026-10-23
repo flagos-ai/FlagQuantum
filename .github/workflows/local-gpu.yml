@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      validate_mc550_pool:
+        description: Validate all sixty-four isolated MC550 CPU runners
+        type: boolean
+        default: false
       validate_pool:
         description: Validate all sixteen CPU slots and the exclusive eight-GPU runner
         type: boolean
@@ -61,7 +65,7 @@ jobs:
           compression-level: 0
 
   one-gpu-local:
-    if: ${{ !inputs.validate_pool }}
+    if: ${{ !inputs.validate_pool && !inputs.validate_mc550_pool }}
     needs: prepare-source
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-171]
     # The multi-node lane uses both A800 hosts. Keep their local and scheduled
@@ -143,7 +147,7 @@ jobs:
           path: hardware-run/
 
   two-gpu-distributed-required:
-    if: ${{ !inputs.validate_pool }}
+    if: ${{ !inputs.validate_pool && !inputs.validate_mc550_pool }}
     needs: prepare-source
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
@@ -336,3 +340,38 @@ jobs:
         with:
           name: a100-pool-validation-${{ github.run_id }}
           path: hardware-run/
+
+  validate-mc550-pool:
+    if: ${{ inputs.validate_mc550_pool }}
+    runs-on: [self-hosted, linux, x64, flagquantum-mc550-cpu, "${{ matrix.host }}", "${{ matrix.slot }}"]
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: 64
+      matrix:
+        host: [mc550-111, mc550-112, mc550-121, mc550-122]
+        slot: [cpu01, cpu02, cpu03, cpu04, cpu05, cpu06, cpu07, cpu08, cpu09, cpu10, cpu11, cpu12, cpu13, cpu14, cpu15, cpu16]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - name: Prepare isolated build tooling
+        run: python -m pip install --upgrade pip "setuptools>=77.0.3" wheel
+      - name: Verify host, account, device, filesystem and cgroup isolation
+        run: python tools/ci/verify_mc550_runner.py
+      - name: Install the CPU-only framework
+        uses: ./.github/actions/install-cpu-torch
+      - name: Install the project and test dependencies in the private environment
+        run: python -m pip install --no-build-isolation -e ".[dev]"
+      - name: Verify CPU-only PyTorch and exact source identity
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python -c "import torch; assert torch.version.cuda is None; assert torch.cuda.device_count() == 0"
+      - name: Run CPU circuit and backend regressions on this exact slot
+        run: python -m pytest tests/test_native_circuit.py tests/test_backends.py -q
