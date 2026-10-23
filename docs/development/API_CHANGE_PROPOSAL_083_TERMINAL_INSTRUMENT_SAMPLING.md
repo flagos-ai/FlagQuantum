@@ -1,12 +1,15 @@
 # Proposal 083: terminal finite-basis instrument sampling
 
-Status: **proposed; not approved for implementation**. The owner requested this
-proposal on 2026-10-22 while authorizing the native-control and visualization
-examples. That request does not approve the API below. Proposal 081 and merged
+Status: **approved for staged implementation on 2026-10-23**. The owner explicitly
+approved all five decisions below and requested the replaceable contract baseline
+first. The [authorization record](../api-changes/FQ-TERMINAL-INSTRUMENT-SAMPLING-20261023.md)
+records that decision and the remaining delivery gates. The original request on
+2026-10-22 and document merge #716 were not implementation approval. No public
+entry or production implementation is added by the baseline. Proposal 081 and merged
 #707 remain the authority for native evolution and plan 1.7; proposal 082's
 service-owned Remote boundary remains unchanged.
 
-## Five decisions requested
+## Five approved decisions
 
 1. Add exactly the Runtime-owned sample_terminal entry specified below. Accept
    ordered full-space tensor Kraus branches and reuse SuperOperator for their
@@ -110,7 +113,9 @@ exactly schema, version, dimension, dtype, branches, requested_seed,
 effective_seed and torch_version. schema is flagquantum.terminal_instrument,
 version is 1.0. Each branch contains exactly label and kraus; each matrix uses
 the existing Core numeric tensor encoding, captured after validation and before
-sampling. Caller mutation after return cannot change these captured values.
+sampling. Mutation of the caller's original input tensors after return cannot
+change these captured values. The existing result metadata is not made recursively
+immutable; no new result wrapper or immutability contract is introduced.
 
 This is output metadata in the existing result contract, not a new sealed plan,
 signed artifact, public fingerprint, or metadata deserializer. Existing result
@@ -190,8 +195,9 @@ record = sample_terminal(rho, branches, shots=10_000, seed=7)
 
 ## Delivery and acceptance gates
 
-1. Obtain explicit approval of all five decisions. Document merge is not API
-   approval. No candidate/snapshot or public implementation changes before it.
+1. Explicit approval of all five decisions was obtained on 2026-10-23. Document
+   merge was not API approval. The baseline adds no candidate/snapshot or public
+   implementation; those retain the staged gates below.
 2. Establish replaceable factories for branch construction and terminal sampling
    under the approved signatures. Use presence and Fock consumers and retain
    independent physical/statistical budgets; do not implement a second framework

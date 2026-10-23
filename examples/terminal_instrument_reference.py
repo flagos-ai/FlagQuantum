@@ -69,7 +69,7 @@ def main() -> None:
                 "Unread measurement changes coherence:",
                 not torch.allclose(sum(states), rho, atol=1e-10, rtol=0),
             )
-    print("Framework terminal instrument API: proposed, not implemented")
+    print("Framework terminal instrument API: approved, not implemented")
 
 
 if __name__ == "__main__":
