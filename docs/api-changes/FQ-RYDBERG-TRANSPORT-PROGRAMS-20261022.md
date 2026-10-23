@@ -277,3 +277,37 @@ last delivery commit adds only the blockade test and this evidence, with no
 production-code change. Latest remote full CI/GPU, applicable checks, repository
 rules and this PR's separate merge authorization remain mandatory. No scientific
 budget or legacy assertion was loosened, and full M3 remains open.
+
+## Merged bounded deliveries
+
+The following records supersede pending-PR wording above; earlier local runs
+remain historical evidence for their original revisions. Each final head had
+41 successful checks and two unchanged manual-only GPU resource-pool skips,
+with successful complete CI/GPU workflows before merge. Each merge's Main smoke
+also succeeded. A PR merge or green reference is not full M3 acceptance.
+
+| Delivery | Final head and merge | Complete CI / GPU | Post-merge Main smoke |
+| --- | --- | --- | --- |
+| [#707 native CPU evolution and plan 1.7](https://github.com/flagos-ai/FlagQuantum/pull/707) | 4f8523cd23 / ac092b003f | [39722409464](https://github.com/flagos-ai/FlagQuantum/actions/runs/39722409464) / [39722409290](https://github.com/flagos-ai/FlagQuantum/actions/runs/39722409290) | [39725500564](https://github.com/flagos-ai/FlagQuantum/actions/runs/39725500564) |
+| [#714 native control training](https://github.com/flagos-ai/FlagQuantum/pull/714) | 5174ced278 / 29a2fdc2a9 | [39727069900](https://github.com/flagos-ai/FlagQuantum/actions/runs/39727069900) / [39727069929](https://github.com/flagos-ai/FlagQuantum/actions/runs/39727069929) | [39733415364](https://github.com/flagos-ai/FlagQuantum/actions/runs/39733415364) |
+| [#715 commanded transport view](https://github.com/flagos-ai/FlagQuantum/pull/715) | a1dd1f3ded / 7e781ba951 | [39729165240 attempt 2](https://github.com/flagos-ai/FlagQuantum/actions/runs/39729165240/attempts/2) / [39729165411](https://github.com/flagos-ai/FlagQuantum/actions/runs/39729165411) | [39740301406](https://github.com/flagos-ai/FlagQuantum/actions/runs/39740301406) |
+
+Training uses the existing CPU Lindblad plan/run path and PyTorch Adam for two
+interval amplitudes. Its 128-interval frozen-unitary value/gradient reference
+retains the original 1e-10 budget; the initial 64-interval gradient difference
+2.28e-10 was fixed by refinement, not by relaxing the assertion. The SVG/PNG view
+uses Core commanded_position and native source timings, not a duplicate geometry
+or solver. It does not infer presence, trap activation, heating or fidelity.
+
+The first #715 CI attempt retained 11 failed and five cancelled checks following
+Action/source downloads and job timeouts. Completed workflow attempt 2 reran
+failed/cancelled jobs on the same head and succeeded without code, workflow,
+timeout, scientific-budget or protection changes; the negative attempt is not
+reported as a pass.
+
+The [terminal instrument proposal](../development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md)
+was documented by #716 and explicitly approved separately on 2026-10-23. Its
+[authorization and baseline](FQ-TERMINAL-INSTRUMENT-SAMPLING-20261023.md)
+cover the next mathematical sampling boundary; they do not retroactively turn
+081's deterministic presence effects into sampled detection or close remaining
+M3 event, feedback, heating, hardware or scalability gates.

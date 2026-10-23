@@ -507,7 +507,7 @@ Unread measurement changes coherence: True
 fock labels: ('0', '1', '2')
 fock probabilities: [0.6, 0.3, 0.1]
 fock Torch draw replay: True
-Framework terminal instrument API: proposed, not implemented
+Framework terminal instrument API: approved, not implemented
 ```
 
 The coherent g/lost example distinguishes physical loss from observed flags and
