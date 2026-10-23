@@ -238,8 +238,8 @@ reason = "the package still reads it and warns, so the docstring that explains t
 identifier = [
     "flagquantum/qec/dem_construction.py::_Mechanism::wire",
     "flagquantum/qec/dem_construction.py::_Mechanism::wire",
-    "flagquantum/qec/dem_construction.py::_checked_wire::wire",
-    "flagquantum/qec/dem_construction.py::_forced_flip::wire",
+    "flagquantum/qec/execution/signatures.py::_checked_wire::wire",
+    "flagquantum/qec/execution/signatures.py::_forced_flip::wire",
 ]
 reason = "the definition's own field or parameter carries this spelling, and a docstring that documents a name has to use that name"
 [[docstring.keep]]
@@ -1036,7 +1036,7 @@ files = [
     "flagquantum/ecosystem/qiskit/conformance.py",
     "flagquantum/ecosystem/simulators/advisor.py",
     "flagquantum/observables/__init__.py",
-    "flagquantum/qec/circuit.py",
+    "flagquantum/qec/circuits/memory.py",
     "flagquantum/qec/codes/checks.py",
     "flagquantum/qec/codes/repetition.py",
     "flagquantum/qec/codes/steane.py",
@@ -1308,7 +1308,7 @@ canonical = [
     "flagquantum/noise/channels.py::KrausChannel::n_wires",
     "flagquantum/noise/model.py::CorrelatedReadoutError::n_wires",
     "flagquantum/observables/__init__.py::OutputRequest::wires",
-    "flagquantum/qec/circuit.py::MeasurementRef::wire",
+    "flagquantum/qec/circuits/memory.py::MeasurementRef::wire",
     "flagquantum/qec/codes/checks.py::CodeCheck::ancilla_wire",
     "flagquantum/qec/codes/checks.py::CodeCheck::cnot_wires",
     "flagquantum/qec/codes/repetition.py::RepetitionCode::ancilla_wires",
@@ -1648,7 +1648,7 @@ site = "flagquantum/drawer/text_drawer.py::TextDrawer::wire_order"
 replacement = "qubit_order"
 declaration = "instance"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/circuit.py::MeasurementRef::wire"
+site = "flagquantum/qec/circuits/memory.py::MeasurementRef::wire"
 replacement = "qubit"
 declaration = "field"
 [[attribute_retirement.sites]]

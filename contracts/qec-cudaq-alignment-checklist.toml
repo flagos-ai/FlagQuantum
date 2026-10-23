@@ -106,7 +106,7 @@ negative_search = [
 ]
 evidence = [
     "flagquantum/qec/codes/__init__.py", "flagquantum/qec/codes/checks.py", "flagquantum/qec/codes/repetition.py", "flagquantum/qec/codes/steane.py", "flagquantum/qec/codes/colour.py", "flagquantum/qec/codes/toric.py", "flagquantum/qec/codes/surface/rotated.py",
-    "flagquantum/qec/circuit.py",
+    "flagquantum/qec/circuits/memory.py",
     "flagquantum/qec/codes/css.py",
     "flagquantum/qec/dem_construction.py",
     "tests/qec/test_codes.py",
@@ -171,8 +171,8 @@ symbols_absent = [
     "to_integer",
 ]
 evidence = [
-    "flagquantum/qec/circuit.py",
-    "flagquantum/qec/sampling.py",
+    "flagquantum/qec/circuits/memory.py",
+    "flagquantum/qec/execution/sampling.py",
     "tests/qec/test_memory_circuit.py",
     "tests/qec/test_memory_circuit_execution.py",
     "tests/qec/test_measurement_handles.py",
@@ -201,10 +201,10 @@ symbols_absent = [
     "z_sample_memory_circuit",
 ]
 evidence = [
-    "flagquantum/qec/sampling.py",
-    "flagquantum/qec/repetition.py",
+    "flagquantum/qec/execution/sampling.py",
+    "flagquantum/qec/execution/repetition.py",
     "flagquantum/qec/noise.py",
-    "flagquantum/qec/context.py",
+    "flagquantum/qec/execution/context.py",
     "contracts/cudaq-parity-matrix.toml",
 ]
 next_action = "Both halves of the cudaq-qec extraction route are here now, and the row records the choice that put it on that route. `sample_memory_circuit` is cudaq-qec's name for the sampler, which is why this repository is on the cudaq-qec route and not on the preview layer's `extract_syndrome`; and `decoder_context_from_memory_circuit` is the helper that hands a decoder the model together with the maps that say where each detector's parity is read, so a caller no longer assembles the pieces beside the sampler. Nothing remains on either half. The matrix's surface item still reads `extract_syndrome`, and that is the right text for it: the item is a record of what a live CUDA-Q install lists, and the `extract_syndrome` entry in `baseline.surface_ownership` names its owner as the logical preview layer and states that the layer emits no detector error model, so the item no longer reads as a cudaq-qec surface to migrate to. Renaming it would make the inventory disagree with the install it records. The two per-basis sampler names stay absent on purpose: a basis is a component of the context here rather than a second entry point, so adopting them would be a second way to ask for one thing. The negative that held this row at `partial` was the provenance of the absence, not the absence itself, and the tree read above is what settles it."
@@ -248,7 +248,7 @@ evidence = [
     "flagquantum/qec/dem.py",
     "flagquantum/qec/dem_construction.py",
     "flagquantum/qec/noise.py",
-    "flagquantum/qec/context.py",
+    "flagquantum/qec/execution/context.py",
     "tests/qec/test_dem_from_memory_circuit.py",
     "tests/benchmark_contract/test_qec_memory_logical_error_rate.py",
     "tests/qec/test_dem_signatures.py",
@@ -305,7 +305,7 @@ evidence = [
     "flagquantum/qec/dem.py",
     "flagquantum/qec/dem_construction.py",
     "flagquantum/qec/decoding_graph.py",
-    "flagquantum/qec/context.py",
+    "flagquantum/qec/execution/context.py",
     "tests/qec/test_dem_rates.py",
     "tests/qec/test_dem_sampling.py",
     "tests/qec/test_dem_error_ids.py",
@@ -359,7 +359,7 @@ negative_search = [
     "symbol:flagquantum.qec.phase_name",
     "flagquantum/qec/seams.py",
 ]
-evidence = ["flagquantum/qec/chunks.py", "flagquantum/qec/circuit.py", "flagquantum/qec/dem.py", "flagquantum/qec/sliding_window.py", "tests/qec/test_dem_chunks.py", "tests/qec/test_sliding_window.py"]
+evidence = ["flagquantum/qec/chunks.py", "flagquantum/qec/circuits/memory.py", "flagquantum/qec/dem.py", "flagquantum/qec/sliding_window.py", "tests/qec/test_dem_chunks.py", "tests/qec/test_sliding_window.py"]
 next_action = "The chunk identity, the operations over it and the chunk-scoped matrix view have all landed, so what is left of the baseline's list is nothing: the row states the projections as present rather than withheld precisely because a window's matrices are what the sliding window is handed, and they landed with that decoder inside qec_decoder_family. dem_chunks_to_pcm is the sequence's detector-by-mechanism incidence in sparse form, and it is deliberately the trail-row form rather than a dense matrix product: the mechanism count of a long model makes the dense product the thing to avoid, and the row and column index spaces are what a caller reads either way. dem_chunks_to_o_sparse is the observable-by-mechanism incidence of the same one column space, matching DetectorErrorModel.observables_flips_matrix without building it dense. dem_chunks_to_d_sparse is the memory XOR map and the only one of the three that meets a third numbering, the measurement bit of a flat rounds-by-d buffer, so it is round-major and its precondition -- every round of the sequence the same d detectors wide -- is checked rather than assumed; a surface code's boundary rounds are half as wide as its interior ones, so that geometry is refused by name and MeasurementMap.flattened is the map that covers it instead. Three further shapes are accounted for rather than pending and are not gaps. expand_dem_chunks exists upstream because its spec is a phase graph with a sparse shorthand that has to be expanded against a round count supplied at expansion time; the spec here is linear, flagquantum.qec.DemChunksSpec.chunk_specs is that expansion, and a second name for one operation would be a second spelling of it. A seam here is identified by its name text rather than by a compile-time hash of one, so there is no name registry a diagnostic has to consult and no hash that can collide. And the stride between windows is fixed at the window width minus one, so a caller that wants to advance by less reads windows without stitching them, while a layer count that does not tile is refused rather than described by the straddle flags upstream carries for it."
 fail_closed = "Every refusal is at the point where the caller still holds the decomposition. A window of one detector layer, a window wider than the layout, and a layer count that does not tile into windows at the fixed stride are all refused with the layer count named, and a layer numbering with a gap in it is refused rather than closed up, because renumbering the rounds after a missing one would silently move every window that follows it. A mechanism that no window contains whole is refused and never split, since splitting it would be two weaker faults where the model stated one, and a mechanism that flips no detector is refused because an observable-only fault has no round to be placed in and choosing one would be inventing placement. A layout whose layer widths do not sum to the model's detector count, and a layout read from a memory circuit whose detector count disagrees with the model's, are refused instead of being reconciled. A chunk may name only the two standard boundary seams, at most once each, with the leading band starting at local row zero and the trailing band ending at the last local row, and two seam bands may not overlap. A stitch refuses two chunks that do not share exactly one detector layer, an observable count that differs between the two sides, a boundary either side does not carry, and -- the check that makes this an identity rather than arithmetic -- a contracted band whose detectors are not the same rows in the same order on both sides, so two boundaries of equal width that are not the same boundary are refused. A close refuses a sequence whose windows disagree on their observable count, that does not share exactly one boundary layer window by window, and whose contracted bands are not the same detectors; and the round-trip invariant is asserted rather than assumed, because flagquantum.qec.dem_close_all of the windows of a model and flagquantum.qec.dem_close of their stitch are both held equal to the model they were cut from."
 domain_row = "qec_decoder_family"
@@ -436,7 +436,7 @@ symbols_present = [
     "flagquantum.qec.DetectorErrorModel.dem_sampling",
 ]
 evidence = [
-    "flagquantum/qec/sampling.py",
+    "flagquantum/qec/execution/sampling.py",
     "flagquantum/simulation/stabilizer/engine.py",
     "flagquantum/qec/dem.py",
     "tests/qec/test_sampling_memory_circuit.py",
@@ -584,7 +584,7 @@ negative_search = ["flagquantum/qec/lattice_surgery.py", "flagquantum/qec/distil
 evidence = [
     "contracts/cudaq-parity-matrix.toml",
     "flagquantum/qec/logical.py",
-    "flagquantum/qec/circuit.py",
+    "flagquantum/qec/circuits/memory.py",
     "flagquantum/qec/dem_construction.py",
     "tests/qec/test_logical_product_rotation.py",
     "tests/qec/test_dem_from_memory_circuit.py",
