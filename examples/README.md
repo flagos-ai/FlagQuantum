@@ -14,6 +14,8 @@ These examples do not use that alias:
 
 - [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
   commanded positions and the existing optional Matplotlib visualization extra.
+- [`terminal_instrument_sampling.py`](terminal_instrument_sampling.py) samples
+  explicit presence and finite-Fock instruments through the CPU Runtime API.
 - [`terminal_instrument_reference.py`](terminal_instrument_reference.py) uses
   existing SuperOperator maps and illustrative Torch draws for proposal 083.
 - [`boson_interference.py`](boson_interference.py) — it uses the existing
@@ -507,17 +509,46 @@ Unread measurement changes coherence: True
 fock labels: ('0', '1', '2')
 fock probabilities: [0.6, 0.3, 0.1]
 fock Torch draw replay: True
-Framework terminal instrument API: approved, not implemented
+Framework terminal instrument API: flagquantum.runtime.sample_terminal
 ```
 
 The coherent g/lost example distinguishes physical loss from observed flags and
 shows that an unread instrument can change coherence. The finite three-level
 Fock example explicitly models QND number projection. Neither is a calibrated
-photodetector or framework event API. The proposed terminal sampling entry and
-its metadata/result behavior require approval of
+photodetector or framework event API. The approved
 [proposal 083](../docs/development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md)
-before implementation. No public exports, Program IR fields, plan formats,
-result types, sampling validators or framework execution paths change here.
+is implemented by the Runtime-only sample_terminal primitive. Existing Program
+IR fields, plan formats and MeasurementResult fields remain unchanged.
+
+Run `python -m examples.terminal_instrument_sampling` for real Runtime samples:
+
+```text
+presence labels: ('no_flag', 'flag')
+presence probabilities: [0.68, 0.32]
+presence indices shape: (4096,)
+presence private-seed replay: True
+fock labels: ('0', '1', '2')
+fock probabilities: [0.6, 0.3, 0.1]
+fock indices shape: (4096,)
+fock private-seed replay: True
+global RNG unchanged: True
+```
+
+```python
+from examples.terminal_instrument_reference import presence_reference
+from flagquantum.runtime import sample_terminal
+
+rho, instrument = presence_reference()
+result = sample_terminal(rho, instrument, shots=4096, seed=7)
+print(tuple(result.metadata["outcome_labels"]))  # ('no_flag', 'flag')
+print(result.value.shape)  # torch.Size([4096])
+```
+
+The caller declares the complete Kraus instrument and its coordinate basis.
+Sampling is CPU-only and does not carry gradients; use analytic evolution
+probabilities and expectations for training. With identical inputs, effective
+seed, Torch version and CPU runtime, samples replay. No cross-version bitwise
+replay, feedback, detector trajectory or hardware submission is implied.
 
 
 ## Native moving-atom dynamics

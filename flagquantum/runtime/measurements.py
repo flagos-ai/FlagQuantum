@@ -41,6 +41,19 @@ _DEFAULT_MAX_DENSITY_MATRIX_QUBITS = 10
 _TRACE_TOLERANCE = 1e-4
 
 
+def _draw_probability_indices(
+    probabilities: torch.Tensor,
+    shots: int,
+    *,
+    generator: torch.Generator | None,
+) -> torch.Tensor:
+    """Draw checked probabilities without changing caller-owned RNG policy."""
+
+    return torch.multinomial(
+        probabilities, shots, replacement=True, generator=generator
+    )
+
+
 class _DensityMatrixTarget:
     """Measurement adapter for an already-materialized density matrix."""
 
@@ -65,10 +78,9 @@ class _DensityMatrixTarget:
         probabilities = torch.real(torch.diagonal(self.density, dim1=-2, dim2=-1))
         probabilities = torch.clamp(probabilities, min=0)
         probabilities = probabilities / probabilities.sum(dim=-1, keepdim=True)
-        indices = torch.multinomial(
+        indices = _draw_probability_indices(
             probabilities,
             shots,
-            replacement=True,
             generator=generator,
         )
         if format == "index":

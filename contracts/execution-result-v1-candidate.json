@@ -65,7 +65,7 @@
     "namespace": "flagquantum.runtime",
     "entry": "sample_terminal",
     "signature": "(density_matrix: 'torch.Tensor', instrument: 'Mapping[str, Sequence[torch.Tensor]]', *, shots: 'int', seed: 'int | None' = None) -> 'MeasurementResult'",
-    "implementation_required": false,
+    "implementation_required": true,
     "namespace_prefix": [
       "ExecutionOptions", "ExecutionResult", "MeasurementResult", "Module",
       "RuntimePolicy", "TrainingResult", "run", "run_native", "run_distributed",

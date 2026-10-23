@@ -59,10 +59,10 @@ python -m pytest tests/unit/test_terminal_instrument_contract.py -q
 ```
 
 The example continues to use current SuperOperator maps and illustrative Torch
-draws; it does not call an unavailable framework entry. Its probability output is
+draws; the separate sampling example below calls the admitted Runtime entry. Its probability output is
 presence [0.68, 0.32] and Fock [0.6, 0.3, 0.1], with reproducible seeded draws,
 no-flag conditional ground 0.88235294 and a changed unread coherence. The final
-line states "Framework terminal instrument API: approved, not implemented".
+line identifies "Framework terminal instrument API: flagquantum.runtime.sample_terminal".
 
 ## Baseline integration evidence
 
@@ -78,7 +78,7 @@ reinterpret implementation approval as an agent merge grant.
 
 ## Runtime interface admission
 
-The next integration change extends the existing
+The separate integration change #730 extended the existing
 `contracts/execution-result-v1-candidate.json` and
 `tools/public_api_snapshot.py`; it creates no separate manifest or checker.
 The admission records the approved Runtime-only signature, retained Runtime
@@ -99,24 +99,60 @@ Admission tests exercise both stages using isolated namespace mutations and
 verify the actual namespace against the recorded current stage. The numerical
 baseline remains unchanged. The real implementation must replace only its
 terminal_sampler fixture and satisfy the same numerical consumers plus the
-production refusal/resource tests. Until then the runnable reference below
-continues to report that the framework API is not implemented.
+production refusal/resource tests. The numerical reference remains available beside the real Runtime sampling example.
 
-## Remaining delivery gates
+## Runtime implementation and remaining delivery gates
 
-1. The replaceable baseline has landed with the evidence above; retain its
-   independent consumers through the remaining stages.
-2. Admit the approved Runtime export/metadata surface in a separate integration
-   change. Preserve MeasurementResult fields, schema_version and existing export
-   prefixes; do not regenerate unrelated snapshots or old fixtures.
-3. Implement Runtime consumption behind those approved boundaries, reusing the
-   existing numerical owners and shared private draw. Replace the fixture and
-   preserve all independent consumers. Add strict type/value/completeness,
-   device/gradient/byte-ceiling refusals and their pre-draw evidence.
-4. Run supported Python minors, the appropriate testing tiers, old measurement
-   and plan compatibility consumers, repository gates and full CI/GPU. Every PR
-   includes runnable user code and expected results and requires its own merge
-   authorization. Baseline approval or merge is not blanket merge permission.
+Admission PR #730 was normally merged with explicit conditional owner
+permission as `ff69b2526809772b7fadde5bcb420f9f5899dcf6`. Its final head
+`ae4fe416fe74d78f2dd3112ba9cf819b9835eeda` passed 41 applicable checks and the
+two original manual GPU-pool skips. Complete
+[CI](https://github.com/flagos-ai/FlagQuantum/actions/runs/39894277586),
+[GPU](https://github.com/flagos-ai/FlagQuantum/actions/runs/39894277587) and
+[merged-main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/39897061398)
+succeeded. Live repository protections and rules were unchanged by the merge.
+
+The Runtime delivery activates the admitted entry and binds terminal_sampler to
+it, retaining all numerical consumer assertions. It delegates density checks to
+the existing Lindblad helper, each branch action to SuperOperator, capture to
+the Core tensor codec, and drawing to a private primitive shared with the old
+qubit density adapter. The old adapter retains its normalization, shapes and
+generator policy, including unseeded global draws. New terminal calls always
+use a private CPU generator. KrausChannel remains qubit-only; it is not adapted
+to change its existing power-of-two or tolerance semantics.
+
+The sum of state, Kraus, branch-probability and int64 output numeric storage is
+checked against the existing dense ceiling before capture or drawing. Gradients
+and non-CPU tensors are refused before conversion. Invalid inputs never create
+a generator, capture matrices or draw. Metadata retains original checked branch
+weights beside the maximum roundoff correction; missing outcomes are rejected.
+A real native-plan integration also feeds the existing 1.7 moving-pair density
+into the same sampler, including a batch member with both atoms lost. At
+efficiency 0.8 that member still has no-flag probability 0.04, distinguishing
+observed flags from physical survival; sampling leaves the plan JSON unchanged.
+The document-code guard reads the existing admission to allow only the approved
+Runtime entry, retaining refusals for other Runtime imports.
+
+The implementation adds no result fields, public model builders, IR fields,
+plan versions, event records or feedback.
+
+Run the actual user path:
+
+```bash
+python -m examples.terminal_instrument_sampling
+python -m pytest tests/unit/test_terminal_instrument_contract.py tests/unit/test_terminal_instruments.py -q
+```
+
+Expected probabilities are presence [0.68, 0.32] and Fock [0.6, 0.3, 0.1].
+Each result has 4096 outcome indices, private-seed replay is true, and global
+Torch RNG state is unchanged. See the complete output and copy-ready code in
+[the examples guide](../../examples/README.md#terminal-instrument-mathematical-references).
+
+The Runtime implementation PR must finish supported Python-minor validation,
+the appropriate testing tiers, old measurement/plan consumers, repository gates
+and latest complete CI/GPU. It requires its own explicit merge grant; #730's
+permission does not cover it. The baseline, admission and implementation each
+retain their separate verification evidence.
 
 Terminal samples are not hidden loss truth or timestamped detector events.
 Feedback, QEC decoder records, motional heating and concrete hardware/service
