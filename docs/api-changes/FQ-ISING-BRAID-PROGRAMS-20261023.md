@@ -349,3 +349,30 @@ jobs and complete CI/GPU workflows succeeded. Concurrent main includes #766's
 0.4.0 QEC retirement and explicit producer-version handling for archived plans.
 Those accepted changes must be preserved during dependency integration; the
 initial stacked-base results above are not newer-head integration evidence.
+
+
+### Runtime acceptance after dependency integration
+
+The Runtime code at 3af27839 integrates Simulation c5e2a5a6 and accepted main
+350793dc (package 0.4.0). The concurrent QEC retirement and producer-version
+handling remain intact. All twelve retained non-factory functions, including
+the independent oracle and main's archived-version refusal test, are
+AST-identical to the integrated contract baseline; all 24 consumer cases pass.
+The four fixtures alone select production construction/planning/execution/replay.
+
+On this integrated code, 199 focused cases pass on each of Python 3.10, 3.11
+and 3.12. The complete default tier passes 15,164 cases with 168 original skips
+in 287.55 seconds; Runtime integration passes 1,863 cases with 125 original
+skips in 192.03 seconds. Both XML reports contain zero failures/errors. Strict
+CI-targeted mypy passes 813 package/test/example files, floor/current Black and
+Ruff pass, and all twelve repository checks pass. The example above was rerun
+with exactly its quoted output. This supersedes the initial stacked-base counts
+as integrated-code evidence, without erasing those original results.
+
+One verification invocation omitted CI's explicit Python 3.12 type target and
+used the project default 3.10 target instead. It reported four errors in three
+untouched numerical/JAX files and is retained as a failed invocation. Repeating
+with the existing CI command's explicit target passed, without suppressions or
+source/configuration changes. Latest applicable remote checks and complete
+CI/GPU are separate acceptance gates; this Runtime PR still requires its own
+merge authorization.
