@@ -196,94 +196,41 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     ), "Evidence provenance still needs full Git history"
 
 
-def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
+def test_sdk_jobs_use_accepted_fixed_capacity() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    migrated = {
-        name: job
-        for name, job in jobs.items()
-        if "flagcicd-r300-" in str(job.get("runs-on", ""))
-    }
-    assert set(migrated) == {"braket-optional"}
-    for job in migrated.values():
+    for name in ("qiskit-compat", "cirq-optional", "braket-optional"):
+        job = jobs[name]
+        assert "'flagquantum-cpu-general'" in job["runs-on"]
+        assert "'ubuntu-latest'" in job["runs-on"]
         assert job["timeout-minutes"] == 30
-        steps = job["steps"]
-        bootstrap = next(
+        assert not any(
+            step.get("continue-on-error") for step in job["steps"]
+        ), "SDK preparation must fail closed"
+
+
+def test_sdk_jobs_retain_native_preflight_before_certification() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    for name in ("qiskit-compat", "cirq-optional", "braket-optional"):
+        steps = jobs[name]["steps"]
+        index = next(
             index
             for index, step in enumerate(steps)
-            if step.get("uses") == "./.github/actions/prepare-r300-cpu"
-        )
-        assert steps[bootstrap]["if"] == "startsWith(runner.name, 'flagcicd-r300-')"
-        assert any(
-            "git checkout --force --detach" in step.get("run", "")
-            for step in steps[:bootstrap]
-        )
-        assert steps[bootstrap + 1]["uses"].startswith("actions/setup-python@")
-        assert steps[bootstrap + 1]["if"] == (
-            "${{ !startsWith(runner.name, 'flagcicd-r300-') }}"
-        )
-        assert steps[bootstrap + 2]["uses"] == "./.github/actions/isolated-python"
-
-
-def test_r300_sdk_jobs_spread_across_distinct_inventory_targets() -> None:
-    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    routes = [jobs[name]["runs-on"] for name in ("braket-optional",)]
-    assert len(set(routes)) == 1
-    assert "'flagcicd-r300-cpu03'" in routes[0]
-    for name in ("qiskit-compat", "cirq-optional"):
-        assert "'flagquantum-cpu-general'" in jobs[name]["runs-on"]
-        preflight = next(
-            step
-            for step in jobs[name]["steps"]
             if step.get("name") == "Validate the CPU runtime before SDK certification"
         )
-        assert "adjoint.native_cpu_adjoint_available()" in preflight["run"]
+        assert "adjoint.native_cpu_adjoint_available()" in steps[index]["run"]
         assert (
             "tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q"
-            in preflight["run"]
+            in steps[index]["run"]
+        )
+        sdk = name.removesuffix("-optional").removesuffix("-compat")
+        assert any(
+            f"python tools/check_{sdk}_interop_contract.py" in step.get("run", "")
+            for step in steps[index + 1 :]
         )
 
 
-def test_r300_source_failover_is_bounded_and_verifies_the_same_commit() -> None:
-    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    for name in ("braket-optional",):
-        steps = jobs[name]["steps"]
-        source = next(step for step in steps if step.get("id") == "source")
-        assert source["timeout-minutes"] == 3
-        assert (
-            source["continue-on-error"]
-            == "${{ startsWith(runner.name, 'flagcicd-r300-') }}"
-        )
-        restore = next(
-            step
-            for step in steps
-            if step.get("name") == "Restore and verify this run's exact source commit"
-        )
-        assert restore["if"] == (
-            "steps.source-cache.outputs.complete == 'true' || steps.source.outcome == 'success'"
-        )
-        probe = next(step for step in steps if step.get("id") == "source-cache")
-        assert probe["if"] == "${{ !startsWith(runner.name, 'flagcicd-r300-') }}"
-        assert source["if"] == (
-            "startsWith(runner.name, 'flagcicd-r300-') || steps.source-cache.outputs.complete != 'true'"
-        )
-        checkout = next(
-            step
-            for step in steps
-            if str(step.get("uses", "")).startswith("actions/checkout@")
-        )
-        assert (
-            checkout["if"]
-            == "startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'"
-        )
-        assert checkout["timeout-minutes"] == 5
-        assert checkout["with"] == {
-            "ref": "${{ github.sha }}",
-            "persist-credentials": False,
-        }
-        verify = next(
-            step
-            for step in steps
-            if step.get("name") == "Verify the checked-out fallback commit"
-        )
-        assert verify["if"] == "steps.source.outcome == 'failure'"
-        assert verify["run"] == 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"'
+def test_r300_manual_diagnostics_remain_available() -> None:
+    workflow = yaml.safe_load((WORKFLOWS / "r300-validation.yml").read_text())
+    assert len(_inventoried_r300_labels()) == 17
+    assert workflow["jobs"]["resources"]["strategy"]["max-parallel"] == 17
+    assert workflow["jobs"]["resources"]["timeout-minutes"] == 5
