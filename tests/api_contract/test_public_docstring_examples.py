@@ -94,6 +94,7 @@ from flagquantum.qec import (
     toric_code,
     triangular_colour_code,
 )
+from flagquantum.qec.codes import matrices as code_matrices
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -326,6 +327,15 @@ def test_every_module_with_examples_is_covered() -> None:
     nothing ran it. Adding the module's public entry to ``ENTRIES`` is the fix.
     """
     covered = {entry.__module__ for entry in ENTRIES}
+    # The class retains its pickle module while its existing tested example is
+    # physically declared in codes.matrices. Verify that source-to-entry mapping.
+    assert CssCodeMatrices in ENTRIES
+    assert code_matrices.CssCodeMatrices is CssCodeMatrices
+    assert (
+        Path(CssCodeMatrices.__post_init__.__code__.co_filename).resolve()
+        == Path(code_matrices.__file__).resolve()
+    )
+    covered.add(code_matrices.__name__)
     uncovered = sorted(_modules_with_examples() - covered)
 
     assert uncovered == [], (
