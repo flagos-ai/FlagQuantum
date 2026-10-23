@@ -129,6 +129,7 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
         "azure-optional",
         "triton-optional",
         "qiskit-optional",
+        "qiskit-compat",
         "cirq-optional",
         "braket-optional",
         "pennylane-optional",

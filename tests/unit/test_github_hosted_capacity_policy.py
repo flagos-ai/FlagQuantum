@@ -508,7 +508,6 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
 def test_each_optional_compatibility_matrix_reuses_one_runner() -> None:
     jobs = _github_hosted_jobs("ci.yml")
     expected = {
-        "qiskit-optional": "2.0.* 2.5.*",
         "cirq-optional": "1.6.1 1.7.0",
         "braket-optional": "1.117.0 1.127.1",
         "cudaq-optional": "0.15.1 0.16.0.post1",

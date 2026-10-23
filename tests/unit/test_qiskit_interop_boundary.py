@@ -102,8 +102,9 @@ def test_qiskit_aer_bridge_has_no_parallel_top_level_package() -> None:
 def test_ci_proves_both_qiskit_optionality_and_real_compatibility() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "qiskit-optional:" in workflow
-    assert 'OPTIONAL_VERSIONS: "2.0.* 2.5.*"' in workflow
-    assert "for version in ${OPTIONAL_VERSIONS}" in workflow
+    assert 'qiskit: ["2.0", "2.5"]' in workflow
+    assert "QISKIT_VERSION: ${{ matrix.qiskit }}.*" in workflow
+    assert 'version="$QISKIT_VERSION"' in workflow
     assert '"qiskit[qasm3-import]==${version}"' in workflow
     assert "python tools/check_qiskit_interop_contract.py" in workflow
     assert "tests/test_qiskit_interop.py" in workflow
