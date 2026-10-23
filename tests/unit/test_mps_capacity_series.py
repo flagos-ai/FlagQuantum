@@ -29,6 +29,23 @@ def test_series_commands_keep_the_same_frozen_manifest(world: int) -> None:
         assert "--bond-dimension" not in command
 
 
+def test_transport_is_checked_at_the_full_topology_before_capacity() -> None:
+    command = series.point_command(
+        16,
+        1,
+        Path("/nfs/fq-mps-capacity-test"),
+        Path("/nfs/test-out"),
+        "10.1.15.172",
+        29640,
+        transport_check=True,
+    )
+    assert command[command.index("--nnodes") + 1] == "2"
+    assert command[command.index("--nproc-per-node") + 1] == "8"
+    assert command[-2:] == ["--backend", "nccl"]
+    assert command[-3].endswith("tests/distributed/mps_training_runtime.py")
+    assert "--role" not in command
+
+
 def test_cleanup_refuses_a_reused_pid(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -61,13 +61,20 @@ def stop_worker(pid_file: Path) -> None:
 
 
 def point_command(
-    world: int, node: int, staging: Path, output: Path, address: str, port: int
+    world: int,
+    node: int,
+    staging: Path,
+    output: Path,
+    address: str,
+    port: int,
+    *,
+    transport_check: bool = False,
 ) -> list[str]:
     """Keep circuit geometry fixed while varying only deployment topology."""
     if world not in (1, 2, 4, 8, 16) or node not in range(2 if world == 16 else 1):
         raise ValueError("unsupported series topology")
     local = min(world, 8)
-    return [
+    launch = [
         sys.executable,
         "-m",
         "torch.distributed.run",
@@ -81,6 +88,16 @@ def point_command(
         address,
         "--master-port",
         str(port),
+    ]
+    if transport_check:
+        return [
+            *launch,
+            str(staging / "tests/distributed/mps_training_runtime.py"),
+            "--backend",
+            "nccl",
+        ]
+    return [
+        *launch,
         str(staging / "benchmarks/mps_release_evidence.py"),
         "--role",
         "capacity-series-point",
@@ -102,7 +119,13 @@ def point_command(
 
 def worker(args: argparse.Namespace) -> int:
     command = point_command(
-        args.world, args.node, args.staging, args.output, args.address, args.port
+        args.world,
+        args.node,
+        args.staging,
+        args.output,
+        args.address,
+        args.port,
+        transport_check=args.transport_check,
     )
     env = dict(
         os.environ,
@@ -116,6 +139,8 @@ def worker(args: argparse.Namespace) -> int:
         GLOO_SOCKET_IFNAME=args.interface,
         NCCL_DEBUG="INFO",
         NCCL_IB_DISABLE="0",
+        NCCL_IB_HCA=args.infiniband_hcas,
+        FQ_TEST_CHECKPOINT=str(args.output / "transport-checkpoint"),
         TORCH_NCCL_ASYNC_ERROR_HANDLING="1",
         PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True",
     )
@@ -206,6 +231,7 @@ def campaign(args: argparse.Namespace) -> int:
                 "launch_address": args.address,
                 "peer": args.peer,
                 "cuda_allocator_policy": "expandable_segments:True",
+                "infiniband_hcas": args.infiniband_hcas,
                 "topology": [
                     _run(["nvidia-smi", "topo", "-m"]),
                     _run(ssh_argv(args.peer, ["nvidia-smi", "topo", "-m"])),
@@ -215,18 +241,29 @@ def campaign(args: argparse.Namespace) -> int:
         )
         + "\n"
     )
-    for world in (1, 2, 4, 8, 16):
+    for world, transport_check in (
+        (16, True),
+        (1, False),
+        (2, False),
+        (4, False),
+        (8, False),
+        (16, False),
+    ):
+        point = "transport-check" if transport_check else f"world-{world}"
         stop = threading.Event()
-        log = args.output / f"world-{world}-telemetry.jsonl"
+        log = args.output / f"{point}-telemetry.jsonl"
 
         def monitor(
-            stop: threading.Event = stop, world: int = world, log: Path = log
+            stop: threading.Event = stop,
+            world: int = world,
+            log: Path = log,
+            point: str = point,
         ) -> None:
             while not stop.is_set():
                 try:
                     sample = {
                         "time": time.time(),
-                        "phase": "capacity_training",
+                        "phase": point,
                         "world_size": world,
                         "hosts": [_inventory(), _inventory(args.peer)],
                     }
@@ -241,7 +278,7 @@ def campaign(args: argparse.Namespace) -> int:
         watcher.start()
         jobs: list[dict[str, Any]] = []
         for node in range(2 if world == 16 else 1):
-            pid_file = args.output / f"world-{world}-node-{node}.pid"
+            pid_file = args.output / f"{point}-node-{node}.pid"
             base = [
                 sys.executable,
                 str(args.staging / "tools/run_mps_capacity_series.py"),
@@ -267,6 +304,9 @@ def campaign(args: argparse.Namespace) -> int:
                 args.interface,
                 "--timeout",
                 str(args.timeout),
+                "--infiniband-hcas",
+                args.infiniband_hcas,
+                *(["--transport-check"] if transport_check else []),
             ]
             cleanup = [*base, "--stop-worker", "--pid-file", str(pid_file)]
             if node:
@@ -281,7 +321,7 @@ def campaign(args: argparse.Namespace) -> int:
                     "cleanup_command": cleanup,
                 }
             )
-        (args.output / f"world-{world}-launch.json").write_text(
+        (args.output / f"{point}-launch.json").write_text(
             json.dumps(
                 {"commit": revision, "world_size": world, "jobs": jobs}, indent=2
             )
@@ -289,7 +329,7 @@ def campaign(args: argparse.Namespace) -> int:
         )
         try:
             if len(jobs) == 1:
-                with (args.output / f"world-{world}.log").open("w") as stream:
+                with (args.output / f"{point}.log").open("w") as stream:
                     result = subprocess.run(
                         jobs[0]["command"],
                         cwd=args.staging,
@@ -302,10 +342,10 @@ def campaign(args: argparse.Namespace) -> int:
             else:
                 report = run_jobs(
                     jobs,
-                    output_dir=args.output / f"world-{world}-logs",
+                    output_dir=args.output / f"{point}-logs",
                     timeout_seconds=args.timeout + 30,
                 )
-                (args.output / f"world-{world}-watchdog.json").write_text(
+                (args.output / f"{point}-watchdog.json").write_text(
                     json.dumps(report, indent=2) + "\n"
                 )
                 passed = report["reason"] == "completed"
@@ -316,7 +356,7 @@ def campaign(args: argparse.Namespace) -> int:
             watcher.join(timeout=45)
         if not passed:
             raise SystemExit(
-                f"world {world} failed; retain all logs and diagnose before retry"
+                f"{point} failed; retain all logs and diagnose before retry"
             )
     digests = {
         str(p.relative_to(args.output)): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -341,6 +381,11 @@ def main() -> int:
     parser.add_argument("--address", default="10.1.15.172")
     parser.add_argument("--port", type=int, default=29640)
     parser.add_argument("--interface", default="ens22f0")
+    parser.add_argument(
+        "--infiniband-hcas",
+        default="mlx5_101,mlx5_102,mlx5_103,mlx5_104,mlx5_105,mlx5_106,mlx5_107,mlx5_108",
+    )
+    parser.add_argument("--transport-check", action="store_true")
     parser.add_argument("--timeout", type=int, default=1200)
     parser.add_argument("--worker", action="store_true")
     parser.add_argument("--stop-worker", action="store_true")
