@@ -146,3 +146,25 @@ def test_launcher_budget_accounts_for_nested_eight_rank_processes(
     from tools.ci_cpu_budget import select_distributed_workers
 
     assert select_distributed_workers(cpus, memory_gib * GIB, shared) == expected
+
+
+@pytest.mark.parametrize(
+    ("cpus", "memory_gib", "shared", "expected"),
+    [
+        (16, 64, True, 2),
+        (15.5, 64, True, 1),
+        (32, 64, True, 2),
+        (16, 16, True, 1),
+        (8, 64, True, 1),
+        (16, 64, False, 1),
+    ],
+)
+def test_isolated_launcher_budget_fits_all_child_ranks(
+    cpus: float, memory_gib: int, shared: bool, expected: int
+) -> None:
+    from tools.ci_cpu_budget import select_distributed_workers
+
+    assert (
+        select_distributed_workers(cpus, memory_gib * GIB, shared, dedicated=True)
+        == expected
+    )

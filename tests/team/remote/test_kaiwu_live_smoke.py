@@ -568,6 +568,7 @@ def test_live_smoke_cli_rejects_public_checkpoint_before_credentials(
 ) -> None:
     checkpoint = tmp_path / "public-checkpoint"
     checkpoint.mkdir(mode=0o755)
+    checkpoint.chmod(0o755)
     credential_resolution_attempted = False
 
     def resolve() -> tuple[str, str]:
