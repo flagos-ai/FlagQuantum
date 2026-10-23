@@ -826,10 +826,6 @@ def _validate_dynamic_plan_request(
     """Validate the approved local planning slice before compilation."""
 
     validate_classical_control(source_ir.instructions, n_qubits=source_ir.n_wires)
-    if resolved.shots is None:
-        raise ValidationError(
-            "dynamic planning requires a positive shots value in ExecutionOptions"
-        )
     if resolved.mode != "auto":
         raise CapabilityError("dynamic planning supports mode='auto' only")
     if resolved.backend not in {"auto", "pytorch"}:
@@ -841,6 +837,10 @@ def _validate_dynamic_plan_request(
     if resolved.target not in {"auto", "samples"}:
         raise CapabilityError(
             "dynamic planning supports target='auto' or target='samples' only"
+        )
+    if resolved.shots is None:
+        raise ValidationError(
+            "dynamic planning requires a positive shots value in ExecutionOptions"
         )
     if resolved.require_gradients or _requires_dynamic_gradients(program, source_ir):
         raise CapabilityError("dynamic planning does not support gradients")
