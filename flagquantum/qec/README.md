@@ -513,7 +513,7 @@ and `ZxxzSurfaceCode` is the first one.
 Two classes rather than one, and the split is the correction this section needs:
 the four blocks a caller writes, and the code algebra they are held to, belong to
 `CssCodeMatrices` in [dem_construction.py](dem_construction.py), while the record
-is [CssCode](css_code.py), which wraps a `CssCodeMatrices` with a **stated**
+is [CssCode](codes/css.py), which wraps a `CssCodeMatrices` with a **stated**
 distance -- the shape the section above uses. The distance search described earlier
 in this section is what the declared and derived families go through in
 [codes/__init__.py](codes/__init__.py) rather than what this route does, so the paragraphs above
@@ -1244,7 +1244,7 @@ at a time and for the projections those windows are read through,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [dem_circuit.py](dem_circuit.py) for writing a model as a circuit and reading it
 back, [noise.py](noise.py) for code-specific noise profiles, [codes/__init__.py](codes/__init__.py)
-for code records, [css_code.py](css_code.py) for a code record built from
+for code records, [css_code.py](codes/css.py) for a code record built from
 parity-check matrices, [dem_text.py](dem_text.py) for the stim text reader,
 [circuit.py](circuit.py) for detector and observable layouts, and
 [types.py](types.py) for records. Run from the repository root:

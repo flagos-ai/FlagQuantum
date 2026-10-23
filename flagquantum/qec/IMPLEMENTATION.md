@@ -249,7 +249,7 @@ there as a suppression claim.
 The merged tree splits what this section describes as one constructor into two
 classes, and that split is the whole correction: the four blocks that are validated
 are `CssCodeMatrices` in [dem_construction.py](dem_construction.py), and
-[CssCode](css_code.py) is the record that wraps them with a **stated** distance.
+[CssCode](codes/css.py) is the record that wraps them with a **stated** distance.
 The distance search this section describes -- `_minimum_logical_weight`, bounded by
 `distance_search_weight` and defaulting to three -- is what the declared and derived
 families go through in [codes/__init__.py](codes/__init__.py), so the paragraphs below still describe
