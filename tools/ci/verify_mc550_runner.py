@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import os
+import socket
 import tempfile
 from pathlib import Path
 
@@ -56,16 +58,26 @@ def verify() -> dict[str, object]:
             continue
         os.close(descriptor)
         raise RuntimeError(f"Unexpected access to protected host path: {path}")
-    if Path("/run/docker.sock").exists():
-        raise RuntimeError("Host Docker socket is exposed")
+    # InaccessiblePaths retains a mode-000 socket placeholder. Test whether the
+    # job can connect, rather than mistaking its visible inode for host access.
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+        client.settimeout(2)
+        try:
+            client.connect("/run/docker.sock")
+        except OSError as error:
+            if error.errno not in (errno.EACCES, errno.EPERM, errno.ENOENT):
+                raise
+        else:
+            raise RuntimeError("Host Docker socket is accessible")
     for pattern in ["nvidia*", "dri/render*", "mtgpu*", "metax*", "musa*"]:
         if list(Path("/dev").glob(pattern)):
             raise RuntimeError(f"Accelerator device exposed: {pattern}")
     try:
         with tempfile.NamedTemporaryFile(dir=root / "runners" / slot):
             pass
-    except PermissionError:
-        pass
+    except OSError as error:
+        if error.errno not in (errno.EACCES, errno.EPERM, errno.EROFS):
+            raise
     else:
         raise RuntimeError("Runner can modify its own application directory")
     with tempfile.NamedTemporaryFile(dir=os.environ["RUNNER_TEMP"]):
