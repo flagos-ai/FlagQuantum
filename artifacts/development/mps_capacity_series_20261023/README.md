@@ -51,6 +51,10 @@ Scientific values and source revisions are unchanged. Each envelope binds the
 available public log; original file digests are retained separately. The original
 run artifacts remain linked above. No old signed envelope was re-sealed.
 
+Diagnostic logs are stored as standard `.log.gz` archives. Decompression retains
+their exact deidentified bytes, including whitespace; verify `raw_log_sha256`
+against those decompressed bytes. All five provenance log digests are unchanged.
+
 `measurements/world-16-index.json` plus sixteen standard gzip JSON rank records
 losslessly reconstruct the deidentified original role document. This retains
 the repeated ownership tables without a 36 MB source file. Verify its digest:

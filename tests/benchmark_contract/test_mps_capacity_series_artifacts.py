@@ -33,13 +33,17 @@ def test_every_capacity_point_has_verifiable_source_and_log_provenance(
     assert len(set(provenance["devices"])) == world
     assert len(provenance["rank_mapping"]) == world
     assert (
-        hashlib.sha256((DATA / f"logs/world-{world}.log").read_bytes()).hexdigest()
+        hashlib.sha256(
+            gzip.decompress((DATA / f"logs/world-{world}.log.gz").read_bytes())
+        ).hexdigest()
         == provenance["raw_log_sha256"]
     )
     assert evidence["world_size"] == world
     assert evidence["logical_mps_bytes"] == 1236780012864
     assert evidence["n_sites"] == 131072
     assert evidence["max_bond_dimension"] == 768
+    log = gzip.decompress((DATA / f"logs/world-{world}.log.gz").read_bytes()).decode()
+    assert sanitize_text(log) == log
     raw_path = DATA / evidence["publication"]["public_measurements_path"]
     assert (
         hashlib.sha256(raw_path.read_bytes()).hexdigest()
