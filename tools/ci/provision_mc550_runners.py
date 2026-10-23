@@ -49,6 +49,8 @@ def download(row: dict[str, str]) -> Path:
         )
     if digest != row["sha256"]:
         raise RuntimeError(f"Official SHA256 mismatch: {target.name}")
+    target.chown(0, 0)
+    target.chmod(0o644)
     print("Verified", target.name, flush=True)
     return target
 
@@ -179,7 +181,7 @@ def main() -> None:
         if not (cache / "Python" / row["version"] / "x64.complete").exists():
             stage = ROOT / "admin" / row["version"]
             stage.mkdir(exist_ok=True)
-            run("tar", "xzf", str(archive), "-C", str(stage))
+            run("tar", "xzf", str(archive), "--no-same-owner", "-C", str(stage))
             run("bash", "setup.sh", cwd=stage, env=env, timeout=300)
         print("Python ready", row["version"], flush=True)
     run("chmod", "-R", "go-w", str(cache))
@@ -215,7 +217,7 @@ def main() -> None:
             os.chown(directory, account.pw_uid, account.pw_gid)
             directory.chmod(0o700)
         if not (app / "bin/Runner.Listener").exists():
-            run("tar", "xzf", str(archive), "-C", str(app))
+            run("tar", "xzf", str(archive), "--no-same-owner", "-C", str(app))
         for row in metadata["python"]:
             target = home / "toolcache/Python" / row["version"]
             if not target.exists():
