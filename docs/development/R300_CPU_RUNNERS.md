@@ -1,17 +1,20 @@
 # R300 CPU CI runners
 
-The initial R300 routing spreads Qiskit compatibility onto
-`flagcicd-r300-cpu05`, Braket onto `flagcicd-r300-cpu03`, and Cirq onto
-`flagcicd-r300-cpu04`. All three targets have completed resource inventory.
-The cpu04 replacement must pass native CPU preflight and both certified Cirq
-versions before integration; earlier SDK qualification on cpu16 is recorded below.
-Same-repository pull requests and manual CI runs use these targets. Fork pull
-requests retain `ubuntu-latest` and its existing hosted concurrency buckets.
-The two certified SDK versions in each compatibility job remain unchanged.
-Qiskit uses separate `qiskit-compat` jobs for 2.0.x and 2.5.x, each retaining
-native CPU preflight and the full SDK checks; `qiskit-optional` aggregates them.
-Ephemeral R300 jobs retain bounded complete-source download and exact-SHA
-checkout fallback. Fixed-host jobs can reuse verified incremental Git objects.
+Braket compatibility uses `flagcicd-r300-cpu03` and Cirq uses
+`flagcicd-r300-cpu04`. Same-repository pull requests and manual CI runs use
+these targets; fork pull requests retain `ubuntu-latest` and the existing
+hosted concurrency buckets. Both targets have completed resource inventory.
+Earlier SDK qualification on cpu16 is recorded below.
+
+Qiskit previously qualified on `flagcicd-r300-cpu05`. Its two certified versions
+now use parallel `qiskit-compat` jobs on the accepted fixed CPU pool, because a
+R300 capacity wait exceeded ten minutes before certification started. The fixed
+pool completed both versions and the stable gate in 4.2 minutes during validation.
+Each lane retains the native CPU preflight and all SDK checks;
+`qiskit-optional` requires both lanes to succeed. The R300 validation workflow
+continues to inventory cpu05; this routing change does not remove its diagnostics.
+Ephemeral R300 SDK jobs retain bounded complete-source download and exact-SHA
+checkout fallback. Fixed-host jobs reuse verified incremental Git objects.
 
 ## Validation and limits
 
@@ -35,7 +38,7 @@ and venv support from the Tsinghua Ubuntu mirror with bounded, non-interactive
 sudo commands. A job-local DEB822 source uses the official Ubuntu archive keyring;
 signature verification remains enabled. If mirror metadata cannot be fetched,
 a warning records a bounded retry against the image's configured Ubuntu sources.
-The three SDK jobs use this distribution Python instead of downloading a GitHub
+The R300 SDK jobs use this distribution Python instead of downloading a GitHub
 Python tarball; hosted fork jobs retain `setup-python`. Compilation uses at most
 two processes. The cross-version manual probes still use `setup-python`.
 Python packages use the existing Tsinghua pip index, while CPU PyTorch uses the
@@ -79,7 +82,7 @@ qualification requires the full native and certified SDK tests on that target.
 The cpu16 network failure remains unqualified for current routing; increasing
 timeouts or repeatedly rerunning it is not treated as a repair.
 
-The three SDK jobs use distinct scale sets so one set's occupied slots do not
+The two R300 SDK jobs use distinct scale sets so one set's occupied slots do not
 serialize unrelated compatibility checks. The native CPU tests execute before
 the SDK matrix on every migrated job. Their full SDK tests remain required CI
 checks, and every job has a 30-minute timeout. GPU, A800 CPU/runtime, full-history quality and fixed-host

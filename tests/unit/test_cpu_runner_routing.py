@@ -203,7 +203,7 @@ def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
         for name, job in jobs.items()
         if "flagcicd-r300-" in str(job.get("runs-on", ""))
     }
-    assert set(migrated) == {"qiskit-compat", "cirq-optional", "braket-optional"}
+    assert set(migrated) == {"cirq-optional", "braket-optional"}
     for job in migrated.values():
         assert job["timeout-minutes"] == 30
         steps = job["steps"]
@@ -226,16 +226,13 @@ def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
 
 def test_r300_sdk_jobs_spread_across_distinct_inventory_targets() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    routes = [
-        jobs[name]["runs-on"]
-        for name in ("qiskit-compat", "cirq-optional", "braket-optional")
-    ]
-    assert len(set(routes)) == 3
+    routes = [jobs[name]["runs-on"] for name in ("cirq-optional", "braket-optional")]
+    assert len(set(routes)) == 2
 
 
 def test_r300_source_failover_is_bounded_and_verifies_the_same_commit() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    for name in ("qiskit-compat", "cirq-optional", "braket-optional"):
+    for name in ("cirq-optional", "braket-optional"):
         steps = jobs[name]["steps"]
         source = next(step for step in steps if step.get("id") == "source")
         assert source["timeout-minutes"] == 3

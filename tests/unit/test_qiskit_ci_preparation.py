@@ -24,6 +24,22 @@ def test_qiskit_gate_requires_both_complete_certified_lanes(result: str) -> None
         "matrix": {"qiskit": ["2.0", "2.5"]},
     }
     assert lane["env"]["QISKIT_VERSION"] == "${{ matrix.qiskit }}.*"
+    assert "'flagquantum-cpu-general'" in lane["runs-on"]
+    preflight = next(
+        s
+        for s in lane["steps"]
+        if s.get("name") == "Validate the CPU runtime before SDK certification"
+    )
+    assert "adjoint.native_cpu_adjoint_available()" in preflight["run"]
+    assert (
+        "tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q"
+        in preflight["run"]
+    )
+    assert lane["steps"].index(preflight) < next(
+        i
+        for i, s in enumerate(lane["steps"])
+        if s.get("name") == "Verify this certified Qiskit and Aer pair"
+    )
     commands = next(
         s
         for s in lane["steps"]
