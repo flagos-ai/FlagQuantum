@@ -15,7 +15,9 @@ file's job is to fail when the invariant breaks, not to reproduce the payload.
 from __future__ import annotations
 
 import pytest
+import torch
 
+from benchmarks import representation_agreement_sweep as sweep
 from benchmarks.representation_agreement_sweep import (
     MODES,
     exact_max_bond,
@@ -160,3 +162,58 @@ def test_spread_is_reported_relative_as_well_as_absolute() -> None:
         assert cell["spread_relative"] < UNTRUNCATED_RELATIVE_BOUND, cell
 
     assert abs(wide["energies"]["statevector"]) > abs(narrow["energies"]["statevector"])
+
+
+def test_precision_comparison_keeps_the_angles_and_widens_the_arithmetic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A precision comparison must change arithmetic, not the input circuit."""
+    parameters_seen: list[torch.Tensor] = []
+    build = sweep.build_ansatz
+
+    def capture(parameters: torch.Tensor, structure: str) -> sweep.fq.Circuit:
+        parameters_seen.append(parameters.clone())
+        circuit = build(parameters, structure)
+        expected = (
+            torch.complex128 if parameters.dtype == torch.float64 else torch.complex64
+        )
+        assert circuit.state().dtype == expected
+        return circuit
+
+    monkeypatch.setattr(sweep, "build_ansatz", capture)
+    single = _cell(n_qubits=4, dtype=torch.complex64)
+    first_double = len(parameters_seen)
+    double = _cell(n_qubits=4, dtype=torch.complex128)
+
+    assert "failures" not in single, single.get("failures")
+    assert "failures" not in double, double.get("failures")
+    assert parameters_seen[0].dtype == torch.float32
+    assert parameters_seen[first_double].dtype == torch.float64
+    assert torch.equal(
+        parameters_seen[0].to(torch.float64), parameters_seen[first_double]
+    )
+    assert double["mps_truncated"] is False
+    assert double["spread_relative"] < 1e-12
+
+
+def test_a_failed_headroom_probe_is_incomplete_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Successful energies cannot hide an unmeasured truncation classification."""
+    build = sweep.build_ansatz
+    calls = 0
+
+    def fail_probe(parameters: torch.Tensor, structure: str) -> sweep.fq.Circuit:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("headroom probe refused")
+        return build(parameters, structure)
+
+    monkeypatch.setattr(sweep, "build_ansatz", fail_probe)
+    cell = _cell(n_qubits=6, max_bond=4)
+
+    assert all(value is not None for value in cell["energies"].values())
+    assert cell["mps_truncated"] is None
+    assert "headroom_probe" in cell["failures"]
+    assert len(summarize([cell])["incomplete_cells"]) == 1
