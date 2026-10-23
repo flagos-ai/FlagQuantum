@@ -120,6 +120,7 @@ def test_validate_private_directory_rejects_unsafe_directory(
 ) -> None:
     public = tmp_path / "public"
     public.mkdir(mode=0o755)
+    public.chmod(0o755)
     private = tmp_path / "private"
     private.mkdir(mode=0o700)
     linked = tmp_path / "linked"
@@ -171,6 +172,7 @@ def test_validate_private_json_output_path_rejects_unsafe_parent(
     private_parent.mkdir(mode=0o700)
     public_parent = tmp_path / "public"
     public_parent.mkdir(mode=0o755)
+    public_parent.chmod(0o755)
     linked_parent = tmp_path / "linked"
     linked_parent.symlink_to(private_parent, target_is_directory=True)
 

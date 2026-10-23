@@ -271,6 +271,7 @@ def test_run_workflow_rejects_symlinked_run_directory(tmp_path: Path) -> None:
 def test_run_workflow_rejects_public_seed_output_root(tmp_path: Path) -> None:
     output_root = tmp_path / "runs"
     output_root.mkdir(mode=0o755)
+    output_root.chmod(0o755)
     workflow = SimpleNamespace(
         build_default_workflow_config=lambda: "original-config",
         default_outputs_root=lambda: tmp_path / "original",
