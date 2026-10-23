@@ -1,0 +1,133 @@
+name: R300 scale set validation
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/r300-validation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resources:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ matrix.scale_set }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        scale_set:
+          - flagcicd-r300-cpu01
+          - flagcicd-r300-cpu02
+          - flagcicd-r300-cpu03
+          - flagcicd-r300-cpu04
+          - flagcicd-r300-cpu05
+          - flagcicd-r300-cpu06
+          - flagcicd-r300-cpu07
+          - flagcicd-r300-cpu08
+          - flagcicd-r300-cpu09
+          - flagcicd-r300-cpu10
+          - flagcicd-r300-cpu11
+          - flagcicd-r300-cpu12
+          - flagcicd-r300-cpu13
+          - flagcicd-r300-cpu14
+          - flagcicd-r300-cpu15
+          - flagcicd-r300-cpu16
+          - flagcicd-r300-cpu115
+    steps:
+      - name: Inspect operating system and compiler
+        run: |
+          uname -a
+          cat /etc/os-release
+          git --version
+          gcc --version
+          g++ --version
+          df -h "$RUNNER_TEMP"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Measure effective resource limits
+        run: python -I tools/ci_cpu_budget.py
+      - name: Require capacity for portable CPU tests
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+
+          report = json.loads((Path(os.environ['FQ_CI_REPORT_DIR']) / 'resources.json').read_text())
+          assert report['effective_cpus'] >= 2, report
+          assert report['memory_limit_bytes'] >= 4 * 1024**3, report
+          assert shutil.disk_usage(os.environ['RUNNER_TEMP']).free >= 8 * 1024**3
+          PY
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        with:
+          name: r300-resources-${{ matrix.scale_set }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
+
+  cpu-workload:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ matrix.scale_set }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - scale_set: flagcicd-r300-cpu01
+            python: '3.12'
+          - scale_set: flagcicd-r300-cpu08
+            python: '3.10'
+          - scale_set: flagcicd-r300-cpu16
+            python: '3.11'
+    env:
+      MAX_JOBS: '2'
+      PIP_DEFAULT_TIMEOUT: '30'
+      PIP_RETRIES: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - name: Build the native extension and install CI dependencies
+        run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Require native CPU execution
+        run: |
+          python - <<'PY'
+          import torch
+          from flagquantum.simulation.native_cpu import adjoint
+
+          assert torch.version.cuda is None
+          assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)
+          print('CPU PyTorch:', torch.__version__)
+          PY
+      - name: Run portable CPU and workflow regressions
+        run: >-
+          python -m pytest tests/test_native_circuit.py tests/test_backends.py
+          tests/smoke/test_smoke_baseline.py tests/unit/test_ci_cpu_budget.py
+          tests/unit/test_cpu_runner_routing.py
+          tests/unit/test_cpu_runner_isolation.py
+          tests/unit/test_github_hosted_capacity_policy.py
+          tests/unit/test_shared_runner_checkout_policy.py -q
+      - name: Run the default PR tier on Python 3.12
+        if: matrix.python == '3.12'
+        run: python tools/ci_tier.py pr-default
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        with:
+          name: r300-workload-${{ matrix.scale_set }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
