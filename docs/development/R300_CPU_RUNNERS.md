@@ -2,8 +2,9 @@
 
 The initial R300 routing spreads Qiskit compatibility onto
 `flagcicd-r300-cpu05`, Braket onto `flagcicd-r300-cpu03`, and Cirq onto
-`flagcicd-r300-cpu16`. Each set has completed resource inventory, native CPU
-preflight and both certified SDK versions in the migrated CI jobs.
+`flagcicd-r300-cpu04`. All three targets have completed resource inventory.
+The cpu04 replacement must pass native CPU preflight and both certified Cirq
+versions before integration; earlier SDK qualification on cpu16 is recorded below.
 Same-repository pull requests and manual CI runs use these targets. Fork pull
 requests retain `ubuntu-latest` and its existing hosted concurrency buckets.
 The two certified SDK versions in each compatibility job remain unchanged.
@@ -66,6 +67,13 @@ that checkout is bounded to five minutes, uses the same `github.sha`, does not
 persist credentials, and verifies HEAD before installing anything. Artifact
 checksum failures remain errors for hosted fork jobs. Source transport never
 changes the tested commit.
+
+Cirq initially qualified on cpu16, but two attempts on the integrated revision
+subsequently exhausted both the three-minute artifact and five-minute checkout
+budgets before reaching tests. Cirq therefore moves to inventoried cpu04;
+qualification requires the full native and certified SDK tests on that target.
+The cpu16 network failure remains unqualified for current routing; increasing
+timeouts or repeatedly rerunning it is not treated as a repair.
 
 The three SDK jobs use distinct scale sets so one set's occupied slots do not
 serialize unrelated compatibility checks. The native CPU tests execute before
