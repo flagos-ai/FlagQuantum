@@ -14,7 +14,9 @@ models, and Remote hardware interfaces.
 The [package layout guide](../../docs/guides/QEC_PACKAGE_LAYOUT.md) maps canonical
 imports to their current implementation owners and explains pickle, source-tool,
 plugin and installed-package compatibility. Existing `flagquantum.qec` imports
-remain the user entry points; both rotated surface classes remain independent.
+remain the user entry points. The approved 0.4.0 retirement keeps one registered
+`RotatedSurfaceCode` and removes the 23 historical flat imports and their pickle
+lookups; surviving identifiers and numerical behavior remain protected.
 
 | Responsibility | Contribution path |
 | --- | --- |
