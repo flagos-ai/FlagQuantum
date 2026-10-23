@@ -269,3 +269,19 @@ def test_r300_source_failover_is_bounded_and_verifies_the_same_commit() -> None:
         )
         assert verify["if"] == "steps.source.outcome == 'failure'"
         assert verify["run"] == 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"'
+
+
+@pytest.mark.parametrize("job", ["cpu-core", "cpu-core-3-12-tests", "cpu-runtime"])
+def test_core_cpu_downloads_use_the_bounded_shared_mirror_policy(job: str) -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    steps = jobs[job]["steps"]
+    installer = next(
+        step
+        for step in steps
+        if step.get("uses") == "./.github/actions/install-cpu-torch"
+    )
+    assert installer["timeout-minutes"] == 8
+    assert not any(
+        "/root/liuwei/fq-ci-bootstrap/cpu-wheels" in step.get("run", "")
+        for step in steps
+    )
