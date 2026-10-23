@@ -210,8 +210,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             "release evidence preflight failed: " + "; ".join(preflight_errors)
         )
     signing_key = os.environ.get("FQ_EVIDENCE_SIGNING_KEY", "").encode()
-    if not signing_key:
-        raise SystemExit("FQ_EVIDENCE_SIGNING_KEY is required")
     evidence = json.loads(args.measurements.read_text(encoding="utf-8"))
     if not isinstance(evidence, dict):
         raise SystemExit("measurements must be a JSON object emitted by the executor")

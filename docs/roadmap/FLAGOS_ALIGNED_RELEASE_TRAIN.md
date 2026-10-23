@@ -224,9 +224,10 @@ contract and implementation gates.
 Proposal 081 was explicitly approved on 2026-10-22 for the native Rydberg
 transport profile. The [authorization and baseline record](../api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md)
 tracks the replaceable fixed-reference consumers and domain deliveries. Core
-construction and Deployment refusal have landed; Simulation now replaces the
-three numerical fixtures with real native program consumption and source-aware
-plan 1.7 in its implementation PR. The fixed-reference baseline alone was not
+construction and Deployment refusal have landed; Simulation #707 merged native
+program consumption and source-aware plan 1.7 after full applicable CI/GPU
+verification. It replaced the three numerical fixtures with real program inputs.
+The fixed-reference baseline alone was not
 native transport support. Event instruments, feedback, motional heating, hardware and
 the complete M3 scenario remain open gates. Existing plan compatibility fixtures
 and scientific budgets remain unchanged; each implementation PR has separate
@@ -236,11 +237,23 @@ merge and verification requirements.
 records the requested service-owned Remote boundary correction and exact generic
 NeutralAtomProvider retirement. Its four decisions, including replacement of 081's Remote-consumer gate, were
 explicitly approved on 2026-10-22. Remote retirement #705 has landed; Core #700
-and Deployment #701 are also on main. The current Simulation delivery is bounded
+and Deployment #701 are also on main. The merged Simulation delivery is bounded
 to one/two-actor CPU dynamics, live control gradients and strict native replay.
-Its PR still needs complete verification and separate merge authorization. No
-concrete cloud service, detector events, feedback, motional heating or full M3
-completion follows.
+Native control training #714 and commanded-path/schedule visualization #715 also
+merged after their separate authorizations and full CI/GPU success. They reuse
+the same native program, planner, integrator and PyTorch workflow; the view does
+not infer atom presence or physical trap activity. The
+[delivery record](../api-changes/FQ-RYDBERG-TRANSPORT-PROGRAMS-20261022.md#merged-bounded-deliveries)
+links their final-head and post-merge evidence. No concrete cloud service,
+detector events, feedback, motional heating or full M3 completion follows.
+
+[Proposal 083](../development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md)
+was explicitly approved on 2026-10-23 for staged terminal instrument sampling.
+Its document merge #716 was not that approval. The current delivery establishes
+two-model replaceable consumers before separate Runtime export/metadata admission
+and implementation. It reuses MeasurementResult and the existing map algebra;
+it adds no public sampling entry in this baseline. This CPU terminal slice does
+not provide a timestamped detector trajectory, feedback or erasure-decoder record.
 
 ### Reference scenarios
 

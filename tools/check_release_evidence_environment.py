@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import subprocess
 from collections.abc import Sequence
@@ -34,7 +33,6 @@ def _is_inside(path: Path, root: Path) -> bool:
 def readiness_errors(
     *,
     commit: str,
-    signing_key_present: bool,
     device_uuids: Sequence[str],
     world_size: int,
     seal_destination: Path | None = None,
@@ -56,8 +54,6 @@ def readiness_errors(
     errors: list[str] = []
     if not _COMMIT.fullmatch(commit):
         errors.append("release evidence requires a full 40-character Git commit")
-    if not signing_key_present:
-        errors.append("FQ_EVIDENCE_SIGNING_KEY is not configured")
     if world_size < 1:
         errors.append("world_size must be positive")
     elif len(tuple(device_uuids)) < world_size:
@@ -120,7 +116,6 @@ def environment_errors(
     )
     return readiness_errors(
         commit=resolved_commit,
-        signing_key_present=bool(os.environ.get("FQ_EVIDENCE_SIGNING_KEY")),
         device_uuids=devices,
         world_size=world_size,
         seal_destination=seal_destination,

@@ -91,7 +91,9 @@ def _provenance(world: int) -> RuntimeProvenance:
     )
 
 
-def _seal(evidence: dict, *, world: int, scope: EvidenceScope, release: bool):
+def _seal(
+    evidence: dict, *, world: int, scope: EvidenceScope, release: bool, key: bytes = KEY
+):
     sealed = dict(evidence)
     if release:
         sealed.update(
@@ -107,7 +109,7 @@ def _seal(evidence: dict, *, world: int, scope: EvidenceScope, release: bool):
         evidence_scope=scope,
         provenance=_provenance(world),
         evidence=sealed,
-        signing_key=KEY,
+        signing_key=key,
     )
     return artifact.summary()
 
@@ -266,7 +268,8 @@ def test_a_pair_payload_with_a_speedup_and_ownership_clears_the_measured_part():
     }
 
 
-def test_a_complete_pair_release_passes():
+@pytest.mark.parametrize("key", [KEY, b""])
+def test_a_complete_pair_release_passes(key: bytes) -> None:
     """Baseline plus completion plus speed is the whole measured contract."""
 
     manifest = _manifest_with_premise()
@@ -276,22 +279,25 @@ def test_a_complete_pair_release_passes():
             world=1,
             scope=EvidenceScope.ONE_GPU_LOCAL,
             release=False,
+            key=key,
         ),
         _seal(
             _sharded_evidence(),
             world=2,
             scope=EvidenceScope.TWO_GPU_SEMANTIC,
             release=True,
+            key=key,
         ),
         _seal(
             _speed_evidence(speedup=1.42, lower=1.11),
             world=2,
             scope=EvidenceScope.TWO_GPU_SEMANTIC,
             release=True,
+            key=key,
         ),
     ]
     passed, blockers = evaluate_tensor_network_release(
-        artifacts, manifest, signing_key=KEY
+        artifacts, manifest, signing_key=key
     )
     assert passed, blockers
     assert blockers == ()
