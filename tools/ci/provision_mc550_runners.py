@@ -182,7 +182,11 @@ def main() -> None:
             stage = ROOT / "admin" / row["version"]
             stage.mkdir(exist_ok=True)
             run("tar", "xzf", str(archive), "--no-same-owner", "-C", str(stage))
-            run("bash", "setup.sh", cwd=stage, env=env, timeout=300)
+            runtime_env = dict(
+                env,
+                LD_LIBRARY_PATH=str(cache / "Python" / row["version"] / "x64/lib"),
+            )
+            run("bash", "setup.sh", cwd=stage, env=runtime_env, timeout=300)
         print("Python ready", row["version"], flush=True)
     run("chmod", "-R", "go-w", str(cache))
     archive = download(metadata["runner"])
