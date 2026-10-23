@@ -37,8 +37,8 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
             route = str(job.get("runs-on", ""))
             if "fromJSON(" in route:
                 guard = (
-                    "github.event_name == 'push' || (github.event_name == 'pull_request' "
-                    "&& github.event.pull_request.head.repo.full_name == github.repository)"
+                    "github.event_name != 'pull_request' || "
+                    "github.event.pull_request.head.repo.full_name == github.repository"
                 )
                 prefix = "self-hosted"
             elif any(

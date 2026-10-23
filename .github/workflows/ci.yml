@@ -14,7 +14,7 @@ on:
 # the full PR matrix, and strict required checks protect the merge base.
 #
 # CPU smoke/unit and runtime suites retain the dedicated A800 CPU runners.
-# Portable trusted Ubuntu checks share all 24 A100/A800 CPU runners.
+# Portable trusted Ubuntu checks share the general CPU runner pool.
 # Full-history quality checks retain A100; fork jobs use hosted runners.
 # Trusted manual validation uses the same A800 routing as same-repository PRs.
 # A800 jobs use up to 16 quota-aware workers and a private environment per run.
