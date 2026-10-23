@@ -29,6 +29,14 @@ def load_pool(path: Path = REGISTRY) -> dict[str, Any]:
             member.get("evidence", "")
         ).startswith("https://github.com/flagos-ai/FlagQuantum/actions/runs/"):
             raise ValueError(f"Missing qualification evidence for {label}")
+    batch = pool["qualification_batch"]
+    if (
+        not isinstance(batch, list)
+        or len(batch) > 4
+        or len(set(batch)) != len(batch)
+        or not set(batch) <= seen
+    ):
+        raise ValueError("Qualification batch must name at most four known targets")
     jobs = pool["jobs"]
     if (
         not jobs
@@ -59,7 +67,10 @@ def qualification_targets(pool: dict[str, Any], limit: int) -> list[str]:
     """Select a bounded candidate batch without admitting it to production."""
     if not 1 <= limit <= 4:
         raise ValueError("Qualification batches must contain at most four targets")
-    return [m["label"] for m in pool["members"] if m["state"] == "candidate"][:limit]
+    candidates = {m["label"] for m in pool["members"] if m["state"] == "candidate"}
+    return [label for label in pool["qualification_batch"] if label in candidates][
+        :limit
+    ]
 
 
 def main() -> None:

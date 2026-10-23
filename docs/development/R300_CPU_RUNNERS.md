@@ -1,10 +1,9 @@
 # R300 CPU CI runners
 
-The initial R300 routing spreads Qiskit compatibility onto
-`flagcicd-r300-cpu05`, Braket onto `flagcicd-r300-cpu03`, and Cirq onto
-`flagcicd-r300-cpu04`. All three targets have completed resource inventory.
-The cpu04 replacement must pass native CPU preflight and both certified Cirq
-versions before integration; earlier SDK qualification on cpu16 is recorded below.
+Initial qualification used Qiskit on `flagcicd-r300-cpu05`, Braket on
+`flagcicd-r300-cpu03`, and Cirq on `flagcicd-r300-cpu04`. All three completed
+resource inventory, native CPU preflight and both certified SDK versions.
+Current workflow routes come from the qualified registry described below.
 Same-repository pull requests and manual CI runs use these targets. Fork pull
 requests retain `ubuntu-latest` and its existing hosted concurrency buckets.
 The two certified SDK versions in each compatibility job remain unchanged.
@@ -89,18 +88,76 @@ After this workflow is merged, run:
 gh workflow run r300-validation.yml --repo flagos-ai/FlagQuantum --ref main
 ```
 
-This diagnostic workflow is manually dispatched; ordinary pull requests use the
-real SDK CI checks without repeating the entire pool inventory. Inspect all
-resource inventory jobs, the three Python workload probes and the
+The full inventory and cross-version diagnostic are manually dispatched. Pool
+policy changes additionally qualify only the explicitly selected candidate batch
+on same-repository pull requests; ordinary PRs do not repeat the whole inventory.
+For a full diagnostic, inspect all resource inventory jobs, the three Python
+workload probes and the
 `r300-workload-*` resource artifacts. The Python 3.12 probe also runs the default
 PR tier with a measured, bounded number of pytest workers. A new target should
 pass both inventory and the relevant native/SDK workload before receiving CI.
 
-## Unified pool admission
+## Workflow-managed pool
 
-The proposed shared selector is `[linux, x64, flagquantum-r300-cpu]`.
-It is not deployed, and the production jobs continue to use their qualified
-individual scale sets until the shared selector passes an actual workflow.
+The workflow-level pool does not require cluster administration or new ARC
+labels. `tools/ci/r300_pool.json` owns the qualified member list, blocked targets,
+consumer jobs and an explicit candidate batch. `prepare-source` calls the standard
+library-only `tools/ci/r300_pool.py` once and passes the JSON plan to job
+`runs-on` expressions. Fork pull requests keep their GitHub-hosted fallback.
+
+A plan assigns each consumer to a distinct qualified target, rotating the
+starting point by workflow run ID. This spreads work across runs; it is not
+live idle-capacity detection, a global reservation, or automatic failover of an
+already-running job. Busy selected sets can still queue. No GitHub API polling,
+cluster credentials, RBAC changes or runner registration changes are needed.
+
+Inspect the exact planning behavior locally:
+
+```bash
+python3 tools/ci/r300_pool.py --seed 123
+```
+
+Initially cpu03/cpu04/cpu05 are qualified using successful SDK CI evidence.
+The first additional candidate batch is cpu01/cpu02/cpu06/cpu07; remaining
+inventoried targets stay candidates, and cpu08/cpu16 remain quarantined.
+Candidates and quarantined members cannot receive production jobs. Fewer
+qualified members than consumer jobs makes planning fail before fan-out.
+
+Run the candidate batch manually when needed:
+
+```bash
+gh workflow run r300-validation.yml --repo flagos-ai/FlagQuantum \
+  --ref ci/r300-unified-pool -f qualify_pool=true
+```
+
+Pool-definition PRs run this batch automatically only when the PR originates
+in the same repository. At most four qualification jobs run concurrently.
+Each target must transfer and verify the exact source commit, install the
+signed Ubuntu Python/compiler prerequisites, install CPU-only PyTorch, compile
+and assert the native extension, run representative native/backend/smoke tests
+and routing policies, and retain measured resource/timing reports. The CPU-wheel
+installation is bounded to eight minutes, source paths to three/five minutes,
+and the entire qualification job to 25 minutes.
+
+After inspecting actual successful job logs, promote only passing targets by
+recording their qualification job URL and changing state to `qualified`.
+Failed targets retain candidate state or become `quarantined` with their reason.
+Promotion does not silently begin a different batch: the batch is explicit, and
+completed members are not requalified. Further expansion requires selecting
+another bounded batch in the registry.
+
+The first consumers are the three existing SDK jobs. After additional members
+qualify and pooled SDK jobs pass, migrate a small portable Python 3.12 CPU job,
+then validate a limited coverage subset before any broad coverage migration.
+Heavy distributed suites and fixed-host performance checks retain dedicated
+measured services. There is no claim that unqualified candidates or additional
+CPU jobs have already migrated.
+
+## Cluster-level shared selector (optional operator path)
+
+A cluster-level alternative is `[linux, x64, flagquantum-r300-cpu]`.
+That shared ARC selector is not deployed. The workflow-managed pool above uses
+existing scale-set names and can proceed independently of operator access.
 
 The runner-side audit found Kubernetes `v1.31.14` in namespace `arc-runners`.
 The cpu04 runner uses service account
@@ -116,17 +173,11 @@ repository is available in this workspace. The runner's permissions must not be
 expanded to obtain cluster administration. An existing cluster operator must
 provide a supported management context or apply reviewed deployment changes.
 
-Repeat the read-only audit without downloading source or starting native tests:
-
-```bash
-gh workflow run r300-validation.yml --repo flagos-ai/FlagQuantum \
-  --ref ci/r300-unified-pool -f audit_only=true
-```
-
-The audit reports only selected Pod/deployment/scale-set metadata through existing
-service-account permissions. It never reads Kubernetes Secrets, prints tokens,
-changes RBAC, or modifies cluster resources. HTTP 403 is recorded as an access
-boundary, not a successful configuration inspection.
+The initial read-only audit evidence is retained in
+[the completed cpu04 probe](https://github.com/flagos-ai/FlagQuantum/actions/runs/39958916351/job/120431654590).
+The temporary cluster-audit implementation is not part of the workflow-managed
+pool: production planning and candidate qualification never read service-account
+credentials or contact Kubernetes APIs.
 
 A cluster operator can collect the missing non-secret deployment evidence with:
 

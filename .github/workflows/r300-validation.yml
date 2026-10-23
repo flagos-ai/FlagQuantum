@@ -1,13 +1,14 @@
 name: R300 scale set validation
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/r300-validation.yml
+      - tools/ci/r300_pool.py
+      - tools/ci/r300_pool.json
   workflow_dispatch:
     inputs:
-      audit_only:
-        description: Inspect runner and existing Kubernetes read access without running workloads
-        type: boolean
-        default: false
-
       qualify_pool:
         description: Qualify the next four candidates for workflow-level R300 routing
         type: boolean
@@ -20,7 +21,6 @@ jobs:
   prepare-source:
     outputs:
       qualification-targets: ${{ steps.pool.outputs.qualification-targets }}
-    if: ${{ !inputs.audit_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
@@ -48,7 +48,7 @@ jobs:
           compression-level: 0
 
   resources:
-    if: ${{ !inputs.audit_only && !inputs.qualify_pool }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.qualify_pool }}
     runs-on: ${{ matrix.scale_set }}
     timeout-minutes: 5
     strategy:
@@ -110,7 +110,7 @@ jobs:
 
   cpu-workload:
     needs: prepare-source
-    if: ${{ !inputs.audit_only && !inputs.qualify_pool }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.qualify_pool }}
     runs-on: ${{ matrix.scale_set }}
     timeout-minutes: 35
     strategy:
@@ -195,88 +195,11 @@ jobs:
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
 
-  cluster-audit:
-    if: inputs.audit_only
-    runs-on: ${{ matrix.scale_set }}
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        scale_set: [flagcicd-r300-cpu03, flagcicd-r300-cpu04, flagcicd-r300-cpu05]
-    steps:
-      - name: Inspect existing cluster access without downloading source
-        shell: bash
-        run: |
-          node_binary=""
-          for candidate in "$(command -v node || true)" /home/runner/externals/node24/bin/node /home/runner/externals/node20/bin/node; do
-            if [ -n "$candidate" ] && [ -x "$candidate" ]; then
-              node_binary="$candidate"
-              break
-            fi
-          done
-          test -n "$node_binary"
-          "$node_binary" <<'JS'
-          const fs = require('node:fs');
-          const https = require('node:https');
-          const os = require('node:os');
-          const emit = (kind, data) => console.log(JSON.stringify({kind, ...data}));
-          const account = '/var/run/secrets/kubernetes.io/serviceaccount';
-          const read = (name) => fs.existsSync(`${account}/${name}`) ? fs.readFileSync(`${account}/${name}`, 'utf8').trim() : null;
-          const namespace = read('namespace');
-          emit('runner', {name: process.env.RUNNER_NAME, hostname: os.hostname(), architecture: os.arch(), namespace, serviceAccountMounted: fs.existsSync(`${account}/token`)});
-          if (!namespace || !fs.existsSync(`${account}/token`) || !process.env.KUBERNETES_SERVICE_HOST) {
-            emit('clusterAccess', {available: false, reason: 'No existing in-cluster service-account access; an operator context is required.'});
-            process.exit(0);
-          }
-          // Use only the pod's existing permissions; never emit credentials or list Secrets.
-          const request = (path) => new Promise((resolve) => {
-            const req = https.get({host: process.env.KUBERNETES_SERVICE_HOST, port: process.env.KUBERNETES_SERVICE_PORT_HTTPS || 443, path,
-              ca: read('ca.crt'), headers: {Authorization: `Bearer ${read('token')}`}}, (res) => {
-              let body = '';
-              res.on('data', (chunk) => {body += chunk; if (body.length > 8000000) req.destroy(new Error('response_too_large'));});
-              res.on('end', () => {
-                if (res.statusCode !== 200) {emit('clusterRead', {path, status: res.statusCode}); resolve(null); return;}
-                try {resolve(JSON.parse(body));} catch {emit('clusterRead', {path, error: 'invalid_json'}); resolve(null);}
-              });
-            });
-            req.setTimeout(15000, () => req.destroy(new Error('request_timeout')));
-            req.on('error', (error) => {emit('clusterRead', {path, error: error.code || 'request_failed'}); resolve(null);});
-          });
-          (async () => {
-            const version = await request('/version');
-            if (version) emit('kubernetes', {version: version.gitVersion});
-            const deployments = await request(`/apis/apps/v1/namespaces/${encodeURIComponent(namespace)}/deployments`);
-            for (const item of deployments?.items || []) {
-              if (!/arc|runner-scale-set/.test(item.metadata.name)) continue;
-              emit('controller', {name: item.metadata.name, namespace: item.metadata.namespace,
-                chart: item.metadata.labels?.['helm.sh/chart'], images: item.spec.template.spec.containers.map((c) => c.image)});
-            }
-            const sets = await request(`/apis/actions.github.com/v1alpha1/namespaces/${encodeURIComponent(namespace)}/autoscalingrunnersets`);
-            for (const item of sets?.items || []) {
-              if (!String(item.spec.runnerScaleSetName || item.metadata.name).startsWith('flagcicd-r300-')) continue;
-              emit('scaleSet', {name: item.metadata.name, namespace: item.metadata.namespace, chart: item.metadata.labels?.['helm.sh/chart'],
-                labels: item.spec.runnerScaleSetLabels, minRunners: item.spec.minRunners, maxRunners: item.spec.maxRunners,
-                nodeSelector: item.spec.template?.spec?.nodeSelector,
-                containers: item.spec.template?.spec?.containers?.map((c) => ({name: c.name, image: c.image, resources: c.resources}))});
-            }
-            const pod = await request(`/api/v1/namespaces/${encodeURIComponent(namespace)}/pods/${encodeURIComponent(os.hostname())}`);
-            if (pod) emit('pod', {node: pod.spec.nodeName, serviceAccount: pod.spec.serviceAccountName,
-              chart: pod.metadata.labels?.['helm.sh/chart'], appVersion: pod.metadata.labels?.['app.kubernetes.io/version'],
-              containers: pod.spec.containers.map((c) => ({name: c.name, image: c.image, resources: c.resources}))});
-            const pods = await request(`/api/v1/namespaces/${encodeURIComponent(namespace)}/pods`);
-            for (const item of pods?.items || []) {
-              if (!item.metadata.name.startsWith('flagcicd-r300-')) continue;
-              emit('r300Pod', {name: item.metadata.name, phase: item.status.phase,
-                chart: item.metadata.labels?.['helm.sh/chart'], appVersion: item.metadata.labels?.['app.kubernetes.io/version'],
-                ownerKinds: item.metadata.ownerReferences?.map((owner) => owner.kind),
-                containers: item.spec.containers.map((c) => ({name: c.name, image: c.image, resources: c.resources}))});
-            }
-          })().catch(() => {emit('clusterRead', {error: 'audit_failed'}); process.exitCode = 1;});
-          JS
-
   pool-qualification:
     needs: prepare-source
-    if: inputs.qualify_pool && !inputs.audit_only && needs.prepare-source.outputs.qualification-targets != '[]'
+    if: >-
+      ${{ needs.prepare-source.outputs.qualification-targets != '[]' &&
+      (inputs.qualify_pool || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
     runs-on: ${{ matrix.scale_set }}
     timeout-minutes: 25
     strategy:

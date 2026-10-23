@@ -79,5 +79,11 @@
       "label": "flagcicd-r300-cpu115",
       "state": "candidate"
     }
+  ],
+  "qualification_batch": [
+    "flagcicd-r300-cpu01",
+    "flagcicd-r300-cpu02",
+    "flagcicd-r300-cpu06",
+    "flagcicd-r300-cpu07"
   ]
 }

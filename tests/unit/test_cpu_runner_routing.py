@@ -15,6 +15,12 @@ def _inventoried_r300_labels() -> set[str]:
     return set(validation["jobs"]["resources"]["strategy"]["matrix"]["scale_set"])
 
 
+def _is_r300_route(route: str) -> bool:
+    return (
+        "flagcicd-r300-" in route or "needs.prepare-source.outputs.r300-routes" in route
+    )
+
+
 @pytest.mark.parametrize("workflow", ["ci.yml", "pre-commit.yaml"])
 def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -> None:
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
@@ -27,6 +33,7 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
                 "flagquantum-a100-cpu",
                 "flagquantum-cpu-general",
                 "flagcicd-r300-",
+                "needs.prepare-source.outputs.r300-routes",
             )
         )
     ]
@@ -37,9 +44,14 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
         "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
     )
     for job in routed:
+        name = next(name for name, item in document["jobs"].items() if item is job)
         assert job["runs-on"] in (
             expected,
             expected.replace("flagquantum-a100-cpu", "flagquantum-cpu-general"),
+            expected.replace(
+                "'flagquantum-a100-cpu'",
+                "fromJSON(needs.prepare-source.outputs.r300-routes)['" + name + "']",
+            ),
             *(
                 expected.replace("flagquantum-a100-cpu", label)
                 for label in _inventoried_r300_labels()
@@ -82,10 +94,11 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
                     "flagquantum-a100-cpu",
                     "flagquantum-cpu-general",
                     "flagcicd-r300-",
+                    "needs.prepare-source.outputs.r300-routes",
                 )
             ):
                 continue
-            prefix = "self-hosted" if "flagcicd-r300-" in job["runs-on"] else "a100-cpu"
+            prefix = "self-hosted" if _is_r300_route(job["runs-on"]) else "a100-cpu"
             selector = (
                 "${{ (github.event_name != 'pull_request' || "
                 "github.event.pull_request.head.repo.full_name == github.repository) "
@@ -158,12 +171,12 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     }
     for name in portable:
         job = jobs[name]
-        assert any(
+        assert _is_r300_route(job["runs-on"]) or any(
             f"'{label}'" in job["runs-on"]
             for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
         ), name
         assert "flagquantum-a100-cpu" not in job["runs-on"], name
-        if "flagcicd-r300-" not in job["runs-on"]:
+        if not _is_r300_route(job["runs-on"]):
             assert not any(
                 str(step.get("uses", "")).startswith("actions/checkout@")
                 for step in job["steps"]
@@ -200,7 +213,7 @@ def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
     migrated = {
         name: job
         for name, job in jobs.items()
-        if "flagcicd-r300-" in str(job.get("runs-on", ""))
+        if _is_r300_route(str(job.get("runs-on", "")))
     }
     assert set(migrated) == {"qiskit-optional", "cirq-optional", "braket-optional"}
     for job in migrated.values():
