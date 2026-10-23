@@ -342,7 +342,7 @@ jobs:
   cpu-core:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-a800-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
@@ -483,7 +483,7 @@ jobs:
   cpu-core-3-12-tests:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-a800-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
@@ -588,7 +588,7 @@ jobs:
   cpu-runtime:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-a800-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
@@ -1387,7 +1387,7 @@ jobs:
   distributed-cpu:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-a800-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 60
     env:
       OMP_NUM_THREADS: "1"
@@ -1456,7 +1456,7 @@ jobs:
   coverage-shard:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-a800-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"

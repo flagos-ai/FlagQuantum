@@ -28,7 +28,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The A100 validation host is independent and must not wait for the A800 pair.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
 
-A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
+A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-a800-cpu"]\' || \'["ubuntu-latest"]\') }}'
 
 TRUSTED_CPU_ROUTE = (
     "${{ (github.event_name != 'pull_request' || "
