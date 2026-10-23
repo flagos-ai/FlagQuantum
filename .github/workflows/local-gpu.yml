@@ -343,6 +343,7 @@ jobs:
 
   validate-mc550-pool:
     if: ${{ inputs.validate_mc550_pool }}
+    needs: prepare-source
     runs-on: [self-hosted, linux, x64, flagquantum-mc550-cpu, "${{ matrix.host }}", "${{ matrix.slot }}"]
     timeout-minutes: 25
     permissions:
@@ -354,9 +355,28 @@ jobs:
         host: [mc550-111, mc550-112, mc550-121, mc550-122]
         slot: [cpu01, cpu02, cpu03, cpu04, cpu05, cpu06, cpu07, cpu08, cpu09, cpu10, cpu11, cpu12, cpu13, cpu14, cpu15, cpu16]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8.0.2
         with:
-          persist-credentials: false
+          digest-mismatch: error
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

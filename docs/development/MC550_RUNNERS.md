@@ -62,7 +62,10 @@ gh workflow run local-gpu.yml --repo flagos-ai/FlagQuantum \
   --ref ci/mc550-cpu-runner-pool -f validate_mc550_pool=true
 ```
 
-The 4-by-16 matrix selects every exact runner, verifies its cgroup limits and
+The 4-by-16 matrix selects every exact runner. It reuses the workflow's verified
+source artifact and checks the restored commit against `GITHUB_SHA`, avoiding
+sixty-four simultaneous HTTPS Git fetches on the unreliable Git transport.
+It verifies cgroup limits and
 filesystem/device boundary from inside the actual service, installs the project
 in a private environment and runs CPU circuit/backend tests. It verifies the
 checked-out SHA and CPU-only PyTorch. This acceptance does not certify accelerator
