@@ -1441,6 +1441,9 @@ def _train_capacity(
         initial_mps_tensors=initial,
         initial_mps_left_canonical=bool(contract["initial_mps_left_canonical"]),
         canonicalization_policy=str(contract["canonicalization_policy"]),
+        # The digest-bound capacity body explicitly compiles its site kernels.
+        # The runtime's one-step automatic policy otherwise selects eager.
+        compile_site_kernels=True,
         svd_driver=str(contract["svd_driver"]),
         reverse_checkpoint_policy=fqxm.MPSReverseCheckpointPolicy(
             max_saved_bytes=workload.reverse_checkpoint_capacity_bytes(

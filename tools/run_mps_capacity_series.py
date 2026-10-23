@@ -141,6 +141,7 @@ def worker(args: argparse.Namespace) -> int:
         NCCL_IB_DISABLE="0",
         NCCL_IB_HCA=args.infiniband_hcas,
         FQ_TEST_CHECKPOINT=str(args.output / "transport-checkpoint"),
+        FLAGQUANTUM_MPS_P2P_TIMEOUT_SECONDS=str(args.timeout),
         TORCH_NCCL_ASYNC_ERROR_HANDLING="1",
         PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True",
     )
@@ -232,6 +233,8 @@ def campaign(args: argparse.Namespace) -> int:
                 "peer": args.peer,
                 "cuda_allocator_policy": "expandable_segments:True",
                 "infiniband_hcas": args.infiniband_hcas,
+                "p2p_timeout_seconds": args.timeout,
+                "capacity_site_kernels": "explicit_compiled_from_frozen_workload_body",
                 "topology": [
                     _run(["nvidia-smi", "topo", "-m"]),
                     _run(ssh_argv(args.peer, ["nvidia-smi", "topo", "-m"])),

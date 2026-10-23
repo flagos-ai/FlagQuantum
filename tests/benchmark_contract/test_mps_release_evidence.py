@@ -20,6 +20,7 @@ import hashlib
 import importlib
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 import torch
@@ -245,6 +246,43 @@ def test_capacity_series_preserves_the_existing_certification_roles(
     monkeypatch.setattr(producer, role, delegated)
     assert producer.main(["--role", "capacity-series-point"]) == 7
     assert calls == ["capacity-series-point"]
+
+
+def test_single_step_capacity_preserves_the_frozen_compiled_kernel_protocol(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A new runtime default must not silently change the measured protocol."""
+    contract = _contract()
+    workload = producer._frozen_workload(contract)
+    monkeypatch.setattr(workload, "rank_owned_initial_mps", lambda *args: {})
+    captured: dict[str, Any] = {}
+    result = object()
+
+    def train(circuit: object, **options: Any) -> object:
+        captured.update(options)
+        return result
+
+    monkeypatch.setattr(producer.fqxd, "train_distributed_mps", train)
+    device = torch.device("cpu")
+    assert (
+        producer._train_capacity(
+            workload, contract, device, 16, workload.frozen_parameters(device)
+        )
+        is result
+    )
+    body = ast.parse(Path(producer._workload_body_source(contract)["path"]).read_text())
+    frozen = [
+        ast.literal_eval(keyword.value)
+        for node in ast.walk(body)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "train_distributed_mps"
+        for keyword in node.keywords
+        if keyword.arg == "compile_site_kernels"
+    ]
+    assert frozen == [True]
+    assert captured["steps"] == 1
+    assert captured["compile_site_kernels"] is frozen[0]
 
 
 def test_the_producer_states_every_field_the_release_contract_requires() -> None:
