@@ -7,7 +7,7 @@ has `gpu`, `flagquantum-local`, `flagquantum-a100`, and `a100-8gpu` labels.
 
 Portable CPU coverage, optional-dependency, distributed CPU, dependency-bound
 and supply-chain checks use `flagquantum-cpu-general`, registered on all sixteen
-A100 and eight A800 CPU runners. GitHub can assign the same PR's ready jobs to
+A100 and twelve A800 CPU runners, alongside other accepted general-pool hosts. GitHub can assign the same PR's ready jobs to
 both hosts' pools without an A100-only backlog while A800 slots are idle. Each
 job restores the producer's digest-verified source artifact and checks its exact
 commit, including when only failed jobs are rerun. This avoids A800's unreliable

@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, "refactor/qec-restructure-*"]
   workflow_dispatch:
 
 # flagos-ai runs every repository from one pool of 20 concurrent GitHub-hosted
@@ -14,8 +14,9 @@ on:
 # the full PR matrix, and strict required checks protect the merge base.
 #
 # CPU smoke/unit and runtime suites retain the dedicated A800 CPU runners.
-# Portable trusted Ubuntu checks share all 24 A100/A800 CPU runners.
+# Portable trusted Ubuntu checks share the general CPU runner pool.
 # Full-history quality checks retain A100; fork jobs use hosted runners.
+# Trusted manual validation uses the same A800 routing as same-repository PRs.
 # A800 jobs use up to 16 quota-aware workers and a private environment per run.
 # Hosted fallback jobs share sixteen scoped concurrency buckets. Self-hosted CPU
 # jobs instead include run ID, job ID and matrix index in their groups, so the
@@ -341,16 +342,16 @@ jobs:
   cpu-core:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      PIP_INDEX_URL: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-cpu-core-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-${{ matrix.python-version }}
       queue: max
     strategy:
       fail-fast: false
@@ -482,16 +483,16 @@ jobs:
   cpu-core-3-12-tests:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      PIP_INDEX_URL: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-cpu-core-3-12-tests-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-3-12-tests-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-cpucore-3.12
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -587,16 +588,16 @@ jobs:
   cpu-runtime:
     needs: prepare-source
     runs-on: >-
-      ${{ fromJSON((github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+      ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
-      PIP_INDEX_URL: ${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
+      PIP_INDEX_URL: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-runtime
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-runtime
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2

@@ -61,7 +61,7 @@ performance claim follows from the workflow.
 
 ## Code-independent records
 
-`pauli.py`, `codes.py`, and `circuit.py` add a code-independent layer beside the
+`pauli.py`, the `codes` package, and `circuit.py` add a code-independent layer beside the
 frozen repetition profile. A `Pauli` is a phase-free operator over arbitrary qubit
 indices; a `StabilizerCode` is a value that declares its distance, qubit layout,
 checks, stabilizers, and logical observables; `build_memory_circuit` turns a code
@@ -252,7 +252,7 @@ are `CssCodeMatrices` in [dem_construction.py](dem_construction.py), and
 [CssCode](css_code.py) is the record that wraps them with a **stated** distance.
 The distance search this section describes -- `_minimum_logical_weight`, bounded by
 `distance_search_weight` and defaulting to three -- is what the declared and derived
-families go through in [codes.py](codes.py), so the paragraphs below still describe
+families go through in [codes/__init__.py](codes/__init__.py), so the paragraphs below still describe
 it; what no longer holds is that the four-block route searches rather than states.
 The paragraph that follows states which records `get_code` reaches by name and which
 one declares a logical observable in each readout basis.

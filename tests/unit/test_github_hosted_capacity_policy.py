@@ -140,21 +140,12 @@ def _groups(job: dict[str, object]) -> set[str]:
     group = concurrency.get("group")
     if not isinstance(group, str):
         return set()
-    # Evaluate the hosted fallback of the trusted-pool selector. Its A100 arm
-    # has independent groups and does not consume the hosted capacity budget.
+    # Evaluate the hosted fallback of both trusted-pool selectors. Their CPU
+    # arms have independent groups and do not consume hosted capacity.
     group = re.sub(
         r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
         r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
-        r"&& format\('a100-cpu-\{0\}-[a-z0-9-]+-\{1\}', "
-        r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
-        "gh",
-        group,
-    )
-    group = re.sub(
-        r"\$\{\{ \(github\.event_name == 'push' \|\| "
-        r"\(github\.event_name == 'pull_request' && "
-        r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\)\) "
-        r"&& format\('self-hosted-\{0\}-[a-z0-9-]+-\{1\}', "
+        r"&& format\('(?:a100-cpu|self-hosted)-\{0\}-[a-z0-9-]+-\{1\}', "
         r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
         "gh",
         group,
@@ -298,8 +289,8 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
         assert definition["env"]["OMP_NUM_THREADS"] == "1"
         assert definition["env"]["PIP_INDEX_URL"] == (
-            "${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && "
-            "github.event.pull_request.head.repo.full_name == github.repository)) && "
+            "${{ (github.event_name != 'pull_request' || "
+            "github.event.pull_request.head.repo.full_name == github.repository) && "
             "'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}"
         )
         commands = "\n".join(str(step.get("run", "")) for step in _steps("ci.yml", job))
@@ -560,7 +551,9 @@ def test_full_ci_runs_once_per_pr_and_remains_manually_available() -> None:
     ci = _document("ci.yml")
     events = ci.get("on", ci.get(True))
     assert set(events) == {"pull_request", "workflow_dispatch"}
-    assert events["pull_request"] == {"branches": ["main"]}
+    assert events["pull_request"] == {
+        "branches": ["main", "refactor/qec-restructure-*"]
+    }
     manual = _document("pre-commit.yaml")
     assert set(manual.get("on", manual.get(True))) == {"workflow_dispatch"}
     gpu = _document("local-gpu.yml")

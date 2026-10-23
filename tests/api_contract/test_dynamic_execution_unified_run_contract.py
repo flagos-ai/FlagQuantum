@@ -136,18 +136,19 @@ def test_current_dynamic_oracle_proves_the_result_projection() -> None:
     assert torch.equal(native.samples[:, 1], native.classical_bits[:, 0])
 
 
-def test_stable_entry_remains_closed_until_dynamic_planning_lands() -> None:
+def test_stable_execution_remains_closed_after_dynamic_planning_lands() -> None:
     contract = _contract()
 
     assert contract["delivery_stage"]["runtime_activation"] is False
+    plan = fq.plan(
+        _feedback_program(),
+        options=fq.ExecutionOptions(shots=32, seed=7),
+    )
     with pytest.raises(
         fqe.CapabilityError,
-        match="fq.run does not execute dynamic trajectories.*run_dynamic",
+        match="dynamic ExecutionPlan is valid.*run_dynamic",
     ):
-        fq.plan(
-            _feedback_program(),
-            options=fq.ExecutionOptions(shots=32, seed=7),
-        )
+        fq.run(plan)
 
 
 def test_static_planning_and_execution_are_unchanged() -> None:

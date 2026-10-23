@@ -21,8 +21,8 @@ These examples do not use that alias:
 - [`boson_interference.py`](boson_interference.py) — it uses the existing
   `flagquantum.lindblad` namespace and boson algebra for two-photon interference
   and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
-  Unconditional output probabilities, survival, and plan serialization share the
-  existing dynamics path; this is a bounded CPU model.
+  Unconditional probabilities, survival, plan replay and explicit QND number
+  samples share the existing dynamics and Runtime paths; this is a bounded CPU model.
 - [`superoperator_channel_algebra.py`](superoperator_channel_algebra.py) — it
   reads one amplitude-damping channel as a superoperator through
   `flagquantum.operators.SuperOperator`: the action, the dense map, the Choi
@@ -96,6 +96,9 @@ These examples do not use that alias:
   a channel between two programs rather than a program to run.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
+- [`qec/restructure_compatibility.py`](qec/restructure_compatibility.py) imports
+  the QEC public surface to run the existing repetition-memory feedback workflow
+  and check its correction, logical error rate and decoded bits.
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.
@@ -550,6 +553,48 @@ probabilities and expectations for training. With identical inputs, effective
 seed, Torch version and CPU runtime, samples replay. No cross-version bitwise
 replay, feedback, detector trajectory or hardware submission is implied.
 
+
+## Two-mode interference and number counting
+
+Run `python -m examples.boson_interference` on CPU. The existing boson algebra
+builds the passive coupling `0.7 * (a0_dagger * a1 + a1_dagger * a0)` from
+`|1, 1>`, for duration `T = pi / (4 * 0.7)`. Each mode has three levels.
+The same Lindblad plan supports uniform pure loss with rate 0 or 0.2 per mode;
+the Runtime terminal primitive samples the tensor product of the declared
+three-level QND number projectors. There is no second evolution or sampling engine.
+
+Expected analytic outputs:
+
+| Loss rate | P(0,2) | P(2,0) | P(1,1) | Two-photon survival |
+| --- | --- | --- | --- | --- |
+| 0.0 | 0.50000000 | 0.50000000 | 0.00000000 | 1.00000000 |
+| 0.2 | 0.31919722 | 0.31919722 | 0.00000000 | 0.63839443 |
+
+The subsequent lines print number labels in mode-0/mode-1 order:
+`['0/0', '0/1', '0/2', '1/0', '1/1', '1/2', '2/0', '2/1', '2/2']`.
+Each nine-element count vector sums to `4096`, followed by `Shots: 4096`
+and `Number sample replay: True`. In Python 3.12 / Torch 2.13 CPU, seed 7 gave
+`[0, 0, 2035, 0, 0, 0, 2061, 0, 0]` without loss and
+`[174, 659, 1281, 705, 0, 0, 1277, 0, 0]` with loss. The exact count vectors
+are not a cross-version guarantee. Vacuum and one-photon outcomes are retained;
+two-photon survival is not an implicit postselection step.
+
+An independent closed form uses transmission `eta = exp(-rate * T)`:
+vacuum probability `(1-eta)^2`, each one-photon probability `eta*(1-eta)`,
+each bunched probability `eta^2/2`, and zero coincidence probability.
+The two bunched states retain coherence `eta^2/2` before measurement. The
+unread QND instrument removes it, which distinguishes the declared measurement
+backaction from merely reporting populations or assuming a destructive detector.
+
+Integration tests compare the full complex density matrix with this formula and
+embed the three-level result in a four-level calculation at absolute error
+`1e-10`. For this fixture the passive coupling preserves total photon number
+and loss only lowers it; the initial total is two, so occupation above two is
+unreachable. This explains the exact truncation closure for this input, rather
+than certifying a general infinite-Fock simulation. Shot-frequency uncertainty
+is checked separately with binomial standard errors. This finite CPU reference
+does not provide a Gaussian backend, optical program frontend, destructive
+photodetection, event timestamps or hardware submission.
 
 ## Native moving-atom dynamics
 
