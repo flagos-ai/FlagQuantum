@@ -8,14 +8,19 @@ over a small grid so CI enforces the invariant across a regime rather than at a
 point.
 
 The subgrid is deliberately small: the checked-in artifact under
-``benchmarks/results/representation_agreement/`` carries the full grid, and this
+``artifacts/development/representation_agreement_precision/`` carries the full grid, and this
 file's job is to fail when the invariant breaks, not to reproduce the payload.
 """
 
 from __future__ import annotations
 
-import pytest
+import json
+from pathlib import Path
 
+import pytest
+import torch
+
+from benchmarks import representation_agreement_sweep as sweep
 from benchmarks.representation_agreement_sweep import (
     MODES,
     exact_max_bond,
@@ -51,8 +56,9 @@ def _cell(**overrides: object) -> dict:
 
 @pytest.mark.parametrize("n_qubits", [4, 6, 8])
 @pytest.mark.parametrize("structure", ["nearest_neighbour", "all_to_all"])
+@pytest.mark.parametrize("dtype", [torch.complex64, torch.complex128])
 def test_representations_agree_where_the_state_is_held_exactly(
-    n_qubits: int, structure: str
+    n_qubits: int, structure: str, dtype: torch.dtype
 ) -> None:
     """With a cap no narrower than the chain needs, all three paths must agree.
 
@@ -61,14 +67,18 @@ def test_representations_agree_where_the_state_is_held_exactly(
     not compute the same program.
     """
     cell = _cell(
-        n_qubits=n_qubits, structure=structure, max_bond=exact_max_bond(n_qubits)
+        n_qubits=n_qubits,
+        structure=structure,
+        max_bond=exact_max_bond(n_qubits),
+        dtype=dtype,
     )
 
     assert "failures" not in cell, cell.get("failures")
     assert set(cell["energies"]) == set(MODES)
     assert cell["mps_truncated"] is False
     assert cell["spread_relative"] is not None
-    assert cell["spread_relative"] < UNTRUNCATED_RELATIVE_BOUND, cell
+    bound = 1e-12 if dtype == torch.complex128 else UNTRUNCATED_RELATIVE_BOUND
+    assert cell["spread_relative"] < bound, cell
 
 
 @pytest.mark.parametrize("depth", [2, 6])
@@ -160,3 +170,94 @@ def test_spread_is_reported_relative_as_well_as_absolute() -> None:
         assert cell["spread_relative"] < UNTRUNCATED_RELATIVE_BOUND, cell
 
     assert abs(wide["energies"]["statevector"]) > abs(narrow["energies"]["statevector"])
+
+
+def test_precision_comparison_keeps_the_angles_and_widens_the_arithmetic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A precision comparison must change arithmetic, not the input circuit."""
+    parameters_seen: list[torch.Tensor] = []
+    build = sweep.build_ansatz
+
+    def capture(parameters: torch.Tensor, structure: str) -> sweep.fq.Circuit:
+        parameters_seen.append(parameters.clone())
+        circuit = build(parameters, structure)
+        expected = (
+            torch.complex128 if parameters.dtype == torch.float64 else torch.complex64
+        )
+        assert circuit.state().dtype == expected
+        return circuit
+
+    monkeypatch.setattr(sweep, "build_ansatz", capture)
+    single = _cell(n_qubits=4, dtype=torch.complex64)
+    first_double = len(parameters_seen)
+    double = _cell(n_qubits=4, dtype=torch.complex128)
+
+    assert "failures" not in single, single.get("failures")
+    assert "failures" not in double, double.get("failures")
+    assert parameters_seen[0].dtype == torch.float32
+    assert parameters_seen[first_double].dtype == torch.float64
+    assert torch.equal(
+        parameters_seen[0].to(torch.float64), parameters_seen[first_double]
+    )
+    assert double["mps_truncated"] is False
+    assert double["spread_relative"] < 1e-12
+
+
+def test_a_failed_headroom_probe_is_incomplete_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Successful energies cannot hide an unmeasured truncation classification."""
+    build = sweep.build_ansatz
+    calls = 0
+
+    def fail_probe(parameters: torch.Tensor, structure: str) -> sweep.fq.Circuit:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("headroom probe refused")
+        return build(parameters, structure)
+
+    monkeypatch.setattr(sweep, "build_ansatz", fail_probe)
+    cell = _cell(n_qubits=6, max_bond=4)
+
+    assert all(value is not None for value in cell["energies"].values())
+    assert cell["mps_truncated"] is None
+    assert "headroom_probe" in cell["failures"]
+    assert len(summarize([cell])["incomplete_cells"]) == 1
+
+
+def test_recorded_precision_grids_compare_the_same_complete_workload() -> None:
+    """The published comparison separates arithmetic from bond truncation."""
+    root = (
+        Path(__file__).resolve().parents[2]
+        / "artifacts/development/representation_agreement_precision"
+    )
+    records = [
+        json.loads((root / f"{dtype}.json").read_text())
+        for dtype in ("complex64", "complex128")
+    ]
+    single, double = records
+    for field in (
+        "grid",
+        "seed",
+        "observable",
+        "parameter_initialization",
+        "source_commit",
+    ):
+        assert single[field] == double[field]
+    for record, bound in zip(records, (1e-4, 1e-12), strict=True):
+        assert record["measuring_source_committed"] is True
+        assert record["summary"]["cells_total"] == 28
+        assert record["summary"]["incomplete_cells"] == []
+        assert record["summary"]["untruncated"]["cells"] == 22
+        assert record["summary"]["truncated"]["cells"] == 6
+        assert record["summary"]["untruncated"]["max_spread_relative"] < bound
+        assert record["summary"]["truncated"]["max_spread_relative"] > 0.1
+        assert record["release_gate_allowed"] is False
+        assert record["scalability_claim_allowed"] is False
+        assert all(set(cell["energies"]) == set(MODES) for cell in record["cells"])
+    fields = ("n_qubits", "depth", "structure", "max_bond_cutoff", "mps_truncated")
+    assert [tuple(c[f] for f in fields) for c in single["cells"]] == [
+        tuple(c[f] for f in fields) for c in double["cells"]
+    ]
