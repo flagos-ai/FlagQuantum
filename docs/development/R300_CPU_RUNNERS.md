@@ -2,9 +2,8 @@
 
 The initial R300 routing spreads Qiskit compatibility onto
 `flagcicd-r300-cpu05`, Braket onto `flagcicd-r300-cpu03`, and Cirq onto
-`flagcicd-r300-cpu16`. Each set has completed resource inventory; each migrated
-job must pass native CPU preflight and both certified SDK versions before the
-pull request can be integrated.
+`flagcicd-r300-cpu16`. Each set has completed resource inventory, native CPU
+preflight and both certified SDK versions in the migrated CI jobs.
 Same-repository pull requests and manual CI runs use these targets. Fork pull
 requests retain `ubuntu-latest` and its existing hosted concurrency buckets.
 The two certified SDK versions in each compatibility job remain unchanged.
@@ -47,6 +46,18 @@ Live native-build checks and 296 representative regressions passed on:
   network-dependent inventory; it is not recorded as a complete tier pass.
 - [cpu16 / Python 3.11](https://github.com/flagos-ai/FlagQuantum/actions/runs/39935812731/job/120355109700):
   the complete representative workload job succeeded.
+
+The [PR CI run](https://github.com/flagos-ai/FlagQuantum/actions/runs/39941739834)
+passed all required checks with Python 3.12 and signed packages downloaded from
+the Tsinghua Ubuntu mirror. Each SDK job passed 182 native preflight tests, then:
+
+- [Qiskit / cpu05](https://github.com/flagos-ai/FlagQuantum/actions/runs/39941739834/job/120374725353):
+  both certified versions passed the interoperability contract, 45 adapter tests
+  and 241 quantum parity tests per version.
+- [Cirq / cpu16](https://github.com/flagos-ai/FlagQuantum/actions/runs/39941739834/job/120374725210):
+  both certified versions passed the interoperability contract and 55 tests each.
+- [Braket / cpu03](https://github.com/flagos-ai/FlagQuantum/actions/runs/39941739834/job/120374725246):
+  both certified versions passed the interoperability contract and 54 tests each.
 
 Direct GitHub checkout and some artifact downloads showed long delays on other
 attempts. Source artifact transfer on R300 is therefore bounded to three minutes.
