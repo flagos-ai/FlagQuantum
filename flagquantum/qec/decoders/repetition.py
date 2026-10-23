@@ -6,7 +6,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from .types import Correction, DecodeResult, PauliFrame, SyndromeRound
+from flagquantum.qec.codes._compat import _retain_module
+from flagquantum.qec.types import Correction, DecodeResult, PauliFrame, SyndromeRound
 
 
 def _repetition_wire(bits: tuple[int, ...]) -> int | None:
@@ -120,4 +121,16 @@ __all__ = (
     "RepetitionStreamingLookupDecoder",
     "RepetitionTemporalDecoder",
     "StreamingDecoder",
+)
+
+
+_retain_module(
+    "flagquantum.qec.decoders",
+    _repetition_wire,
+    _validate_repetition_history,
+    Decoder,
+    StreamingDecoder,
+    RepetitionLookupDecoder,
+    RepetitionStreamingLookupDecoder,
+    RepetitionTemporalDecoder,
 )

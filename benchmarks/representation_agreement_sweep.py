@@ -58,6 +58,8 @@ import torch
 
 import flagquantum as fq
 import flagquantum.runtime as fqr
+from flagquantum.simulation.tensor_network import tensor_network_expectations
+from flagquantum.simulation.tensor_network.state import TensorNetworkState
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -153,6 +155,19 @@ def energy(target: Any, n_qubits: int) -> torch.Tensor:
     cell of this sweep measures the same quantity the single-point result
     reports.
     """
+    if isinstance(target, TensorNetworkState) and target.max_intermediate_bytes is None:
+        # The same bra/ket is shared by every Ising term. Contract the complete
+        # observable batch once instead of rebuilding it for each Pauli product.
+        observables: list[dict[str, tuple[int, ...]]] = [
+            {"z": (qubit, qubit + 1)} for qubit in range(n_qubits - 1)
+        ] + [{"x": (qubit,)} for qubit in range(n_qubits)]
+        values = tensor_network_expectations(
+            target.plan,
+            observables,
+            contraction_strategy=target.contraction_strategy,
+        )
+        coefficients = values.new_tensor([-1.0] * (n_qubits - 1) + [-0.7] * n_qubits)
+        return (values * coefficients).sum()
     value = sum(
         -_expectation(target, n_qubits, z=(qubit, qubit + 1))
         for qubit in range(n_qubits - 1)

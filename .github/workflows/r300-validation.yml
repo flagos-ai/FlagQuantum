@@ -1,0 +1,181 @@
+name: R300 scale set validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-source:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: flagquantum-gh-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Pack the exact validation commit
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/r300-source"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git rev-parse HEAD > "$RUNNER_TEMP/r300-source/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/r300-source/source.pack"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r300-source
+          path: ${{ runner.temp }}/r300-source/
+          retention-days: 1
+          compression-level: 0
+
+  resources:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ matrix.scale_set }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      max-parallel: 17
+      matrix:
+        scale_set:
+          - flagcicd-r300-cpu01
+          - flagcicd-r300-cpu02
+          - flagcicd-r300-cpu03
+          - flagcicd-r300-cpu04
+          - flagcicd-r300-cpu05
+          - flagcicd-r300-cpu06
+          - flagcicd-r300-cpu07
+          - flagcicd-r300-cpu08
+          - flagcicd-r300-cpu09
+          - flagcicd-r300-cpu10
+          - flagcicd-r300-cpu11
+          - flagcicd-r300-cpu12
+          - flagcicd-r300-cpu13
+          - flagcicd-r300-cpu14
+          - flagcicd-r300-cpu15
+          - flagcicd-r300-cpu16
+          - flagcicd-r300-cpu115
+    steps:
+      # Keep inventory independent of GitHub source/action download latency.
+      # Workload jobs below use ci_cpu_budget.py for effective limits and workers.
+      - name: Record host visibility and every enclosing cgroup limit
+        run: |
+          uname -a
+          cat /etc/os-release
+          nproc
+          free -b
+          df -B1 "$RUNNER_TEMP"
+          grep Cpus_allowed_list /proc/self/status
+          cat /proc/self/cgroup
+          for tool in git python3 gcc g++; do
+            if command -v "$tool"; then
+              "$tool" --version
+            else
+              echo "::warning::$tool is absent from the base image"
+            fi
+          done
+          membership="$(awk -F: '$1 == "0" {print $3}' /proc/self/cgroup)"
+          test -n "$membership"
+          directory="/sys/fs/cgroup${membership%/}"
+          if [ ! -d "$directory" ]; then
+            directory=/sys/fs/cgroup
+          fi
+          while [[ "$directory" == /sys/fs/cgroup* ]]; do
+            for controller in cpu.max memory.max memory.current cpuset.cpus.effective; do
+              if [ -f "$directory/$controller" ]; then
+                printf '%s: %s\n' "$directory/$controller" "$(cat "$directory/$controller")"
+              fi
+            done
+            [ "$directory" != /sys/fs/cgroup ] || break
+            directory="$(dirname "$directory")"
+          done
+
+  cpu-workload:
+    needs: prepare-source
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ matrix.scale_set }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - scale_set: flagcicd-r300-cpu01
+            python: '3.12'
+          - scale_set: flagcicd-r300-cpu08
+            python: '3.10'
+          - scale_set: flagcicd-r300-cpu16
+            python: '3.11'
+    env:
+      MAX_JOBS: '2'
+      PIP_DEFAULT_TIMEOUT: '30'
+      PIP_RETRIES: '1'
+    steps:
+      - name: Provision the native CPU compiler when absent
+        run: |
+          if ! command -v gcc || ! command -v g++; then
+            sudo -n timeout --kill-after=10s 240s apt-get update
+            sudo -n timeout --kill-after=10s 240s apt-get install -y --no-install-recommends build-essential
+          fi
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: r300-source
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - name: Build the native extension and install CI dependencies
+        run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Require native CPU execution
+        run: |
+          python - <<'PY'
+          import torch
+          from flagquantum.simulation.native_cpu import adjoint
+
+          assert torch.version.cuda is None
+          assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)
+          print('CPU PyTorch:', torch.__version__)
+          PY
+      - name: Run portable CPU and workflow regressions
+        run: >-
+          python -m pytest tests/test_native_circuit.py tests/test_backends.py
+          tests/smoke/test_smoke_baseline.py tests/unit/test_ci_cpu_budget.py
+          tests/unit/test_cpu_runner_routing.py
+          tests/unit/test_cpu_runner_isolation.py
+          tests/unit/test_github_hosted_capacity_policy.py
+          tests/unit/test_shared_runner_checkout_policy.py -q
+      - name: Run the default PR tier on Python 3.12
+        if: matrix.python == '3.12'
+        run: >-
+          PYTEST_ADDOPTS="-n $FQ_PYTEST_WORKERS --dist=worksteal --durations=25"
+          python tools/ci_tier.py pr-default
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        with:
+          name: r300-workload-${{ matrix.scale_set }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7

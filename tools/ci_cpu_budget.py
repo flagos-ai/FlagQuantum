@@ -1,4 +1,4 @@
-"""Measure Linux runner limits and budget pytest for two shared registrations."""
+"""Budget Linux CI within isolated service or shared registration limits."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import argparse
 import json
 import math
 import os
+import re
 import tempfile
 from pathlib import Path
 
@@ -81,6 +82,17 @@ def read_limits(directories: dict[str, list[Path]]) -> tuple[list[float], list[i
     return cpu, memory
 
 
+def is_dedicated_cpu_service(directories: dict[str, list[Path]]) -> bool:
+    """Recognize MC550 slots with their own finite CPU and memory limits."""
+    common = set(directories["cpu"]).intersection(directories["memory"])
+    for directory in common:
+        if re.fullmatch(r"fqmc-cpu(?:0[1-9]|1[0-6])\.service", directory.name):
+            cpu, memory = read_limits({"cpu": [directory], "memory": [directory]})
+            if cpu and memory:
+                return True
+    return False
+
+
 def select_workers(
     cpu: float, memory: int, shared: bool, dedicated: bool = False
 ) -> int:
@@ -92,13 +104,15 @@ def select_workers(
     return max(1, min(8, math.floor(cpu / 2), memory // (2 * 2 * GIB)))
 
 
-def select_distributed_workers(cpu: float, memory: int, shared: bool) -> int:
-    """Budget up to eight child ranks per launcher, with at most two launchers."""
+def select_distributed_workers(
+    cpu: float, memory: int, shared: bool, dedicated: bool = False
+) -> int:
+    """Bound eight child ranks per launcher by service CPU and memory limits."""
     if not shared:
         return 1
-    return max(
-        1, min(2, math.floor(math.ceil(cpu / 2) / 8), memory // (2 * 8 * 2 * GIB))
-    )
+    cpu_share = cpu if dedicated else math.ceil(cpu / 2)
+    memory_share = memory if dedicated else memory // 2
+    return max(1, min(2, math.floor(cpu_share / 8), memory_share // (8 * 2 * GIB)))
 
 
 def main(*, dedicated: bool = False) -> None:
@@ -111,12 +125,13 @@ def main(*, dedicated: bool = False) -> None:
     if shared := os.environ.get("RUNNER_ENVIRONMENT") == "self-hosted":
         if not directories["cpu"] or not directories["memory"]:
             raise RuntimeError("Shared Linux runner cgroup limits are unavailable")
+    dedicated = dedicated or (shared and is_dedicated_cpu_service(directories))
     quotas, memory_limits = read_limits(directories)
     physical_memory = int(os.sysconf("SC_PAGE_SIZE")) * int(os.sysconf("SC_PHYS_PAGES"))
     cpu = min([float(len(affinity)), *quotas])
     memory = min([physical_memory, *memory_limits])
     workers = select_workers(cpu, memory, shared, dedicated)
-    distributed_workers = select_distributed_workers(cpu, memory, shared)
+    distributed_workers = select_distributed_workers(cpu, memory, shared, dedicated)
     report = {
         "runner": os.environ.get("RUNNER_NAME"),
         "hostname": os.uname().nodename,

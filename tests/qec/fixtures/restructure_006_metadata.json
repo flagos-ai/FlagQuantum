@@ -1,0 +1,1003 @@
+{
+  "definitions": {
+    "flagquantum.qec.adapters.MatchingDependencyError": [
+      "flagquantum.qec.adapters",
+      "MatchingDependencyError"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.__delattr__": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.__delattr__"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.__eq__": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.__eq__"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.__hash__": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.__hash__"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.__init__": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.__init__"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.__post_init__": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.__post_init__"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.__repr__": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.__repr__"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.__setattr__": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.__setattr__"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder._pair": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder._pair"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.decode": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.decode"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.from_decoding_graph": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.from_decoding_graph"
+    ],
+    "flagquantum.qec.adapters.PyMatchingDecoder.from_detector_error_model": [
+      "flagquantum.qec.adapters",
+      "PyMatchingDecoder.from_detector_error_model"
+    ],
+    "flagquantum.qec.adapters._pymatching": [
+      "flagquantum.qec.adapters",
+      "_pymatching"
+    ],
+    "flagquantum.qec.adapters._translate": [
+      "flagquantum.qec.adapters",
+      "_translate"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecodeResult"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult.__delattr__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecodeResult.__delattr__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult.__eq__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecodeResult.__eq__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult.__hash__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecodeResult.__hash__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult.__init__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecodeResult.__init__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult.__post_init__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecodeResult.__post_init__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult.__repr__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecodeResult.__repr__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecodeResult.__setattr__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecodeResult.__setattr__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.__delattr__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.__delattr__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.__eq__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.__eq__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.__hash__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.__hash__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.__init__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.__init__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.__post_init__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.__post_init__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.__repr__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.__repr__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.__setattr__": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.__setattr__"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder._result": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder._result"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.decode": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.decode"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.factor_graph": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.factor_graph"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.from_decoding_graph": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.from_decoding_graph"
+    ],
+    "flagquantum.qec.belief_propagation.BeliefPropagationDecoder.from_detector_error_model": [
+      "flagquantum.qec.belief_propagation",
+      "BeliefPropagationDecoder.from_detector_error_model"
+    ],
+    "flagquantum.qec.belief_propagation._FactorGraph": [
+      "flagquantum.qec.belief_propagation",
+      "_FactorGraph"
+    ],
+    "flagquantum.qec.belief_propagation._FactorGraph.__delattr__": [
+      "flagquantum.qec.belief_propagation",
+      "_FactorGraph.__delattr__"
+    ],
+    "flagquantum.qec.belief_propagation._FactorGraph.__eq__": [
+      "flagquantum.qec.belief_propagation",
+      "_FactorGraph.__eq__"
+    ],
+    "flagquantum.qec.belief_propagation._FactorGraph.__hash__": [
+      "flagquantum.qec.belief_propagation",
+      "_FactorGraph.__hash__"
+    ],
+    "flagquantum.qec.belief_propagation._FactorGraph.__init__": [
+      "flagquantum.qec.belief_propagation",
+      "_FactorGraph.__init__"
+    ],
+    "flagquantum.qec.belief_propagation._FactorGraph.__repr__": [
+      "flagquantum.qec.belief_propagation",
+      "_FactorGraph.__repr__"
+    ],
+    "flagquantum.qec.belief_propagation._FactorGraph.__setattr__": [
+      "flagquantum.qec.belief_propagation",
+      "_FactorGraph.__setattr__"
+    ],
+    "flagquantum.qec.belief_propagation._FactorGraph.check_rows": [
+      "flagquantum.qec.belief_propagation",
+      "_FactorGraph.check_rows"
+    ],
+    "flagquantum.qec.belief_propagation._check_messages": [
+      "flagquantum.qec.belief_propagation",
+      "_check_messages"
+    ],
+    "flagquantum.qec.belief_propagation._clip": [
+      "flagquantum.qec.belief_propagation",
+      "_clip"
+    ],
+    "flagquantum.qec.belief_propagation._decision": [
+      "flagquantum.qec.belief_propagation",
+      "_decision"
+    ],
+    "flagquantum.qec.belief_propagation._explains": [
+      "flagquantum.qec.belief_propagation",
+      "_explains"
+    ],
+    "flagquantum.qec.belief_propagation._factor_graph": [
+      "flagquantum.qec.belief_propagation",
+      "_factor_graph"
+    ],
+    "flagquantum.qec.belief_propagation._flips": [
+      "flagquantum.qec.belief_propagation",
+      "_flips"
+    ],
+    "flagquantum.qec.belief_propagation._model_from_graph": [
+      "flagquantum.qec.belief_propagation",
+      "_model_from_graph"
+    ],
+    "flagquantum.qec.belief_propagation._ordered_statistics": [
+      "flagquantum.qec.belief_propagation",
+      "_ordered_statistics"
+    ],
+    "flagquantum.qec.belief_propagation._pivot_mask": [
+      "flagquantum.qec.belief_propagation",
+      "_pivot_mask"
+    ],
+    "flagquantum.qec.belief_propagation._posteriors": [
+      "flagquantum.qec.belief_propagation",
+      "_posteriors"
+    ],
+    "flagquantum.qec.belief_propagation._syndrome_mask": [
+      "flagquantum.qec.belief_propagation",
+      "_syndrome_mask"
+    ],
+    "flagquantum.qec.belief_propagation._variable_messages": [
+      "flagquantum.qec.belief_propagation",
+      "_variable_messages"
+    ],
+    "flagquantum.qec.belief_propagation._weight": [
+      "flagquantum.qec.belief_propagation",
+      "_weight"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecodeResult"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult.__delattr__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecodeResult.__delattr__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult.__eq__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecodeResult.__eq__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult.__hash__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecodeResult.__hash__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult.__init__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecodeResult.__init__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult.__post_init__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecodeResult.__post_init__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult.__repr__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecodeResult.__repr__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecodeResult.__setattr__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecodeResult.__setattr__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.__delattr__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.__delattr__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.__eq__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.__eq__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.__hash__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.__hash__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.__init__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.__init__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.__post_init__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.__post_init__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.__repr__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.__repr__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.__setattr__": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.__setattr__"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder._observables": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder._observables"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder._ordered_statistics": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder._ordered_statistics"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder._propagate": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder._propagate"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.decode": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.decode"
+    ],
+    "flagquantum.qec.bposd.BeliefPropagationOsdDecoder.from_detector_error_model": [
+      "flagquantum.qec.bposd",
+      "BeliefPropagationOsdDecoder.from_detector_error_model"
+    ],
+    "flagquantum.qec.bposd._indices": [
+      "flagquantum.qec.bposd",
+      "_indices"
+    ],
+    "flagquantum.qec.bposd._syndrome": [
+      "flagquantum.qec.bposd",
+      "_syndrome"
+    ],
+    "flagquantum.qec.decoders.Decoder": [
+      "flagquantum.qec.decoders",
+      "Decoder"
+    ],
+    "flagquantum.qec.decoders.Decoder.decode": [
+      "flagquantum.qec.decoders",
+      "Decoder.decode"
+    ],
+    "flagquantum.qec.decoders.RepetitionLookupDecoder": [
+      "flagquantum.qec.decoders",
+      "RepetitionLookupDecoder"
+    ],
+    "flagquantum.qec.decoders.RepetitionLookupDecoder.__delattr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionLookupDecoder.__delattr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionLookupDecoder.__eq__": [
+      "flagquantum.qec.decoders",
+      "RepetitionLookupDecoder.__eq__"
+    ],
+    "flagquantum.qec.decoders.RepetitionLookupDecoder.__hash__": [
+      "flagquantum.qec.decoders",
+      "RepetitionLookupDecoder.__hash__"
+    ],
+    "flagquantum.qec.decoders.RepetitionLookupDecoder.__init__": [
+      "flagquantum.qec.decoders",
+      "RepetitionLookupDecoder.__init__"
+    ],
+    "flagquantum.qec.decoders.RepetitionLookupDecoder.__repr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionLookupDecoder.__repr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionLookupDecoder.__setattr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionLookupDecoder.__setattr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionLookupDecoder.decode": [
+      "flagquantum.qec.decoders",
+      "RepetitionLookupDecoder.decode"
+    ],
+    "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder": [
+      "flagquantum.qec.decoders",
+      "RepetitionStreamingLookupDecoder"
+    ],
+    "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder.__delattr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionStreamingLookupDecoder.__delattr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder.__eq__": [
+      "flagquantum.qec.decoders",
+      "RepetitionStreamingLookupDecoder.__eq__"
+    ],
+    "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder.__hash__": [
+      "flagquantum.qec.decoders",
+      "RepetitionStreamingLookupDecoder.__hash__"
+    ],
+    "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder.__init__": [
+      "flagquantum.qec.decoders",
+      "RepetitionStreamingLookupDecoder.__init__"
+    ],
+    "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder.__repr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionStreamingLookupDecoder.__repr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder.__setattr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionStreamingLookupDecoder.__setattr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionStreamingLookupDecoder.decode_round": [
+      "flagquantum.qec.decoders",
+      "RepetitionStreamingLookupDecoder.decode_round"
+    ],
+    "flagquantum.qec.decoders.RepetitionTemporalDecoder": [
+      "flagquantum.qec.decoders",
+      "RepetitionTemporalDecoder"
+    ],
+    "flagquantum.qec.decoders.RepetitionTemporalDecoder.__delattr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionTemporalDecoder.__delattr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionTemporalDecoder.__eq__": [
+      "flagquantum.qec.decoders",
+      "RepetitionTemporalDecoder.__eq__"
+    ],
+    "flagquantum.qec.decoders.RepetitionTemporalDecoder.__hash__": [
+      "flagquantum.qec.decoders",
+      "RepetitionTemporalDecoder.__hash__"
+    ],
+    "flagquantum.qec.decoders.RepetitionTemporalDecoder.__init__": [
+      "flagquantum.qec.decoders",
+      "RepetitionTemporalDecoder.__init__"
+    ],
+    "flagquantum.qec.decoders.RepetitionTemporalDecoder.__repr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionTemporalDecoder.__repr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionTemporalDecoder.__setattr__": [
+      "flagquantum.qec.decoders",
+      "RepetitionTemporalDecoder.__setattr__"
+    ],
+    "flagquantum.qec.decoders.RepetitionTemporalDecoder.decode_round": [
+      "flagquantum.qec.decoders",
+      "RepetitionTemporalDecoder.decode_round"
+    ],
+    "flagquantum.qec.decoders.StreamingDecoder": [
+      "flagquantum.qec.decoders",
+      "StreamingDecoder"
+    ],
+    "flagquantum.qec.decoders.StreamingDecoder.decode_round": [
+      "flagquantum.qec.decoders",
+      "StreamingDecoder.decode_round"
+    ],
+    "flagquantum.qec.decoders._repetition_wire": [
+      "flagquantum.qec.decoders",
+      "_repetition_wire"
+    ],
+    "flagquantum.qec.decoders._validate_repetition_history": [
+      "flagquantum.qec.decoders",
+      "_validate_repetition_history"
+    ],
+    "flagquantum.qec.matching.MatchingDecodeResult": [
+      "flagquantum.qec.matching",
+      "MatchingDecodeResult"
+    ],
+    "flagquantum.qec.matching.MatchingDecodeResult.__delattr__": [
+      "flagquantum.qec.matching",
+      "MatchingDecodeResult.__delattr__"
+    ],
+    "flagquantum.qec.matching.MatchingDecodeResult.__eq__": [
+      "flagquantum.qec.matching",
+      "MatchingDecodeResult.__eq__"
+    ],
+    "flagquantum.qec.matching.MatchingDecodeResult.__hash__": [
+      "flagquantum.qec.matching",
+      "MatchingDecodeResult.__hash__"
+    ],
+    "flagquantum.qec.matching.MatchingDecodeResult.__init__": [
+      "flagquantum.qec.matching",
+      "MatchingDecodeResult.__init__"
+    ],
+    "flagquantum.qec.matching.MatchingDecodeResult.__post_init__": [
+      "flagquantum.qec.matching",
+      "MatchingDecodeResult.__post_init__"
+    ],
+    "flagquantum.qec.matching.MatchingDecodeResult.__repr__": [
+      "flagquantum.qec.matching",
+      "MatchingDecodeResult.__repr__"
+    ],
+    "flagquantum.qec.matching.MatchingDecodeResult.__setattr__": [
+      "flagquantum.qec.matching",
+      "MatchingDecodeResult.__setattr__"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.__delattr__": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.__delattr__"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.__eq__": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.__eq__"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.__hash__": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.__hash__"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.__init__": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.__init__"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.__post_init__": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.__post_init__"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.__repr__": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.__repr__"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.__setattr__": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.__setattr__"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder._route_to_boundary": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder._route_to_boundary"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder._walk": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder._walk"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.decode": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.decode"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.from_decoding_graph": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.from_decoding_graph"
+    ],
+    "flagquantum.qec.matching.MinimumWeightMatchingDecoder.from_detector_error_model": [
+      "flagquantum.qec.matching",
+      "MinimumWeightMatchingDecoder.from_detector_error_model"
+    ],
+    "flagquantum.qec.matching._SearchTree": [
+      "flagquantum.qec.matching",
+      "_SearchTree"
+    ],
+    "flagquantum.qec.matching._SearchTree.__delattr__": [
+      "flagquantum.qec.matching",
+      "_SearchTree.__delattr__"
+    ],
+    "flagquantum.qec.matching._SearchTree.__eq__": [
+      "flagquantum.qec.matching",
+      "_SearchTree.__eq__"
+    ],
+    "flagquantum.qec.matching._SearchTree.__hash__": [
+      "flagquantum.qec.matching",
+      "_SearchTree.__hash__"
+    ],
+    "flagquantum.qec.matching._SearchTree.__init__": [
+      "flagquantum.qec.matching",
+      "_SearchTree.__init__"
+    ],
+    "flagquantum.qec.matching._SearchTree.__repr__": [
+      "flagquantum.qec.matching",
+      "_SearchTree.__repr__"
+    ],
+    "flagquantum.qec.matching._SearchTree.__setattr__": [
+      "flagquantum.qec.matching",
+      "_SearchTree.__setattr__"
+    ],
+    "flagquantum.qec.matching._boundary_weights": [
+      "flagquantum.qec.matching",
+      "_boundary_weights"
+    ],
+    "flagquantum.qec.matching._defects": [
+      "flagquantum.qec.matching",
+      "_defects"
+    ],
+    "flagquantum.qec.matching._detector_adjacency": [
+      "flagquantum.qec.matching",
+      "_detector_adjacency"
+    ],
+    "flagquantum.qec.matching._pair_weights": [
+      "flagquantum.qec.matching",
+      "_pair_weights"
+    ],
+    "flagquantum.qec.matching._pairing": [
+      "flagquantum.qec.matching",
+      "_pairing"
+    ],
+    "flagquantum.qec.matching._search": [
+      "flagquantum.qec.matching",
+      "_search"
+    ],
+    "flagquantum.qec.matching._toggle": [
+      "flagquantum.qec.matching",
+      "_toggle"
+    ],
+    "flagquantum.qec.registry.DetectorErrorModelDecodeResult": [
+      "flagquantum.qec.registry",
+      "DetectorErrorModelDecodeResult"
+    ],
+    "flagquantum.qec.registry.DetectorErrorModelDecodeResult.observables": [
+      "flagquantum.qec.registry",
+      "DetectorErrorModelDecodeResult.observables"
+    ],
+    "flagquantum.qec.registry.DetectorErrorModelDecoder": [
+      "flagquantum.qec.registry",
+      "DetectorErrorModelDecoder"
+    ],
+    "flagquantum.qec.registry.DetectorErrorModelDecoder.decode": [
+      "flagquantum.qec.registry",
+      "DetectorErrorModelDecoder.decode"
+    ],
+    "flagquantum.qec.registry.GraphlikeDetectorErrorModelDecoder": [
+      "flagquantum.qec.registry",
+      "GraphlikeDetectorErrorModelDecoder"
+    ],
+    "flagquantum.qec.registry.GraphlikeDetectorErrorModelDecoder.graph": [
+      "flagquantum.qec.registry",
+      "GraphlikeDetectorErrorModelDecoder.graph"
+    ],
+    "flagquantum.qec.registry._DecoderT": [
+      "flagquantum.qec.registry",
+      "_DecoderT"
+    ],
+    "flagquantum.qec.registry._declares_a_graph_carrier": [
+      "flagquantum.qec.registry",
+      "_declares_a_graph_carrier"
+    ],
+    "flagquantum.qec.registry._register_windowed_decoder": [
+      "flagquantum.qec.registry",
+      "_register_windowed_decoder"
+    ],
+    "flagquantum.qec.registry._takes_a_graph": [
+      "flagquantum.qec.registry",
+      "_takes_a_graph"
+    ],
+    "flagquantum.qec.registry.decoder_names": [
+      "flagquantum.qec.registry",
+      "decoder_names"
+    ],
+    "flagquantum.qec.registry.get_decoder": [
+      "flagquantum.qec.registry",
+      "get_decoder"
+    ],
+    "flagquantum.qec.registry.register_decoder": [
+      "flagquantum.qec.registry",
+      "register_decoder"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecodeResult": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecodeResult"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecodeResult.__delattr__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecodeResult.__delattr__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecodeResult.__eq__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecodeResult.__eq__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecodeResult.__hash__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecodeResult.__hash__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecodeResult.__init__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecodeResult.__init__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecodeResult.__post_init__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecodeResult.__post_init__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecodeResult.__repr__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecodeResult.__repr__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecodeResult.__setattr__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecodeResult.__setattr__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.__init__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.__init__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder._commit": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder._commit"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder._events": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder._events"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder._feed": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder._feed"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder._record": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder._record"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder._release_layers": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder._release_layers"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder._selected": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder._selected"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.chunks": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.chunks"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.decode": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.decode"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.decode_round": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.decode_round"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.model": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.model"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.num_windows": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.num_windows"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.reset_stream": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.reset_stream"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.spec": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.spec"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowDecoder.windows_decoded": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowDecoder.windows_decoded"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.__delattr__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.__delattr__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.__eq__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.__eq__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.__hash__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.__hash__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.__init__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.__init__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.__post_init__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.__post_init__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.__repr__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.__repr__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.__setattr__": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.__setattr__"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.decode": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.decode"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.from_detector_error_model": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.from_detector_error_model"
+    ],
+    "flagquantum.qec.sliding_window.SlidingWindowMatchingDecoder.mechanism_span": [
+      "flagquantum.qec.sliding_window",
+      "SlidingWindowMatchingDecoder.mechanism_span"
+    ],
+    "flagquantum.qec.sliding_window._mechanism_span": [
+      "flagquantum.qec.sliding_window",
+      "_mechanism_span"
+    ],
+    "flagquantum.qec.sliding_window._ordering_key": [
+      "flagquantum.qec.sliding_window",
+      "_ordering_key"
+    ],
+    "flagquantum.qec.sliding_window._projected_columns": [
+      "flagquantum.qec.sliding_window",
+      "_projected_columns"
+    ],
+    "flagquantum.qec.sliding_window._round_sequence": [
+      "flagquantum.qec.sliding_window",
+      "_round_sequence"
+    ],
+    "flagquantum.qec.sliding_window._rounds_of": [
+      "flagquantum.qec.sliding_window",
+      "_rounds_of"
+    ],
+    "flagquantum.qec.sliding_window._seam_width": [
+      "flagquantum.qec.sliding_window",
+      "_seam_width"
+    ],
+    "flagquantum.qec.sliding_window._window_columns": [
+      "flagquantum.qec.sliding_window",
+      "_window_columns"
+    ],
+    "flagquantum.qec.sliding_window._window_graph": [
+      "flagquantum.qec.sliding_window",
+      "_window_graph"
+    ],
+    "flagquantum.qec.sliding_window.dem_chunks_to_d_sparse": [
+      "flagquantum.qec.sliding_window",
+      "dem_chunks_to_d_sparse"
+    ],
+    "flagquantum.qec.sliding_window.dem_chunks_to_o_sparse": [
+      "flagquantum.qec.sliding_window",
+      "dem_chunks_to_o_sparse"
+    ],
+    "flagquantum.qec.sliding_window.dem_chunks_to_pcm": [
+      "flagquantum.qec.sliding_window",
+      "dem_chunks_to_pcm"
+    ]
+  },
+  "namespaces": {
+    "adapters": [
+      "Any",
+      "CapabilityError",
+      "DecodingGraph",
+      "DecodingGraphEdge",
+      "DetectorErrorModel",
+      "Iterable",
+      "MatchingDecodeResult",
+      "MatchingDependencyError",
+      "ModuleType",
+      "PyMatchingDecoder",
+      "_BOUNDARY",
+      "_EXTRA_NAME",
+      "_defects",
+      "_pymatching",
+      "_translate",
+      "dataclass",
+      "field",
+      "import_module"
+    ],
+    "belief_propagation": [
+      "BeliefPropagationDecodeResult",
+      "BeliefPropagationDecoder",
+      "CapabilityError",
+      "DecodingGraph",
+      "DemError",
+      "DetectorErrorModel",
+      "Integral",
+      "Iterable",
+      "Real",
+      "_CLIP",
+      "_DEFAULT_MAX_ITERATIONS",
+      "_FactorGraph",
+      "_TANH_LIMIT",
+      "_check_messages",
+      "_clip",
+      "_count",
+      "_decision",
+      "_explains",
+      "_factor_graph",
+      "_flips",
+      "_model_from_graph",
+      "_normalized_indices",
+      "_ordered_statistics",
+      "_pivot_mask",
+      "_posteriors",
+      "_syndrome_mask",
+      "_variable_messages",
+      "_weight",
+      "dataclass",
+      "math"
+    ],
+    "bposd": [
+      "BeliefPropagationOsdDecodeResult",
+      "BeliefPropagationOsdDecoder",
+      "CapabilityError",
+      "DetectorErrorModel",
+      "Integral",
+      "Iterable",
+      "Real",
+      "_DEFAULT_ITERATIONS",
+      "_DEFAULT_SCALING",
+      "_INFINITY",
+      "_MESSAGE_LIMIT",
+      "_MINIMUM_PROBABILITY",
+      "_indices",
+      "_syndrome",
+      "dataclass",
+      "field",
+      "math",
+      "torch"
+    ],
+    "decoders": [
+      "Correction",
+      "DecodeResult",
+      "Decoder",
+      "PauliFrame",
+      "Protocol",
+      "RepetitionLookupDecoder",
+      "RepetitionStreamingLookupDecoder",
+      "RepetitionTemporalDecoder",
+      "Sequence",
+      "StreamingDecoder",
+      "SyndromeRound",
+      "_repetition_wire",
+      "_validate_repetition_history",
+      "dataclass",
+      "runtime_checkable"
+    ],
+    "matching": [
+      "CapabilityError",
+      "DecodingGraph",
+      "DecodingGraphEdge",
+      "DetectorErrorModel",
+      "Integral",
+      "Iterable",
+      "MatchingDecodeResult",
+      "MinimumWeightMatchingDecoder",
+      "Real",
+      "_BOUNDARY_PARTNER",
+      "_DEFAULT_DEFECT_BUDGET",
+      "_SearchTree",
+      "_boundary_weights",
+      "_defects",
+      "_detector_adjacency",
+      "_pair_weights",
+      "_pairing",
+      "_search",
+      "_toggle",
+      "dataclass",
+      "heapq",
+      "math"
+    ],
+    "registry": [
+      "AUTHORITY_NAME",
+      "Any",
+      "BELIEF_PROPAGATION_NAME",
+      "BELIEF_PROPAGATION_OSD_NAME",
+      "BeliefPropagationDecoder",
+      "BeliefPropagationOsdDecoder",
+      "CROSS_CHECK_NAME",
+      "Callable",
+      "CapabilityError",
+      "DecodingGraph",
+      "DetectorErrorModel",
+      "DetectorErrorModelDecodeResult",
+      "DetectorErrorModelDecoder",
+      "GraphlikeDetectorErrorModelDecoder",
+      "Iterable",
+      "MinimumWeightMatchingDecoder",
+      "Protocol",
+      "PyMatchingDecoder",
+      "SLIDING_WINDOW_NAME",
+      "TypeVar",
+      "_DECODERS",
+      "_DecoderT",
+      "_declares_a_graph_carrier",
+      "_register_windowed_decoder",
+      "_takes_a_graph",
+      "decoder_names",
+      "get_decoder",
+      "inspect",
+      "register_decoder",
+      "runtime_checkable"
+    ],
+    "sliding_window": [
+      "Any",
+      "CapabilityError",
+      "DecodingGraph",
+      "DecodingGraphEdge",
+      "DemChunk",
+      "DemChunksSpec",
+      "DetectorErrorModel",
+      "Integral",
+      "Iterable",
+      "MatchingDecodeResult",
+      "MinimumWeightMatchingDecoder",
+      "SeamId",
+      "Sequence",
+      "SlidingWindowDecodeResult",
+      "SlidingWindowDecoder",
+      "SlidingWindowMatchingDecoder",
+      "_DEFAULT_DEFECT_BUDGET",
+      "_defects",
+      "_mechanism_span",
+      "_ordering_key",
+      "_projected_columns",
+      "_round_sequence",
+      "_rounds_of",
+      "_seam_width",
+      "_window_columns",
+      "_window_graph",
+      "dataclass",
+      "dem_chunks_from_spec",
+      "dem_chunks_to_d_sparse",
+      "dem_chunks_to_o_sparse",
+      "dem_chunks_to_pcm",
+      "dem_close_all",
+      "get_decoder",
+      "math"
+    ]
+  }
+}

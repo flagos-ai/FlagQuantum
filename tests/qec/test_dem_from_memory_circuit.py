@@ -8,7 +8,6 @@ from dataclasses import dataclass, replace
 import pytest
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec import dem_construction as dem_module
 from flagquantum.qec.circuit import (
     Detector,
     DetectorLayout,
@@ -25,6 +24,7 @@ from flagquantum.qec.codes import (
     ancilla_bands,
 )
 from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.dem import construction as dem_module
 from flagquantum.qec.dem_construction import (
     _forced_signature,
     _inject_data_flip,

@@ -71,7 +71,11 @@ def _labels(job: dict[str, object]) -> tuple[str, ...]:
     if isinstance(value, str):
         if any(
             label in value
-            for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+            for label in (
+                "flagquantum-a100-cpu",
+                "flagquantum-cpu-general",
+                "flagcicd-r300-",
+            )
         ):
             return ("self-hosted", "flagquantum-a100-cpu")
         return (value,)

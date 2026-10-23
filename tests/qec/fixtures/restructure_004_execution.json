@@ -1,0 +1,4809 @@
+{
+  "stim_version": "1.16.0",
+  "declarations": {
+    "repetition:z": {
+      "memory": {
+        "code": {
+          "distance": 3
+        },
+        "rounds": 2,
+        "source": "def memory_experiment(rounds):\n    last = False\n    for round_index in range(rounds):\n        qp.CNOT(wires=[0, 3])\n        qp.CNOT(wires=[1, 3])\n        last = qp.measure(wires=3)\n        qp.reset(wires=3)\n        qp.CNOT(wires=[1, 4])\n        qp.CNOT(wires=[2, 4])\n        last = qp.measure(wires=4)\n        qp.reset(wires=4)\n    return last\n",
+        "detectors": {
+          "detectors": [
+            {
+              "index": 0,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 3
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 4
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 3
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 3
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 4
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 4
+                }
+              ]
+            },
+            {
+              "index": 4,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 3
+                },
+                {
+                  "round_index": null,
+                  "qubit": 0
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                }
+              ]
+            },
+            {
+              "index": 5,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 4
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                }
+              ]
+            }
+          ]
+        },
+        "observables": {
+          "observables": [
+            {
+              "index": 0,
+              "pauli": {
+                "x_qubits": [],
+                "z_qubits": [0, 1, 2]
+              },
+              "measurement_parity": [
+                {
+                  "round_index": null,
+                  "qubit": 0
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                }
+              ]
+            }
+          ]
+        },
+        "x_readout_qubits": []
+      },
+      "context": {
+        "dem": {
+          "num_detectors": 6,
+          "num_observables": 1,
+          "errors": [
+            {
+              "probability": 0.125,
+              "detectors": [0],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [0, 1],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [0, 2],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [1],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [1, 3],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [2],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [2, 3],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [2, 4],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [3, 5],
+              "observables": [],
+              "error_id": null
+            }
+          ]
+        },
+        "measurement_to_detectors": {
+          "num_measurements": 7,
+          "rows": [
+            [0],
+            [1],
+            [0, 2],
+            [1, 3],
+            [2, 4, 5],
+            [3, 5, 6]
+          ]
+        },
+        "measurement_to_observables": {
+          "num_measurements": 7,
+          "rows": [
+            [4, 5, 6]
+          ]
+        }
+      },
+      "forced_source": "def memory_experiment(rounds):\n    last = False\n    for round_index in range(rounds):\n        if round_index == 1:\n            qp.X(wires=0)\n        qp.CNOT(wires=[0, 3])\n        qp.CNOT(wires=[1, 3])\n        last = qp.measure(wires=3)\n        qp.reset(wires=3)\n        qp.CNOT(wires=[1, 4])\n        qp.CNOT(wires=[2, 4])\n        last = qp.measure(wires=4)\n        qp.reset(wires=4)\n    return last\n",
+      "forced_signature": [
+        [2],
+        [0]
+      ],
+      "matrix_dem": "error(0.125) D0 D1 D2 D3 L0\nerror(0.25) D0 D2\nerror(0.125) D0 D2 L0\nerror(0.25) D1 D3\nerror(0.125) D1 D3 L0\nerror(0.25) D2\nerror(0.125) D2 L0\nerror(0.125) D2 D3 L0\nerror(0.25) D3\nerror(0.125) D3 L0\ndetector D0\ndetector D1\ndetector D2\ndetector D3\nlogical_observable L0\n",
+      "circuit_dem": "error(0.125) D0 L0\nerror(0.125) D0 D1 L0\nerror(0.25) D0 D2\nerror(0.125) D1 L0\nerror(0.25) D1 D3\nerror(0.125) D2 L0\nerror(0.125) D2 D3 L0\nerror(0.25) D2 D4\nerror(0.125) D3 L0\nerror(0.25) D3 D5\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\nlogical_observable L0\n"
+    },
+    "surface:z": {
+      "memory": {
+        "code": {
+          "distance": 3
+        },
+        "rounds": 2,
+        "source": "def memory_experiment(rounds):\n    last = False\n    for round_index in range(rounds):\n        qp.CNOT(wires=[3, 9])\n        qp.CNOT(wires=[6, 9])\n        last = qp.measure(wires=9)\n        qp.reset(wires=9)\n        qp.H(wires=10)\n        qp.CNOT(wires=[10, 0])\n        qp.CNOT(wires=[10, 1])\n        qp.H(wires=10)\n        last = qp.measure(wires=10)\n        qp.reset(wires=10)\n        qp.CNOT(wires=[0, 11])\n        qp.CNOT(wires=[1, 11])\n        qp.CNOT(wires=[3, 11])\n        qp.CNOT(wires=[4, 11])\n        last = qp.measure(wires=11)\n        qp.reset(wires=11)\n        qp.H(wires=12)\n        qp.CNOT(wires=[12, 3])\n        qp.CNOT(wires=[12, 4])\n        qp.CNOT(wires=[12, 6])\n        qp.CNOT(wires=[12, 7])\n        qp.H(wires=12)\n        last = qp.measure(wires=12)\n        qp.reset(wires=12)\n        qp.H(wires=13)\n        qp.CNOT(wires=[13, 1])\n        qp.CNOT(wires=[13, 2])\n        qp.CNOT(wires=[13, 4])\n        qp.CNOT(wires=[13, 5])\n        qp.H(wires=13)\n        last = qp.measure(wires=13)\n        qp.reset(wires=13)\n        qp.CNOT(wires=[4, 14])\n        qp.CNOT(wires=[5, 14])\n        qp.CNOT(wires=[7, 14])\n        qp.CNOT(wires=[8, 14])\n        last = qp.measure(wires=14)\n        qp.reset(wires=14)\n        qp.H(wires=15)\n        qp.CNOT(wires=[15, 7])\n        qp.CNOT(wires=[15, 8])\n        qp.H(wires=15)\n        last = qp.measure(wires=15)\n        qp.reset(wires=15)\n        qp.CNOT(wires=[2, 16])\n        qp.CNOT(wires=[5, 16])\n        last = qp.measure(wires=16)\n        qp.reset(wires=16)\n    return last\n",
+        "detectors": {
+          "detectors": [
+            {
+              "index": 0,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 9
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 11
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 14
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 16
+                }
+              ]
+            },
+            {
+              "index": 4,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 9
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 9
+                }
+              ]
+            },
+            {
+              "index": 5,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 10
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 10
+                }
+              ]
+            },
+            {
+              "index": 6,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 11
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 11
+                }
+              ]
+            },
+            {
+              "index": 7,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 12
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 12
+                }
+              ]
+            },
+            {
+              "index": 8,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 13
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 13
+                }
+              ]
+            },
+            {
+              "index": 9,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 14
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 14
+                }
+              ]
+            },
+            {
+              "index": 10,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 15
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 15
+                }
+              ]
+            },
+            {
+              "index": 11,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 16
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 16
+                }
+              ]
+            },
+            {
+              "index": 12,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 9
+                },
+                {
+                  "round_index": null,
+                  "qubit": 3
+                },
+                {
+                  "round_index": null,
+                  "qubit": 6
+                }
+              ]
+            },
+            {
+              "index": 13,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 11
+                },
+                {
+                  "round_index": null,
+                  "qubit": 0
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                },
+                {
+                  "round_index": null,
+                  "qubit": 3
+                },
+                {
+                  "round_index": null,
+                  "qubit": 4
+                }
+              ]
+            },
+            {
+              "index": 14,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 14
+                },
+                {
+                  "round_index": null,
+                  "qubit": 4
+                },
+                {
+                  "round_index": null,
+                  "qubit": 5
+                },
+                {
+                  "round_index": null,
+                  "qubit": 7
+                },
+                {
+                  "round_index": null,
+                  "qubit": 8
+                }
+              ]
+            },
+            {
+              "index": 15,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 16
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                },
+                {
+                  "round_index": null,
+                  "qubit": 5
+                }
+              ]
+            }
+          ]
+        },
+        "observables": {
+          "observables": [
+            {
+              "index": 0,
+              "pauli": {
+                "x_qubits": [],
+                "z_qubits": [0, 1, 2]
+              },
+              "measurement_parity": [
+                {
+                  "round_index": null,
+                  "qubit": 0
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                }
+              ]
+            }
+          ]
+        },
+        "x_readout_qubits": []
+      },
+      "context": {
+        "dem": {
+          "num_detectors": 16,
+          "num_observables": 1,
+          "errors": [
+            {
+              "probability": 0.125,
+              "detectors": [0],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [0, 1],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [0, 4],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.21875,
+              "detectors": [1],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [1, 2],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [1, 6],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.21875,
+              "detectors": [2],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [2, 3],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [2, 9],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [3, 11],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [4],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [4, 6],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [4, 12],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.375,
+              "detectors": [5],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.21875,
+              "detectors": [6],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [6, 9],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [6, 13],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.375,
+              "detectors": [7],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.375,
+              "detectors": [8],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.21875,
+              "detectors": [9],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [9, 11],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [9, 14],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.375,
+              "detectors": [10],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [11],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [11, 15],
+              "observables": [],
+              "error_id": null
+            }
+          ]
+        },
+        "measurement_to_detectors": {
+          "num_measurements": 25,
+          "rows": [
+            [0],
+            [2],
+            [5],
+            [7],
+            [0, 8],
+            [1, 9],
+            [2, 10],
+            [3, 11],
+            [4, 12],
+            [5, 13],
+            [6, 14],
+            [7, 15],
+            [8, 19, 22],
+            [10, 16, 17, 19, 20],
+            [13, 20, 21, 23, 24],
+            [15, 18, 21]
+          ]
+        },
+        "measurement_to_observables": {
+          "num_measurements": 25,
+          "rows": [
+            [16, 17, 18]
+          ]
+        }
+      },
+      "forced_source": "def memory_experiment(rounds):\n    last = False\n    for round_index in range(rounds):\n        if round_index == 1:\n            qp.X(wires=0)\n        qp.CNOT(wires=[3, 9])\n        qp.CNOT(wires=[6, 9])\n        last = qp.measure(wires=9)\n        qp.reset(wires=9)\n        qp.H(wires=10)\n        qp.CNOT(wires=[10, 0])\n        qp.CNOT(wires=[10, 1])\n        qp.H(wires=10)\n        last = qp.measure(wires=10)\n        qp.reset(wires=10)\n        qp.CNOT(wires=[0, 11])\n        qp.CNOT(wires=[1, 11])\n        qp.CNOT(wires=[3, 11])\n        qp.CNOT(wires=[4, 11])\n        last = qp.measure(wires=11)\n        qp.reset(wires=11)\n        qp.H(wires=12)\n        qp.CNOT(wires=[12, 3])\n        qp.CNOT(wires=[12, 4])\n        qp.CNOT(wires=[12, 6])\n        qp.CNOT(wires=[12, 7])\n        qp.H(wires=12)\n        last = qp.measure(wires=12)\n        qp.reset(wires=12)\n        qp.H(wires=13)\n        qp.CNOT(wires=[13, 1])\n        qp.CNOT(wires=[13, 2])\n        qp.CNOT(wires=[13, 4])\n        qp.CNOT(wires=[13, 5])\n        qp.H(wires=13)\n        last = qp.measure(wires=13)\n        qp.reset(wires=13)\n        qp.CNOT(wires=[4, 14])\n        qp.CNOT(wires=[5, 14])\n        qp.CNOT(wires=[7, 14])\n        qp.CNOT(wires=[8, 14])\n        last = qp.measure(wires=14)\n        qp.reset(wires=14)\n        qp.H(wires=15)\n        qp.CNOT(wires=[15, 7])\n        qp.CNOT(wires=[15, 8])\n        qp.H(wires=15)\n        last = qp.measure(wires=15)\n        qp.reset(wires=15)\n        qp.CNOT(wires=[2, 16])\n        qp.CNOT(wires=[5, 16])\n        last = qp.measure(wires=16)\n        qp.reset(wires=16)\n    return last\n",
+      "forced_signature": [
+        [6],
+        [0]
+      ],
+      "matrix_dem": "error(0.125) D0 D1 D8 D9\nerror(0.3125) D0 D8\nerror(0.125) D1 D2 D9 D10\nerror(0.25) D1 D9\nerror(0.21875) D1 D9 L0\nerror(0.125) D2 D3 D10 D11\nerror(0.359375) D2 D10\nerror(0.25) D3 D11\nerror(0.125) D3 D11 L0\nerror(0.25) D4 D12\nerror(0.25) D5 D13\nerror(0.25) D6 D14\nerror(0.25) D7 D15\nerror(0.3125) D8\nerror(0.125) D8 D9\nerror(0.25) D9\nerror(0.21875) D9 L0\nerror(0.125) D9 D10\nerror(0.359375) D10\nerror(0.125) D10 D11\nerror(0.25) D11\nerror(0.125) D11 L0\nerror(0.25) D12\nerror(0.25) D13\nerror(0.25) D14\nerror(0.25) D15\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\ndetector D6\ndetector D7\ndetector D8\ndetector D9\ndetector D10\ndetector D11\ndetector D12\ndetector D13\ndetector D14\ndetector D15\nlogical_observable L0\n",
+      "circuit_dem": "error(0.125) D0\nerror(0.125) D0 D1\nerror(0.25) D0 D4\nerror(0.21875) D1 L0\nerror(0.125) D1 D2\nerror(0.25) D1 D6\nerror(0.21875) D2\nerror(0.125) D2 D3\nerror(0.25) D2 D9\nerror(0.125) D3 L0\nerror(0.25) D3 D11\nerror(0.125) D4\nerror(0.125) D4 D6\nerror(0.25) D4 D12\nerror(0.375) D5\nerror(0.21875) D6 L0\nerror(0.125) D6 D9\nerror(0.25) D6 D13\nerror(0.375) D7\nerror(0.375) D8\nerror(0.21875) D9\nerror(0.125) D9 D11\nerror(0.25) D9 D14\nerror(0.375) D10\nerror(0.125) D11 L0\nerror(0.25) D11 D15\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\ndetector D6\ndetector D7\ndetector D8\ndetector D9\ndetector D10\ndetector D11\ndetector D12\ndetector D13\ndetector D14\ndetector D15\nlogical_observable L0\n"
+    },
+    "steane:x": {
+      "memory": {
+        "code": {},
+        "rounds": 2,
+        "source": "def memory_experiment(rounds):\n    qp.H(wires=0)\n    qp.H(wires=1)\n    qp.H(wires=2)\n    qp.H(wires=3)\n    qp.H(wires=4)\n    qp.H(wires=5)\n    qp.H(wires=6)\n    last = False\n    for round_index in range(rounds):\n        qp.CNOT(wires=[3, 7])\n        qp.CNOT(wires=[4, 7])\n        qp.CNOT(wires=[5, 7])\n        qp.CNOT(wires=[6, 7])\n        last = qp.measure(wires=7)\n        qp.reset(wires=7)\n        qp.CNOT(wires=[1, 8])\n        qp.CNOT(wires=[2, 8])\n        qp.CNOT(wires=[5, 8])\n        qp.CNOT(wires=[6, 8])\n        last = qp.measure(wires=8)\n        qp.reset(wires=8)\n        qp.CNOT(wires=[0, 9])\n        qp.CNOT(wires=[2, 9])\n        qp.CNOT(wires=[4, 9])\n        qp.CNOT(wires=[6, 9])\n        last = qp.measure(wires=9)\n        qp.reset(wires=9)\n        qp.H(wires=10)\n        qp.CNOT(wires=[10, 3])\n        qp.CNOT(wires=[10, 4])\n        qp.CNOT(wires=[10, 5])\n        qp.CNOT(wires=[10, 6])\n        qp.H(wires=10)\n        last = qp.measure(wires=10)\n        qp.reset(wires=10)\n        qp.H(wires=11)\n        qp.CNOT(wires=[11, 1])\n        qp.CNOT(wires=[11, 2])\n        qp.CNOT(wires=[11, 5])\n        qp.CNOT(wires=[11, 6])\n        qp.H(wires=11)\n        last = qp.measure(wires=11)\n        qp.reset(wires=11)\n        qp.H(wires=12)\n        qp.CNOT(wires=[12, 0])\n        qp.CNOT(wires=[12, 2])\n        qp.CNOT(wires=[12, 4])\n        qp.CNOT(wires=[12, 6])\n        qp.H(wires=12)\n        last = qp.measure(wires=12)\n        qp.reset(wires=12)\n    qp.H(wires=0)\n    qp.H(wires=1)\n    qp.H(wires=2)\n    qp.H(wires=3)\n    qp.H(wires=4)\n    qp.H(wires=5)\n    qp.H(wires=6)\n    return last\n",
+        "detectors": {
+          "detectors": [
+            {
+              "index": 0,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 10
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 11
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 12
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 7
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 7
+                }
+              ]
+            },
+            {
+              "index": 4,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 8
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 8
+                }
+              ]
+            },
+            {
+              "index": 5,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 9
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 9
+                }
+              ]
+            },
+            {
+              "index": 6,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 10
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 10
+                }
+              ]
+            },
+            {
+              "index": 7,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 11
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 11
+                }
+              ]
+            },
+            {
+              "index": 8,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 12
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 12
+                }
+              ]
+            },
+            {
+              "index": 9,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 10
+                },
+                {
+                  "round_index": null,
+                  "qubit": 3
+                },
+                {
+                  "round_index": null,
+                  "qubit": 4
+                },
+                {
+                  "round_index": null,
+                  "qubit": 5
+                },
+                {
+                  "round_index": null,
+                  "qubit": 6
+                }
+              ]
+            },
+            {
+              "index": 10,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 11
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                },
+                {
+                  "round_index": null,
+                  "qubit": 5
+                },
+                {
+                  "round_index": null,
+                  "qubit": 6
+                }
+              ]
+            },
+            {
+              "index": 11,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 12
+                },
+                {
+                  "round_index": null,
+                  "qubit": 0
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                },
+                {
+                  "round_index": null,
+                  "qubit": 4
+                },
+                {
+                  "round_index": null,
+                  "qubit": 6
+                }
+              ]
+            }
+          ]
+        },
+        "observables": {
+          "observables": [
+            {
+              "index": 0,
+              "pauli": {
+                "x_qubits": [0, 1, 2],
+                "z_qubits": []
+              },
+              "measurement_parity": [
+                {
+                  "round_index": null,
+                  "qubit": 0
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                }
+              ]
+            }
+          ]
+        },
+        "x_readout_qubits": [0, 1, 2, 3, 4, 5, 6]
+      },
+      "context": {
+        "dem": {
+          "num_detectors": 12,
+          "num_observables": 1,
+          "errors": [
+            {
+              "probability": 0.25,
+              "detectors": [0, 6],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [1, 7],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [2, 8],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.40625,
+              "detectors": [3],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3, 4],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3, 4, 5],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3, 5],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.40625,
+              "detectors": [4],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [4, 5],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.40625,
+              "detectors": [5],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [6, 9],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [7, 10],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [8, 11],
+              "observables": [],
+              "error_id": null
+            }
+          ]
+        },
+        "measurement_to_detectors": {
+          "num_measurements": 19,
+          "rows": [
+            [3],
+            [4],
+            [5],
+            [0, 6],
+            [1, 7],
+            [2, 8],
+            [3, 9],
+            [4, 10],
+            [5, 11],
+            [9, 15, 16, 17, 18],
+            [10, 13, 14, 17, 18],
+            [11, 12, 14, 16, 18]
+          ]
+        },
+        "measurement_to_observables": {
+          "num_measurements": 19,
+          "rows": [
+            [12, 13, 14]
+          ]
+        }
+      },
+      "forced_source": "def memory_experiment(rounds):\n    qp.H(wires=0)\n    qp.H(wires=1)\n    qp.H(wires=2)\n    qp.H(wires=3)\n    qp.H(wires=4)\n    qp.H(wires=5)\n    qp.H(wires=6)\n    last = False\n    for round_index in range(rounds):\n        if round_index == 1:\n            qp.X(wires=0)\n        qp.CNOT(wires=[3, 7])\n        qp.CNOT(wires=[4, 7])\n        qp.CNOT(wires=[5, 7])\n        qp.CNOT(wires=[6, 7])\n        last = qp.measure(wires=7)\n        qp.reset(wires=7)\n        qp.CNOT(wires=[1, 8])\n        qp.CNOT(wires=[2, 8])\n        qp.CNOT(wires=[5, 8])\n        qp.CNOT(wires=[6, 8])\n        last = qp.measure(wires=8)\n        qp.reset(wires=8)\n        qp.CNOT(wires=[0, 9])\n        qp.CNOT(wires=[2, 9])\n        qp.CNOT(wires=[4, 9])\n        qp.CNOT(wires=[6, 9])\n        last = qp.measure(wires=9)\n        qp.reset(wires=9)\n        qp.H(wires=10)\n        qp.CNOT(wires=[10, 3])\n        qp.CNOT(wires=[10, 4])\n        qp.CNOT(wires=[10, 5])\n        qp.CNOT(wires=[10, 6])\n        qp.H(wires=10)\n        last = qp.measure(wires=10)\n        qp.reset(wires=10)\n        qp.H(wires=11)\n        qp.CNOT(wires=[11, 1])\n        qp.CNOT(wires=[11, 2])\n        qp.CNOT(wires=[11, 5])\n        qp.CNOT(wires=[11, 6])\n        qp.H(wires=11)\n        last = qp.measure(wires=11)\n        qp.reset(wires=11)\n        qp.H(wires=12)\n        qp.CNOT(wires=[12, 0])\n        qp.CNOT(wires=[12, 2])\n        qp.CNOT(wires=[12, 4])\n        qp.CNOT(wires=[12, 6])\n        qp.H(wires=12)\n        last = qp.measure(wires=12)\n        qp.reset(wires=12)\n    qp.H(wires=0)\n    qp.H(wires=1)\n    qp.H(wires=2)\n    qp.H(wires=3)\n    qp.H(wires=4)\n    qp.H(wires=5)\n    qp.H(wires=6)\n    return last\n",
+      "forced_signature": [
+        [5],
+        []
+      ],
+      "matrix_dem": "error(0.125) D0 D1 D2 D6 D7 D8\nerror(0.125) D0 D1 D6 D7\nerror(0.125) D0 D2 D6 D8\nerror(0.3125) D0 D6\nerror(0.125) D1 D2 D7 D8 L0\nerror(0.25) D1 D7\nerror(0.125) D1 D7 L0\nerror(0.25) D2 D8\nerror(0.125) D2 D8 L0\nerror(0.25) D3 D9\nerror(0.25) D4 D10\nerror(0.25) D5 D11\nerror(0.3125) D6\nerror(0.125) D6 D7\nerror(0.125) D6 D7 D8\nerror(0.125) D6 D8\nerror(0.25) D7\nerror(0.125) D7 L0\nerror(0.125) D7 D8 L0\nerror(0.25) D8\nerror(0.125) D8 L0\nerror(0.25) D9\nerror(0.25) D10\nerror(0.25) D11\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\ndetector D6\ndetector D7\ndetector D8\ndetector D9\ndetector D10\ndetector D11\nlogical_observable L0\nlogical_observable L1\n",
+      "circuit_dem": "error(0.25) D0 D6\nerror(0.25) D1 D7\nerror(0.25) D2 D8\nerror(0.40625) D3\nerror(0.125) D3 D4\nerror(0.125) D3 D4 D5\nerror(0.125) D3 D5\nerror(0.40625) D4\nerror(0.125) D4 D5\nerror(0.40625) D5\nerror(0.25) D6 D9\nerror(0.25) D7 D10\nerror(0.25) D8 D11\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\ndetector D6\ndetector D7\ndetector D8\ndetector D9\ndetector D10\ndetector D11\nlogical_observable L0\n"
+    },
+    "steane:z": {
+      "memory": {
+        "code": {},
+        "rounds": 2,
+        "source": "def memory_experiment(rounds):\n    last = False\n    for round_index in range(rounds):\n        qp.CNOT(wires=[3, 7])\n        qp.CNOT(wires=[4, 7])\n        qp.CNOT(wires=[5, 7])\n        qp.CNOT(wires=[6, 7])\n        last = qp.measure(wires=7)\n        qp.reset(wires=7)\n        qp.CNOT(wires=[1, 8])\n        qp.CNOT(wires=[2, 8])\n        qp.CNOT(wires=[5, 8])\n        qp.CNOT(wires=[6, 8])\n        last = qp.measure(wires=8)\n        qp.reset(wires=8)\n        qp.CNOT(wires=[0, 9])\n        qp.CNOT(wires=[2, 9])\n        qp.CNOT(wires=[4, 9])\n        qp.CNOT(wires=[6, 9])\n        last = qp.measure(wires=9)\n        qp.reset(wires=9)\n        qp.H(wires=10)\n        qp.CNOT(wires=[10, 3])\n        qp.CNOT(wires=[10, 4])\n        qp.CNOT(wires=[10, 5])\n        qp.CNOT(wires=[10, 6])\n        qp.H(wires=10)\n        last = qp.measure(wires=10)\n        qp.reset(wires=10)\n        qp.H(wires=11)\n        qp.CNOT(wires=[11, 1])\n        qp.CNOT(wires=[11, 2])\n        qp.CNOT(wires=[11, 5])\n        qp.CNOT(wires=[11, 6])\n        qp.H(wires=11)\n        last = qp.measure(wires=11)\n        qp.reset(wires=11)\n        qp.H(wires=12)\n        qp.CNOT(wires=[12, 0])\n        qp.CNOT(wires=[12, 2])\n        qp.CNOT(wires=[12, 4])\n        qp.CNOT(wires=[12, 6])\n        qp.H(wires=12)\n        last = qp.measure(wires=12)\n        qp.reset(wires=12)\n    return last\n",
+        "detectors": {
+          "detectors": [
+            {
+              "index": 0,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 7
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 8
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "parity": [
+                {
+                  "round_index": 0,
+                  "qubit": 9
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 7
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 7
+                }
+              ]
+            },
+            {
+              "index": 4,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 8
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 8
+                }
+              ]
+            },
+            {
+              "index": 5,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 9
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 9
+                }
+              ]
+            },
+            {
+              "index": 6,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 10
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 10
+                }
+              ]
+            },
+            {
+              "index": 7,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 11
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 11
+                }
+              ]
+            },
+            {
+              "index": 8,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 12
+                },
+                {
+                  "round_index": 0,
+                  "qubit": 12
+                }
+              ]
+            },
+            {
+              "index": 9,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 7
+                },
+                {
+                  "round_index": null,
+                  "qubit": 3
+                },
+                {
+                  "round_index": null,
+                  "qubit": 4
+                },
+                {
+                  "round_index": null,
+                  "qubit": 5
+                },
+                {
+                  "round_index": null,
+                  "qubit": 6
+                }
+              ]
+            },
+            {
+              "index": 10,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 8
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                },
+                {
+                  "round_index": null,
+                  "qubit": 5
+                },
+                {
+                  "round_index": null,
+                  "qubit": 6
+                }
+              ]
+            },
+            {
+              "index": 11,
+              "parity": [
+                {
+                  "round_index": 1,
+                  "qubit": 9
+                },
+                {
+                  "round_index": null,
+                  "qubit": 0
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                },
+                {
+                  "round_index": null,
+                  "qubit": 4
+                },
+                {
+                  "round_index": null,
+                  "qubit": 6
+                }
+              ]
+            }
+          ]
+        },
+        "observables": {
+          "observables": [
+            {
+              "index": 0,
+              "pauli": {
+                "x_qubits": [],
+                "z_qubits": [0, 1, 2]
+              },
+              "measurement_parity": [
+                {
+                  "round_index": null,
+                  "qubit": 0
+                },
+                {
+                  "round_index": null,
+                  "qubit": 1
+                },
+                {
+                  "round_index": null,
+                  "qubit": 2
+                }
+              ]
+            }
+          ]
+        },
+        "x_readout_qubits": []
+      },
+      "context": {
+        "dem": {
+          "num_detectors": 12,
+          "num_observables": 1,
+          "errors": [
+            {
+              "probability": 0.125,
+              "detectors": [0],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [0, 1],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [0, 1, 2],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [0, 2],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [0, 3],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [1],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [1, 2],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [1, 4],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [2],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [2, 5],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3, 4],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3, 4, 5],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [3, 5],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [3, 9],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [4],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [4, 5],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [4, 10],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.125,
+              "detectors": [5],
+              "observables": [0],
+              "error_id": null
+            },
+            {
+              "probability": 0.25,
+              "detectors": [5, 11],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.375,
+              "detectors": [6],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.375,
+              "detectors": [7],
+              "observables": [],
+              "error_id": null
+            },
+            {
+              "probability": 0.375,
+              "detectors": [8],
+              "observables": [],
+              "error_id": null
+            }
+          ]
+        },
+        "measurement_to_detectors": {
+          "num_measurements": 19,
+          "rows": [
+            [0],
+            [1],
+            [2],
+            [0, 6],
+            [1, 7],
+            [2, 8],
+            [3, 9],
+            [4, 10],
+            [5, 11],
+            [6, 15, 16, 17, 18],
+            [7, 13, 14, 17, 18],
+            [8, 12, 14, 16, 18]
+          ]
+        },
+        "measurement_to_observables": {
+          "num_measurements": 19,
+          "rows": [
+            [12, 13, 14]
+          ]
+        }
+      },
+      "forced_source": "def memory_experiment(rounds):\n    last = False\n    for round_index in range(rounds):\n        if round_index == 1:\n            qp.X(wires=0)\n        qp.CNOT(wires=[3, 7])\n        qp.CNOT(wires=[4, 7])\n        qp.CNOT(wires=[5, 7])\n        qp.CNOT(wires=[6, 7])\n        last = qp.measure(wires=7)\n        qp.reset(wires=7)\n        qp.CNOT(wires=[1, 8])\n        qp.CNOT(wires=[2, 8])\n        qp.CNOT(wires=[5, 8])\n        qp.CNOT(wires=[6, 8])\n        last = qp.measure(wires=8)\n        qp.reset(wires=8)\n        qp.CNOT(wires=[0, 9])\n        qp.CNOT(wires=[2, 9])\n        qp.CNOT(wires=[4, 9])\n        qp.CNOT(wires=[6, 9])\n        last = qp.measure(wires=9)\n        qp.reset(wires=9)\n        qp.H(wires=10)\n        qp.CNOT(wires=[10, 3])\n        qp.CNOT(wires=[10, 4])\n        qp.CNOT(wires=[10, 5])\n        qp.CNOT(wires=[10, 6])\n        qp.H(wires=10)\n        last = qp.measure(wires=10)\n        qp.reset(wires=10)\n        qp.H(wires=11)\n        qp.CNOT(wires=[11, 1])\n        qp.CNOT(wires=[11, 2])\n        qp.CNOT(wires=[11, 5])\n        qp.CNOT(wires=[11, 6])\n        qp.H(wires=11)\n        last = qp.measure(wires=11)\n        qp.reset(wires=11)\n        qp.H(wires=12)\n        qp.CNOT(wires=[12, 0])\n        qp.CNOT(wires=[12, 2])\n        qp.CNOT(wires=[12, 4])\n        qp.CNOT(wires=[12, 6])\n        qp.H(wires=12)\n        last = qp.measure(wires=12)\n        qp.reset(wires=12)\n    return last\n",
+      "forced_signature": [
+        [5],
+        [0]
+      ],
+      "matrix_dem": "error(0.125) D0 D1 D2 D6 D7 D8\nerror(0.125) D0 D1 D6 D7\nerror(0.125) D0 D2 D6 D8\nerror(0.3125) D0 D6\nerror(0.125) D1 D2 D7 D8 L0\nerror(0.25) D1 D7\nerror(0.125) D1 D7 L0\nerror(0.25) D2 D8\nerror(0.125) D2 D8 L0\nerror(0.25) D3 D9\nerror(0.25) D4 D10\nerror(0.25) D5 D11\nerror(0.3125) D6\nerror(0.125) D6 D7\nerror(0.125) D6 D7 D8\nerror(0.125) D6 D8\nerror(0.25) D7\nerror(0.125) D7 L0\nerror(0.125) D7 D8 L0\nerror(0.25) D8\nerror(0.125) D8 L0\nerror(0.25) D9\nerror(0.25) D10\nerror(0.25) D11\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\ndetector D6\ndetector D7\ndetector D8\ndetector D9\ndetector D10\ndetector D11\nlogical_observable L0\nlogical_observable L1\n",
+      "circuit_dem": "error(0.125) D0\nerror(0.125) D0 D1\nerror(0.125) D0 D1 D2\nerror(0.125) D0 D2\nerror(0.25) D0 D3\nerror(0.125) D1 L0\nerror(0.125) D1 D2 L0\nerror(0.25) D1 D4\nerror(0.125) D2 L0\nerror(0.25) D2 D5\nerror(0.125) D3\nerror(0.125) D3 D4\nerror(0.125) D3 D4 D5\nerror(0.125) D3 D5\nerror(0.25) D3 D9\nerror(0.125) D4 L0\nerror(0.125) D4 D5 L0\nerror(0.25) D4 D10\nerror(0.125) D5 L0\nerror(0.25) D5 D11\nerror(0.375) D6\nerror(0.375) D7\nerror(0.375) D8\ndetector D0\ndetector D1\ndetector D2\ndetector D3\ndetector D4\ndetector D5\ndetector D6\ndetector D7\ndetector D8\ndetector D9\ndetector D10\ndetector D11\nlogical_observable L0\n"
+    }
+  },
+  "samples": {
+    "repetition:z:0.0": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 3
+          },
+          {
+            "round_index": 0,
+            "qubit": 4
+          },
+          {
+            "round_index": 1,
+            "qubit": 3
+          },
+          {
+            "round_index": 1,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "repetition:z:0.125": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 3
+          },
+          {
+            "round_index": 0,
+            "qubit": 4
+          },
+          {
+            "round_index": 1,
+            "qubit": 3
+          },
+          {
+            "round_index": 1,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 1, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 1, 0, 0, 1],
+            [1, 1, 1, 1, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 0, 1],
+            [0, 0, 1, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 1, 0, 0],
+            [1, 1, 1, 0, 0, 1, 0]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0],
+            [1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 1, 0],
+            [1, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 1],
+            [0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 0, 1],
+            [1, 1, 0, 1, 0, 1]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [1],
+            [0],
+            [0],
+            [1],
+            [1],
+            [0],
+            [0],
+            [0],
+            [1],
+            [1],
+            [0],
+            [0],
+            [0],
+            [1],
+            [1]
+          ]
+        }
+      }
+    },
+    "repetition:z:1.0": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 3
+          },
+          {
+            "round_index": 0,
+            "qubit": 4
+          },
+          {
+            "round_index": 1,
+            "qubit": 3
+          },
+          {
+            "round_index": 1,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 0]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 1, 1]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "surface:z:0.0": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 0,
+            "qubit": 13
+          },
+          {
+            "round_index": 0,
+            "qubit": 14
+          },
+          {
+            "round_index": 0,
+            "qubit": 15
+          },
+          {
+            "round_index": 0,
+            "qubit": 16
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 13
+          },
+          {
+            "round_index": 1,
+            "qubit": 14
+          },
+          {
+            "round_index": 1,
+            "qubit": 15
+          },
+          {
+            "round_index": 1,
+            "qubit": 16
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          },
+          {
+            "round_index": null,
+            "qubit": 7
+          },
+          {
+            "round_index": null,
+            "qubit": 8
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0],
+            [0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0],
+            [0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+            [0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+            [0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0],
+            [0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0],
+            [0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "surface:z:0.125": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 0,
+            "qubit": 13
+          },
+          {
+            "round_index": 0,
+            "qubit": 14
+          },
+          {
+            "round_index": 0,
+            "qubit": 15
+          },
+          {
+            "round_index": 0,
+            "qubit": 16
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 13
+          },
+          {
+            "round_index": 1,
+            "qubit": 14
+          },
+          {
+            "round_index": 1,
+            "qubit": 15
+          },
+          {
+            "round_index": 1,
+            "qubit": 16
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          },
+          {
+            "round_index": null,
+            "qubit": 7
+          },
+          {
+            "round_index": null,
+            "qubit": 8
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1],
+            [0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0],
+            [0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1],
+            [0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0],
+            [0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0],
+            [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0],
+            [0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0],
+            [0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+            [0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1],
+            [0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [1],
+            [1],
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [1],
+            [1]
+          ]
+        }
+      }
+    },
+    "surface:z:1.0": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 0,
+            "qubit": 13
+          },
+          {
+            "round_index": 0,
+            "qubit": 14
+          },
+          {
+            "round_index": 0,
+            "qubit": 15
+          },
+          {
+            "round_index": 0,
+            "qubit": 16
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 13
+          },
+          {
+            "round_index": 1,
+            "qubit": 14
+          },
+          {
+            "round_index": 1,
+            "qubit": 15
+          },
+          {
+            "round_index": 1,
+            "qubit": 16
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          },
+          {
+            "round_index": null,
+            "qubit": 7
+          },
+          {
+            "round_index": null,
+            "qubit": 8
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0],
+            [1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+            [1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1],
+            [1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0],
+            [1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0],
+            [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+            [1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0],
+            [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0],
+            [1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "steane:x:0.0": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 7
+          },
+          {
+            "round_index": 0,
+            "qubit": 8
+          },
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 7
+          },
+          {
+            "round_index": 1,
+            "qubit": 8
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0],
+            [1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0],
+            [0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+            [0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "steane:x:0.125": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 7
+          },
+          {
+            "round_index": 0,
+            "qubit": 8
+          },
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 7
+          },
+          {
+            "round_index": 1,
+            "qubit": 8
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0],
+            [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+            [0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+            [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1],
+            [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0],
+            [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "steane:x:1.0": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 7
+          },
+          {
+            "round_index": 0,
+            "qubit": 8
+          },
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 7
+          },
+          {
+            "round_index": 1,
+            "qubit": 8
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1],
+            [0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1],
+            [0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0],
+            [0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1],
+            [1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0],
+            [0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0],
+            [1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1],
+            [0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0],
+            [1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0],
+            [1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "steane:z:0.0": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 7
+          },
+          {
+            "round_index": 0,
+            "qubit": 8
+          },
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 7
+          },
+          {
+            "round_index": 1,
+            "qubit": 8
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0],
+            [0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1],
+            [0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+            [0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0],
+            [0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1],
+            [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+            [0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "steane:z:0.125": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 7
+          },
+          {
+            "round_index": 0,
+            "qubit": 8
+          },
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 7
+          },
+          {
+            "round_index": 1,
+            "qubit": 8
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+            [1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0],
+            [0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1],
+            [0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0],
+            [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+            [0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0],
+            [0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1],
+            [1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1],
+            [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+            [0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [1],
+            [0],
+            [0],
+            [0],
+            [1],
+            [0],
+            [0],
+            [0],
+            [1],
+            [0],
+            [0],
+            [0],
+            [1],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "steane:z:1.0": {
+      "measurements": {
+        "refs": [
+          {
+            "round_index": 0,
+            "qubit": 7
+          },
+          {
+            "round_index": 0,
+            "qubit": 8
+          },
+          {
+            "round_index": 0,
+            "qubit": 9
+          },
+          {
+            "round_index": 0,
+            "qubit": 10
+          },
+          {
+            "round_index": 0,
+            "qubit": 11
+          },
+          {
+            "round_index": 0,
+            "qubit": 12
+          },
+          {
+            "round_index": 1,
+            "qubit": 7
+          },
+          {
+            "round_index": 1,
+            "qubit": 8
+          },
+          {
+            "round_index": 1,
+            "qubit": 9
+          },
+          {
+            "round_index": 1,
+            "qubit": 10
+          },
+          {
+            "round_index": 1,
+            "qubit": 11
+          },
+          {
+            "round_index": 1,
+            "qubit": 12
+          },
+          {
+            "round_index": null,
+            "qubit": 0
+          },
+          {
+            "round_index": null,
+            "qubit": 1
+          },
+          {
+            "round_index": null,
+            "qubit": 2
+          },
+          {
+            "round_index": null,
+            "qubit": 3
+          },
+          {
+            "round_index": null,
+            "qubit": 4
+          },
+          {
+            "round_index": null,
+            "qubit": 5
+          },
+          {
+            "round_index": null,
+            "qubit": 6
+          }
+        ],
+        "outcomes": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0],
+            [1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0],
+            [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1],
+            [1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0],
+            [1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+            [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1],
+            [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0],
+            [1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1],
+            [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1]
+          ]
+        }
+      },
+      "dem": {
+        "detectors": {
+          "dtype": "torch.int8",
+          "values": [
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+            [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1]
+          ]
+        },
+        "observables": {
+          "dtype": "torch.int8",
+          "values": [
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0],
+            [0]
+          ]
+        }
+      }
+    },
+    "compiled_lookup": {
+      "rounds": 3,
+      "error_schedule": {
+        "events": [
+          {
+            "round_index": 1,
+            "qubit": 1,
+            "pauli": "x"
+          }
+        ]
+      },
+      "feedback_mode": "compiled_lookup",
+      "shot_records": [
+        {
+          "shot_index": 0,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 1,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 2,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 3,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 4,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 5,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 6,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 7,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        }
+      ],
+      "execution_semantics": "local_statevector_trajectory",
+      "noise_model_identity": null,
+      "bit_flip_events": 0,
+      "readout_errors": 0
+    },
+    "offline_pauli_frame": {
+      "rounds": 3,
+      "error_schedule": {
+        "events": [
+          {
+            "round_index": 1,
+            "qubit": 1,
+            "pauli": "x"
+          }
+        ]
+      },
+      "feedback_mode": "offline_pauli_frame",
+      "shot_records": [
+        {
+          "shot_index": 0,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [1, 1],
+              "detection_events": []
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": 1,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": [1]
+            }
+          },
+          "raw_final_data_bits": [0, 1, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 1,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [1, 1],
+              "detection_events": []
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": 1,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": [1]
+            }
+          },
+          "raw_final_data_bits": [0, 1, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 2,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [1, 1],
+              "detection_events": []
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": 1,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": [1]
+            }
+          },
+          "raw_final_data_bits": [0, 1, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 3,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [1, 1],
+              "detection_events": []
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": 1,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": [1]
+            }
+          },
+          "raw_final_data_bits": [0, 1, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 4,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [1, 1],
+              "detection_events": []
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": 1,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": [1]
+            }
+          },
+          "raw_final_data_bits": [0, 1, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 5,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [1, 1],
+              "detection_events": []
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": 1,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": [1]
+            }
+          },
+          "raw_final_data_bits": [0, 1, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 6,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [1, 1],
+              "detection_events": []
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": 1,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": [1]
+            }
+          },
+          "raw_final_data_bits": [0, 1, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 7,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [1, 1],
+              "detection_events": []
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": 1,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": [1]
+            }
+          },
+          "raw_final_data_bits": [0, 1, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        }
+      ],
+      "execution_semantics": "local_statevector_trajectory",
+      "noise_model_identity": null,
+      "bit_flip_events": 0,
+      "readout_errors": 0
+    },
+    "runtime_decoder": {
+      "rounds": 3,
+      "error_schedule": {
+        "events": [
+          {
+            "round_index": 1,
+            "qubit": 1,
+            "pauli": "x"
+          }
+        ]
+      },
+      "feedback_mode": "runtime_decoder",
+      "shot_records": [
+        {
+          "shot_index": 0,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 1,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 2,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 3,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 4,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 5,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 6,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        },
+        {
+          "shot_index": 7,
+          "syndrome_rounds": [
+            {
+              "round_index": 0,
+              "bits": [0, 0],
+              "detection_events": []
+            },
+            {
+              "round_index": 1,
+              "bits": [1, 1],
+              "detection_events": [
+                {
+                  "round_index": 1,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 1,
+                  "check_index": 1
+                }
+              ]
+            },
+            {
+              "round_index": 2,
+              "bits": [0, 0],
+              "detection_events": [
+                {
+                  "round_index": 2,
+                  "check_index": 0
+                },
+                {
+                  "round_index": 2,
+                  "check_index": 1
+                }
+              ]
+            }
+          ],
+          "executed_feedback": [
+            {
+              "round_index": 0,
+              "qubit": null,
+              "pauli": "x"
+            },
+            {
+              "round_index": 1,
+              "qubit": 1,
+              "pauli": "x"
+            },
+            {
+              "round_index": 2,
+              "qubit": null,
+              "pauli": "x"
+            }
+          ],
+          "decode_result": {
+            "consumed_rounds": 3,
+            "corrections": [
+              {
+                "round_index": 2,
+                "qubit": null,
+                "pauli": "x"
+              }
+            ],
+            "pauli_frame": {
+              "x_qubits": []
+            }
+          },
+          "raw_final_data_bits": [0, 0, 0],
+          "decoded_data_bits": [0, 0, 0],
+          "logical_bit": 0,
+          "logical_failure": false
+        }
+      ],
+      "execution_semantics": "local_statevector_trajectory",
+      "noise_model_identity": null,
+      "bit_flip_events": 0,
+      "readout_errors": 0
+    }
+  },
+  "machine": "arm64"
+}

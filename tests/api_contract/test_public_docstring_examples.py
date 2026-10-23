@@ -2,6 +2,8 @@
 
 import ast
 import doctest
+import importlib
+import inspect
 from pathlib import Path
 
 import pytest
@@ -326,6 +328,42 @@ def test_every_module_with_examples_is_covered() -> None:
     nothing ran it. Adding the module's public entry to ``ENTRIES`` is the fix.
     """
     covered = {entry.__module__ for entry in ENTRIES}
+    # Historical pickle modules differ from physical owners after relocation.
+    # Map only existing executable entries, checking their actual source files.
+    for entry, owner_name in (
+        (build_memory_circuit, "circuits.memory"),
+        (CssCodeMatrices, "codes.matrices"),
+        (CssCode, "codes.css"),
+        (FloquetCode, "codes.floquet"),
+        (SubsystemCode, "codes.subsystem"),
+        (bivariate_bicycle_code, "codes.bicycle"),
+        (qldpc_code, "codes.qldpc"),
+        (reed_muller_code, "codes.reed_muller"),
+        (toric_code, "codes.toric"),
+        (triangular_colour_code, "codes.colour"),
+    ):
+        assert entry in ENTRIES
+        owner = importlib.import_module("flagquantum.qec." + owner_name)
+        assert getattr(owner, entry.__name__) is entry
+        definition = entry.__post_init__ if inspect.isclass(entry) else entry
+        assert (
+            Path(definition.__code__.co_filename).resolve()
+            == Path(owner.__file__).resolve()
+        )
+        covered.add(owner.__name__)
+    entry = BeliefPropagationOsdDecoder.from_detector_error_model
+    assert entry in ENTRIES
+    owner = importlib.import_module("flagquantum.qec.decoders.bposd")
+    assert owner.BeliefPropagationOsdDecoder is BeliefPropagationOsdDecoder
+    assert (
+        entry.__func__
+        is owner.BeliefPropagationOsdDecoder.from_detector_error_model.__func__
+    )
+    assert (
+        Path(entry.__func__.__code__.co_filename).resolve()
+        == Path(owner.__file__).resolve()
+    )
+    covered.add(owner.__name__)
     uncovered = sorted(_modules_with_examples() - covered)
 
     assert uncovered == [], (

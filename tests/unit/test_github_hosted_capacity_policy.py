@@ -95,6 +95,7 @@ BUCKETS = frozenset(
 
 CEILING = 16
 TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}"
+A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
@@ -140,21 +141,12 @@ def _groups(job: dict[str, object]) -> set[str]:
     group = concurrency.get("group")
     if not isinstance(group, str):
         return set()
-    # Evaluate the hosted fallback of the trusted-pool selector. Its A100 arm
-    # has independent groups and does not consume the hosted capacity budget.
+    # Evaluate the hosted fallback of both trusted-pool selectors. Their CPU
+    # arms have independent groups and do not consume hosted capacity.
     group = re.sub(
         r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
         r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
-        r"&& format\('a100-cpu-\{0\}-[a-z0-9-]+-\{1\}', "
-        r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
-        "gh",
-        group,
-    )
-    group = re.sub(
-        r"\$\{\{ \(github\.event_name == 'push' \|\| "
-        r"\(github\.event_name == 'pull_request' && "
-        r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\)\) "
-        r"&& format\('self-hosted-\{0\}-[a-z0-9-]+-\{1\}', "
+        r"&& format\('(?:a100-cpu|self-hosted)-\{0\}-[a-z0-9-]+-\{1\}', "
         r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
         "gh",
         group,
@@ -166,6 +158,8 @@ def _groups(job: dict[str, object]) -> set[str]:
     matrix = strategy.get("matrix") if isinstance(strategy, dict) else None
     assert isinstance(matrix, dict), f"{group}: job declares no matrix"
     values = matrix.get(reference.group(1))
+    if values is None and isinstance(matrix.get("include"), list):
+        values = [row[reference.group(1)] for row in matrix["include"]]
     assert isinstance(
         values, list
     ), f"{group}: matrix {reference.group(1)} is not a list"
@@ -298,16 +292,25 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
         assert definition["env"]["OMP_NUM_THREADS"] == "1"
         assert definition["env"]["PIP_INDEX_URL"] == (
-            "${{ (github.event_name == 'push' || (github.event_name == 'pull_request' && "
-            "github.event.pull_request.head.repo.full_name == github.repository)) && "
+            "${{ (github.event_name != 'pull_request' || "
+            "github.event.pull_request.head.repo.full_name == github.repository) && "
             "'https://pypi.tuna.tsinghua.edu.cn/simple' || 'https://pypi.org/simple' }}"
         )
         commands = "\n".join(str(step.get("run", "")) for step in _steps("ci.yml", job))
         assert "assert torch.version.cuda is None" in commands
         assert "python -m pip check" in commands
-        assert commands.index('python -m pip install "torch>=2.13,<2.14"') < (
-            commands.index("python -m pip install --no-build-isolation")
+        steps = _steps("ci.yml", job)
+        torch_installation = next(
+            index
+            for index, step in enumerate(steps)
+            if step.get("uses") == "./.github/actions/install-cpu-torch"
         )
+        package_installation = next(
+            index
+            for index, step in enumerate(steps)
+            if "python -m pip install --no-build-isolation" in step.get("run", "")
+        )
+        assert torch_installation < package_installation
         assert 'python -m venv "${RUNNER_TEMP}/venv-' in commands
         assert '>> "$GITHUB_PATH"' in commands
         assert 'test "$sha" = "$GITHUB_SHA"' in commands
@@ -333,7 +336,10 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     assert select_workers(24, 64 * GIB, shared=False, dedicated=True) == 2
 
 
-@pytest.mark.parametrize("job", ["distributed-cpu", "coverage-shard"])
+@pytest.mark.parametrize(
+    "job",
+    [pytest.param("distributed-cpu-shard", id="distributed-cpu"), "coverage-shard"],
+)
 def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> None:
     definition = _document("ci.yml")["jobs"][job]
     assert definition["needs"] == "prepare-source"
@@ -345,13 +351,17 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     assert "python -m pip check" in commands
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
-    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
-    assert definition["timeout-minutes"] == (60 if job == "distributed-cpu" else 30)
+    assert definition["runs-on"] == A800_CPU_ROUTE
+    assert definition["timeout-minutes"] == (
+        60 if job == "distributed-cpu-shard" else 30
+    )
     assert any(
         step.get("uses") == "./.github/actions/isolated-python" for step in steps
     )
     if job == "coverage-shard":
-        assert definition["strategy"]["matrix"]["shard"] == list(range(8))
+        assert [
+            row["shard"] for row in definition["strategy"]["matrix"]["include"]
+        ] == list(range(16))
     else:
         assert "python tools/ci_tier.py pr-distributed" in commands
 
@@ -464,7 +474,7 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
             assert token in command
         for token in (
             "-p tools.pytest_shard",
-            "--fq-shard-count 8",
+            "--fq-shard-count 16",
             "--fq-shard-index ${{ matrix.shard }}",
         ):
             assert token in command
@@ -488,7 +498,9 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     shard = _document("ci.yml")["jobs"]["coverage-shard"]
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
-    assert strategy.get("matrix") == {"shard": list(range(8))}
+    assert strategy.get("matrix") == {
+        "include": [{"shard": i, "hosted-bucket": i % 8} for i in range(16)]
+    }
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
     assert final.get("needs") == "coverage-shard"
@@ -560,7 +572,9 @@ def test_full_ci_runs_once_per_pr_and_remains_manually_available() -> None:
     ci = _document("ci.yml")
     events = ci.get("on", ci.get(True))
     assert set(events) == {"pull_request", "workflow_dispatch"}
-    assert events["pull_request"] == {"branches": ["main"]}
+    assert events["pull_request"] == {
+        "branches": ["main", "refactor/qec-restructure-*"]
+    }
     manual = _document("pre-commit.yaml")
     assert set(manual.get("on", manual.get(True))) == {"workflow_dispatch"}
     gpu = _document("local-gpu.yml")
@@ -741,3 +755,38 @@ def test_merge_gate_waits_for_every_ci_job_including_source_hygiene(
         check=False,
     )
     assert completed.returncode != 0
+
+
+def test_distributed_matrix_runs_both_complete_selections_and_one_rank_probe() -> None:
+    job = _document("ci.yml")["jobs"]["distributed-cpu-shard"]
+    rows = job["strategy"]["matrix"]["include"]
+    assert rows == [
+        {"command": command, "shard": shard, "shards": count}
+        for command, count in [(0, 4), (1, 2)]
+        for shard in range(count)
+    ]
+    assert job["strategy"]["fail-fast"] is False
+    commands = "\n".join(str(s.get("run", "")) for s in job["steps"])
+    assert "--command-index ${{ matrix.command }}" in commands
+    assert "--shard-count ${{ matrix.shards }}" in commands
+    assert "--shard-index ${{ matrix.shard }}" in commands
+    probe = next(
+        s for s in job["steps"] if str(s.get("run", "")).startswith("torchrun")
+    )
+    assert probe["if"] == "matrix.command == 0 && matrix.shard == 0"
+    assert sum(row["command"] == 0 and row["shard"] == 0 for row in rows) == 1
+    assert "--nproc-per-node=2" in probe["run"]
+
+
+def test_distributed_cpu_retains_its_stable_check_and_rejects_a_failed_partition() -> (
+    None
+):
+    job = _document("ci.yml")["jobs"]["distributed-cpu"]
+    assert job["if"] == "${{ always() }}"
+    assert job["needs"] == "distributed-cpu-shard"
+    assert job["steps"] == [
+        {
+            "name": "Require every partition and the two-rank probe to pass",
+            "run": "test '${{ needs.distributed-cpu-shard.result }}' = success",
+        }
+    ]
