@@ -1451,6 +1451,7 @@ jobs:
           retention-days: 7
 
   coverage-shard:
+    name: coverage-shard (${{ matrix.shard }})
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 30
@@ -1462,12 +1463,29 @@ jobs:
       JAX_PLATFORMS: cpu
       COVERAGE_FILE: .coverage.${{ matrix.shard }}
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.shard }}
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-coverage-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        # Reuse eight hosted buckets; trusted CPU slots remain independent.
+        include:
+          - {shard: 0, hosted-bucket: 0}
+          - {shard: 1, hosted-bucket: 1}
+          - {shard: 2, hosted-bucket: 2}
+          - {shard: 3, hosted-bucket: 3}
+          - {shard: 4, hosted-bucket: 4}
+          - {shard: 5, hosted-bucket: 5}
+          - {shard: 6, hosted-bucket: 6}
+          - {shard: 7, hosted-bucket: 7}
+          - {shard: 8, hosted-bucket: 0}
+          - {shard: 9, hosted-bucket: 1}
+          - {shard: 10, hosted-bucket: 2}
+          - {shard: 11, hosted-bucket: 3}
+          - {shard: 12, hosted-bucket: 4}
+          - {shard: 13, hosted-bucket: 5}
+          - {shard: 14, hosted-bucket: 6}
+          - {shard: 15, hosted-bucket: 7}
     steps:
       # Reuse the runner's verified Git objects before transferring a full tree.
       - uses: actions/download-artifact@v8.0.2
@@ -1534,7 +1552,7 @@ jobs:
           python -m pytest -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton"
           -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
           -p tools.pytest_shard
-          --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
+          --fq-shard-count 16 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
       - name: Run complete maintained-runtime tests with coverage on integration revisions
@@ -1543,7 +1561,7 @@ jobs:
           python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton"
           -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50
           -p tools.pytest_shard
-          --fq-shard-count 8 --fq-shard-index ${{ matrix.shard }}
+          --fq-shard-count 16 --fq-shard-index ${{ matrix.shard }}
           --cov=flagquantum
           --cov-report=
       - uses: actions/upload-artifact@v4

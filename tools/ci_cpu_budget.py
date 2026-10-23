@@ -1,4 +1,4 @@
-"""Measure Linux runner limits and budget pytest for two shared registrations."""
+"""Measure Linux runner limits and budget pytest for shared or isolated services."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import argparse
 import json
 import math
 import os
+import re
 import tempfile
 from pathlib import Path
 
@@ -81,6 +82,17 @@ def read_limits(directories: dict[str, list[Path]]) -> tuple[list[float], list[i
     return cpu, memory
 
 
+def is_dedicated_cpu_service(directories: dict[str, list[Path]]) -> bool:
+    """Recognize MC550 slots with their own finite CPU and memory limits."""
+    common = set(directories["cpu"]).intersection(directories["memory"])
+    for directory in common:
+        if re.fullmatch(r"fqmc-cpu(?:0[1-9]|1[0-6])\.service", directory.name):
+            cpu, memory = read_limits({"cpu": [directory], "memory": [directory]})
+            if cpu and memory:
+                return True
+    return False
+
+
 def select_workers(
     cpu: float, memory: int, shared: bool, dedicated: bool = False
 ) -> int:
@@ -111,6 +123,7 @@ def main(*, dedicated: bool = False) -> None:
     if shared := os.environ.get("RUNNER_ENVIRONMENT") == "self-hosted":
         if not directories["cpu"] or not directories["memory"]:
             raise RuntimeError("Shared Linux runner cgroup limits are unavailable")
+    dedicated = dedicated or (shared and is_dedicated_cpu_service(directories))
     quotas, memory_limits = read_limits(directories)
     physical_memory = int(os.sysconf("SC_PAGE_SIZE")) * int(os.sysconf("SC_PHYS_PAGES"))
     cpu = min([float(len(affinity)), *quotas])

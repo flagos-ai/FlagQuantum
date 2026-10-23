@@ -33,6 +33,13 @@ units, 256 GiB memory and no swap. CPU weight 1, nice 10 and idle I/O priority
 favor existing work during contention. Aggregate data-disk I/O is capped at
 300 MB/s read and 150 MB/s write.
 
+The CPU budget probe recognizes the finite CPU and memory limits on each
+`fqmc-cpuNN.service` as a dedicated slot. Pytest can therefore use four workers
+inside the four-CPU quota instead of reserving half for another registration.
+Affinity, stricter ancestor quotas and memory limits still bound the worker count.
+Other shared registrations keep their existing conservative budget. Coverage uses
+sixteen duration-balanced shards with the same test selections and coverage gate.
+
 Existing unrestricted business containers can still execute on the CPUs assigned
 to CI. Affinity and priority therefore reduce interference but cannot guarantee
 zero impact or a latency SLA on this shared host. Do not change business affinity

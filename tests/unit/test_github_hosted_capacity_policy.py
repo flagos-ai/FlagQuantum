@@ -157,6 +157,8 @@ def _groups(job: dict[str, object]) -> set[str]:
     matrix = strategy.get("matrix") if isinstance(strategy, dict) else None
     assert isinstance(matrix, dict), f"{group}: job declares no matrix"
     values = matrix.get(reference.group(1))
+    if values is None and isinstance(matrix.get("include"), list):
+        values = [row[reference.group(1)] for row in matrix["include"]]
     assert isinstance(
         values, list
     ), f"{group}: matrix {reference.group(1)} is not a list"
@@ -342,7 +344,9 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         step.get("uses") == "./.github/actions/isolated-python" for step in steps
     )
     if job == "coverage-shard":
-        assert definition["strategy"]["matrix"]["shard"] == list(range(8))
+        assert [
+            row["shard"] for row in definition["strategy"]["matrix"]["include"]
+        ] == list(range(16))
     else:
         assert "python tools/ci_tier.py pr-distributed" in commands
 
@@ -455,7 +459,7 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
             assert token in command
         for token in (
             "-p tools.pytest_shard",
-            "--fq-shard-count 8",
+            "--fq-shard-count 16",
             "--fq-shard-index ${{ matrix.shard }}",
         ):
             assert token in command
@@ -479,7 +483,9 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     shard = _document("ci.yml")["jobs"]["coverage-shard"]
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
-    assert strategy.get("matrix") == {"shard": list(range(8))}
+    assert strategy.get("matrix") == {
+        "include": [{"shard": i, "hosted-bucket": i % 8} for i in range(16)]
+    }
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
     assert final.get("needs") == "coverage-shard"
