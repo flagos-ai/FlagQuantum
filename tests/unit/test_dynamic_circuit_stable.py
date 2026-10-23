@@ -38,9 +38,10 @@ def test_dynamic_circuit_is_stable_without_stabilizing_execution() -> None:
     assert contract["migration"]["user_code_change_required"] is False
     assert contract["history"]["candidate_owner"] == "API owner"
     assert contract["history"]["candidate_target"] == "first-public-alpha"
-    assert "all eight promotion criteria" in contract["history"][
-        "candidate_removal_condition"
-    ]
+    assert (
+        "all eight promotion criteria"
+        in contract["history"]["candidate_removal_condition"]
+    )
     assert not RETIRED_CANDIDATE.exists()
     assert contract["result_boundary"]["native_result_stable"] is False
     # The one signature added during candidacy remains part of the stable history.
