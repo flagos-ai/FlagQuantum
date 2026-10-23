@@ -10,6 +10,14 @@ pytestmark = pytest.mark.unit
 WORKFLOWS = Path(__file__).resolve().parents[2] / ".github/workflows"
 
 
+def _validated_r300_labels() -> set[str]:
+    validation = yaml.safe_load((WORKFLOWS / "r300-validation.yml").read_text())
+    return {
+        row["scale_set"]
+        for row in validation["jobs"]["cpu-workload"]["strategy"]["matrix"]["include"]
+    }
+
+
 @pytest.mark.parametrize("workflow", ["ci.yml", "pre-commit.yaml"])
 def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -> None:
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
@@ -18,7 +26,11 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
         for job in document["jobs"].values()
         if any(
             label in str(job.get("runs-on", ""))
-            for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+            for label in (
+                "flagquantum-a100-cpu",
+                "flagquantum-cpu-general",
+                "flagcicd-r300-",
+            )
         )
     ]
     assert routed, "The policy must discover at least one CPU-pool job"
@@ -31,6 +43,10 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
         assert job["runs-on"] in (
             expected,
             expected.replace("flagquantum-a100-cpu", "flagquantum-cpu-general"),
+            *(
+                expected.replace("flagquantum-a100-cpu", label)
+                for label in _validated_r300_labels()
+            ),
         )
         steps = job["steps"]
         for index, step in enumerate(steps):
@@ -65,13 +81,18 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
         for name, job in jobs.items():
             if not any(
                 label in str(job.get("runs-on", ""))
-                for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+                for label in (
+                    "flagquantum-a100-cpu",
+                    "flagquantum-cpu-general",
+                    "flagcicd-r300-",
+                )
             ):
                 continue
+            prefix = "self-hosted" if "flagcicd-r300-" in job["runs-on"] else "a100-cpu"
             selector = (
                 "${{ (github.event_name != 'pull_request' || "
                 "github.event.pull_request.head.repo.full_name == github.repository) "
-                f"&& format('a100-cpu-{{0}}-{name}-{{1}}', "
+                f"&& format('{prefix}-{{0}}-{name}-{{1}}', "
                 "github.run_id, strategy.job-index || 0) || 'gh' }}"
             )
             template = job["concurrency"]["group"]
@@ -122,7 +143,7 @@ def test_dependency_matrix_separates_cpu_wheels_from_ordinary_dependencies() -> 
     assert len(jobs["dependency-bounds"]["strategy"]["matrix"]["include"]) == 7
 
 
-def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() -> None:
+def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     portable = {
         "jax-optional",
@@ -141,7 +162,10 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
     }
     for name in portable:
         job = jobs[name]
-        assert "'flagquantum-cpu-general'" in job["runs-on"], name
+        assert any(
+            f"'{label}'" in job["runs-on"]
+            for label in {"flagquantum-cpu-general", *_validated_r300_labels()}
+        ), name
         assert "flagquantum-a100-cpu" not in job["runs-on"], name
         assert not any(
             str(step.get("uses", "")).startswith("actions/checkout@")
@@ -154,3 +178,28 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
         step.get("with", {}).get("fetch-depth") == 0
         for step in jobs["quality"]["steps"]
     ), "Evidence provenance still needs full Git history"
+
+
+def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    migrated = {
+        name: job
+        for name, job in jobs.items()
+        if "flagcicd-r300-" in str(job.get("runs-on", ""))
+    }
+    assert set(migrated) == {"qiskit-optional", "cirq-optional", "braket-optional"}
+    for job in migrated.values():
+        assert job["timeout-minutes"] == 30
+        steps = job["steps"]
+        bootstrap = next(
+            index
+            for index, step in enumerate(steps)
+            if step.get("uses") == "./.github/actions/prepare-r300-cpu"
+        )
+        assert steps[bootstrap]["if"] == "startsWith(runner.name, 'flagcicd-r300-')"
+        assert any(
+            "git checkout --force --detach" in step.get("run", "")
+            for step in steps[:bootstrap]
+        )
+        assert steps[bootstrap + 1]["uses"].startswith("actions/setup-python@")
+        assert steps[bootstrap + 2]["uses"] == "./.github/actions/isolated-python"

@@ -15,6 +15,7 @@ on:
 #
 # CPU smoke/unit and runtime suites retain the dedicated A800 CPU runners.
 # Portable trusted Ubuntu checks share the general CPU runner pool.
+# Qiskit, Cirq and Braket compatibility checks use validated R300 scale sets.
 # Full-history quality checks retain A100; fork jobs use hosted runners.
 # Trusted manual validation uses the same A800 routing as same-repository PRs.
 # A800 jobs use up to 16 quota-aware workers and a private environment per run.
@@ -846,9 +847,10 @@ jobs:
 
   qiskit-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu01' || 'ubuntu-latest' }}
+    timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-qiskit-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
       OPTIONAL_VERSIONS: "2.0.* 2.5.*"
@@ -875,10 +877,13 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: ./.github/actions/prepare-r300-cpu
+        if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Qiskit and Aer versions
@@ -916,9 +921,10 @@ jobs:
 
   cirq-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu16' || 'ubuntu-latest' }}
+    timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cirq-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-b
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.6.1 1.7.0"
@@ -945,10 +951,13 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: ./.github/actions/prepare-r300-cpu
+        if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Cirq Core versions
@@ -970,9 +979,10 @@ jobs:
 
   braket-optional:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagcicd-r300-cpu01' || 'ubuntu-latest' }}
+    timeout-minutes: 30
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-braket-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ github.event.pull_request.number || github.ref_name }}-light-c
       queue: max
     env:
       OPTIONAL_VERSIONS: "1.117.0 1.127.1"
@@ -999,10 +1009,13 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: ./.github/actions/prepare-r300-cpu
+        if: startsWith(runner.name, 'flagcicd-r300-')
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify both certified Amazon Braket SDK versions

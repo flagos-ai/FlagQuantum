@@ -1,0 +1,13 @@
+name: Prepare R300 CPU runner
+description: Install the native compiler missing from the ephemeral R300 image
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        if ! command -v gcc || ! command -v g++; then
+          sudo -n timeout --kill-after=10s 240s apt-get update
+          sudo -n timeout --kill-after=10s 240s apt-get install -y --no-install-recommends build-essential
+        fi
+        echo "MAX_JOBS=2" >> "$GITHUB_ENV"
+        echo "PIP_CACHE_DIR=$RUNNER_TEMP/fq-pip-cache" >> "$GITHUB_ENV"
