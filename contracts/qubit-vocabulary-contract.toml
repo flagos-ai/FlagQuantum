@@ -1037,7 +1037,10 @@ files = [
     "flagquantum/ecosystem/simulators/advisor.py",
     "flagquantum/observables/__init__.py",
     "flagquantum/qec/circuit.py",
-    "flagquantum/qec/codes/__init__.py",
+    "flagquantum/qec/codes/checks.py",
+    "flagquantum/qec/codes/repetition.py",
+    "flagquantum/qec/codes/steane.py",
+    "flagquantum/qec/codes/surface/rotated.py",
     "flagquantum/qec/pauli.py",
     "flagquantum/qec/types.py",
     "flagquantum/testing/correctness.py",
@@ -1306,16 +1309,16 @@ canonical = [
     "flagquantum/noise/model.py::CorrelatedReadoutError::n_wires",
     "flagquantum/observables/__init__.py::OutputRequest::wires",
     "flagquantum/qec/circuit.py::MeasurementRef::wire",
-    "flagquantum/qec/codes/__init__.py::CodeCheck::ancilla_wire",
-    "flagquantum/qec/codes/__init__.py::CodeCheck::cnot_wires",
-    "flagquantum/qec/codes/__init__.py::RepetitionCode::ancilla_wires",
-    "flagquantum/qec/codes/__init__.py::RepetitionCode::data_wires",
-    "flagquantum/qec/codes/__init__.py::RotatedSurfaceCode::ancilla_wires",
-    "flagquantum/qec/codes/__init__.py::RotatedSurfaceCode::data_wires",
-    "flagquantum/qec/codes/__init__.py::StabilizerCode::ancilla_wires",
-    "flagquantum/qec/codes/__init__.py::StabilizerCode::data_wires",
-    "flagquantum/qec/codes/__init__.py::SteaneCode::ancilla_wires",
-    "flagquantum/qec/codes/__init__.py::SteaneCode::data_wires",
+    "flagquantum/qec/codes/checks.py::CodeCheck::ancilla_wire",
+    "flagquantum/qec/codes/checks.py::CodeCheck::cnot_wires",
+    "flagquantum/qec/codes/repetition.py::RepetitionCode::ancilla_wires",
+    "flagquantum/qec/codes/repetition.py::RepetitionCode::data_wires",
+    "flagquantum/qec/codes/surface/rotated.py::RotatedSurfaceCode::ancilla_wires",
+    "flagquantum/qec/codes/surface/rotated.py::RotatedSurfaceCode::data_wires",
+    "flagquantum/qec/codes/checks.py::StabilizerCode::ancilla_wires",
+    "flagquantum/qec/codes/checks.py::StabilizerCode::data_wires",
+    "flagquantum/qec/codes/steane.py::SteaneCode::ancilla_wires",
+    "flagquantum/qec/codes/steane.py::SteaneCode::data_wires",
     "flagquantum/qec/pauli.py::Pauli::x_wires",
     "flagquantum/qec/pauli.py::Pauli::z_wires",
     "flagquantum/qec/types.py::Correction::wire",
@@ -1649,43 +1652,43 @@ site = "flagquantum/qec/circuit.py::MeasurementRef::wire"
 replacement = "qubit"
 declaration = "field"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::CodeCheck::ancilla_wire"
+site = "flagquantum/qec/codes/checks.py::CodeCheck::ancilla_wire"
 replacement = "ancilla_qubit"
 declaration = "field"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::CodeCheck::cnot_wires"
+site = "flagquantum/qec/codes/checks.py::CodeCheck::cnot_wires"
 replacement = "cnot_qubits"
 declaration = "field"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::RepetitionCode::ancilla_wires"
+site = "flagquantum/qec/codes/repetition.py::RepetitionCode::ancilla_wires"
 replacement = "ancilla_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::RepetitionCode::data_wires"
+site = "flagquantum/qec/codes/repetition.py::RepetitionCode::data_wires"
 replacement = "data_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::RotatedSurfaceCode::ancilla_wires"
+site = "flagquantum/qec/codes/surface/rotated.py::RotatedSurfaceCode::ancilla_wires"
 replacement = "ancilla_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::RotatedSurfaceCode::data_wires"
+site = "flagquantum/qec/codes/surface/rotated.py::RotatedSurfaceCode::data_wires"
 replacement = "data_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::StabilizerCode::ancilla_wires"
+site = "flagquantum/qec/codes/checks.py::StabilizerCode::ancilla_wires"
 replacement = "ancilla_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::StabilizerCode::data_wires"
+site = "flagquantum/qec/codes/checks.py::StabilizerCode::data_wires"
 replacement = "data_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::SteaneCode::ancilla_wires"
+site = "flagquantum/qec/codes/steane.py::SteaneCode::ancilla_wires"
 replacement = "ancilla_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
-site = "flagquantum/qec/codes/__init__.py::SteaneCode::data_wires"
+site = "flagquantum/qec/codes/steane.py::SteaneCode::data_wires"
 replacement = "data_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
