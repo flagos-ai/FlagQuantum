@@ -1,7 +1,7 @@
 # Keyless runtime-evidence integrity
 
-Status: approved by the repository owner on 2026-10-23; implemented, validation
-in progress before merge.
+Status: approved by the repository owner on 2026-10-23; implemented and merged
+in [PR #728](https://github.com/flagos-ai/FlagQuantum/pull/728).
 
 ## Problem and user journey
 
@@ -89,9 +89,12 @@ Retain this record with the implementation and its validation.
 
 ## Implementation validation
 
-The focused runtime-envelope, CLI sealer, environment preflight and three
-capability-gate suites passed 146 tests before the final audit parity case was
-added. Tests exercise both integrity formats, missing legacy keys, measurement
-and provenance tampering, keyless promotion, and refusal to promote an incomplete
-capacity set. Public API baseline and runtime contract schema checks passed
-without changing their snapshots. Broader CI must pass before merge.
+The final focused runtime-envelope, CLI sealer, environment preflight and three
+capability-gate suites passed 147 tests. The broader benchmark-contract and audit
+run passed 956 tests, with 22 optional skips. Tests exercise both integrity
+formats, missing legacy keys, measurement and provenance tampering, keyless
+promotion, and refusal to promote an incomplete capacity set. A comparison with
+the previous implementation reproduced identical v1 envelopes in all four
+scopes. Public API baseline and runtime contract schema checks passed without
+changing their snapshots. All 41 applicable GitHub CI checks passed before merge,
+including the required GPU lanes; two manual optional checks were skipped.

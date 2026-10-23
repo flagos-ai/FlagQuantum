@@ -1,0 +1,33 @@
+{
+  "schema": "flagquantum.multinode_watchdog.v1",
+  "status": "failed_closed",
+  "reason": "peer_launcher_failure",
+  "first_failure_job": "node-1",
+  "elapsed_seconds": 209.42085928842425,
+  "failure_detected_seconds": 204.02013576962054,
+  "cleanup_elapsed_seconds": 5.400727128610015,
+  "cleanup_required": true,
+  "cleanup_results": {
+    "node-0": 0,
+    "node-1": 0
+  },
+  "cleanup_verified": true,
+  "cleanup_failures": [],
+  "cleanup_logs": {
+    "node-0": "/nfs/fq-mps-capacity-39894046943-1-out/world-16-logs/node-0.cleanup.log",
+    "node-1": "/nfs/fq-mps-capacity-39894046943-1-out/world-16-logs/node-1.cleanup.log"
+  },
+  "jobs": [
+    {
+      "name": "node-0",
+      "returncode": -9,
+      "log": "/nfs/fq-mps-capacity-39894046943-1-out/world-16-logs/node-0.log"
+    },
+    {
+      "name": "node-1",
+      "returncode": 1,
+      "log": "/nfs/fq-mps-capacity-39894046943-1-out/world-16-logs/node-1.log"
+    }
+  ],
+  "all_launchers_exited": true
+}

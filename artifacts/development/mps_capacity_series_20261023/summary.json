@@ -1,0 +1,37 @@
+{
+  "commit": "4f23154fe9d944ce3f1e801701d59150138b3bd0",
+  "logical_mps_bytes": 1236780012864,
+  "points": [
+    {
+      "node_count": 1,
+      "peak_memory_bytes": 84046531584,
+      "status": "cuda_oom",
+      "world_size": 1
+    },
+    {
+      "node_count": 1,
+      "peak_memory_bytes": 83830173696,
+      "status": "cuda_oom",
+      "world_size": 2
+    },
+    {
+      "node_count": 1,
+      "peak_memory_bytes": 83830173696,
+      "status": "cuda_oom",
+      "world_size": 4
+    },
+    {
+      "node_count": 1,
+      "peak_memory_bytes": 83830173696,
+      "status": "cuda_oom",
+      "world_size": 8
+    },
+    {
+      "node_count": 2,
+      "peak_memory_bytes": 77745422336,
+      "status": "passed",
+      "world_size": 16
+    }
+  ],
+  "run": "https://github.com/flagos-ai/FlagQuantum/actions/runs/39895451311"
+}
