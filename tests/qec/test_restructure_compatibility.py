@@ -151,9 +151,10 @@ def test_plugins_share_registries_across_old_and_top_level_imports(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from flagquantum.qec import codes, registry
+    from flagquantum.qec.decoders import registry as registry_owner
 
     monkeypatch.setattr(codes, "_CODES", dict(codes._CODES))
-    monkeypatch.setattr(registry, "_DECODERS", dict(registry._DECODERS))
+    monkeypatch.setattr(registry_owner, "_DECODERS", dict(registry_owner._DECODERS))
     assert qec.register_code is codes.register_code
     assert qec.register_decoder is registry.register_decoder
     assert (

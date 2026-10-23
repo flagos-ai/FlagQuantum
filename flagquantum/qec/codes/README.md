@@ -1,41 +1,46 @@
 # QEC code definitions
 
-This package owns the existing stabilizer-code checks, protocols, factories and
-single code registry. `matrices.py` owns CSS matrix records, binary validation and
-code-to-matrix extraction. It must not import DEM construction, compiler,
-runtime, simulation or experiment execution. Standard-library helpers, PyTorch
-matrix operations, QEC algebra and code records are allowed dependencies.
+Core owns code records, check layouts, matrix conversion, family construction and
+the existing single code registry. These modules may use standard-library helpers,
+PyTorch matrix operations and QEC algebra (`gf2`, `pauli`, `logical`). They must
+not depend on DEM construction, compiler, runtime, simulation or experiment
+execution. The QEC root facade still eagerly imports execution; this boundary
+does not make a cold root import infrastructure-free.
 
-The package `__init__.py` is the former `qec.codes` module: its public objects,
-lazy `CssCode` export and mutable registry remain authoritative and unchanged.
-Code-family splitting belongs to QEC-RESTRUCTURE-003. The independent class in
-`qec.surface` remains distinct from `qec.codes.RotatedSurfaceCode`.
+- `checks.py`: check record, stabilizer protocol and ancilla bands.
+- `repetition.py`, `steane.py`: fixed stabilizer families.
+- `css.py`, `_css_helpers.py`, `matrices.py`: matrix records and CSS validation.
+- `colour.py`, `toric.py`, `qldpc.py`, `bicycle.py`, `reed_muller.py`: factories.
+- `subsystem.py`, `floquet.py`: gauge and measurement-period records.
+- [surface/](surface/README.md): the registered rotated family, the independent
+  historical frame and the checkerboard-conjugated ZXXZ family.
+- `__init__.py`: historical exports, lazy `CssCode` alias and authoritative
+  `_CODES` table. Keeping the registry here preserves existing plugin replacement
+  and monkeypatch behavior; no forwarding registry or second table is introduced.
 
-Existing public entries remain `flagquantum.qec` and `flagquantum.qec.codes`.
-`CssCodeMatrices` and `css_code_matrices` are the same objects at the root,
-`codes.matrices`, `dem_matrices` and `dem_construction`; their historical defining
-module stays `flagquantum.qec.dem_matrices` for pickle compatibility, including
-the relocated class's constructors, dataclass methods and property accessors. Core owns
-these aliases; removal has no approved target release and requires a separate
-approved deprecation proposal.
+User entry points remain `flagquantum.qec` and their existing submodules.
+Historical flat family modules explicitly re-export the same objects, including
+previous helper aliases used internally. `_compat.py` retains historical
+`__module__` values on moved definitions and their own methods/accessors. It
+leaves Python/typing-owned protocol methods alone. No wrapper, alternate reducer,
+safe-global allowlist or new class is created. `CssCodeMatrices` retains the 002
+identity at `dem_matrices` and `dem_construction` too.
 
-A short local workflow:
+Core owns these compatibility paths. Removal has no approved target release;
+it requires a separate approved deprecation and serialized-artifact migration
+proposal. Physical source links follow the owning files; import and pickle
+identifiers remain historical. Plugin code should continue importing public
+entries; code and decoder registration behavior is unchanged.
 
-```python
-from flagquantum.qec import CssCode, SteaneCode, css_code_matrices
-
-matrices = css_code_matrices(SteaneCode())
-code = CssCode(matrices=matrices, distance=3)
-print(code.num_data_qubits, matrices.num_checks, matrices.num_observables)
-# 7 6 2
-```
-
-For a matrix-validation change, edit `matrices.py`, retain its existing error and
-normalization behavior, and run:
+For a check-layout change, edit its family module, run the shortest existing
+user workflow, then the relevant family tests and compatibility tests:
 
 ```bash
-python -m pytest tests/qec/test_restructure_compatibility.py tests/qec/test_restructure_boundaries.py tests/qec/test_css_code.py tests/qec/test_dem_code_matrices.py -q
+PYTHONPATH=. python examples/qec/code_family_imports.py
+python -m pytest tests/qec/test_restructure_compatibility.py tests/qec/test_restructure_boundaries.py tests/qec/test_restructure_code_families.py tests/qec/test_codes.py tests/qec/test_surface_code.py -q
 ```
 
-The unchanged 001 fixture protects public signatures, fields, identities and
-historical pickle paths; never refresh it to conceal a migration failure.
+The example prints equal check layouts, separate frame identity, the two old
+pickle modules, Steane counts `7 6 2`, and zero logical error rate. The 001 and
+002 fixtures remain frozen; the pre-003 fixture also protects class/function
+pickles and method metadata. Never refresh fixtures to conceal drift.

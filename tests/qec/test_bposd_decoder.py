@@ -698,7 +698,10 @@ def test_the_decoder_is_exported_from_the_package() -> None:
 def test_the_decoder_imports_nothing_outside_torch_and_the_standard_library() -> None:
     """The replacement must not smuggle in an external decoder."""
 
-    tree = ast.parse((Path(bposd_module.__file__)).read_text(encoding="utf-8"))
+    source = Path(
+        BeliefPropagationOsdDecoder.from_detector_error_model.__func__.__code__.co_filename
+    )
+    tree = ast.parse(source.read_text(encoding="utf-8"))
     imported: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):

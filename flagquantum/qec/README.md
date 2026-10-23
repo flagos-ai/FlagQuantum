@@ -9,6 +9,26 @@ QEC owns codes, decoder semantics, detection events, and Pauli frames. It
 composes Compiler control flow, Runtime feedback, Simulation kernels, Noise
 models, and Remote hardware interfaces.
 
+## Package responsibilities and compatibility
+
+The [package layout guide](../../docs/guides/QEC_PACKAGE_LAYOUT.md) maps historical
+imports to their current implementation owners and explains pickle, source-tool,
+plugin and installed-package compatibility. Existing `flagquantum.qec` imports
+remain the user entry points; both rotated surface classes remain independent.
+
+| Responsibility | Contribution path |
+| --- | --- |
+| Codes, matrices and code registry | [codes](codes/README.md), including [surface records](codes/surface/README.md) |
+| Memory declarations and layouts | [circuits](circuits/README.md) |
+| Detector models, text, mechanisms, chunks and graphs | [dem](dem/README.md) |
+| Decoder algorithms and the single decoder registry | [decoders](decoders/README.md) |
+| Lowering, feedback, sampling and composition | [execution](execution/README.md) |
+| Optional PyMatching boundary | [adapters](adapters/README.md) |
+
+Each README gives allowed dependencies and a ten-minute edit/test workflow.
+Compatibility aliases remain Core-owned and explicitly frozen; removing a path
+requires an approved deprecation and serialized-artifact migration plan.
+
 ## Start with a memory experiment
 
 This experimental local example uses the three-data-qubit repetition-code
@@ -93,10 +113,10 @@ it.
 
 ## Decode a detection-event syndrome
 
-`decoding_graph.py` turns a detector error model into a weighted graph and
-`matching.py` decodes a syndrome on it. This is the code-independent decoder: it
+`dem/graph.py` turns a detector error model into a weighted graph and
+`decoders/matching.py` decodes a syndrome on it. This is the code-independent decoder: it
 reads the model's mechanisms and nothing about the code that produced them.
-`belief_propagation.py` is the second decoder over the same model, for the
+`decoders/belief_propagation.py` is the second decoder over the same model, for the
 mechanisms a matcher has no edge for.
 
 ```python
@@ -126,7 +146,7 @@ projected onto a pair. The matcher enumerates the ways to pair the defective
 detectors, so it refuses a syndrome larger than its defect budget instead of
 returning a pairing that only looks cheapest.
 
-A syndrome the budget refuses is the case `sliding_window.py` exists for. A
+A syndrome the budget refuses is the case `decoders/sliding_window.py` exists for. A
 memory experiment's defect count grows with its rounds, so a long history is
 exactly where the exact matcher stops answering; the windowed decoder answers it
 by deciding a band of detectors at a time against a window of them, with the
@@ -190,7 +210,7 @@ the refusal.
 ## Decode a model the matcher refuses
 
 A matcher needs one edge per mechanism, so a mechanism that flips three or more
-detectors is a hyperedge and `matching.py` refuses it. `belief_propagation.py`
+detectors is a hyperedge and `decoders/matching.py` refuses it. `decoders/belief_propagation.py`
 reads exactly that model: a mechanism is one variable, a detector is one check,
 and a mechanism touching three detectors joins three checks, so the graph is the
 model as written rather than a projection of it.
@@ -224,7 +244,7 @@ rather than approximating any of the three.
 
 The matcher is the authority, and its evidence cannot come from itself. Brute
 force over enumerable syndromes is independent of the implementation but not of
-the detector error model both read, so `adapters.py` adds the one check that is:
+the detector error model both read, so `adapters/pymatching.py` adds the one check that is:
 a second decoder, over the same decoding graph, behind the optional `pymatching`
 extra.
 
@@ -512,11 +532,11 @@ and `ZxxzSurfaceCode` is the first one.
 
 Two classes rather than one, and the split is the correction this section needs:
 the four blocks a caller writes, and the code algebra they are held to, belong to
-`CssCodeMatrices` in [dem_construction.py](dem_construction.py), while the record
-is [CssCode](css_code.py), which wraps a `CssCodeMatrices` with a **stated**
+`CssCodeMatrices` in [codes/matrices.py](codes/matrices.py), while the record
+is [CssCode](codes/css.py), which wraps a `CssCodeMatrices` with a **stated**
 distance -- the shape the section above uses. The distance search described earlier
 in this section is what the declared and derived families go through in
-[codes/__init__.py](codes/__init__.py) rather than what this route does, so the paragraphs above
+[codes/_css_helpers.py](codes/_css_helpers.py) rather than what this route does, so the paragraphs above
 stand as written about the families and about the bound, and what changes is which
 class the four blocks are handed to. The eight declared records are the set this
 section names; `get_code` reaches three of them by name.
@@ -796,7 +816,7 @@ Two sentences in the paragraphs above are earlier readings, corrected here rathe
 than left standing, and both corrections were read off the tree. The engine does
 execute one channel, but the merged sampler does not conjugate it:
 [channels.py](../noise/channels.py) declares `y_flip_channel`, and
-[sampling.py](sampling.py) places each of the three data families as its own channel
+[sampling.py](execution/sampling.py) places each of the three data families as its own channel
 at the one data location, which is the reading the paragraph before this one states
 and the reason a pair rate is one draw at one family's rate rather than a
 conjugation around the engine's flip. And a fault placed after a named gate does
@@ -814,7 +834,7 @@ Every mechanism in a model is an independent fault unless it carries an
 `error_id`, and mechanisms sharing one are mutually exclusive: at most one of
 them fires in a shot. This is the one statement the parity matrices cannot carry,
 because two columns of a parity matrix are independent by construction.
-`dem_alternatives.py` owns its arithmetic:
+`dem/alternatives.py` owns its arithmetic:
 
 ```python
 from flagquantum.qec import DemError, DetectorErrorModel
@@ -1150,7 +1170,7 @@ covers it instead.
 
 ## Move between a model and a realization
 
-`dem_circuit.py` goes the other way from construction: a model is written as the
+`dem/circuit.py` goes the other way from construction: a model is written as the
 circuit it already is — one wire per detector, one per observable, one
 Pauli-frame channel per fault — and read back. That makes a model something a
 simulator can draw from, on the stabilizer engine, without a statevector.
@@ -1220,7 +1240,7 @@ block, and `from_stim_text` interprets the block rather than refusing it, so the
 unflattened text is read directly and `.flattened()` is the form the guide's own
 fences use rather than the only form this reader accepts. An earlier revision of
 this section recorded the block as refused by name, which was true until
-[dem_text.py](dem_text.py) read blocks; the section above states what the reader
+[dem/text.py](dem/text.py) read blocks; the section above states what the reader
 does with one. The other refusals, the two readings of the `^` separator and the
 observable marginal each one implies, and what this route does not cover are in
 [Migrating a Stim workflow](../../docs/guides/STIM_USER_MIGRATION.md); that guide
@@ -1230,23 +1250,23 @@ is the runnable form of the same route.
 
 ## Change and verify
 
-Use [repetition.py](repetition.py) for experiment composition,
-[decoders.py](decoders.py) for decoding, [decoding_graph.py](decoding_graph.py)
-and [matching.py](matching.py) for the detector-error-model matcher, which is the
-authority decoder this layer ships, [belief_propagation.py](belief_propagation.py)
+Use [repetition.py](execution/repetition.py) for experiment composition,
+[decoders/repetition.py](decoders/repetition.py) for decoding, [dem/graph.py](dem/graph.py)
+and [decoders/matching.py](decoders/matching.py) for the detector-error-model matcher, which is the
+authority decoder this layer ships, [decoders/belief_propagation.py](decoders/belief_propagation.py)
 for the decoder that reads the hyperedges the matcher refuses,
-[bposd.py](bposd.py) for the belief-propagation-and-ordered-statistics decoder
-reached by name, [chunks.py](chunks.py) for the round-window decomposition,
-[sliding_window.py](sliding_window.py) for the same decoder over a band of detectors
+[decoders/bposd.py](decoders/bposd.py) for the belief-propagation-and-ordered-statistics decoder
+reached by name, [dem/chunks.py](dem/chunks.py) for the round-window decomposition,
+[decoders/sliding_window.py](decoders/sliding_window.py) for the same decoder over a band of detectors
 at a time and for the projections those windows are read through,
-[registry.py](registry.py) for reaching a decoder by name,
-[adapters.py](adapters.py) for the PyMatching cross-check,
-[sampling.py](sampling.py) for sampling detection events from a memory circuit,
-[dem_circuit.py](dem_circuit.py) for writing a model as a circuit and reading it
-back, [noise.py](noise.py) for code-specific noise profiles, [codes/__init__.py](codes/__init__.py)
-for code records, [css_code.py](css_code.py) for a code record built from
-parity-check matrices, [dem_text.py](dem_text.py) for the stim text reader,
-[circuit.py](circuit.py) for detector and observable layouts, and
+[decoders/registry.py](decoders/registry.py) for reaching a decoder by name,
+[adapters/pymatching.py](adapters/pymatching.py) for the PyMatching cross-check,
+[sampling.py](execution/sampling.py) for sampling detection events from a memory circuit,
+[dem/circuit.py](dem/circuit.py) for writing a model as a circuit and reading it
+back, [noise.py](noise.py) for code-specific noise profiles, [codes/README.md](codes/README.md)
+for code records and family ownership, [codes/css.py](codes/css.py) for a code record built from
+parity-check matrices, [dem/text.py](dem/text.py) for the stim text reader,
+[circuit.py](circuits/memory.py) for detector and observable layouts, and
 [types.py](types.py) for records. Run from the repository root:
 
 ```bash

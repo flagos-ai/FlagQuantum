@@ -1,0 +1,986 @@
+{
+  "flagquantum.qec.codes.ancilla_bands": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "ancilla_bands"
+  },
+  "flagquantum.qec.codes.ancilla_band_counts": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "ancilla_band_counts"
+  },
+  "flagquantum.qec.codes.CodeCheck": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck"
+  },
+  "flagquantum.qec.codes.CodeCheck.__post_init__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck.__post_init__"
+  },
+  "flagquantum.qec.codes.CodeCheck._validate_z_run": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck._validate_z_run"
+  },
+  "flagquantum.qec.codes.CodeCheck._validate_x_run": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck._validate_x_run"
+  },
+  "flagquantum.qec.codes.CodeCheck.__init__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck.__init__"
+  },
+  "flagquantum.qec.codes.CodeCheck.__repr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck.__repr__"
+  },
+  "flagquantum.qec.codes.CodeCheck.__eq__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck.__eq__"
+  },
+  "flagquantum.qec.codes.CodeCheck.__setattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck.__setattr__"
+  },
+  "flagquantum.qec.codes.CodeCheck.__delattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck.__delattr__"
+  },
+  "flagquantum.qec.codes.CodeCheck.__hash__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "CodeCheck.__hash__"
+  },
+  "flagquantum.qec.codes.StabilizerCode": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode"
+  },
+  "flagquantum.qec.codes.StabilizerCode.distance": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.distance"
+  },
+  "flagquantum.qec.codes.StabilizerCode.num_data_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.num_data_qubits"
+  },
+  "flagquantum.qec.codes.StabilizerCode.num_ancilla_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.num_ancilla_qubits"
+  },
+  "flagquantum.qec.codes.StabilizerCode.num_ancilla_x_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.num_ancilla_x_qubits"
+  },
+  "flagquantum.qec.codes.StabilizerCode.num_ancilla_z_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.num_ancilla_z_qubits"
+  },
+  "flagquantum.qec.codes.StabilizerCode.num_x_stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.num_x_stabilizers"
+  },
+  "flagquantum.qec.codes.StabilizerCode.num_z_stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.num_z_stabilizers"
+  },
+  "flagquantum.qec.codes.StabilizerCode.data_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.data_qubits"
+  },
+  "flagquantum.qec.codes.StabilizerCode.ancilla_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.ancilla_qubits"
+  },
+  "flagquantum.qec.codes.StabilizerCode.checks": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.checks"
+  },
+  "flagquantum.qec.codes.StabilizerCode.stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.stabilizers"
+  },
+  "flagquantum.qec.codes.StabilizerCode.logical_observables": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "StabilizerCode.logical_observables"
+  },
+  "flagquantum.qec.codes.StabilizerCode.__init__": {
+    "module": "typing",
+    "qualname": "_no_init_or_replace_init"
+  },
+  "flagquantum.qec.codes.RepetitionCode": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode"
+  },
+  "flagquantum.qec.codes.RepetitionCode.__post_init__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.__post_init__"
+  },
+  "flagquantum.qec.codes.RepetitionCode.num_data_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.num_data_qubits"
+  },
+  "flagquantum.qec.codes.RepetitionCode.num_ancilla_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.num_ancilla_qubits"
+  },
+  "flagquantum.qec.codes.RepetitionCode.num_ancilla_x_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.num_ancilla_x_qubits"
+  },
+  "flagquantum.qec.codes.RepetitionCode.num_ancilla_z_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.num_ancilla_z_qubits"
+  },
+  "flagquantum.qec.codes.RepetitionCode.num_x_stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.num_x_stabilizers"
+  },
+  "flagquantum.qec.codes.RepetitionCode.num_z_stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.num_z_stabilizers"
+  },
+  "flagquantum.qec.codes.RepetitionCode.data_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.data_qubits"
+  },
+  "flagquantum.qec.codes.RepetitionCode.ancilla_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.ancilla_qubits"
+  },
+  "flagquantum.qec.codes.RepetitionCode.checks": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.checks"
+  },
+  "flagquantum.qec.codes.RepetitionCode.stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.stabilizers"
+  },
+  "flagquantum.qec.codes.RepetitionCode.logical_observables": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.logical_observables"
+  },
+  "flagquantum.qec.codes.RepetitionCode.__init__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.__init__"
+  },
+  "flagquantum.qec.codes.RepetitionCode.__repr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.__repr__"
+  },
+  "flagquantum.qec.codes.RepetitionCode.__eq__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.__eq__"
+  },
+  "flagquantum.qec.codes.RepetitionCode.__setattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.__setattr__"
+  },
+  "flagquantum.qec.codes.RepetitionCode.__delattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.__delattr__"
+  },
+  "flagquantum.qec.codes.RepetitionCode.__hash__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RepetitionCode.__hash__"
+  },
+  "flagquantum.qec.codes._surface_ancilla_sites": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "_surface_ancilla_sites"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.__post_init__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.__post_init__"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.num_data_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.num_data_qubits"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.num_ancilla_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.num_ancilla_qubits"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.num_ancilla_x_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.num_ancilla_x_qubits"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.num_ancilla_z_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.num_ancilla_z_qubits"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.num_x_stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.num_x_stabilizers"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.num_z_stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.num_z_stabilizers"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.data_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.data_qubits"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.ancilla_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.ancilla_qubits"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.checks": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.checks"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.stabilizers"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.logical_observables": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.logical_observables"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.__init__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.__init__"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.__repr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.__repr__"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.__eq__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.__eq__"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.__setattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.__setattr__"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.__delattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.__delattr__"
+  },
+  "flagquantum.qec.codes.RotatedSurfaceCode.__hash__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "RotatedSurfaceCode.__hash__"
+  },
+  "flagquantum.qec.codes.SteaneCode": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode"
+  },
+  "flagquantum.qec.codes.SteaneCode.distance": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.distance"
+  },
+  "flagquantum.qec.codes.SteaneCode.num_data_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.num_data_qubits"
+  },
+  "flagquantum.qec.codes.SteaneCode.num_ancilla_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.num_ancilla_qubits"
+  },
+  "flagquantum.qec.codes.SteaneCode.num_ancilla_x_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.num_ancilla_x_qubits"
+  },
+  "flagquantum.qec.codes.SteaneCode.num_ancilla_z_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.num_ancilla_z_qubits"
+  },
+  "flagquantum.qec.codes.SteaneCode.num_x_stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.num_x_stabilizers"
+  },
+  "flagquantum.qec.codes.SteaneCode.num_z_stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.num_z_stabilizers"
+  },
+  "flagquantum.qec.codes.SteaneCode.data_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.data_qubits"
+  },
+  "flagquantum.qec.codes.SteaneCode.ancilla_qubits": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.ancilla_qubits"
+  },
+  "flagquantum.qec.codes.SteaneCode.checks": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.checks"
+  },
+  "flagquantum.qec.codes.SteaneCode.stabilizers": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.stabilizers"
+  },
+  "flagquantum.qec.codes.SteaneCode.logical_observables": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.logical_observables"
+  },
+  "flagquantum.qec.codes.SteaneCode.__init__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.__init__"
+  },
+  "flagquantum.qec.codes.SteaneCode.__repr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.__repr__"
+  },
+  "flagquantum.qec.codes.SteaneCode.__eq__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.__eq__"
+  },
+  "flagquantum.qec.codes.SteaneCode.__setattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.__setattr__"
+  },
+  "flagquantum.qec.codes.SteaneCode.__delattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.__delattr__"
+  },
+  "flagquantum.qec.codes.SteaneCode.__hash__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "SteaneCode.__hash__"
+  },
+  "flagquantum.qec.codes._block_width": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "_block_width"
+  },
+  "flagquantum.qec.codes._matrix_rows": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "_matrix_rows"
+  },
+  "flagquantum.qec.codes._mask": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "_mask"
+  },
+  "flagquantum.qec.codes._supports": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "_supports"
+  },
+  "flagquantum.qec.codes._odd_overlap": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "_odd_overlap"
+  },
+  "flagquantum.qec.codes._minimum_logical_weight": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "_minimum_logical_weight"
+  },
+  "flagquantum.qec.codes._refuse_non_logicals": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "_refuse_non_logicals"
+  },
+  "flagquantum.qec.codes.triangular_colour_code": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "triangular_colour_code"
+  },
+  "flagquantum.qec.codes.toric_code": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "toric_code"
+  },
+  "flagquantum.qec.codes.register_code": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "register_code"
+  },
+  "flagquantum.qec.codes.code_names": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "code_names"
+  },
+  "flagquantum.qec.codes.get_code": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "get_code"
+  },
+  "flagquantum.qec.codes.__getattr__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "__getattr__"
+  },
+  "flagquantum.qec.codes.__dir__": {
+    "module": "flagquantum.qec.codes",
+    "qualname": "__dir__"
+  },
+  "flagquantum.qec.css_code._row_masks": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "_row_masks"
+  },
+  "flagquantum.qec.css_code._support": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "_support"
+  },
+  "flagquantum.qec.css_code._row_basis": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "_row_basis"
+  },
+  "flagquantum.qec.css_code._in_span": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "_in_span"
+  },
+  "flagquantum.qec.css_code._stated": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "_stated"
+  },
+  "flagquantum.qec.css_code.CssCode": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode"
+  },
+  "flagquantum.qec.css_code.CssCode.__post_init__": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.__post_init__"
+  },
+  "flagquantum.qec.css_code.CssCode._read_matrices": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode._read_matrices"
+  },
+  "flagquantum.qec.css_code.CssCode._read_hand_written_matrices": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode._read_hand_written_matrices"
+  },
+  "flagquantum.qec.css_code.CssCode._require_distance_fits": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode._require_distance_fits"
+  },
+  "flagquantum.qec.css_code.CssCode.x_distance": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.x_distance"
+  },
+  "flagquantum.qec.css_code.CssCode.z_distance": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.z_distance"
+  },
+  "flagquantum.qec.css_code.CssCode.num_data_qubits": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.num_data_qubits"
+  },
+  "flagquantum.qec.css_code.CssCode.data_qubits": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.data_qubits"
+  },
+  "flagquantum.qec.css_code.CssCode.num_ancilla_qubits": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.num_ancilla_qubits"
+  },
+  "flagquantum.qec.css_code.CssCode.ancilla_qubits": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.ancilla_qubits"
+  },
+  "flagquantum.qec.css_code.CssCode.num_ancilla_x_qubits": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.num_ancilla_x_qubits"
+  },
+  "flagquantum.qec.css_code.CssCode.num_ancilla_z_qubits": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.num_ancilla_z_qubits"
+  },
+  "flagquantum.qec.css_code.CssCode.num_x_stabilizers": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.num_x_stabilizers"
+  },
+  "flagquantum.qec.css_code.CssCode.num_z_stabilizers": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.num_z_stabilizers"
+  },
+  "flagquantum.qec.css_code.CssCode.checks": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.checks"
+  },
+  "flagquantum.qec.css_code.CssCode.stabilizers": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.stabilizers"
+  },
+  "flagquantum.qec.css_code.CssCode.logical_observables": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.logical_observables"
+  },
+  "flagquantum.qec.css_code.CssCode.__eq__": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.__eq__"
+  },
+  "flagquantum.qec.css_code.CssCode.__hash__": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.__hash__"
+  },
+  "flagquantum.qec.css_code.CssCode.__init__": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.__init__"
+  },
+  "flagquantum.qec.css_code.CssCode.__repr__": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.__repr__"
+  },
+  "flagquantum.qec.css_code.CssCode.__setattr__": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.__setattr__"
+  },
+  "flagquantum.qec.css_code.CssCode.__delattr__": {
+    "module": "flagquantum.qec.css_code",
+    "qualname": "CssCode.__delattr__"
+  },
+  "flagquantum.qec.surface._surface_ancilla_sites": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "_surface_ancilla_sites"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.__post_init__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.__post_init__"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.num_data_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.num_data_qubits"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.num_ancilla_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.num_ancilla_qubits"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.num_ancilla_x_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.num_ancilla_x_qubits"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.num_ancilla_z_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.num_ancilla_z_qubits"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.num_x_stabilizers": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.num_x_stabilizers"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.num_z_stabilizers": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.num_z_stabilizers"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.data_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.data_qubits"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.ancilla_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.ancilla_qubits"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.checks": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.checks"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.stabilizers": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.stabilizers"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.logical_observables": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.logical_observables"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.__init__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.__init__"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.__repr__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.__repr__"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.__eq__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.__eq__"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.__setattr__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.__setattr__"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.__delattr__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.__delattr__"
+  },
+  "flagquantum.qec.surface.RotatedSurfaceCode.__hash__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "RotatedSurfaceCode.__hash__"
+  },
+  "flagquantum.qec.surface._zxxz_checkerboard": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "_zxxz_checkerboard"
+  },
+  "flagquantum.qec.surface._conjugate_by_checkerboard": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "_conjugate_by_checkerboard"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.__post_init__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.__post_init__"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.num_data_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.num_data_qubits"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.num_ancilla_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.num_ancilla_qubits"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.num_ancilla_x_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.num_ancilla_x_qubits"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.num_ancilla_z_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.num_ancilla_z_qubits"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.num_x_stabilizers": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.num_x_stabilizers"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.num_z_stabilizers": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.num_z_stabilizers"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.data_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.data_qubits"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.ancilla_qubits": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.ancilla_qubits"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.checks": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.checks"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.stabilizers": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.stabilizers"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.logical_observables": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.logical_observables"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.__init__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.__init__"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.__repr__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.__repr__"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.__eq__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.__eq__"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.__setattr__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.__setattr__"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.__delattr__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.__delattr__"
+  },
+  "flagquantum.qec.surface.ZxxzSurfaceCode.__hash__": {
+    "module": "flagquantum.qec.surface",
+    "qualname": "ZxxzSurfaceCode.__hash__"
+  },
+  "flagquantum.qec.qldpc._rows": {
+    "module": "flagquantum.qec.qldpc",
+    "qualname": "_rows"
+  },
+  "flagquantum.qec.qldpc._masks": {
+    "module": "flagquantum.qec.qldpc",
+    "qualname": "_masks"
+  },
+  "flagquantum.qec.qldpc._logical_basis": {
+    "module": "flagquantum.qec.qldpc",
+    "qualname": "_logical_basis"
+  },
+  "flagquantum.qec.qldpc._paired_basis": {
+    "module": "flagquantum.qec.qldpc",
+    "qualname": "_paired_basis"
+  },
+  "flagquantum.qec.qldpc.qldpc_code": {
+    "module": "flagquantum.qec.qldpc",
+    "qualname": "qldpc_code"
+  },
+  "flagquantum.qec.bicycle._monomial_exponents": {
+    "module": "flagquantum.qec.bicycle",
+    "qualname": "_monomial_exponents"
+  },
+  "flagquantum.qec.bicycle._polynomial_masks": {
+    "module": "flagquantum.qec.bicycle",
+    "qualname": "_polynomial_masks"
+  },
+  "flagquantum.qec.bicycle._transpose": {
+    "module": "flagquantum.qec.bicycle",
+    "qualname": "_transpose"
+  },
+  "flagquantum.qec.bicycle.bivariate_bicycle_code": {
+    "module": "flagquantum.qec.bicycle",
+    "qualname": "bivariate_bicycle_code"
+  },
+  "flagquantum.qec.reed_muller._monomial_rows": {
+    "module": "flagquantum.qec.reed_muller",
+    "qualname": "_monomial_rows"
+  },
+  "flagquantum.qec.reed_muller._punctured": {
+    "module": "flagquantum.qec.reed_muller",
+    "qualname": "_punctured"
+  },
+  "flagquantum.qec.reed_muller.reed_muller_code": {
+    "module": "flagquantum.qec.reed_muller",
+    "qualname": "reed_muller_code"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.__post_init__": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.__post_init__"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.distance": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.distance"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.x_distance": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.x_distance"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.z_distance": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.z_distance"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.num_data_qubits": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.num_data_qubits"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.data_qubits": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.data_qubits"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.num_stabilizer_generators": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.num_stabilizer_generators"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.num_gauge_qubits": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.num_gauge_qubits"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.num_logical_qubits": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.num_logical_qubits"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.stabilizer_generators": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.stabilizer_generators"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.gauge_generators": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.gauge_generators"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.logical_operators": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.logical_operators"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.__init__": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.__init__"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.__repr__": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.__repr__"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.__eq__": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.__eq__"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.__setattr__": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.__setattr__"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.__delattr__": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.__delattr__"
+  },
+  "flagquantum.qec.subsystem.SubsystemCode.__hash__": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "SubsystemCode.__hash__"
+  },
+  "flagquantum.qec.subsystem.tesseract_code": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "tesseract_code"
+  },
+  "flagquantum.qec.subsystem.tesseract_column_swap": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "tesseract_column_swap"
+  },
+  "flagquantum.qec.subsystem.tesseract_free_cnot_pairs": {
+    "module": "flagquantum.qec.subsystem",
+    "qualname": "tesseract_free_cnot_pairs"
+  },
+  "flagquantum.qec.floquet._phase_rows": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_phase_rows"
+  },
+  "flagquantum.qec.floquet._combination": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_combination"
+  },
+  "flagquantum.qec.floquet._same_span": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_same_span"
+  },
+  "flagquantum.qec.floquet._surviving": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_surviving"
+  },
+  "flagquantum.qec.floquet._commutes": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_commutes"
+  },
+  "flagquantum.qec.floquet._advance": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_advance"
+  },
+  "flagquantum.qec.floquet._centralizer": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_centralizer"
+  },
+  "flagquantum.qec.floquet._quotient_basis": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_quotient_basis"
+  },
+  "flagquantum.qec.floquet._least_logical_weight": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_least_logical_weight"
+  },
+  "flagquantum.qec.floquet._support": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_support"
+  },
+  "flagquantum.qec.floquet._to_pauli": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_to_pauli"
+  },
+  "flagquantum.qec.floquet._settle": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_settle"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.__post_init__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.__post_init__"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.num_operators": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.num_operators"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.num_independent_operators": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.num_independent_operators"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.__init__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.__init__"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.__repr__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.__repr__"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.__eq__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.__eq__"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.__setattr__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.__setattr__"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.__delattr__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.__delattr__"
+  },
+  "flagquantum.qec.floquet.MeasurementPhase.__hash__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "MeasurementPhase.__hash__"
+  },
+  "flagquantum.qec.floquet.FloquetCode": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode"
+  },
+  "flagquantum.qec.floquet.FloquetCode.__post_init__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.__post_init__"
+  },
+  "flagquantum.qec.floquet.FloquetCode._derive": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode._derive"
+  },
+  "flagquantum.qec.floquet.FloquetCode.num_data_qubits": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.num_data_qubits"
+  },
+  "flagquantum.qec.floquet.FloquetCode.data_qubits": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.data_qubits"
+  },
+  "flagquantum.qec.floquet.FloquetCode.num_phases": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.num_phases"
+  },
+  "flagquantum.qec.floquet.FloquetCode.period": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.period"
+  },
+  "flagquantum.qec.floquet.FloquetCode.num_transient_rounds": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.num_transient_rounds"
+  },
+  "flagquantum.qec.floquet.FloquetCode.num_stabilizer_generators": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.num_stabilizer_generators"
+  },
+  "flagquantum.qec.floquet.FloquetCode.num_logical_qubits": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.num_logical_qubits"
+  },
+  "flagquantum.qec.floquet.FloquetCode.least_logical_weight": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.least_logical_weight"
+  },
+  "flagquantum.qec.floquet.FloquetCode.stabilizer_generators": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.stabilizer_generators"
+  },
+  "flagquantum.qec.floquet.FloquetCode.logical_operators": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.logical_operators"
+  },
+  "flagquantum.qec.floquet.FloquetCode.steady_stabilizer_groups": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.steady_stabilizer_groups"
+  },
+  "flagquantum.qec.floquet.FloquetCode.__init__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.__init__"
+  },
+  "flagquantum.qec.floquet.FloquetCode.__repr__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.__repr__"
+  },
+  "flagquantum.qec.floquet.FloquetCode.__eq__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.__eq__"
+  },
+  "flagquantum.qec.floquet.FloquetCode.__setattr__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.__setattr__"
+  },
+  "flagquantum.qec.floquet.FloquetCode.__delattr__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.__delattr__"
+  },
+  "flagquantum.qec.floquet.FloquetCode.__hash__": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "FloquetCode.__hash__"
+  },
+  "flagquantum.qec.floquet._ring_edges": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "_ring_edges"
+  },
+  "flagquantum.qec.floquet.ring_floquet_code": {
+    "module": "flagquantum.qec.floquet",
+    "qualname": "ring_floquet_code"
+  }
+}

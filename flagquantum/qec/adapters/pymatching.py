@@ -75,10 +75,11 @@ from importlib import import_module
 from types import ModuleType
 from typing import Any
 
-from ..errors import CapabilityError
-from .decoding_graph import DecodingGraph, DecodingGraphEdge
-from .dem import DetectorErrorModel
-from .matching import MatchingDecodeResult, _defects
+from flagquantum.errors import CapabilityError
+from flagquantum.qec.codes._compat import _retain_module
+from flagquantum.qec.decoders.matching import MatchingDecodeResult, _defects
+from flagquantum.qec.decoding_graph import DecodingGraph, DecodingGraphEdge
+from flagquantum.qec.dem import DetectorErrorModel
 
 _EXTRA_NAME = "pymatching"
 # PyMatching reports the step from a detector to its virtual boundary as an edge
@@ -298,4 +299,13 @@ class PyMatchingDecoder:
 __all__ = (
     "MatchingDependencyError",
     "PyMatchingDecoder",
+)
+
+
+_retain_module(
+    "flagquantum.qec.adapters",
+    MatchingDependencyError,
+    _pymatching,
+    _translate,
+    PyMatchingDecoder,
 )
