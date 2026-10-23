@@ -1,4 +1,4 @@
-"""Approved contract for executing DynamicCircuit through the stable entry.
+"""Stable contract for executing DynamicCircuit through the stable entry.
 
 The native dynamic executor remains the numerical and performance oracle; these
 tests do not promote it or expose its result type through the stable API.
@@ -19,7 +19,8 @@ from flagquantum.dynamic import DynamicCircuit
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = ROOT / "contracts" / "dynamic-execution-unified-run-v1-candidate.json"
+CONTRACT = ROOT / "contracts" / "dynamic-execution-unified-run-v1.json"
+CANDIDATE = ROOT / "contracts" / "dynamic-execution-unified-run-v1-candidate.json"
 
 
 def _contract() -> dict[str, object]:
@@ -31,21 +32,39 @@ def _feedback_program() -> DynamicCircuit:
     return circuit.conditional("x", 1, classical_bit=0)
 
 
-def test_contract_records_exact_approval_and_performance_stage() -> None:
+def test_contract_records_exact_stable_promotion() -> None:
     contract = _contract()
 
-    assert contract["status"] == "approved_for_staged_implementation"
+    assert contract["status"] == "stable"
+    assert contract["promoted_at"] == "2026-10-23"
     assert contract["approval"] == {
         "approved_by": "API owner via explicit user directive",
         "approved_at": "2026-10-23",
-        "directive": "approve DYNAMIC-EXECUTION-UNIFIED-RUN-CONTRACT",
+        "directive": "approve DYNAMIC-EXECUTION-UNIFIED-RUN-STABLE-PROMOTION",
         "approved_scope": (
+            "stable local DynamicCircuit planning and execution through "
+            "fq.plan and fq.run"
+        ),
+    }
+    assert contract["history"] == {
+        "candidate_contract": (
+            "contracts/dynamic-execution-unified-run-v1-candidate.json"
+        ),
+        "candidate_approved_at": "2026-10-23",
+        "candidate_directive": "approve DYNAMIC-EXECUTION-UNIFIED-RUN-CONTRACT",
+        "candidate_scope": (
             "staged local DynamicCircuit planning and execution through "
             "fq.plan and fq.run"
         ),
     }
+    assert contract["migration"] == {
+        "supersedes": "contracts/dynamic-execution-unified-run-v1-candidate.json",
+        "candidate_removed": True,
+        "user_code_change_required": False,
+    }
+    assert not CANDIDATE.exists()
     assert contract["delivery_stage"] == {
-        "name": "performance_and_non_regression",
+        "name": "local_stable_complete",
         "runtime_activation": True,
         "public_behavior_change": False,
         "successor": "remote_capability_proposal",

@@ -17,6 +17,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Promote the completed local DynamicCircuit execution contract to stable.
+  `fq.plan(...)` and `fq.run(...)` remain the single planning and execution
+  entries, return `fq.ExecutionResult`, and preserve plan identity. This is a
+  contract-status change only: no signature, root export, schema, or runtime
+  behavior changes, and `run_dynamic` remains experimental.
 - Add a reproducible local performance runner for the stable DynamicCircuit
   `fq.plan` / `fq.run` path. It measures planning, explicit-plan execution,
   automatic planning and execution, the native numerical oracle, memory-bound
