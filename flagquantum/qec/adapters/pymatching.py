@@ -75,6 +75,8 @@ from importlib import import_module
 from types import ModuleType
 from typing import Any
 
+import torch
+
 from flagquantum.errors import CapabilityError
 from flagquantum.qec.codes._compat import _retain_module
 from flagquantum.qec.decoders.matching import MatchingDecodeResult, _defects
@@ -246,6 +248,84 @@ class PyMatchingDecoder:
             node = second if first == _BOUNDARY else first
             return (node, self.graph.boundary_node)
         return (first, second) if first < second else (second, first)
+
+    def decode_batch(self, detection_events: torch.Tensor) -> torch.Tensor:
+        """Predict logical flips for a CPU binary matrix of detection events.
+
+        Args:
+            detection_events: Dense bool or integer tensor of shape
+                ``(shots, graph.num_detectors)``. Noncontiguous input is copied.
+
+        Returns:
+            Caller-owned CPU bool tensor of shape ``(shots, num_observables)``.
+            This logical-only path reuses the graph and does not recover edges.
+
+        Raises:
+            TypeError: The input is not a dense bool or integer tensor.
+            ValueError: The rank, detector width or binary values are invalid.
+            CapabilityError: The input is not on CPU, the batch cannot be
+                decoded, or the SDK returns an invalid logical prediction.
+
+        Examples:
+            Install the optional pymatching extra to execute the matching step.
+
+            >>> from importlib.util import find_spec
+            >>> import torch
+            >>> from flagquantum.qec import DetectorErrorModel, DemError
+            >>> if find_spec("pymatching") is not None:
+            ...     model = DetectorErrorModel(1, 1, (DemError(0.1, (0,), (0,)),))
+            ...     decoder = PyMatchingDecoder.from_detector_error_model(model)
+            ...     result = decoder.decode_batch(torch.tensor([[0], [1]]))
+            ...     assert result.tolist() == [[False], [True]]
+        """
+        if not isinstance(detection_events, torch.Tensor):
+            raise TypeError("detection_events must be a torch.Tensor")
+        if detection_events.layout != torch.strided:
+            raise TypeError("detection_events must be a dense strided tensor")
+        if detection_events.dtype not in (
+            torch.bool,
+            torch.uint8,
+            torch.uint16,
+            torch.uint32,
+            torch.uint64,
+            torch.int8,
+            torch.int16,
+            torch.int32,
+            torch.int64,
+        ):
+            raise TypeError("detection_events must have bool or integer dtype")
+        if detection_events.device.type != "cpu":
+            raise CapabilityError("batch matching accepts CPU tensors only")
+        if detection_events.ndim != 2:
+            raise ValueError("detection_events must have shape (shots, detectors)")
+        if detection_events.shape[1] != self.graph.num_detectors:
+            raise ValueError(
+                f"detection_events must have {self.graph.num_detectors} detector columns"
+            )
+        if not bool(((detection_events == 0) | (detection_events == 1)).all()):
+            raise ValueError("detection_events must contain only binary values 0 and 1")
+        shots = detection_events.shape[0]
+        if shots == 0:
+            return torch.empty((0, self.graph.num_observables), dtype=torch.bool)
+        # Own the SDK buffer even when the caller already supplied uint8.
+        syndrome = detection_events.to(dtype=torch.uint8, copy=True).contiguous()
+        try:
+            predicted = self._matching.decode_batch(syndrome.numpy())
+        except ValueError as exc:
+            raise CapabilityError(
+                f"PyMatching could not decode the batch: {exc}"
+            ) from exc
+        try:
+            result = torch.as_tensor(predicted)
+        except (TypeError, ValueError, RuntimeError) as exc:
+            raise CapabilityError(
+                "PyMatching returned an invalid prediction buffer"
+            ) from exc
+        if result.shape != (shots, self.graph.num_observables):
+            raise CapabilityError("PyMatching returned an invalid prediction shape")
+        if not bool(((result == 0) | (result == 1)).all()):
+            raise CapabilityError("PyMatching returned nonbinary predictions")
+        return result.to(dtype=torch.bool, device="cpu").clone()
 
     def decode(self, detection_events: Iterable[int]) -> MatchingDecodeResult:
         """Return PyMatching's cheapest explanation of a syndrome.

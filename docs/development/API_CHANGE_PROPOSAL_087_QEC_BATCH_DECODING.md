@@ -1,8 +1,11 @@
 # Proposal 087: QEC batch logical prediction
 
-Status: proposed, not approved or implemented. Core owns the adapter;
-Integration reviews the public API delta. This proposal grants no approval to
-change exports, snapshots, serialization, or the existing decoder protocol.
+Status: explicitly approved by the user on 2026-10-24; implementation pending
+release. Core owns the adapter; Integration reviews the public API delta.
+Approval is limited to the Tensor-only method and atomic failure behavior below;
+it does not authorize changing exports, serialization or the decoder protocol.
+`contracts/qec-batch-prediction-v1.json` records this additive delta. Historical
+fixtures remain unchanged; compatibility checks apply the reviewed addition.
 
 ## Frozen development baseline
 
@@ -14,7 +17,8 @@ establish a published release. Use canonical owners and existing root exports.
 Existing capabilities are circuit sampling through the optional Stim boundary,
 measurement maps, exact DEM sampling, one decoder registry and single-shot
 PyMatching cross-checks. The SDK graph is already reused by a decoder instance.
-There is no public batch prediction or persistent sampler session. Do not repeat
+At that baseline there was no public batch prediction or persistent sampler
+session. Do not repeat
 the completed package restructuring or restore retired imports.
 
 ## First user workflow and executable evidence
@@ -26,18 +30,19 @@ PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py
 Install the existing stim and pymatching extras first. The example constructs a
 distance-three, three-round repetition experiment, samples the original noisy
 circuit in bounded chunks and counts complete-shot logical failures. It uses
-the existing single-shot decoder. Expected invariants are 128 completed shots,
+the approved batch logical-prediction method. Expected invariants are 128 completed shots,
 eight detector columns, one observable, and failures between zero and 128.
 The exact random count is version/architecture scoped, not a frozen constant.
 
 `tests/qec/test_stim_pymatching_baseline.py` independently recomputes detector and
 observable parity from raw measurements, compares the existing decoder with
 upstream batch prediction on the same graph, and checks a non-divisible tail
-batch. It does not certify the proposed batch API or performance.
+batch. The separate batch conformance suite verifies the new method; neither suite
+certifies performance.
 
 ## Proposed narrow API delta
 
-Add only this method on the existing `PyMatchingDecoder` after approval:
+The approved implementation adds only this method on `PyMatchingDecoder`:
 
 ```python
 def decode_batch(self, detection_events: torch.Tensor) -> torch.Tensor:
@@ -107,9 +112,8 @@ globally by circuit hash or serialize SDK objects.
 4. Design persistent sampler ownership separately, then extend the same proven
    path to Surface memory and explicitly scoped circuit-level Pauli noise.
 
-Review decisions required: approve the narrow Tensor-only method and atomic
-failure behavior, or revise them before implementation. Authorization to explore
-the overall integration is not recorded as approval of a new public signature.
+The user explicitly approved this narrow Tensor-only method and atomic failure
+behavior on 2026-10-24. No other public signature is authorized by this proposal.
 
 ## S0 validation record (2026-10-24)
 
@@ -132,6 +136,6 @@ reused environment lacks setuptools in two unrelated installation/benchmark
 imports. It did not execute the selected 15,203 tests and is not a passing gate.
 No tests were excluded and no frozen fixtures were updated.
 
-The new example still recompiles sampling per chunk and loops over single-shot
-decodes. Those limitations are deliberately exposed until the reviewed batch and
-sampling-lifecycle work is implemented.
+The S0 example used single-shot decoding. The approved follow-up now uses batch
+prediction; sampler compilation still occurs per chunk. A persistent sampler
+lifecycle remains a separate design task.

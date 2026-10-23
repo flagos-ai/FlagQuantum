@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_release",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_087_QEC_BATCH_DECODING.md",
+  "approval": {
+    "source": "Explicit user approval in the implementation chat",
+    "date": "2026-10-24",
+    "scope": "Add PyMatchingDecoder.decode_batch only; preserve existing exports, methods, fields and registry"
+  },
+  "additive_methods": {
+    "PyMatchingDecoder": {
+      "decode_batch": "(self, detection_events: 'torch.Tensor') -> 'torch.Tensor'"
+    }
+  },
+  "input": "CPU dense strided binary bool or integer Tensor[B,D]",
+  "output": "Caller-owned CPU bool Tensor[B,L]",
+  "empty_batch": "Tensor[0,L]",
+  "zero_observables": "Tensor[B,0], with reachability still checked",
+  "failure": "Atomic CapabilityError on SDK decode failure; no partial predictions",
+  "consumer": "tests/qec/test_restructure_compatibility.py",
+  "conformance_tests": "tests/qec/test_pymatching_batch.py"
+}

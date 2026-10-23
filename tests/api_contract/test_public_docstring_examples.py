@@ -84,6 +84,7 @@ from flagquantum.qec import (
     CssCodeMatrices,
     FloquetCode,
     MeasurementPhase,
+    PyMatchingDecoder,
     SubsystemCode,
     bivariate_bicycle_code,
     build_memory_circuit,
@@ -254,6 +255,7 @@ ENTRIES = (
     optimize,
     pauli_exponential_circuit,
     pauli_readout,
+    PyMatchingDecoder.decode_batch,
     parity_encoding,
     plan_lindblad_evolution,
     planner.plan,
@@ -328,6 +330,13 @@ def test_every_module_with_examples_is_covered() -> None:
     nothing ran it. Adding the module's public entry to ``ENTRIES`` is the fix.
     """
     covered = {entry.__module__ for entry in ENTRIES}
+    batch_owner = importlib.import_module("flagquantum.qec.adapters.pymatching")
+    assert batch_owner.PyMatchingDecoder.decode_batch is PyMatchingDecoder.decode_batch
+    assert (
+        Path(PyMatchingDecoder.decode_batch.__code__.co_filename).resolve()
+        == Path(batch_owner.__file__).resolve()
+    )
+    covered.add(batch_owner.__name__)
     # Historical pickle modules differ from physical owners after relocation.
     # Map only existing executable entries, checking their actual source files.
     for entry, owner_name in (
@@ -367,5 +376,5 @@ def test_every_module_with_examples_is_covered() -> None:
     uncovered = sorted(_modules_with_examples() - covered)
 
     assert uncovered == [], (
-        "docstring examples in modules that no doctest entry runs: " f"{uncovered}"
+        f"docstring examples in modules that no doctest entry runs: {uncovered}"
     )
