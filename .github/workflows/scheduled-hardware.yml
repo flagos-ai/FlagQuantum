@@ -44,7 +44,8 @@ jobs:
           STAGING: /nfs/fq-mps-capacity-${{ github.run_id }}-${{ github.run_attempt }}
           OUTPUT: /nfs/fq-mps-capacity-${{ github.run_id }}-${{ github.run_attempt }}-out
         run: |
-          python tools/run_mps_capacity_series.py --staging "$STAGING" --output "$OUTPUT"
+          /root/liuwei/FlagQuantum/.conda-root/envs/flagquantum-dev/bin/python \
+            tools/run_mps_capacity_series.py --staging "$STAGING" --output "$OUTPUT"
       - name: Retain raw measurements and diagnostics
         if: always()
         run: |

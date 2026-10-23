@@ -309,9 +309,9 @@ def campaign(args: argparse.Namespace) -> int:
                 passed = report["reason"] == "completed"
         finally:
             stop.set()
-            watcher.join(timeout=45)
             for job in jobs:
                 subprocess.run(job["cleanup_command"], timeout=30, check=True)
+            watcher.join(timeout=45)
         if not passed:
             raise SystemExit(
                 f"world {world} failed; retain all logs and diagnose before retry"
@@ -328,6 +328,10 @@ def campaign(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    def interrupted(signum: int, frame: Any) -> None:
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGTERM, interrupted)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--staging", type=Path)
     parser.add_argument("--output", type=Path)
