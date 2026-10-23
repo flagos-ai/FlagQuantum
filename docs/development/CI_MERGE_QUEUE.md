@@ -2,7 +2,9 @@
 
 ## Current policy
 
-Pull requests targeting `main` run the existing complete CI job graph once.
+Pull requests targeting `main` or a `refactor/qec-restructure-*` stack base run
+the existing complete CI job graph once. QEC stack targets receive the same
+automatic checks as main-target PRs; manual runs remain supplementary evidence.
 `CI complete` depends on every CI job, including source hygiene (`pre-commit`),
 compatibility matrices, packaging, coverage, optional SDKs and distributed proofs.
 A failed, cancelled or skipped dependency fails the aggregate. Required jobs are
@@ -20,7 +22,7 @@ checks retain this protection. New pushes to one PR cancel its obsolete run.
 
 ## Workflow ownership
 
-- `ci.yml`: full pull-request CI and manual full validation. It has no `push` or
+- `ci.yml`: full main/QEC-stack pull-request CI and manual full validation. It has no `push` or
   `merge_group` trigger. Test selections and thresholds are unchanged.
 - `pre-commit.yaml`: manual source-hygiene diagnostics. Both it and the CI job use
   `.github/actions/source-hygiene`, so there is one implementation of the hooks.

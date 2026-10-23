@@ -28,7 +28,7 @@ print(result.logical_error_rate)
 
 ## Declare a code and its detection layout
 
-`codes.py` holds the code records and `circuit.py` turns one into a memory
+The `codes` package holds the code records and `circuit.py` turns one into a memory
 experiment. This is the code-independent layer beside the frozen repetition
 profile:
 
@@ -516,7 +516,7 @@ the four blocks a caller writes, and the code algebra they are held to, belong t
 is [CssCode](css_code.py), which wraps a `CssCodeMatrices` with a **stated**
 distance -- the shape the section above uses. The distance search described earlier
 in this section is what the declared and derived families go through in
-[codes.py](codes.py) rather than what this route does, so the paragraphs above
+[codes/__init__.py](codes/__init__.py) rather than what this route does, so the paragraphs above
 stand as written about the families and about the bound, and what changes is which
 class the four blocks are handed to. The eight declared records are the set this
 section names; `get_code` reaches three of them by name.
@@ -1243,7 +1243,7 @@ at a time and for the projections those windows are read through,
 [adapters.py](adapters.py) for the PyMatching cross-check,
 [sampling.py](sampling.py) for sampling detection events from a memory circuit,
 [dem_circuit.py](dem_circuit.py) for writing a model as a circuit and reading it
-back, [noise.py](noise.py) for code-specific noise profiles, [codes.py](codes.py)
+back, [noise.py](noise.py) for code-specific noise profiles, [codes/__init__.py](codes/__init__.py)
 for code records, [css_code.py](css_code.py) for a code record built from
 parity-check matrices, [dem_text.py](dem_text.py) for the stim text reader,
 [circuit.py](circuit.py) for detector and observable layouts, and
