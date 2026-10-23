@@ -36,6 +36,7 @@ from .execution_plan_contract import (
     plan_execution_program,
     plan_noise_model,
     plan_program,
+    plan_resolved_options,
     validate_plan_environment,
 )
 from .measurements import validate_measurements
@@ -299,9 +300,47 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     if any(
         instruction_is_dynamic(instruction) for instruction in source_ir.instructions
     ):
-        raise CapabilityError(
-            "dynamic ExecutionPlan is valid but stable execution is not active yet; "
-            "use fq.experimental.dynamic.run_dynamic(..., shots=...)"
+        if decision["device"] == "cpu" and decision["backend"] == "pytorch":
+            _require_local_cpu_capabilities(
+                str(decision["backend"]),
+                str(decision["precision"]),
+            )
+        from ..dynamic import DynamicCircuit
+        from .dynamic.execution import run_dynamic
+
+        resolved = plan_resolved_options(execution_plan)
+        shots = resolved["shots"]
+        seed = resolved["seed"]
+        if type(shots) is not int or shots < 1:  # pragma: no cover - plan invariant
+            raise ExecutionPlanContractError(
+                "options_fingerprint_mismatch",
+                "dynamic ExecutionPlan requires a positive integer shots value",
+            )
+        if seed is not None and (type(seed) is not int or seed < 0):
+            raise ExecutionPlanContractError(
+                "options_fingerprint_mismatch",
+                "dynamic ExecutionPlan seed must be null or a non-negative integer",
+            )
+        program = DynamicCircuit.from_ir(
+            source_ir,
+            bsz=batch_size,
+            device=str(decision["device"]),
+            dtype=getattr(torch, str(decision["precision"])),
+        )
+        native = run_dynamic(
+            program,
+            shots=shots,
+            seed=seed,
+            max_batched_bytes=(
+                int(decision["memory_limit_bytes"])
+                if decision["memory_limit_bytes"] is not None
+                else 256 * 1024**2
+            ),
+        )
+        return replace(
+            native.to_execution_result(),
+            plan=execution_plan,
+            provenance={},
         )
     if decision["device"] == "cpu" and decision["backend"] == "pytorch":
         _require_local_cpu_capabilities(

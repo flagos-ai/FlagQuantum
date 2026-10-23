@@ -79,15 +79,20 @@ def test_dynamic_plan_tampering_still_fails_under_plan_v1() -> None:
     assert captured.value.reason_code == "program_fingerprint_mismatch"
 
 
-def test_dynamic_plan_and_direct_run_remain_execution_gated() -> None:
+def test_dynamic_plan_and_direct_run_use_the_same_stable_result_contract() -> None:
     circuit = _feedback_program()
     options = fq.ExecutionOptions(shots=16, seed=3)
     plan = fq.plan(circuit, options=options)
 
-    with pytest.raises(fqe.CapabilityError, match="stable execution is not active"):
-        fq.run(plan)
-    with pytest.raises(fqe.CapabilityError, match="stable execution is not active"):
-        fq.run(circuit, options=options)
+    explicit = fq.run(plan)
+    automatic = fq.run(circuit, options=options)
+
+    assert isinstance(explicit, fq.ExecutionResult)
+    assert isinstance(automatic, fq.ExecutionResult)
+    assert explicit.plan is plan
+    assert automatic.plan is not None
+    assert explicit.plan.identity == automatic.plan.identity
+    assert torch.equal(explicit.samples, automatic.samples)
 
 
 @pytest.mark.parametrize(
@@ -138,6 +143,16 @@ def test_dynamic_planning_rejects_gradient_carrying_parameters() -> None:
     circuit = DynamicCircuit(1).rx(0, theta=theta).measure(0, classical_bit=0)
 
     with pytest.raises(fqe.CapabilityError, match="support gradients"):
+        fq.plan(circuit, options=fq.ExecutionOptions(shots=8))
+
+
+def test_dynamic_planning_rejects_unserialized_custom_initial_states() -> None:
+    circuit = DynamicCircuit(
+        1,
+        inputs=torch.tensor([[0.0, 1.0]], dtype=torch.complex64),
+    ).measure(0, classical_bit=0)
+
+    with pytest.raises(fqe.CapabilityError, match="custom initial states"):
         fq.plan(circuit, options=fq.ExecutionOptions(shots=8))
 
 

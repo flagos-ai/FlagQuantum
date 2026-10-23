@@ -14,18 +14,24 @@ def main() -> None:
     circuit.reset(0)
     circuit.measure(0, classical_bit=1)
 
-    dynamic = fq.experimental.dynamic.run_dynamic(circuit, shots=128, seed=7)
-    result = dynamic.to_execution_result()
+    options = fq.ExecutionOptions(shots=128, seed=7)
+    plan = fq.plan(circuit, options=options)
+    result = fq.run(plan)
 
-    assert torch.equal(dynamic.final_samples[:, 1], dynamic.classical_bits[:, 0])
-    assert torch.count_nonzero(dynamic.final_samples[:, 0]) == 0
-    assert torch.count_nonzero(dynamic.classical_bits[:, 1]) == 0
+    assert result.samples is not None
+    classical_bits = result.measurement("mid_circuit_measurement").value
+    assert isinstance(classical_bits, torch.Tensor)
+    assert torch.equal(result.samples[:, 1], classical_bits[:, 0])
+    assert torch.count_nonzero(result.samples[:, 0]) == 0
+    assert torch.count_nonzero(classical_bits[:, 1]) == 0
+    assert result.plan is plan
     assert result.runtime["mid_circuit_measurements_available"] is True
     print(
         {
-            "final_samples": dynamic.final_samples[:8].tolist(),
-            "classical_bits": dynamic.classical_bits[:8].tolist(),
-            "execution_semantics": dynamic.execution_semantics,
+            "final_samples": result.samples[:8].tolist(),
+            "classical_bits": classical_bits[:8].tolist(),
+            "execution_semantics": result.runtime["mode"],
+            "plan_identity": plan.identity,
         }
     )
 

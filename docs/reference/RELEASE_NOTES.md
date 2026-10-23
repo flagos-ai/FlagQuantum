@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Execute supported noiseless `DynamicCircuit` programs through the stable
+  `fq.plan(...)` and `fq.run(...)` workflow on local CPU. Direct `shots=` and
+  restored `ExecutionPlan` execution now return the stable `ExecutionResult`
+  while preserving plan identity, batch size, precision, and seeded sampling.
+  Noise, custom initial states, remote execution, and native dynamic result
+  fields remain outside this stable slice and fail closed.
 - Refuse collisions between explicit and generated Lindblad expectation output
   names with `duplicate_output_name`, instead of silently overwriting a result.
   Supply distinct names to keep both outputs. The existing planner now captures
