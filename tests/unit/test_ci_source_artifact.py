@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("ci.yml", "jax-optional"),
         ("ci.yml", "azure-optional"),
         ("ci.yml", "triton-optional"),
-        ("ci.yml", "qiskit-optional"),
+        pytest.param("ci.yml", "qiskit-compat", id="ci.yml-qiskit-optional"),
         ("ci.yml", "cirq-optional"),
         ("ci.yml", "braket-optional"),
         ("ci.yml", "cudaq-optional"),

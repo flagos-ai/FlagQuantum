@@ -151,8 +151,12 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     fake_timeout = tmp_path / "timeout"
     fake_timeout.write_text(
         "#!/bin/bash\n"
-        'test "$1" = --kill-after=10s && test "$2" = 180s || exit 2\n'
-        'if [ "$MIRROR_FAILURE" = timeout ]; then exit 124; fi\n'
+        'test "$1" = --kill-after=10s || exit 2\n'
+        'case "$2" in\n'
+        '180s) if [ "$MIRROR_FAILURE" = timeout ]; then exit 124; fi ;;\n'
+        "300s) ;;\n"
+        "*) exit 2 ;;\n"
+        "esac\n"
         "shift 2\n"
         'exec "$@"\n'
     )

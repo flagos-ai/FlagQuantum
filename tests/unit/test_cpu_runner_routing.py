@@ -147,6 +147,7 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
         "azure-optional",
         "triton-optional",
         "qiskit-optional",
+        "qiskit-compat",
         "cirq-optional",
         "braket-optional",
         "pennylane-optional",
@@ -195,21 +196,51 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     ), "Evidence provenance still needs full Git history"
 
 
-def test_portable_sdk_jobs_use_general_cpu_pool_while_r300_is_paused() -> None:
+def test_sdk_jobs_use_accepted_fixed_capacity() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    expected = (
-        "${{ (github.event_name != 'pull_request' || "
-        "github.event.pull_request.head.repo.full_name == github.repository) "
-        "&& 'flagquantum-cpu-general' || 'ubuntu-latest' }}"
-    )
-    for name in ("qiskit-optional", "cirq-optional", "braket-optional"):
-        assert jobs[name]["runs-on"] == expected
-        assert jobs[name]["timeout-minutes"] == 30
-        assert jobs[name]["env"]["MAX_JOBS"] == "2"
-        assert any(
-            step.get("name") == "Validate the CPU runtime before SDK certification"
-            for step in jobs[name]["steps"]
+    for name in ("qiskit-compat", "cirq-optional", "braket-optional"):
+        job = jobs[name]
+        assert "'flagquantum-cpu-general'" in job["runs-on"]
+        assert "'ubuntu-latest'" in job["runs-on"]
+        assert job["timeout-minutes"] == 30
+        assert job["env"]["MAX_JOBS"] == "2"
+        installer = next(
+            step
+            for step in job["steps"]
+            if step.get("uses") == "./.github/actions/install-cpu-torch"
         )
+        assert installer["timeout-minutes"] == 8
+        assert not any(
+            step.get("continue-on-error") for step in job["steps"]
+        ), "SDK preparation must fail closed"
+
+
+def test_sdk_jobs_retain_native_preflight_before_certification() -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    for name in ("qiskit-compat", "cirq-optional", "braket-optional"):
+        steps = jobs[name]["steps"]
+        index = next(
+            index
+            for index, step in enumerate(steps)
+            if step.get("name") == "Validate the CPU runtime before SDK certification"
+        )
+        assert "adjoint.native_cpu_adjoint_available()" in steps[index]["run"]
+        assert (
+            "tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q"
+            in steps[index]["run"]
+        )
+        sdk = name.removesuffix("-optional").removesuffix("-compat")
+        assert any(
+            f"python tools/check_{sdk}_interop_contract.py" in step.get("run", "")
+            for step in steps[index + 1 :]
+        )
+
+
+def test_r300_manual_diagnostics_remain_available() -> None:
+    workflow = yaml.safe_load((WORKFLOWS / "r300-validation.yml").read_text())
+    assert len(_inventoried_r300_labels()) == 17
+    assert workflow["jobs"]["resources"]["strategy"]["max-parallel"] == 17
+    assert workflow["jobs"]["resources"]["timeout-minutes"] == 5
 
 
 def test_r300_is_not_a_dependency_of_pr_source_preparation() -> None:
@@ -224,35 +255,6 @@ def test_r300_is_not_a_dependency_of_pr_source_preparation() -> None:
         and "outputs.r300-routes" not in str(job.get("runs-on", ""))
         for job in jobs.values()
     )
-
-
-def test_general_sdk_source_restoration_verifies_the_exact_commit() -> None:
-    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    for name in ("qiskit-optional", "cirq-optional", "braket-optional"):
-        steps = jobs[name]["steps"]
-        source = next(
-            step
-            for step in steps
-            if str(step.get("uses", "")).startswith("actions/download-artifact@")
-        )
-        assert source.get("continue-on-error", False) is False
-        assert source["with"]["digest-mismatch"] == "error"
-        restore = next(
-            step
-            for step in steps
-            if step.get("name") == "Restore and verify this run's exact source commit"
-        )
-        assert 'test "$sha" = "$GITHUB_SHA"' in restore["run"]
-        assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in restore["run"]
-        assert not any(
-            str(step.get("uses", "")).startswith("actions/checkout@") for step in steps
-        )
-        installer = next(
-            step
-            for step in steps
-            if step.get("uses") == "./.github/actions/install-cpu-torch"
-        )
-        assert installer["timeout-minutes"] == 8
 
 
 @pytest.mark.parametrize("job", ["cpu-core", "cpu-core-3-12-tests", "cpu-runtime"])

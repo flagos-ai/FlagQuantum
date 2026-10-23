@@ -1,15 +1,27 @@
 {
   "schema_version": "1.0",
-  "status": "approved_for_staged_implementation",
+  "status": "stable",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_084_DYNAMIC_EXECUTION_UNIFIED_RUN.md",
+  "promoted_at": "2026-10-23",
   "approval": {
     "approved_by": "API owner via explicit user directive",
     "approved_at": "2026-10-23",
-    "directive": "approve DYNAMIC-EXECUTION-UNIFIED-RUN-CONTRACT",
-    "approved_scope": "staged local DynamicCircuit planning and execution through fq.plan and fq.run"
+    "directive": "approve DYNAMIC-EXECUTION-UNIFIED-RUN-STABLE-PROMOTION",
+    "approved_scope": "stable local DynamicCircuit planning and execution through fq.plan and fq.run"
+  },
+  "history": {
+    "candidate_contract": "contracts/dynamic-execution-unified-run-v1-candidate.json",
+    "candidate_approved_at": "2026-10-23",
+    "candidate_directive": "approve DYNAMIC-EXECUTION-UNIFIED-RUN-CONTRACT",
+    "candidate_scope": "staged local DynamicCircuit planning and execution through fq.plan and fq.run"
+  },
+  "migration": {
+    "supersedes": "contracts/dynamic-execution-unified-run-v1-candidate.json",
+    "candidate_removed": true,
+    "user_code_change_required": false
   },
   "delivery_stage": {
-    "name": "performance_and_non_regression",
+    "name": "local_stable_complete",
     "runtime_activation": true,
     "public_behavior_change": false,
     "successor": "remote_capability_proposal"
