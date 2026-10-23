@@ -1,0 +1,551 @@
+{
+  "captured_from": "3dac28c30a437269a8d39f476d33b3a28da5784d",
+  "plans": {
+    "circuit_bell": {
+      "decision": {
+        "allow_approximate": false,
+        "allow_backend_fallback": false,
+        "backend": "pytorch",
+        "batch_size": 1,
+        "device": "cpu",
+        "memory_limit_bytes": null,
+        "mode": "statevector",
+        "precision": "complex64",
+        "recommended_mode": "local",
+        "require_gradients": false,
+        "state_bytes": 32,
+        "target": "auto",
+        "world_size": 1
+      },
+      "environment_requirements": {
+        "allow_approximate": false,
+        "backend": "pytorch",
+        "device_kind": "cpu",
+        "distribution_semantics": "single_device_fast_path",
+        "precision": "complex64",
+        "protocol": "flagquantum.execution_environment",
+        "require_gradients": false,
+        "version": "1.0",
+        "world_size": 1
+      },
+      "extensions": [],
+      "fingerprints": {
+        "compiler": "f2a3055754a5597685621a4a5f8d10afa7d1bc475c5b974954362c6cb09544e7",
+        "environment": "2da503d15493e098c7ba5fbafa48874430aa3544bfde9dc882e41d9f63718964",
+        "options": "1c15689c55bb13636e0fde1f0dfe4b8d5884adac8dbc730d68b66480c392de0a",
+        "program": "dd90946e309a1ae5cbdaab264adacd69bbc6a9af803de3cd4c5b56735eda1283"
+      },
+      "identity": "43a694fd8313f8b6c4a0ee88b75f00b566a0cc1cb9e509babfe7e3c47ea14570",
+      "program": {
+        "dtype": "complex64",
+        "instructions": [
+          {
+            "matrix": null,
+            "metadata": {},
+            "opcode": "h",
+            "params": {},
+            "wires": [
+              0
+            ]
+          },
+          {
+            "matrix": null,
+            "metadata": {},
+            "opcode": "cx",
+            "params": {},
+            "wires": [
+              0,
+              1
+            ]
+          }
+        ],
+        "kind": "flagquantum.circuit_ir",
+        "measurements": [
+          {
+            "kind": "probabilities",
+            "metadata": {
+              "fq_output_index": 0,
+              "fq_output_kind": "probabilities",
+              "fq_output_name": null
+            },
+            "shots": null,
+            "wires": [
+              0,
+              1
+            ]
+          }
+        ],
+        "metadata": {
+          "batch_size": 1,
+          "logical_state_shape": null
+        },
+        "n_wires": 2,
+        "observables": [],
+        "shape": [
+          1,
+          4
+        ],
+        "version": "1.0"
+      },
+      "requested_options": {
+        "allow_approximate": null,
+        "allow_backend_fallback": null,
+        "backend": null,
+        "batch_size": null,
+        "device": null,
+        "memory_limit_bytes": null,
+        "mode": null,
+        "precision": null,
+        "require_gradients": null,
+        "schema": "flagquantum.execution_options",
+        "seed": null,
+        "shots": null,
+        "target": null,
+        "version": "1.0"
+      },
+      "resolved_options": {
+        "allow_approximate": false,
+        "allow_backend_fallback": false,
+        "backend": "pytorch",
+        "batch_size": 1,
+        "device": "cpu",
+        "memory_limit_bytes": null,
+        "mode": "auto",
+        "precision": "complex64",
+        "require_gradients": false,
+        "seed": null,
+        "shots": null,
+        "target": "auto"
+      },
+      "schema": "flagquantum.execution_plan",
+      "version": "1.0"
+    },
+    "circuit_h": {
+      "decision": {
+        "allow_approximate": false,
+        "allow_backend_fallback": false,
+        "backend": "pytorch",
+        "batch_size": 1,
+        "device": "cpu",
+        "memory_limit_bytes": null,
+        "mode": "statevector",
+        "precision": "complex64",
+        "recommended_mode": "local",
+        "require_gradients": false,
+        "state_bytes": 16,
+        "target": "auto",
+        "world_size": 1
+      },
+      "environment_requirements": {
+        "allow_approximate": false,
+        "backend": "pytorch",
+        "device_kind": "cpu",
+        "distribution_semantics": "single_device_fast_path",
+        "precision": "complex64",
+        "protocol": "flagquantum.execution_environment",
+        "require_gradients": false,
+        "version": "1.0",
+        "world_size": 1
+      },
+      "extensions": [],
+      "fingerprints": {
+        "compiler": "f2a3055754a5597685621a4a5f8d10afa7d1bc475c5b974954362c6cb09544e7",
+        "environment": "2da503d15493e098c7ba5fbafa48874430aa3544bfde9dc882e41d9f63718964",
+        "options": "1c15689c55bb13636e0fde1f0dfe4b8d5884adac8dbc730d68b66480c392de0a",
+        "program": "c164a8a136e6d4604cf3374ca0bcef415e4d5058947b5a2139ac35aa1e400996"
+      },
+      "identity": "b57793fdde1bf074fefbf18a4b2d111ac11f4bd025a062d3b422258586e9ed7b",
+      "program": {
+        "dtype": "complex64",
+        "instructions": [
+          {
+            "matrix": null,
+            "metadata": {},
+            "opcode": "h",
+            "params": {},
+            "wires": [
+              0
+            ]
+          }
+        ],
+        "kind": "flagquantum.circuit_ir",
+        "measurements": [
+          {
+            "kind": "probabilities",
+            "metadata": {
+              "fq_output_index": 0,
+              "fq_output_kind": "probabilities",
+              "fq_output_name": null
+            },
+            "shots": null,
+            "wires": [
+              0
+            ]
+          }
+        ],
+        "metadata": {
+          "batch_size": 1,
+          "logical_state_shape": null
+        },
+        "n_wires": 1,
+        "observables": [],
+        "shape": [
+          1,
+          2
+        ],
+        "version": "1.0"
+      },
+      "requested_options": {
+        "allow_approximate": null,
+        "allow_backend_fallback": null,
+        "backend": null,
+        "batch_size": null,
+        "device": null,
+        "memory_limit_bytes": null,
+        "mode": null,
+        "precision": null,
+        "require_gradients": null,
+        "schema": "flagquantum.execution_options",
+        "seed": null,
+        "shots": null,
+        "target": null,
+        "version": "1.0"
+      },
+      "resolved_options": {
+        "allow_approximate": false,
+        "allow_backend_fallback": false,
+        "backend": "pytorch",
+        "batch_size": 1,
+        "device": "cpu",
+        "memory_limit_bytes": null,
+        "mode": "auto",
+        "precision": "complex64",
+        "require_gradients": false,
+        "seed": null,
+        "shots": null,
+        "target": "auto"
+      },
+      "schema": "flagquantum.execution_plan",
+      "version": "1.0"
+    },
+    "native_rydberg": {
+      "bindings": null,
+      "decision": {
+        "batch_size": 1,
+        "dimension": 3,
+        "dimensions": [
+          3
+        ],
+        "n_times": 2,
+        "n_wires": 1,
+        "numerics": {
+          "device": "cpu",
+          "method": "krylov-exponential",
+          "n_intervals": 1,
+          "order": null,
+          "precision": "complex128",
+          "require_gradients": false,
+          "solve_tolerance": 1e-12,
+          "step_size": 1.0,
+          "time_dependence": "piecewise_constant"
+        },
+        "trajectory_bytes": 288
+      },
+      "identity": "10fbdc4b8fa19ee00d9cac15b7794bbad4ec2222cfbfff097e300783211b75f5",
+      "program": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "rydberg.pulse",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "amplitude": 1.0,
+                      "atoms": [
+                        "a"
+                      ],
+                      "channel": "laser",
+                      "detuning": 0.0,
+                      "duration": 1.0,
+                      "kind": "pulse",
+                      "phase": 0.0,
+                      "start": 0.0
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "atoms": [
+            [
+              "a",
+              "trap"
+            ]
+          ],
+          "c6": 0.0,
+          "coordinate_frame": "program_local",
+          "drive_channels": [
+            "laser"
+          ],
+          "geometry_sampling": "interval_midpoint",
+          "kind": "rydberg",
+          "length_unit": "um",
+          "loss_rate": 0.0,
+          "minimum_separation": 1.0,
+          "sites": [
+            [
+              "trap",
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "time_unit": "us",
+          "transport_channels": []
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.0"
+      },
+      "request": {
+        "collapse_operators": [
+          {
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ]
+              ]
+            },
+            "rate": 0.0
+          },
+          {
+            "operator": {
+              "shape": [
+                3,
+                3
+              ],
+              "values": [
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ],
+                [
+                  [
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0
+                  ]
+                ]
+              ]
+            },
+            "rate": 0.0
+          }
+        ],
+        "dimensions": [
+          3
+        ],
+        "hamiltonians": [
+          {
+            "shape": [
+              3,
+              3
+            ],
+            "values": [
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ],
+              [
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ],
+                [
+                  0.0,
+                  0.0
+                ]
+              ]
+            ]
+          }
+        ],
+        "initial_density_matrix": {
+          "shape": [
+            3,
+            3
+          ],
+          "values": [
+            [
+              [
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "n_qubits": null,
+        "observables": [],
+        "return_density_matrices": false,
+        "times": [
+          0.0,
+          1.0
+        ]
+      },
+      "schema": "flagquantum.lindblad_plan",
+      "version": "1.7"
+    }
+  },
+  "scope": "Existing executable circuit plans 1.0 and Rydberg plan 1.7/source 1.0 before proposal 085 implementation"
+}
