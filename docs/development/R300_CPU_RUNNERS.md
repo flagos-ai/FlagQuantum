@@ -95,3 +95,72 @@ resource inventory jobs, the three Python workload probes and the
 `r300-workload-*` resource artifacts. The Python 3.12 probe also runs the default
 PR tier with a measured, bounded number of pytest workers. A new target should
 pass both inventory and the relevant native/SDK workload before receiving CI.
+
+## Unified pool admission
+
+The proposed shared selector is `[linux, x64, flagquantum-r300-cpu]`.
+It is not deployed, and the production jobs continue to use their qualified
+individual scale sets until the shared selector passes an actual workflow.
+
+The runner-side audit found Kubernetes `v1.31.14` in namespace `arc-runners`.
+The cpu04 runner uses service account
+`flagcicd-r300-cpu04-gha-rs-kube-mode`; its existing permissions allow reading
+its own Pod, but cluster-wide deployment and autoscaling-runner-set listing
+returned HTTP 403. Its runner and Docker sidecar have empty resource settings.
+The observed images are `harbor.baai.ac.cn/baai-infra/actions-runner:latest` and
+`harbor.baai.ac.cn/baai-infra/docker:dind-ubuntu-v2.0`. Kubernetes version and
+runner binary version do not establish the ARC controller/chart version.
+
+No local kubeconfig, R300 management SSH alias, or authoritative ARC deployment
+repository is available in this workspace. The runner's permissions must not be
+expanded to obtain cluster administration. An existing cluster operator must
+provide a supported management context or apply reviewed deployment changes.
+
+Repeat the read-only audit without downloading source or starting native tests:
+
+```bash
+gh workflow run r300-validation.yml --repo flagos-ai/FlagQuantum \
+  --ref ci/r300-unified-pool -f audit_only=true
+```
+
+The audit reports only selected Pod/deployment/scale-set metadata through existing
+service-account permissions. It never reads Kubernetes Secrets, prints tokens,
+changes RBAC, or modifies cluster resources. HTTP 403 is recorded as an access
+boundary, not a successful configuration inspection.
+
+A cluster operator can collect the missing non-secret deployment evidence with:
+
+```bash
+helm list --all-namespaces --output json
+kubectl get deployments --all-namespaces \
+  -l app.kubernetes.io/name=gha-runner-scale-set-controller \
+  -o 'custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,IMAGE:.spec.template.spec.containers[*].image'
+kubectl get autoscalingrunnersets.actions.github.com --all-namespaces \
+  -o 'custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,CHART:.metadata.labels.helm\.sh/chart,LABELS:.spec.runnerScaleSetLabels,MIN:.spec.minRunners,MAX:.spec.maxRunners'
+```
+
+Admission sequence:
+
+1. Verify controller and chart versions. ARC 0.14.0 introduced multiple scale-set
+   labels ([release notes](https://github.blog/changelog/2026-03-19-actions-runner-controller-release-0-14-0/)).
+   Do not assume the installed version supports them or upgrade a shared
+   controller without inspecting its other consumers.
+2. Use the authoritative Helm/GitOps values to add `linux`, `x64`, and
+   `flagquantum-r300-cpu` to qualified R300 sets. Preserve each individual selector,
+   GitHub scope, runner-group restrictions, node placement and existing capacity
+   limits. Do not add the generic A800/MC550 `flagquantum-cpu` selector.
+3. Pin the runner image, provide Python/compiler prerequisites and the existing
+   CPU-wheel mirror/cache policy, and set measured CPU/memory requests and limits
+   for both runner and sidecar. Derive pool concurrency from node allocatable
+   resources and per-Pod budgets; shared host totals are not per-job capacity.
+4. Run concurrent smoke/native and SDK probes using only the shared selector.
+   Record actual selected scale sets, Pod limits, download source, queue delay,
+   test results and cleanup. Accept only healthy, qualified members; exclude
+   cpu16 while its repeated source-transfer failure remains unresolved.
+5. Move the three SDK jobs to the shared selector first. Then qualify additional
+   ordinary CPU jobs and a small coverage subset before broader migration.
+   Performance and distributed jobs retain their dedicated measured services.
+
+Rollback removes the shared selector from the affected deployment values and
+restores individually qualified job targets. Until operator access and the
+admission workflow are verified, no shared pool or new CPU migration is claimed.
