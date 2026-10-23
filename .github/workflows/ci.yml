@@ -414,7 +414,9 @@ jobs:
       - name: Measure dedicated CPU service limits
         run: python -I tools/ci_cpu_budget.py --dedicated
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
-      - uses: ./.github/actions/install-cpu-torch
+      - name: Install CPU PyTorch through the shared mirror policy
+        uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
         with:
           torch-spec: "torch>=2.13,<2.14"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
@@ -547,7 +549,9 @@ jobs:
       - name: Measure dedicated CPU service limits
         run: python -I tools/ci_cpu_budget.py --dedicated
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
-      - uses: ./.github/actions/install-cpu-torch
+      - name: Install CPU PyTorch through the shared mirror policy
+        uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
         with:
           torch-spec: "torch>=2.13,<2.14"
       - run: python -m pip install --no-build-isolation -e '.[dev]'
@@ -648,7 +652,9 @@ jobs:
       - name: Measure dedicated CPU service limits
         run: python -I tools/ci_cpu_budget.py --dedicated
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
-      - uses: ./.github/actions/install-cpu-torch
+      - name: Install CPU PyTorch through the shared mirror policy
+        uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
         with:
           torch-spec: "torch>=2.13,<2.14"
       - run: python -m pip install --no-build-isolation -e '.[dev]'

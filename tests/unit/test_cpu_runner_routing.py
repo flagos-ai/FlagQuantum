@@ -234,3 +234,19 @@ def test_r300_manual_diagnostics_remain_available() -> None:
     assert len(_inventoried_r300_labels()) == 17
     assert workflow["jobs"]["resources"]["strategy"]["max-parallel"] == 17
     assert workflow["jobs"]["resources"]["timeout-minutes"] == 5
+
+
+@pytest.mark.parametrize("job", ["cpu-core", "cpu-core-3-12-tests", "cpu-runtime"])
+def test_core_cpu_downloads_use_the_bounded_shared_mirror_policy(job: str) -> None:
+    jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
+    steps = jobs[job]["steps"]
+    installer = next(
+        step
+        for step in steps
+        if step.get("uses") == "./.github/actions/install-cpu-torch"
+    )
+    assert installer["timeout-minutes"] == 8
+    assert not any(
+        "/root/liuwei/fq-ci-bootstrap/cpu-wheels" in step.get("run", "")
+        for step in steps
+    )

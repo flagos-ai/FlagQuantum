@@ -12,6 +12,11 @@ class = "current_claim"
 reason = "Retains the profile-aware non-regression verdict consumed by DynamicCircuit promotion criterion 7."
 consumers = ["docs/development/API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md"]
 
+[entries."benchmarks/results/comparison/dynamic_unified_run_cpu_arm64_20261023.json"]
+class = "current_claim"
+reason = "Retains the measured local planning, stable-boundary overhead, strategy-reachability, correctness, and static-sentinel evidence used to close the DynamicCircuit unified-run performance gate."
+consumers = ["docs/development/API_CHANGE_PROPOSAL_084_DYNAMIC_EXECUTION_UNIFIED_RUN.md", "tests/api_contract/test_dynamic_execution_unified_run_contract.py"]
+
 [entries."benchmarks/results/local/representation_agreement_cpu_grid.json"]
 class = "regression_baseline"
 reason = "Records the regime in which statevector, MPS, and tensor-network execution were measured to agree, and the bound the spread held to inside it. The conformance test enforces the invariant over a small subgrid; this payload is the measured grid that subgrid stands for, including which cells were truncated and which all-to-all widths the tensor-network path could not afford."

@@ -5,6 +5,12 @@ models and decoders. The package keeps its 108 ordered public exports, original
 signatures/defaults, numerical behavior and code/decoder registration policy.
 The responsibility split changes where contributors edit implementations.
 
+The API owner has authorized direct retirement of 23 historical submodules.
+[Proposal 085](../development/API_CHANGE_PROPOSAL_085_QEC_HISTORICAL_IMPORT_RETIREMENT.md)
+lists every replacement and targets **0.4.0**. It is a separate breaking change;
+the current 0.3.1 implementation still retains all historical imports and pickle
+paths described below. The proposal does not remove any implementation.
+
 ## Find the implementation
 
 ```text
@@ -22,6 +28,14 @@ flagquantum/qec/
 remain shared leaves. They are active responsibilities, not unfinished moves.
 Core owns QEC. Each responsibility directory has a README describing allowed
 dependencies, exclusions, public entry points and a ten-minute edit/test path.
+
+At the accepted mainline merge, the QEC root still contains 29 Python files:
+23 historical import facades, five retained implementation leaves and the root
+API facade. The historical facades contain no own class/function definitions.
+Their objects live in the responsibility packages below. The
+[mainline acceptance record](../development/QEC_RESTRUCTURE_ACCEPTANCE.md) lists
+the remaining files, their purposes and post-merge evidence. Removing historical
+imports is a separate compatibility change, outside this structural delivery.
 
 | Existing import or responsibility | Physical owner |
 | --- | --- |
