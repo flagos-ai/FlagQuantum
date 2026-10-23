@@ -297,10 +297,10 @@ not require credentials or paid hardware in its ordinary test path.
 - [x] The API owner approved the proposal scope; the administrative renumbering
       from the requested 085 label to 086 is recorded.
 - [x] A protected candidate contract receives separate explicit authorization.
-- [ ] Dynamic program requirements are derived from IR rather than caller or
+- [x] Dynamic program requirements are derived from IR rather than caller or
       provider claims.
-- [ ] One coarse boolean cannot make a target executable.
-- [ ] Missing, stale, unknown, unmeasured, unsupported, and not-exposed facts
+- [x] One coarse boolean cannot make a target executable.
+- [x] Missing, stale, unknown, unmeasured, unsupported, and not-exposed facts
       produce distinct actionable blockers.
 - [ ] Direct and inspectable remote paths use the same match and target identity.
 - [ ] Routing and dialect lowering cannot weaken requirements.

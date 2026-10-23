@@ -65,9 +65,10 @@ This stage adds a candidate JSON contract and executable API-contract tests. It
 does not modify production source, public exports, signatures, serialized
 schemas, provider discovery, credentials, transport, or stable behavior.
 
-The next separately approved stage is the requirement and snapshot bridge. It
-must reuse `DynamicFeatureSet`, Core Target Capabilities, and
-`CloudBackendProfile` rather than adding a second public capability model.
+The requirement and snapshot bridge was separately approved on 2026-10-23. It
+reuses `DynamicFeatureSet`, Core Target Capabilities, and
+`CloudBackendProfile` rather than adding a second public capability model; see
+[`API_CHANGE_IMPLEMENTATION_086_DYNAMIC_REMOTE_REQUIREMENT_SNAPSHOT_BRIDGE.md`](API_CHANGE_IMPLEMENTATION_086_DYNAMIC_REMOTE_REQUIREMENT_SNAPSHOT_BRIDGE.md).
 
 ## Exit evidence
 
