@@ -42,8 +42,13 @@ jobs:
           uname -a
           cat /etc/os-release
           git --version
-          gcc --version
-          g++ --version
+          for compiler in gcc g++; do
+            if command -v "$compiler"; then
+              "$compiler" --version
+            else
+              echo "::warning::$compiler is absent from the base image"
+            fi
+          done
           df -h "$RUNNER_TEMP"
       - uses: actions/checkout@v4
         with:
@@ -93,6 +98,12 @@ jobs:
       PIP_DEFAULT_TIMEOUT: '30'
       PIP_RETRIES: '1'
     steps:
+      - name: Provision the native CPU compiler when absent
+        run: |
+          if ! command -v gcc || ! command -v g++; then
+            sudo -n timeout --kill-after=10s 240s apt-get update
+            sudo -n timeout --kill-after=10s 240s apt-get install -y --no-install-recommends build-essential
+          fi
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
