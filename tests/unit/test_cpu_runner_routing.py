@@ -133,8 +133,6 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
         "braket-optional",
         "pennylane-optional",
         "dependency-bounds",
-        "distributed-cpu",
-        "coverage-shard",
         "supply-chain",
         "cpu-core-3-12",
         "ci-complete",
@@ -147,6 +145,24 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
             str(step.get("uses", "")).startswith("actions/checkout@")
             for step in job["steps"]
         ), f"{name} must not need A800's unavailable HTTPS checkout"
+    # Long suites retain the measured A800 service budget; environment checks
+    # above remain portable across the general pool.
+    for name in ("distributed-cpu", "coverage-shard"):
+        job = jobs[name]
+        assert '\'["self-hosted","linux","x64","flagquantum-cpu"]\'' in job["runs-on"]
+        assert "github.event_name != 'pull_request'" in job["runs-on"]
+        assert "github.event.pull_request.head.repo.full_name == github.repository" in (
+            job["runs-on"]
+        )
+        assert "'[\"ubuntu-latest\"]'" in job["runs-on"]
+        assert not any(
+            str(step.get("uses", "")).startswith("actions/checkout@")
+            for step in job["steps"]
+        )
+    assert any(
+        step.get("run") == "python -I tools/ci_cpu_budget.py --dedicated"
+        for step in jobs["distributed-cpu"]["steps"]
+    )
     # CUDA-Q stays hosted because cold SDK downloads time out on the shared pool.
     assert jobs["cudaq-optional"]["runs-on"] == "ubuntu-latest"
     assert "'flagquantum-a100-cpu'" in jobs["quality"]["runs-on"]

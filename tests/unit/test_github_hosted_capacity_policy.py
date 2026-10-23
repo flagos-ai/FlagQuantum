@@ -95,6 +95,7 @@ BUCKETS = frozenset(
 
 CEILING = 16
 TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}"
+A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 GITHUB_HOSTED_UBUNTU_RUNNERS = frozenset({"ubuntu-latest", "ubuntu-22.04"})
 
@@ -336,7 +337,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     assert "python -m pip check" in commands
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
-    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
+    assert definition["runs-on"] == A800_CPU_ROUTE
     assert definition["timeout-minutes"] == (60 if job == "distributed-cpu" else 30)
     assert any(
         step.get("uses") == "./.github/actions/isolated-python" for step in steps
