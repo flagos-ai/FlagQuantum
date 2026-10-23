@@ -1,12 +1,6 @@
 name: R300 scale set validation
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - .github/workflows/r300-validation.yml
-      - tools/ci/r300_pool.py
-      - tools/ci/r300_pool.json
   workflow_dispatch:
     inputs:
       qualify_pool:
@@ -197,9 +191,7 @@ jobs:
 
   pool-qualification:
     needs: prepare-source
-    if: >-
-      ${{ needs.prepare-source.outputs.qualification-targets != '[]' &&
-      (inputs.qualify_pool || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.qualify_pool && needs.prepare-source.outputs.qualification-targets != '[]' }}
     runs-on: ${{ matrix.scale_set }}
     timeout-minutes: 25
     strategy:

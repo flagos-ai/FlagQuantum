@@ -1,10 +1,19 @@
 # R300 CPU CI runners
 
+PR scheduling on R300 is temporarily paused because source transfer and cold
+Python/compiler installation repeatedly timed out. Qiskit, Cirq and Braket use
+`flagquantum-cpu-general` for trusted runs and `ubuntu-latest` for fork PRs.
+All existing SDK versions, native preflight and required test commands remain.
+R300 qualification is manual-only; ordinary PRs never start R300 jobs or depend
+on an experimental pool plan. Historical qualification and proposed pool design
+below do not imply that R300 PR scheduling is currently enabled.
+
+
 Initial qualification used Qiskit on `flagcicd-r300-cpu05`, Braket on
 `flagcicd-r300-cpu03`, and Cirq on `flagcicd-r300-cpu04`. All three completed
 resource inventory, native CPU preflight and both certified SDK versions.
-Current workflow routes come from the qualified registry described below.
-Same-repository pull requests and manual CI runs use these targets. Fork pull
+The experimental registry below is disconnected from current PR jobs.
+Before the pause, same-repository pull requests and manual CI runs used these targets. Fork pull
 requests retain `ubuntu-latest` and its existing hosted concurrency buckets.
 The two certified SDK versions in each compatibility job remain unchanged.
 
@@ -89,8 +98,8 @@ gh workflow run r300-validation.yml --repo flagos-ai/FlagQuantum --ref main
 ```
 
 The full inventory and cross-version diagnostic are manually dispatched. Pool
-policy changes additionally qualify only the explicitly selected candidate batch
-on same-repository pull requests; ordinary PRs do not repeat the whole inventory.
+qualification is also manual-only while R300 PR scheduling is paused; ordinary
+PRs never repeat the inventory or start the candidate batch.
 For a full diagnostic, inspect all resource inventory jobs, the three Python
 workload probes and the
 `r300-workload-*` resource artifacts. The Python 3.12 probe also runs the default
@@ -101,9 +110,10 @@ pass both inventory and the relevant native/SDK workload before receiving CI.
 
 The workflow-level pool does not require cluster administration or new ARC
 labels. `tools/ci/r300_pool.json` owns the qualified member list, blocked targets,
-consumer jobs and an explicit candidate batch. `prepare-source` calls the standard
-library-only `tools/ci/r300_pool.py` once and passes the JSON plan to job
-`runs-on` expressions. Fork pull requests keep their GitHub-hosted fallback.
+consumer jobs and an explicit candidate batch. The manual validation workflow
+calls the standard-library-only `tools/ci/r300_pool.py` to select candidates.
+Its former PR routing integration is disconnected while scheduling is paused;
+ordinary source preparation does not run the planner. Fork PRs retain hosted runners.
 
 A plan assigns each consumer to a distinct qualified target, rotating the
 starting point by workflow run ID. This spreads work across runs; it is not
@@ -130,8 +140,8 @@ gh workflow run r300-validation.yml --repo flagos-ai/FlagQuantum \
   --ref ci/r300-unified-pool -f qualify_pool=true
 ```
 
-Pool-definition PRs run this batch automatically only when the PR originates
-in the same repository. At most four qualification jobs run concurrently.
+The batch runs only through an explicit manual dispatch. Ordinary PRs cannot
+start qualification while R300 is paused. At most four jobs run concurrently.
 Each target must transfer and verify the exact source commit, install the
 signed Ubuntu Python/compiler prerequisites, install CPU-only PyTorch, compile
 and assert the native extension, run representative native/backend/smoke tests

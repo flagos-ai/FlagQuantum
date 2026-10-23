@@ -85,48 +85,27 @@ def test_registry_rejects_duplicate_targets_and_missing_evidence(
         load_pool(path)
 
 
-def test_ci_consumes_one_shared_plan_and_qualification_excludes_fork_prs() -> None:
+def test_pool_qualification_stays_manual_while_pr_routing_is_paused() -> None:
     import yaml
 
     workflows = Path(__file__).resolve().parents[2] / ".github/workflows"
     jobs = yaml.safe_load((workflows / "ci.yml").read_text())["jobs"]
-    assert jobs["prepare-source"]["outputs"]["r300-routes"] == (
-        "${{ steps.r300-pool.outputs.r300-routes }}"
+    assert "r300-routes" not in jobs["prepare-source"]["outputs"]
+    assert all(
+        "outputs.r300-routes" not in str(job.get("runs-on", ""))
+        and "flagcicd-r300-" not in str(job.get("runs-on", ""))
+        for job in jobs.values()
     )
-    producer = next(
-        s for s in jobs["prepare-source"]["steps"] if s.get("id") == "r300-pool"
-    )
-    assert "python3 tools/ci/r300_pool.py" in producer["run"]
-    assert {
-        name
-        for name, job in jobs.items()
-        if "needs.prepare-source.outputs.r300-routes" in str(job.get("runs-on", ""))
-    } == set(load_pool()["jobs"])
-    for name in load_pool()["jobs"]:
-        assert (
-            "fromJSON(needs.prepare-source.outputs.r300-routes)['" + name + "']"
-            in jobs[name]["runs-on"]
-        )
-        assert (
-            "github.event.pull_request.head.repo.full_name == github.repository"
-            in jobs[name]["runs-on"]
-        )
     validation = yaml.safe_load((workflows / "r300-validation.yml").read_text())
+    events = validation.get("on") or validation[True]
+    assert set(events) == {"workflow_dispatch"}
     qualification = validation["jobs"]["pool-qualification"]
-    assert (
-        "github.event.pull_request.head.repo.full_name == github.repository"
-        in qualification["if"]
-    )
+    assert "github.event_name == 'workflow_dispatch'" in qualification["if"]
+    assert "inputs.qualify_pool" in qualification["if"]
     assert qualification["strategy"]["max-parallel"] == 4
     assert qualification["strategy"]["matrix"]["scale_set"] == (
         "${{ fromJSON(needs.prepare-source.outputs.qualification-targets) }}"
     )
-    for job in ("resources", "cpu-workload"):
-        assert (
-            "github.event_name == 'workflow_dispatch'" in validation["jobs"][job]["if"]
-        )
-    events = validation.get("on") or validation[True]
-    assert "pull_request_target" not in events
 
 
 def test_cli_outputs_valid_workflow_json(tmp_path: Path) -> None:
