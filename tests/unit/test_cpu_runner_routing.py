@@ -149,7 +149,9 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
     # above remain portable across the general pool.
     for name in ("distributed-cpu", "coverage-shard"):
         job = jobs[name]
-        assert '\'["self-hosted","linux","x64","flagquantum-a800-cpu"]\'' in job["runs-on"]
+        assert (
+            '\'["self-hosted","linux","x64","flagquantum-a800-cpu"]\'' in job["runs-on"]
+        )
         assert "github.event_name != 'pull_request'" in job["runs-on"]
         assert "github.event.pull_request.head.repo.full_name == github.repository" in (
             job["runs-on"]
