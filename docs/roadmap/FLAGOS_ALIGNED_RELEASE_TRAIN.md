@@ -260,6 +260,15 @@ trajectory, feedback or erasure-decoder record. The
 [delivery record](../api-changes/FQ-TERMINAL-INSTRUMENT-SAMPLING-20261023.md)
 retains independent merge and validation gates for the implementation.
 
+The native control-training example now composes the delivered primitives:
+analytic PyTorch optimization, detached native plan 1.7 replay, then explicit
+terminal a/b presence-instrument samples. Run
+`python -m examples.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`.
+Its observed probabilities are checked against independent exponential loss;
+shot-frequency uncertainty is separate from solver error. Physical survival,
+observed no-flag selection and unconditional RR remain distinct. This closes a
+user-workflow composition gap without a new API or an event/feedback claim.
+
 ### Reference scenarios
 
 | Scenario | Shared capability under test | Additional acceptance |

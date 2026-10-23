@@ -593,7 +593,8 @@ native numerical evolution; detector events and hardware submission remain open.
 
 ## Train native moving-atom controls
 
-Run `python -m examples.train_rydberg_controls --steps 40 --intervals 128` on CPU.
+Run `python -m examples.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`
+on CPU.
 The source declares a moving atom pair and one named pulse amplitude. Two
 per-interval amplitude bindings train through the existing Lindblad planner,
 Runge-Kutta integrator and PyTorch Adam; geometry, C6, loss and time boundaries
@@ -608,11 +609,27 @@ Final unconditional RR: 0.12278807
 Survival-conditioned RR: 0.14997368
 No-flag-selected RR: 0.14385816
 Exact numeric replay: True
+Observed flag labels: ['no_flag/no_flag', 'no_flag/flag', 'flag/no_flag', 'flag/flag']
+Observed flag probabilities: [0.85353566, 0.07033428, 0.07033428, 0.00579579]
 ```
 
-Survival conditioning and no-flag selection use different explicit denominators;
-no detector events are sampled. Detached plan replay preserves numbers rather
-than a training graph. The 128-interval default meets the existing 1e-10 frozen
+The remaining lines report four observed counts summing to `4096`,
+`Detection shots: 4096`, and `Detection replay: True`. Counts depend on the Torch
+version; seed 7 replays in the same CPU environment. Each frequency has binomial
+standard error `sqrt(p * (1 - p) / shots)`, separate from integration error.
+
+Survival conditioning and no-flag selection use different explicit denominators.
+Training uses analytic expectations; only the detached final plan requests dense
+states for Runtime terminal sampling. Detection uses the declared efficiency 0.8
+and zero false positives, with outcome order following atoms a/b. With equal
+g/r loss rates, each observed flag has probability `0.8 * (1 - exp(-0.1))`,
+independent of the optimized amplitudes. Consequently, a no-flag result includes
+undetected physical loss and is not a survival certificate. The no-flag RR ratio
+matches conditioning with the declared square-root Kraus branch. This is one
+terminal measurement, without timestamps or feedback.
+
+Detached plan replay preserves numbers rather than a training graph. The
+128-interval default meets the existing 1e-10 frozen
 unitary/gradient reference budget for this fixture. At 64 intervals one gradient
 differed by 2.28e-10 and failed that unchanged budget; refinement fixes the
 integration error. Imposed-path midpoint convergence remains a separate check.

@@ -9,6 +9,8 @@ import torch
 
 import flagquantum.lindblad as fql
 from examples.train_rydberg_controls import control_plan, train_controls
+from flagquantum.operators import SuperOperator
+from flagquantum.runtime import sample_terminal
 
 pytestmark = pytest.mark.integration
 
@@ -57,6 +59,65 @@ def test_native_pair_optimization_rebuilds_plans_and_reduces_loss() -> None:
     final = fql.run(control_plan(amplitudes)).expectation("rr")[-1].detach()
     assert (final - 0.12).square() < (initial - 0.12).square() / 100
     assert torch.isfinite(amplitudes).all()
+
+    # Training stays analytic. Only the fresh detached export retains states
+    # for observed terminal detection; no sampling estimator enters autograd.
+    plan = control_plan(amplitudes.detach(), return_density_matrices=True)
+    encoded = plan.to_json()
+    evolution = fql.run(plan)
+    replay = fql.run(fql.LindbladPlan.from_json(encoded))
+    assert evolution.density_matrices is not None
+    assert replay.density_matrices is not None
+    assert not evolution.density_matrices.requires_grad
+    quiet = torch.diag(torch.tensor([1.0, 1.0, math.sqrt(0.2)], dtype=torch.complex128))
+    flag = torch.diag(torch.tensor([0.0, 0.0, math.sqrt(0.8)], dtype=torch.complex128))
+    branches = {
+        f"{left}/{right}": (torch.kron(a, b),)
+        for left, a in (("no_flag", quiet), ("flag", flag))
+        for right, b in (("no_flag", quiet), ("flag", flag))
+    }
+    rng = torch.get_rng_state()
+    observed = sample_terminal(
+        evolution.density_matrices[-1], branches, shots=4096, seed=7
+    )
+    repeated = sample_terminal(
+        replay.density_matrices[-1], branches, shots=4096, seed=7
+    )
+    assert isinstance(observed.value, torch.Tensor)
+    assert isinstance(repeated.value, torch.Tensor)
+    assert torch.equal(observed.value, repeated.value)
+    assert torch.equal(rng, torch.get_rng_state())
+
+    # Equal g/r loss rates give independent exponential survival, even after
+    # optimizing the interacting drive. These are observed flags, not lost truth.
+    flag_probability = 0.8 * (1 - math.exp(-0.1))
+    expected = torch.tensor(
+        [
+            (1 - flag_probability) ** 2,
+            flag_probability * (1 - flag_probability),
+            flag_probability * (1 - flag_probability),
+            flag_probability**2,
+        ],
+        dtype=torch.float64,
+    )
+    weights = torch.tensor(observed.metadata["probabilities"], dtype=torch.float64)
+    torch.testing.assert_close(weights, expected, atol=1e-10, rtol=0)
+    frequencies = torch.bincount(observed.value, minlength=4).to(torch.float64) / 4096
+    standard_errors = torch.sqrt(expected * (1 - expected) / 4096)
+    assert bool(((frequencies - expected).abs() < 6 * standard_errors).all())
+    assert weights[0] > evolution.expectation("survival")[-1] + 1e-3
+    conditional = SuperOperator.from_kraus(branches["no_flag/no_flag"]).apply(
+        evolution.density_matrices[-1]
+    )
+    conditioned_rr = conditional[4, 4].real / torch.trace(conditional).real
+    torch.testing.assert_close(
+        conditioned_rr,
+        evolution.expectation("rr")[-1] / evolution.expectation("no_flag")[-1],
+        atol=1e-10,
+        rtol=0,
+    )
+    assert encoded == plan.to_json()
+    assert plan.to_dict()["version"] == "1.7"
 
 
 def test_native_training_reports_conditioning_and_replays_detached_plan() -> None:

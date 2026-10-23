@@ -1,8 +1,9 @@
 """Train a moving pair's two pulse amplitudes on the existing CPU dynamics path.
 
 Run ``python -m examples.train_rydberg_controls``. Geometry, C6 and loss are fixed;
-only the two interval amplitude bindings are optimized. Detection is an effect,
-not sampled events. Rebuild the live plan after each optimizer update.
+only the two interval amplitude bindings are optimized. Train on analytic outputs,
+then sample observed terminal flags from a detached numeric plan. Rebuild the
+live plan after each optimizer update.
 """
 
 from __future__ import annotations
@@ -13,7 +14,9 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
+from examples.terminal_instrument_reference import presence_reference
 from flagquantum.experimental.simulation import RydbergProgram
+from flagquantum.runtime import sample_terminal
 
 
 def moving_pair_program() -> RydbergProgram:
@@ -43,7 +46,12 @@ def moving_pair_program() -> RydbergProgram:
     return program
 
 
-def control_plan(amplitudes: torch.Tensor, *, intervals: int = 128) -> fql.LindbladPlan:
+def control_plan(
+    amplitudes: torch.Tensor,
+    *,
+    intervals: int = 128,
+    return_density_matrices: bool = False,
+) -> fql.LindbladPlan:
     if type(intervals) is not int or intervals < 2 or intervals % 2:
         raise ValueError("intervals must be a positive even integer of at least two")
     if amplitudes.shape != (2,):
@@ -63,6 +71,7 @@ def control_plan(amplitudes: torch.Tensor, *, intervals: int = 128) -> fql.Lindb
         ),
         method="runge-kutta",
         options=fq.ExecutionOptions(require_gradients=amplitudes.requires_grad),
+        return_density_matrices=return_density_matrices,
     )
 
 
@@ -84,6 +93,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--steps", type=int, default=40)
     parser.add_argument("--intervals", type=int, default=128)
+    parser.add_argument("--shots", type=int, default=4096)
     args = parser.parse_args()
     amplitudes = torch.tensor([0.8, 1.2], dtype=torch.float64, requires_grad=True)
     initial = fql.run(control_plan(amplitudes, intervals=args.intervals))
@@ -95,7 +105,9 @@ def main() -> None:
     print("Initial amplitude gradient:", [round(v, 8) for v in gradient.tolist()])
     train_controls(amplitudes, steps=args.steps, intervals=args.intervals)
     # Export a fresh detached plan for numeric replay, rather than serializing a graph.
-    plan = control_plan(amplitudes.detach(), intervals=args.intervals)
+    plan = control_plan(
+        amplitudes.detach(), intervals=args.intervals, return_density_matrices=True
+    )
     final = fql.run(plan)
     replay = fql.run(fql.LindbladPlan.from_json(plan.to_json()))
     rr = final.expectation("rr")[-1]
@@ -109,6 +121,33 @@ def main() -> None:
     print(f"Survival-conditioned RR: {(rr / survival).item():.8f}")
     print(f"No-flag-selected RR: {(rr / no_flag).item():.8f}")
     print("Exact numeric replay:", torch.equal(final.populations, replay.populations))
+    if final.density_matrices is None or replay.density_matrices is None:
+        raise RuntimeError("terminal detection requires the requested density matrices")
+    _, single_atom = presence_reference()
+    # Declared efficiency 0.8, zero false positives, ordered a/b outcomes.
+    instrument = {
+        f"{left}/{right}": (torch.kron(a[0], b[0]),)
+        for left, a in single_atom.items()
+        for right, b in single_atom.items()
+    }
+    detection = sample_terminal(
+        final.density_matrices[-1], instrument, shots=args.shots, seed=7
+    )
+    detection_replay = sample_terminal(
+        replay.density_matrices[-1], instrument, shots=args.shots, seed=7
+    )
+    assert isinstance(detection.value, torch.Tensor)
+    assert isinstance(detection_replay.value, torch.Tensor)
+    print("Observed flag labels:", detection.metadata["outcome_labels"])
+    print(
+        "Observed flag probabilities:",
+        [round(p, 8) for p in detection.metadata["probabilities"]],
+    )
+    print(
+        "Observed flag counts:", torch.bincount(detection.value, minlength=4).tolist()
+    )
+    print("Detection shots:", detection.shots)
+    print("Detection replay:", torch.equal(detection.value, detection_replay.value))
 
 
 if __name__ == "__main__":
