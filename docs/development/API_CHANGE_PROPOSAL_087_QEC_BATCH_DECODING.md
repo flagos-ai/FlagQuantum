@@ -139,3 +139,32 @@ No tests were excluded and no frozen fixtures were updated.
 The S0 example used single-shot decoding. The approved follow-up now uses batch
 prediction; sampler compilation still occurs per chunk. A persistent sampler
 lifecycle remains a separate design task.
+
+## Approved implementation validation (2026-10-24)
+
+The approved method is implemented and the repetition example now calls it.
+No frozen fixture, root export, registry entry or existing method was changed.
+
+- 137 focused batch/adapter/registry/restructuring/retirement tests passed.
+  The two public doctest gates also passed after registering the new example.
+- Architecture, retired-phase, public API migration baseline, Ruff and formatting
+  checks passed. The reviewed addition is layered over the immutable historical
+  API fixture using the new explicit contract, not a regenerated snapshot.
+- A macOS arm64 CPython abi3 wheel built successfully. Installed outside the
+  checkout under Python 3.11, it passed binary batch prediction and the 35-shot,
+  16-shot-chunk tail-batch example. Installed import/refusal checks also passed
+  with import blockers simulating neither SDK, each SDK separately, and both.
+  These are availability simulations, not four independently installed envs.
+- The required default smoke/unit tier ran with four workers and maxfail=5:
+  10,817 passed, 103 skipped, 4 failed and 5 setup errors before stopping. The
+  failures concern unchanged QFT pass-count/native-region expectations; errors
+  concern local Gloo address resolution. A separate archive of the frozen main
+  baseline reproduced all four failures and all five reported setup errors
+  (plus another instance of that setup error). The default gate is not green;
+  no test exclusion or unrelated numerical change was made to hide this.
+- No performance, GPU, threshold or logical-suppression claim is made. Persistent
+  Stim sampler ownership is still a follow-up, not part of this batch method.
+
+The local implementation commit is `4a50004`. Publishing the branch and opening
+a draft PR require explicit authorization for the GitHub destination after the
+automatic push review rejected publication; no push or PR creation succeeded.
