@@ -111,6 +111,9 @@ These examples do not use that alias:
 - [`qec/decoder_registry_and_pickle.py`](qec/decoder_registry_and_pickle.py)
   uses QEC registry imports to compare three in-tree decoders and verify the
   historical matcher pickle class, without an optional SDK.
+- [`qec/installed_imports.py`](qec/installed_imports.py) checks existing QEC
+  exports, independent rotated-class pickle paths, decoding and a noiseless
+  memory sweep; run it outside the checkout to verify an installed wheel.
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.

@@ -9,6 +9,26 @@ QEC owns codes, decoder semantics, detection events, and Pauli frames. It
 composes Compiler control flow, Runtime feedback, Simulation kernels, Noise
 models, and Remote hardware interfaces.
 
+## Package responsibilities and compatibility
+
+The [package layout guide](../../docs/guides/QEC_PACKAGE_LAYOUT.md) maps historical
+imports to their current implementation owners and explains pickle, source-tool,
+plugin and installed-package compatibility. Existing `flagquantum.qec` imports
+remain the user entry points; both rotated surface classes remain independent.
+
+| Responsibility | Contribution path |
+| --- | --- |
+| Codes, matrices and code registry | [codes](codes/README.md), including [surface records](codes/surface/README.md) |
+| Memory declarations and layouts | [circuits](circuits/README.md) |
+| Detector models, text, mechanisms, chunks and graphs | [dem](dem/README.md) |
+| Decoder algorithms and the single decoder registry | [decoders](decoders/README.md) |
+| Lowering, feedback, sampling and composition | [execution](execution/README.md) |
+| Optional PyMatching boundary | [adapters](adapters/README.md) |
+
+Each README gives allowed dependencies and a ten-minute edit/test workflow.
+Compatibility aliases remain Core-owned and explicitly frozen; removing a path
+requires an approved deprecation and serialized-artifact migration plan.
+
 ## Start with a memory experiment
 
 This experimental local example uses the three-data-qubit repetition-code
