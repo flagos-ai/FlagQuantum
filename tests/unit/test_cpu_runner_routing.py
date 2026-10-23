@@ -203,7 +203,7 @@ def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
         for name, job in jobs.items()
         if "flagcicd-r300-" in str(job.get("runs-on", ""))
     }
-    assert set(migrated) == {"cirq-optional", "braket-optional"}
+    assert set(migrated) == {"braket-optional"}
     for job in migrated.values():
         assert job["timeout-minutes"] == 30
         steps = job["steps"]
@@ -226,13 +226,26 @@ def test_r300_compatibility_jobs_prepare_the_ephemeral_image() -> None:
 
 def test_r300_sdk_jobs_spread_across_distinct_inventory_targets() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    routes = [jobs[name]["runs-on"] for name in ("cirq-optional", "braket-optional")]
-    assert len(set(routes)) == 2
+    routes = [jobs[name]["runs-on"] for name in ("braket-optional",)]
+    assert len(set(routes)) == 1
+    assert "'flagcicd-r300-cpu03'" in routes[0]
+    for name in ("qiskit-compat", "cirq-optional"):
+        assert "'flagquantum-cpu-general'" in jobs[name]["runs-on"]
+        preflight = next(
+            step
+            for step in jobs[name]["steps"]
+            if step.get("name") == "Validate the CPU runtime before SDK certification"
+        )
+        assert "adjoint.native_cpu_adjoint_available()" in preflight["run"]
+        assert (
+            "tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q"
+            in preflight["run"]
+        )
 
 
 def test_r300_source_failover_is_bounded_and_verifies_the_same_commit() -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
-    for name in ("cirq-optional", "braket-optional"):
+    for name in ("braket-optional",):
         steps = jobs[name]["steps"]
         source = next(step for step in steps if step.get("id") == "source")
         assert source["timeout-minutes"] == 3

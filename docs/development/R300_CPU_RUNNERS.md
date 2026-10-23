@@ -1,10 +1,10 @@
 # R300 CPU CI runners
 
-Braket compatibility uses `flagcicd-r300-cpu03` and Cirq uses
-`flagcicd-r300-cpu04`. Same-repository pull requests and manual CI runs use
-these targets; fork pull requests retain `ubuntu-latest` and the existing
-hosted concurrency buckets. Both targets have completed resource inventory.
-Earlier SDK qualification on cpu16 is recorded below.
+Braket compatibility uses `flagcicd-r300-cpu03`. Same-repository pull requests
+and manual CI runs use this inventoried target; fork pull requests retain
+`ubuntu-latest` and the existing hosted concurrency buckets. Qiskit and Cirq
+use the accepted fixed CPU pool for latency and source-transport reliability.
+The scale-set diagnostics remain available for future qualification.
 
 Qiskit previously qualified on `flagcicd-r300-cpu05`. Its two certified versions
 now use parallel `qiskit-compat` jobs on the accepted fixed CPU pool, because a
@@ -13,7 +13,10 @@ pool completed both versions and the stable gate in 4.2 minutes during validatio
 Each lane retains the native CPU preflight and all SDK checks;
 `qiskit-optional` requires both lanes to succeed. The R300 validation workflow
 continues to inventory cpu05; this routing change does not remove its diagnostics.
-Ephemeral R300 SDK jobs retain bounded complete-source download and exact-SHA
+Cirq's latest cpu04 attempt exhausted both the three-minute artifact budget and
+five-minute checkout budget before any tests started. Its fixed-pool route keeps
+native CPU preflight and both complete 1.6.1/1.7.0 certification selections.
+Ephemeral Braket jobs retain bounded complete-source download and exact-SHA
 checkout fallback. Fixed-host jobs reuse verified incremental Git objects.
 
 ## Validation and limits
@@ -77,13 +80,15 @@ changes the tested commit.
 
 Cirq initially qualified on cpu16, but two attempts on the integrated revision
 subsequently exhausted both the three-minute artifact and five-minute checkout
-budgets before reaching tests. Cirq therefore moves to inventoried cpu04;
-qualification requires the full native and certified SDK tests on that target.
+budgets before reaching tests. Cirq then moved to inventoried cpu04 for qualification. After the later
+integrated cpu04 source-transport failure, the normal CI lane returned to the
+accepted fixed pool with all native and SDK tests intact.
 The cpu16 network failure remains unqualified for current routing; increasing
 timeouts or repeatedly rerunning it is not treated as a repair.
 
-The two R300 SDK jobs use distinct scale sets so one set's occupied slots do not
-serialize unrelated compatibility checks. The native CPU tests execute before
+Braket retains the qualified cpu03 target. Queue-constrained Qiskit and
+source-constrained Cirq use the wide fixed CPU pool instead of serializing
+behind unavailable scale-set slots. The native CPU tests execute before
 the SDK matrix on every migrated job. Their full SDK tests remain required CI
 checks, and every job has a 30-minute timeout. GPU, A800 CPU/runtime, full-history quality and fixed-host
 performance jobs retain their existing routes.
