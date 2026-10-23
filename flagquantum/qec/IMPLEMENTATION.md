@@ -248,11 +248,11 @@ there as a suppression claim.
 
 The merged tree splits what this section describes as one constructor into two
 classes, and that split is the whole correction: the four blocks that are validated
-are `CssCodeMatrices` in [dem_construction.py](dem_construction.py), and
+are `CssCodeMatrices` in [codes/matrices.py](codes/matrices.py), and
 [CssCode](codes/css.py) is the record that wraps them with a **stated** distance.
 The distance search this section describes -- `_minimum_logical_weight`, bounded by
 `distance_search_weight` and defaulting to three -- is what the declared and derived
-families go through in [codes/__init__.py](codes/__init__.py), so the paragraphs below still describe
+families go through in [codes/_css_helpers.py](codes/_css_helpers.py), so the paragraphs below still describe
 it; what no longer holds is that the four-block route searches rather than states.
 The paragraph that follows states which records `get_code` reaches by name and which
 one declares a logical observable in each readout basis.
