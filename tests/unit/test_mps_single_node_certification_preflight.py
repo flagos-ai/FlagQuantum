@@ -16,11 +16,12 @@ def test_mps_certification_preflight_accepts_complete_environment() -> None:
         nccl_available=True,
         device_names=names,
         source_tree_dirty=False,
-        signing_key_present=True,
+        signing_key_present=False,
         source_commit="a" * 40,
     )
 
     assert payload["ready"] is True
+    assert payload["signing_key_present"] is False
     assert payload["blockers"] == ()
     assert payload["required_world_sizes"] == (1, 2, 4, 8)
     assert payload["scalability_claim_allowed"] is False
@@ -42,7 +43,6 @@ def test_mps_certification_preflight_reports_every_environment_blocker() -> None
         "MPS certification requires 8 visible GPUs; detected 2",
         "the first 8 visible GPUs must use one accelerator model",
         "MPS certification requires a clean source tree",
-        "FQ_EVIDENCE_SIGNING_KEY is not configured",
     )
 
 

@@ -5,8 +5,9 @@ Sealing writes into a candidate directory because the strict promotion audit
 refuses to seal while the release directory already holds promoted JSON, and
 because a payload must be checked before it becomes release evidence. This tool
 is the single step between the two, and it is fail-closed: it re-runs the same
-gate over the candidates and moves nothing unless that gate passes with a
-signing key, so promotion cannot happen on an unchecked or unsigned set.
+gate over the candidates and moves nothing unless integrity, provenance and
+scientific acceptance pass. Legacy v1 envelopes additionally require their HMAC
+key; keyless v2 envelopes verify their checksum without claiming authentication.
 
 The gate is selected by name because a release directory belongs to one
 capability: a candidate set is checked against the gate of the capability it
@@ -90,11 +91,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     manifest = gate.load_manifest()
     signing_key = os.environ.get("FQ_EVIDENCE_SIGNING_KEY", "").encode()
-    if not signing_key:
-        raise SystemExit(
-            "FQ_EVIDENCE_SIGNING_KEY is required: an unsigned candidate set "
-            "cannot be promoted"
-        )
     candidates = sorted(args.candidate.glob("*.json"))
     if not candidates:
         raise SystemExit(f"no candidate artifacts under {args.candidate}")
@@ -116,6 +112,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         json.loads(path.read_text(encoding="utf-8"))
         for path in [*provenance, *candidates]
     ]
+    if not signing_key and any(
+        artifact.get("schema") == "flagquantum_runtime_evidence_v1"
+        for artifact in artifacts
+    ):
+        raise SystemExit(
+            "FQ_EVIDENCE_SIGNING_KEY is required to authenticate legacy v1 evidence"
+        )
     passed, blockers = evaluate(artifacts, manifest, signing_key=signing_key)
     if not passed:
         raise SystemExit(

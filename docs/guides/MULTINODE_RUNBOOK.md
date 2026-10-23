@@ -864,9 +864,12 @@ claim to have frozen a capacity premise.
 
 The MPS gate is published as `python benchmarks/internal/evidence/mps_release_gate.py`
 and `capability-maturity.toml` names that path as the release gate, so it is the
-invocation a reviewer has. It needs `FQ_EVIDENCE_SIGNING_KEY` in the environment;
-without the key the gate cannot verify a sealed payload and adds
-`invalid_or_unsigned_production_artifact`.
+invocation a reviewer has. New v2 envelopes verify their SHA-256 checksum without
+an environment key, followed by the same provenance and scientific acceptance
+checks. A checksum does not authenticate the publisher. Existing v1 envelopes
+still need their original `FQ_EVIDENCE_SIGNING_KEY`; without it the gate adds
+`invalid_or_unsigned_production_artifact`. Mixing v1 and v2 in a campaign does
+not waive that requirement for v1.
 
 With no arguments the gate reads `benchmarks/results/scalability` plus the
 manifest's declared baseline. That directory now holds seven promoted payloads --
