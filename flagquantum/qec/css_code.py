@@ -53,7 +53,7 @@ from .codes import (
     _supports,
     ancilla_band_counts,
 )
-from .dem_construction import CssCodeMatrices
+from .codes.matrices import CssCodeMatrices
 from .gf2 import rank
 from .pauli import Pauli
 

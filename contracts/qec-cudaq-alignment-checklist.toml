@@ -105,7 +105,7 @@ negative_search = [
     "symbol:flagquantum.qec.reichardt_code",
 ]
 evidence = [
-    "flagquantum/qec/codes.py",
+    "flagquantum/qec/codes/__init__.py",
     "flagquantum/qec/circuit.py",
     "flagquantum/qec/css_code.py",
     "flagquantum/qec/dem_construction.py",

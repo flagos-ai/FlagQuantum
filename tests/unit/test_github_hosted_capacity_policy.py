@@ -552,7 +552,9 @@ def test_full_ci_runs_once_per_pr_and_remains_manually_available() -> None:
     ci = _document("ci.yml")
     events = ci.get("on", ci.get(True))
     assert set(events) == {"pull_request", "workflow_dispatch"}
-    assert events["pull_request"] == {"branches": ["main"]}
+    assert events["pull_request"] == {
+        "branches": ["main", "refactor/qec-restructure-*"]
+    }
     manual = _document("pre-commit.yaml")
     assert set(manual.get("on", manual.get(True))) == {"workflow_dispatch"}
     gpu = _document("local-gpu.yml")
