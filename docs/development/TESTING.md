@@ -498,7 +498,8 @@ The checked-in `ci.yml` defines twenty-five jobs:
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
 - `prepare-source`: package the exact commit and complete tree, plus a smaller
-  incremental Git pack, before the test jobs fan out. A800 jobs verify the
+  incremental Git pack, before the test jobs fan out. Trusted portable CPU jobs
+  (including optional SDK, dependency-bound and supply-chain checks) verify the
   commit and the presence of every required tree object, reuse their existing Git objects, and
   download the complete pack when the cache is incomplete;
 
