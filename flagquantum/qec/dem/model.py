@@ -57,10 +57,12 @@ from typing import Any
 
 import torch
 
-from ..noise import NoiseModel
-from .circuit import MemoryCircuit
-from .codes import StabilizerCode
-from .dem_alternatives import (
+from flagquantum.noise import NoiseModel
+from flagquantum.qec.circuits.memory import MemoryCircuit
+from flagquantum.qec.codes import StabilizerCode
+from flagquantum.qec.codes._compat import _retain_module
+from flagquantum.qec.codes.matrices import CssCodeMatrices, css_code_matrices
+from flagquantum.qec.dem.alternatives import (
     alternative_groups,
     fold_marginals,
     projected_ids,
@@ -68,14 +70,13 @@ from .dem_alternatives import (
     sample_groups,
     stated_ids,
 )
-from .dem_construction import (
-    CssCodeMatrices,
-    _code_matrix_entries,
-    _memory_circuit_entries,
-    css_code_matrices,
+from flagquantum.qec.dem.matrices import _code_matrix_entries
+from flagquantum.qec.dem.text import (
+    _DETECTOR_PREFIX,
+    _OBSERVABLE_PREFIX,
+    _parse_stim_text,
 )
-from .dem_text import _DETECTOR_PREFIX, _OBSERVABLE_PREFIX, _parse_stim_text
-from .noise import PhenomenologicalNoise
+from flagquantum.qec.noise import PhenomenologicalNoise
 
 
 class DemMergeRule(str, Enum):
@@ -824,6 +825,8 @@ class DetectorErrorModel:
                 the Y family of a round-boundary record.
         """
 
+        from flagquantum.qec.dem.construction import _memory_circuit_entries
+
         num_detectors, num_observables, entries = _memory_circuit_entries(
             circuit,
             noise,
@@ -921,7 +924,7 @@ class DetectorErrorModel:
             The model the realization stands for.
         """
 
-        from .dem_circuit import detector_error_model_from_circuit
+        from flagquantum.qec.dem.circuit import detector_error_model_from_circuit
 
         return detector_error_model_from_circuit(circuit, num_detectors=num_detectors)
 
@@ -985,3 +988,17 @@ class DetectorErrorModel:
 
 
 __all__ = ("DemError", "DemSample", "DetectorErrorModel")
+
+
+_retain_module(
+    "flagquantum.qec.dem",
+    DemMergeRule,
+    _combine_two,
+    _probability,
+    _count,
+    _error_id,
+    _normalized_indices,
+    DemError,
+    DemSample,
+    DetectorErrorModel,
+)

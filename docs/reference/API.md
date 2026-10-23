@@ -853,10 +853,10 @@ pytest -m pennylane
 pytest -m braket
 ```
 
-### Dynamic circuit construction
+### Dynamic circuit construction and local execution
 
-The stable construction API is isolated from experimental execution and
-provider integrations:
+The stable construction API and the first noiseless, single-process execution
+slice share the ordinary planning and execution entries:
 
 ```python
 from flagquantum.dynamic import DynamicCircuit
@@ -866,8 +866,13 @@ circuit.h(0)
 circuit.measure(0, classical_bit=0)
 circuit.conditional("x", 1, classical_bit=0)
 
-result = fq.experimental.dynamic.run_dynamic(circuit, shots=128, seed=7)
-stable_result = result.to_execution_result()
+options = fq.ExecutionOptions(shots=128, seed=7)
+plan = fq.plan(circuit, options=options)
+result = fq.run(plan)
+
+assert isinstance(result, fq.ExecutionResult)
+assert result.plan.identity == plan.identity
+assert result.samples.shape == (128, 2)
 ```
 
 A condition is either one conjunction of classical-bit tests, stated with
@@ -901,19 +906,20 @@ matrix.
 
 Every condition may read only a classical bit written by an earlier
 `measure`. The builder checks this def-use rule immediately and raises
-`flagquantum.errors.ValidationError`; `run_dynamic` repeats the check for a
+`flagquantum.errors.ValidationError`; stable planning repeats the check for a
 program reconstructed directly from IR. Distributed statevector execution does
 not yet carry classical feedback and therefore raises `CapabilityError` with the
 blocker `dynamic_conditional_execution_unsupported` instead of silently dropping
-the condition. Use `fq.experimental.dynamic.run_dynamic(..., shots=...)` for the
-supported single-process trajectory path.
+the condition. `fq.run(circuit, shots=...)`, `fq.run(circuit, options=...)`, and
+`fq.run(fq.plan(circuit, options=...))` all reach the same local trajectory path.
 
 `DynamicCircuit` and its CircuitIR encoding are stable under
-`contracts/dynamic-circuit-v1.json`. `run_dynamic` and backend assessment remain
-experimental; routing, dialect export, deployment and provider adapters are internal. Stable
-dynamic execution will return the canonical `fq.ExecutionResult`;
-provider-native state and diagnostic fields will not be frozen into that
-contract.
+`contracts/dynamic-circuit-v1.json`. Stable local execution returns the canonical
+`fq.ExecutionResult`; the native `run_dynamic` result, noisy dynamic execution,
+backend assessment, routing, dialect export, deployment, and provider adapters
+remain experimental or internal. Custom initial states are refused because
+ExecutionPlan v1 does not serialize them. Provider-native state and diagnostic
+fields are not part of the stable result contract.
 
 ### Interoperability adapter contract
 

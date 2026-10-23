@@ -99,6 +99,21 @@ These examples do not use that alias:
 - [`qec/restructure_compatibility.py`](qec/restructure_compatibility.py) imports
   the QEC public surface to run the existing repetition-memory feedback workflow
   and check its correction, logical error rate and decoded bits.
+- [`qec/code_family_imports.py`](qec/code_family_imports.py) imports QEC code
+  records and historical aliases to check independent surface identities, pickle
+  paths, Steane matrices and the existing memory noise sweep.
+- [`qec/memory_layout_and_sampling.py`](qec/memory_layout_and_sampling.py)
+  imports QEC declarations, maps and sampling directly, then runs all three
+  existing feedback modes; actual measurement sampling requires the Stim extra.
+- [`qec/dem_model_and_chunks.py`](qec/dem_model_and_chunks.py) uses the QEC
+  public imports to read exact rates, build a decoding graph, close a complete
+  chunk and verify the historical pickle class; no optional SDK is required.
+- [`qec/decoder_registry_and_pickle.py`](qec/decoder_registry_and_pickle.py)
+  uses QEC registry imports to compare three in-tree decoders and verify the
+  historical matcher pickle class, without an optional SDK.
+- [`qec/installed_imports.py`](qec/installed_imports.py) checks existing QEC
+  exports, independent rotated-class pickle paths, decoding and a noiseless
+  memory sweep; run it outside the checkout to verify an installed wheel.
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.
@@ -111,9 +126,8 @@ These examples do not use that alias:
   root-level `fq.` name.
 - [`dynamic_density_matrix.py`](dynamic_density_matrix.py) — it imports
   `flagquantum.dynamic` and `flagquantum.simulation.density_matrix`, because the
-  exact route for a mid-circuit measurement is reached through
-  `DynamicCircuit.density_matrix()` and `fq.run` still refuses a dynamic program
-  by name.
+  exact mixed-state route for a mid-circuit measurement is reached through
+  `DynamicCircuit.density_matrix()`, while `fq.run` returns sampled trajectories.
 - [`dynamic_disjunctive_condition.py`](dynamic_disjunctive_condition.py) — it
   imports `flagquantum.dynamic` and `flagquantum.experimental.dynamic`, because a
   disjunctive condition is a `DynamicCircuit.conditional` keyword, and the two

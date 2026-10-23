@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from ..noise import RepetitionNoiseProfile, _probability
-from ..repetition import run_repetition_memory_experiment
 from ..types import NoiseSweepPoint
+from .repetition import run_repetition_memory_experiment
 
 
 def run_repetition_memory_noise_sweep(

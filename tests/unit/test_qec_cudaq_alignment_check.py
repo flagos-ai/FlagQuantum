@@ -373,7 +373,7 @@ MUTATIONS: list[tuple[str, str, Callable[[str], str]]] = [
         "claim a gap whose proof path now exists",
         "now exists",
         lambda t: append_to_list(
-            t, "qec_dem_chunking", "negative_search", "flagquantum/qec/dem.py"
+            t, "qec_dem_chunking", "negative_search", "flagquantum/qec/dem/model.py"
         ),
     ),
     (

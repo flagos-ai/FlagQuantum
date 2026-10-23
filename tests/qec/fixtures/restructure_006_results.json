@@ -1,0 +1,711 @@
+{
+  "adapter": {
+    "pickle": "TypeError",
+    "results": [
+      {
+        "error_edges": [],
+        "observables": [],
+        "weight": 0.0
+      },
+      {
+        "error_edges": [
+          {
+            "detectors": [
+              0,
+              2
+            ],
+            "observables": [
+              0
+            ],
+            "probability": 0.125
+          }
+        ],
+        "observables": [
+          0
+        ],
+        "weight": 1.9459101490553132
+      },
+      {
+        "error_edges": [
+          {
+            "detectors": [
+              1,
+              2
+            ],
+            "observables": [],
+            "probability": 0.0625
+          }
+        ],
+        "observables": [],
+        "weight": 2.70805020110221
+      },
+      {
+        "error_edges": [
+          {
+            "detectors": [
+              0,
+              1
+            ],
+            "observables": [],
+            "probability": 0.25
+          }
+        ],
+        "observables": [],
+        "weight": 1.0986122886681098
+      }
+    ]
+  },
+  "belief_propagation:graph": [
+    {
+      "converged": true,
+      "iterations": 0,
+      "mechanisms": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "converged": true,
+      "iterations": 3,
+      "mechanisms": [
+        0
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "converged": true,
+      "iterations": 3,
+      "mechanisms": [
+        2
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "converged": true,
+      "iterations": 2,
+      "mechanisms": [
+        1
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "belief_propagation:hyperedges": [
+    {
+      "converged": true,
+      "iterations": 0,
+      "mechanisms": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "converged": true,
+      "iterations": 2,
+      "mechanisms": [
+        0
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    },
+    {
+      "converged": true,
+      "iterations": 10,
+      "mechanisms": [
+        2
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "converged": true,
+      "iterations": 3,
+      "mechanisms": [
+        1
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    }
+  ],
+  "belief_propagation:model": [
+    {
+      "converged": true,
+      "iterations": 0,
+      "mechanisms": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "converged": true,
+      "iterations": 3,
+      "mechanisms": [
+        0
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "converged": true,
+      "iterations": 3,
+      "mechanisms": [
+        2
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "converged": true,
+      "iterations": 2,
+      "mechanisms": [
+        1
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "belief_propagation:text": [
+    {
+      "converged": true,
+      "iterations": 0,
+      "mechanisms": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "converged": true,
+      "iterations": 3,
+      "mechanisms": [
+        0
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "converged": true,
+      "iterations": 3,
+      "mechanisms": [
+        2
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "converged": true,
+      "iterations": 2,
+      "mechanisms": [
+        1
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "belief_propagation_osd:graph": [
+    "CapabilityError",
+    "'belief_propagation_osd' is registered against BeliefPropagationOsdDecoder, which decodes a detector error model and searches no pair graph, so it cannot be handed a DecodingGraph; ask for it with a model or with stim's text for one"
+  ],
+  "belief_propagation_osd:hyperedges": [
+    {
+      "converged": true,
+      "iterations": 0,
+      "mechanisms": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "converged": true,
+      "iterations": 1,
+      "mechanisms": [
+        0
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    },
+    {
+      "converged": false,
+      "iterations": 30,
+      "mechanisms": [
+        2
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "converged": true,
+      "iterations": 2,
+      "mechanisms": [
+        1
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    }
+  ],
+  "belief_propagation_osd:model": [
+    {
+      "converged": true,
+      "iterations": 0,
+      "mechanisms": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "converged": true,
+      "iterations": 2,
+      "mechanisms": [
+        0
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "converged": false,
+      "iterations": 30,
+      "mechanisms": [
+        2
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "converged": true,
+      "iterations": 1,
+      "mechanisms": [
+        1
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "belief_propagation_osd:text": [
+    {
+      "converged": true,
+      "iterations": 0,
+      "mechanisms": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "converged": true,
+      "iterations": 2,
+      "mechanisms": [
+        0
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "converged": false,
+      "iterations": 30,
+      "mechanisms": [
+        2
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "converged": true,
+      "iterations": 1,
+      "mechanisms": [
+        1
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "decorator": [
+    "flagquantum.qec.registry",
+    "register_decoder.<locals>.decorate"
+  ],
+  "minimum_weight_matching:graph": [
+    {
+      "error_edges": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            2
+          ],
+          "observables": [
+            0
+          ],
+          "probability": 0.125
+        }
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            1,
+            2
+          ],
+          "observables": [],
+          "probability": 0.0625
+        }
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "probability": 0.25
+        }
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "minimum_weight_matching:model": [
+    {
+      "error_edges": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            2
+          ],
+          "observables": [
+            0
+          ],
+          "probability": 0.125
+        }
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            1,
+            2
+          ],
+          "observables": [],
+          "probability": 0.0625
+        }
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "probability": 0.25
+        }
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "minimum_weight_matching:text": [
+    {
+      "error_edges": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            2
+          ],
+          "observables": [
+            0
+          ],
+          "probability": 0.125
+        }
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            1,
+            2
+          ],
+          "observables": [],
+          "probability": 0.0625
+        }
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "probability": 0.25
+        }
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "repetition:lookup": {
+    "consumed_rounds": 2,
+    "corrections": [
+      {
+        "pauli": "x",
+        "qubit": 1,
+        "round_index": 1
+      }
+    ],
+    "pauli_frame": {
+      "x_qubits": [
+        1
+      ]
+    }
+  },
+  "repetition:streaming": {
+    "pauli": "x",
+    "qubit": 1,
+    "round_index": 1
+  },
+  "repetition:temporal": {
+    "pauli": "x",
+    "qubit": 1,
+    "round_index": 1
+  },
+  "sliding_window_matching:graph": [
+    {
+      "error_edges": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            2
+          ],
+          "observables": [
+            0
+          ],
+          "probability": 0.125
+        }
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            1,
+            2
+          ],
+          "observables": [],
+          "probability": 0.0625
+        }
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "probability": 0.25
+        }
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "sliding_window_matching:model": [
+    {
+      "error_edges": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            2
+          ],
+          "observables": [
+            0
+          ],
+          "probability": 0.125
+        }
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            1,
+            2
+          ],
+          "observables": [],
+          "probability": 0.0625
+        }
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "probability": 0.25
+        }
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "sliding_window_matching:text": [
+    {
+      "error_edges": [],
+      "observables": [],
+      "weight": 0.0
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            2
+          ],
+          "observables": [
+            0
+          ],
+          "probability": 0.125
+        }
+      ],
+      "observables": [
+        0
+      ],
+      "weight": 1.9459101490553132
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            1,
+            2
+          ],
+          "observables": [],
+          "probability": 0.0625
+        }
+      ],
+      "observables": [],
+      "weight": 2.70805020110221
+    },
+    {
+      "error_edges": [
+        {
+          "detectors": [
+            0,
+            1
+          ],
+          "observables": [],
+          "probability": 0.25
+        }
+      ],
+      "observables": [],
+      "weight": 1.0986122886681098
+    }
+  ],
+  "stream": [
+    null,
+    {
+      "complete": false,
+      "converged": true,
+      "faults": [
+        0
+      ],
+      "observables": [
+        0
+      ],
+      "windows_decoded": 1
+    },
+    {
+      "complete": false,
+      "converged": true,
+      "faults": [
+        0
+      ],
+      "observables": [
+        0
+      ],
+      "windows_decoded": 2
+    },
+    {
+      "complete": true,
+      "converged": true,
+      "faults": [
+        0
+      ],
+      "observables": [
+        0
+      ],
+      "windows_decoded": 3
+    }
+  ]
+}

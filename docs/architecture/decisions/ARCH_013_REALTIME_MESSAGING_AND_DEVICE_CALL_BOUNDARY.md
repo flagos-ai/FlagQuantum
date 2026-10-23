@@ -153,7 +153,7 @@ in this package is reachable from `fq.run`, and no runtime option, target, or
 result field changes.
 
 The role a future round would most plausibly connect this to is the existing
-`StreamingDecoder` protocol in `flagquantum/qec/decoders.py`, whose round-by-round
+`StreamingDecoder` protocol in `flagquantum/qec/decoders/repetition.py`, whose round-by-round
 shape matches a decoding round. This record does **not** claim that connection:
 `flagquantum/qec/**` is untouched, and `StreamingDecoder` must not be described as
 realtime-satisfied because of this package.

@@ -826,6 +826,12 @@ def _validate_dynamic_plan_request(
     """Validate the approved local planning slice before compilation."""
 
     validate_classical_control(source_ir.instructions, n_qubits=source_ir.n_wires)
+    construction = getattr(program, "circuit_param", {})
+    if isinstance(construction, Mapping) and construction.get("inputs") is not None:
+        raise CapabilityError(
+            "dynamic planning does not yet support custom initial states because "
+            "ExecutionPlan v1 does not serialize them"
+        )
     if resolved.mode != "auto":
         raise CapabilityError("dynamic planning supports mode='auto' only")
     if resolved.backend not in {"auto", "pytorch"}:

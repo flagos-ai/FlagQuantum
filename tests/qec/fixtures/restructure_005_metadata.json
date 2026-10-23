@@ -1,0 +1,1211 @@
+{
+  "definitions": {
+    "flagquantum.qec.dem.DemMergeRule": [
+      "flagquantum.qec.dem",
+      "DemMergeRule"
+    ],
+    "flagquantum.qec.dem._combine_two": [
+      "flagquantum.qec.dem",
+      "_combine_two"
+    ],
+    "flagquantum.qec.dem._probability": [
+      "flagquantum.qec.dem",
+      "_probability"
+    ],
+    "flagquantum.qec.dem._count": [
+      "flagquantum.qec.dem",
+      "_count"
+    ],
+    "flagquantum.qec.dem._error_id": [
+      "flagquantum.qec.dem",
+      "_error_id"
+    ],
+    "flagquantum.qec.dem._normalized_indices": [
+      "flagquantum.qec.dem",
+      "_normalized_indices"
+    ],
+    "flagquantum.qec.dem.DemError": [
+      "flagquantum.qec.dem",
+      "DemError"
+    ],
+    "flagquantum.qec.dem.DemError.__post_init__": [
+      "flagquantum.qec.dem",
+      "DemError.__post_init__"
+    ],
+    "flagquantum.qec.dem.DemError.__init__": [
+      "flagquantum.qec.dem",
+      "DemError.__init__"
+    ],
+    "flagquantum.qec.dem.DemError.__repr__": [
+      "flagquantum.qec.dem",
+      "DemError.__repr__"
+    ],
+    "flagquantum.qec.dem.DemError.__eq__": [
+      "flagquantum.qec.dem",
+      "DemError.__eq__"
+    ],
+    "flagquantum.qec.dem.DemError.__setattr__": [
+      "flagquantum.qec.dem",
+      "DemError.__setattr__"
+    ],
+    "flagquantum.qec.dem.DemError.__delattr__": [
+      "flagquantum.qec.dem",
+      "DemError.__delattr__"
+    ],
+    "flagquantum.qec.dem.DemError.__hash__": [
+      "flagquantum.qec.dem",
+      "DemError.__hash__"
+    ],
+    "flagquantum.qec.dem.DemSample": [
+      "flagquantum.qec.dem",
+      "DemSample"
+    ],
+    "flagquantum.qec.dem.DemSample.__eq__": [
+      "flagquantum.qec.dem",
+      "DemSample.__eq__"
+    ],
+    "flagquantum.qec.dem.DemSample.shots": [
+      "flagquantum.qec.dem",
+      "DemSample.shots"
+    ],
+    "flagquantum.qec.dem.DemSample.__init__": [
+      "flagquantum.qec.dem",
+      "DemSample.__init__"
+    ],
+    "flagquantum.qec.dem.DemSample.__repr__": [
+      "flagquantum.qec.dem",
+      "DemSample.__repr__"
+    ],
+    "flagquantum.qec.dem.DemSample.__setattr__": [
+      "flagquantum.qec.dem",
+      "DemSample.__setattr__"
+    ],
+    "flagquantum.qec.dem.DemSample.__delattr__": [
+      "flagquantum.qec.dem",
+      "DemSample.__delattr__"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.__post_init__": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.__post_init__"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel._require_exclusive_groups_fit": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel._require_exclusive_groups_fit"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.error_ids": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.error_ids"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.stated_error_ids": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.stated_error_ids"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.exclusive_groups": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.exclusive_groups"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.mechanisms_are_unique": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.mechanisms_are_unique"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.require_unique_mechanisms": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.require_unique_mechanisms"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.merge_duplicate_mechanisms": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.merge_duplicate_mechanisms"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.detector_error_matrix": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.detector_error_matrix"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.observables_flips_matrix": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.observables_flips_matrix"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.error_rates": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.error_rates"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel._marginal_rates": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel._marginal_rates"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.detector_rates": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.detector_rates"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.observable_rates": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.observable_rates"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.dem_sampling": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.dem_sampling"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel._sample_exclusive_groups": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel._sample_exclusive_groups"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.from_stim_text": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.from_stim_text"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel._merge_mechanisms": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel._merge_mechanisms"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.from_memory_circuit": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.from_memory_circuit"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.from_code_matrices": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.from_code_matrices"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.from_code": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.from_code"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.from_circuit": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.from_circuit"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.to_stim_text": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.to_stim_text"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.num_errors": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.num_errors"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.__init__": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.__init__"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.__repr__": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.__repr__"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.__eq__": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.__eq__"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.__setattr__": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.__setattr__"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.__delattr__": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.__delattr__"
+    ],
+    "flagquantum.qec.dem.DetectorErrorModel.__hash__": [
+      "flagquantum.qec.dem",
+      "DetectorErrorModel.__hash__"
+    ],
+    "flagquantum.qec.dem_text._target_index": [
+      "flagquantum.qec.dem_text",
+      "_target_index"
+    ],
+    "flagquantum.qec.dem_text._parse_shift_detectors": [
+      "flagquantum.qec.dem_text",
+      "_parse_shift_detectors"
+    ],
+    "flagquantum.qec.dem_text._toggle": [
+      "flagquantum.qec.dem_text",
+      "_toggle"
+    ],
+    "flagquantum.qec.dem_text._parse_error_line": [
+      "flagquantum.qec.dem_text",
+      "_parse_error_line"
+    ],
+    "flagquantum.qec.dem_text._parse_declaration_line": [
+      "flagquantum.qec.dem_text",
+      "_parse_declaration_line"
+    ],
+    "flagquantum.qec.dem_text._declared_count": [
+      "flagquantum.qec.dem_text",
+      "_declared_count"
+    ],
+    "flagquantum.qec.dem_text._instructions": [
+      "flagquantum.qec.dem_text",
+      "_instructions"
+    ],
+    "flagquantum.qec.dem_text._repeat_count": [
+      "flagquantum.qec.dem_text",
+      "_repeat_count"
+    ],
+    "flagquantum.qec.dem_text._structure": [
+      "flagquantum.qec.dem_text",
+      "_structure"
+    ],
+    "flagquantum.qec.dem_text._unroll_stim_text": [
+      "flagquantum.qec.dem_text",
+      "_unroll_stim_text"
+    ],
+    "flagquantum.qec.dem_text._parse_stim_text": [
+      "flagquantum.qec.dem_text",
+      "_parse_stim_text"
+    ],
+    "flagquantum.qec.dem_alternatives.stated_ids": [
+      "flagquantum.qec.dem_alternatives",
+      "stated_ids"
+    ],
+    "flagquantum.qec.dem_alternatives.projected_ids": [
+      "flagquantum.qec.dem_alternatives",
+      "projected_ids"
+    ],
+    "flagquantum.qec.dem_alternatives.fault_groups": [
+      "flagquantum.qec.dem_alternatives",
+      "fault_groups"
+    ],
+    "flagquantum.qec.dem_alternatives.alternative_groups": [
+      "flagquantum.qec.dem_alternatives",
+      "alternative_groups"
+    ],
+    "flagquantum.qec.dem_alternatives.require_groups_fit": [
+      "flagquantum.qec.dem_alternatives",
+      "require_groups_fit"
+    ],
+    "flagquantum.qec.dem_alternatives.fold_marginals": [
+      "flagquantum.qec.dem_alternatives",
+      "fold_marginals"
+    ],
+    "flagquantum.qec.dem_alternatives.sample_groups": [
+      "flagquantum.qec.dem_alternatives",
+      "sample_groups"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.__post_init__": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.__post_init__"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.num_qubits": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.num_qubits"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.num_z_checks": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.num_z_checks"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.num_x_checks": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.num_x_checks"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.num_checks": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.num_checks"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.num_z_logicals": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.num_z_logicals"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.num_x_logicals": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.num_x_logicals"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.num_observables": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.num_observables"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.__init__": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.__init__"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.__repr__": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.__repr__"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.__eq__": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.__eq__"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.__setattr__": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.__setattr__"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.__delattr__": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.__delattr__"
+    ],
+    "flagquantum.qec.dem_matrices.CssCodeMatrices.__hash__": [
+      "flagquantum.qec.dem_matrices",
+      "CssCodeMatrices.__hash__"
+    ],
+    "flagquantum.qec.dem_matrices.css_code_matrices": [
+      "flagquantum.qec.dem_matrices",
+      "css_code_matrices"
+    ],
+    "flagquantum.qec.dem_matrices._column_supports": [
+      "flagquantum.qec.dem_matrices",
+      "_column_supports"
+    ],
+    "flagquantum.qec.dem_matrices._code_matrix_entries": [
+      "flagquantum.qec.dem_matrices",
+      "_code_matrix_entries"
+    ],
+    "flagquantum.qec.dem_construction._checked_round": [
+      "flagquantum.qec.dem_construction",
+      "_checked_round"
+    ],
+    "flagquantum.qec.dem_construction._checked_wire": [
+      "flagquantum.qec.dem_construction",
+      "_checked_wire"
+    ],
+    "flagquantum.qec.dem_construction._executed_flip_set": [
+      "flagquantum.qec.dem_construction",
+      "_executed_flip_set"
+    ],
+    "flagquantum.qec.dem_construction._forced_flip": [
+      "flagquantum.qec.dem_construction",
+      "_forced_flip"
+    ],
+    "flagquantum.qec.dem_construction._forced_signature": [
+      "flagquantum.qec.dem_construction",
+      "_forced_signature"
+    ],
+    "flagquantum.qec.dem_construction._inject_data_flip": [
+      "flagquantum.qec.dem_construction",
+      "_inject_data_flip"
+    ],
+    "flagquantum.qec.dem_construction._inject_measurement_flip": [
+      "flagquantum.qec.dem_construction",
+      "_inject_measurement_flip"
+    ],
+    "flagquantum.qec.dem_construction._lowered_program": [
+      "flagquantum.qec.dem_construction",
+      "_lowered_program"
+    ],
+    "flagquantum.qec.dem_construction._lowered_source": [
+      "flagquantum.qec.dem_construction",
+      "_lowered_source"
+    ],
+    "flagquantum.qec.dem_construction._single_anchor": [
+      "flagquantum.qec.dem_construction",
+      "_single_anchor"
+    ],
+    "flagquantum.qec.dem_construction._data_family_rates": [
+      "flagquantum.qec.dem_construction",
+      "_data_family_rates"
+    ],
+    "flagquantum.qec.dem_construction._require_source_anchors": [
+      "flagquantum.qec.dem_construction",
+      "_require_source_anchors"
+    ],
+    "flagquantum.qec.dem_construction._require_owned_syndrome_references": [
+      "flagquantum.qec.dem_construction",
+      "_require_owned_syndrome_references"
+    ],
+    "flagquantum.qec.dem_construction._flipped_measurements": [
+      "flagquantum.qec.dem_construction",
+      "_flipped_measurements"
+    ],
+    "flagquantum.qec.dem_construction._layout_signature": [
+      "flagquantum.qec.dem_construction",
+      "_layout_signature"
+    ],
+    "flagquantum.qec.dem_construction._memory_circuit_entries": [
+      "flagquantum.qec.dem_construction",
+      "_memory_circuit_entries"
+    ],
+    "flagquantum.qec.dem_construction._Mechanism": [
+      "flagquantum.qec.dem_construction",
+      "_Mechanism"
+    ],
+    "flagquantum.qec.dem_construction._Mechanism.__init__": [
+      "flagquantum.qec.dem_construction",
+      "_Mechanism.__init__"
+    ],
+    "flagquantum.qec.dem_construction._Mechanism.__repr__": [
+      "flagquantum.qec.dem_construction",
+      "_Mechanism.__repr__"
+    ],
+    "flagquantum.qec.dem_construction._Mechanism.__eq__": [
+      "flagquantum.qec.dem_construction",
+      "_Mechanism.__eq__"
+    ],
+    "flagquantum.qec.dem_construction._Mechanism.__setattr__": [
+      "flagquantum.qec.dem_construction",
+      "_Mechanism.__setattr__"
+    ],
+    "flagquantum.qec.dem_construction._Mechanism.__delattr__": [
+      "flagquantum.qec.dem_construction",
+      "_Mechanism.__delattr__"
+    ],
+    "flagquantum.qec.dem_construction._Mechanism.__hash__": [
+      "flagquantum.qec.dem_construction",
+      "_Mechanism.__hash__"
+    ],
+    "flagquantum.qec.dem_construction._GateBoundMechanism": [
+      "flagquantum.qec.dem_construction",
+      "_GateBoundMechanism"
+    ],
+    "flagquantum.qec.dem_construction._GateBoundMechanism.__init__": [
+      "flagquantum.qec.dem_construction",
+      "_GateBoundMechanism.__init__"
+    ],
+    "flagquantum.qec.dem_construction._GateBoundMechanism.__repr__": [
+      "flagquantum.qec.dem_construction",
+      "_GateBoundMechanism.__repr__"
+    ],
+    "flagquantum.qec.dem_construction._GateBoundMechanism.__eq__": [
+      "flagquantum.qec.dem_construction",
+      "_GateBoundMechanism.__eq__"
+    ],
+    "flagquantum.qec.dem_construction._GateBoundMechanism.__setattr__": [
+      "flagquantum.qec.dem_construction",
+      "_GateBoundMechanism.__setattr__"
+    ],
+    "flagquantum.qec.dem_construction._GateBoundMechanism.__delattr__": [
+      "flagquantum.qec.dem_construction",
+      "_GateBoundMechanism.__delattr__"
+    ],
+    "flagquantum.qec.dem_construction._GateBoundMechanism.__hash__": [
+      "flagquantum.qec.dem_construction",
+      "_GateBoundMechanism.__hash__"
+    ],
+    "flagquantum.qec.dem_construction._pauli_fault": [
+      "flagquantum.qec.dem_construction",
+      "_pauli_fault"
+    ],
+    "flagquantum.qec.dem_construction._gate_bound_mechanisms": [
+      "flagquantum.qec.dem_construction",
+      "_gate_bound_mechanisms"
+    ],
+    "flagquantum.qec.dem_construction._spliced_fault": [
+      "flagquantum.qec.dem_construction",
+      "_spliced_fault"
+    ],
+    "flagquantum.qec.dem_construction._check_rate_order": [
+      "flagquantum.qec.dem_construction",
+      "_check_rate_order"
+    ],
+    "flagquantum.qec.dem_construction._mechanisms": [
+      "flagquantum.qec.dem_construction",
+      "_mechanisms"
+    ],
+    "flagquantum.qec.dem_circuit.circuit_from_detector_error_model": [
+      "flagquantum.qec.dem_circuit",
+      "circuit_from_detector_error_model"
+    ],
+    "flagquantum.qec.dem_circuit.detector_error_model_from_circuit": [
+      "flagquantum.qec.dem_circuit",
+      "detector_error_model_from_circuit"
+    ],
+    "flagquantum.qec.dem_circuit._require_every_mechanism_fires": [
+      "flagquantum.qec.dem_circuit",
+      "_require_every_mechanism_fires"
+    ],
+    "flagquantum.qec.dem_circuit._mechanisms": [
+      "flagquantum.qec.dem_circuit",
+      "_mechanisms"
+    ],
+    "flagquantum.qec.dem_circuit._operators": [
+      "flagquantum.qec.dem_circuit",
+      "_operators"
+    ],
+    "flagquantum.qec.dem_circuit._declared_probabilities": [
+      "flagquantum.qec.dem_circuit",
+      "_declared_probabilities"
+    ],
+    "flagquantum.qec.dem_circuit._error_id": [
+      "flagquantum.qec.dem_circuit",
+      "_error_id"
+    ],
+    "flagquantum.qec.dem_circuit._support": [
+      "flagquantum.qec.dem_circuit",
+      "_support"
+    ],
+    "flagquantum.qec.dem_circuit._frame": [
+      "flagquantum.qec.dem_circuit",
+      "_frame"
+    ],
+    "flagquantum.qec.dem_circuit._scale": [
+      "flagquantum.qec.dem_circuit",
+      "_scale"
+    ],
+    "flagquantum.qec.dem_circuit._frame_support": [
+      "flagquantum.qec.dem_circuit",
+      "_frame_support"
+    ],
+    "flagquantum.qec.dem_circuit._count": [
+      "flagquantum.qec.dem_circuit",
+      "_count"
+    ],
+    "flagquantum.qec.chunks.SeamId": [
+      "flagquantum.qec.chunks",
+      "SeamId"
+    ],
+    "flagquantum.qec.chunks.SeamId.__post_init__": [
+      "flagquantum.qec.chunks",
+      "SeamId.__post_init__"
+    ],
+    "flagquantum.qec.chunks.SeamId.__str__": [
+      "flagquantum.qec.chunks",
+      "SeamId.__str__"
+    ],
+    "flagquantum.qec.chunks.SeamId.__init__": [
+      "flagquantum.qec.chunks",
+      "SeamId.__init__"
+    ],
+    "flagquantum.qec.chunks.SeamId.__repr__": [
+      "flagquantum.qec.chunks",
+      "SeamId.__repr__"
+    ],
+    "flagquantum.qec.chunks.SeamId.__eq__": [
+      "flagquantum.qec.chunks",
+      "SeamId.__eq__"
+    ],
+    "flagquantum.qec.chunks.SeamId.__setattr__": [
+      "flagquantum.qec.chunks",
+      "SeamId.__setattr__"
+    ],
+    "flagquantum.qec.chunks.SeamId.__delattr__": [
+      "flagquantum.qec.chunks",
+      "SeamId.__delattr__"
+    ],
+    "flagquantum.qec.chunks.SeamId.__hash__": [
+      "flagquantum.qec.chunks",
+      "SeamId.__hash__"
+    ],
+    "flagquantum.qec.chunks.PhaseId": [
+      "flagquantum.qec.chunks",
+      "PhaseId"
+    ],
+    "flagquantum.qec.chunks.PhaseId.__post_init__": [
+      "flagquantum.qec.chunks",
+      "PhaseId.__post_init__"
+    ],
+    "flagquantum.qec.chunks.PhaseId.__str__": [
+      "flagquantum.qec.chunks",
+      "PhaseId.__str__"
+    ],
+    "flagquantum.qec.chunks.PhaseId.__init__": [
+      "flagquantum.qec.chunks",
+      "PhaseId.__init__"
+    ],
+    "flagquantum.qec.chunks.PhaseId.__repr__": [
+      "flagquantum.qec.chunks",
+      "PhaseId.__repr__"
+    ],
+    "flagquantum.qec.chunks.PhaseId.__eq__": [
+      "flagquantum.qec.chunks",
+      "PhaseId.__eq__"
+    ],
+    "flagquantum.qec.chunks.PhaseId.__setattr__": [
+      "flagquantum.qec.chunks",
+      "PhaseId.__setattr__"
+    ],
+    "flagquantum.qec.chunks.PhaseId.__delattr__": [
+      "flagquantum.qec.chunks",
+      "PhaseId.__delattr__"
+    ],
+    "flagquantum.qec.chunks.PhaseId.__hash__": [
+      "flagquantum.qec.chunks",
+      "PhaseId.__hash__"
+    ],
+    "flagquantum.qec.chunks.DemSeam": [
+      "flagquantum.qec.chunks",
+      "DemSeam"
+    ],
+    "flagquantum.qec.chunks.DemSeam.__post_init__": [
+      "flagquantum.qec.chunks",
+      "DemSeam.__post_init__"
+    ],
+    "flagquantum.qec.chunks.DemSeam.width": [
+      "flagquantum.qec.chunks",
+      "DemSeam.width"
+    ],
+    "flagquantum.qec.chunks.DemSeam.rows": [
+      "flagquantum.qec.chunks",
+      "DemSeam.rows"
+    ],
+    "flagquantum.qec.chunks.DemSeam.__len__": [
+      "flagquantum.qec.chunks",
+      "DemSeam.__len__"
+    ],
+    "flagquantum.qec.chunks.DemSeam.__init__": [
+      "flagquantum.qec.chunks",
+      "DemSeam.__init__"
+    ],
+    "flagquantum.qec.chunks.DemSeam.__repr__": [
+      "flagquantum.qec.chunks",
+      "DemSeam.__repr__"
+    ],
+    "flagquantum.qec.chunks.DemSeam.__eq__": [
+      "flagquantum.qec.chunks",
+      "DemSeam.__eq__"
+    ],
+    "flagquantum.qec.chunks.DemSeam.__setattr__": [
+      "flagquantum.qec.chunks",
+      "DemSeam.__setattr__"
+    ],
+    "flagquantum.qec.chunks.DemSeam.__delattr__": [
+      "flagquantum.qec.chunks",
+      "DemSeam.__delattr__"
+    ],
+    "flagquantum.qec.chunks.DemSeam.__hash__": [
+      "flagquantum.qec.chunks",
+      "DemSeam.__hash__"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.__post_init__": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.__post_init__"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.from_memory_circuit": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.from_memory_circuit"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.num_layers": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.num_layers"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.num_detectors": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.num_detectors"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.rows": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.rows"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.width_of": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.width_of"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.first_row_of": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.first_row_of"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.layer_of": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.layer_of"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.rows_for": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.rows_for"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.__init__": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.__init__"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.__repr__": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.__repr__"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.__eq__": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.__eq__"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.__setattr__": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.__setattr__"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.__delattr__": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.__delattr__"
+    ],
+    "flagquantum.qec.chunks.ChunkLayout.__hash__": [
+      "flagquantum.qec.chunks",
+      "ChunkLayout.__hash__"
+    ],
+    "flagquantum.qec.chunks.DemChunk": [
+      "flagquantum.qec.chunks",
+      "DemChunk"
+    ],
+    "flagquantum.qec.chunks.DemChunk.__post_init__": [
+      "flagquantum.qec.chunks",
+      "DemChunk.__post_init__"
+    ],
+    "flagquantum.qec.chunks.DemChunk.rows": [
+      "flagquantum.qec.chunks",
+      "DemChunk.rows"
+    ],
+    "flagquantum.qec.chunks.DemChunk.num_layers": [
+      "flagquantum.qec.chunks",
+      "DemChunk.num_layers"
+    ],
+    "flagquantum.qec.chunks.DemChunk.has_seam": [
+      "flagquantum.qec.chunks",
+      "DemChunk.has_seam"
+    ],
+    "flagquantum.qec.chunks.DemChunk.get_seam": [
+      "flagquantum.qec.chunks",
+      "DemChunk.get_seam"
+    ],
+    "flagquantum.qec.chunks.DemChunk.interior_rows": [
+      "flagquantum.qec.chunks",
+      "DemChunk.interior_rows"
+    ],
+    "flagquantum.qec.chunks.DemChunk.seam_rows": [
+      "flagquantum.qec.chunks",
+      "DemChunk.seam_rows"
+    ],
+    "flagquantum.qec.chunks.DemChunk.__init__": [
+      "flagquantum.qec.chunks",
+      "DemChunk.__init__"
+    ],
+    "flagquantum.qec.chunks.DemChunk.__repr__": [
+      "flagquantum.qec.chunks",
+      "DemChunk.__repr__"
+    ],
+    "flagquantum.qec.chunks.DemChunk.__eq__": [
+      "flagquantum.qec.chunks",
+      "DemChunk.__eq__"
+    ],
+    "flagquantum.qec.chunks.DemChunk.__setattr__": [
+      "flagquantum.qec.chunks",
+      "DemChunk.__setattr__"
+    ],
+    "flagquantum.qec.chunks.DemChunk.__delattr__": [
+      "flagquantum.qec.chunks",
+      "DemChunk.__delattr__"
+    ],
+    "flagquantum.qec.chunks.DemChunk.__hash__": [
+      "flagquantum.qec.chunks",
+      "DemChunk.__hash__"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec.__post_init__": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec.__post_init__"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec.num_layers": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec.num_layers"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec.__init__": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec.__init__"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec.__repr__": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec.__repr__"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec.__eq__": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec.__eq__"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec.__setattr__": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec.__setattr__"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec.__delattr__": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec.__delattr__"
+    ],
+    "flagquantum.qec.chunks.DemChunkSpec.__hash__": [
+      "flagquantum.qec.chunks",
+      "DemChunkSpec.__hash__"
+    ],
+    "flagquantum.qec.chunks._cut": [
+      "flagquantum.qec.chunks",
+      "_cut"
+    ],
+    "flagquantum.qec.chunks.dem_chunk_from_spec": [
+      "flagquantum.qec.chunks",
+      "dem_chunk_from_spec"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.__post_init__": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.__post_init__"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.stride": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.stride"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.num_windows": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.num_windows"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.layer_ranges": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.layer_ranges"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.phase_sequence": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.phase_sequence"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.chunk_specs": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.chunk_specs"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.__init__": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.__init__"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.__repr__": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.__repr__"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.__eq__": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.__eq__"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.__setattr__": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.__setattr__"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.__delattr__": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.__delattr__"
+    ],
+    "flagquantum.qec.chunks.DemChunksSpec.__hash__": [
+      "flagquantum.qec.chunks",
+      "DemChunksSpec.__hash__"
+    ],
+    "flagquantum.qec.chunks.dem_chunks_from_spec": [
+      "flagquantum.qec.chunks",
+      "dem_chunks_from_spec"
+    ],
+    "flagquantum.qec.chunks.dem_stitch": [
+      "flagquantum.qec.chunks",
+      "dem_stitch"
+    ],
+    "flagquantum.qec.chunks.dem_stitch_all": [
+      "flagquantum.qec.chunks",
+      "dem_stitch_all"
+    ],
+    "flagquantum.qec.chunks.dem_stitch_merged": [
+      "flagquantum.qec.chunks",
+      "dem_stitch_merged"
+    ],
+    "flagquantum.qec.chunks.dem_close": [
+      "flagquantum.qec.chunks",
+      "dem_close"
+    ],
+    "flagquantum.qec.chunks.dem_close_all": [
+      "flagquantum.qec.chunks",
+      "dem_close_all"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge.__post_init__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge.__post_init__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge.weight": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge.weight"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge.__init__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge.__init__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge.__repr__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge.__repr__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge.__eq__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge.__eq__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge.__setattr__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge.__setattr__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge.__delattr__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge.__delattr__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraphEdge.__hash__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraphEdge.__hash__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.__post_init__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.__post_init__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.boundary_node": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.boundary_node"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.num_edges": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.num_edges"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.from_detector_error_model": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.from_detector_error_model"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.__init__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.__init__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.__repr__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.__repr__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.__eq__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.__eq__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.__setattr__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.__setattr__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.__delattr__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.__delattr__"
+    ],
+    "flagquantum.qec.decoding_graph.DecodingGraph.__hash__": [
+      "flagquantum.qec.decoding_graph",
+      "DecodingGraph.__hash__"
+    ]
+  },
+  "namespaces": {
+    "dem": [
+      "Any",
+      "Callable",
+      "CssCodeMatrices",
+      "DemError",
+      "DemMergeRule",
+      "DemSample",
+      "DetectorErrorModel",
+      "Enum",
+      "Integral",
+      "Iterable",
+      "MemoryCircuit",
+      "NoiseModel",
+      "PhenomenologicalNoise",
+      "Real",
+      "StabilizerCode",
+      "_DETECTOR_PREFIX",
+      "_OBSERVABLE_PREFIX",
+      "_code_matrix_entries",
+      "_combine_two",
+      "_count",
+      "_error_id",
+      "_memory_circuit_entries",
+      "_normalized_indices",
+      "_parse_stim_text",
+      "_probability",
+      "alternative_groups",
+      "css_code_matrices",
+      "dataclass",
+      "fold_marginals",
+      "math",
+      "projected_ids",
+      "require_groups_fit",
+      "sample_groups",
+      "stated_ids",
+      "torch"
+    ],
+    "dem_text": [
+      "Iterator",
+      "TypeAlias",
+      "_BLOCK_CLOSE",
+      "_BLOCK_OPEN",
+      "_COMMENT",
+      "_DETECTOR_PREFIX",
+      "_Entry",
+      "_NestedInstructions",
+      "_OBSERVABLE_PREFIX",
+      "_REPEAT",
+      "_SEPARATOR",
+      "_UnrollFrame",
+      "_declared_count",
+      "_instructions",
+      "_parse_declaration_line",
+      "_parse_error_line",
+      "_parse_shift_detectors",
+      "_parse_stim_text",
+      "_repeat_count",
+      "_structure",
+      "_target_index",
+      "_toggle",
+      "_unroll_stim_text"
+    ],
+    "dem_alternatives": [
+      "Callable",
+      "Sequence",
+      "TYPE_CHECKING",
+      "alternative_groups",
+      "fault_groups",
+      "fold_marginals",
+      "projected_ids",
+      "require_groups_fit",
+      "sample_groups",
+      "stated_ids",
+      "torch"
+    ],
+    "dem_matrices": [
+      "CssCodeMatrices",
+      "Entry",
+      "Integral",
+      "PhenomenologicalNoise",
+      "StabilizerCode",
+      "_binary_matrix",
+      "_code_matrix_entries",
+      "_column_supports",
+      "css_code_matrices",
+      "torch"
+    ],
+    "dem_construction": [
+      "CapabilityError",
+      "CircuitIR",
+      "CodeCheck",
+      "CssCodeMatrices",
+      "Entry",
+      "INDEX",
+      "Instruction",
+      "Integral",
+      "KrausChannel",
+      "Literal",
+      "Mapping",
+      "MappingProxyType",
+      "MeasurementRef",
+      "MemoryCircuit",
+      "NoiseModel",
+      "PhenomenologicalNoise",
+      "StabilizerCode",
+      "ValidationError",
+      "_COMPOSITE_KIND",
+      "_COMPOSITE_PARTS",
+      "_DataFaultFamily",
+      "_FAULT_GATES",
+      "_FAULT_KIND_BY_LETTER",
+      "_FAULT_LETTER_BY_KIND",
+      "_FLIP_INDENT",
+      "_GATE_BOUND_FAMILIES",
+      "_GATE_BOUND_GATES",
+      "_GateBoundMechanism",
+      "_Mechanism",
+      "_MechanismKind",
+      "_PAULI_MATRICES",
+      "_ROUND_LOOP_ANCHOR",
+      "_UNPLACEABLE_RULE_GATES",
+      "_binary_matrix",
+      "_check_rate_order",
+      "_checked_round",
+      "_checked_wire",
+      "_code_matrix_entries",
+      "_column_supports",
+      "_data_family_rates",
+      "_executed_flip_set",
+      "_flipped_measurements",
+      "_forced_flip",
+      "_forced_signature",
+      "_gate_bound_mechanisms",
+      "_inject_data_flip",
+      "_inject_measurement_flip",
+      "_layout_signature",
+      "_lowered_program",
+      "_lowered_source",
+      "_mechanisms",
+      "_memory_circuit_entries",
+      "_pauli_fault",
+      "_require_owned_syndrome_references",
+      "_require_source_anchors",
+      "_single_anchor",
+      "_spliced_fault",
+      "capture_source",
+      "css_code_matrices",
+      "dataclass",
+      "execute_hybrid_dynamic_session",
+      "lower_dynamic_program",
+      "math",
+      "replace",
+      "torch"
+    ],
+    "dem_circuit": [
+      "Any",
+      "CircuitIR",
+      "Instruction",
+      "Integral",
+      "Iterable",
+      "Real",
+      "Sequence",
+      "TYPE_CHECKING",
+      "_BIT_FLIP",
+      "_ERROR_ID_KEY",
+      "_FRAME_OPCODE",
+      "_IDENTITY",
+      "_MASS_TOLERANCE",
+      "_MEASURE_OPCODE",
+      "_OPERATOR_TOLERANCE",
+      "_PROBABILITIES_KEY",
+      "_count",
+      "_declared_probabilities",
+      "_error_id",
+      "_frame",
+      "_frame_support",
+      "_mechanisms",
+      "_operators",
+      "_require_every_mechanism_fires",
+      "_scale",
+      "_support",
+      "canonical_opcode",
+      "circuit_from_detector_error_model",
+      "detector_error_model_from_circuit",
+      "ensure_circuit_ir",
+      "fault_groups",
+      "math",
+      "torch"
+    ],
+    "chunks": [
+      "ChunkLayout",
+      "ClassVar",
+      "DemChunk",
+      "DemChunkSpec",
+      "DemChunksSpec",
+      "DemError",
+      "DemMergeRule",
+      "DemSeam",
+      "DetectorErrorModel",
+      "MemoryCircuit",
+      "PhaseId",
+      "SeamId",
+      "Sequence",
+      "_count",
+      "_cut",
+      "dataclass",
+      "dem_chunk_from_spec",
+      "dem_chunks_from_spec",
+      "dem_close",
+      "dem_close_all",
+      "dem_stitch",
+      "dem_stitch_all",
+      "dem_stitch_merged",
+      "field",
+      "replace"
+    ],
+    "decoding_graph": [
+      "CapabilityError",
+      "DecodingGraph",
+      "DecodingGraphEdge",
+      "DetectorErrorModel",
+      "Integral",
+      "_GRAPH_DETECTORS",
+      "_count",
+      "_normalized_indices",
+      "_probability",
+      "dataclass",
+      "math"
+    ]
+  }
+}
