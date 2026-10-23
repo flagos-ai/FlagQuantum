@@ -1,0 +1,151 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_for_staged_implementation",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_084_DYNAMIC_EXECUTION_UNIFIED_RUN.md",
+  "approval": {
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-10-23",
+    "directive": "approve DYNAMIC-EXECUTION-UNIFIED-RUN-CONTRACT",
+    "approved_scope": "staged local DynamicCircuit planning and execution through fq.plan and fq.run"
+  },
+  "delivery_stage": {
+    "name": "contract_and_conformance_baseline",
+    "runtime_activation": false,
+    "public_behavior_change": false,
+    "successor": "dynamic_planning"
+  },
+  "compatibility": {
+    "additive_behavior_only": true,
+    "public_signature_change": false,
+    "root_export_change": false,
+    "circuit_ir_schema_change": false,
+    "execution_plan_schema_change": false,
+    "execution_result_schema_change": false,
+    "dynamic_circuit_and_circuit_remain_distinct": true,
+    "run_dynamic_remains_experimental": true
+  },
+  "existing_authorities": {
+    "program": "flagquantum.dynamic.DynamicCircuit",
+    "public_ir": "flagquantum.CircuitIR@1.0",
+    "options": "flagquantum.ExecutionOptions",
+    "planning": "flagquantum.plan",
+    "plan": "flagquantum.ExecutionPlan@1.0",
+    "execution": "flagquantum.run",
+    "result": "flagquantum.ExecutionResult",
+    "current_oracle": "flagquantum.experimental.dynamic.run_dynamic"
+  },
+  "stable_workflows": {
+    "automatic": "fq.run(circuit, options=options)",
+    "explicit": "fq.run(fq.plan(circuit, options=options))",
+    "identity_rule": "automatic and explicit results carry the same effective plan identity",
+    "replanning_rule": "a supplied plan is executed without silent replanning",
+    "activation_order": [
+      "dynamic planning",
+      "local fq.run activation"
+    ]
+  },
+  "planning": {
+    "program_representation": "CircuitIR 1.0",
+    "plan_representation": "ExecutionPlan 1.0",
+    "preserve": [
+      "instruction order",
+      "measurement classical-bit identity",
+      "reset",
+      "condition clauses",
+      "shots",
+      "seed",
+      "plan identity"
+    ],
+    "decision": {
+      "distribution_semantics": "single_process",
+      "execution_semantics": "local_statevector_trajectory",
+      "backend": "pytorch",
+      "device": "cpu"
+    },
+    "new_public_plan_type": false,
+    "silent_static_lowering": false,
+    "silent_backend_fallback": false
+  },
+  "options": {
+    "shots": "required positive integer supplied once",
+    "seed": "optional integer through ExecutionOptions",
+    "mode": [
+      null,
+      "auto"
+    ],
+    "backend": [
+      null,
+      "auto",
+      "pytorch"
+    ],
+    "device": [
+      null,
+      "auto",
+      "cpu"
+    ],
+    "target": [
+      null,
+      "auto",
+      "samples"
+    ],
+    "require_gradients": [
+      null,
+      false
+    ],
+    "allow_approximate": [
+      null,
+      false
+    ],
+    "allow_backend_fallback": [
+      null,
+      false
+    ],
+    "outputs": null,
+    "remote_target": false,
+    "distributed_world_size_greater_than_one": false
+  },
+  "result_projection": {
+    "type": "flagquantum.ExecutionResult",
+    "samples_shape": "(shots, n_qubits) for an unbatched program",
+    "measurement_kinds": [
+      "sample",
+      "mid_circuit_measurement"
+    ],
+    "state": null,
+    "value": null,
+    "plan": "exact effective ExecutionPlan",
+    "runtime_fields": [
+      "mode",
+      "shots",
+      "seed",
+      "mid_circuit_measurements_available"
+    ],
+    "excluded_native_fields": [
+      "final_states",
+      "feedback_traces",
+      "executor strategy"
+    ],
+    "invent_provider_provenance": false
+  },
+  "fail_closed": {
+    "missing_or_invalid_shots": "TypeError or ValidationError before execution",
+    "invalid_measurement_def_use": "ValidationError before execution",
+    "gradients": "CapabilityError before execution",
+    "distributed_execution": "CapabilityError: dynamic_conditional_execution_unsupported",
+    "unsupported_noise_or_option": "typed refusal naming the capability",
+    "plan_mismatch": "ExecutionPlanContractError without replanning",
+    "unsupported_remote_target": "refused before submission",
+    "rng_consumed_on_refusal": false,
+    "task_submitted_on_refusal": false,
+    "partial_result_on_refusal": false
+  },
+  "activation_gates": [
+    "contract baseline merged",
+    "dynamic plan JSON round-trip preserves feedback semantics and identity",
+    "automatic and explicit plan paths are identity-equivalent",
+    "stable result projection matches the seeded dynamic oracle",
+    "unsupported local and remote capabilities fail before execution or submission",
+    "static planning and execution remain unchanged",
+    "performance budgets pass"
+  ]
+}
