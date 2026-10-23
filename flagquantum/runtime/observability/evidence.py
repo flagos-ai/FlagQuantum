@@ -148,10 +148,13 @@ def create_evidence_artifact(
     evidence_scope: EvidenceScope,
     provenance: RuntimeProvenance,
     evidence: Mapping[str, Any],
-    signing_key: bytes,
+    signing_key: bytes = b"",
 ) -> EvidenceArtifact:
-    if not signing_key:
-        raise ValueError("a non-empty signing key is required")
+    """Seal measured provenance with a checksum or an explicitly supplied HMAC.
+
+    Keyless v2 establishes content integrity, not publisher authentication.
+    Supplying a key retains the original signed v1 format.
+    """
     scope_errors = _scope_errors(evidence_scope, provenance)
     if scope_errors:
         raise ValueError("; ".join(scope_errors))
@@ -177,43 +180,46 @@ def create_evidence_artifact(
         if not _contains_measured_field(evidence):
             raise ValueError("production evidence requires runtime-measured fields")
 
+    schema = (
+        "flagquantum_runtime_evidence_v1"
+        if signing_key
+        else "flagquantum_runtime_evidence_v2"
+    )
     unsigned = {
-        "schema": "flagquantum_runtime_evidence_v1",
+        "schema": schema,
         "artifact_class": artifact_class.value,
         "evidence_scope": evidence_scope.value,
         "provenance": asdict(provenance),
         "evidence": dict(evidence),
     }
     content_sha256 = hashlib.sha256(_canonical(unsigned)).hexdigest()
-    signature = hmac.new(
-        signing_key, content_sha256.encode(), hashlib.sha256
-    ).hexdigest()
+    integrity = {
+        "algorithm": "hmac-sha256" if signing_key else "sha256",
+        "content_sha256": content_sha256,
+    }
+    if signing_key:
+        integrity["signature"] = hmac.new(
+            signing_key, content_sha256.encode(), hashlib.sha256
+        ).hexdigest()
     return EvidenceArtifact(
-        schema="flagquantum_runtime_evidence_v1",
+        schema=schema,
         artifact_class=artifact_class,
         evidence_scope=evidence_scope,
         provenance=provenance,
         evidence=_freeze(evidence),
-        integrity=MappingProxyType(
-            {
-                "algorithm": "hmac-sha256",
-                "content_sha256": content_sha256,
-                "signature": signature,
-            }
-        ),
+        integrity=MappingProxyType(integrity),
     )
 
 
 def verify_evidence_artifact(
-    payload: Mapping[str, Any], *, signing_key: bytes
+    payload: Mapping[str, Any], *, signing_key: bytes = b""
 ) -> tuple[bool, tuple[str, ...]]:
-    """Check an evidence artifact's checksum and signature.
+    """Check v2 content integrity or v1 content integrity and authentication.
 
     The digest is recomputed over the canonical form of the unsigned fields, so
     anything appended to the artifact outside that set is not covered by it and
-    cannot be smuggled into a release scan. The signature is an HMAC over that
-    digest, which is what ties the content to a holder of the key rather than
-    only to itself.
+    cannot be smuggled into a release scan. V1 additionally checks an HMAC over
+    that digest to authenticate a key holder. V2 checks content integrity only.
 
     Returns the reasons instead of raising, because a release scan wants every
     reason at once rather than the first one: the caller is deciding whether to
@@ -224,13 +230,27 @@ def verify_evidence_artifact(
     being the wrong kind of artifact.
     """
     errors: list[str] = []
-    if payload.get("schema") != "flagquantum_runtime_evidence_v1":
+    schema = str(payload.get("schema", ""))
+    if schema not in {
+        "flagquantum_runtime_evidence_v1",
+        "flagquantum_runtime_evidence_v2",
+    }:
         errors.append("runtime evidence schema is missing or unknown")
     if payload.get("artifact_class") != ArtifactClass.MEASURED_PRODUCTION_RUN.value:
         errors.append("release scan requires measured_production_run")
     integrity = payload.get("integrity")
     if not isinstance(integrity, Mapping):
         return False, tuple((*errors, "runtime evidence integrity is missing"))
+    expected_algorithm = (
+        "sha256" if schema == "flagquantum_runtime_evidence_v2" else "hmac-sha256"
+    )
+    if integrity.get("algorithm") != expected_algorithm:
+        errors.append("runtime evidence integrity algorithm does not match its schema")
+    if schema == "flagquantum_runtime_evidence_v2" and set(integrity) != {
+        "algorithm",
+        "content_sha256",
+    }:
+        errors.append("keyless runtime evidence integrity fields are invalid")
     unsigned = {
         key: payload.get(key)
         for key in (
@@ -244,13 +264,14 @@ def verify_evidence_artifact(
     expected_hash = hashlib.sha256(_canonical(unsigned)).hexdigest()
     if not hmac.compare_digest(str(integrity.get("content_sha256", "")), expected_hash):
         errors.append("runtime evidence content checksum mismatch")
-    expected_signature = hmac.new(
-        signing_key, expected_hash.encode(), hashlib.sha256
-    ).hexdigest()
-    if not signing_key or not hmac.compare_digest(
-        str(integrity.get("signature", "")), expected_signature
-    ):
-        errors.append("runtime evidence signature mismatch")
+    if schema != "flagquantum_runtime_evidence_v2":
+        expected_signature = hmac.new(
+            signing_key, expected_hash.encode(), hashlib.sha256
+        ).hexdigest()
+        if not signing_key or not hmac.compare_digest(
+            str(integrity.get("signature", "")), expected_signature
+        ):
+            errors.append("runtime evidence signature mismatch")
     provenance = payload.get("provenance")
     required = tuple(
         field.name for field in RuntimeProvenance.__dataclass_fields__.values()

@@ -264,6 +264,27 @@ def _signed(artifact: dict, *, key: bytes = _KEYS) -> dict:
     ).summary()
 
 
+@pytest.mark.parametrize("key", [_KEYS, b""])
+@pytest.mark.parametrize("capacity_completed", [True, False])
+def test_integrity_modes_enforce_the_same_capacity_gate(
+    key: bytes, capacity_completed: bool
+) -> None:
+    artifacts = _passing_artifacts()
+    if not capacity_completed:
+        artifacts = [
+            item
+            for item in artifacts
+            if item["evidence"]["acceptance_case"] != "multi_gpu_capacity_completion"
+        ]
+    sealed = [_signed(item, key=key) for item in artifacts]
+    passed, blockers = evaluate_issue044_release(
+        sealed, load_manifest(), signing_key=key
+    )
+    assert passed is capacity_completed, blockers
+    if not capacity_completed:
+        assert "missing_multi_gpu_capacity_completion_artifact" in blockers
+
+
 def _write_candidates(directory: Path, artifacts: list[dict]) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     for index, artifact in enumerate(artifacts):

@@ -1,5 +1,6 @@
 import json
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, asdict
+from pathlib import Path
 
 import pytest
 
@@ -176,61 +177,124 @@ def test_signed_runtime_artifact_rejects_editing():
     assert "runtime evidence content checksum mismatch" in errors
 
 
-def test_release_scanner_requires_signed_runtime_envelope(tmp_path):
+def test_keyless_evidence_has_only_a_checksum_and_no_authentication_claim() -> None:
+    artifact = create_evidence_artifact(
+        artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+        evidence_scope=EvidenceScope.TWO_GPU_SEMANTIC,
+        provenance=_provenance(),
+        evidence=_measured_payload(),
+    ).summary()
+    assert artifact["schema"] == "flagquantum_runtime_evidence_v2"
+    assert set(artifact["integrity"]) == {"algorithm", "content_sha256"}
+    assert artifact["integrity"]["algorithm"] == "sha256"
+    assert verify_evidence_artifact(artifact) == (True, ())
+
+
+@pytest.mark.parametrize(
+    "section,field,value",
+    [
+        ("evidence", "measured_peak_memory_bytes", 8192),
+        ("provenance", "commit", "d" * 40),
+        ("provenance", "workload_sha256", "d" * 64),
+        ("provenance", "raw_log_sha256", "d" * 64),
+        ("provenance", "devices", ["GPU-other", "GPU-1"]),
+    ],
+)
+def test_keyless_evidence_rejects_changes_to_measurements_and_provenance(
+    section: str, field: str, value: object
+) -> None:
+    payload = create_evidence_artifact(
+        artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+        evidence_scope=EvidenceScope.TWO_GPU_SEMANTIC,
+        provenance=_provenance(),
+        evidence=_measured_payload(),
+    ).summary()
+    payload[section][field] = value
+    valid, errors = verify_evidence_artifact(payload)
+    assert not valid
+    assert "runtime evidence content checksum mismatch" in errors
+
+
+def test_keyless_verification_cannot_downgrade_a_legacy_signature() -> None:
+    payload = create_evidence_artifact(
+        artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+        evidence_scope=EvidenceScope.TWO_GPU_SEMANTIC,
+        provenance=_provenance(),
+        evidence=_measured_payload(),
+        signing_key=KEY,
+    ).summary()
+    assert verify_evidence_artifact(payload, signing_key=KEY) == (True, ())
+    assert "runtime evidence signature mismatch" in verify_evidence_artifact(payload)[1]
+    payload["integrity"]["algorithm"] = "sha256"
+    assert "algorithm does not match" in "; ".join(
+        verify_evidence_artifact(payload, signing_key=KEY)[1]
+    )
+
+
+@pytest.mark.parametrize("algorithm", ["hmac-sha256", "unknown"])
+def test_keyless_schema_rejects_a_different_algorithm(algorithm: str) -> None:
+    payload = create_evidence_artifact(
+        artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
+        evidence_scope=EvidenceScope.TWO_GPU_SEMANTIC,
+        provenance=_provenance(),
+        evidence=_measured_payload(),
+    ).summary()
+    payload["integrity"]["algorithm"] = algorithm
+    assert not verify_evidence_artifact(payload)[0]
+
+
+@pytest.mark.parametrize("key", [KEY, b""])
+def test_release_scanner_checks_envelope_integrity(tmp_path: Path, key: bytes) -> None:
     artifact = create_evidence_artifact(
         artifact_class=ArtifactClass.MEASURED_PRODUCTION_RUN,
         evidence_scope=EvidenceScope.SCHEDULED_SCALE,
         provenance=_provenance(4),
         evidence=_measured_payload(),
-        signing_key=KEY,
+        signing_key=key,
     )
     path = tmp_path / "runtime.json"
     path.write_text(json.dumps(artifact.summary()), encoding="utf-8")
 
-    wrong_key = audit_paths([path], require_scalability=True, signing_key=b"wrong")
-    assert wrong_key["claimable_count"] == 0
-    assert wrong_key["records"][0]["status"] == "provenance_rejected"
+    if key:
+        wrong_key = audit_paths([path], require_scalability=True, signing_key=b"wrong")
+        assert wrong_key["claimable_count"] == 0
+        assert wrong_key["records"][0]["status"] == "provenance_rejected"
 
-    signed = audit_paths([path], require_scalability=True, signing_key=KEY)
+    signed = audit_paths([path], require_scalability=True, signing_key=key)
     assert signed["records"][0]["status"] == "ok"
 
 
-def test_runtime_sealer_refuses_to_emit_without_protected_key(tmp_path, monkeypatch):
+def test_runtime_sealer_emits_keyless_evidence_with_complete_recorded_provenance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     measurements = tmp_path / "measurements.json"
-    measurements.write_text("{}", encoding="utf-8")
-    raw_log = tmp_path / "run.log"
-    raw_log.write_text("executed", encoding="utf-8")
-    workload = tmp_path / "workload.json"
-    workload.write_text("{}", encoding="utf-8")
+    measurements.write_text(json.dumps(_measured_payload()), encoding="utf-8")
+    provenance = tmp_path / "provenance.json"
+    provenance.write_text(json.dumps(asdict(_provenance())), encoding="utf-8")
+    output = tmp_path / "sealed.json"
     monkeypatch.delenv("FQ_EVIDENCE_SIGNING_KEY", raising=False)
 
-    with pytest.raises(SystemExit, match="FQ_EVIDENCE_SIGNING_KEY is not configured"):
+    assert (
         seal_main(
             [
                 "--measurements",
                 str(measurements),
-                "--raw-log",
-                str(raw_log),
-                "--workload",
-                str(workload),
+                "--recorded-provenance",
+                str(provenance),
                 "--output",
-                str(tmp_path / "sealed.json"),
+                str(output),
                 "--scope",
                 "two_gpu_semantic_regression",
-                "--command",
-                "torchrun benchmark.py",
-                "--collective-backend",
-                "nccl",
-                "--warmup",
-                "1",
-                "--iterations",
-                "2",
                 "--world-size",
                 "2",
-                "--seed",
-                "7",
             ]
         )
+        == 0
+    )
+    payload = json.loads(output.read_text())
+    assert payload["schema"] == "flagquantum_runtime_evidence_v2"
+    assert payload["provenance"] == json.loads(provenance.read_text())
+    assert verify_evidence_artifact(payload) == (True, ())
 
 
 def test_runtime_sealer_requires_a_complete_provenance_source(tmp_path, monkeypatch):
