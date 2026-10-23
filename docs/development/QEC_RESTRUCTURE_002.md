@@ -5,12 +5,15 @@ Status: implemented for review after the user's 2026-10-23 approval of the
 002 only. Owner: Core; source-reference contract maintenance is a separate
 Integration commits. Classification: `single_device_fast_path`.
 
-The branch starts at fetched `origin/main`
-`ff69b2526809772b7fadde5bcb420f9f5899dcf6` and fast-forwards the approved 001
-commit `398765f7a886e6eea356eea00e830ca399834635`. Since audit PR #735 is still
-open, this implementation is a separate stacked PR against its branch, with
-only 002 differences. No PR is merged by this work. DynamicCircuit PR #731 and
-its branch are not modified or incorporated.
+The implementation initially started at fetched `origin/main`
+`ff69b2526809772b7fadde5bcb420f9f5899dcf6` with approved audit commit
+`398765f7a886e6eea356eea00e830ca399834635` as a stacked prerequisite.
+After audit PR #735 merged, PR #737 was retargeted to `main` and integrated main
+revision `d658df0dfea36fe9ae9929c9f5715f617e74461e`. This enables the ordinary
+main-target pull-request CI and its required `CI complete` check. The QEC implementation diff against main remains batch 002 only; compiler,
+runtime and Core implementations match main. CI integration also enables the
+same complete automatic workflow on QEC stack bases and fixes one negative
+permission fixture so it remains public under either umask 022 or 077. PR #731 is not edited or merged by this work.
 
 ## Implemented boundaries
 
@@ -179,6 +182,11 @@ nodes and six error nodes are the previously reproduced 001 baseline. This is
 not a claim that the repository-wide default gate is green; the full broad tier
 was not repeated after the scoped documentation/metadata fixes.
 
-CI currently triggers automatically only for PRs targeting `main`. After #735
-is merged, this stacked PR needs its base changed to `main` before required CI
-and merge review; no workflow or branch-protection rule is bypassed or changed.
+The original stacked-head manual full CI completed with 38/38 successful jobs,
+and its required single-GPU and two-GPU jobs passed under the unchanged
+performance thresholds. After integrating current main, the new head must pass
+normal main-target pull-request CI and hardware checks again. Historical green
+runs are retained as evidence for their own revisions; they do not substitute
+for the new integration's required checks. The CI job graph, test selections, thresholds and branch protection remain
+unchanged. Only the existing full-CI trigger range expands to QEC stack bases,
+with the workflow policy test asserting both main and the exact QEC pattern.
