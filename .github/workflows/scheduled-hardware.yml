@@ -5,13 +5,64 @@ on:
     - cron: "17 3 * * 1"
   workflow_dispatch:
     inputs:
+      run_capacity_series:
+        description: Measure only the frozen MPS capacity series on the reserved A800 pair
+        type: boolean
+        default: false
       run_multinode:
         description: Run the provisioned multi-node tier
         type: boolean
         default: false
 
 jobs:
+  mps-capacity-series:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_capacity_series
+    runs-on: [self-hosted, linux, gpu, flagquantum-local, multinode]
+    concurrency:
+      group: flagquantum-accelerator
+      queue: max
+    timeout-minutes: 100
+    steps:
+      - name: Clear stale sparse settings in the isolated capacity checkout
+        run: |
+          if [ -d capacity-series-source ]; then
+            (
+              cd capacity-series-source
+              if [ -d .git ]; then
+                git sparse-checkout disable
+                rm -f .git/info/sparse-checkout
+                git config --local --unset core.sparseCheckout || true
+              fi
+            )
+          fi
+      - uses: actions/checkout@v4
+        with:
+          path: capacity-series-source
+      - name: Measure one frozen workload at every rank count
+        working-directory: capacity-series-source
+        env:
+          STAGING: /nfs/fq-mps-capacity-${{ github.run_id }}-${{ github.run_attempt }}
+          OUTPUT: /nfs/fq-mps-capacity-${{ github.run_id }}-${{ github.run_attempt }}-out
+        run: |
+          python tools/run_mps_capacity_series.py --staging "$STAGING" --output "$OUTPUT"
+      - name: Retain raw measurements and diagnostics
+        if: always()
+        run: |
+          output="/nfs/fq-mps-capacity-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-out"
+          report="hardware-run-capacity-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$report"
+          if [ -d "$output" ]; then
+            cp -a "$output/." "$report/"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mps-capacity-series-${{ github.sha }}
+          path: hardware-run-capacity-${{ github.run_id }}-${{ github.run_attempt }}/
+          retention-days: 30
+
   gpu-scheduled:
+    if: ${{ !inputs.run_capacity_series }}
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     # Every accelerator job here measures a device that the others also measure,
     # and the repository registers its runners onto shared hosts. Nothing
@@ -69,7 +120,7 @@ jobs:
           path: hardware-run/
 
   local-scale-scheduled:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && !inputs.run_capacity_series
     runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-172]
     concurrency:
       group: flagquantum-accelerator
@@ -176,7 +227,7 @@ jobs:
     # Manual only. The pair holds a device on each of two shared hosts for the
     # length of the run, and a schedule would take them whether or not anyone
     # is watching the result.
-    if: github.event_name == 'workflow_dispatch' && inputs.run_multinode
+    if: github.event_name == 'workflow_dispatch' && inputs.run_multinode && !inputs.run_capacity_series
     # Only the launch host carries `multinode`. SSH reaches the peer from there
     # and not the other way round, so a job that lands on the peer cannot start
     # the pair at all; `--preflight` is what notices if that label ever moves.
