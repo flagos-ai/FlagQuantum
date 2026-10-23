@@ -977,7 +977,7 @@ jobs:
       - name: Select a private Qiskit wheel cache
         run: |
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            directory="$HOME/.cache/flagquantum/qiskit-wheels/py312/${{ matrix.qiskit }}"
+            directory="$HOME/.cache/fq-qiskit-wheels/py312/${{ matrix.qiskit }}"
           else
             directory="$RUNNER_TEMP/qiskit-wheels"
           fi
