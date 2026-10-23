@@ -36,6 +36,11 @@ A fast subgrid, which is what the conformance test drives::
     python benchmarks/representation_agreement_sweep.py \
         --widths 4,6 --depths 2,6 --structures nearest_neighbour \
         --output /tmp/agreement-smoke.json
+
+Repeat the identical seeded angles with double-precision amplitudes::
+
+    python benchmarks/representation_agreement_sweep.py --dtype complex128 \
+        --output /tmp/agreement-complex128.json
 """
 
 from __future__ import annotations
@@ -102,7 +107,8 @@ def build_ansatz(parameters: torch.Tensor, structure: str) -> fq.Circuit:
     expected to matter.
     """
     depth, n_qubits, _ = parameters.shape
-    circuit = fq.Circuit(n_qubits, device=parameters.device)
+    dtype = torch.complex128 if parameters.dtype == torch.float64 else torch.complex64
+    circuit = fq.Circuit(n_qubits, device=parameters.device, dtype=dtype)
     for qubit in range(n_qubits):
         circuit.h(qubit)
     for layer in range(depth):
@@ -134,7 +140,9 @@ def _expectation(
 ) -> torch.Tensor:
     if hasattr(target, "expectation_ps"):
         return target.expectation_ps(x=x, z=z).sum()
-    state_circuit = fq.Circuit(n_qubits, device=target.device, inputs=target)
+    state_circuit = fq.Circuit(
+        n_qubits, device=target.device, dtype=target.dtype, inputs=target
+    )
     return state_circuit.expectation_ps(x=x, z=z).sum()
 
 
@@ -163,6 +171,7 @@ def measure_cell(
     seed: int,
     device: str,
     modes: tuple[str, ...] = MODES,
+    dtype: torch.dtype = torch.complex64,
 ) -> dict[str, Any]:
     """Measure one grid cell: the same parameters through every representation.
 
@@ -170,10 +179,19 @@ def measure_cell(
     every run, so a disagreement is a property of the representation rather than
     of a different starting point.
     """
+    if dtype not in (torch.complex64, torch.complex128):
+        raise ValueError("dtype must be torch.complex64 or torch.complex128")
     generator = torch.Generator(device=device).manual_seed(seed)
-    parameters = 0.05 * torch.randn(
-        depth, n_qubits, 2, device=device, generator=generator
-    )
+    # Draw once in float32, including the scale, then widen exactly. Both
+    # precision runs therefore execute identical angles rather than different
+    # random streams or differently rounded input programs.
+    parameters = (
+        0.05
+        * torch.randn(
+            depth, n_qubits, 2, device=device, generator=generator, dtype=torch.float32
+        )
+    ).to(dtype=torch.float64 if dtype == torch.complex128 else torch.float32)
+    failures: dict[str, str] = {}
 
     # Whether the cap actually discarded weight. An observed bond equal to the
     # cap does not settle it: a shallow circuit stops growing on its own, and at
@@ -193,11 +211,13 @@ def measure_cell(
                     max_bond=headroom_cap,
                 )
                 headroom_bond = int(max(headroom_state.bond_dims))
-        except Exception:
+        except Exception as exc:
             headroom_bond = None
+            failures["headroom_probe"] = (
+                f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
+            )
 
     energies: dict[str, float | None] = {}
-    failures: dict[str, str] = {}
     observed_bond: int | None = None
     for mode in modes:
         options = {"max_bond": max_bond} if mode == "mps" else {}
@@ -214,18 +234,16 @@ def measure_cell(
             failures[mode] = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
 
     measured = [value for value in energies.values() if value is not None]
-    # complex64 carries about seven significant decimal digits, so a repr with
-    # seventeen states ten digits the arithmetic never had. The spreads are
-    # computed at full precision first and only the recorded numbers are
-    # rounded, which keeps the payload honest about its own precision and keeps
-    # it inside the repository's benchmark-results ratchet budget.
+    reference = energies["statevector"]
+    digits = 17 if dtype == torch.complex128 else 9
+    # Preserve double precision in the record; nine digits suffice only for
+    # complex64. Compute both spreads from the unrounded measurements.
     energies = {
-        mode: None if value is None else float(f"{value:.9g}")
+        mode: None if value is None else float(f"{value:.{digits}g}")
         for mode, value in energies.items()
     }
     # The dense path is the exact reference the relative spread is divided by,
     # named explicitly rather than taken positionally.
-    reference = energies["statevector"]
     spread = max(measured) - min(measured) if len(measured) > 1 else None
     relative = (
         spread / abs(reference)
@@ -353,6 +371,9 @@ def main() -> int:
     )
     parser.add_argument("--seed", type=int, default=260720)
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
+    parser.add_argument(
+        "--dtype", choices=("complex64", "complex128"), default="complex64"
+    )
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args()
 
@@ -390,6 +411,7 @@ def main() -> int:
                         seed=arguments.seed,
                         device=arguments.device,
                         modes=arguments.modes,
+                        dtype=getattr(torch, arguments.dtype),
                     )
                     cells.append(cell)
                     print(
@@ -444,10 +466,13 @@ def main() -> int:
             "max_bond_cutoffs": list(arguments.max_bond),
         },
         "observable": "open-boundary transverse-field Ising, h=0.7",
-        "parameter_initialization": "0.05 * randn, one seeded draw shared per cell",
+        "parameter_initialization": (
+            "0.05 * float32 randn, one seeded draw shared per cell; "
+            "complex128 widens the same float32 angles exactly"
+        ),
         "seed": arguments.seed,
         "device": arguments.device,
-        "dtype": "complex64",
+        "dtype": arguments.dtype,
         "summary": summarize(cells),
         "skipped_configurations": skipped,
         "cells": cells,
@@ -461,7 +486,10 @@ def main() -> int:
         # requires a revision a ref of this repository reaches, and an orphaned
         # hash is exactly what it rejects.
         "base_commit": subprocess.check_output(
-            ["git", "rev-parse", "origin/main"], cwd=REPO_ROOT, text=True
+            ["git", "rev-parse", "origin/main"], cwd=REPO_ROOT, text=True, timeout=15
+        ).strip(),
+        "source_commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True, timeout=15
         ).strip(),
         # Whether the measuring code itself was committed when it ran. A whole
         # working tree cannot be reported clean here -- writing this payload
@@ -471,12 +499,13 @@ def main() -> int:
             ["git", "status", "--porcelain", "--", str(Path(__file__).resolve())],
             cwd=REPO_ROOT,
             text=True,
+            timeout=15,
         ).strip(),
     }
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     arguments.output.write_text(json.dumps(payload, indent=2) + "\n")
     print(json.dumps({"output": str(arguments.output), **payload["summary"]}, indent=2))
-    return 0
+    return 2 if payload["summary"]["incomplete_cells"] else 0
 
 
 if __name__ == "__main__":

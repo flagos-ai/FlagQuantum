@@ -13,33 +13,46 @@ import flagquantum.errors as fqe
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = ROOT / "contracts" / "dynamic-circuit-v1-candidate.json"
+CONTRACT = ROOT / "contracts" / "dynamic-circuit-v1.json"
+RETIRED_CANDIDATE = ROOT / "contracts" / "dynamic-circuit-v1-candidate.json"
 
 
 def _load() -> dict[str, object]:
     return json.loads(CONTRACT.read_text(encoding="utf-8"))
 
 
-def test_dynamic_circuit_is_frozen_without_freezing_execution() -> None:
-    candidate = _load()
+def test_dynamic_circuit_is_stable_without_stabilizing_execution() -> None:
+    contract = _load()
 
-    assert candidate["status"] == "frozen"
-    assert candidate["implementation_authorized"] is True
-    assert candidate["root_manifest_change"] is False
-    assert candidate["rules"]["candidate_is_frozen_contract"] is True
-    assert candidate["rules"]["whole_api_freeze_implied"] is False
-    assert candidate["approval"]["approved_at"] == "2026-09-01"
-    assert candidate["result_boundary"]["native_result_candidate_stable"] is False
-    # The one signature this contract gained after the freeze was approved by the
-    # API owner, and the record names the parameter rather than only a date.
-    (extension,) = candidate["approval"]["approved_extensions"]
+    assert contract["status"] == "stable"
+    assert contract["root_manifest_change"] is False
+    assert contract["rules"]["construction_api_is_stable_contract"] is True
+    assert contract["rules"]["whole_dynamic_api_freeze_implied"] is False
+    assert contract["approval"] == {
+        "approved_by": "API owner via explicit user directive",
+        "approved_at": "2026-10-23",
+        "directive": "approve DYNAMIC-CIRCUIT-STABLE-CONTRACT-PROMOTION",
+        "approved_scope": "DynamicCircuit construction contract only",
+    }
+    assert contract["migration"]["candidate_removed"] is True
+    assert contract["migration"]["user_code_change_required"] is False
+    assert contract["history"]["candidate_owner"] == "API owner"
+    assert contract["history"]["candidate_target"] == "first-public-alpha"
+    assert (
+        "all eight promotion criteria"
+        in contract["history"]["candidate_removal_condition"]
+    )
+    assert not RETIRED_CANDIDATE.exists()
+    assert contract["result_boundary"]["native_result_stable"] is False
+    # The one signature added during candidacy remains part of the stable history.
+    (extension,) = contract["history"]["approved_extensions"]
     assert extension["extension"] == "DynamicCircuit.conditional(any_of=...)"
     assert extension["approved_at"] == "2026-10-20"
     assert "additive keyword-only parameter" in extension["approved_scope"]
 
 
-def test_dynamic_namespace_matches_candidate_exactly() -> None:
-    extension = _load()["stable_extension"]
+def test_dynamic_namespace_matches_stable_contract_exactly() -> None:
+    extension = _load()["stable_surface"]
 
     assert extension["namespace"] == "flagquantum.dynamic"
     assert list(fqd.__all__) == extension["additions"] == ["DynamicCircuit"]
@@ -47,7 +60,7 @@ def test_dynamic_namespace_matches_candidate_exactly() -> None:
     assert "DynamicCircuit" not in fq.experimental.dynamic.__all__
 
 
-def test_dynamic_signatures_match_candidate() -> None:
+def test_dynamic_signatures_match_stable_contract() -> None:
     signatures = _load()["public_signatures"]
 
     assert (

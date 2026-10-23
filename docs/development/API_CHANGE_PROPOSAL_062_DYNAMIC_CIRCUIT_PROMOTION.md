@@ -2,9 +2,9 @@
 
 ## Status
 
-**Readiness audited on 2026-10-22. Criteria 1–7 are satisfied; criterion 8 and
-final API-owner authorization remain open. `DynamicCircuit` is not promoted by
-this audit.**
+**Stable promotion completed on 2026-10-23. All eight criteria are satisfied,
+and the API owner authorized the exact scope with
+`approve DYNAMIC-CIRCUIT-STABLE-CONTRACT-PROMOTION`.**
 
 This proposal defines the criteria for promoting the candidate-stable
 `DynamicCircuit` to stable and for leaving `run_dynamic` experimental. It
@@ -40,9 +40,9 @@ namespace carries and the conditions under which it may change.
 
 ### 1. Promotion is criteria-gated, not schedule-gated
 
-`DynamicCircuit` moves from candidate-stable to stable only when every criterion
-in the table below holds with recorded evidence. Passing a milestone date, or
-implementing a related internal feature, does not by itself promote the surface.
+`DynamicCircuit` moved from candidate-stable to stable only after every criterion
+in the table below held with recorded evidence. Passing a milestone date, or
+implementing a related internal feature, did not by itself promote the surface.
 
 ### 2. The criteria
 
@@ -55,7 +55,7 @@ implementing a related internal feature, does not by itself promote the surface.
 | 5 | Distribution | Sharded execution either preserves feedback semantics, or fails closed with a reported blocker naming the unsupported case. Replicated per-rank execution must not be described as distributed scalability. |
 | 6 | Degradation | A target without conditional execution is rejected at planning time with an actionable blocker. No silent flattening to a static circuit, and no substitution of another backend. |
 | 7 | Non-regression | Static batched execution shows no regression against the recorded baseline. |
-| 8 | Contract | `contracts/dynamic-circuit-v1-candidate.json` is superseded by a stable contract with a recorded migration path, and the candidate contract is retired rather than left to coexist indefinitely. |
+| 8 | Contract | `contracts/dynamic-circuit-v1.json` supersedes the retired candidate contract, records a zero-code-change migration, and prevents the two contracts from coexisting. |
 
 Criterion 7 is satisfied for the declared Apple-arm64 CPU profile at source
 revision `4972fd0ce9b03a809cca78dc298810bb45a3c5c0`. The profile-aware gate passed
@@ -92,9 +92,9 @@ flagquantum-benchmark run cpu_performance_gate \
 
 ### 2.1 Readiness audit
 
-The audit is deliberately narrower than promotion. It establishes that the
-implementation and evidence satisfy criteria 1–7, but it does not replace the
-candidate contract, change an API label, or authorize stable publication.
+The 2026-10-22 audit was deliberately narrower than promotion. It established
+criteria 1–7 without replacing the candidate contract or authorizing stable
+publication. The separately approved 2026-10-23 change completed criterion 8.
 
 | Criterion | Verdict | Executable evidence |
 | --- | --- | --- |
@@ -105,7 +105,7 @@ candidate contract, change an API label, or authorize stable publication.
 | 5. Distribution | Satisfied by explicit refusal | `tests/unit/test_classical_control_contract.py::test_distributed_execution_refuses_every_classical_control_key` proves refusal occurs before compilation and reports `dynamic_conditional_execution_unsupported`; no replicated execution is presented as scalability. |
 | 6. Degradation | Satisfied | `tests/test_dynamic_circuit.py::test_dynamic_backend_capability_negotiation_fails_closed` verifies actionable blockers, while `::test_dynamic_deployment_preflight_blocks_provider_submission` proves an incompatible program never reaches `provider.run`. |
 | 7. Non-regression | Satisfied on the declared profile | The raw observations, gate verdict, policy, source revision, and reproduction commands are recorded immediately above. |
-| 8. Contract | Open | `contracts/dynamic-circuit-v1-candidate.json` is still the active frozen contract and `tests/unit/test_dynamic_circuit_candidate.py` still enforces candidate status. Promotion requires one separately approved change that installs the stable contract and retires this candidate rather than retaining both. |
+| 8. Contract | Satisfied | `contracts/dynamic-circuit-v1.json` records the stable surface, approval, history, and zero-code-change migration. `tests/unit/test_dynamic_circuit_stable.py` enforces it and proves the retired candidate path is absent. |
 
 Run the functional portion of the audit with:
 
@@ -114,13 +114,14 @@ python -m pytest -q \
   tests/test_dynamic_circuit.py \
   tests/test_dynamic_conformance.py \
   tests/unit/test_classical_control_contract.py \
-  tests/unit/test_dynamic_circuit_candidate.py \
+  tests/unit/test_dynamic_circuit_stable.py \
   tests/unit/test_multi_level_ir_contract.py
 ```
 
-The audit decision is therefore **ready to enter criterion 8**, not “already
-stable”. If any cited test is removed, weakened, or stops passing, readiness is
-withdrawn until an equivalent recorded proof replaces it.
+The audit decision entered criterion 8, and the explicit 2026-10-23 owner
+authorization completed the promotion. If any cited proof is removed, weakened,
+or stops passing, release readiness is withdrawn until equivalent recorded
+evidence replaces it; the stable API still follows the deprecation policy.
 
 ### 3. `run_dynamic` and the rest stay experimental
 
@@ -131,10 +132,9 @@ is the part users build against, and the execution surfaces still move.
 
 ### 4. The candidate contract is retired, not stacked
 
-Criterion 8 exists to prevent permanent compatibility debt, which engineering
-decision principle 1 prohibits. When the stable contract lands, the candidate
-contract has a named owner, a documented scope, a removal condition, and a target
-version. Two coexisting dynamic-circuit contracts is not an acceptable end state.
+Criterion 8 prevents permanent compatibility debt. The stable contract replaced
+and retired the candidate in one change; its history records the original owner,
+scope, and approved extension. Two dynamic-circuit contracts do not coexist.
 
 ## Public API
 
@@ -149,9 +149,9 @@ circuit.measure(0)
 circuit.conditional("x", 1, classical_bit=0)
 ```
 
-The namespace already exists and is candidate-stable. Promotion changes the
-label and the contract that backs it; it does not add names, change signatures,
-change defaults, or alter documented exception behaviour.
+The namespace already existed. Promotion changed the label and backing contract;
+it did not add names, change signatures, change defaults, or alter documented
+exception behaviour.
 
 If a later step concludes that a promotion requires a public surface change — a
 new method, a condition expression, or a result field — that change is proposed
@@ -163,46 +163,45 @@ promotion step. `DynamicCircuit.conditional` gained an `any_of` keyword on
 spelling, which is a condition expression in the sense of the sentence above. It
 was taken as the separate change that sentence asks for, under explicit API-owner
 approval, and the additive, defaulted, keyword-only scope is recorded in
-`contracts/dynamic-circuit-v1-candidate.json` under
-`approval.approved_extensions`. Nothing else here moves: the namespace label, the
-promotion criteria below, and the experimental status of `run_dynamic` are
-unchanged, and this proposal remains **Proposed**.
+`contracts/dynamic-circuit-v1.json` under `history.approved_extensions`. Nothing
+else moved: the promotion criteria and the experimental status of `run_dynamic`
+are unchanged.
 
 ## Compatibility
 
-Before promotion, the surface is candidate-stable and `contracts/dynamic-circuit-v1-candidate.json`
-is the machine contract. After promotion, the stable contract replaces it under
-criterion 8.
+Before promotion, the surface was candidate-stable and
+`contracts/dynamic-circuit-v1-candidate.json` was its machine contract. The
+stable `contracts/dynamic-circuit-v1.json` now replaces it under criterion 8;
+users do not need to change code.
 
-Because nothing changes in this proposal, rollback is not applicable until a
-promotion is actually made. Once made, a reverse move would be a public API
-change requiring the standard deprecation process, which is why the criteria are
-gated on recorded evidence rather than on intent.
+A reverse move is now a public API change requiring the standard deprecation
+process, which is why promotion was gated on recorded evidence rather than intent.
 
 `IR_VERSION`, `CircuitIR` schema `1.0`, `docs/public_api_v1.json`, and the root
 export set are unaffected either way.
 
 ## Acceptance
 
-- [ ] Every criterion in Decision 2 holds, each with a recorded evidence artifact
+- [x] Every criterion in Decision 2 holds, each with a recorded evidence artifact
       and a command that reproduces it.
 - [x] Dynamic, unknown, and lossy inputs fail closed with typed diagnostics.
 - [x] Planning-time rejection is verified for a target lacking conditional
       execution, including that no fallback path executes.
 - [x] Sharded dynamic execution is tested for both outcomes: preserved feedback
       semantics, or an explicit blocker.
-- [ ] `python tools/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
+- [x] `python tools/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
       pass.
 - [x] Static batched execution shows no regression against the recorded baseline
       on the declared Apple-arm64 CPU profile; the evidence and its limits are
       recorded above.
-- [ ] The stable contract supersedes the candidate contract, and the candidate
+- [x] The stable contract supersedes the candidate contract, and the candidate
       contract has a named owner, removal condition, and target version.
 - [x] The root export set, `IR_VERSION`, `CircuitIR` schema, and
       `docs/public_api_v1.json` are unchanged.
 - [x] Any criterion that cannot be met is recorded as an explicit, owned gap with a
       reason, and promotion is deferred rather than granted conditionally.
-- [ ] API owner authorizes the promotion.
+- [x] API owner authorizes the promotion with the exact directive recorded in the
+      stable machine contract.
 
 ## Non-goals
 
