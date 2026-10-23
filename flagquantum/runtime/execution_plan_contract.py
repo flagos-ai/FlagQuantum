@@ -496,6 +496,14 @@ def plan_decision(plan: ExecutionPlan) -> dict[str, object]:
     return _require_mapping("ExecutionPlan.decision", plan_to_dict(plan)["decision"])
 
 
+def plan_resolved_options(plan: ExecutionPlan) -> dict[str, object]:
+    """Return the validated concrete options whose identity the plan carries."""
+
+    return _require_mapping(
+        "ExecutionPlan.resolved_options", plan_to_dict(plan)["resolved_options"]
+    )
+
+
 def plan_noise_model(plan: ExecutionPlan) -> Any | None:
     """Restore the optional stable noise extension carried by a plan."""
 
@@ -744,6 +752,7 @@ __all__ = (
     "plan_from_dict",
     "plan_from_json",
     "plan_program",
+    "plan_resolved_options",
     "plan_to_dict",
     "plan_to_json",
     "validate_plan_environment",

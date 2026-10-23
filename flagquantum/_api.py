@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import replace
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
@@ -102,6 +103,14 @@ def run(
         >>> circuit = fq.Circuit(2).h(0).cx(0, 1)
         >>> fq.run(circuit, outputs=fq.probabilities()).probabilities.shape
         torch.Size([1, 4])
+
+        Run a dynamic circuit through the same stable entry point:
+
+        >>> from flagquantum.dynamic import DynamicCircuit
+        >>> dynamic = DynamicCircuit(2).h(0).measure(0, classical_bit=0)
+        >>> _ = dynamic.conditional("x", 1, classical_bit=0)
+        >>> fq.run(dynamic, shots=8).samples.shape
+        torch.Size([8, 2])
     """
 
     import_module(".core.ir", __package__)._reject_native_circuit_input(program_or_plan)
@@ -137,8 +146,32 @@ def run(
                 n_qubits=ir.n_wires,
             )
         elif shots is not None:
-            raise TypeError(
-                "local shots requires fq.samples(...) or fq.counts(...) output"
+            if isinstance(program_or_plan, ExecutionPlan):
+                raise TypeError(
+                    "shots must be None when executing an ExecutionPlan; the plan "
+                    "already fixes its shot count"
+                )
+            ir = import_module(".core.ir", __package__).ensure_circuit_ir(
+                program_or_plan
+            )
+            classical_control = import_module(".core.classical_control", __package__)
+            is_dynamic = any(
+                classical_control.is_classical_control_instruction(instruction)
+                for instruction in ir.instructions
+            )
+            if not is_dynamic:
+                raise TypeError(
+                    "local shots requires fq.samples(...) or fq.counts(...) output"
+                )
+            options_type = import_module(
+                ".runtime.options", __package__
+            ).ExecutionOptions
+            if options is not None and not isinstance(options, options_type):
+                raise TypeError("options must be an ExecutionOptions or None")
+            options = (
+                options_type(shots=shots)
+                if options is None
+                else replace(options, shots=shots)
             )
         from .runtime.execution import run as run_local
 
