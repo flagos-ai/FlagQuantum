@@ -251,7 +251,7 @@ ANCHOR_PAYLOAD_FIELDS = ("reference_anchor", "qiskit_anchor")
 # The one job that installs Qiskit. Its certified lanes come from
 # `dependency-policy.toml`, and an anchor is only comparable with a release that
 # table lists.
-QISKIT_LANE_JOB = "qiskit-optional"
+QISKIT_LANE_JOB = "qiskit-compat"
 
 
 def _anchor_files() -> list[Path]:

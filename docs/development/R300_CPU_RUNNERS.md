@@ -1,13 +1,25 @@
 # R300 CPU CI runners
 
-The initial R300 routing spreads Qiskit compatibility onto
-`flagcicd-r300-cpu05`, Braket onto `flagcicd-r300-cpu03`, and Cirq onto
-`flagcicd-r300-cpu04`. All three targets have completed resource inventory.
-The cpu04 replacement must pass native CPU preflight and both certified Cirq
-versions before integration; earlier SDK qualification on cpu16 is recorded below.
-Same-repository pull requests and manual CI runs use these targets. Fork pull
-requests retain `ubuntu-latest` and its existing hosted concurrency buckets.
-The two certified SDK versions in each compatibility job remain unchanged.
+Qiskit, Cirq and Braket compatibility use the accepted fixed CPU pool for
+latency and source-transport reliability. Same-repository pull requests and
+manual CI runs use this pool; fork pull requests retain `ubuntu-latest` and the
+existing hosted concurrency buckets. The scale-set diagnostics remain available
+for future qualification.
+
+Qiskit previously qualified on `flagcicd-r300-cpu05`. Its two certified versions
+now use parallel `qiskit-compat` jobs on the accepted fixed CPU pool, because a
+R300 capacity wait exceeded ten minutes before certification started. The fixed
+pool completed both versions and the stable gate in 4.2 minutes during validation.
+Each lane retains the native CPU preflight and all SDK checks;
+`qiskit-optional` requires both lanes to succeed. The R300 validation workflow
+continues to inventory cpu05; this routing change does not remove its diagnostics.
+Cirq's latest cpu04 attempt exhausted both the three-minute artifact budget and
+five-minute checkout budget before any tests started. Its fixed-pool route keeps
+native CPU preflight and both complete 1.6.1/1.7.0 certification selections.
+Braket subsequently exhausted the same three-minute artifact and five-minute
+checkout budgets on cpu03 before any tests started. It now uses the fixed pool
+with both 1.117.0/1.127.1 SDK selections and native CPU preflight intact.
+Fixed-host jobs reuse verified incremental Git objects.
 
 ## Validation and limits
 
@@ -31,7 +43,7 @@ and venv support from the Tsinghua Ubuntu mirror with bounded, non-interactive
 sudo commands. A job-local DEB822 source uses the official Ubuntu archive keyring;
 signature verification remains enabled. If mirror metadata cannot be fetched,
 a warning records a bounded retry against the image's configured Ubuntu sources.
-The three SDK jobs use this distribution Python instead of downloading a GitHub
+The R300 SDK jobs use this distribution Python instead of downloading a GitHub
 Python tarball; hosted fork jobs retain `setup-python`. Compilation uses at most
 two processes. The cross-version manual probes still use `setup-python`.
 Python packages use the existing Tsinghua pip index, while CPU PyTorch uses the
@@ -70,16 +82,18 @@ changes the tested commit.
 
 Cirq initially qualified on cpu16, but two attempts on the integrated revision
 subsequently exhausted both the three-minute artifact and five-minute checkout
-budgets before reaching tests. Cirq therefore moves to inventoried cpu04;
-qualification requires the full native and certified SDK tests on that target.
+budgets before reaching tests. Cirq then moved to inventoried cpu04 for qualification. After the later
+integrated cpu04 source-transport failure, the normal CI lane returned to the
+accepted fixed pool with all native and SDK tests intact.
 The cpu16 network failure remains unqualified for current routing; increasing
 timeouts or repeatedly rerunning it is not treated as a repair.
 
-The three SDK jobs use distinct scale sets so one set's occupied slots do not
-serialize unrelated compatibility checks. The native CPU tests execute before
-the SDK matrix on every migrated job. Their full SDK tests remain required CI
-checks, and every job has a 30-minute timeout. GPU, A800 CPU/runtime, full-history quality and fixed-host
-performance jobs retain their existing routes.
+All three SDK lanes now use the wide fixed CPU pool. R300 remains available
+through manual diagnostics until its source transport and capacity are qualified
+again. Native CPU tests execute before SDK certification on every lane. Their
+full SDK tests remain required CI checks, and every job has a 30-minute timeout.
+GPU, A800 CPU/runtime, full-history quality and fixed-host performance jobs retain
+their existing routes.
 
 ## Repeat the checks
 
