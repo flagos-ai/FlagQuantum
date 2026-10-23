@@ -1,17 +1,25 @@
 {
   "schema_version": "1.0",
-  "status": "frozen",
-  "proposal": "docs/development/API_CHANGE_PROPOSAL_010_DYNAMIC_CIRCUIT.md",
+  "status": "stable",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md",
+  "origin_proposal": "docs/development/API_CHANGE_PROPOSAL_010_DYNAMIC_CIRCUIT.md",
   "amendments": [
     "docs/development/API_CHANGE_PROPOSAL_065_QUBIT_VOCABULARY.md"
   ],
-  "target": "first-public-alpha",
-  "implementation_authorized": true,
+  "promoted_at": "2026-10-23",
   "root_manifest_change": false,
   "approval": {
     "approved_by": "API owner via explicit user directive",
-    "approved_at": "2026-09-01",
-    "approved_scope": "DynamicCircuit construction contract only",
+    "approved_at": "2026-10-23",
+    "directive": "approve DYNAMIC-CIRCUIT-STABLE-CONTRACT-PROMOTION",
+    "approved_scope": "DynamicCircuit construction contract only"
+  },
+  "history": {
+    "candidate_contract": "contracts/dynamic-circuit-v1-candidate.json",
+    "candidate_owner": "API owner",
+    "candidate_approved_at": "2026-09-01",
+    "candidate_target": "first-public-alpha",
+    "candidate_removal_condition": "all eight promotion criteria satisfied and explicit API-owner authorization recorded",
     "approved_extensions": [
       {
         "extension": "DynamicCircuit.conditional(any_of=...)",
@@ -21,7 +29,15 @@
       }
     ]
   },
-  "stable_extension": {
+  "migration": {
+    "supersedes": "contracts/dynamic-circuit-v1-candidate.json",
+    "candidate_removed": true,
+    "user_code_change_required": false,
+    "namespace": "flagquantum.dynamic",
+    "stable_name": "DynamicCircuit",
+    "root_export_added": false
+  },
+  "stable_surface": {
     "namespace": "flagquantum.dynamic",
     "additions": [
       "DynamicCircuit"
@@ -63,10 +79,10 @@
     "stable_result": "flagquantum.ExecutionResult",
     "experimental_native_result": "flagquantum.experimental.dynamic.DynamicExecutionResult",
     "projection": "DynamicExecutionResult.to_execution_result",
-    "native_result_candidate_stable": false,
+    "native_result_stable": false,
     "reason": "native final-state availability and provider metadata differ by implementation"
   },
-  "excluded_from_stable_extension": [
+  "excluded_from_stable_surface": [
     "DynamicExecutionResult",
     "run_dynamic",
     "routing",
@@ -77,9 +93,10 @@
     "dynamic conformance implementations"
   ],
   "rules": {
-    "candidate_is_frozen_contract": true,
-    "whole_api_freeze_implied": false,
+    "construction_api_is_stable_contract": true,
+    "whole_dynamic_api_freeze_implied": false,
     "execution_stabilization_requires_separate_proposal": true,
-    "future_breaking_changes_require_api_owner_approval": true
+    "future_breaking_changes_require_deprecation_and_api_owner_approval": true,
+    "candidate_contract_must_not_coexist": true
   }
 }

@@ -807,7 +807,7 @@ pytest -m braket
 
 ### Dynamic circuit construction
 
-The candidate-stable builder is isolated from experimental execution and
+The stable construction API is isolated from experimental execution and
 provider integrations:
 
 ```python
@@ -860,9 +860,9 @@ blocker `dynamic_conditional_execution_unsupported` instead of silently dropping
 the condition. Use `fq.experimental.dynamic.run_dynamic(..., shots=...)` for the
 supported single-process trajectory path.
 
-`DynamicCircuit` and its CircuitIR encoding are candidate-stable pending API
-owner approval. `run_dynamic` and backend assessment remain experimental;
-routing, dialect export, deployment and provider adapters are internal. Stable
+`DynamicCircuit` and its CircuitIR encoding are stable under
+`contracts/dynamic-circuit-v1.json`. `run_dynamic` and backend assessment remain
+experimental; routing, dialect export, deployment and provider adapters are internal. Stable
 dynamic execution will return the canonical `fq.ExecutionResult`;
 provider-native state and diagnostic fields will not be frozen into that
 contract.

@@ -2,14 +2,16 @@
 
 ## Status
 
-Implemented on branch `feat/dynamic-circuit-v1`; review and merge are pending.
+Implemented and merged. This document records the implementation-stage evidence;
+the construction API was subsequently promoted to stable on 2026-10-23 under
+[`API_CHANGE_PROPOSAL_062`](API_CHANGE_PROPOSAL_062_DYNAMIC_CIRCUIT_PROMOTION.md).
 The repository owner authorized this work on 2026-10-21 with the exact directive
 `approve API-CHANGE-074-DYNAMIC-CIRCUIT-V1-IMPLEMENTATION`.
 
 That approval includes the experimental behavior change from `RuntimeError` to
 `ValidationError` for a classical bit read before measurement. It does not add or
-promote a public name. `DynamicCircuit` remains candidate-stable, while
-`run_dynamic` and backend assessment remain experimental.
+promote a public name. At that stage `DynamicCircuit` remained candidate-stable;
+`run_dynamic` and backend assessment remain experimental after its later promotion.
 
 ## User-facing behavior
 
