@@ -27,6 +27,7 @@ tests, and rendered in the
 | Compile for a selected tool and target | `fq.compile` | `fq.CircuitIR` |
 | Inspect execution | `fq.plan`, `Circuit.runtime_plan` | Explainable runtime plan |
 | Execute locally or remotely | `fq.run` | `fq.ExecutionResult` |
+| Sample an explicit terminal instrument | `flagquantum.runtime.sample_terminal` | `MeasurementResult` with observed outcome indices |
 | Define a trainable quantum layer | `fq.Module` | PyTorch module |
 | Train | `fq.train` | `fq.TrainingResult` |
 | Differentiate a program and report the method | `fq.gradient` | Derivative, method, exactness, step |
@@ -651,6 +652,53 @@ outcome_counts = result.counts
 Set `JIUDING_WORKSPACE` when calling from outside the workspace. Inspect
 `result.runtime` and `result.provenance` for the selected device, result
 transfer, counts aggregation, and CPU-fallback evidence.
+
+### Terminal Kraus instruments
+
+`flagquantum.runtime.sample_terminal(density_matrix, instrument, *, shots, seed=None)`
+returns the existing MeasurementResult for a complete, ordered Kraus instrument.
+The explicit matrix coordinates may describe atoms, finite Fock levels or other
+finite systems; no qubit width is inferred.
+
+```python
+import torch
+from flagquantum.runtime import sample_terminal
+
+rho = torch.diag(torch.tensor([0.6, 0.3, 0.1], dtype=torch.complex128))
+levels = torch.eye(3, dtype=rho.dtype)
+instrument = {str(n): (torch.diag(levels[n]),) for n in range(3)}
+result = sample_terminal(rho, instrument, shots=1000, seed=7)
+print(result.metadata["outcome_labels"])  # ['0', '1', '2']
+print(result.value.shape)  # torch.Size([1000])
+```
+
+State and Kraus matrices must be CPU complex64/complex128 strided tensors,
+without gradients. A state has shape (D,D) or (B,D,D), with positive D and B.
+Outcome indices are CPU int64, shaped (shots,) or (B,shots); B=1 is retained.
+Labels preserve mapping order and their original spelling. All Kraus effects
+must sum to identity; missing outcomes are refused instead of postselected.
+Invalid types raise TypeError, invalid numeric requests raise ValidationError,
+and device/gradient/dense-byte-ceiling refusals raise CapabilityError before
+sampling. The existing dense ceiling bounds input, Kraus, branch-probability and
+sample numeric storage, rather than total process RSS.
+
+The result has kind "sample", empty qubits and statistics, with metadata keys
+outcome_labels, probabilities, probability_correction and terminal_instrument.
+Probabilities retain original checked branch weights; only roundoff-sized
+negatives and near-one normalization are corrected for the draw. Captured Kraus
+values survive later caller mutation. Metadata is not made recursively immutable
+or promoted to a standalone replay request. A private CPU generator records its
+effective seed without changing global Torch RNG. Replay requires identical
+numeric inputs, labels, effective seed, Torch version and CPU runtime.
+
+Use analytic probabilities/expectations for training. This primitive returns
+observed outcomes, rather than conditional states, hidden loss truth, detector
+events or feedback. Ordinary Lindblad shots/seed refusals and plan/IR schemas
+are unchanged. Run
+[`examples.terminal_instrument_sampling`](../../examples/terminal_instrument_sampling.py)
+for presence and finite-Fock QND examples; the
+[approved contract](../development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md)
+specifies the physical, rounding and failure boundaries.
 
 ## Noise
 

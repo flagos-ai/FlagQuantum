@@ -34,6 +34,7 @@ __all__ = (
     "RouteCategory",
     "RouteExplanation",
     "StrictExecutionScope",
+    "sample_terminal",
 )
 
 _EXPORTS = {
@@ -64,6 +65,7 @@ _EXPORTS = {
     "RouteCategory": (".routing", "RouteCategory"),
     "RouteExplanation": (".routing", "RouteExplanation"),
     "StrictExecutionScope": (".routing", "StrictExecutionScope"),
+    "sample_terminal": ("._terminal_instruments", "sample_terminal"),
 }
 
 
