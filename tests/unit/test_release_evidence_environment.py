@@ -18,7 +18,6 @@ def _seal(destination: str) -> tuple[str, ...]:
 
     return readiness_errors(
         commit="a" * 40,
-        signing_key_present=True,
         device_uuids=("GPU-0", "GPU-1"),
         world_size=2,
         seal_destination=Path(destination),
@@ -30,7 +29,6 @@ def test_release_evidence_preflight_accepts_complete_environment():
     assert (
         readiness_errors(
             commit="a" * 40,
-            signing_key_present=True,
             device_uuids=("GPU-0", "GPU-1"),
             world_size=2,
         )
@@ -38,16 +36,14 @@ def test_release_evidence_preflight_accepts_complete_environment():
     )
 
 
-def test_release_evidence_preflight_fails_closed_without_authority_or_hardware():
+def test_release_evidence_preflight_fails_closed_without_source_or_hardware():
     errors = readiness_errors(
         commit="",
-        signing_key_present=False,
         device_uuids=("GPU-0",),
         world_size=2,
     )
-    assert len(errors) == 3
+    assert len(errors) == 2
     assert any("Git commit" in error for error in errors)
-    assert any("FQ_EVIDENCE_SIGNING_KEY" in error for error in errors)
     assert any("GPU UUIDs" in error for error in errors)
 
 
@@ -102,7 +98,6 @@ def test_a_destination_that_resolves_into_the_release_directory_is_refused(tmp_p
     link.symlink_to(release, target_is_directory=True)
     errors = readiness_errors(
         commit="a" * 40,
-        signing_key_present=True,
         device_uuids=("GPU-0",),
         world_size=1,
         seal_destination=link / "leg.json",
@@ -119,7 +114,6 @@ def test_the_environment_check_alone_names_no_destination():
     assert (
         readiness_errors(
             commit="a" * 40,
-            signing_key_present=True,
             device_uuids=("GPU-0", "GPU-1"),
             world_size=2,
             seal_destination=None,

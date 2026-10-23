@@ -90,7 +90,7 @@ def sealed_evidence(payload: dict[str, Any]) -> dict[str, Any] | None:
 
     A promoted scalability artifact is a ``measured_production_run`` envelope:
     the payload the executor measured under ``evidence``, wrapped in the
-    provenance, topology, device inventory and signature that make the
+    provenance, topology, device inventory and integrity record that make the
     measurement verifiable. The benchmark verdict is a property of that enclosed
     payload, so a scanner that read the wrapper would see a file that never
     reported its distribution semantics. This is the one definition of what a
@@ -188,19 +188,16 @@ def audit_paths(
             )
         summary = audit.summary()
         if enclosed is not None:
-            # A general scan audits structure, not authorship: without the
-            # campaign key the envelope's signature cannot be checked, and a
-            # reader of the summary would otherwise see no trace of that. The
-            # strict scan is where an unverified signature rejects the payload
-            # instead of annotating it.
-            verified, signature_errors = _evidence_module.verify_evidence_artifact(
+            # The general scan annotates integrity failures; the strict scan
+            # rejects them. V1 additionally requires the campaign HMAC key.
+            verified, integrity_errors = _evidence_module.verify_evidence_artifact(
                 payload, signing_key=signing_key or b""
             )
             if not verified:
                 summary["warnings"] = [
                     *summary["warnings"],
-                    "sealed envelope signature not verified: "
-                    + "; ".join(signature_errors),
+                    "sealed envelope integrity not verified: "
+                    + "; ".join(integrity_errors),
                 ]
         records.append(
             {

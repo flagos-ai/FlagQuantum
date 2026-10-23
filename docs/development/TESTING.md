@@ -479,7 +479,8 @@ python tools/check_mps_single_node_certification_environment.py \
 ```
 
 The preflight requires a clean tree, eight visible GPUs of one model, PyTorch
-NCCL support, and `FQ_EVIDENCE_SIGNING_KEY`. It prints the frozen 1/2/4/8-rank
+NCCL support. New v2 evidence requires no signing key; existing v1 evidence
+retains its HMAC verification requirement. It prints the frozen 1/2/4/8-rank
 measured-training commands but remains non-claimable plan evidence. A blocked
 preflight must not be presented as runtime or scalability certification.
 

@@ -1580,6 +1580,50 @@ def test_a_candidate_set_is_not_promoted_when_the_gate_refuses_it(
     assert manifest_path.is_file()
 
 
+@pytest.mark.parametrize("failure", [None, "tampered", "capacity_missing"])
+def test_keyless_promotion_requires_integrity_and_scientific_acceptance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str | None
+) -> None:
+    """A keyless campaign still needs the complete measured capacity contract."""
+    _, candidates, baseline = _candidate_set(tmp_path, load_manifest())
+    for directory in (candidates, baseline):
+        for path in directory.glob("*.json"):
+            payload = json.loads(path.read_text(encoding="utf-8"))["evidence"]
+            if (
+                failure == "capacity_missing"
+                and payload["acceptance_case"] == "multi_gpu_capacity_completion"
+            ):
+                path.unlink()
+                continue
+            sealed = _signed(payload, key=b"")
+            if failure == "tampered":
+                sealed["evidence"]["measured_peak_memory_bytes"] = 1
+            path.write_text(json.dumps(sealed), encoding="utf-8")
+    staged = sorted(path.name for path in candidates.glob("*.json"))
+    monkeypatch.delenv("FQ_EVIDENCE_SIGNING_KEY", raising=False)
+    release = tmp_path / "release"
+    command = [
+        "--gate",
+        "mps",
+        "--candidate",
+        str(candidates),
+        "--baseline-directory",
+        str(baseline),
+        "--release-directory",
+        str(release),
+    ]
+    if failure is None:
+        assert promote_main(command) == 0
+        assert sorted(path.name for path in release.glob("*.json")) == staged
+        assert not list(candidates.glob("*.json"))
+    else:
+        with pytest.raises(SystemExit, match="candidate set does not satisfy"):
+            promote_main(command)
+        assert not release.exists()
+        assert sorted(path.name for path in candidates.glob("*.json")) == staged
+    assert len(list(baseline.glob("*.json"))) == 1
+
+
 def test_an_unsigned_candidate_set_is_never_promoted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

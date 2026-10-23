@@ -39,8 +39,6 @@ def readiness_errors(
         errors.append("the first 8 visible GPUs must use one accelerator model")
     if source_tree_dirty:
         errors.append("MPS certification requires a clean source tree")
-    if not signing_key_present:
-        errors.append("FQ_EVIDENCE_SIGNING_KEY is not configured")
     return tuple(errors)
 
 
