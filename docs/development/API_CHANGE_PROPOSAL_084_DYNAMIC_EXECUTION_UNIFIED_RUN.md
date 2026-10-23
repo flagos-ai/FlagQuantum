@@ -2,24 +2,29 @@
 
 ## Status
 
-**Approved for staged implementation by the API owner on 2026-10-23 with the
-exact directive below.**
+**Stable promotion completed on 2026-10-23. The local delivery sequence and all
+acceptance criteria are complete, and the API owner authorized the exact scope
+with `approve DYNAMIC-EXECUTION-UNIFIED-RUN-STABLE-PROMOTION`.**
 
-The recorded authorization directive is:
+The original implementation authorization was:
 
 ```text
 approve DYNAMIC-EXECUTION-UNIFIED-RUN-CONTRACT
 ```
 
-This proposal PR changes no public runtime behavior. The approval authorizes
-the delivery sequence defined here; protected contract and conformance work,
-planning support, execution activation, and performance validation remain
-separate reviewed changes.
+The stable promotion changes no public runtime behavior. It retires the
+candidate contract after the separately reviewed contract, planning, execution,
+and performance stages completed. The root export set and every existing public
+signature remain unchanged.
 
 The approved stable construction contract remains
 [`contracts/dynamic-circuit-v1.json`](../../contracts/dynamic-circuit-v1.json).
-This proposal covers execution only. It does not merge `DynamicCircuit` into
-`Circuit`, promote provider integrations, or expose the native dynamic result.
+The stable execution contract is
+[`contracts/dynamic-execution-unified-run-v1.json`](../../contracts/dynamic-execution-unified-run-v1.json).
+It supersedes and retires the candidate contract without requiring a user-code
+change. This proposal covers execution only. It does not merge `DynamicCircuit`
+into `Circuit`, promote provider integrations, or expose the native dynamic
+result.
 
 ## Problem
 
@@ -260,28 +265,40 @@ passed. These values characterize that observation only; the versioned runner
 and budget verdict, rather than the numbers themselves, are the regression
 mechanism.
 
+## Promotion record
+
+| Stage | Merged evidence | Outcome |
+| --- | --- | --- |
+| Contract and conformance | PR #733 | Protected candidate contract and failing-first semantic checks established. |
+| Dynamic planning | PR #734 | Dynamic instructions and plan identity survive ExecutionPlan 1.0 serialization. |
+| Local stable execution | PR #752 | Direct and explicit-plan execution converge on `fq.ExecutionResult`. |
+| Performance and non-regression | PR #754 | Local overhead budgets, both strategy paths, correctness, and the static sentinel pass. |
+
+The promotion itself changes only contract status and documentation. It does not
+modify Runtime code or infer remote, accelerator, distributed, or QPU support.
+
 ## Acceptance
 
 - [x] API owner approves the exact decision with the recorded directive.
-- [ ] A target-branch-protected machine contract describes the additive behavior
+- [x] A target-branch-protected machine contract describes the additive behavior
       without replacing existing stable snapshots merely to pass CI.
-- [ ] `fq.run(circuit, options=options)` and
+- [x] `fq.run(circuit, options=options)` and
       `fq.run(fq.plan(circuit, options=options))` return results carrying the same
       plan identity.
-- [ ] Dynamic plan JSON round-trips without losing measurement, reset, conditions,
+- [x] Dynamic plan JSON round-trips without losing measurement, reset, conditions,
       instruction order, shots, seed, or plan identity.
-- [ ] The stable path returns `fq.ExecutionResult` and exposes no native dynamic
+- [x] The stable path returns `fq.ExecutionResult` and exposes no native dynamic
       result type.
-- [ ] Result samples and classical registers match the existing seeded dynamic
+- [x] Result samples and classical registers match the existing seeded dynamic
       executor on trajectory and batched paths.
-- [ ] Invalid def-use, gradients, distributed execution, unsupported noise,
+- [x] Invalid def-use, gradients, distributed execution, unsupported noise,
       unsupported options, and incompatible targets fail before execution or
       submission with typed diagnostics.
-- [ ] Static circuit planning and execution retain their current signatures,
+- [x] Static circuit planning and execution retain their current signatures,
       results, identities, and measured fast-path performance.
-- [ ] CircuitIR `1.0`, ExecutionPlan `1.0`, the root export set, and existing
+- [x] CircuitIR `1.0`, ExecutionPlan `1.0`, the root export set, and existing
       `ExecutionResult` fields remain unchanged.
-- [ ] Required unit, integration, distributed-CPU refusal, API-contract,
+- [x] Required unit, integration, distributed-CPU refusal, API-contract,
       serialization, documentation, package, and supported Python checks pass.
 
 ## Non-goals
