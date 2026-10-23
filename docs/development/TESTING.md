@@ -833,3 +833,5 @@ nothing keeping it true. Benchmark tooling and GPU-only Triton kernels are owned
 by their dedicated benchmark and hardware gates; backend-independent runtime,
 accelerator orchestration, and multi-node control paths remain visible in the
 XML report.
+
+<!-- Temporary A800 concurrent capacity measurement lane B. -->
