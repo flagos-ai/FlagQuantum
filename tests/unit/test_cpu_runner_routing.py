@@ -134,6 +134,7 @@ def test_portable_cpu_work_cannot_be_partitioned_back_onto_a_single_host_pool() 
         "pennylane-optional",
         "dependency-bounds",
         "distributed-cpu",
+        "distributed-cpu-shard",
         "coverage-shard",
         "supply-chain",
         "cpu-core-3-12",

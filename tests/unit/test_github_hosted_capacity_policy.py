@@ -326,7 +326,10 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     assert select_workers(24, 64 * GIB, shared=False, dedicated=True) == 2
 
 
-@pytest.mark.parametrize("job", ["distributed-cpu", "coverage-shard"])
+@pytest.mark.parametrize(
+    "job",
+    [pytest.param("distributed-cpu-shard", id="distributed-cpu"), "coverage-shard"],
+)
 def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> None:
     definition = _document("ci.yml")["jobs"][job]
     assert definition["needs"] == "prepare-source"
@@ -339,7 +342,9 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
     assert "torch.version.cuda is None" in commands
     assert "jax.default_backend() == 'cpu'" in commands
     assert definition["runs-on"] == TRUSTED_CPU_ROUTE
-    assert definition["timeout-minutes"] == (60 if job == "distributed-cpu" else 30)
+    assert definition["timeout-minutes"] == (
+        60 if job == "distributed-cpu-shard" else 30
+    )
     assert any(
         step.get("uses") == "./.github/actions/isolated-python" for step in steps
     )
@@ -740,3 +745,38 @@ def test_merge_gate_waits_for_every_ci_job_including_source_hygiene(
         check=False,
     )
     assert completed.returncode != 0
+
+
+def test_distributed_matrix_runs_both_complete_selections_and_one_rank_probe() -> None:
+    job = _document("ci.yml")["jobs"]["distributed-cpu-shard"]
+    rows = job["strategy"]["matrix"]["include"]
+    assert rows == [
+        {"command": command, "shard": shard, "shards": count}
+        for command, count in [(0, 4), (1, 2)]
+        for shard in range(count)
+    ]
+    assert job["strategy"]["fail-fast"] is False
+    commands = "\n".join(str(s.get("run", "")) for s in job["steps"])
+    assert "--command-index ${{ matrix.command }}" in commands
+    assert "--shard-count ${{ matrix.shards }}" in commands
+    assert "--shard-index ${{ matrix.shard }}" in commands
+    probe = next(
+        s for s in job["steps"] if str(s.get("run", "")).startswith("torchrun")
+    )
+    assert probe["if"] == "matrix.command == 0 && matrix.shard == 0"
+    assert sum(row["command"] == 0 and row["shard"] == 0 for row in rows) == 1
+    assert "--nproc-per-node=2" in probe["run"]
+
+
+def test_distributed_cpu_retains_its_stable_check_and_rejects_a_failed_partition() -> (
+    None
+):
+    job = _document("ci.yml")["jobs"]["distributed-cpu"]
+    assert job["if"] == "${{ always() }}"
+    assert job["needs"] == "distributed-cpu-shard"
+    assert job["steps"] == [
+        {
+            "name": "Require every partition and the two-rank probe to pass",
+            "run": "test '${{ needs.distributed-cpu-shard.result }}' = success",
+        }
+    ]

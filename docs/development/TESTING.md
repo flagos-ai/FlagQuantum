@@ -827,3 +827,23 @@ nothing keeping it true. Benchmark tooling and GPU-only Triton kernels are owned
 by their dedicated benchmark and hardware gates; backend-independent runtime,
 accelerator orchestration, and multi-node control paths remain visible in the
 XML report.
+
+### Partitioning the distributed CPU lane
+
+`pr-distributed` still runs both complete marker selections locally. In CI the
+`distributed_cpu` command is partitioned across four independent runners and the
+`benchmark_contract or release_gate` command across two. Each node ID belongs to
+exactly one partition of its original selection. The two-rank JAX probe runs once
+after the first distributed partition. Hosted fork jobs keep the same shared
+concurrency bucket; trusted CPU registrations can run the six partitions together.
+
+```bash
+python tools/ci_tier.py pr-distributed --command-index 0 --shard-count 4 --shard-index 0
+python tools/ci_tier.py pr-distributed --command-index 1 --shard-count 2 --shard-index 0
+```
+
+The representation-agreement sweep computes the full Ising observable batch on
+one shared tensor-network bra/ket, instead of contracting it separately per term.
+The circuit grid, precisions, truncation probes and numerical assertions remain
+unchanged. Batched energies and gradients are checked against the termwise
+contractions, with dense-state materialization explicitly refused.

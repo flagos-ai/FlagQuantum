@@ -247,6 +247,9 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         default=sys.executable,
         help="Python executable used when running tier commands; defaults to the current interpreter",
     )
+    parser.add_argument("--command-index", type=int, help="Run one command of the tier")
+    parser.add_argument("--shard-count", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     return parser.parse_args(argv)
 
 
@@ -262,6 +265,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     root = Path(__file__).resolve().parents[1]
     tier = CI_TIERS[args.tier]
     commands = tier.rendered_commands(args.python)
+    if args.command_index is not None:
+        if not 0 <= args.command_index < len(commands):
+            print("error: command-index is outside this tier", file=sys.stderr)
+            return 2
+        commands = (commands[args.command_index],)
+    if args.shard_count < 1 or not 0 <= args.shard_index < args.shard_count:
+        print(
+            "error: shard-index must be within a positive shard-count", file=sys.stderr
+        )
+        return 2
+    if args.shard_count > 1:
+        if any(command[1:3] != ("-m", "pytest") for command in commands):
+            print("error: only pytest commands can be sharded", file=sys.stderr)
+            return 2
+        commands = tuple(
+            (
+                *command,
+                "-p",
+                "tools.pytest_shard",
+                "--fq-shard-count",
+                str(args.shard_count),
+                "--fq-shard-index",
+                str(args.shard_index),
+            )
+            for command in commands
+        )
     return run_commands(commands, cwd=root, dry_run=args.dry_run)
 
 
