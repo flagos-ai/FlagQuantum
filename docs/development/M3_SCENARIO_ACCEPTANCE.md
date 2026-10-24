@@ -161,7 +161,9 @@ python -m pytest -q \
 
 The approved Ising unread slice above closes one exact observation-plus-
 continuation path. **Sampled conditional continuation in a native finite-basis
-program** remains a contract-review target, not an approved API. An Ising unread
+program** remains a contract-review target, not an approved API. The concrete
+[proposal 091](API_CHANGE_PROPOSAL_091_ISING_SAMPLED_OBSERVATION.md) reviews one
+seeded conditional Ising trajectory; its API and implementation are unapproved. An Ising unread
 operation does not settle atom-presence detection, nonideal detector models or
 the classical record of a selected branch.
 Qubit dynamic execution already has intermediate measurement, classical state,
