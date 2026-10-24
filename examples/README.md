@@ -117,6 +117,9 @@ These examples do not use that alias:
 - [`qec/installed_imports.py`](qec/installed_imports.py) checks existing QEC
   exports, one registered rotated-class pickle path, decoding and a noiseless
   memory sweep; run it outside the checkout to verify an installed wheel.
+- [`qec/circuit_noise_dem.py`](qec/circuit_noise_dem.py) builds and samples a
+  distance-five circuit-location surface-code DEM without a dense statevector
+  or optional SDK; the physical circuit has 49 qubits.
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.

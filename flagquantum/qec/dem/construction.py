@@ -45,8 +45,8 @@ difference belongs to the description, not to the model, and a test pins each
 geometry to its own route.
 
 The circuit route enumerates four families -- the X, Z and Y data faults
-and the measurement fault -- and forces each one through the program instead of
-reading it off a matrix. The injection writes its guard into the experiment's own
+and the measurement fault -- and derives each one's response from the layouts.
+The independent reference injection writes its guard into the experiment's own
 source, whose language carries ``h`` and ``x`` as its only single-qubit gates that
 take no parameter, so a Z fault is forced as the X fault conjugated by ``h`` and a
 Y fault as that Z fault followed by the X fault; both are exact gate identities
@@ -118,6 +118,7 @@ from flagquantum.qec.execution.signatures import (
 )
 from flagquantum.qec.execution.signatures import _forced_flip as _forced_flip
 from flagquantum.qec.execution.signatures import _forced_signature as _forced_signature
+from flagquantum.qec.execution.signatures import _gate_fault_signatures
 from flagquantum.qec.execution.signatures import _inject_data_flip as _inject_data_flip
 from flagquantum.qec.execution.signatures import (
     _inject_measurement_flip as _inject_measurement_flip,
@@ -317,9 +318,10 @@ def _memory_circuit_entries(
     the circuit's own layouts by :func:`_flipped_measurements`, so the model is a
     reading of the record the circuit states rather than a claim about it. The
     derivation needs no execution, so the width of the code does not bound it. A
-    gate-bound record is the exception: a rule names a gate rather than a round, so
-    its placement is read off the lowered program and its signature off the program
-    that placement produces.
+    gate-bound record names a gate rather than a round: its placement is read
+    from the lowered program, and Simulation's exact Clifford parity propagation
+    supplies its signature through the QEC execution bridge. Neither production
+    route allocates amplitudes; forced execution remains a test reference.
 
     The source is still held against the layouts. A round-boundary record's
     mechanisms are read rather than injected, so a source that does not carry the
@@ -374,10 +376,19 @@ def _memory_circuit_entries(
                 "fault for the option to read apart"
             )
         program = _lowered_program(circuit)
-        for bound in _gate_bound_mechanisms(noise, program):
-            detectors, observables = _executed_flip_set(
-                circuit, _spliced_fault(program, bound)
+        bound_mechanisms = _gate_bound_mechanisms(noise, program)
+        faults = tuple(
+            (
+                bound.after_instruction,
+                bound.wire,
+                _FAULT_LETTER_BY_KIND[bound.kind].upper(),
             )
+            for bound in bound_mechanisms
+        )
+        signatures = _gate_fault_signatures(circuit, program, faults)
+        for bound, (detectors, observables) in zip(
+            bound_mechanisms, signatures, strict=True
+        ):
             entries.append((bound.probability, detectors, observables))
     elif isinstance(noise, PhenomenologicalNoise):
         mechanisms = _mechanisms(circuit, noise)

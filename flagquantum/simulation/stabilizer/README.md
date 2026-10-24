@@ -76,6 +76,15 @@ the ones no amplitude store can hold.
 - Run `python -m pytest tests/team/simulation/test_stabilizer_engine.py tests/team/simulation/test_stabilizer_positioned_noise.py -q`
   after a typical local change.
 
+The private `_fault_signatures.py` primitive reuses the engine's Clifford images
+to propagate recorded-measurement and terminal-Z parities backwards through gates,
+measurements and resets. It returns exact post-instruction Pauli responses without
+Stim, amplitudes or sampling, and refuses nondeterministic parities. QEC's
+execution bridge supplies its layouts; this primitive owns no codes, noise-rule
+placement or detector numbering. Run
+`python -m pytest tests/team/simulation/test_clifford_fault_signatures.py -q`
+after changing it. Its local conjugation tests use independent dense evolution.
+
 ## What this package must not own
 
 Device selection, backend dispatch, shot policy, seed streams, job lifecycle,
