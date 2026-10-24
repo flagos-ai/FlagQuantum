@@ -4,6 +4,10 @@ Owner: QEC maintainers. Date: 2026-10-24 (Asia/Shanghai).
 Status: sequencing approved by the user; delivery in progress. Approval of this
 roadmap does not replace review and approval of protected API change proposals.
 
+## Relation to the FTQC mission
+
+This is the QEC foundation subplan of the [FTQC simulation master plan](FTQC_SIMULATION_MASTER_PLAN.md). The master plan maps the full mission to R01–R15, FTS work packages and staged acceptance, including mixed simulation, dynamic feedback, domestic hardware and experimental validation. Existing QEC contract approvals and compatibility gates remain authoritative; the broader roadmap does not approve pending interfaces. Every PR must include runnable public-user code, prerequisites, an execution command and expected results, including documentation, tests and performance changes.
+
 ## Starting point
 
 [PR #749](https://github.com/flagos-ai/FlagQuantum/pull/749) delivered the
