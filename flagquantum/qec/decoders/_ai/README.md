@@ -38,6 +38,7 @@ be retained, not retried as a newly selected completion.
 | `spacetime.py` | Square-grid detector layout, masks and local 3D CNN; reuses the same sampling and hybrid decode implementation. |
 | `training.py` | CPU Adam training and exact optimizer, batch-generator and step recovery. |
 | `assessment.py` | Held-out evaluation, paired logical counts, confidence intervals and CPU whole-block timing. |
+| `exact_statistics.py` | Separately named, outward-bracketed exact-binomial intervals and conservative paired-count ratio summaries; old assessment defaults stay unchanged. |
 | `diagnostics.py` | Label sparsity, positive/negative BCE, complete H/L correction equivalence and streaming exact MLP feature/label groups. |
 | `calibration.py` | Calibration-only temperature fitting and separate validation threshold selection. |
 | `comparison.py` | Shared CPU global decoding boundary, explicit device transfers, exact correction-bit parity and whole-batch timing with caller-owned synchronization. |
@@ -135,3 +136,20 @@ unchanged. Existing MLP and CNN training checkpoints remain loadable. Historical
 assessment JSON and hashes continue to describe their original source revision;
 new runs fingerprint all four current implementation modules. Do not rewrite
 old evidence or present the reorganization as a new experiment.
+
+
+For the prospectively registered continued-checkpoint study, `exact_statistics.py`
+uses standard-library Decimal directed rounding and positive binomial recurrences.
+Its certified scope is 1 to 4194304 shots and marginal alpha in [1e-12, 1).
+Callers allocate family error explicitly; `summarize_exact` splits comparison alpha
+across its two marginal intervals. It preserves `PairedCounts` and the existing
+exact paired p-value; zero reference lower bounds remain inconclusive. It does
+not change `assessment.rate_interval` or `assessment.summarize`. Tail summation
+cost grows with the smaller failure/success count; it is not a latency primitive.
+
+Run `python -m pytest tests/qec/test_exact_statistics.py -q` for independent
+rational-binomial tail/coverage tests and pinned SciPy1.17.1 beta-quantile numeric
+references (no SciPy runtime dependency). These are synthetic statistical
+fixtures, not measured logical-quality benefit. The physical study runner and
+new data collection remain separate prerequisites in
+[the frozen protocol](../../../../docs/development/QEC_AI_CONTINUED_PHYSICAL_ASSESSMENT.md).
