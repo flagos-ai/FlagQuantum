@@ -15,6 +15,7 @@ from typing import TypedDict
 
 import torch
 
+from flagquantum import __version__
 from flagquantum.benchmarking.contract import runtime_metadata, write_json_atomic
 from flagquantum.qec import (
     DetectorErrorModel,
@@ -173,6 +174,8 @@ def _run_case(
         source_revision=revision,
         tracked_tree_clean=True,
         device="cpu",
+        precision="CPU int8 detector/observable records and bool logical predictions",
+        flagquantum_source_version=__version__,
         distribution_semantics="single_process",
         local_world_size=1,
         node_count=1,
