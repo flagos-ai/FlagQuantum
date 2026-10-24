@@ -42,11 +42,13 @@ predicted rates.
 
 from __future__ import annotations
 
+import os
+import threading
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from numbers import Integral
-from types import MappingProxyType
-from typing import Literal
+from types import MappingProxyType, TracebackType
+from typing import Literal, NoReturn, SupportsIndex
 
 import torch
 
@@ -66,6 +68,10 @@ from ...noise import (
     y_flip_channel,
 )
 from ...simulation.stabilizer import sample_noisy_measurements
+from ...simulation.stabilizer.engine import (
+    _prepare_noisy_measurements,
+    _PreparedMeasurements,
+)
 from ..circuits.memory import MeasurementRef, MemoryCircuit
 from ..dem import DemSample
 from ..noise import PhenomenologicalNoise
@@ -594,38 +600,49 @@ def _noisy_program(
     )
 
 
-def _recorded_bits(
-    memory: MemoryCircuit, plan: _MeasurementPlan, record: torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return the detection events and observable flips a record holds."""
+def _parity_columns(
+    memory: MemoryCircuit, plan: _MeasurementPlan
+) -> tuple[tuple[tuple[int, ...], ...], tuple[tuple[int, ...], ...]]:
+    """Snapshot parity columns; later draws retain no caller-owned layouts."""
 
-    shots = int(record.shape[0])
-    dtype = torch.int8
-    detectors = torch.zeros((shots, len(memory.detectors)), dtype=dtype)
-    observables = torch.zeros((shots, len(memory.observables)), dtype=dtype)
-
-    def recorded(reference: MeasurementRef) -> torch.Tensor:
+    def column(reference: MeasurementRef) -> int:
         if reference.round_index is None:
-            return record[:, plan.terminal_columns[reference.qubit]]
-        column = plan.syndrome_columns.get((reference.round_index, reference.qubit))
-        if column is None:
+            return plan.terminal_columns[reference.qubit]
+        result = plan.syndrome_columns.get((reference.round_index, reference.qubit))
+        if result is None:
             raise ValueError(
                 f"detector syndrome measurement names ancilla qubit "
                 f"{reference.qubit}, which no check owns"
             )
-        return record[:, column]
+        return result
 
+    detectors: list[tuple[int, ...]] = [()] * len(memory.detectors)
+    observables: list[tuple[int, ...]] = [()] * len(memory.observables)
     for detector in memory.detectors.detectors:
-        parity = torch.zeros(shots, dtype=dtype)
-        for reference in detector.parity:
-            parity ^= recorded(reference)
-        detectors[:, detector.index] = parity
+        detectors[detector.index] = tuple(column(ref) for ref in detector.parity)
     for observable in memory.observables.observables:
-        parity = torch.zeros(shots, dtype=dtype)
-        for reference in observable.measurement_parity:
-            parity ^= record[:, plan.terminal_columns[reference.qubit]]
-        observables[:, observable.index] = parity
-    return detectors, observables
+        observables[observable.index] = tuple(
+            plan.terminal_columns[ref.qubit] for ref in observable.measurement_parity
+        )
+    return tuple(detectors), tuple(observables)
+
+
+def _parity_bits(
+    columns: tuple[tuple[int, ...], ...], record: torch.Tensor
+) -> torch.Tensor:
+    result = torch.zeros((record.shape[0], len(columns)), dtype=torch.int8)
+    for index, parity in enumerate(columns):
+        for column in parity:
+            result[:, index] ^= record[:, column].to(torch.int8)
+    return result
+
+
+def _recorded_bits(
+    memory: MemoryCircuit, plan: _MeasurementPlan, record: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return the detection events and observable flips a record holds."""
+    detectors, observables = _parity_columns(memory, plan)
+    return _parity_bits(detectors, record), _parity_bits(observables, record)
 
 
 def _sample_record(
@@ -797,4 +814,161 @@ def sample_memory_circuit(
     return DemSample(detectors=detectors, observables=observables)
 
 
-__all__ = ("MeasurementSamples", "sample_memory_circuit", "sample_memory_measurements")
+class MemorySampler:
+    """A compiled memory experiment owned by its creator process and thread.
+
+    Obtain a handle with :func:`compile_memory_sampler`. Sampling advances one
+    continuous engine stream; a fixed seed reproduces an identical sequence of
+    sample calls on the same engine version and instruction set. Configuration
+    is fixed at construction. Use a context manager or call :meth:`close` to
+    release prepared state. Live handles cannot be copied or serialized.
+    """
+
+    __slots__ = (
+        "_sampler",
+        "_detector_columns",
+        "_observable_columns",
+        "_owner_pid",
+        "_owner_thread",
+    )
+
+    _sampler: _PreparedMeasurements | None
+    _detector_columns: tuple[tuple[int, ...], ...]
+    _observable_columns: tuple[tuple[int, ...], ...]
+    _owner_pid: int
+    _owner_thread: threading.Thread
+
+    def __init__(self) -> None:
+        raise TypeError("use compile_memory_sampler to construct a MemorySampler")
+
+    def _check_owner(self) -> None:
+        if (
+            os.getpid() != self._owner_pid
+            or threading.current_thread() is not self._owner_thread
+        ):
+            raise RuntimeError(
+                "memory sampler belongs to its creator process and thread"
+            )
+
+    def _open_sampler(self) -> _PreparedMeasurements:
+        self._check_owner()
+        if self._sampler is None:
+            raise RuntimeError("memory sampler is closed")
+        return self._sampler
+
+    def sample(self, *, shots: int) -> DemSample:
+        """Draw a positive number of independent experiment repetitions.
+
+        Returns caller-owned CPU int8 detector and observable bit tensors.
+        Invalid shot counts raise TypeError or ValueError without advancing the
+        stream. Lifecycle misuse raises RuntimeError. Execution failures close
+        the handle before propagating the original error.
+        """
+        prepared = self._open_sampler()
+        shots = _checked_shots(shots)
+        try:
+            record = prepared.sample(shots=shots)
+            return DemSample(
+                detectors=_parity_bits(self._detector_columns, record),
+                observables=_parity_bits(self._observable_columns, record),
+            )
+        except BaseException:
+            # RNG advancement cannot be rolled back, including interrupted draws.
+            self.close()
+            raise
+
+    def close(self) -> None:
+        """Release prepared state; repeated calls by the owner are harmless."""
+        self._check_owner()
+        if self._sampler is not None:
+            self._sampler.close()
+            self._sampler = None
+            self._detector_columns = ()
+            self._observable_columns = ()
+
+    def __enter__(self) -> MemorySampler:
+        self._open_sampler()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def __reduce_ex__(self, protocol: SupportsIndex) -> NoReturn:
+        raise TypeError("live memory samplers cannot be copied or serialized")
+
+
+def compile_memory_sampler(
+    circuit: MemoryCircuit,
+    *,
+    noise: PhenomenologicalNoise | NoiseModel,
+    seed: int | None = None,
+) -> MemorySampler:
+    """Compile one memory experiment for repeated, bounded-size sample calls.
+
+    Lowering, noise placement, parity mapping and engine compilation happen once.
+    The handle snapshots configuration and retains no sampled batches or mutable
+    caller layouts. Only its creator process and thread may sample or close it.
+
+    Args:
+        circuit: The configured memory experiment.
+        noise: Existing phenomenological or gate-bound noise configuration.
+        seed: Initial stream seed, with the engine's reproducibility scope.
+
+    Returns:
+        A handle supporting ``sample(shots=...)``, ``close()`` and context use.
+
+    Raises:
+        TypeError: Circuit, noise or seed has an invalid type.
+        ValueError: The configured memory or seed is invalid.
+        CapabilityError: The existing noise or Clifford grammar is unsupported.
+        StabilizerDependencyError: The optional engine is not installed.
+
+    Examples:
+        >>> from importlib.util import find_spec
+        >>> from flagquantum.qec import (
+        ...     PhenomenologicalNoise, RepetitionCode, build_memory_circuit,
+        ...     compile_memory_sampler,
+        ... )
+        >>> if find_spec("stim") is not None:
+        ...     memory = build_memory_circuit(RepetitionCode(distance=3), rounds=3)
+        ...     with compile_memory_sampler(memory, noise=PhenomenologicalNoise(), seed=53) as sampler:
+        ...         batch = sampler.sample(shots=4)
+        ...         assert batch.detectors.shape == (4, 8)
+        ...         assert not batch.detectors.any() and not batch.observables.any()
+    """
+    if not isinstance(circuit, MemoryCircuit):
+        raise TypeError("circuit must be a MemoryCircuit")
+    if not isinstance(noise, (PhenomenologicalNoise, NoiseModel)):
+        raise TypeError(
+            "noise must be a PhenomenologicalNoise or a NoiseModel, got "
+            f"{type(noise).__name__}"
+        )
+    seed = _checked_seed(seed)
+    plan = _measurement_plan(circuit)
+    locations = _noise_locations(circuit, plan, noise)
+    program = _noisy_program(plan, locations)
+    detectors, observables = _parity_columns(circuit, plan)
+    prepared = _prepare_noisy_measurements(
+        program, terminal_qubits=tuple(circuit.code.data_qubits), seed=seed
+    )
+    handle = object.__new__(MemorySampler)
+    handle._sampler = prepared
+    handle._detector_columns = detectors
+    handle._observable_columns = observables
+    handle._owner_pid = os.getpid()
+    handle._owner_thread = threading.current_thread()
+    return handle
+
+
+__all__ = (
+    "MeasurementSamples",
+    "sample_memory_circuit",
+    "sample_memory_measurements",
+    "MemorySampler",
+    "compile_memory_sampler",
+)

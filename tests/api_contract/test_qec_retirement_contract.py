@@ -91,6 +91,14 @@ def test_contract_loader_rejects_a_non_object(
         gate.load_contract()
 
 
+def test_approved_sampler_delta_does_not_allow_other_root_additions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert gate.check("retired") == []
+    monkeypatch.setattr(qec, "__all__", (*qec.__all__, "UnapprovedSampler"))
+    assert any("root exports" in error for error in gate.check("retired"))
+
+
 def test_all_frozen_fixture_bytes_are_protected() -> None:
     actual = {
         path.relative_to(ROOT).as_posix()
@@ -123,7 +131,10 @@ def test_current_implementation_passes_retirement_and_refuses_preparation() -> N
 
 def test_gate_rejects_reordered_root_exports(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(qec, "__all__", tuple(reversed(qec.__all__)))
-    assert "flagquantum.qec: ordered 108 root exports changed" in gate.check("retired")
+    assert (
+        "flagquantum.qec: ordered historical root exports or approved sampler additions changed"
+        in gate.check("retired")
+    )
 
 
 @pytest.mark.parametrize("name", RETIRED)
@@ -154,7 +165,12 @@ def test_root_workflow_and_registered_class_remain_authoritative() -> None:
     baseline = json.loads(
         (ROOT / CONTRACT["preserved"]["root_api_fixture"]).read_text()
     )
-    assert list(qec.__all__) == baseline["exports"]
+    sampler_contract = json.loads(
+        (ROOT / "contracts/qec-memory-sampler-v1.json").read_text()
+    )
+    assert (
+        list(qec.__all__) == baseline["exports"] + sampler_contract["appended_exports"]
+    )
     assert qec.RotatedSurfaceCode is codes.RotatedSurfaceCode is Surface is Owner
     assert list(qec.code_names()) == baseline["code_names"]
     assert list(qec.decoder_names()) == baseline["decoder_names"]

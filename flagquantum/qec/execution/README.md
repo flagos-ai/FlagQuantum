@@ -10,7 +10,11 @@ execution, core IR, noise channels and the optional stabilizer sampler.
 - `repetition.py`: the original repetition-memory source and feedback controller.
 - `sampling.py`: lowering plans, noise placement, measurement records and sampled
   detection/observable parity. It shares lowering with `signatures.py` and keeps
-  sampler draws, location order and seed handling unchanged.
+  existing one-shot draws, location order and seed handling unchanged.
+  `compile_memory_sampler` prepares a separate reusable stream: lowering,
+  placement and Simulation compilation happen once; immutable parity-column
+  tuples are retained instead of the caller's memory/noise records. Each draw
+  returns the existing `DemSample` and retains no sample buffers.
 - `context.py`: declaration-to-DEM and per-basis measurement maps, without shot
   execution. It consumes declarations and DEMs; declarations never import it.
 - `signatures.py`: source injection, exact lowering, forced reference execution
@@ -54,3 +58,37 @@ circuit DEM semantics, forced signatures, raw samples, detected parities, feedba
 results and all surviving Python identifiers; retired identifiers are refused. Raw seeded sample equality is scoped
 to its recorded Stim version and machine architecture; the unchanged independent
 statistical/reference tests cover other supported sampling environments.
+
+## Repeated batches
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise, RepetitionCode, build_memory_circuit,
+    compile_memory_sampler,
+)
+
+memory = build_memory_circuit(RepetitionCode(distance=3), rounds=3)
+with compile_memory_sampler(memory, noise=PhenomenologicalNoise(), seed=53) as sampler:
+    for _ in range(2):
+        batch = sampler.sample(shots=32)
+        assert batch.detectors.shape == (32, 8)
+        assert not batch.detectors.any() and not batch.observables.any()
+```
+
+The handle belongs to its creator process and thread. Context exit releases the
+prepared numerical stream even on an exception; `close()` is owner-idempotent.
+Sampling after close or from another owner raises `RuntimeError`. Invalid shot
+counts do not advance the stream. Execution/parity failure closes it before
+propagating the original error. Live handles cannot be copied or pickled.
+Create separate handles and assign seeds explicitly in separate workers.
+
+A fixed seed reproduces an identical sequence of sample calls within one engine
+version and machine instruction set. Different batching is not a promise of
+identical bits. `PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py`
+uses this stream with the optional PyMatching batch adapter, including a final
+partial chunk. Configuration changes require constructing a new handle.
+
+Run `python -m pytest tests/qec/test_memory_sampler.py tests/team/simulation/test_prepared_stabilizer_sampling.py -q`
+for lifecycle, numerical seam and replacement checks. The approved additive
+surface is recorded in `contracts/qec-memory-sampler-v1.json`; historical
+restructuring fixtures remain unchanged.
