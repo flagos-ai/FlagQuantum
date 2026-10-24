@@ -147,3 +147,20 @@ def test_sampled_contract_authorization_rejects_unreviewed_changes(
     assert public_api_snapshot._validate_authorized_execution_plan(
         contract, ["ExecutionPlan"]
     ) == ["native Ising admission differs from approved proposals 085/089"]
+
+
+def test_sampled_source_signature_is_protected(monkeypatch: pytest.MonkeyPatch) -> None:
+    from flagquantum.core.ising import IsingBraidProgram
+
+    def unreviewed(self: IsingBraidProgram, *, outcome: str) -> IsingBraidProgram:
+        raise AssertionError("signature inspection must not call this method")
+
+    monkeypatch.setattr(IsingBraidProgram, "measure_pair", unreviewed)
+    contract = json.loads(
+        (ROOT / "contracts/execution-plan-v1-candidate.json").read_text()
+    )
+    assert public_api_snapshot._validate_authorized_execution_plan(
+        contract, ["ExecutionPlan"]
+    ) == [
+        "native Ising sampled source must expose measure_pair(self) -> IsingBraidProgram"
+    ]

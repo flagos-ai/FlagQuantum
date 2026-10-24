@@ -8,9 +8,9 @@ applicable CI/GPU. Each later PR requires separate merge authorization.
 ## Replaceable baseline
 
 The [existing execution-plan candidate](../../contracts/execution-plan-v1-candidate.json)
-records the approved extension as `contract_baseline`, with
+records the approved extension as `core_source`, with
 `production_implemented=false`. No production source 1.3, environment 1.1,
-`measure_pair()` method, new IR, result class or execution path is activated.
+new IR, result class or execution path was activated by the baseline.
 The exact candidate guard continues to reject unapproved changes.
 
 Four factories in the
@@ -43,6 +43,49 @@ Replace only the four factories and delete the obsolete reference; retain the
 independent assertions. Real native source/plan/environment version and rehashed
 tamper tests join the existing codec/admission suites when those domains are
 implemented. The recipe does not pretend to validate a production 1.3 payload.
+
+## Core source delivery
+
+Baseline #821 merged after independent authorization and complete CI/GPU.
+Core now provides the fluent zero-argument `measure_pair()` builder and strict
+native source codec 1.3. It reuses ProgramRecord/Operation with literal null
+physical data, the existing physical verifier and canonical codec. A shared
+private append guard rejects any second sampled or unread observation before
+mutation. No new IR class, mutable identity cache, RNG or numerical algorithm
+is introduced. Existing braid-only 1.1 and unread 1.2 bytes remain unchanged.
+
+The candidate stage means source construction only: `production_implemented`
+remains false until native numerical execution is delivered. The existing
+Runtime version boundary still refuses 1.3 before numerical execution, including
+rehashed attempts to place the real new source in old plans. Root signatures,
+plan/environment protocols, independent baseline factories and physics
+assertions are unchanged. The obsolete baseline assertion that the method was
+absent is removed; real closed-admission tests replace that stage assertion.
+
+```python
+import json
+import flagquantum as fq
+from flagquantum.experimental.simulation import IsingBraidProgram
+from flagquantum.core.ir.program.physical_codec import (
+    native_program_from_dict, native_program_to_dict,
+)
+from flagquantum.errors import CapabilityError
+
+source = IsingBraidProgram().exchange(1).measure_pair().exchange(0)
+payload = native_program_to_dict(source.to_ir())
+print(payload["version"])
+print(payload["functions"][0]["blocks"][0]["operations"][1]["opcode"])
+print(native_program_from_dict(json.loads(json.dumps(payload))) == source.to_ir())
+try:
+    fq.plan(source, options=fq.ExecutionOptions(shots=1, seed=17))
+except CapabilityError:
+    print("native execution not yet admitted")
+```
+
+Output: `1.3`, `ising.measure_pair`, `True`, `native execution not yet admitted`.
+The codec functions above are the existing internal source boundary, not new
+root exports. This demonstrates source inspection and the honest execution
+boundary; the proposed conditional-state workflow is not available yet.
 
 ## Runnable current user workflow
 
