@@ -99,6 +99,7 @@ def test_runner_registry_is_lazy_and_sorted() -> None:
         "dynamic_unified_run",
         "environment_probe",
         "numa_memory_traffic",
+        "qec_memory_sampling",
         "simulator_compare",
         "simulator_compare_cirq",
         "simulator_compare_pennylane",

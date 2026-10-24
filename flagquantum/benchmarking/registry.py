@@ -24,6 +24,18 @@ class RunnerSpec:
 
 
 _RUNNERS: dict[str, RunnerSpec] = {
+    "qec_memory_sampling": RunnerSpec(
+        name="qec_memory_sampling",
+        module="flagquantum.benchmarking.qec_memory_sampling",
+        attribute="main",
+        category="qec",
+        summary="Observe compiled Surface memory sampling phases and local memory.",
+        hardware="CPU; Stim/PyMatching extras required; process RSS available on Unix",
+        example=(
+            "flagquantum-benchmark run qec_memory_sampling --shots 128 "
+            "--batch-size 32 --json-output results/qec-memory-sampling.json"
+        ),
+    ),
     "batched_statevector_memory": RunnerSpec(
         name="batched_statevector_memory",
         module="flagquantum.benchmarking.batched_statevector_memory",
