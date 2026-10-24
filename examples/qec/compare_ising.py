@@ -348,6 +348,7 @@ def cuda_metadata(image_id: str | None) -> dict[str, Any]:
         "name": properties.name,
         "nvidia_smi_uuid_name_driver": queried[0],
         "total_memory_bytes": properties.total_memory,
+        "free_memory_bytes_at_preflight": torch.cuda.mem_get_info(0)[0],
         "cuda_runtime": torch.version.cuda,
         "image_id": image_id,
         "hostname": platform.node(),
@@ -656,6 +657,11 @@ def run(args: argparse.Namespace, config: Config, ref: Reference) -> None:
         "records": records,
     }
     (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
+    if config.a800:
+        # Timing workers own their active model; the idle parent retains no tensors on CUDA.
+        native.cpu()
+        ref.pipeline.cpu()
+        torch.cuda.empty_cache()
     for name in PATHS:
         subprocess.run(
             [
