@@ -2,7 +2,145 @@
 
 Status: active delivery plan, 2026-10-24. Core owns QEC composition and adapters;
 Simulation owns numerical execution; Runtime owns execution policy and lifecycle.
-This document orders work, not approvals of future public APIs or merges.
+This document orders work and records the delivery authorization below. It does
+not approve new public APIs or declare proposed modules implemented.
+
+## Scope and continuing delivery authorization
+
+On 2026-10-24 the user clarified that the long-running task covers the **whole
+Stim/PyMatching compatibility roadmap**, requested this expected code structure
+in the plan, and authorized the repeated cycle: implement the next bounded PR,
+monitor its CI, merge after all applicable checks succeed and repository rules
+are satisfied, then continue to the next step. This authorization covers PRs
+within this compatibility roadmap, including #792; it is not limited to #788.
+Do not end the follow-up merely because one successor PR is delivered.
+
+Every PR description must contain executable **user-facing Python code**,
+installation requirements and observed/expected output. A CLI command alone is
+insufficient. Show existing public APIs that a user can run; label proposed APIs
+explicitly and never present them as implemented. Run the example and preserve
+its environment and evidence. Documentation/design PRs show the existing user
+workflow they support as well as the proposed change.
+
+Before each merge, re-read the actual PR head, all applicable checks, complete
+CI/GPU workflow conclusions, review requirements and branch rules. Merge the
+verified head normally, without admin bypass, force updates or weaker checks.
+Verify the real merge commit and its actual main workflows, then synchronize a
+clean branch from current main. Preserve unrelated work and inspect other QEC
+deliveries before implementing overlapping work. Diagnose genuine failures;
+retry infrastructure faults only with evidence and a finite budget.
+
+Stable API changes still require a concrete proposal and explicit API-owner
+approval under `PUBLIC_API_PROTECTION.md`. This delivery authorization is not
+approval of proposal 087 Decision C or an unspecified Stim bridge contract.
+Prepare reviewable proposals and complete independent work before requesting
+such a decision; do not request routine implementation or merge approval again.
+
+## Expected code structure after compatibility delivery
+
+Keep the existing domain packages and authorities. The two entries marked
+`candidate` below describe possible ownership locations, not approved import
+paths or an instruction to create empty modules.
+
+```text
+flagquantum/
+  qec/
+    codes/                       # Existing code families and code registry
+      repetition.py
+      surface/rotated.py         # The one existing RotatedSurfaceCode
+    circuits/memory.py           # Memory declarations and measurement layouts
+    noise.py                     # QEC noise settings; reuse shared NoiseModel
+    dem/
+      model.py                   # Owned detector-error-model semantics
+      construction.py            # Fault-to-detector/logical model construction
+      circuit_noise.py           # Circuit-channel mechanisms and alternatives
+      text.py                    # Stim DEM text interoperability
+      graph.py                   # Decoder graph derived from the owned DEM
+    execution/
+      context.py                 # Measurement-to-detector/observable maps
+      sampling.py                # Compile once, bounded batches, handle lifetime
+      signatures.py              # Fault placement and propagation composition
+      experiments.py             # Candidate: common evaluation, only after review
+    adapters/
+      pymatching.py              # Owned graph in, owned logical predictions out
+      stim.py                    # Candidate: annotated experiment import/export
+    decoders/
+      registry.py                # The one existing decoder registry
+      matching.py                # Existing native matching implementation
+      belief_propagation.py      # Existing alternative decoder
+      ...                        # Other existing decoder owners
+    types.py                     # Existing shared records, not a second schema
+  simulation/stabilizer/
+    engine.py                    # Clifford numerical execution and Stim boundary
+    _fault_signatures.py         # Simulation-owned fault propagation primitives
+
+examples/qec/                    # Runnable user workflows, including both entrances
+tests/qec/                       # Composition, interoperability and decoder evidence
+tests/team/simulation/           # Numerical and replacement/conformance evidence
+```
+
+The flow is code/noise/experiment declaration -> circuit and measurement layout.
+One branch executes through Simulation and produces bounded detector/observable
+batches; another constructs the owned DEM/decoding graph and selects a decoder.
+Evaluation compares predictions with the **same sampled observable bits**, then
+reports counts, fixed-shot uncertainty and configuration. Raw circuit sampling
+and a transformed matching graph have different roles: decoder conversion must
+not replace the original noise distribution used to generate samples.
+
+Stim has two boundaries: QEC owns experiment annotations and interoperability;
+Simulation owns numerical Clifford execution. PyMatching remains an optional,
+lazy decoder adapter. Vendor objects stay inside their adapter/engine boundary.
+Keep core imports and registry inspection usable without either optional SDK,
+and fail explicitly when an unavailable engine/decoder is selected.
+
+Later internalization replaces a numerical implementation inside
+`simulation/stabilizer/` or a matching implementation inside `qec/decoders/`.
+It reuses code/layout, DEM, logical-prediction meaning and conformance tests;
+external SDKs may remain optional independent references. No whole-library
+vendoring, second QEC IR, second Surface class or speculative backend registry
+is required by this plan.
+
+## Route status and final acceptance
+
+- A/B are delivered by the approved sampling design and merged #784.
+- C's fixed-shot example statistics are delivered by merged #788; the proposed
+  generic library experiment API remains a separate unapproved decision.
+- D is implemented in #792. Its initial implementation head passed 54 main CI
+  jobs and the GPU workflow; every later head, including this plan update, needs
+  its own current-head verification before merge.
+- E, the annotated native/external Stim experiment bridge, is the next contract
+  and implementation boundary after D lands.
+- F/G/H must first reconcile the already approved correlated-Pauli contract 088
+  and existing circuit-noise/sampling/DEM implementations on current main. Extend
+  only demonstrated gaps in location coverage, distribution preservation and
+  independent evidence; do not reimplement those capabilities from old plans.
+- I closes the whole compatibility task, not merely an individual PR.
+
+The continuing task is complete only when all of the following are recorded:
+
+1. Supported native-memory and external-Stim experiment entrances have runnable
+   user examples and feed the same logical evaluation semantics. Preserve
+   measurement/detector/observable parity and supported coordinates; publish
+   explicit unsupported cases rather than promise arbitrary reverse compilation.
+2. The supported noise-location/channel contract is approved and implemented;
+   original circuit/DEM marginal, selected joint and logical distributions have
+   independent evidence, including exclusive channel branches and boundaries.
+3. Repetition and Surface cases, bounded repeated sampling, failure/cleanup,
+   same-sample decoder comparisons and optional replacement boundaries pass
+   their reviewed acceptance cases without threshold or performance overclaims.
+4. Four real install profiles (core, Stim, PyMatching, both), plus built wheel
+   and sdist smoke checks outside the checkout, prove dependency isolation and
+   installed-user workflows. Fake missing-module tests alone do not satisfy this.
+5. All delivery PRs are normally merged after their current-head CI/GPU and
+   repository gates pass. Actual merge-commit/main checks, limitations, evidence
+   and the final capability checklist are reconciled in this plan.
+
+Do not stop at a green intermediate PR or start internal kernel replacement,
+AI training or unrelated framework work as a substitute for these exit gates.
+When all gates pass, report the complete route's results and stop the follow-up.
+If a necessary API-owner decision or external resource is unavailable, finish
+independent work, retain a concrete reviewable result and report the precise
+remaining requirement without repeatedly retrying unchanged blockers.
 
 ## Current baseline and user workflow
 
@@ -255,7 +393,9 @@ gate. Preserve CPU and single-device usability and dependency isolation.
 A/F are design reviews; B/G/H are implementation changes after their contracts
 are approved. Persistent samplers, common batch protocols and new result types
 are not implicitly approved by the roadmap. Publishing PRs and changing release
-status follow the user's authorization; merging is a separate decision.
+status follow the continuing delivery authorization above. Normal merges within
+this roadmap are authorized after the stated gates; new public API decisions
+remain separate.
 
 Planning estimate: two QEC/PyTorch contributors, roughly 4-6 weeks for A-I,
 including review time. The bridge and circuit-level noise are the largest
