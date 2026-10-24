@@ -491,7 +491,7 @@ def _validate_authorized_execution_plan(
         "proposal": "docs/development/API_CHANGE_PROPOSAL_091_ISING_SAMPLED_OBSERVATION.md",
         "record": "docs/api-changes/FQ-ISING-SAMPLED-OBSERVATION-20261024.md",
         "implementation_authorized": True,
-        "delivery_stage": "contract_baseline",
+        "delivery_stage": "core_source",
         "operation": "ising.measure_pair",
         "new_operation_source_and_plan_version": "1.3",
         "environment_protocol_version": "1.1",
@@ -509,6 +509,13 @@ def _validate_authorized_execution_plan(
 
         if simulation.IsingBraidProgram is not IsingBraidProgram:
             errors.append("native Ising frontend must resolve to its Core authority")
+        sampled = getattr(IsingBraidProgram, "measure_pair", None)
+        if not callable(sampled) or str(inspect.signature(sampled)) != (
+            "(self) -> 'IsingBraidProgram'"
+        ):
+            errors.append(
+                "native Ising sampled source must expose measure_pair(self) -> IsingBraidProgram"
+            )
         annotations = {
             field.name: str(field.type) for field in dataclasses.fields(ExecutionPlan)
         }

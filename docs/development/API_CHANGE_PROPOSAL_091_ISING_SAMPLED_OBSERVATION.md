@@ -88,7 +88,8 @@ promised across PyTorch builds. Within the reviewed environment, repeating the
 sealed seeded plan must return identical indices, conditional state and outputs.
 The first exchange gives both labels nonzero probability; the final outer
 exchange preserves their populations, so the conditional P(psi) equals the
-selected index. The new method does not exist today.
+selected index. Core source construction is delivered separately; this complete
+execution workflow remains unavailable until Runtime admission is implemented.
 
 ## Exact source and physics semantics
 

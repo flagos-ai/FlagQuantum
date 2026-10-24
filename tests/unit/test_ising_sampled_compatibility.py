@@ -105,4 +105,5 @@ def test_reference_recipe_is_not_an_executable_native_plan() -> None:
     assert json.loads(recipe.to_json())["schema"] == "test.ising_sampled_recipe"
     with pytest.raises((ValueError, TypeError)):
         fq.ExecutionPlan.from_json(recipe.to_json())
-    assert not hasattr(IsingBraidProgram, "measure_pair")
+    # Core may now declare the approved operation; it still is not an executable
+    # native plan until the separately delivered Runtime admission is accepted.
