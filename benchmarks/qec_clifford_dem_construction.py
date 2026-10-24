@@ -60,6 +60,7 @@ def main() -> None:
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     record = {
+        "benchmark": "qec_clifford_dem_construction",
         "source_revision": revision,
         "platform": platform.platform(),
         "python": platform.python_version(),

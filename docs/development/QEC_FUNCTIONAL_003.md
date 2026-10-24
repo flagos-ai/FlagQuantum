@@ -147,7 +147,14 @@ Measured local CPU results from the [resource artifact](../../benchmarks/results
 Visit counts are exact loop counts derived from the measured I/P/F sizes, not
 CPU instruction or FLOP counters. Each row is one instrumented observation, not
 a latency distribution. The artifact retains the full process RSS measurements
-and environment. Source QEC/retirement plus new Simulation regression: **1,894
+and environment. Its compact JSON stores identical environment/input values
+once at the root and variable observations as `columns` and `rows`. Combining
+each row with the shared root values reconstructs every original measurement
+record at full precision; no observation is dropped or rounded. This keeps the
+new evidence within the existing repository byte budget without changing that
+budget or removing other evidence.
+
+Source QEC/retirement plus new Simulation regression: **1,894
 passed, one existing inapplicable-fault skip**. Full-package strict type checking
 passes for 810 source files; the architecture and all 499 QEC alignment checks
 pass. Installed-profile and final required CI results belong to the PR handoff.
