@@ -24,23 +24,27 @@ PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py
 It circuit-samples 128 repetition-memory shots in bounded chunks and predicts
 logical flips in batches: 8 detector columns, 1 observable, and an observed
 logical failure count. The random count is version/architecture scoped.
-Stim compilation is still repeated per chunk. No performance claim follows.
+The approved work B branch updates this example to reuse one compiled sampler
+with a continuous seed-53 stream across chunks. That sampling change is pending
+review and merge; main at #772 still recompiles per chunk. No performance claim
+follows from the example.
 
 The existing `PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py`
 workflow remains available with the Stim extra; it exercises measurement
 layouts, sampling and feedback.
 
-## Immediate action: review work A
+## Immediate action: review work B
 
 The #772 CI repair corrected Black formatting in two tests and registered the
 new baseline example in `examples/README.md`. All 54 main CI jobs passed, as
 did the single-GPU and required two-GPU jobs. No test assertions or frozen
 fixtures were weakened to obtain this result.
 
-Review the [reusable sampling proposal](../development/QEC_REUSABLE_SAMPLING_PROPOSAL.md)
-next. Approve the exact additive public surface and lifecycle semantics before
-work B adds implementation. Work C's prepared acceptance cases can inform the
-next statistics review without assuming A's API is approved.
+The API owner approved the [reusable sampling proposal](../development/QEC_REUSABLE_SAMPLING_PROPOSAL.md)
+on 2026-10-24. Work B implements the two additive QEC exports and the approved
+lifecycle; it must pass required CI and review before merging. Next is work C's
+fixed-shot statistics design, reusing existing result concepts before proposing
+new public records. Approval of A/B does not approve C's public API.
 
 ## Ordered PRs
 

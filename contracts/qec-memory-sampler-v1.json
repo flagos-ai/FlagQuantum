@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "implementation_authorized",
+  "status": "implemented_pending_release",
   "proposal": "docs/development/QEC_REUSABLE_SAMPLING_PROPOSAL.md",
   "approval": {
     "source": "Explicit API owner approval in the implementation chat",

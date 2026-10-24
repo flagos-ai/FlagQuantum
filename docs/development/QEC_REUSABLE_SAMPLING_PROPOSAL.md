@@ -144,3 +144,64 @@ fallback, approximation or automatic SDK installation is introduced.
 Implementation must remain within the approved compile/sample/close public API
 and snapshot/ownership semantics. Record validation separately; approval itself
 does not establish correctness, performance or release acceptance.
+
+## Implementation and validation
+
+Runtime implementation was committed at
+`4b2402b71c82a1061a43b60e589829efd2cc6ed2`, after the approved contract and the
+Simulation-owned preparation implementation. Execution classification is
+`single_device_fast_path`, on CPU. Required remote CI and maintainer review
+still decide merge acceptance.
+
+- Python 3.12.14, Torch 2.13.0, Stim 1.16.0 and PyMatching 2.4.0: the complete
+  QEC suite, stabilizer engine/positioned-noise/preparation suites, public
+  docstring examples and retirement contract suite passed: 2070 passed,
+  1 conditional skip. The original 15 restructuring fixtures were not changed.
+- Whole-package strict mypy passed for 811 source files. Full Black/Ruff,
+  architecture, retired-phase, public API migration and generated-documentation
+  checks passed. The retirement checker retains all 108 historical exports and
+  admits only the two approved additions; it still rejects an unrelated export.
+- A native wheel built without isolation and was installed into a temporary
+  target. From outside the checkout, 35 circuit shots in batches 16, 16 and 3
+  passed through compiled sampling and PyMatching batch decoding. Sampling after
+  context exit was refused. The installed handle was also checked on Python 3.12.
+- A clean subprocess blocked Stim import: core QEC still imported without Stim
+  or PyMatching, and sampler construction raised the existing dependency error.
+- The source Python 3.11 default tier stopped after 6 failures, with 6212 passed
+  and 47 skipped. All 6 failures reproduced on untouched main `a90176e1`: four
+  native-fusion expectations and two missing installed entry-point metadata
+  checks. That environment is not reported as a passing default tier.
+- The Python 3.11 expanded QEC run had 2069 passed, 1 skipped and one existing
+  mixed-check exception-message failure, also reproduced on untouched main.
+  The full Python 3.12 QEC run above passed that same test. No assertion was
+  changed to hide it.
+
+Reproduce focused verification from a checkout with the dev, Stim and PyMatching
+extras installed:
+
+```bash
+python -m pytest tests/qec tests/team/simulation/test_stabilizer_engine.py tests/team/simulation/test_stabilizer_positioned_noise.py tests/team/simulation/test_prepared_stabilizer_sampling.py tests/api_contract/test_public_docstring_examples.py tests/api_contract/test_qec_retirement_contract.py -n 4 -q
+PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py
+```
+
+### Bounded-batch resource observation
+
+Two separate macOS arm64 processes at the implementation revision above used a
+repetition d=3, rounds=3 memory, seed 53, data-flip probability 0.02,
+measurement-flip probability 0.03 and batch size 1024. Python was 3.11.16,
+Torch 2.10.0 and Stim 1.16.0. Preparation time and the sampling loop were measured
+separately. Every returned detector/observable tensor had an expired weak
+reference after the caller dropped its batch.
+
+| Total shots | Lowering / compilation count | Python peak traced bytes during draws | Process peak RSS after draws, bytes |
+| --- | --- | --- | --- |
+| 16,384 | 1 / 1 | 47,980 | 224,198,656 |
+| 262,144 | 1 / 1 | 52,395 | 224,116,736 |
+
+Preparation took approximately 0.012 seconds in each run. Sampling took 0.0062
+and 0.0766 seconds respectively. These are local observations under shared-host
+load, not comparative speed evidence or a universal memory ceiling. They support
+the bounded-batch retention check and make no GPU, distributed, threshold or
+production-throughput claim. Lifecycle and no-retention regression tests are in
+`tests/qec/test_memory_sampler.py`; preparation/count/reference checks are in
+`tests/team/simulation/test_prepared_stabilizer_sampling.py`.
