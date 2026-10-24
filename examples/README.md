@@ -120,6 +120,9 @@ These examples do not use that alias:
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.
+- [`qec/stim_pymatching_baseline.py`](qec/stim_pymatching_baseline.py) imports
+  QEC sampling and decoder APIs from the subpackage to evaluate streamed Stim
+  memory samples with PyMatching batch predictions; both optional SDKs are required.
 - [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) — it imports
   the QEC subpackage surface, because the code record built from parity-check
   matrices lives there and has no root-level `fq.` name.

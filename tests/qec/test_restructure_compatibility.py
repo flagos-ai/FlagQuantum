@@ -69,8 +69,22 @@ def _describe(value: object) -> dict[str, object]:
 
 def test_top_level_exports_and_signatures_match_pre_migration_baseline() -> None:
     baseline = json.loads(_FIXTURE.read_text())
+    # Proposal 087 adds one reviewed method without rewriting historical evidence.
+    contract = json.loads(
+        (
+            Path(__file__).parents[2] / "contracts/qec-batch-prediction-v1.json"
+        ).read_text()
+    )
     assert list(qec.__all__) == baseline["exports"]
     for name, expected in baseline["api"].items():
+        if name in contract["additive_methods"]:
+            expected = {
+                **expected,
+                "methods": {
+                    **expected["methods"],
+                    **contract["additive_methods"][name],
+                },
+            }
         assert _describe(getattr(qec, name)) == expected, name
 
 
