@@ -1,11 +1,15 @@
 # QEC reusable memory sampling proposal
 
-Status: proposed for API review, not approved or implemented. Work A of the
+Status: approved for implementation on 2026-10-24. Work A of the
 [delivery plan](../roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md).
 
 Prerequisite: PR #772 merged at `0cb4086270ddc47dc431ee9d5e76984198a2d997`.
-This is the next review decision; the earlier approval of proposal 087 covers
-batch decoding only and does not approve this new sampling interface.
+After reviewing the concrete factory, handle and lifecycle proposal, the API
+owner replied "Approved" (translated from Chinese) in the implementation chat.
+This separately authorizes work B's two additive QEC exports, the signatures
+below and their snapshot, ownership, RNG, release and failure semantics. It does
+not approve the separate fixed-shot experiment API, noise extensions or merges.
+The machine-readable delta is `contracts/qec-memory-sampler-v1.json`.
 
 ## Existing implementation and reuse decision
 
@@ -137,6 +141,6 @@ fallback, approximation or automatic SDK installation is introduced.
 - At fixed batch size, increasing requested total shots does not grow retained
   sample buffers. Measure preparation and steady-state sampling separately.
 
-Open review decision: approve this narrow compile/sample/close public API and
-snapshot/ownership semantics, or revise it before implementation. This document
-records no human approval and creates no runtime implementation.
+Implementation must remain within the approved compile/sample/close public API
+and snapshot/ownership semantics. Record validation separately; approval itself
+does not establish correctness, performance or release acceptance.
