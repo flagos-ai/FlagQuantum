@@ -82,6 +82,9 @@ def plan_ising(
 ) -> ExecutionPlan:
     """Seal a validated native source using the shared options resolver."""
     record = program.to_ir()
+    source = native_program_to_dict(record)
+    if source.get("version") != "1.1":
+        raise CapabilityError("Ising execution supports only native source 1.1")
     requests = _outputs(outputs)
     try:
         resolved = resolve_execution_options(
@@ -138,7 +141,6 @@ def plan_ising(
         )
     }
     decision.update(world_size=1, state_bytes=64, recommended_mode="density_matrix")
-    source = native_program_to_dict(record)
     concrete = _resolved_mapping(resolved)
     environment = _environment_requirements(decision)
     payload = {
@@ -261,9 +263,10 @@ def validate_ising_payload(values: Mapping[str, Any]) -> dict[str, Any]:
     )
 
     try:
-        record = native_program_from_dict(
-            _require_mapping("program", values["program"])
-        )
+        source = _require_mapping("program", values["program"])
+        if source.get("version") != "1.1":
+            raise ValueError("plan 1.1 requires native Ising source 1.1")
+        record = native_program_from_dict(source)
         if not isinstance(record.physical_context, IsingContext):
             raise ValueError("plan 1.1 requires the native Ising source")
     except (TypeError, ValueError) as exc:
