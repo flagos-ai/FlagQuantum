@@ -121,6 +121,22 @@ replacement interface, and an exit plan. Here they are:
 
 ## Determinism
 
+QEC repeated sampling uses the private `engine._prepare_noisy_measurements`
+boundary. It accepts the same positioned-noise grammar as the one-shot entry,
+compiles once, and returns a private numerical stream with `sample` and `close`.
+SDK circuit and sampler objects stay in `engine.py`. Draws return owned CPU
+integer measurement records with validated width and binary values; the stream
+retains no drawn batches. Close drops the compiled-state reference. QEC owns
+process/thread restrictions, RNG call sequencing, poisoning and public lifecycle;
+this primitive adds no Runtime scheduling policy or public Simulation export.
+
+The existing one-shot entry uses the same preparation implementation and closes
+it after its draw. Its seed and result behavior remain protected by existing
+fixtures. `test_prepared_stabilizer_sampling.py` checks one compilation, release,
+invalid records and independently authored measurement distributions. A future
+Clifford kernel can replace this private boundary without changing the QEC
+consumer, as the controlled-record replacement test demonstrates.
+
 A seed reproduces a run on one engine version and one machine instruction set
 and does not pin a bit pattern. That is the engine's documented behaviour, so a
 seeded comparison across hosts is a comparison of distributions, not of bits.
