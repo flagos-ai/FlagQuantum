@@ -4,6 +4,7 @@ Long-term direction, capability maturity, ecosystem plans, and staged delivery
 targets.
 
 - [Noisy simulation implementation roadmap](NOISY_SIMULATION_ROADMAP.md)
+- [QEC functional development plan](QEC_FUNCTIONAL_DEVELOPMENT_PLAN.md)
 - [FlagQuantum vision](FLAGQUANTUM_VISION.md)
 - [Pre-open-source API quality and freeze plan](OPEN_SOURCE_API_QUALITY_PLAN.md)
 - [Capability maturity](CAPABILITY_MATURITY.md)
