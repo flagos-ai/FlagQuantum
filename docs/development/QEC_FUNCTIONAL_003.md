@@ -134,3 +134,20 @@ vector or a dense F-by-P tensor. Integer-mask cost still grows with wire and
 parity counts. This is a polynomial construction path, not a constant-memory or
 hardware scalability claim. Artifact measurements and final CI evidence are
 recorded in the PR handoff; a pending run is not a passing result.
+
+Measured local CPU results from the [resource artifact](../../benchmarks/results/comparison/qec_clifford_dem_cpu_arm64_20261024.json), produced by published implementation commit
+`42ff10d4b0f081dd1465dd5338e6b26f89af7368`:
+
+| Distance | Physical qubits | Reverse instruction visits | Fault responses | Traced Python peak (MiB) | Instrumented seconds |
+| --- | --- | --- | --- | --- | --- |
+| 3 | 17 | 3600 | 3600 | 0.434 | 0.140 |
+| 5 | 49 | 33288 | 35040 | 1.303 | 0.695 |
+| 7 | 97 | 135720 | 146160 | 2.456 | 2.382 |
+
+Visit counts are exact loop counts derived from the measured I/P/F sizes, not
+CPU instruction or FLOP counters. Each row is one instrumented observation, not
+a latency distribution. The artifact retains the full process RSS measurements
+and environment. Source QEC/retirement plus new Simulation regression: **1,894
+passed, one existing inapplicable-fault skip**. Full-package strict type checking
+passes for 810 source files; the architecture and all 499 QEC alignment checks
+pass. Installed-profile and final required CI results belong to the PR handoff.

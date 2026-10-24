@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import resource
 import subprocess
@@ -63,10 +64,18 @@ def main() -> None:
         "platform": platform.platform(),
         "python": platform.python_version(),
         "torch": torch.__version__,
+        "machine": platform.machine(),
+        "logical_cpu_count": os.cpu_count(),
+        "torch_threads": torch.get_num_threads(),
         "device": "cpu",
         "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "rank_ownership": {"0": "whole_model"},
+        "communication_bytes": 0,
         "distribution_semantics": "single_process",
         "scalability_claim_allowed": False,
+        "blockers": [],
         "distance": args.distance,
         "rounds": args.rounds,
         "physical_qubits": program.n_wires,
