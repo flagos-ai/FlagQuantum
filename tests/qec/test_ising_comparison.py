@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import argparse
+import copy
 import json
 import os
 import subprocess
 import sys
+import time
 from dataclasses import replace
 from pathlib import Path
 
@@ -13,7 +16,12 @@ import pytest
 import torch
 from torch import nn
 
-from flagquantum.qec.decoders._ai.comparison import decode, measure
+from flagquantum.qec.decoders._ai.comparison import (
+    decode,
+    measure,
+    on_device,
+    require_parity,
+)
 from flagquantum.qec.decoders._ai.predecoder import Predecoder
 from flagquantum.qec.decoders._ai.training import Trainer
 from flagquantum.qec.dem.model import DetectorErrorModel
@@ -91,6 +99,142 @@ def test_bad_external_residual_is_rejected_before_global_decode() -> None:
 
     with pytest.raises(ValueError, match="binary"):
         decode(torch.zeros(1, 2), bad, global_decode)
+
+
+def test_parity_refuses_cancelling_residual_and_logical_frame_errors() -> None:
+    bits = torch.tensor([[0], [1]], dtype=torch.int8)
+
+    def reference(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return x, torch.zeros_like(x)
+
+    def broken(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return 1 - x, torch.ones_like(x)
+
+    def matching(x: torch.Tensor) -> torch.Tensor:
+        return x
+
+    assert torch.equal(
+        decode(bits, reference, matching), decode(bits, broken, matching)
+    )
+    with pytest.raises(ValueError, match="residual or logical-frame"):
+        require_parity(
+            bits, reference, on_device(broken, torch.device("cpu")), matching
+        )
+
+
+def test_cuda_requests_refuse_cpu_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    from examples.qec.compare_ising import cuda_metadata
+
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    with pytest.raises(ValueError, match="requires CUDA"):
+        cuda_metadata(None)
+    with pytest.raises(ValueError, match="available CUDA"):
+        on_device(lambda x: (x, x[:, :1]), torch.device("cuda:0"))
+
+
+def test_cuda_timing_fences_bracket_the_complete_cpu_match(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """CPU contract check of synchronization order, not GPU timing evidence."""
+    events: list[str] = []
+    clock = iter(range(0, 6000, 1000))
+    device = torch.device("cuda:0")
+
+    def synchronize(selected: torch.device) -> None:
+        assert selected == device
+        events.append("sync")
+
+    def now() -> int:
+        events.append("clock")
+        return next(clock)
+
+    def matching(x: torch.Tensor) -> torch.Tensor:
+        events.append("matching")
+        return x[:, :1]
+
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "synchronize", synchronize)
+    monkeypatch.setattr(time, "perf_counter_ns", now)
+    bits = torch.zeros(2, 3, dtype=torch.int8)
+    timing = measure(
+        bits, lambda x: (x, x[:, :1]), matching, warmup=1, repetitions=3, device=device
+    )
+    assert events[2:] == ["sync", "clock", "matching", "sync", "clock"] * 3
+    assert timing.p50_block_us == timing.p99_block_us == 1.0
+
+
+def test_a800_parity_failure_aborts_before_primary_sampling(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from examples.qec import compare_ising as study
+
+    model = hyperedge_model()
+    output = tmp_path / "aborted"
+    monkeypatch.setattr(
+        study,
+        "training_dem",
+        lambda circuit: DetectorErrorModel.from_stim_text(model.dem_text),
+    )
+    monkeypatch.setattr(study, "global_decoder", lambda circuit: lambda x: x[:, :1])
+    monkeypatch.setattr(study, "choices", lambda *args: {})
+
+    def refuse(*args: object) -> None:
+        raise ValueError("declared probe parity failed")
+
+    def no_primary(*args: object) -> None:
+        raise AssertionError("primary sampler reached before parity passed")
+
+    monkeypatch.setattr(study, "device_parity", refuse)
+    monkeypatch.setattr(study, "sample", no_primary)
+    args = argparse.Namespace(
+        output_directory=output, hardware={}, ising_source=tmp_path
+    )
+    ref = study.Reference(None, nn.Identity(), {}, {})
+    with pytest.raises(ValueError, match="probe parity failed"):
+        study.run(args, study.Config(True, distance=9, rounds=9, a800=True), ref)
+    assert (output / "choices.json").is_file()
+    assert not (output / "test-shots.pt").exists()
+
+
+def test_a800_smoke_also_requires_the_real_pinned_checkpoint(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from examples.qec import compare_ising as study
+
+    checkpoint = tmp_path / "untrained.safetensors"
+    checkpoint.write_bytes(b"not the official checkpoint")
+    monkeypatch.setattr(study, "source_digest", lambda root: study.ISING_SOURCE_SHA256)
+    with pytest.raises(ValueError, match="pinned official Fast"):
+        study.reference(tmp_path, checkpoint, study.Config(True, a800=True))
+
+
+@pytest.mark.gpu
+def test_real_cuda_complete_hyperedge_correction_and_timing() -> None:
+    if not torch.cuda.is_available():
+        pytest.skip("requires an actual CUDA device")
+    model = hyperedge_model().eval()
+    with torch.no_grad():
+        for parameter in model.parameters():
+            parameter.zero_()
+        head = model.network[-1]
+        assert isinstance(head, nn.Linear) and head.bias is not None
+        head.bias.fill_(10)
+    device = torch.device("cuda:0")
+    accelerated = copy.deepcopy(model).to(device)
+    transferred = on_device(accelerated.correct, device)
+    bits = torch.tensor([[0, 0, 0], [1, 1, 1], [1, 0, 1]], dtype=torch.int8)
+
+    def matching(x: torch.Tensor) -> torch.Tensor:
+        return x[:, :1]
+
+    require_parity(bits, model.correct, transferred, matching)
+    timing = measure(
+        bits, transferred, matching, warmup=1, repetitions=3, device=device
+    )
+    assert timing.p99_block_us >= timing.p50_block_us > 0
+    assert torch.cuda.max_memory_allocated(device) > 0
 
 
 def test_non_smoke_requires_real_checkpoint_before_creating_output(

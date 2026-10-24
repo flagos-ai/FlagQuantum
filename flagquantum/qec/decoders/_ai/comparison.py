@@ -1,4 +1,4 @@
-"""CPU comparison primitives with one shared global decoding boundary."""
+"""Comparison primitives with one shared CPU global decoding boundary."""
 
 from __future__ import annotations
 
@@ -13,6 +13,51 @@ from flagquantum.qec.decoders._ai.predecoder import _positive
 
 Correction = Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]
 GlobalDecode = Callable[[torch.Tensor], torch.Tensor]
+
+
+def on_device(correction: Correction, device: torch.device) -> Correction:
+    """Transfer input and both correction outputs across an explicit device boundary.
+
+    The caller places its model on the same device. Blocking CPU outputs include
+    D2H completion before global matching; no accelerator fallback is permitted.
+    """
+    if device.type not in ("cpu", "cuda"):
+        raise ValueError("comparison supports only explicit CPU or CUDA devices")
+    if device.type == "cuda" and not torch.cuda.is_available():
+        raise ValueError("CUDA comparison requires an available CUDA device")
+
+    def run(bits: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        transferred = bits.to(device)
+        residual, frame = correction(transferred)
+        if residual.device != transferred.device or frame.device != residual.device:
+            raise ValueError("correction outputs must remain on the selected device")
+        return residual.cpu(), frame.cpu()
+
+    return run
+
+
+@torch.inference_mode()
+def require_parity(
+    detectors: torch.Tensor,
+    reference: Correction,
+    candidate: Correction,
+    global_decode: GlobalDecode | None = None,
+) -> None:
+    """Require exact correction bits, plus final predictions for matchable inputs."""
+    expected = reference(detectors)
+    actual = candidate(detectors)
+    for residual, frame in (expected, actual):
+        binary_array(residual, width=detectors.shape[1], shots=detectors.shape[0])
+        if frame.ndim != 2 or frame.shape[1] < 1:
+            raise ValueError("requires a nonempty logical frame")
+        binary_array(frame, width=frame.shape[1], shots=detectors.shape[0])
+    if not all(torch.equal(a, b) for a, b in zip(expected, actual, strict=True)):
+        raise ValueError("CPU/device residual or logical-frame parity failed")
+    if global_decode is not None and not torch.equal(
+        decode(detectors, reference, global_decode),
+        decode(detectors, candidate, global_decode),
+    ):
+        raise ValueError("CPU/device final-prediction parity failed")
 
 
 def binary_array(bits: torch.Tensor, *, width: int, shots: int) -> None:
@@ -59,17 +104,24 @@ def measure(
     *,
     warmup: int = 3,
     repetitions: int = 32,
+    device: torch.device | None = None,
 ) -> Timing:
-    """Time whole CPU batches; verify repeated predictions outside timed regions."""
+    """Time complete batches, synchronizing an explicitly selected CUDA device."""
     _positive(warmup, "warmup")
     _positive(repetitions, "repetitions")
+    if device is not None and (device.type != "cuda" or not torch.cuda.is_available()):
+        raise ValueError("timing synchronization requires an available CUDA device")
     expected = decode(detectors, correction, global_decode)
     for _ in range(warmup):
         decode(detectors, correction, global_decode)
     elapsed: list[float] = []
     for _ in range(repetitions):
+        if device is not None:
+            torch.cuda.synchronize(device)
         start = time.perf_counter_ns()
         actual = decode(detectors, correction, global_decode)
+        if device is not None:
+            torch.cuda.synchronize(device)
         elapsed.append((time.perf_counter_ns() - start) / 1000)
         if not torch.equal(actual, expected):
             raise ValueError("nondeterministic predictions in timing run")

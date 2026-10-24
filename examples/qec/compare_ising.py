@@ -7,12 +7,14 @@ Smoke uses an explicitly untrained upstream model and cannot establish a ranking
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import importlib
 import importlib.metadata
 import json
 import os
 import platform
+import re
 import resource
 import subprocess
 import sys
@@ -27,7 +29,13 @@ from torch import nn
 
 from flagquantum.qec.decoders._ai.assessment import paired_counts, summarize
 from flagquantum.qec.decoders._ai.calibration import fit_temperature
-from flagquantum.qec.decoders._ai.comparison import Correction, decode, measure
+from flagquantum.qec.decoders._ai.comparison import (
+    Correction,
+    decode,
+    measure,
+    on_device,
+    require_parity,
+)
 from flagquantum.qec.decoders._ai.predecoder import Predecoder
 from flagquantum.qec.decoders._ai.training import Trainer
 from flagquantum.qec.dem.model import DemError, DetectorErrorModel
@@ -35,6 +43,7 @@ from flagquantum.qec.dem.model import DemError, DetectorErrorModel
 ISING_COMMIT = "ea7c1bb3b823fc6a38472d0d95974b6d01932288"
 ISING_SOURCE_SHA256 = "ed9e6c56f263e0cd9fcc04a494e9cf6544c9f78cbb54c788fcce71b2e961b70e"
 PATHS = ("pymatching", "flagquantum_raw", "flagquantum_calibrated", "ising")
+FAST_SHA256 = "22db7ad25b584d7588493d6ef815381c8d1263cfb29f212391a591b285ad0a05"
 
 
 def digest(path: Path) -> str:
@@ -58,6 +67,15 @@ class Config:
     basis: str = "X"
     rotation: str = "XV"
     threads: int = 1
+    a800: bool = False
+
+    @property
+    def device(self) -> torch.device:
+        return torch.device("cuda:0" if self.a800 else "cpu")
+
+    @property
+    def stream_offset(self) -> int:
+        return 100000 if self.a800 else 0
 
     @property
     def seeds(self) -> tuple[int, ...]:
@@ -89,10 +107,14 @@ def reference(
 ) -> Reference:
     if source_digest(root) != ISING_SOURCE_SHA256:
         raise ValueError(f"Ising source does not match pinned commit {ISING_COMMIT}")
-    if not config.smoke and (checkpoint is None or not checkpoint.is_file()):
+    if (not config.smoke or config.a800) and (
+        checkpoint is None or not checkpoint.is_file()
+    ):
         raise ValueError(
             "non-smoke comparison requires an authorized .safetensors file"
         )
+    if config.a800 and (checkpoint is None or digest(checkpoint) != FAST_SHA256):
+        raise ValueError("A800 protocol requires the pinned official Fast checkpoint")
     sys.path.insert(0, str(root / "code"))
     memory = importlib.import_module("qec.surface_code.memory_circuit")
     noise_module = importlib.import_module("qec.noise_model")
@@ -120,7 +142,7 @@ def reference(
         )
     exports = importlib.import_module("export.safetensors_utils")
     evaluation = importlib.import_module("evaluation.logical_error_rate")
-    if config.smoke:
+    if config.smoke and not config.a800:
         torch.manual_seed(7)
         cfg = exports._build_minimal_cfg(1)
         factory = importlib.import_module("model.factory")
@@ -216,19 +238,19 @@ def global_decoder(circuit: Any) -> Callable[[torch.Tensor], torch.Tensor]:
 
 def correction(
     name: str,
-    native: Predecoder,
+    native: Predecoder | None,
     upstream: nn.Module,
     threshold: float = 1.0,
     temperature: float = 1.0,
 ) -> Correction:
     def run(bits: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if name == "pymatching":
-            return bits, torch.zeros(
-                (bits.shape[0], native.logical.shape[0]), dtype=torch.int8
-            )
+            return bits, torch.zeros((bits.shape[0], 1), dtype=torch.int8)
         if name == "ising":
             output = upstream(bits)
             return output[:, 1:], output[:, :1]
+        if native is None:
+            raise ValueError("native comparison requires its trained model")
         return native.correct(bits, threshold=threshold, temperature=temperature)
 
     if name not in PATHS:
@@ -236,20 +258,28 @@ def correction(
     return run
 
 
+@torch.no_grad()
 def choices(
     model: Predecoder,
     ref: Reference,
     decode_global: Callable[[torch.Tensor], torch.Tensor],
     seed: int,
     smoke: bool,
+    stream_offset: int = 0,
 ) -> dict[str, Any]:
-    batch = model.sample(
-        32 if smoke else 4096, torch.Generator().manual_seed(seed + 4000000)
-    )
+    generator = torch.Generator().manual_seed(seed + 4000000 + stream_offset)
+    # Bound activation memory at d=9; sampling order stays explicit and deterministic.
+    if smoke or not stream_offset:
+        batches = [model.sample(32 if smoke else 4096, generator)]
+    else:
+        batches = [model.sample(128, generator) for _ in range(32)]
     temperature = fit_temperature(
-        model(batch.sample.detectors), batch.mechanisms
+        torch.cat([model(batch.sample.detectors) for batch in batches]),
+        torch.cat([batch.mechanisms for batch in batches]),
     ).temperature
-    detectors, truth = sample(ref.circuit, 32 if smoke else 4096, seed + 5000000)
+    detectors, truth = sample(
+        ref.circuit, 32 if smoke else 4096, seed + 5000000 + stream_offset
+    )
     selected: dict[str, Any] = {}
     for name, temp in (
         ("flagquantum_raw", 1.0),
@@ -257,11 +287,16 @@ def choices(
     ):
         trials = []
         for threshold in (0.5, 0.7, 0.9, 0.99, 1.0):
-            predicted = decode(
-                detectors,
-                correction(name, model, ref.pipeline, threshold, temp),
-                decode_global,
-            )
+            correct = correction(name, model, ref.pipeline, threshold, temp)
+            if stream_offset:
+                predicted = torch.cat(
+                    [
+                        decode(detectors[start : start + 32], correct, decode_global)
+                        for start in range(0, detectors.shape[0], 32)
+                    ]
+                )
+            else:
+                predicted = decode(detectors, correct, decode_global)
             trials.append((int((predicted != truth).any(1).sum()), -threshold))
         selected[name] = {
             "threshold": -min(trials)[1],
@@ -274,28 +309,143 @@ def choices(
     return selected
 
 
+def cuda_metadata(image_id: str | None) -> dict[str, Any]:
+    if not torch.cuda.is_available():
+        raise ValueError("A800 comparison requires CUDA; CPU fallback is forbidden")
+    if image_id is None or re.fullmatch(r"sha256:[0-9a-f]{64}", image_id) is None:
+        raise ValueError("A800 comparison requires the exact --image-id SHA-256")
+    properties = torch.cuda.get_device_properties(0)
+    if "A800" not in properties.name:
+        raise ValueError("A800 protocol requires an A800 device")
+    queried = (
+        subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=uuid,name,driver_version",
+                "--format=csv,noheader",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        .stdout.strip()
+        .splitlines()
+    )
+    if len(queried) != 1:
+        raise ValueError("expose exactly one physical GPU to the isolated container")
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True)
+    return {
+        "device": "cuda:0",
+        "name": properties.name,
+        "nvidia_smi_uuid_name_driver": queried[0],
+        "total_memory_bytes": properties.total_memory,
+        "cuda_runtime": torch.version.cuda,
+        "image_id": image_id,
+        "hostname": platform.node(),
+        "tf32": False,
+        "autocast": False,
+        "deterministic_algorithms": True,
+    }
+
+
+def device_parity(
+    config: Config,
+    ref: Reference,
+    dem: DetectorErrorModel,
+    output: Path,
+    selected: dict[str, Any],
+) -> None:
+    """Validate independent probe inputs before creating a primary test sampler."""
+    bits, _ = sample(ref.circuit, 64, 8100011)
+    width = bits.shape[1]
+    probes = torch.cat(
+        (
+            bits,
+            torch.eye(width, dtype=torch.int8),
+            torch.zeros(1, width, dtype=torch.int8),
+            torch.ones(1, width, dtype=torch.int8),
+        )
+    )
+    upstream = copy.deepcopy(ref.pipeline).to(config.device)
+    decode_global = global_decoder(ref.circuit)
+    for seed in config.seeds:
+        native = Predecoder(dem, allow_hyperedges=True)
+        Trainer(native).restore(output / f"native-{seed}.pt")
+        native.eval()
+        accelerated = copy.deepcopy(native).to(config.device)
+        for name in PATHS[1:]:
+            choice = selected[str(seed)].get(name, {})
+            threshold, temperature = choice.get("threshold", 1.0), choice.get(
+                "temperature", 1.0
+            )
+            first = correction(name, native, ref.pipeline, threshold, temperature)
+            second = on_device(
+                correction(name, accelerated, upstream, threshold, temperature),
+                config.device,
+            )
+            for start in range(0, probes.shape[0], 32):
+                require_parity(
+                    probes[start : start + 32],
+                    first,
+                    second,
+                    decode_global if start < 64 else None,
+                )
+    (output / "device-parity.json").write_text(
+        json.dumps(
+            {
+                "status": "passed",
+                "probe_shots": probes.shape[0],
+                "probe_seed": 8100011,
+                "seeds": config.seeds,
+                "scope": "exact_residual_frame_bits_all_probes_and_final_prediction_bits_64_physical_shots",
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+
+
 def timing_worker(args: argparse.Namespace, config: Config, ref: Reference) -> None:
     manifest = json.loads((args.output_directory / "manifest.json").read_text())
     selected = json.loads((args.output_directory / "choices.json").read_text())["11"]
-    native = Predecoder(training_dem(ref.circuit), allow_hyperedges=True)
-    Trainer(native).restore(args.output_directory / "native-11.pt")
-    native.eval()
     name = args.timing_worker
+    native = None
+    if not config.a800 or name.startswith("flagquantum"):
+        native = Predecoder(training_dem(ref.circuit), allow_hyperedges=True)
+        Trainer(native).restore(args.output_directory / "native-11.pt")
+        native.eval()
+        if config.a800:
+            native.to(config.device)
+    if config.a800 and name == "ising":
+        ref.pipeline.to(config.device)
     threshold = selected.get(name, {}).get("threshold", 1.0)
     temperature = selected.get(name, {}).get("temperature", 1.0)
     correct = correction(name, native, ref.pipeline, threshold, temperature)
+    if config.a800 and name != "pymatching":
+        correct = on_device(correct, config.device)
     decode_global = global_decoder(ref.circuit)
-    detectors, _ = sample(ref.circuit, 32, 7000011)
+    detectors, _ = sample(
+        ref.circuit, 128 if config.a800 else 32, 7000011 + config.stream_offset
+    )
+    if config.a800:
+        torch.cuda.reset_peak_memory_stats(config.device)
     timings = [
         asdict(
             measure(
                 detectors[:size],
                 correct,
                 decode_global,
-                repetitions=4 if config.smoke else 32,
+                warmup=3 if config.smoke or not config.a800 else 10,
+                repetitions=4 if config.smoke else (200 if config.a800 else 32),
+                device=config.device if config.a800 and name != "pymatching" else None,
             )
         )
-        for size in (1, 32)
+        for size in ((1, 32, 128) if config.a800 else (1, 32))
     ]
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     result = {
@@ -308,6 +458,16 @@ def timing_worker(args: argparse.Namespace, config: Config, ref: Reference) -> N
         "manifest_sha256": digest(args.output_directory / "manifest.json"),
         "smoke": manifest["config"]["smoke"],
     }
+    if config.a800:
+        result["cuda_peak_allocated_bytes"] = torch.cuda.max_memory_allocated(
+            config.device
+        )
+        result["cuda_peak_reserved_bytes"] = torch.cuda.max_memory_reserved(
+            config.device
+        )
+        result["cuda_memory_scope"] = (
+            "active_model_and_dem_plus_inference_buffers_not_training_or_total_device_usage"
+        )
     (args.output_directory / f"timing-{name}.json").write_text(
         json.dumps(result, indent=2) + "\n"
     )
@@ -316,9 +476,10 @@ def timing_worker(args: argparse.Namespace, config: Config, ref: Reference) -> N
 def run(args: argparse.Namespace, config: Config, ref: Reference) -> None:
     output: Path = args.output_directory
     output.mkdir(parents=True, exist_ok=False)
-    protocol = (
-        Path(__file__).resolve().parents[2]
-        / "docs/development/QEC_AI_ISING_COMPARISON.md"
+    protocol = Path(__file__).resolve().parents[2] / (
+        "docs/development/QEC_AI_ISING_A800.md"
+        if config.a800
+        else "docs/development/QEC_AI_ISING_COMPARISON.md"
     )
     sources = [
         Path(__file__),
@@ -357,6 +518,13 @@ def run(args: argparse.Namespace, config: Config, ref: Reference) -> None:
             "smoke" if config.smoke else "fixed_budget_exploratory_cpu_comparison"
         ),
     }
+    if config.a800:
+        manifest["purpose"] = (
+            "smoke" if config.smoke else "fixed_budget_a800_checkpoint_comparison"
+        )
+        manifest["hardware"] = args.hardware
+        manifest["native_training_device"] = "cpu"
+        manifest["primary_test_seed"] = 6001011
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (output / "circuit.stim").write_text(str(ref.circuit))
     dem = training_dem(ref.circuit)
@@ -365,6 +533,7 @@ def run(args: argparse.Namespace, config: Config, ref: Reference) -> None:
     selected = {}
     training_cost = {}
     for seed in config.seeds:
+        print(json.dumps({"phase": "training", "seed": seed}), flush=True)
         torch.manual_seed(seed)
         native = Predecoder(dem, allow_hyperedges=True)
         trainer = Trainer(native, seed=seed + 104729)
@@ -380,13 +549,23 @@ def run(args: argparse.Namespace, config: Config, ref: Reference) -> None:
             "parameters": sum(p.numel() for p in native.parameters()),
         }
     for seed in config.seeds:
+        print(json.dumps({"phase": "validation", "seed": seed}), flush=True)
         native = Predecoder(dem, allow_hyperedges=True)
         Trainer(native).restore(output / f"native-{seed}.pt")
         native.eval()
-        selected[str(seed)] = choices(native, ref, decode_global, seed, config.smoke)
+        selected[str(seed)] = choices(
+            native, ref, decode_global, seed, config.smoke, config.stream_offset
+        )
     (output / "choices.json").write_text(json.dumps(selected, indent=2) + "\n")
+    if config.a800:
+        print(json.dumps({"phase": "device_parity"}), flush=True)
+        device_parity(config, ref, dem, output, selected)
+        ref.pipeline.to(config.device)
     # No test sampler is constructed before every training and validation choice is frozen.
-    detectors, truth = sample(ref.circuit, config.shots, 6000011)
+    print(json.dumps({"phase": "testing", "shots": config.shots}), flush=True)
+    detectors, truth = sample(
+        ref.circuit, config.shots, 6001011 if config.a800 else 6000011
+    )
     torch.save({"detectors": detectors, "observables": truth}, output / "test-shots.pt")
     baseline = decode_global(detectors)
     boundary_control = paired_counts(
@@ -397,11 +576,15 @@ def run(args: argparse.Namespace, config: Config, ref: Reference) -> None:
         native = Predecoder(dem, allow_hyperedges=True)
         Trainer(native).restore(output / f"native-{seed}.pt")
         native.eval()
+        if config.a800:
+            native.to(config.device)
         predictions = {}
         for name in PATHS[1:]:
             threshold = selected[str(seed)].get(name, {}).get("threshold", 1.0)
             temperature = selected[str(seed)].get(name, {}).get("temperature", 1.0)
             correct = correction(name, native, ref.pipeline, threshold, temperature)
+            if config.a800:
+                correct = on_device(correct, config.device)
             predictions[name] = torch.cat(
                 [
                     decode(detectors[start : start + 32], correct, decode_global)
@@ -494,11 +677,26 @@ def main() -> None:
     parser.add_argument("--ising-checkpoint", type=Path)
     parser.add_argument("--output-directory", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument(
+        "--a800", action="store_true", help="run the frozen d=9 CUDA protocol"
+    )
+    parser.add_argument(
+        "--image-id", help="exact isolated container image SHA-256 for --a800"
+    )
     parser.add_argument("--timing-worker", choices=PATHS, help=argparse.SUPPRESS)
     args = parser.parse_args()
     torch.set_num_threads(1)
     torch.set_num_interop_threads(1)
-    config = Config(args.smoke)
+    config = Config(
+        args.smoke,
+        distance=9 if args.a800 else 3,
+        rounds=9 if args.a800 else 3,
+        a800=args.a800,
+    )
+    if config.a800:
+        if os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8") != ":4096:8":
+            raise ValueError("A800 protocol requires CUBLAS_WORKSPACE_CONFIG=:4096:8")
+    args.hardware = cuda_metadata(args.image_id) if config.a800 else None
     with torch.inference_mode(False):
         ref = reference(
             args.ising_source.resolve(),
