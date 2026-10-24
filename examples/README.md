@@ -12,6 +12,8 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/continued_primary.py`: guarded fixed primary prediction shards and registered offline summaries; no formal execution CLI.
+
 - `qec/continued_parity.py`: internal frozen-probe and two-host bit-parity prerequisites; no primary sampler or CLI.
 
 - `qec/continued_selection.py`: internal calibration and physical-validation decision stages for the registered continued-checkpoint study; no sampling CLI.

@@ -164,8 +164,8 @@ and source hashes; subsequent stages must verify the externally frozen choices
 hash. Existing default calibration behavior and checkpoint contents are unchanged.
 Run `python -m pytest tests/qec/test_continued_assessment.py
  tests/qec/test_predecoder_calibration.py -q` for synthetic software scenarios.
-The CLI remains verification-only. Actual two-host execution, primary prediction
-shards, complete orchestration and matching-environment preflight are pending;
+The CLI remains verification-only. Actual two-host execution, complete orchestration and matching-environment
+preflight are pending;
 these stages do not authorize collecting the registered physical study yet.
 
 The optional `examples/qec/continued_parity.py` module captures one post-choice
@@ -177,6 +177,18 @@ probes, source and per-path evidence on distinct recorded GPU UUIDs. This checks
 stored bindings, not independent authentication of the remote host: the authorized
 launcher and complete environment preflight remain required. Tests use synthetic
 CPU paths and fabricated parser documents, never A800 evidence. Run
-`python -m pytest tests/qec/test_continued_parity.py -q`. Primary prediction shards,
-complete orchestration and actual two-host execution remain pending; no new real
+`python -m pytest tests/qec/test_continued_parity.py -q`. Complete formal orchestration and actual two-host execution remain pending; no new real
 research data are authorized by these primitives alone.
+
+`examples/qec/continued_primary.py` implements the separate primary stage. Its
+CUDA entry verifies frozen choices, both externally hashed receipts, the current
+172 GPU UUID and pinned reference before constructing the single primary sampler.
+It retains complete detector/truth/all-fifteen-prediction shards; replay checks
+the entire inventory and per-bit fingerprints. Offline reporting reuses the exact
+and legacy statistics and reports all 26 registered comparisons plus six
+descriptive horizon count tables. Quality requires the conjunction across the
+three fixed step-2000 calibrated seeds. Repeated models do not multiply the sample
+size. Test with `python -m pytest tests/qec/test_continued_primary.py -q`. Synthetic
+fixtures can pass their numerical rule without providing scientific evidence.
+The formal coordinator, matching-environment preflight and real two-host/primary
+execution are still pending; there is no new research collection CLI.
