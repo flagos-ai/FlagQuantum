@@ -309,6 +309,15 @@ hardware, gradients or universal anyon computation.
 
 ### Reference scenarios
 
+The [M3 scenario acceptance review](../development/M3_SCENARIO_ACCEPTANCE.md)
+links executable witnesses, shared boundaries and separate numerical,
+truncation, gradient and sampling budgets. It includes the merged driven
+three-level (#787), thermal spin-mode (#782) and native fusion-observation
+(#778) slices. These are bounded CPU references, not full M3/M4 or hardware
+certification. Native intermediate observation is a proposed contract-review
+boundary; existing qubit dynamic measurement/feedback must be reused rather than
+reimplemented, and no new protected interface is approved by this inventory.
+
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |
 | Existing variational circuit training | CircuitIR, Module, planning, gradients | Preserve current APIs and the local CPU fast path. |
