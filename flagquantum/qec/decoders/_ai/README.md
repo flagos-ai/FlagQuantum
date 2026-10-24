@@ -164,6 +164,19 @@ and source hashes; subsequent stages must verify the externally frozen choices
 hash. Existing default calibration behavior and checkpoint contents are unchanged.
 Run `python -m pytest tests/qec/test_continued_assessment.py
  tests/qec/test_predecoder_calibration.py -q` for synthetic software scenarios.
-The CLI remains verification-only. Two-host device receipts, primary prediction
+The CLI remains verification-only. Actual two-host execution, primary prediction
 shards, complete orchestration and matching-environment preflight are pending;
 these stages do not authorize collecting the registered physical study yet.
+
+The optional `examples/qec/continued_parity.py` module captures one post-choice
+64-shot physical probe and replays the same file on both hosts. Its exact bit
+oracles cover all fifteen paths, all zero/one/one-hot detector rows, and final
+predictions on physical rows. The hardware receipt writer requires explicit CUDA
+and the pinned Fast reference. Two receipt hashes must bind the same choices,
+probes, source and per-path evidence on distinct recorded GPU UUIDs. This checks
+stored bindings, not independent authentication of the remote host: the authorized
+launcher and complete environment preflight remain required. Tests use synthetic
+CPU paths and fabricated parser documents, never A800 evidence. Run
+`python -m pytest tests/qec/test_continued_parity.py -q`. Primary prediction shards,
+complete orchestration and actual two-host execution remain pending; no new real
+research data are authorized by these primitives alone.
