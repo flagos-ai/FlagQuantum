@@ -1,0 +1,164 @@
+{
+  "11": {
+    "flagquantum_raw": {
+      "threshold": 1.0,
+      "temperature": 1.0,
+      "trials": [
+        {
+          "threshold": 0.5,
+          "logical_failures": 5
+        },
+        {
+          "threshold": 0.7,
+          "logical_failures": 5
+        },
+        {
+          "threshold": 0.9,
+          "logical_failures": 5
+        },
+        {
+          "threshold": 0.99,
+          "logical_failures": 5
+        },
+        {
+          "threshold": 1.0,
+          "logical_failures": 5
+        }
+      ]
+    },
+    "flagquantum_calibrated": {
+      "threshold": 1.0,
+      "temperature": 0.5,
+      "trials": [
+        {
+          "threshold": 0.5,
+          "logical_failures": 5
+        },
+        {
+          "threshold": 0.7,
+          "logical_failures": 5
+        },
+        {
+          "threshold": 0.9,
+          "logical_failures": 5
+        },
+        {
+          "threshold": 0.99,
+          "logical_failures": 5
+        },
+        {
+          "threshold": 1.0,
+          "logical_failures": 5
+        }
+      ]
+    }
+  },
+  "22": {
+    "flagquantum_raw": {
+      "threshold": 1.0,
+      "temperature": 1.0,
+      "trials": [
+        {
+          "threshold": 0.5,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.7,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.9,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.99,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 1.0,
+          "logical_failures": 1
+        }
+      ]
+    },
+    "flagquantum_calibrated": {
+      "threshold": 1.0,
+      "temperature": 0.25,
+      "trials": [
+        {
+          "threshold": 0.5,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.7,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.9,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.99,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 1.0,
+          "logical_failures": 1
+        }
+      ]
+    }
+  },
+  "33": {
+    "flagquantum_raw": {
+      "threshold": 1.0,
+      "temperature": 1.0,
+      "trials": [
+        {
+          "threshold": 0.5,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.7,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.9,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.99,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 1.0,
+          "logical_failures": 1
+        }
+      ]
+    },
+    "flagquantum_calibrated": {
+      "threshold": 1.0,
+      "temperature": 0.5,
+      "trials": [
+        {
+          "threshold": 0.5,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.7,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.9,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 0.99,
+          "logical_failures": 1
+        },
+        {
+          "threshold": 1.0,
+          "logical_failures": 1
+        }
+      ]
+    }
+  }
+}

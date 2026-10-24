@@ -1,0 +1,39 @@
+{
+  "path": "flagquantum_raw",
+  "timings": [
+    {
+      "batch_size": 1,
+      "warmup": 10,
+      "repetitions": 200,
+      "p50_block_us": 671.611,
+      "p95_block_us": 689.961,
+      "p99_block_us": 703.926,
+      "shots_per_second": 1484.7501534452165
+    },
+    {
+      "batch_size": 32,
+      "warmup": 10,
+      "repetitions": 200,
+      "p50_block_us": 1639.639,
+      "p95_block_us": 1663.904,
+      "p99_block_us": 1673.75,
+      "shots_per_second": 19957.758717626188
+    },
+    {
+      "batch_size": 128,
+      "warmup": 10,
+      "repetitions": 200,
+      "p50_block_us": 4253.956,
+      "p95_block_us": 4547.546,
+      "p99_block_us": 4667.032,
+      "shots_per_second": 29799.92769722699
+    }
+  ],
+  "isolated_process_peak_rss_bytes": 5155254272,
+  "memory_scope": "whole_worker_including_imports_active_model_and_graph_not_training",
+  "manifest_sha256": "995fb2bf698ec059dcf5a4b396a38d21c9da954d2b798a5939c0e64838c60331",
+  "smoke": false,
+  "cuda_peak_allocated_bytes": 287430656,
+  "cuda_peak_reserved_bytes": 339738624,
+  "cuda_memory_scope": "active_model_and_dem_plus_inference_buffers_not_training_or_total_device_usage"
+}
