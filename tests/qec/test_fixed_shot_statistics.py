@@ -259,6 +259,34 @@ def test_failed_workflow_exits_context_and_returns_no_partial_report(
     assert traceback is not None
 
 
+@pytest.mark.parametrize("basis", ["x", "z"])
+def test_surface_workflow_uses_existing_statistics_without_optional_sdks(
+    basis: str, workflow: tuple[MagicMock, Mock]
+) -> None:
+    sampler, _ = workflow
+    report = baseline.run_surface_baseline(readout_basis=basis, shots=35, batch_size=16)
+    assert report["shots"] == report["requested_shots"] == 35
+    assert report["readout_basis"] == basis
+    assert report["logical_support"] == list(range(9 if basis == "x" else 3))
+    assert report["noise"]["phase_flip"] == 0.007
+    assert report["confidence_interval"] == baseline._wilson_interval(0, 35)
+    sampler.__exit__.assert_called_once_with(None, None, None)
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [{"distance": 4}, {"distance": True}, {"readout_basis": "y"}, {"shots": 0}],
+)
+def test_invalid_surface_requests_are_refused_before_preparation(
+    arguments: dict[str, object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    compile_sampler = Mock()
+    monkeypatch.setattr(baseline, "compile_memory_sampler", compile_sampler)
+    with pytest.raises((TypeError, ValueError)):
+        baseline.run_surface_baseline(**arguments)
+    compile_sampler.assert_not_called()
+
+
 @pytest.mark.parametrize(
     ("shots", "batch_size"), [(0, 16), (35, 0), (True, 16), (35, 1.5)]
 )

@@ -34,7 +34,15 @@ The existing `PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py`
 workflow remains available with the Stim extra; it exercises measurement
 layouts, sampling and feedback.
 
-## Immediate action: review work C's fixed-shot report
+## Immediate action: Surface batch evidence
+
+[PR #788](https://github.com/flagos-ai/FlagQuantum/pull/788) merged as
+`47db63d6dd243e5a2fc498440a0a660858eb06a2`. Its final head `9daf326b`
+passed all 54 main CI jobs and the single/two-GPU gates. The merge commit's
+Main smoke run `40066862426` succeeded; that smoke is not a complete main CI.
+The next evidence slice starts at main `4be2375eff47c112ce8d8e24f8206ed5592130d8`,
+including subsequent correlated-fault and dynamic-preflight work. It changes
+only the existing example, tests and documentation, with no new library API.
 
 The #772 CI repair corrected Black formatting in two tests and registered the
 new baseline example in `examples/README.md`. All 54 main CI jobs passed, as
@@ -159,6 +167,64 @@ tests retain their dependency guards.
 ```bash
 python -m pytest tests/qec/test_fixed_shot_statistics.py tests/qec/test_stim_pymatching_baseline.py -q
 PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py
+```
+
+## Work D: bounded Surface evidence
+
+The existing baseline example now also accepts:
+
+```bash
+PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py --code surface --distance 5 --basis x --shots 35 --batch-size 16
+```
+
+This uses the same code record, builder, compiled stream, PyMatching adapter and
+fixed-shot statistics as the repetition example. The Z experiment reads the
+declared row operator. The X experiment passes the certified product of X on
+**all data qubits**, so preparation and readout both use the uniform X frame.
+The code still declares only Z; requesting `readout_basis="x"` without a product
+is not added here. Passing a minimal column product would rotate only that
+column and would describe a different experiment. The report records the
+chosen basis and full logical support to make this distinction inspectable.
+
+Predeclared developer evidence budget: distances 3, 5, 7, 9, 13, 17 in both
+frames, exactly three syndrome rounds, 35 shots in chunks 16 + 16 + 3 per cell,
+seed 53, independent X/Z faults 0.005/0.007 per data location and syndrome
+readout faults 0.009. Y probability is zero; no correlated mechanism is split
+for matching. All twelve cells run once with the same call schedule, bounded
+to 240 seconds in total. Retain every cell, including failures; do not change
+seeds, append shots or relax tolerances after inspecting results. This is
+small structural/capacity evidence, not a threshold, precision, GPU throughput
+or advantage experiment. Three fixed rounds do not establish distance-scaled
+memory performance. A zero count at 35 shots still has a 9.89% upper bound.
+
+The declared twelve-cell run completed on macOS arm64, Python 3.12.14,
+Torch 2.13.0, Stim 1.16.0 and PyMatching 2.4.0. Every cell completed all 35
+shots and observed zero logical failures; every interval was
+`[0.0, 0.09890099232440398]`. These counts are engine/architecture scoped.
+This small all-zero sample does not establish a distance trend.
+
+| Distance | Data qubits | Detectors | X failures/shots | Z failures/shots |
+| --- | --- | --- | --- | --- |
+| 3 | 9 | 24 | 0/35 | 0/35 |
+| 5 | 25 | 72 | 0/35 | 0/35 |
+| 7 | 49 | 144 | 0/35 | 0/35 |
+| 9 | 81 | 240 | 0/35 | 0/35 |
+| 13 | 169 | 504 | 0/35 | 0/35 |
+| 17 | 289 | 864 | 0/35 | 0/35 |
+
+Committed integration coverage compares raw measurement-map parities with the
+compiled sampler at d=3/5/7 in both frames and one/three rounds, verifies
+noiseless preparation/readout, and executes forced X/Z data faults at corner
+and interior locations and syndrome faults on weight-two/four checks in first
+and last rounds. Injected programs are intentionally non-identical by round;
+their independent oracle uses the existing Simulation Clifford seam without
+weakening the QEC sampler's identical-round placement guard. At d=3, native
+matching, PyMatching per-row and PyMatching batch decode exactly the same
+zero/single-mechanism syndrome rows. This pins single-fault correction; it
+does not require arbitrary tied matchings to choose identical logical classes.
+
+```bash
+python -m pytest tests/qec/test_surface_batch_evidence.py -q
 ```
 
 ## Later internal implementations

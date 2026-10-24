@@ -132,7 +132,10 @@ These examples do not use that alias:
   QEC sampling and decoder APIs from the subpackage to evaluate streamed Stim
   memory samples with PyMatching batch predictions. It reports fixed-shot logical
   failures, per-observable counts, a Wilson 95% interval and experiment metadata;
-  both optional SDKs are required.
+  both optional SDKs are required. `--code surface --distance 5 --basis x`
+  selects three rounds of the existing rotated Surface code in a certified
+  all-data X frame; `--basis z` uses its declared Z logical. The report records
+  the logical support and reuses the same fixed-shot statistics.
 - [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) — it imports
   the QEC subpackage surface, because the code record built from parity-check
   matrices lives there and has no root-level `fq.` name.
