@@ -69,11 +69,39 @@ transport defect: the SDK circuit printer shortened the executed value to
 when its returned source is parsed. Reprinting it with another pretty printer
 can again lose precision. The text has no stable byte-identity promise.
 
-The earlier nominal-rate `1e-12` comparisons still fail and remain evidence of
-an unresolved configured-versus-executed distinction. Actual-law comparisons
-do not make those nominal comparisons pass. No operators, default dtype, native
-seed stream or scientific tolerance were changed. Altering those protected
-behaviors needs a concrete approved delta before implementation.
+The earlier nominal-rate `1e-12` comparisons still fail. They remain a recorded
+limitation of configured-versus-executed precision; actual-law comparisons do
+not make them pass. No operators, default dtype, native seed stream or scientific
+tolerance were changed. Altering those protected behaviors needs a concrete
+approved delta before implementation.
+
+### Existing numerical authority and phase-one acceptance
+
+The approved bridge proposal already specifies that positioned Kraus operators
+define the executed distribution. Phase-one interoperability therefore compares
+the exported/reparsed law with that executed law, retaining the absolute
+`1e-12`, relative-zero comparison for independent detector, logical and selected
+joint references. This disposition applies the approved authority; it does not
+promote a failed configured-decimal comparison or change a channel factory.
+
+For a DEM paired with actual native circuit execution, use
+`memory_to_stim_text(memory, noise=...)`, then
+`stim_circuit_to_dem_text(source)`, then
+`DetectorErrorModel.from_stim_text(...)`. Sample the original exported source
+with `compile_stim_sampler`, or the corresponding native memory sampler. Build
+the decoder from a separately derived owned DEM; do not sample a matching graph.
+This is also the path used by `examples/qec/stim_experiment_bridge.py` and the
+installed-user acceptance checks.
+
+The analytical `DetectorErrorModel.from_memory_circuit` path remains available
+under its existing semantics. Supplying nominal phenomenological probabilities
+to it does not certify `1e-12` agreement with a factory-quantized circuit. The
+independent five-cell reference explicitly supplies measured executed branch
+weights to the analytical constructor, without passing them through factories
+a second time. This reference is evidence about transport, not a new production
+normalization policy. Applications requiring decimal-to-execution agreement at
+that tolerance need a separate factory/precision change; this route provides
+no such guarantee.
 
 ## Runnable public inspection
 
@@ -129,9 +157,14 @@ circuit rates were `0.202225, 0.300725, 0.50295`. Both had zero forbidden joint
 alternatives. This is bounded distribution evidence, not a decoding-quality,
 threshold or performance claim.
 
-The complete route remains open. Reconcile the numerical-policy decision,
-remaining placement/distribution cases and limitations before marking F/G/H
-complete. I additionally requires four real optional-dependency installations,
-wheel and sdist workflows outside the checkout, current-head CI/GPU, normal
-merges and actual latest-main acceptance. Historical installation evidence for
-contract 088 does not certify the newer bridge.
+Contract 088 supplies the supported placement and exclusive-channel behavior;
+the bridge and #813 supply strict executed-law transport. The numerical
+acceptance scope above records their common authority and the remaining
+nominal-precision limitation. No additional noise grammar is introduced.
+
+Installation acceptance for the bridge is now delivered by
+[#819](https://github.com/flagos-ai/FlagQuantum/pull/819), rather than inferred
+from historical contract-088 installations. The delivery plan records the five
+actual installed reports and their source/artifact checks. Whole-route closure
+still requires normal delivery of the acceptance record and completed actual
+main CI/GPU; successful installation alone is insufficient.
