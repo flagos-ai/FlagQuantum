@@ -99,6 +99,11 @@ from flagquantum.qec import (
     toric_code,
     triangular_colour_code,
 )
+from flagquantum.qec.adapters.stim import (
+    compile_stim_sampler,
+    memory_to_stim_text,
+    stim_circuit_to_dem_text,
+)
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -227,6 +232,7 @@ ENTRIES = (
     bivariate_bicycle_code,
     build_memory_circuit,
     compile_memory_sampler,
+    compile_stim_sampler,
     coupler_hardware_efficient_ansatz,
     create_molecular_hamiltonian,
     exponential_pauli_operator,
@@ -255,6 +261,7 @@ ENTRIES = (
     import_qcis,
     jordan_wigner,
     maxcut_hamiltonian,
+    memory_to_stim_text,
     molecular_integrals,
     optimize,
     pauli_exponential_circuit,
@@ -274,6 +281,7 @@ ENTRIES = (
     run_qiskit,
     single_excitation,
     surface_code_qubits_per_logical,
+    stim_circuit_to_dem_text,
     tesseract_code,
     tesseract_column_swap,
     tesseract_free_cnot_pairs,

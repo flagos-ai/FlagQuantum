@@ -25,7 +25,7 @@ lookups; surviving identifiers and numerical behavior remain protected.
 | Detector models, text, mechanisms, chunks and graphs | [dem](dem/README.md) |
 | Decoder algorithms and the single decoder registry | [decoders](decoders/README.md) |
 | Lowering, feedback, sampling and composition | [execution](execution/README.md) |
-| Optional PyMatching boundary | [adapters](adapters/README.md) |
+| Optional experiment and decoder adapters | [adapters](adapters/README.md) |
 
 Each README gives allowed dependencies and a ten-minute edit/test workflow.
 Compatibility aliases remain Core-owned and explicitly frozen; removing a path

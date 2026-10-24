@@ -38,9 +38,10 @@ such a decision; do not request routine implementation or merge approval again.
 
 ## Expected code structure after compatibility delivery
 
-Keep the existing domain packages and authorities. The two entries marked
-`candidate` below describe possible ownership locations, not approved import
-paths or an instruction to create empty modules.
+Keep the existing domain packages and authorities. The entry marked `candidate`
+below describes a possible ownership location, not an approved import path or
+an instruction to create an empty module. The Stim adapter's three functions
+received explicit approval after design PR #800 merged.
 
 ```text
 flagquantum/
@@ -63,7 +64,7 @@ flagquantum/
       experiments.py             # Candidate: common evaluation, only after review
     adapters/
       pymatching.py              # Owned graph in, owned logical predictions out
-      stim.py                    # Candidate: annotated experiment import/export
+      stim.py                    # Approved: annotated experiment import/export
     decoders/
       registry.py                # The one existing decoder registry
       matching.py                # Existing native matching implementation
@@ -110,10 +111,14 @@ is required by this plan.
   passed 54 main CI jobs and the GPU workflow. The actual merge commit's
   Main smoke run `40077460827` succeeded; it is not complete main CI evidence.
 - E's [annotated native/external Stim experiment bridge proposal](../development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md)
-  specifies three opt-in adapter functions and reuses existing sampler/model
-  records. The public additions remain unapproved; merging this design is not
-  approval to activate them. Private read-only feasibility evidence does not
-  substitute for production implementation acceptance.
+  merged in [#800](https://github.com/flagos-ai/FlagQuantum/pull/800) as
+  `bfb1fd6f9d042a24515295e311daf15930af9cf2`, after 54 main CI jobs and
+  the required GPU checks succeeded. One failed-job retry resolved a quay.io
+  HTTP 503 without a new commit or changed checks. The API owner then explicitly
+  approved the three functions and their complete proposal. Implementation is
+  now in validation; this does not activate the separate sparse batch or generic
+  experiment contracts. Private feasibility evidence does not substitute for
+  production implementation acceptance.
 - F/G/H must first reconcile the already approved correlated-Pauli contract 088
   and existing circuit-noise/sampling/DEM implementations on current main. Extend
   only demonstrated gaps in location coverage, distribution preservation and

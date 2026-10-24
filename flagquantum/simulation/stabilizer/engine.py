@@ -90,7 +90,6 @@ two apart from the samples.
 from __future__ import annotations
 
 import math
-import operator
 from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import import_module
@@ -104,6 +103,7 @@ from ...core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError, FlagQuantumError, ValidationError
 from ...noise import KrausChannel
+from ._validation import _pauli_letters, _validate_seed, _validate_shots
 
 # FlagQuantum opcode -> engine gate name. Only Clifford gates appear here, and
 # the mapping is total over the Clifford subset of the operator schema: an
@@ -154,9 +154,6 @@ STABILIZER_MEASUREMENT_KINDS = (
     )
     | STABILIZER_SAMPLING_KINDS
 )
-
-# `stim` documents a seed as an integer in `range(2**64)`.
-_SEED_LIMIT = 2**64
 
 # The channel this engine translates. A channel is executed exactly when its
 # Kraus operators are a mixture of Pauli unitaries, because a Pauli error is the
@@ -281,28 +278,6 @@ def _stim() -> ModuleType:
             "stabilizer sampling requires the optional dependency; install it "
             f"with `pip install 'flagquantum[{_EXTRA_NAME}]'`."
         ) from exc
-
-
-def _validate_seed(seed: Any) -> int | None:
-    """Return a seed the engine accepts, refusing anything that is not one.
-
-    A seed that is not an integer denotes no seed, so it is refused rather than
-    coerced: `int(2.5)` would sample a different stream than the caller wrote
-    while the result reported the requested seed. `bool` is refused for the
-    reason the IR count helpers give: it is a flag, not an index.
-    """
-
-    if seed is None:
-        return None
-    if isinstance(seed, bool) or not isinstance(seed, int):
-        raise ValidationError(
-            f"stabilizer sampling seed must be an integer or None, got {seed!r}"
-        )
-    if not 0 <= seed < _SEED_LIMIT:
-        raise ValidationError(
-            f"stabilizer sampling seed must be in range(2**64), got {seed}"
-        )
-    return seed
 
 
 def _sampling_request(
@@ -520,51 +495,6 @@ def _conjugate_step(
     return "".join(updated), (phase + conjugated_phase) % 4
 
 
-def _pauli_letters(
-    n_wires: int,
-    x: Sequence[int],
-    y: Sequence[int],
-    z: Sequence[int],
-) -> str:
-    """Return the tracked Pauli, refusing a qubit named twice or off the program.
-
-    A qubit the string does not name carries the identity, and the three axes are
-    disjoint by construction, so a qubit appearing twice is a malformed string
-    rather than a string two spellings agree about. `bool` is refused for the
-    reason the seed check gives: it is a flag, not a qubit index.
-    """
-
-    letters = ["I"] * n_wires
-    for axis, wires in (("x", x), ("y", y), ("z", z)):
-        for wire in wires:
-            if isinstance(wire, bool):
-                raise ValidationError(
-                    f"Pauli readout {axis} wires must be integers, got {wire!r}"
-                )
-            # `operator.index` is the protocol for "I am exactly an integer", so
-            # `0.0` and `'1'` are refused while a NumPy or Torch scalar is not.
-            # `int(...)` would also have accepted them, and `0.5` would have
-            # truncated to qubit 0 rather than being refused.
-            try:
-                index = operator.index(wire)
-            except TypeError as error:
-                raise ValidationError(
-                    f"Pauli readout {axis} wires must be integers, got {wire!r}"
-                ) from error
-            if not 0 <= index < n_wires:
-                raise ValidationError(
-                    f"Pauli readout {axis} wire {index} is outside a "
-                    f"{n_wires}-wire program"
-                )
-            if letters[index] != "I":
-                raise ValidationError(
-                    f"Pauli readout names wire {index} on more than one axis; a "
-                    "Pauli string carries one letter per wire"
-                )
-            letters[index] = axis.upper()
-    return "".join(letters)
-
-
 def pauli_readout(
     program: Any,
     *,
@@ -636,16 +566,6 @@ def pauli_readout(
         phase=phase,
         expectation=1 if phase == 0 else -1,
     )
-
-
-def _validate_shots(shots: Any) -> int:
-    """Return the shot count, refusing anything that is not a positive integer."""
-
-    if isinstance(shots, bool) or not isinstance(shots, int):
-        raise ValidationError(f"shot count must be an integer, got {shots!r}")
-    if shots <= 0:
-        raise ValidationError(f"shot count must be positive, got {shots}")
-    return shots
 
 
 def _pauli_matrix(label: str) -> torch.Tensor:
@@ -1125,12 +1045,17 @@ class _PreparedMeasurements:
 
     _sampler: Any
     _num_recorded: int
+    _append_observables: bool = False
 
     def sample(self, *, shots: int) -> torch.Tensor:
         if self._sampler is None:
             raise RuntimeError("prepared measurement sampler is closed")
         shots = _validate_shots(shots)
-        samples = self._sampler.sample(shots=shots)
+        samples = (
+            self._sampler.sample(shots=shots, append_observables=True)
+            if self._append_observables
+            else self._sampler.sample(shots=shots)
+        )
         record = torch.as_tensor(samples)
         if record.shape != (shots, self._num_recorded):
             raise ValidationError("stabilizer engine returned an invalid record shape")
@@ -1181,3 +1106,132 @@ def _prepare_noisy_measurements(
     circuit = _noisy_engine_circuit(operations, selected)
     sampler = circuit.compile_sampler(seed=validated_seed)
     return _PreparedMeasurements(sampler, recorded + len(selected))
+
+
+def _bounded_stim_expansion(program: Any) -> int:
+    """Count repeated instructions before asking the SDK to expand them."""
+    count = 0
+    pending = [(program, 1)]
+    while pending:
+        body, multiplier = pending.pop()
+        for instruction in body:
+            if hasattr(instruction, "repeat_count"):
+                pending.append(
+                    (instruction.body_copy(), multiplier * instruction.repeat_count)
+                )
+            else:
+                count += multiplier
+            if count > 1_000_000:
+                raise CapabilityError(
+                    "Stim experiment exceeds 1,000,000 expanded instructions"
+                )
+    return count
+
+
+def _parse_stim_experiment(circuit_text: str) -> Any:
+    if not isinstance(circuit_text, str):
+        raise TypeError("circuit_text must be a string")
+    if not circuit_text.strip():
+        raise ValueError("circuit_text must not be empty")
+    if len(circuit_text.encode("utf-8")) > 1_048_576:
+        raise CapabilityError("Stim experiment exceeds 1 MiB of UTF-8 source")
+    try:
+        circuit = _stim().Circuit(circuit_text)
+    except ValueError as error:
+        raise ValueError("invalid Stim circuit text") from error
+    _bounded_stim_expansion(circuit)
+    if circuit.num_qubits > 4096:
+        raise CapabilityError("Stim experiment exceeds 4,096 qubits")
+    if (
+        circuit.num_measurements + circuit.num_detectors + circuit.num_observables
+        > 1_000_000
+    ):
+        raise CapabilityError("Stim experiment exceeds 1,000,000 recorded columns")
+    if circuit.num_detectors == 0:
+        raise ValueError("Stim experiment requires at least one detector")
+    return circuit
+
+
+def _annotated_stim_text(
+    program: CircuitIR,
+    *,
+    terminal_qubits: tuple[int, ...],
+    detector_columns: tuple[tuple[int, ...], ...],
+    observable_columns: tuple[tuple[int, ...], ...],
+) -> str:
+    """Serialize the actual positioned program with QEC-owned parity columns."""
+    ir = _measurement_record_ir(program)
+    circuit = _noisy_engine_circuit(_noisy_operations(ir), terminal_qubits)
+    recorded = circuit.num_measurements
+    stim = _stim()
+    for kind, columns in (
+        ("DETECTOR", detector_columns),
+        ("OBSERVABLE_INCLUDE", observable_columns),
+    ):
+        for index, parity in enumerate(columns):
+            if any(column < 0 or column >= recorded for column in parity):
+                raise ValueError("parity column outside recorded measurements")
+            targets = [stim.target_rec(column - recorded) for column in parity]
+            if kind == "DETECTOR":
+                circuit.append(kind, targets)
+            else:
+                circuit.append(kind, targets, index)
+    text = str(circuit)
+    _parse_stim_experiment(text)
+    return text
+
+
+def _prepare_stim_experiment(
+    circuit_text: str, *, seed: int | None
+) -> tuple[_PreparedMeasurements, int, int]:
+    """Prepare normalized flips from the original noisy circuit, not its DEM."""
+    circuit = _parse_stim_experiment(circuit_text)
+    try:
+        circuit.without_noise().detector_error_model(allow_gauge_detectors=False)
+    except ValueError as error:
+        raise CapabilityError(
+            "Stim experiment has nondeterministic declared parities"
+        ) from error
+    sampler = circuit.compile_detector_sampler(seed=_validate_seed(seed))
+    detectors, observables = circuit.num_detectors, circuit.num_observables
+    return (
+        _PreparedMeasurements(sampler, detectors + observables, True),
+        detectors,
+        observables,
+    )
+
+
+def _stim_experiment_dem_text(circuit_text: str, *, decompose_errors: bool) -> str:
+    """Keep exact SDK conversion refusals and normalize only missing shape."""
+    circuit = _parse_stim_experiment(circuit_text)
+    try:
+        model = circuit.detector_error_model(
+            decompose_errors=decompose_errors,
+            allow_gauge_detectors=False,
+            approximate_disjoint_errors=False,
+            ignore_decomposition_failures=False,
+        )
+    except ValueError as error:
+        raise CapabilityError(
+            "Stim experiment has no supported exact DEM conversion"
+        ) from error
+    _bounded_stim_expansion(model)
+    flat = model.flattened()
+    detectors: set[int] = set()
+    observables: set[int] = set()
+    for instruction in flat:
+        if instruction.type == "detector":
+            detectors.update(target.val for target in instruction.targets_copy())
+        elif instruction.type == "logical_observable":
+            observables.update(target.val for target in instruction.targets_copy())
+    declarations = [
+        f"detector D{index}"
+        for index in range(circuit.num_detectors)
+        if index not in detectors
+    ]
+    declarations.extend(
+        f"logical_observable L{index}"
+        for index in range(circuit.num_observables)
+        if index not in observables
+    )
+    return "\n".join((str(flat), *declarations)).strip()

@@ -2,9 +2,12 @@
 
 ## Status and decision
 
-Proposed for roadmap E; not approved and not implemented. Approval of the
-complete compatibility delivery sequence authorizes this reviewable design,
-not the new public entry points below. Core owns QEC composition; Simulation
+Approved for roadmap E on 2026-10-24. After design-only #800 merged, the API
+owner explicitly replied: "Approve the three APIs and implement according to
+the proposal" (translated). This approves the complete three-function contract
+below; implementation validation and delivery remain separate gates. The
+earlier approval of the compatibility sequence alone did not approve these APIs.
+Core owns QEC composition; Simulation
 owns engine execution and all imports of Stim. Integration reviews the shared
 boundary and protected additive public surface before implementation.
 
@@ -110,9 +113,9 @@ Stim-to-native IR reverse compilation, QPU execution, real-time feedback,
 non-Clifford approximation or external device support. Preserve instruction
 ordering and actual exclusivity of channel branches.
 
-Proposed initial validation bounds are 1 MiB UTF-8 source, 4,096 qubits,
-1,000,000 expanded instructions and 1,000,000 total recorded
-detector/observable columns. Check declared wire and logical indices before
+Initial validation bounds are 1 MiB UTF-8 source, 4,096 qubits,
+1,000,000 expanded instructions and 1,000,000 total recorded columns
+(measurements, detectors and observables combined). Check declared wire and logical indices before
 compiling a sampler, including sparsely numbered very large indices. Count
 repeat bodies symbolically before materializing any expansion; reject overflow
 or an excess with `CapabilityError`. These are disclosed initial support bounds,

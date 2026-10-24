@@ -1,4 +1,4 @@
-# Optional decoder adapters
+# Optional QEC adapters
 
 Core owns the existing PyMatching cross-check boundary. `pymatching.py` translates
 the QEC-owned decoding graph, invokes the optional SDK and translates its answer
@@ -40,7 +40,39 @@ The example in `examples/qec/decoder_registry_and_pickle.py` provides the core
 model. `PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py` uses both
 extras to sample and batch-decode 128 repetition-memory shots in chunks. It
 reports 8 detector columns, 1 observable and the observed logical failure count;
-the random count is version/machine scoped. Sampler compilation still occurs
-per chunk, so this is not a persistent-sampler or performance claim.
+the random count is version/machine scoped. It compiles the existing sampler
+once and advances its stream across chunks; this is not a performance claim.
 Keep graph sizing, refusals, weights and observable labels aligned with those
 existing independent cross-check tests.
+
+## Annotated Stim experiments
+
+The approved opt-in `flagquantum.qec.adapters.stim` module provides
+`memory_to_stim_text`, `compile_stim_sampler` and `stim_circuit_to_dem_text`.
+QEC owns native placement and parity maps. Simulation alone imports Stim and
+owns parsing, actual Kraus translation, reference-normalized sampling and exact
+DEM analysis. No SDK objects, new result classes or root exports are added.
+The returned `MemorySampler` retains the existing process/thread ownership,
+bounded draws, failure poisoning and close contract.
+
+Install `pip install -e '.[stim,pymatching]'` and run
+`PYTHONPATH=. python examples/qec/stim_experiment_bridge.py`. Both native memory
+export and external annotated text feed the same logical-only decoder workflow.
+Always sample the original experiment text; DEM decomposition suggestions are
+for decoding and cannot substitute for the original circuit distribution.
+
+The initial support limits are 1 MiB UTF-8 input, 4,096 qubits, 1,000,000 expanded
+instructions and 1,000,000 combined measurement/detector/observable columns.
+Noiseless detector/logical parities must be deterministic; nonzero ideal raw
+measurements are normalized to flips. Exact DEM refusal does not prevent
+otherwise supported circuit sampling. Missing shape declarations are supplied
+without changing the existing DEM reader; source/canonical text preserves
+coordinates while the owned numerical DEM gains no geometry fields.
+
+Run `python -m pytest tests/qec/test_stim_experiment_bridge.py
+tests/team/simulation/test_stim_annotated_engine.py tests/qec/test_memory_sampler.py
+tests/team/simulation/test_prepared_stabilizer_sampling.py -q` after a typical
+change. The approved surface is in
+`contracts/qec-stim-experiment-bridge-v1.json`; the complete contract and numerical
+precision limitations are in
+`docs/development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md`.

@@ -149,3 +149,16 @@ the existing engine authority and propagates simultaneous products for QEC.
 It does not sample or import Stim. Run
 `python -m pytest tests/team/simulation/test_correlated_fault_signatures.py -q`
 for dense-reference, global-phase, reset and odd-parity checks.
+
+The approved QEC Stim experiment adapter additionally uses private
+`_annotated_stim_text`, `_prepare_stim_experiment` and
+`_stim_experiment_dem_text`. These keep all SDK parsing, serialization,
+reference-normalized detector sampling and strict DEM conversion here. QEC
+supplies positioned IR and parity columns and reuses its existing sampler
+lifecycle. Original noisy circuits generate samples independently of whether
+exact noisy DEM analysis succeeds. Normalization supplies only missing shape
+declarations and preserves effective coordinates through bounded repeats.
+Run `python -m pytest tests/team/simulation/test_stim_annotated_engine.py -q`
+for independent SDK, joint-law, reference, bounds and failure evidence.
+Pure scalar and Pauli-support checks live in `_validation.py`; their validation
+behavior is unchanged and they hold no SDK state.
