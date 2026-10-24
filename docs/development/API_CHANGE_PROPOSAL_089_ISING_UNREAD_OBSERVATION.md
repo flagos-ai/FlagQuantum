@@ -1,11 +1,18 @@
 # Proposal 089: unread Ising pair-charge observation
 
-Status: **draft for review; neither contract nor implementation approved**.
+Status: **the five decisions below were explicitly approved on 2026-10-24**.
+The user also conditionally authorized this document PR #793 to merge only
+after its latest complete applicable CI/GPU and repository rules succeed.
+Delivery starts with the replaceable contract baseline, not API implementation.
+Every subsequent PR still requires its own merge authorization.
+
+The user explicitly approved the contract and conditional document merge. This
+approval does not include sampled native branches or feedback.
 The [M3 acceptance review PR](https://github.com/flagos-ai/FlagQuantum/pull/791)
 identified the native intermediate-observation gap. Its document approval or
 merge does not approve this change. No protected API is implemented here.
 
-## Five decisions requiring explicit approval
+## Five approved decisions
 
 1. Add `IsingBraidProgram.dephase_pair(self) -> IsingBraidProgram` in its existing
    experimental namespace. This appends one **unread**, ideal QND observation of
@@ -196,4 +203,5 @@ future required decisions, not fields to add speculatively in this slice.
    strict type/architecture/API checks and complete latest CI/GPU before each
    individually authorized merge. Proposal approval does not authorize merges.
 
-This draft introduces no implementation and asserts no contract approval.
+This document contains no implementation. The approved scope is the five
+decisions above; subsequent implementation PRs retain their independent gates.
