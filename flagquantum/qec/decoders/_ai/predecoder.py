@@ -6,6 +6,7 @@ This bounded M1 reference makes no accuracy, scaling or latency claim.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import torch
@@ -86,13 +87,24 @@ class Predecoder(nn.Module):
         *,
         threshold: float = 0.9,
         enabled: bool = True,
+        temperature: float = 1.0,
     ) -> torch.Tensor:
         """Combine the local correction's logical contribution with residual decode."""
         if isinstance(threshold, bool) or not 0 < threshold <= 1:
             raise ValueError("threshold must be in (0, 1]")
+        if (
+            isinstance(temperature, bool)
+            or not math.isfinite(temperature)
+            or temperature <= 0
+        ):
+            raise ValueError("temperature must be finite and positive")
         logits = self(detectors)
         if not bool(torch.isfinite(logits).all()):
             raise ValueError("nonfinite predecoder output")
+        if temperature != 1.0:
+            logits = logits / temperature
+            if not bool(torch.isfinite(logits).all()):
+                raise ValueError("nonfinite calibrated logits")
         correction = (
             (logits.sigmoid() >= threshold)
             if enabled
