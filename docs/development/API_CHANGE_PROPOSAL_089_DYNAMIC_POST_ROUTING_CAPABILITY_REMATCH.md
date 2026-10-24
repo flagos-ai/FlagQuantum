@@ -2,8 +2,8 @@
 
 ## Status
 
-**Proposal approved on 2026-10-24; Batches A-B establish the contract and pure
-Runtime rematch.**
+**Proposal approved on 2026-10-24; Batches A-C establish the contract, pure
+Runtime rematch, and offline routing integration.**
 
 API Change 086 requires capability matching both before and after routing. API
 Change 087 installed the stable, fail-closed preflight and preserved the source
@@ -248,12 +248,12 @@ support claim merely because this proposal exists.
 - [x] The original requirement identity is preserved by the pure rematch.
 - [x] Route-induced requirements are additive rather than replacements.
 - [x] Preflight and rematch use one exact target and snapshot.
-- [ ] Stale, wrong-target, semantically weakened, and physically illegal routed
+- [x] Stale, wrong-target, semantically weakened, and physically illegal routed
       artifacts fail closed.
-- [ ] No provider, credential, network, package, task, result, or RNG boundary is
+- [x] No provider, credential, network, package, task, result, or RNG boundary is
       crossed on refusal.
-- [ ] Local dynamic and static remote behavior remains unchanged.
-- [ ] No public API or serialized schema changes.
+- [x] Local dynamic and static remote behavior remains unchanged.
+- [x] No public API or serialized schema changes.
 - [ ] A provider vertical slice remains separately authorized.
 
 ## Non-goals
