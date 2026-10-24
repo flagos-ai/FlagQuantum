@@ -5,6 +5,7 @@ targets.
 
 - [Noisy simulation implementation roadmap](NOISY_SIMULATION_ROADMAP.md)
 - [QEC functional development plan](QEC_FUNCTIONAL_DEVELOPMENT_PLAN.md)
+- [QEC Stim and PyMatching delivery plan](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md)
 - [FlagQuantum vision](FLAGQUANTUM_VISION.md)
 - [Pre-open-source API quality and freeze plan](OPEN_SOURCE_API_QUALITY_PLAN.md)
 - [Capability maturity](CAPABILITY_MATURITY.md)
