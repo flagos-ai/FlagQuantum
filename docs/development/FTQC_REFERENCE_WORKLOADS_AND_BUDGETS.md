@@ -175,7 +175,7 @@ Implementation of new APIs, approximation, FTQC package boundaries or hardware s
 
 ## FTS-02E bounded scale campaign proposal
 
-Status: **concrete proposal awaiting explicit resource/matrix approval**. Documentation merge, planning authorization and passing CI do not activate this campaign. The user's baseline-only decision still disables 1.5x/2x goals. No large run is performed by this proposal, no tolerance/CI threshold is changed, and no benchmark observation constitutes a capacity or performance improvement.
+Status: **Stage A matrix and resources explicitly approved by the user on 2026-10-25 (Asia/Shanghai), with supervisor review required first**. This does not approve Stage B or waive the supervisor admission gate. The user's baseline-only decision still disables 1.5x/2x goals. No large run is performed by this proposal, no tolerance/CI threshold is changed, and no benchmark observation constitutes a capacity or performance improvement.
 
 ### Why this is the next decision
 
@@ -183,7 +183,7 @@ Status: **concrete proposal awaiting explicit resource/matrix approval**. Docume
 
 The first CPU construction study stopped at d=7; the maintained sampling observer intentionally admits at most 4096 shots. Expanding these ranges needs a declared resource budget and reviewed benchmark-envelope change. Both preserve existing public QEC APIs. The original complete-result decoder/experiment contracts remain unapproved; this campaign uses only existing native PyMatching logical predictions, not a hypothetical batch-result API.
 
-### Stage A: recommended pilot, approval requested
+### Stage A: approved pilot, supervisor review first
 
 | Point | Frozen workload | Existing producer and proposed change | Records |
 | --- | --- | --- | --- |
@@ -205,7 +205,7 @@ The request is one local CPU-only campaign on the existing host, one process at 
 | Observed workload-process RSS | 2 GiB stop threshold, observed at <=100 ms intervals. | Requires functioning process supervision before launch. On a sampled exceedance terminate owned participants; retain high-water result where available, sample maximum, interval and termination latency. This sampled threshold can overshoot and is not a hard allocator/cgroup limit. |
 | Retained evidence storage | At most 128 MiB; require at least 512 MiB filesystem free before launch. | Keep compact JSON/counts/logs, not all shot tensors. Refuse to start when space is insufficient; never delete unrelated files or original evidence. |
 
-Reuse the maintained watchdog for wall-time/process-group cancellation. Its current diagnostics do **not** enforce RSS: a reviewed minimal workload-process monitor is an admission dependency, not a capability claimed by this document. If RSS supervision is unavailable or permission is denied, record that blocker and do not start the expanded run. Do not substitute virtual-address limits for measured RSS. Parent/controller RSS, child high-water RSS, Python-traced allocations and visible tensors remain different measurements; none is renamed exclusive sampler memory. This proposal does not guarantee protection against an OS-level OOM.
+Reuse the maintained watchdog for wall-time/process-group cancellation. Its default hardware invocations remain wall-time-only. The optional RSS implementation described below must pass review and mainline acceptance before expanded collection. If RSS supervision is unavailable or permission is denied, record that blocker and do not start the expanded run. Do not substitute virtual-address limits for measured RSS. Parent/controller RSS, child high-water RSS, Python-traced allocations and visible tensors remain different measurements; none is renamed exclusive sampler memory. This proposal does not guarantee protection against an OS-level OOM.
 
 For every point retain command, clean obtainable producer revision, workload/noise, environment, measured phases and actual external wall, process memory semantics, raw counts, normal completion/refusal/timeout/termination status, and logs. A failure cannot enter the successful median or disappear from the manifest. On a failure stop escalation in that workload class; keep other classes unattempted until the failure is reviewed. No automatic reruns of failed points and no selecting the fastest surviving subset.
 
@@ -223,6 +223,37 @@ Distance 17, longer rounds, shots 10^6, batch-size comparisons, ten-repetition c
 - [ ] R04: mixed Clifford/non-Clifford algorithm selection remains open; H-T-H is a small reference only.
 - [ ] R05/R06: reuse delivered feedback and independent small references, then close uncovered conditional/channel cases under authoritative contracts.
 - [ ] R11/R12/R15: name domestic resource and experimental data owners; no resource or dataset is fabricated.
-- [ ] Obtain explicit approval of **Stage A matrix, repetitions, wall/RSS/storage allocations and supervision prerequisite** before implementation/expanded collection. Approving this does not approve performance targets, new QEC APIs or Stage B.
+- [x] Explicit user approval of **Stage A matrix, repetitions, wall/RSS/storage allocations and supervision prerequisite** received on 2026-10-25 (Asia/Shanghai). This does not approve performance targets, new QEC APIs or Stage B.
+- [ ] Complete supervisor review and mainline acceptance before extending the benchmark envelope or collecting Stage A cases.
 
 Every implementation/evidence PR must continue to include a real public-user code example, prerequisites, command, expected output/invariants and exact reviewed-head execution evidence. The current H-T-H/feedback example above and the accepted 17-shot compiled-memory example remain runnable without activating this proposal.
+
+### Stage A admission implementation: optional RSS watchdog
+
+`tools/run_with_watchdog.py --rss-limit-bytes 2147483648` adds opt-in POSIX process-group RSS supervision to the existing wall-time watchdog. Existing hardware invocations omit the flag and do not query RSS. The supported workload is a trusted local command whose children remain in its owned process group; this is not isolation against untrusted commands escaping with `setsid`, an allocator limit, or a cgroup boundary. Shared pages may be counted once per group member. Short-lived allocations or processes between observations can be missed.
+
+The monitor queries `ps` with a 50 ms query timeout, checks actual observation gaps against 100 ms, and stops on an unavailable/malformed query or excessive gap. An unavailable initial query prevents command launch (exit 125). A live RSS exceedance, lost accounting, excessive sampling gap, no live positive-RSS observation, or children outliving the launcher stops the owned group (exit 124). Otherwise the command's exit code is preserved. SIGTERM and Python interruption run owned-group cleanup; SIGKILL of the supervisor cannot run Python cleanup. Reuse parent/campaign supervision for that external failure boundary.
+
+Reports retain sampled aggregate peak RSS, positive-RSS observation count, maximum actual interval, the last 32 timestamp/RSS pairs (a bounded recent trend, not every RSS sample), process return code and measured termination duration. Normal RSS-supervised completion writes `watchdog.json`; failures retain existing diagnostics. OS high-water RSS from producers and the supervisor's sampled process-group peak are distinct. All timing/memory fields are observed, not success thresholds for the numerical algorithms. A sampling-gap refusal never counts as an accepted resource observation. This change does not expand the current 4096-shot observer envelope or run the Stage A matrix.
+
+Runnable public-user example (core CPU installation; source checkout for the watchdog). Save as `/tmp/ftqc_rss_example.py`:
+
+```python
+import flagquantum as fq
+
+circuit = fq.Circuit(1).h(0).t(0).h(0)
+options = fq.ExecutionOptions(mode="statevector", device="cpu", precision="complex128")
+plan = fq.plan(circuit, outputs=fq.probabilities([0]), options=options)
+probabilities = fq.run(plan).probabilities
+print("HTH probabilities:", *[f"{float(p):.8f}" for p in probabilities[0]])
+```
+
+Run from the source checkout in an environment permitting read-only POSIX `ps` accounting:
+
+```bash
+PYTHONPATH=. python tools/run_with_watchdog.py --phase ftqc-reference \
+  --stall-seconds 10 --timeout-seconds 120 --rss-limit-bytes 2147483648 \
+  --diagnostics /tmp/ftqc-rss-reference -- python /tmp/ftqc_rss_example.py
+```
+
+Expected application output line: `HTH probabilities: 0.85355339 0.14644661`. The existing watchdog merges command stderr into its output, so dependency warnings may also appear and are retained. Exit zero requires the example to succeed and RSS monitoring to remain within the declared observation budget. Inspect `watchdog.json` for `reason="completed"`, `command_returncode=0`, a positive observation count, sampled peak no greater than the configured limit, actual maximum gap at most 0.1 seconds and `hard_allocation_limit=false`. Timings/RSS values depend on the host and are not pinned. This small example is not the approved larger campaign.
