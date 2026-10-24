@@ -47,7 +47,7 @@ def _exchange_unitary(exchange: IsingExchange) -> torch.Tensor:
 
 
 def evolve_ising_braid(record: ProgramRecord) -> torch.Tensor:
-    """Apply the ordered word to its declared initial charge density matrix.
+    """Apply ordered braids and unread charge actions to the initial density.
 
     Return one CPU complex128 (2, 2) density matrix in canonical fusion order.
     Runtime owns input admission, batching, planning, outputs and result evidence;
@@ -65,6 +65,12 @@ def evolve_ising_braid(record: ProgramRecord) -> torch.Tensor:
     initial = 0 if context.initial_channel == "1" else 1
     state[initial, initial] = 1
     for operation in record.functions[0].blocks[0].operations:
+        if operation.opcode == "ising.dephase_pair":
+            projectors = torch.diag_embed(
+                torch.eye(2, dtype=state.dtype, device=state.device)
+            ).unbind(0)
+            state = SuperOperator.from_kraus(projectors).apply(state)
+            continue
         exchange = operation.physical_data
         assert isinstance(exchange, IsingExchange)
         unitary = _exchange_unitary(exchange)
