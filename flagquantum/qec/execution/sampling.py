@@ -19,13 +19,11 @@ per round per matching gate. Neither position exists in the source program, whos
 bounded hybrid capture refuses a channel call outright, so the placement is
 derived here from the lowered program rather than written into the experiment.
 
-Which Pauli an error is is the other half of the join, and it is the part the
-engine constrains. The engine executes one channel -- a single-qubit bit flip --
-so the record's Z and Y families are placed as that channel conjugated by the
-Clifford that turns the flip into the Pauli they name, which is one draw at that
-family's rate rather than a pair of independent bit flips. A family the
-conjugation cannot express has no route here and is refused rather than sampled
-as a nearby Pauli.
+The stabilizer engine reads the actual Pauli Kraus operators. A gate-bound
+one-/two-qubit mixture is one complete channel at its location, with mutually
+exclusive branches; separate channel locations remain independent. The existing
+round-boundary X/Z/Y factories and old gate-bound X/Z reconstruction are
+preserved. Unsupported channels are refused without substituting another Pauli.
 
 The derived placement rests on one property of the emitted program, checked
 rather than assumed: the syndrome loop lowers to `rounds` identical round

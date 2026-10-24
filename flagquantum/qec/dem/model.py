@@ -31,8 +31,9 @@ own record, so the model carries it through every entry point unchanged and
 refuses the statements that would drop it. ``dem_alternatives`` owns the reading
 -- what a group means for a rate and for a draw, and what a group that does not
 fit one shot earns -- and this module holds the field the reading is stated on.
-A model with no ids is what every construction route here produces and what
-stim's text states, and it behaves exactly as it did before the field existed.
+Independent construction routes and stim text produce models with no ids,
+which behave exactly as they did before the field existed. Gate-bound Pauli
+mixtures retain their exclusive circuit-location groups.
 
 The model is defined for Pauli noise only. It is built on the memory circuit
 *without* in-circuit feedback, because the model describes the physical
@@ -299,8 +300,8 @@ class DetectorErrorModel:
         This is the model's parallel id column in the sense upstream gives
         ``error_ids``: entry ``i`` is the id of mechanism ``i``, mechanisms
         sharing an id are alternatives rather than independent faults, and
-        ``None`` -- upstream's ``nullopt`` -- is the state every construction
-        route here produces and the state stim's text always describes. The
+        ``None`` -- upstream's ``nullopt`` -- denotes independent construction
+        routes and the state stim's text always describes. The
         values are opaque labels and the vector is a numbering of them, so what
         is a fact about the model is the partition the vector induces;
         :func:`flagquantum.qec.dem.alternatives.projected_ids` states the rule.
@@ -584,9 +585,8 @@ class DetectorErrorModel:
         :func:`flagquantum.qec.dem.alternatives.sample_groups` draws a group once
         and lands the shot in one member's interval or in the left-over mass; this
         method only wraps the two bit tensors the caller owns. The id-free path
-        stays in :meth:`dem_sampling`, because a model with no ids is the state
-        every construction route here produces and its draws are pinned against
-        the circuit simulator.
+        stays in :meth:`dem_sampling`; its independent-model draws remain pinned
+        against the circuit simulator.
         """
 
         sample_groups(
