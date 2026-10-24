@@ -105,15 +105,23 @@ is required by this plan.
 - A/B are delivered by the approved sampling design and merged #784.
 - C's fixed-shot example statistics are delivered by merged #788; the proposed
   generic library experiment API remains a separate unapproved decision.
-- D is implemented in #792. Its initial implementation head passed 54 main CI
-  jobs and the GPU workflow; every later head, including this plan update, needs
-  its own current-head verification before merge.
-- E, the annotated native/external Stim experiment bridge, is the next contract
-  and implementation boundary after D lands.
+- D merged in [#792](https://github.com/flagos-ai/FlagQuantum/pull/792) as
+  `3d39640d42cf9c698a7e16dab116aafb5af95288`. Its final head `47e9344d`
+  passed 54 main CI jobs and the GPU workflow. The actual merge commit's
+  Main smoke run `40077460827` succeeded; it is not complete main CI evidence.
+- E's [annotated native/external Stim experiment bridge proposal](../development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md)
+  specifies three opt-in adapter functions and reuses existing sampler/model
+  records. The public additions remain unapproved; merging this design is not
+  approval to activate them. Private read-only feasibility evidence does not
+  substitute for production implementation acceptance.
 - F/G/H must first reconcile the already approved correlated-Pauli contract 088
   and existing circuit-noise/sampling/DEM implementations on current main. Extend
   only demonstrated gaps in location coverage, distribution preservation and
   independent evidence; do not reimplement those capabilities from old plans.
+  The bridge audit also found configured decimal rates differ from default
+  executed Kraus probabilities through existing tensor precision. Preserve the
+  failed 1e-12 configured-rate comparison and actual-law evidence; resolve the
+  numerical contract rather than silently widening a scientific gate.
 - I closes the whole compatibility task, not merely an individual PR.
 
 The continuing task is complete only when all of the following are recorded:
@@ -172,13 +180,21 @@ The existing `PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py`
 workflow remains available with the Stim extra; it exercises measurement
 layouts, sampling and feedback.
 
-## Immediate action: Surface batch evidence
+## Immediate action: review the annotated Stim bridge contract
+
+Work D and the expected structure are now on main through #792. The next
+contract is [the bridge proposal](../development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md),
+based on that verified merge and reconciled with the separate, still-unapproved
+QEC-FUNCTIONAL-005 sparse batch contract. The bridge uses the already delivered
+PyMatching Tensor method and does not activate either Decision B or C of the
+broader functional proposal. Complete independent design/evidence work and
+obtain API-owner approval of the concrete opt-in functions before activation.
 
 [PR #788](https://github.com/flagos-ai/FlagQuantum/pull/788) merged as
 `47db63d6dd243e5a2fc498440a0a660858eb06a2`. Its final head `9daf326b`
 passed all 54 main CI jobs and the single/two-GPU gates. The merge commit's
 Main smoke run `40066862426` succeeded; that smoke is not a complete main CI.
-The next evidence slice starts at main `4be2375eff47c112ce8d8e24f8206ed5592130d8`,
+The Surface evidence slice started at main `4be2375eff47c112ce8d8e24f8206ed5592130d8`,
 including subsequent correlated-fault and dynamic-preflight work. It changes
 only the existing example, tests and documentation, with no new library API.
 
