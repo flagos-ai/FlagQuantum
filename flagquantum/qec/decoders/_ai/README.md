@@ -14,8 +14,21 @@ empirical conditional BCE. These are CPU research diagnostics, not final logical
 accuracy or population Bayes bounds. The three-feature table does not claim CNN
 support. Follow the frozen
 [diagnostic protocol](../../../../docs/development/QEC_AI_LABEL_IDENTIFIABILITY.md)
-before collecting data. The fixed archived-checkpoint study runner and its
-outcome are pending; no retraining is licensed by the diagnostic implementation.
+before collecting data. The archived-checkpoint runner is
+`examples/qec/diagnose_predecoder.py`; its scientific outcome remains pending.
+No retraining is licensed by the diagnostic implementation.
+
+```bash
+PYTHONPATH=. python examples/qec/diagnose_predecoder.py --fixture-smoke
+```
+
+This exact probe reports `latent_equal=0`, `detector_equal=1` and
+`detector_and_logical_equal=1`. It draws no noise samples and trains no model.
+For the fixed study, pass `--input-directory` pointing to the preserved A800-172
+study and a fresh `--output-directory`, inside the same producing environment.
+Every input and all three checkpoints are checked before any new sample. The
+runner writes a manifest and per-seed reports; interrupted partial output must
+be retained, not retried as a newly selected completion.
 
 | Module | Responsibility |
 | --- | --- |
