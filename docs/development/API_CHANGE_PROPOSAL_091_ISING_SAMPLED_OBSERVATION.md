@@ -1,9 +1,10 @@
 # Proposal 091: one sampled Ising pair-charge trajectory
 
-Status: **proposed; not approved for implementation**.
-The user's instruction authorizes preparing this concrete proposal, not the
-protected changes below. A document merge alone is not implementation approval.
-This PR changes no production API, codec, candidate contract or API snapshot.
+Status: **approved for staged implementation on 2026-10-24**.
+The user explicitly approved all five decisions and conditionally authorized
+merging the document PR #818. That PR merged after complete applicable CI/GPU.
+Proceed first with the replaceable baseline; each later PR still needs its own
+merge authorization. This approval record does not activate a production API.
 
 ## Five decisions for review
 

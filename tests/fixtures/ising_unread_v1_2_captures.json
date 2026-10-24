@@ -1,0 +1,754 @@
+{
+  "native_1_2": {
+    "1-1-0": {
+      "plan_json": "{\"decision\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"recommended_mode\":\"density_matrix\",\"require_gradients\":false,\"state_bytes\":64,\"target\":\"expectation\",\"world_size\":1},\"environment_requirements\":{\"allow_approximate\":false,\"backend\":\"pytorch\",\"device_kind\":\"cpu\",\"distribution_semantics\":\"single_device_fast_path\",\"precision\":\"complex128\",\"protocol\":\"flagquantum.execution_environment\",\"require_gradients\":false,\"version\":\"1.0\",\"world_size\":1},\"extensions\":[],\"fingerprints\":{\"compiler\":\"4ea3d39c4c602ab2569f29bb9f6c920bb33432ac3a3e3dbf2d02aa4edf87f57a\",\"environment\":\"6bcc022cbaddcb0515024a38529570b31dd562c5cc61656f205cfbd5f9f0dbd2\",\"options\":\"7cb13296a794207bccfdef586fa8a5c17ce4f2ed235d5f6d30fa50e4e89eef93\",\"program\":\"78eed7bc73ca1e93f3361dff5eb6579dcff2df795cc08498f1d020b7c5f0a9b2\"},\"identity\":\"1dbf272968afbbf39886e0d829f2973db79c4ec74ec74bdf3971e067dfa42058\",\"outputs\":[{\"kind\":\"expectation\",\"name\":\"psi\",\"operator\":{\"$tensor\":{\"data\":[[{\"$complex\":[0.0,0.0]},{\"$complex\":[0.0,0.0]}],[{\"$complex\":[0.0,0.0]},{\"$complex\":[1.0,0.0]}]],\"dtype\":\"complex128\",\"shape\":[2,2]}}}],\"program\":{\"functions\":[{\"blocks\":[{\"arguments\":[],\"edges\":[],\"name\":\"entry\",\"operations\":[{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.dephase_pair\",\"operands\":[],\"parameters\":[],\"physical_data\":null,\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":0},\"results\":[]}],\"terminator\":\"return\"}],\"entry\":\"entry\",\"name\":\"main\"}],\"physical_context\":{\"anyon_ids\":[\"a\",\"b\",\"c\",\"d\"],\"fusion_tree\":\"left_associated\",\"gauge\":\"nayak_ising\",\"initial_channel\":\"1\",\"kind\":\"ising_braid\",\"total_charge\":\"1\"},\"schema\":\"flagquantum.program_ir\",\"version\":\"1.2\"},\"requested_options\":{\"allow_approximate\":null,\"allow_backend_fallback\":null,\"backend\":null,\"batch_size\":null,\"device\":null,\"memory_limit_bytes\":null,\"mode\":null,\"precision\":null,\"require_gradients\":null,\"schema\":\"flagquantum.execution_options\",\"seed\":null,\"shots\":null,\"target\":null,\"version\":\"1.0\"},\"resolved_options\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"require_gradients\":false,\"seed\":null,\"shots\":null,\"target\":\"expectation\"},\"schema\":\"flagquantum.execution_plan\",\"version\":\"1.2\"}",
+      "plan_sha256": "587204545a96ff7f05f5914e3bc8800c57c5cda1eda95f8c20e1f3eb5804725b",
+      "source": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.dephase_pair",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": null,
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 0
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "anyon_ids": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "fusion_tree": "left_associated",
+          "gauge": "nayak_ising",
+          "initial_channel": "1",
+          "kind": "ising_braid",
+          "total_charge": "1"
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.2"
+      }
+    },
+    "1-1-1": {
+      "plan_json": "{\"decision\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"recommended_mode\":\"density_matrix\",\"require_gradients\":false,\"state_bytes\":64,\"target\":\"expectation\",\"world_size\":1},\"environment_requirements\":{\"allow_approximate\":false,\"backend\":\"pytorch\",\"device_kind\":\"cpu\",\"distribution_semantics\":\"single_device_fast_path\",\"precision\":\"complex128\",\"protocol\":\"flagquantum.execution_environment\",\"require_gradients\":false,\"version\":\"1.0\",\"world_size\":1},\"extensions\":[],\"fingerprints\":{\"compiler\":\"4ea3d39c4c602ab2569f29bb9f6c920bb33432ac3a3e3dbf2d02aa4edf87f57a\",\"environment\":\"6bcc022cbaddcb0515024a38529570b31dd562c5cc61656f205cfbd5f9f0dbd2\",\"options\":\"7cb13296a794207bccfdef586fa8a5c17ce4f2ed235d5f6d30fa50e4e89eef93\",\"program\":\"17a526e43eacdaf15291a2844b302a1c40f398d668349f489e68dbbfa682e2cc\"},\"identity\":\"4383fef24b23283dce6304be421f32e935cbe959c52a2e015603d173975cc891\",\"outputs\":[{\"kind\":\"expectation\",\"name\":\"psi\",\"operator\":{\"$tensor\":{\"data\":[[{\"$complex\":[0.0,0.0]},{\"$complex\":[0.0,0.0]}],[{\"$complex\":[0.0,0.0]},{\"$complex\":[1.0,0.0]}]],\"dtype\":\"complex128\",\"shape\":[2,2]}}}],\"program\":{\"functions\":[{\"blocks\":[{\"arguments\":[],\"edges\":[],\"name\":\"entry\",\"operations\":[{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.dephase_pair\",\"operands\":[],\"parameters\":[],\"physical_data\":null,\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]}],\"terminator\":\"return\"}],\"entry\":\"entry\",\"name\":\"main\"}],\"physical_context\":{\"anyon_ids\":[\"a\",\"b\",\"c\",\"d\"],\"fusion_tree\":\"left_associated\",\"gauge\":\"nayak_ising\",\"initial_channel\":\"1\",\"kind\":\"ising_braid\",\"total_charge\":\"1\"},\"schema\":\"flagquantum.program_ir\",\"version\":\"1.2\"},\"requested_options\":{\"allow_approximate\":null,\"allow_backend_fallback\":null,\"backend\":null,\"batch_size\":null,\"device\":null,\"memory_limit_bytes\":null,\"mode\":null,\"precision\":null,\"require_gradients\":null,\"schema\":\"flagquantum.execution_options\",\"seed\":null,\"shots\":null,\"target\":null,\"version\":\"1.0\"},\"resolved_options\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"require_gradients\":false,\"seed\":null,\"shots\":null,\"target\":\"expectation\"},\"schema\":\"flagquantum.execution_plan\",\"version\":\"1.2\"}",
+      "plan_sha256": "0c157b51a23925d1cfab6fce2c49f43ff275f5ef44be46ea44e93b4d9bd59b0b",
+      "source": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.dephase_pair",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": null,
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "anyon_ids": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "fusion_tree": "left_associated",
+          "gauge": "nayak_ising",
+          "initial_channel": "1",
+          "kind": "ising_braid",
+          "total_charge": "1"
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.2"
+      }
+    },
+    "1-2-0": {
+      "plan_json": "{\"decision\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"recommended_mode\":\"density_matrix\",\"require_gradients\":false,\"state_bytes\":64,\"target\":\"expectation\",\"world_size\":1},\"environment_requirements\":{\"allow_approximate\":false,\"backend\":\"pytorch\",\"device_kind\":\"cpu\",\"distribution_semantics\":\"single_device_fast_path\",\"precision\":\"complex128\",\"protocol\":\"flagquantum.execution_environment\",\"require_gradients\":false,\"version\":\"1.0\",\"world_size\":1},\"extensions\":[],\"fingerprints\":{\"compiler\":\"4ea3d39c4c602ab2569f29bb9f6c920bb33432ac3a3e3dbf2d02aa4edf87f57a\",\"environment\":\"6bcc022cbaddcb0515024a38529570b31dd562c5cc61656f205cfbd5f9f0dbd2\",\"options\":\"7cb13296a794207bccfdef586fa8a5c17ce4f2ed235d5f6d30fa50e4e89eef93\",\"program\":\"29c7aaa1897301f4db910907e122574acd5878224459cfa358c0039056ac5cfa\"},\"identity\":\"bf4af582dc6fcdb2f68bc3182f8281a17276f64659b9b2a8a6d2755ba34b3a53\",\"outputs\":[{\"kind\":\"expectation\",\"name\":\"psi\",\"operator\":{\"$tensor\":{\"data\":[[{\"$complex\":[0.0,0.0]},{\"$complex\":[0.0,0.0]}],[{\"$complex\":[0.0,0.0]},{\"$complex\":[1.0,0.0]}]],\"dtype\":\"complex128\",\"shape\":[2,2]}}}],\"program\":{\"functions\":[{\"blocks\":[{\"arguments\":[],\"edges\":[],\"name\":\"entry\",\"operations\":[{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":true,\"kind\":\"exchange\",\"left\":0},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.dephase_pair\",\"operands\":[],\"parameters\":[],\"physical_data\":null,\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":0},\"results\":[]}],\"terminator\":\"return\"}],\"entry\":\"entry\",\"name\":\"main\"}],\"physical_context\":{\"anyon_ids\":[\"a\",\"b\",\"c\",\"d\"],\"fusion_tree\":\"left_associated\",\"gauge\":\"nayak_ising\",\"initial_channel\":\"1\",\"kind\":\"ising_braid\",\"total_charge\":\"1\"},\"schema\":\"flagquantum.program_ir\",\"version\":\"1.2\"},\"requested_options\":{\"allow_approximate\":null,\"allow_backend_fallback\":null,\"backend\":null,\"batch_size\":null,\"device\":null,\"memory_limit_bytes\":null,\"mode\":null,\"precision\":null,\"require_gradients\":null,\"schema\":\"flagquantum.execution_options\",\"seed\":null,\"shots\":null,\"target\":null,\"version\":\"1.0\"},\"resolved_options\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"require_gradients\":false,\"seed\":null,\"shots\":null,\"target\":\"expectation\"},\"schema\":\"flagquantum.execution_plan\",\"version\":\"1.2\"}",
+      "plan_sha256": "7b13de491f1e4f3c694d4e6564ff1e34a471c1185ed0a30b1976e6849510e915",
+      "source": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": true,
+                      "kind": "exchange",
+                      "left": 0
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.dephase_pair",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": null,
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 0
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "anyon_ids": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "fusion_tree": "left_associated",
+          "gauge": "nayak_ising",
+          "initial_channel": "1",
+          "kind": "ising_braid",
+          "total_charge": "1"
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.2"
+      }
+    },
+    "1-2-1": {
+      "plan_json": "{\"decision\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"recommended_mode\":\"density_matrix\",\"require_gradients\":false,\"state_bytes\":64,\"target\":\"expectation\",\"world_size\":1},\"environment_requirements\":{\"allow_approximate\":false,\"backend\":\"pytorch\",\"device_kind\":\"cpu\",\"distribution_semantics\":\"single_device_fast_path\",\"precision\":\"complex128\",\"protocol\":\"flagquantum.execution_environment\",\"require_gradients\":false,\"version\":\"1.0\",\"world_size\":1},\"extensions\":[],\"fingerprints\":{\"compiler\":\"4ea3d39c4c602ab2569f29bb9f6c920bb33432ac3a3e3dbf2d02aa4edf87f57a\",\"environment\":\"6bcc022cbaddcb0515024a38529570b31dd562c5cc61656f205cfbd5f9f0dbd2\",\"options\":\"7cb13296a794207bccfdef586fa8a5c17ce4f2ed235d5f6d30fa50e4e89eef93\",\"program\":\"ee8f2d8664be0e1fcb8da441ac8196f1626d8271cf406156209d8bc1b173e942\"},\"identity\":\"bf6acc8980c1c9f5642a52747dfed97e4fabc621ac01524115e9fd38d17bdee7\",\"outputs\":[{\"kind\":\"expectation\",\"name\":\"psi\",\"operator\":{\"$tensor\":{\"data\":[[{\"$complex\":[0.0,0.0]},{\"$complex\":[0.0,0.0]}],[{\"$complex\":[0.0,0.0]},{\"$complex\":[1.0,0.0]}]],\"dtype\":\"complex128\",\"shape\":[2,2]}}}],\"program\":{\"functions\":[{\"blocks\":[{\"arguments\":[],\"edges\":[],\"name\":\"entry\",\"operations\":[{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":true,\"kind\":\"exchange\",\"left\":0},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.dephase_pair\",\"operands\":[],\"parameters\":[],\"physical_data\":null,\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]}],\"terminator\":\"return\"}],\"entry\":\"entry\",\"name\":\"main\"}],\"physical_context\":{\"anyon_ids\":[\"a\",\"b\",\"c\",\"d\"],\"fusion_tree\":\"left_associated\",\"gauge\":\"nayak_ising\",\"initial_channel\":\"1\",\"kind\":\"ising_braid\",\"total_charge\":\"1\"},\"schema\":\"flagquantum.program_ir\",\"version\":\"1.2\"},\"requested_options\":{\"allow_approximate\":null,\"allow_backend_fallback\":null,\"backend\":null,\"batch_size\":null,\"device\":null,\"memory_limit_bytes\":null,\"mode\":null,\"precision\":null,\"require_gradients\":null,\"schema\":\"flagquantum.execution_options\",\"seed\":null,\"shots\":null,\"target\":null,\"version\":\"1.0\"},\"resolved_options\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"require_gradients\":false,\"seed\":null,\"shots\":null,\"target\":\"expectation\"},\"schema\":\"flagquantum.execution_plan\",\"version\":\"1.2\"}",
+      "plan_sha256": "42f469d36852c357aa28fe73bf2aeef9b8c4c1b6d292582adc7617a9f714d3f4",
+      "source": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": true,
+                      "kind": "exchange",
+                      "left": 0
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.dephase_pair",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": null,
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "anyon_ids": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "fusion_tree": "left_associated",
+          "gauge": "nayak_ising",
+          "initial_channel": "1",
+          "kind": "ising_braid",
+          "total_charge": "1"
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.2"
+      }
+    },
+    "psi-1-0": {
+      "plan_json": "{\"decision\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"recommended_mode\":\"density_matrix\",\"require_gradients\":false,\"state_bytes\":64,\"target\":\"expectation\",\"world_size\":1},\"environment_requirements\":{\"allow_approximate\":false,\"backend\":\"pytorch\",\"device_kind\":\"cpu\",\"distribution_semantics\":\"single_device_fast_path\",\"precision\":\"complex128\",\"protocol\":\"flagquantum.execution_environment\",\"require_gradients\":false,\"version\":\"1.0\",\"world_size\":1},\"extensions\":[],\"fingerprints\":{\"compiler\":\"4ea3d39c4c602ab2569f29bb9f6c920bb33432ac3a3e3dbf2d02aa4edf87f57a\",\"environment\":\"6bcc022cbaddcb0515024a38529570b31dd562c5cc61656f205cfbd5f9f0dbd2\",\"options\":\"7cb13296a794207bccfdef586fa8a5c17ce4f2ed235d5f6d30fa50e4e89eef93\",\"program\":\"1a9b296f1c5088d413b2105be8d2c1de59a73ab1b10c358fe0843d982ae8341a\"},\"identity\":\"9dc2be12d6463afecdaeff796dea19ac18179547babf98a0a5adcdb39754d6d0\",\"outputs\":[{\"kind\":\"expectation\",\"name\":\"psi\",\"operator\":{\"$tensor\":{\"data\":[[{\"$complex\":[0.0,0.0]},{\"$complex\":[0.0,0.0]}],[{\"$complex\":[0.0,0.0]},{\"$complex\":[1.0,0.0]}]],\"dtype\":\"complex128\",\"shape\":[2,2]}}}],\"program\":{\"functions\":[{\"blocks\":[{\"arguments\":[],\"edges\":[],\"name\":\"entry\",\"operations\":[{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.dephase_pair\",\"operands\":[],\"parameters\":[],\"physical_data\":null,\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":0},\"results\":[]}],\"terminator\":\"return\"}],\"entry\":\"entry\",\"name\":\"main\"}],\"physical_context\":{\"anyon_ids\":[\"a\",\"b\",\"c\",\"d\"],\"fusion_tree\":\"left_associated\",\"gauge\":\"nayak_ising\",\"initial_channel\":\"psi\",\"kind\":\"ising_braid\",\"total_charge\":\"1\"},\"schema\":\"flagquantum.program_ir\",\"version\":\"1.2\"},\"requested_options\":{\"allow_approximate\":null,\"allow_backend_fallback\":null,\"backend\":null,\"batch_size\":null,\"device\":null,\"memory_limit_bytes\":null,\"mode\":null,\"precision\":null,\"require_gradients\":null,\"schema\":\"flagquantum.execution_options\",\"seed\":null,\"shots\":null,\"target\":null,\"version\":\"1.0\"},\"resolved_options\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"require_gradients\":false,\"seed\":null,\"shots\":null,\"target\":\"expectation\"},\"schema\":\"flagquantum.execution_plan\",\"version\":\"1.2\"}",
+      "plan_sha256": "bcc1b049777434939c10913d8322f9b6e3465d008a6a6405f919252c7703024a",
+      "source": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.dephase_pair",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": null,
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 0
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "anyon_ids": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "fusion_tree": "left_associated",
+          "gauge": "nayak_ising",
+          "initial_channel": "psi",
+          "kind": "ising_braid",
+          "total_charge": "1"
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.2"
+      }
+    },
+    "psi-1-1": {
+      "plan_json": "{\"decision\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"recommended_mode\":\"density_matrix\",\"require_gradients\":false,\"state_bytes\":64,\"target\":\"expectation\",\"world_size\":1},\"environment_requirements\":{\"allow_approximate\":false,\"backend\":\"pytorch\",\"device_kind\":\"cpu\",\"distribution_semantics\":\"single_device_fast_path\",\"precision\":\"complex128\",\"protocol\":\"flagquantum.execution_environment\",\"require_gradients\":false,\"version\":\"1.0\",\"world_size\":1},\"extensions\":[],\"fingerprints\":{\"compiler\":\"4ea3d39c4c602ab2569f29bb9f6c920bb33432ac3a3e3dbf2d02aa4edf87f57a\",\"environment\":\"6bcc022cbaddcb0515024a38529570b31dd562c5cc61656f205cfbd5f9f0dbd2\",\"options\":\"7cb13296a794207bccfdef586fa8a5c17ce4f2ed235d5f6d30fa50e4e89eef93\",\"program\":\"6bd0c85ca764289b366fc6fa3f46868a216240a2b66593692cf182d8e316969f\"},\"identity\":\"eb352a600eb6c270e04b35a8ea4887025a5db442f8a22f8a69b1fcdc969fa879\",\"outputs\":[{\"kind\":\"expectation\",\"name\":\"psi\",\"operator\":{\"$tensor\":{\"data\":[[{\"$complex\":[0.0,0.0]},{\"$complex\":[0.0,0.0]}],[{\"$complex\":[0.0,0.0]},{\"$complex\":[1.0,0.0]}]],\"dtype\":\"complex128\",\"shape\":[2,2]}}}],\"program\":{\"functions\":[{\"blocks\":[{\"arguments\":[],\"edges\":[],\"name\":\"entry\",\"operations\":[{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.dephase_pair\",\"operands\":[],\"parameters\":[],\"physical_data\":null,\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]}],\"terminator\":\"return\"}],\"entry\":\"entry\",\"name\":\"main\"}],\"physical_context\":{\"anyon_ids\":[\"a\",\"b\",\"c\",\"d\"],\"fusion_tree\":\"left_associated\",\"gauge\":\"nayak_ising\",\"initial_channel\":\"psi\",\"kind\":\"ising_braid\",\"total_charge\":\"1\"},\"schema\":\"flagquantum.program_ir\",\"version\":\"1.2\"},\"requested_options\":{\"allow_approximate\":null,\"allow_backend_fallback\":null,\"backend\":null,\"batch_size\":null,\"device\":null,\"memory_limit_bytes\":null,\"mode\":null,\"precision\":null,\"require_gradients\":null,\"schema\":\"flagquantum.execution_options\",\"seed\":null,\"shots\":null,\"target\":null,\"version\":\"1.0\"},\"resolved_options\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"require_gradients\":false,\"seed\":null,\"shots\":null,\"target\":\"expectation\"},\"schema\":\"flagquantum.execution_plan\",\"version\":\"1.2\"}",
+      "plan_sha256": "25f4f9ea944a00cb0af8a1aa4eae22fa71f570404fa9992ee54956d065ff89e9",
+      "source": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.dephase_pair",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": null,
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "anyon_ids": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "fusion_tree": "left_associated",
+          "gauge": "nayak_ising",
+          "initial_channel": "psi",
+          "kind": "ising_braid",
+          "total_charge": "1"
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.2"
+      }
+    },
+    "psi-2-0": {
+      "plan_json": "{\"decision\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"recommended_mode\":\"density_matrix\",\"require_gradients\":false,\"state_bytes\":64,\"target\":\"expectation\",\"world_size\":1},\"environment_requirements\":{\"allow_approximate\":false,\"backend\":\"pytorch\",\"device_kind\":\"cpu\",\"distribution_semantics\":\"single_device_fast_path\",\"precision\":\"complex128\",\"protocol\":\"flagquantum.execution_environment\",\"require_gradients\":false,\"version\":\"1.0\",\"world_size\":1},\"extensions\":[],\"fingerprints\":{\"compiler\":\"4ea3d39c4c602ab2569f29bb9f6c920bb33432ac3a3e3dbf2d02aa4edf87f57a\",\"environment\":\"6bcc022cbaddcb0515024a38529570b31dd562c5cc61656f205cfbd5f9f0dbd2\",\"options\":\"7cb13296a794207bccfdef586fa8a5c17ce4f2ed235d5f6d30fa50e4e89eef93\",\"program\":\"dda26336926dd243bf2c18fa61f6084759338a85637c83bb08144f7c76d53545\"},\"identity\":\"fa8a550d6d721199935bcddffa803f51cd7dcd23ee48617b9bd6895110b08360\",\"outputs\":[{\"kind\":\"expectation\",\"name\":\"psi\",\"operator\":{\"$tensor\":{\"data\":[[{\"$complex\":[0.0,0.0]},{\"$complex\":[0.0,0.0]}],[{\"$complex\":[0.0,0.0]},{\"$complex\":[1.0,0.0]}]],\"dtype\":\"complex128\",\"shape\":[2,2]}}}],\"program\":{\"functions\":[{\"blocks\":[{\"arguments\":[],\"edges\":[],\"name\":\"entry\",\"operations\":[{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":true,\"kind\":\"exchange\",\"left\":0},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.dephase_pair\",\"operands\":[],\"parameters\":[],\"physical_data\":null,\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":0},\"results\":[]}],\"terminator\":\"return\"}],\"entry\":\"entry\",\"name\":\"main\"}],\"physical_context\":{\"anyon_ids\":[\"a\",\"b\",\"c\",\"d\"],\"fusion_tree\":\"left_associated\",\"gauge\":\"nayak_ising\",\"initial_channel\":\"psi\",\"kind\":\"ising_braid\",\"total_charge\":\"1\"},\"schema\":\"flagquantum.program_ir\",\"version\":\"1.2\"},\"requested_options\":{\"allow_approximate\":null,\"allow_backend_fallback\":null,\"backend\":null,\"batch_size\":null,\"device\":null,\"memory_limit_bytes\":null,\"mode\":null,\"precision\":null,\"require_gradients\":null,\"schema\":\"flagquantum.execution_options\",\"seed\":null,\"shots\":null,\"target\":null,\"version\":\"1.0\"},\"resolved_options\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"require_gradients\":false,\"seed\":null,\"shots\":null,\"target\":\"expectation\"},\"schema\":\"flagquantum.execution_plan\",\"version\":\"1.2\"}",
+      "plan_sha256": "c91356317c6205570ba28002d1f3a3de5955373881c56d5b7753bd60223a7c54",
+      "source": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": true,
+                      "kind": "exchange",
+                      "left": 0
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.dephase_pair",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": null,
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 0
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "anyon_ids": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "fusion_tree": "left_associated",
+          "gauge": "nayak_ising",
+          "initial_channel": "psi",
+          "kind": "ising_braid",
+          "total_charge": "1"
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.2"
+      }
+    },
+    "psi-2-1": {
+      "plan_json": "{\"decision\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"recommended_mode\":\"density_matrix\",\"require_gradients\":false,\"state_bytes\":64,\"target\":\"expectation\",\"world_size\":1},\"environment_requirements\":{\"allow_approximate\":false,\"backend\":\"pytorch\",\"device_kind\":\"cpu\",\"distribution_semantics\":\"single_device_fast_path\",\"precision\":\"complex128\",\"protocol\":\"flagquantum.execution_environment\",\"require_gradients\":false,\"version\":\"1.0\",\"world_size\":1},\"extensions\":[],\"fingerprints\":{\"compiler\":\"4ea3d39c4c602ab2569f29bb9f6c920bb33432ac3a3e3dbf2d02aa4edf87f57a\",\"environment\":\"6bcc022cbaddcb0515024a38529570b31dd562c5cc61656f205cfbd5f9f0dbd2\",\"options\":\"7cb13296a794207bccfdef586fa8a5c17ce4f2ed235d5f6d30fa50e4e89eef93\",\"program\":\"17b9976018bccf5abbfaa4d3296b75f99c4e9d94f4ceec01bf6240bc9528542c\"},\"identity\":\"cd880fbea1fd1870ba4be9554b74c8e1f60a55b8923355a26d518be6f7cabd94\",\"outputs\":[{\"kind\":\"expectation\",\"name\":\"psi\",\"operator\":{\"$tensor\":{\"data\":[[{\"$complex\":[0.0,0.0]},{\"$complex\":[0.0,0.0]}],[{\"$complex\":[0.0,0.0]},{\"$complex\":[1.0,0.0]}]],\"dtype\":\"complex128\",\"shape\":[2,2]}}}],\"program\":{\"functions\":[{\"blocks\":[{\"arguments\":[],\"edges\":[],\"name\":\"entry\",\"operations\":[{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":true,\"kind\":\"exchange\",\"left\":0},\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.dephase_pair\",\"operands\":[],\"parameters\":[],\"physical_data\":null,\"results\":[]},{\"condition_clauses\":[],\"literal\":null,\"opcode\":\"ising.exchange\",\"operands\":[],\"parameters\":[],\"physical_data\":{\"clockwise\":false,\"kind\":\"exchange\",\"left\":1},\"results\":[]}],\"terminator\":\"return\"}],\"entry\":\"entry\",\"name\":\"main\"}],\"physical_context\":{\"anyon_ids\":[\"a\",\"b\",\"c\",\"d\"],\"fusion_tree\":\"left_associated\",\"gauge\":\"nayak_ising\",\"initial_channel\":\"psi\",\"kind\":\"ising_braid\",\"total_charge\":\"1\"},\"schema\":\"flagquantum.program_ir\",\"version\":\"1.2\"},\"requested_options\":{\"allow_approximate\":null,\"allow_backend_fallback\":null,\"backend\":null,\"batch_size\":null,\"device\":null,\"memory_limit_bytes\":null,\"mode\":null,\"precision\":null,\"require_gradients\":null,\"schema\":\"flagquantum.execution_options\",\"seed\":null,\"shots\":null,\"target\":null,\"version\":\"1.0\"},\"resolved_options\":{\"allow_approximate\":false,\"allow_backend_fallback\":false,\"backend\":\"pytorch\",\"batch_size\":1,\"device\":\"cpu\",\"memory_limit_bytes\":null,\"mode\":\"density_matrix\",\"precision\":\"complex128\",\"require_gradients\":false,\"seed\":null,\"shots\":null,\"target\":\"expectation\"},\"schema\":\"flagquantum.execution_plan\",\"version\":\"1.2\"}",
+      "plan_sha256": "364d15c705ad646cb393c8be373c13b7be0149f7c8ae22c48a3f2eb2d42f2f16",
+      "source": {
+        "functions": [
+          {
+            "blocks": [
+              {
+                "arguments": [],
+                "edges": [],
+                "name": "entry",
+                "operations": [
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": true,
+                      "kind": "exchange",
+                      "left": 0
+                    },
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.dephase_pair",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": null,
+                    "results": []
+                  },
+                  {
+                    "condition_clauses": [],
+                    "literal": null,
+                    "opcode": "ising.exchange",
+                    "operands": [],
+                    "parameters": [],
+                    "physical_data": {
+                      "clockwise": false,
+                      "kind": "exchange",
+                      "left": 1
+                    },
+                    "results": []
+                  }
+                ],
+                "terminator": "return"
+              }
+            ],
+            "entry": "entry",
+            "name": "main"
+          }
+        ],
+        "physical_context": {
+          "anyon_ids": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "fusion_tree": "left_associated",
+          "gauge": "nayak_ising",
+          "initial_channel": "psi",
+          "kind": "ising_braid",
+          "total_charge": "1"
+        },
+        "schema": "flagquantum.program_ir",
+        "version": "1.2"
+      }
+    }
+  },
+  "not_a_production_1_3_plan": true,
+  "old_capture_reference": "089-pre-implementation-legacy-capture.json",
+  "source_commit": "e873723bd359832de3e718235373affd19544bab",
+  "terminal": {
+    "metadata": {
+      "outcome_labels": [
+        "1",
+        "psi"
+      ],
+      "probabilities": [
+        [
+          0.49999999999999983,
+          0.4999999999999997
+        ]
+      ],
+      "probability_correction": 2.7755575615628914e-16,
+      "terminal_instrument": {
+        "branches": [
+          {
+            "kraus": [
+              {
+                "$tensor": {
+                  "data": [
+                    [
+                      {
+                        "$complex": [
+                          1.0,
+                          0.0
+                        ]
+                      },
+                      {
+                        "$complex": [
+                          0.0,
+                          0.0
+                        ]
+                      }
+                    ],
+                    [
+                      {
+                        "$complex": [
+                          0.0,
+                          0.0
+                        ]
+                      },
+                      {
+                        "$complex": [
+                          0.0,
+                          0.0
+                        ]
+                      }
+                    ]
+                  ],
+                  "dtype": "complex128",
+                  "shape": [
+                    2,
+                    2
+                  ]
+                }
+              }
+            ],
+            "label": "1"
+          },
+          {
+            "kraus": [
+              {
+                "$tensor": {
+                  "data": [
+                    [
+                      {
+                        "$complex": [
+                          0.0,
+                          0.0
+                        ]
+                      },
+                      {
+                        "$complex": [
+                          0.0,
+                          0.0
+                        ]
+                      }
+                    ],
+                    [
+                      {
+                        "$complex": [
+                          0.0,
+                          0.0
+                        ]
+                      },
+                      {
+                        "$complex": [
+                          1.0,
+                          0.0
+                        ]
+                      }
+                    ]
+                  ],
+                  "dtype": "complex128",
+                  "shape": [
+                    2,
+                    2
+                  ]
+                }
+              }
+            ],
+            "label": "psi"
+          }
+        ],
+        "dimension": 2,
+        "dtype": "complex128",
+        "effective_seed": 17,
+        "requested_seed": 17,
+        "schema": "flagquantum.terminal_instrument",
+        "torch_version": "2.13.0",
+        "version": "1.0"
+      }
+    },
+    "value": [
+      [
+        0
+      ]
+    ]
+  }
+}
