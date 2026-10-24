@@ -2,6 +2,11 @@ schema = "flagquantum.benchmark_evidence_retention.v1"
 
 [entries]
 
+[entries."benchmarks/results/comparison/qec_clifford_dem_cpu_arm64_20261024.json"]
+class = "current_claim"
+reason = "Retains the local CPU instruction/parity/fault counts, traced Python allocation peaks and process RSS observations supporting QEC-FUNCTIONAL-003 construction capacity at 17, 49 and 97 physical qubits. It establishes no decoder-quality, threshold, speedup, GPU or distributed scaling claim."
+consumers = ["docs/development/QEC_FUNCTIONAL_003.md", "capability-maturity.toml"]
+
 [entries."benchmarks/results/comparison/batched_statevector_dynamic_promotion_current_cpu_arm64_20261022.json"]
 class = "current_claim"
 reason = "Retains the raw static batched-statevector observations used to assess DynamicCircuit promotion criterion 7 on the declared Apple-arm64 profile."
