@@ -23,7 +23,7 @@ OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
 flagquantum-benchmark run dynamic_remote_preflight \
   --feedback-pairs 1 16 128 --warmup 5 --iterations 101 \
   --static-iterations 1001 --json-output \
-  benchmarks/results/comparison/dynamic_remote_preflight_cpu_arm64_20261024.json
+  ./dynamic_remote_preflight.json
 ```
 
 The command exits successfully only when every measured case passes its budget.
@@ -60,9 +60,9 @@ to scheduler noise but still fails large fixed overhead and superlinear growth.
 CI checks the payload contract and arithmetic with short runs; it does not turn
 shared-runner timing into a flaky required check.
 
-## Retained observation
+## Reference observation
 
-The retained macOS arm64 observation used Python 3.12.14, PyTorch 2.13.0,
+The reference macOS arm64 observation used Python 3.12.14, PyTorch 2.13.0,
 FlagQuantum 0.4.0, one process, and one PyTorch thread.
 
 | Instructions | p50 | p95 | p95 budget | Result |
@@ -81,7 +81,9 @@ only; the versioned runner and budget logic are the durable regression mechanism
   behavior changes.
 - The benchmark imports an internal evaluator but does not expose it publicly.
 - No positive remote DynamicCircuit path is admitted.
-- The retained artifact is comparison-only, non-release local evidence.
+- The reference observation is comparison-only, non-release local evidence.
+- Raw samples are reproducible output and are not retained in the source
+  repository; users choose an output path outside `benchmarks/results/`.
 - Provider-owned snapshot acquisition, post-routing rematch, task semantics,
   live evidence, and provider-slice promotion remain future gates.
 

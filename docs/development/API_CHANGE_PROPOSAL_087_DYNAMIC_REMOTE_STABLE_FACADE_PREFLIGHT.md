@@ -290,20 +290,21 @@ runner performs no credential, provider, network, or task operation.
 
 The preflight p95 budget is a linear envelope of 10 ms fixed allowance plus
 0.55 ms per instruction. This gives limits of 11.1, 27.6, and 150.8 ms for the
-three retained cases. Static classification has a separate 1 ms p95 limit. The
+three reference cases. Static classification has a separate 1 ms p95 limit. The
 envelope reflects repeated local tail-latency observations while still detecting
 fixed-cost and superlinear regressions; it is local non-release evidence, not a
 QPU latency or provider-performance claim. CI validates the runner, schema, and
 budget arithmetic but does not use shared-runner wall time as a release gate.
 
-Reproduce the retained observation with:
+Reproduce the reference observation without adding generated output to the
+source repository:
 
 ```bash
 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
 flagquantum-benchmark run dynamic_remote_preflight \
   --feedback-pairs 1 16 128 --warmup 5 --iterations 101 \
   --static-iterations 1001 --json-output \
-  benchmarks/results/comparison/dynamic_remote_preflight_cpu_arm64_20261024.json
+  ./dynamic_remote_preflight.json
 ```
 
 ## Acceptance
