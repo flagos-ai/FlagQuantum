@@ -849,7 +849,8 @@ def sample_memory_circuit(
 class MemorySampler:
     """A compiled memory experiment owned by its creator process and thread.
 
-    Obtain a handle with :func:`compile_memory_sampler`. Sampling advances one
+    Obtain a handle with :func:`compile_memory_sampler` or the opt-in
+    ``flagquantum.qec.adapters.stim.compile_stim_sampler``. Sampling advances one
     continuous engine stream; a fixed seed reproduces an identical sequence of
     sample calls on the same engine version and instruction set. Configuration
     is fixed at construction. Use a context manager or call :meth:`close` to
@@ -987,6 +988,15 @@ def compile_memory_sampler(
     prepared = _prepare_noisy_measurements(
         program, terminal_qubits=tuple(circuit.code.data_qubits), seed=seed
     )
+    return _memory_sampler(prepared, detectors, observables)
+
+
+def _memory_sampler(
+    prepared: _PreparedMeasurements,
+    detectors: tuple[tuple[int, ...], ...],
+    observables: tuple[tuple[int, ...], ...],
+) -> MemorySampler:
+    """Attach the same owned lifecycle to native records or normalized flips."""
     handle = object.__new__(MemorySampler)
     handle._sampler = prepared
     handle._detector_columns = detectors

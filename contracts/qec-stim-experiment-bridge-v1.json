@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_release",
+  "proposal": "docs/development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md",
+  "approval": {
+    "date": "2026-10-24",
+    "source": "Explicit API owner reply in the implementation chat: approve the three APIs and implement according to the proposal",
+    "scope": "The three opt-in functions and complete boundaries in the linked proposal only"
+  },
+  "namespace": "flagquantum.qec.adapters.stim",
+  "root_exports_added": [],
+  "signatures": {
+    "memory_to_stim_text": "(circuit: 'MemoryCircuit', *, noise: 'PhenomenologicalNoise | NoiseModel') -> 'str'",
+    "compile_stim_sampler": "(circuit_text: 'str', *, seed: 'int | None' = None) -> 'MemorySampler'",
+    "stim_circuit_to_dem_text": "(circuit_text: 'str', *, decompose_errors: 'bool' = False) -> 'str'"
+  },
+  "numerical_owner": "flagquantum.simulation.stabilizer.engine",
+  "output": "Existing MemorySampler and DemSample, or plain text; no SDK objects",
+  "conformance_tests": "tests/qec/test_stim_experiment_bridge.py"
+}
