@@ -92,3 +92,11 @@ Run `python -m pytest tests/qec/test_memory_sampler.py tests/team/simulation/tes
 for lifecycle, numerical seam and replacement checks. The approved additive
 surface is recorded in `contracts/qec-memory-sampler-v1.json`; historical
 restructuring fixtures remain unchanged.
+
+Gate-bound one-/two-qubit Pauli mixtures are placed as complete channels using
+the locations shared with DEM assembly. Branches at one location are exclusive;
+different locations remain independent. The prior X/Z channel reconstruction
+and seeded instruction stream are preserved. See
+[QEC-FUNCTIONAL-004](../../../docs/development/QEC_FUNCTIONAL_004.md) and run
+`PYTHONPATH=. python examples/qec/correlated_circuit_noise.py` for the core-only
+declared-model example; physical circuit sampling uses the existing Stim extra.

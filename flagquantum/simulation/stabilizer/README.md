@@ -143,3 +143,9 @@ seeded comparison across hosts is a comparison of distributions, not of bits.
 Sampling is not differentiable and no gradient is claimed for it - a
 differentiable stabilizer objective is a separate capability with its own
 evidence.
+
+Private `_fault_signatures.py` also classifies bounded Pauli channels through
+the existing engine authority and propagates simultaneous products for QEC.
+It does not sample or import Stim. Run
+`python -m pytest tests/team/simulation/test_correlated_fault_signatures.py -q`
+for dense-reference, global-phase, reset and odd-parity checks.

@@ -280,6 +280,33 @@ this path.
 6. **Promotion decision.** Promote only the exact provider/device/feature slice
    supported by retained evidence.
 
+### Preflight performance budget
+
+The maintained `dynamic_remote_preflight` runner measures the pure fail-closed
+preflight at 2, 32, and 256 dynamic instructions, plus the static-circuit type
+classification that bypasses this path. Circuit construction is outside the
+timed region, evaluation time is fixed so identities are reproducible, and the
+runner performs no credential, provider, network, or task operation.
+
+The preflight p95 budget is a linear envelope of 10 ms fixed allowance plus
+0.55 ms per instruction. This gives limits of 11.1, 27.6, and 150.8 ms for the
+three reference cases. Static classification has a separate 1 ms p95 limit. The
+envelope reflects repeated local tail-latency observations while still detecting
+fixed-cost and superlinear regressions; it is local non-release evidence, not a
+QPU latency or provider-performance claim. CI validates the runner, schema, and
+budget arithmetic but does not use shared-runner wall time as a release gate.
+
+Reproduce the reference observation without adding generated output to the
+source repository:
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+flagquantum-benchmark run dynamic_remote_preflight \
+  --feedback-pairs 1 16 128 --warmup 5 --iterations 101 \
+  --static-iterations 1001 --json-output \
+  ./dynamic_remote_preflight.json
+```
+
 ## Acceptance
 
 - [x] API owner approves this proposal and its no-submit boundary.
@@ -292,6 +319,8 @@ this path.
 - [ ] Routing cannot weaken or erase the preserved requirement identity.
 - [x] Root exports, stable signatures, and serialized schemas remain unchanged.
 - [x] The PR includes a runnable credential-free user example.
+- [x] Reproducible preflight and static-classifier performance evidence passes
+      its local non-release budget without provider activity.
 
 ## Non-goals
 

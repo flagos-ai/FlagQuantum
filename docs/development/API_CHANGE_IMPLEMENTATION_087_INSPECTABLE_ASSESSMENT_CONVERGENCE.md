@@ -107,7 +107,6 @@ runtime team scope: passed
 
 ## Remaining gates
 
-- reproducible preflight and static-bypass performance evidence;
 - provider-owned snapshot acquisition and freshness policy;
 - post-routing capability rematch;
 - sealed provider submission and exactly-once task semantics;

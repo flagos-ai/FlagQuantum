@@ -10,6 +10,7 @@ own decoder algorithms, code families, execution kernels or SDK policy.
 | `text.py` | Existing Stim text grammar; standard library only. |
 | `alternatives.py` | Exclusive mechanism groups; standard library and PyTorch. |
 | `matrices.py` | Code-capacity mechanisms; code matrices and noise records. |
+| `circuit_noise.py` | Gate-bound Pauli locations and exact exclusive groups; shared execution/signature boundary and existing model records. |
 | `construction.py` | Circuit/noise mechanisms; declarative layouts and the existing execution/signature reference helpers. |
 | `circuit.py` | Model/IR realization; owned IR and noise channels. |
 | `chunks.py` | Detector layers, seams, stitching and closing; models and circuit declarations. |
@@ -32,3 +33,9 @@ run its existing focused tests plus `tests/qec/test_restructure_dem.py`. The exa
 needs no optional SDK: it reports rates `[0.3125, 0.25]`, two graph edges, successful
 chunk closure and pickle class `flagquantum.qec.dem`. Preserve the frozen 001–005
 fixtures; add a new behavioral test when extending supported input.
+
+For correlated Pauli circuit noise, run `PYTHONPATH=. python
+examples/qec/correlated_circuit_noise.py` and
+`python -m pytest tests/qec/test_correlated_circuit_noise.py -q`. Branches at
+one location share an `error_id`; separate locations remain independent.
+Independent-only graph, text and decoder consumers retain their refusals.

@@ -75,6 +75,19 @@ _RUNNERS: dict[str, RunnerSpec] = {
             "--json-output results/dynamic-unified-run.json"
         ),
     ),
+    "dynamic_remote_preflight": RunnerSpec(
+        name="dynamic_remote_preflight",
+        module="flagquantum.benchmarking.dynamic_remote_preflight",
+        attribute="main",
+        category="runtime",
+        summary="Measure remote DynamicCircuit preflight and static classification.",
+        hardware="CPU only",
+        example=(
+            "flagquantum-benchmark run dynamic_remote_preflight "
+            "--feedback-pairs 1 16 128 --iterations 101 "
+            "--json-output results/dynamic-remote-preflight.json"
+        ),
+    ),
     "statevector_local": RunnerSpec(
         name="statevector_local",
         module="flagquantum.benchmarking.statevector_local",

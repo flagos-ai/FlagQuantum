@@ -2,12 +2,14 @@
 
 ## Status and decision
 
-Proposed for QEC-FUNCTIONAL-004; implementation is not authorized by this
-proposal. The user requested this contract PR after #779 merged. Approval to
-prepare the proposal is not approval to change accepted noise or DEM behavior.
+The API owner explicitly approved this complete contract for
+QEC-FUNCTIONAL-004 implementation on 2026-10-24, replying `approve`
+(translated) after #783 merged and implementation approval was requested.
+The preceding proposal-only authorization did not activate the feature.
 Core owns QEC and Noise; Integration reviews the protected behavior delta.
 
-Approve or amend the complete scope below before an implementation PR starts.
+Approval covers the complete scope below; implementation and CI remain
+separate delivery gates.
 The target is development version 0.4.0, subject to review and release policy;
 merging a proposal neither releases a feature nor freezes an unimplemented API.
 No root export, constructor argument, public result field, serialization schema,

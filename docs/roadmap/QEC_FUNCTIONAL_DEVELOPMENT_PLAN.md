@@ -44,7 +44,7 @@ not GitHub issue or PR numbers. Split a row if its reviewed scope requires it.
 001–002 were delivered in #774 and #776. Decision A was explicitly approved on
 2026-10-24; 003 merged in #779. The exact channel extension for 004 is now
 specified in [Proposal 088](../development/API_CHANGE_PROPOSAL_088_QEC_CORRELATED_PAULI_FAULTS.md)
-and awaits owner approval. Cross-decoder Decision B and experiment Decision C
+and was explicitly approved for implementation on 2026-10-24. Cross-decoder Decision B and experiment Decision C
 remain unapproved. The separately approved Tensor-only PyMatching batch method
 on main is recorded in [its own proposal](../development/API_CHANGE_PROPOSAL_087_QEC_BATCH_DECODING.md);
 it does not authorize the broader cross-decoder contract. 004–009 depend on
@@ -84,7 +84,7 @@ python examples/qec/installed_imports.py
 Expected output:
 
 ```text
-Public exports: 108
+Public exports: 110
 Registered class: True
 Code pickle path: flagquantum.qec.codes
 Correction: (0,)
@@ -110,6 +110,6 @@ normalization remain candidate work, not capabilities implied by this plan.
 | 001 | Merged in [#774](https://github.com/flagos-ai/FlagQuantum/pull/774) | [Post-retirement mainline acceptance](../development/QEC_RETIREMENT_MAINLINE_ACCEPTANCE.md): main and PR full CI/GPU checks passed; old clean merged QEC worktrees and branches were cleaned. |
 | 002 | Proposal merged in [#776](https://github.com/flagos-ai/FlagQuantum/pull/776) | Decision A explicitly approved by the API owner on 2026-10-24; B/C remain unapproved. |
 | 003 | Merged in [#779](https://github.com/flagos-ai/FlagQuantum/pull/779) | [Implementation and resource evidence](../development/QEC_FUNCTIONAL_003.md); final PR head passed complete CI and single-/two-GPU checks. [Post-merge acceptance](../development/QEC_FUNCTIONAL_003_MAINLINE_ACCEPTANCE.md) records exact revisions, installations and checks. |
-| 004 | Contract proposed; implementation pending approval | [Proposal 088](../development/API_CHANGE_PROPOSAL_088_QEC_CORRELATED_PAULI_FAULTS.md) specifies the channel grammar, exclusive distributions, compatibility and independent numerical acceptance. No noise implementation in this proposal PR. |
+| 004 | Contract merged in #783 and explicitly approved; implementation under review | [Proposal 088](../development/API_CHANGE_PROPOSAL_088_QEC_CORRELATED_PAULI_FAULTS.md) specifies the channel grammar, exclusive distributions, compatibility and independent numerical acceptance. [Implementation and acceptance](../development/QEC_FUNCTIONAL_004.md) cover exclusive circuit-noise construction and sampling. |
 | 005–009 | Pending respective contracts | No broad B/C activation or later performance/threshold claims. Existing adapter-only batch support is separately approved and does not complete the cross-decoder plan. |
 | 010–012 | Candidate tranche | Separate contract review required. |
