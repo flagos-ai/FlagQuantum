@@ -50,6 +50,20 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def peak_rss_bytes() -> int:
+    """Read the Linux address-space peak, excluding inherited pre-exec history."""
+    if sys.platform.startswith("linux"):
+        for line in Path("/proc/self/status").read_text(encoding="utf-8").splitlines():
+            fields = line.split()
+            if fields and fields[0] == "VmHWM:":
+                if len(fields) != 3 or fields[2] != "kB" or int(fields[1]) <= 0:
+                    raise ValueError("invalid Linux VmHWM memory counter")
+                return int(fields[1]) * 1024
+        raise ValueError("Linux process memory measurement requires VmHWM")
+    peak = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    return peak if sys.platform == "darwin" else peak * 1024
+
+
 def source_digest(root: Path) -> str:
     hashed = hashlib.sha256()
     for path in sorted([*root.glob("code/**/*.py"), *root.glob("conf/*.yaml")]):
@@ -456,14 +470,16 @@ def timing_worker(args: argparse.Namespace, config: Config, ref: Reference) -> N
         )
         for size in ((1, 32, 128) if config.a800 else (1, 32))
     ]
-    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     result = {
         "path": name,
         "timings": timings,
-        "isolated_process_peak_rss_bytes": (
-            peak if sys.platform == "darwin" else peak * 1024
-        ),
+        "isolated_process_peak_rss_bytes": peak_rss_bytes(),
         "memory_scope": "whole_worker_including_imports_active_model_and_graph_not_training",
+        "rss_counter": (
+            "proc_self_status_VmHWM"
+            if sys.platform.startswith("linux")
+            else "ru_maxrss"
+        ),
         "manifest_sha256": digest(args.output_directory / "manifest.json"),
         "smoke": manifest["config"]["smoke"],
     }

@@ -6,11 +6,13 @@ import argparse
 import copy
 import json
 import os
+import resource
 import subprocess
 import sys
 import time
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -28,6 +30,36 @@ from flagquantum.qec.decoders._ai.training import Trainer
 from flagquantum.qec.dem.model import DetectorErrorModel
 
 pytestmark = pytest.mark.integration
+
+
+@pytest.mark.parametrize("counter", ["VmHWM: 1234 kB", "VmRSS: 7 kB\nVmHWM: 1234 kB"])
+def test_linux_rss_excludes_inherited_pre_exec_peak(
+    monkeypatch: pytest.MonkeyPatch,
+    counter: str,
+) -> None:
+    from examples.qec.compare_ising import peak_rss_bytes
+
+    def status(path: Path, encoding: str = "utf-8") -> str:
+        assert str(path) == "/proc/self/status"
+        return counter
+
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(Path, "read_text", status)
+    monkeypatch.setattr(
+        resource, "getrusage", lambda who: SimpleNamespace(ru_maxrss=10**9)
+    )
+    assert peak_rss_bytes() == 1234 * 1024
+
+
+def test_missing_linux_memory_counter_is_not_a_false_rss_measurement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from examples.qec.compare_ising import peak_rss_bytes
+
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(Path, "read_text", lambda path, encoding: "VmRSS: 7 kB")
+    with pytest.raises(ValueError, match="requires VmHWM"):
+        peak_rss_bytes()
 
 
 def hyperedge_model() -> Predecoder:
