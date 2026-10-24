@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
@@ -16,6 +15,7 @@ import flagquantum as fq
 import flagquantum._api as fq_api
 import flagquantum.errors as fqe
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic.post_routing import _evaluate_post_routing_policy
 
 pytestmark = pytest.mark.unit
 
@@ -35,41 +35,6 @@ def _feedback_program() -> DynamicCircuit:
     circuit.gate("h", 0)
     circuit.measure(0, classical_bit=0)
     return circuit.conditional("x", 1, classical_bit=0)
-
-
-def _reference_rematch(vector: Mapping[str, Any]) -> tuple[str, ...]:
-    """Evaluate candidate vectors without activating production Runtime."""
-
-    blockers: list[str] = []
-    source_id = vector["source_requirement_set_id"]
-    presented_source_id = vector["presented_source_requirement_set_id"]
-    if not presented_source_id:
-        blockers.append("dynamic_source_requirement_identity_missing")
-    elif presented_source_id != source_id:
-        blockers.append("dynamic_source_requirement_identity_changed")
-
-    preserved = set(vector["preserved_source_requirements"])
-    for requirement in vector["source_requirements"]:
-        if requirement not in preserved:
-            blockers.append(f"dynamic_source_semantic_lost:{requirement}")
-
-    if vector["postrouting_target_id"] != vector["requested_target_id"]:
-        blockers.append("dynamic_postrouting_target_identity_mismatch")
-    if vector["postrouting_snapshot_id"] != vector["preflight_snapshot_id"]:
-        blockers.append("dynamic_postrouting_snapshot_identity_mismatch")
-    if not vector["snapshot_fresh"]:
-        blockers.append("dynamic_postrouting_snapshot_stale")
-
-    route_facts = vector["route_facts"]
-    for requirement in vector["route_requirements"]:
-        state = route_facts.get(requirement, "missing")
-        if state != "supported":
-            blockers.append(f"dynamic_route_capability_fact_{state}:{requirement}")
-
-    legality = vector["provider_legality"]
-    if legality != "accepted":
-        blockers.append(f"dynamic_provider_legality_{legality}")
-    return tuple(blockers)
 
 
 def test_contract_records_exact_approval_and_inactive_stage() -> None:
@@ -192,9 +157,10 @@ def test_contract_freezes_precise_blocker_vocabulary() -> None:
 
 def test_candidate_vectors_freeze_reference_rematch_semantics() -> None:
     for vector in _contract()["conformance_vectors"]:
-        assert _reference_rematch(vector) == tuple(vector["expected_blockers"]), vector[
-            "name"
-        ]
+        inputs = {key: value for key, value in vector.items() if key != "name"}
+        expected = tuple(inputs.pop("expected_blockers"))
+
+        assert _evaluate_post_routing_policy(**inputs) == expected, vector["name"]
 
 
 def test_contract_guarantees_no_external_boundary_or_fallback() -> None:

@@ -2,7 +2,8 @@
 
 ## Status
 
-**Proposal approved on 2026-10-24; Batch A establishes the candidate contract.**
+**Proposal approved on 2026-10-24; Batches A-B establish the contract and pure
+Runtime rematch.**
 
 API Change 086 requires capability matching both before and after routing. API
 Change 087 installed the stable, fail-closed preflight and preserved the source
@@ -244,9 +245,9 @@ support claim merely because this proposal exists.
 
 - [x] The API owner approves this proposal and no-submit boundary.
 - [x] A failing-first contract freezes post-routing blocker semantics.
-- [ ] The original requirement identity survives routing and lowering.
-- [ ] Route-induced requirements are additive rather than replacements.
-- [ ] Preflight and rematch use one exact target and snapshot.
+- [x] The original requirement identity is preserved by the pure rematch.
+- [x] Route-induced requirements are additive rather than replacements.
+- [x] Preflight and rematch use one exact target and snapshot.
 - [ ] Stale, wrong-target, semantically weakened, and physically illegal routed
       artifacts fail closed.
 - [ ] No provider, credential, network, package, task, result, or RNG boundary is

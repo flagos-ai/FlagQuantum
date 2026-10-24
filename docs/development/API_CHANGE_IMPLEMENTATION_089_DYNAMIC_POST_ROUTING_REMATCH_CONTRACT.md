@@ -2,8 +2,8 @@
 
 ## Status
 
-**Batch A candidate contract implemented on 2026-10-24; pure Runtime rematch is
-the next stage.**
+**Batch A candidate contract implemented on 2026-10-24; Batch B pure Runtime
+rematch is implemented in the successor change.**
 
 The API owner authorized this bounded work with:
 
@@ -68,9 +68,9 @@ reference fake. The vectors cover:
 3. simultaneous semantic loss, target and snapshot mismatch, staleness,
    unsupported and not-exposed route facts, and unavailable provider legality.
 
-The successor pure Runtime implementation must pass these vectors without
-changing their expected blockers. The fake is test-only and cannot be imported
-by product code.
+The Batch B pure Runtime implementation passes these vectors without changing
+their expected blockers. The former test-only fake has been removed; the
+contract suite now calls the production policy directly.
 
 ## Compatibility and safety boundary
 
@@ -90,6 +90,6 @@ inputs, monotonicity rules, decision order, blocker vocabulary, external
 boundary, and reusable conformance vectors; tests also prove the current stable
 workflow still refuses before compilation, remote imports, and RNG mutation.
 
-The next implementation must remain pure and credential-free: it reuses the
+The Batch B implementation remains pure and credential-free: it reuses the
 existing requirement/snapshot matcher and returns a deterministic internal
 decision. Routing integration remains a later, separately reviewable batch.
