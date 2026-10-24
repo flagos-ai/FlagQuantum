@@ -420,7 +420,13 @@ def _structural_errors(record: ProgramRecord) -> tuple[LevelDiagnostic, ...]:
                 op
                 for op in block.operations
                 if op.physical_data is None
-                and op.opcode not in ("rydberg.move", "rydberg.pulse", "ising.exchange")
+                and op.opcode
+                not in (
+                    "rydberg.move",
+                    "rydberg.pulse",
+                    "ising.exchange",
+                    "ising.dephase_pair",
+                )
             )
             blocks.append(replace(block, operations=ordinary))
         diagnostics.extend(_verify_function(replace(function, blocks=tuple(blocks))))
@@ -479,7 +485,8 @@ def _verify_ising_program(
         or block.terminator != "return"
         or record.canonical_payload is not None
         or any(
-            op.physical_data is None and op.opcode != "ising.exchange"
+            op.physical_data is None
+            and op.opcode not in ("ising.exchange", "ising.dephase_pair")
             for op in block.operations
         )
     ):
@@ -490,8 +497,31 @@ def _verify_ising_program(
             ),
         )
     diagnostics: list[LevelDiagnostic] = []
+    observations = 0
     for index, operation in enumerate(block.operations):
         data = operation.physical_data
+        if operation.opcode == "ising.dephase_pair" and data is None:
+            observations += 1
+            if (
+                observations > 1
+                or any(
+                    type(value) is not tuple or bool(value)
+                    for value in (
+                        operation.operands,
+                        operation.results,
+                        operation.parameters,
+                        operation.condition_clauses,
+                    )
+                )
+                or operation.literal is not None
+            ):
+                diagnostics.append(
+                    _diagnostic(
+                        "physical.invalid_operation",
+                        f"operation {index} requires a single unread observation with no SSA or control data",
+                    )
+                )
+            continue
         if (
             operation.opcode != "ising.exchange"
             or type(data) is not IsingExchange

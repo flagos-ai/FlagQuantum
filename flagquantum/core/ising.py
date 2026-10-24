@@ -60,6 +60,31 @@ class IsingBraidProgram:
         """
         data = IsingExchange(left, clockwise)
         check_ising_exchange(data)
+        return self._append(Operation("ising.exchange", physical_data=data))
+
+    def dephase_pair(self) -> IsingBraidProgram:
+        """Append an ideal unread charge observation of the current first pair.
+
+        No outcome is selected or returned. This records a channel in source
+        order, without adding physical time, classical bits or feedback.
+
+        Raises:
+            ValueError: An unread observation is already present.
+
+        Examples:
+            >>> from flagquantum.experimental.simulation import IsingBraidProgram
+            >>> program = IsingBraidProgram().exchange(1).dephase_pair()
+            >>> program.to_ir().functions[0].blocks[0].operations[-1].opcode
+            'ising.dephase_pair'
+        """
+        if any(
+            operation.opcode == "ising.dephase_pair"
+            for operation in self._record.functions[0].blocks[0].operations
+        ):
+            raise ValueError("only one unread pair observation is admitted")
+        return self._append(Operation("ising.dephase_pair"))
+
+    def _append(self, operation: Operation) -> IsingBraidProgram:
         function = self._record.functions[0]
         block = function.blocks[0]
         self._record = replace(
@@ -72,7 +97,7 @@ class IsingBraidProgram:
                             block,
                             operations=(
                                 *block.operations,
-                                Operation("ising.exchange", physical_data=data),
+                                operation,
                             ),
                         ),
                     ),
