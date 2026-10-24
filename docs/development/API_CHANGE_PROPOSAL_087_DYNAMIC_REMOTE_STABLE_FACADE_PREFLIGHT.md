@@ -2,8 +2,20 @@
 
 ## Status
 
-**Proposed on 2026-10-24. Implementation, provider activation, networking, and
-task submission require separate authorization.**
+**Proposal approved on 2026-10-24. Implementation, provider activation,
+networking, and task submission require separate authorization.**
+
+The API owner authorized this decision scope with:
+
+```text
+approve API-CHANGE-087-DYNAMIC-REMOTE-STABLE-FACADE-PREFLIGHT-PROPOSAL
+```
+
+This authorization approves the ownership, ordering, fail-closed behavior,
+negative provider matrix, and verification requirements in this document. It
+does not authorize production-source changes, a protected contract edit, a
+provider activation, network access, a mocked or live task submission, or a
+hardware-support claim.
 
 API Change 086 froze the dynamic remote capability contract and implemented the
 internal requirement/snapshot bridge. This proposal governs delivery-sequence
@@ -270,7 +282,7 @@ this path.
 
 ## Acceptance
 
-- [ ] API owner approves this proposal and its no-submit boundary.
+- [x] API owner approves this proposal and its no-submit boundary.
 - [ ] Direct stable dispatch and inspectable assessment use one matcher.
 - [ ] Equivalent inputs produce the same target identity and blocker ordering.
 - [ ] Quafu, Azure, non-IQM Braket, incomplete IQM, and unknown targets create no
