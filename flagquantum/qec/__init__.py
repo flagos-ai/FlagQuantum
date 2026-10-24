@@ -89,6 +89,8 @@ from flagquantum.qec.execution.context import (
 from flagquantum.qec.execution.repetition import run_repetition_memory_experiment
 from flagquantum.qec.execution.sampling import (
     MeasurementSamples,
+    MemorySampler,
+    compile_memory_sampler,
     sample_memory_circuit,
     sample_memory_measurements,
 )
@@ -244,4 +246,6 @@ __all__ = (
     "tesseract_free_cnot_pairs",
     "toric_code",
     "triangular_colour_code",
+    "MemorySampler",
+    "compile_memory_sampler",
 )

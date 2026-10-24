@@ -1,8 +1,8 @@
 """Run CPU circuit sampling and batched logical prediction.
 
 Install the stim and pymatching extras, then run with PYTHONPATH=. from the
-checkout. This example is not a performance benchmark. Memory is bounded by
-batch_size; sampler compilation is still repeated per chunk.
+checkout. This example is not a performance benchmark. One compiled sampler
+serves all chunks; sample storage is bounded by batch_size.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from flagquantum.qec import (
     PyMatchingDecoder,
     RepetitionCode,
     build_memory_circuit,
-    sample_memory_circuit,
+    compile_memory_sampler,
 )
 
 
@@ -34,16 +34,12 @@ def run_baseline(*, shots: int = 128, batch_size: int = 32) -> dict[str, int | s
     )
     failures = 0
     completed = 0
-    for batch_index, start in enumerate(range(0, shots, batch_size)):
-        sample = sample_memory_circuit(
-            memory,
-            noise=noise,
-            shots=min(batch_size, shots - start),
-            seed=53 + batch_index,
-        )
-        predicted = decoder.decode_batch(sample.detectors)
-        failures += int((predicted != sample.observables.bool()).any(dim=1).sum())
-        completed += sample.shots
+    with compile_memory_sampler(memory, noise=noise, seed=53) as sampler:
+        for start in range(0, shots, batch_size):
+            sample = sampler.sample(shots=min(batch_size, shots - start))
+            predicted = decoder.decode_batch(sample.detectors)
+            failures += int((predicted != sample.observables.bool()).any(dim=1).sum())
+            completed += sample.shots
     return {
         "sampling": "circuit",
         "decoder": "pymatching_batch",

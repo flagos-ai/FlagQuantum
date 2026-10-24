@@ -1108,6 +1108,41 @@ def sample_noisy_measurements(
             not a valid one.
     """
 
+    ir = _measurement_record_ir(program)
+    shots = _validate_shots(shots)
+    prepared = _prepare_noisy_measurements(
+        ir, terminal_qubits=terminal_qubits, seed=seed
+    )
+    try:
+        return prepared.sample(shots=shots)
+    finally:
+        prepared.close()
+
+
+@dataclass
+class _PreparedMeasurements:
+    """Own one compiled engine stream without retaining sampled batches."""
+
+    _sampler: Any
+    _num_recorded: int
+
+    def sample(self, *, shots: int) -> torch.Tensor:
+        if self._sampler is None:
+            raise RuntimeError("prepared measurement sampler is closed")
+        shots = _validate_shots(shots)
+        samples = self._sampler.sample(shots=shots)
+        record = torch.as_tensor(samples)
+        if record.shape != (shots, self._num_recorded):
+            raise ValidationError("stabilizer engine returned an invalid record shape")
+        if not bool(((record == 0) | (record == 1)).all()):
+            raise ValidationError("stabilizer engine returned nonbinary measurements")
+        return record.to(dtype=torch.int64, copy=True)
+
+    def close(self) -> None:
+        self._sampler = None
+
+
+def _measurement_record_ir(program: Any) -> CircuitIR:
     ir = ensure_circuit_ir(program)
     if ir.measurements:
         kinds = ", ".join(sorted({node.kind for node in ir.measurements}))
@@ -1116,7 +1151,18 @@ def sample_noisy_measurements(
             f"(found kind(s): {kinds}); the program's own measurements are what "
             "it samples"
         )
-    shots = _validate_shots(shots)
+    return ir
+
+
+def _prepare_noisy_measurements(
+    program: Any,
+    *,
+    terminal_qubits: Sequence[int] | None = None,
+    seed: int | None = None,
+) -> _PreparedMeasurements:
+    """Compile the existing positioned-noise grammar once; keep SDK state here."""
+
+    ir = _measurement_record_ir(program)
     validated_seed = _validate_seed(seed)
     selected = () if terminal_qubits is None else tuple(terminal_qubits)
     outside = tuple(qubit for qubit in selected if qubit >= ir.n_wires)
@@ -1134,5 +1180,4 @@ def sample_noisy_measurements(
         )
     circuit = _noisy_engine_circuit(operations, selected)
     sampler = circuit.compile_sampler(seed=validated_seed)
-    samples = sampler.sample(shots=shots)
-    return torch.as_tensor(samples, dtype=torch.int64)
+    return _PreparedMeasurements(sampler, recorded + len(selected))

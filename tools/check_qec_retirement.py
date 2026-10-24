@@ -121,8 +121,16 @@ def check(phase: str) -> list[str]:
         errors.append(
             "release: retirement requires 0.4.0 or later, never a 0.3.x patch"
         )
-    if list(qec.__all__) != baseline["exports"] or len(qec.__all__) != 108:
-        errors.append("flagquantum.qec: ordered 108 root exports changed")
+    sampler_contract = json.loads(
+        (ROOT / "contracts/qec-memory-sampler-v1.json").read_text()
+    )
+    expected_exports = baseline["exports"] + (
+        sampler_contract["appended_exports"] if active else []
+    )
+    if list(qec.__all__) != expected_exports:
+        errors.append(
+            "flagquantum.qec: ordered historical root exports or approved sampler additions changed"
+        )
     errors += import_errors(tuple(modules), absent=active)
     if not active and errors:
         return errors
@@ -210,7 +218,10 @@ def main() -> int:
     if errors:
         print("QEC retirement contract failed:\n" + "\n".join(errors))
         return 1
-    print(f"QEC retirement contract passed: {args.phase}, 23 modules, 108 exports")
+    print(
+        f"QEC retirement contract passed: {args.phase}, 23 modules, "
+        f"108 exports preserved; {2 if args.phase == 'retired' else 0} approved sampler additions"
+    )
     return 0
 
 

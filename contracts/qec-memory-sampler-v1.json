@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "status": "implemented_pending_release",
+  "proposal": "docs/development/QEC_REUSABLE_SAMPLING_PROPOSAL.md",
+  "approval": {
+    "source": "Explicit API owner approval in the implementation chat",
+    "date": "2026-10-24",
+    "scope": "Two additive flagquantum.qec exports and the approved sampler lifecycle only"
+  },
+  "namespace": "flagquantum.qec",
+  "appended_exports": ["MemorySampler", "compile_memory_sampler"],
+  "owner": "flagquantum.qec.execution.sampling",
+  "factory_signature": "(circuit: 'MemoryCircuit', *, noise: 'PhenomenologicalNoise | NoiseModel', seed: 'int | None' = None) -> 'MemorySampler'",
+  "methods": {
+    "sample": "(self, *, shots: 'int') -> 'DemSample'",
+    "close": "(self) -> 'None'",
+    "__enter__": "(self) -> 'MemorySampler'",
+    "__exit__": "(self, exc_type: 'type[BaseException] | None', exc_value: 'BaseException | None', traceback: 'TracebackType | None') -> 'None'"
+  },
+  "construction": "Factory only; direct construction raises TypeError",
+  "output": "Existing DemSample with caller-owned CPU int8 detectors[B,D] and observables[B,L]",
+  "ownership": "Creator process and thread only; lifecycle misuse raises RuntimeError",
+  "configuration": "Compilation snapshots all execution and parity configuration",
+  "rng": "Continuous stream; identical seed and sample-call sequence reproduce within the engine/platform scope",
+  "shots": "Positive non-boolean integer; invalid counts consume no randomness",
+  "close": "Owner-idempotent release; context exit closes and does not suppress exceptions",
+  "failure": "Execution or extraction failure closes the handle and propagates the original error",
+  "serialization": "Live handles cannot be pickled or copied; TypeError",
+  "consumer": "tests/qec/test_restructure_compatibility.py",
+  "conformance_tests": "tests/qec/test_memory_sampler.py"
+}

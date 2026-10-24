@@ -75,7 +75,12 @@ def test_top_level_exports_and_signatures_match_pre_migration_baseline() -> None
             Path(__file__).parents[2] / "contracts/qec-batch-prediction-v1.json"
         ).read_text()
     )
-    assert list(qec.__all__) == baseline["exports"]
+    sampler_contract = json.loads(
+        (Path(__file__).parents[2] / "contracts/qec-memory-sampler-v1.json").read_text()
+    )
+    assert list(qec.__all__) == (
+        baseline["exports"] + sampler_contract["appended_exports"]
+    )
     for name, expected in baseline["api"].items():
         if name in contract["additive_methods"]:
             expected = {
