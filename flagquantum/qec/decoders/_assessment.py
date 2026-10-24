@@ -180,7 +180,8 @@ def block_timings(
         model.decode(data[:1], backend, threshold=threshold)
     for index in range(repetitions):
         row = data[index : index + 1]
-        for is_hybrid in ((False, True) if index % 2 == 0 else (True, False)):
+        order = (False, True) if index % 2 == 0 else (True, False)
+        for is_hybrid in order:
             start = time.perf_counter_ns()
             if is_hybrid:
                 model.decode(row, backend, threshold=threshold)
