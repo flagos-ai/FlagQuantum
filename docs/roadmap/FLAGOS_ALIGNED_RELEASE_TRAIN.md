@@ -307,16 +307,30 @@ remain required before each authorized merge. This is only the fixed four-sigma
 vacuum CPU slice; it does not certify full M3, other anyon sectors, physical
 hardware, gradients or universal anyon computation.
 
+[Proposal 089](../development/API_CHANGE_PROPOSAL_089_ISING_UNREAD_OBSERVATION.md)
+now adds one ideal unread observation of the current first pair between native
+Ising exchanges. Baseline #798, source #804, Simulation #807 and Runtime #809
+reuse ProgramRecord, existing Kraus actions and root plan/run/results. Only the
+new operation uses native source/plan 1.2; braid-only 1.1 and all old captures
+remain unchanged. The four replaceable factories now use the real path while
+independent physical assertions and 1e-12/rtol=0 budgets stay fixed. The
+[delivery record](../api-changes/FQ-ISING-UNREAD-OBSERVATION-20261024.md) runs an
+exchange/channel/inverse program with P(psi)=0.5 and exact JSON replay. It
+produces a mixed density without selecting an intermediate outcome or creating
+an event/feedback record. Sampled native branches, intermediate atom-presence
+instruments and hardware feedback still require separate reviewed contracts.
+
 ### Reference scenarios
 
 The [M3 scenario acceptance review](../development/M3_SCENARIO_ACCEPTANCE.md)
 links executable witnesses, shared boundaries and separate numerical,
 truncation, gradient and sampling budgets. It includes the merged driven
 three-level (#787), thermal spin-mode (#782) and native fusion-observation
-(#778) slices. These are bounded CPU references, not full M3/M4 or hardware
-certification. Native intermediate observation is a proposed contract-review
-boundary; existing qubit dynamic measurement/feedback must be reused rather than
-reimplemented, and no new protected interface is approved by this inventory.
+(#778) and unread native continuation (#809) slices. These are bounded CPU
+references, not full M3/M4 or hardware certification. Sampled native observation
+and its relationship to existing qubit dynamic measurement/feedback remain a
+contract-review boundary. That work must reuse existing authorities; this
+inventory approves no new protected interface.
 
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |
