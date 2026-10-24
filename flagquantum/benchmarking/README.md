@@ -129,3 +129,7 @@ methodology, platform, or runtime environment differs from the baseline. It
 records refresh provenance, preserves every unmeasured engine payload, and
 recomputes derived ratios and the
 Markdown table.
+
+- `ftqc_exact_reference.py`: observe W1-A H-T-H construction, planning and
+  execution through existing public APIs. Core CPU only, no performance gate.
+  See [the exact reference baseline](../../docs/development/FTQC_EXACT_REFERENCE_BASELINE.md).
