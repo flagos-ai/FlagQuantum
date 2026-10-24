@@ -7,10 +7,42 @@ import math
 import pytest
 import torch
 
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import CapabilityError, ValidationError
+from flagquantum.noise import bit_flip_channel
 from flagquantum.simulation.stabilizer import engine
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize(
+    "probability", [1e-10, 0.005, 0.1234567890123456, 0.999999, 1.0]
+)
+def test_native_text_round_trip_retains_executed_probability(
+    probability: float,
+) -> None:
+    stim = pytest.importorskip("stim")
+    channel = bit_flip_channel(probability)
+    mixture = channel.unitary_mixture
+    assert mixture is not None
+    expected = float(mixture.probabilities[-1])
+    program = CircuitIR(
+        n_wires=1,
+        instructions=(
+            Instruction(
+                "bit_flip", (0,), matrix=channel.kraus, metadata={"is_channel": True}
+            ),
+        ),
+    )
+    text = engine._annotated_stim_text(
+        program,
+        terminal_qubits=(0,),
+        detector_columns=((0,),),
+        observable_columns=((0,),),
+    )
+    reconstructed = stim.Circuit(text)
+    assert reconstructed[0].gate_args_copy()[0] == expected
+    assert reconstructed.num_detectors == reconstructed.num_observables == 1
 
 
 @pytest.mark.parametrize("text", ["", " ", "INVALID_GATE 0"])

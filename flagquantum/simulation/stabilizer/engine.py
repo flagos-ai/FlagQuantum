@@ -1176,7 +1176,16 @@ def _annotated_stim_text(
                 circuit.append(kind, targets)
             else:
                 circuit.append(kind, targets, index)
-    text = str(circuit)
+    lines = []
+    for instruction in circuit:
+        line = str(instruction)
+        if arguments := instruction.gate_args_copy():
+            # The SDK circuit printer rounds arguments; preserve their binary64 values.
+            prefix, suffix = line.split("(", 1)
+            values = ", ".join(map(repr, arguments))
+            line = f"{prefix}({values}){suffix.split(')', 1)[1]}"
+        lines.append(line)
+    text = "\n".join(lines)
     _parse_stim_experiment(text)
     return text
 

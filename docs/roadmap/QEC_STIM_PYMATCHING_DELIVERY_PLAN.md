@@ -115,10 +115,13 @@ is required by this plan.
   `bfb1fd6f9d042a24515295e311daf15930af9cf2`, after 54 main CI jobs and
   the required GPU checks succeeded. One failed-job retry resolved a quay.io
   HTTP 503 without a new commit or changed checks. The API owner then explicitly
-  approved the three functions and their complete proposal. Implementation is
-  now in validation; this does not activate the separate sparse batch or generic
-  experiment contracts. Private feasibility evidence does not substitute for
-  production implementation acceptance.
+  approved the three functions and their complete proposal. Implementation
+  [#806](https://github.com/flagos-ai/FlagQuantum/pull/806) merged as
+  `f7e58d9536bb694761d9799b0972625f69d75a42`: its final head `75bc38a6`
+  passed all 54 main CI jobs and the required GPU checks. Its actual merge
+  Main smoke `40084803885` succeeded; this is not complete main CI evidence.
+  Exact exported-law acceptance continues below. Neither delivery activates
+  the separate sparse batch or generic experiment contracts.
 - F/G/H must first reconcile the already approved correlated-Pauli contract 088
   and existing circuit-noise/sampling/DEM implementations on current main. Extend
   only demonstrated gaps in location coverage, distribution preservation and
@@ -127,6 +130,14 @@ is required by this plan.
   executed Kraus probabilities through existing tensor precision. Preserve the
   failed 1e-12 configured-rate comparison and actual-law evidence; resolve the
   numerical contract rather than silently widening a scientific gate.
+  The first public-API joint-law audit after #806 also exposed an independent
+  text-transport defect: Stim's circuit pretty printer shortens numerical
+  arguments, for example `0.004999999422580004` to `0.005`. Native export must
+  serialize the actual SDK arguments with round-trip precision while retaining
+  SDK target syntax and annotations. This correction changes no Kraus operator,
+  native seeded stream or nominal-versus-executed precision policy. Its strict
+  detector/logical/selected-joint comparisons retain the 1e-12 gate; the original
+  transport failure and nominal-rate discrepancy remain distinct evidence.
 - I closes the whole compatibility task, not merely an individual PR.
 
 The continuing task is complete only when all of the following are recorded:
@@ -185,15 +196,18 @@ The existing `PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py`
 workflow remains available with the Stim extra; it exercises measurement
 layouts, sampling and feedback.
 
-## Immediate action: review the annotated Stim bridge contract
+## Immediate action: preserve exported law and close noise evidence
 
-Work D and the expected structure are now on main through #792. The next
-contract is [the bridge proposal](../development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md),
-based on that verified merge and reconciled with the separate, still-unapproved
-QEC-FUNCTIONAL-005 sparse batch contract. The bridge uses the already delivered
-PyMatching Tensor method and does not activate either Decision B or C of the
-broader functional proposal. Complete independent design/evidence work and
-obtain API-owner approval of the concrete opt-in functions before activation.
+Work D and the expected structure are on main through #792; the explicitly
+approved [bridge proposal](../development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md)
+is implemented by #806. The next bounded correction preserves actual gate
+arguments across native circuit text export, with independent same-law detector,
+logical and selected joint comparisons for Repetition and Surface X/Z d=3/5.
+It preserves the approved signatures and existing public behavior rather than
+adding an API. Then complete F/G/H placement/distribution evidence and I's real
+installation acceptance, reconciling approved contract 088 before adding any
+noise grammar. Do not activate the separate unapproved QEC-FUNCTIONAL-005 sparse
+batch contract or broader functional proposal Decisions B/C.
 
 [PR #788](https://github.com/flagos-ai/FlagQuantum/pull/788) merged as
 `47db63d6dd243e5a2fc498440a0a660858eb06a2`. Its final head `9daf326b`
