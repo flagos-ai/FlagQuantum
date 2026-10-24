@@ -41,8 +41,10 @@ observation as produced by the corrected engine.
 Separate timers cover memory construction, DEM construction, decoder preparation
 (including mechanism merging), sampler compilation, sampling, logical prediction
 and shot-level count reduction. The actual pipeline wall time also includes
-context cleanup and observer bookkeeping. It excludes module imports, metadata
-collection, JSON writing and file I/O. Throughput uses that actual pipeline wall
+context cleanup and observer bookkeeping. It excludes initial runner imports, metadata
+collection, JSON writing and file I/O. Lazy SDK imports triggered inside decoder
+or sampler preparation remain included in those phases and the pipeline wall
+time, including the first warmup. Throughput uses that actual pipeline wall
 time, rather than a sum of phase minima. These observation overheads are not
 subtracted or presented as an optimized uninstrumented implementation.
 
