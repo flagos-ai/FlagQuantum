@@ -108,7 +108,7 @@ def test_snapshot_diagnostic_forbids_unreviewed_regeneration(
     "field,value",
     [
         ("operation", "ising.sample_pair"),
-        ("production_implemented", True),
+        ("production_implemented", False),
         ("braid_only_source_and_plan_version", "1.2"),
         ("new_operation_source_and_plan_version", "1.1"),
         ("unapproved_field", "anything"),

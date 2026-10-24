@@ -34,8 +34,8 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   physical time or classical bit. Rydberg source 1.0 is unchanged.
   Charge projectors are CPU mathematical inputs. Native braid execution,
   executable plans and numerical F/R/Kraus actions remain outside this source gate.
-  Runtime currently refuses source 1.2; source encoding alone does not enable
-  numerical observation support.
+  Runtime admits matching native plan 1.2 separately; Core owns no numerical
+  observation algorithm or execution state.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.
 - `contracts.py`: versioned cross-domain execution and evidence records.

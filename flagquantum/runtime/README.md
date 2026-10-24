@@ -20,14 +20,16 @@ again. The result retains that plan and reports the observed execution route.
 The experimental IsingBraidProgram uses this same path for the reviewed
 four-sigma vacuum sector. `_ising_plan.py` is native admission behind the existing
 plan codec, not another plan class or execution manager. Native plans alone use
-version 1.1, seal ordered matrix outputs and have `analysis=None`; circuit plans
+version 1.1 for braid-only sources or 1.2 for one unread observation, seal matrix outputs and have `analysis=None`; circuit plans
 retain version 1.0 and their actual CircuitAnalysis. Dispatch authenticates the
 profile from the sealed payload and delegates finite F/R actions to Simulation.
 Source snapshots, matrix snapshots and exact environment preflight also apply
 to JSON replay. No qubit count or elapsed time is inferred from fusion labels.
-The planner and reader explicitly bind native plan 1.1 to source 1.1, before
-output allocation or source decoding. Core accepting a newer source version does
-not grant Runtime numerical support for it; rehashing cannot bypass this boundary.
+The planner and reader bind native plan/source versions exactly, before output
+allocation or source decoding. Version 1.2 requires exactly one ordered
+`dephase_pair()`; its unread channel may yield a mixed density. No intermediate
+outcome, event, classical bit or feedback record is produced. Rehashing cannot
+bypass the version or source semantics.
 
 Run `python -m examples.ising_braid_execution` for direct execution, exact JSON
 replay and explicit terminal QND charge sampling. It reports plan 1.1, null qubit

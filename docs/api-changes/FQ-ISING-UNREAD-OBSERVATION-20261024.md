@@ -1,65 +1,70 @@
 # Ising unread pair-charge observation
 
 Proposal: [089](../development/API_CHANGE_PROPOSAL_089_ISING_UNREAD_OBSERVATION.md).
-The five decisions were explicitly approved on 2026-10-24. Document PR #793
-merged as `1570fb9f74efa85878255ca6f94cb0063b0abff8` after its full applicable
-CI/GPU succeeded. This record grants no additional PR merge permissions.
+The five decisions were explicitly approved on 2026-10-24. Each PR still requires
+its own merge authorization and complete applicable CI/GPU.
 
-## Shared baseline
+## Shared baseline and replacement
 
 The [existing execution-plan authority](../../contracts/execution-plan-v1-candidate.json)
-records the approved narrow extension. Its live braid-only version remains 1.1.
-Production source/plan 1.2 and `dephase_pair()` are **not implemented** by this
-baseline. Existing stable root signatures and result fields are unchanged.
+records the approved narrow extension. Braid-only source/plan 1.1 is unchanged;
+exactly one ordered `dephase_pair()` uses native source/plan 1.2. Root signatures,
+options and result fields remain unchanged.
 
-[Independent numerical consumers](../../tests/unit/test_ising_unread_contract.py)
-cover both initial fusion channels, zero-weight branches, ordered exchange/channel
-composition, full complex density, trace and mixed-state echo, named expectations,
-frozen source/output snapshots, deterministic recipe replay and untouched private
-RNG state. They use fixed F/R references at absolute tolerance 1e-12 and rtol=0.
-The four replaceable fixtures are source construction, planning, execution and
-reading. Later implementation replaces these factories; the consumer assertions
-and mathematical oracle must remain unchanged.
+The baseline landed before implementation in #798. Its test-only source and
+recipe composed existing exchange/Kraus actions without claiming production 1.2
+support. Core #804 added the bounded source operation and strict encoding;
+Simulation #807 added the channel to the existing ordered action kernel.
+Runtime now admits matching native plan/source 1.2 through the existing codec,
+identity, preflight, replay and result authorities. It implements no numerical
+channel, solver or controller.
 
-The test-only reference composes existing Simulation exchange actions and
-`SuperOperator.from_kraus`; it reuses existing tensor encoding, canonical JSON/hash
-and `ExecutionResult`/`MeasurementResult`. Its `test.ising_unread_recipe` is a
-private fixture recipe, **not** a production native source or executable plan.
-It does not attach a fabricated public plan to results. It certifies numerical
-consumers and snapshots, not source/schema, environment or resource admission.
+The four [consumer factories](../../tests/unit/test_ising_unread_contract.py)
+now use real source construction, planning, execution and JSON reading. The
+reference source/recipe/execution implementations have been deleted. Independent
+consumer assertions and fixed F/R oracles remain unchanged at atol=1e-12, rtol=0.
+They cover both initial channels, zero-weight branches, noncommuting continuation,
+full complex density, trace, mixed-state echo, named outputs, snapshots, exact
+replay and unchanged Torch/Python RNG.
 
 [Compatibility consumers](../../tests/unit/test_ising_unread_compatibility.py)
-read six exact braid-only source/plan captures made before implementation at
-`4be2375eff47c112ce8d8e24f8206ed5592130d8`. The archived JSON strings and SHA256
-values were copied without regeneration. Existing circuit, Rydberg and Lindblad
-capture authorities remain unchanged and keep their existing tests.
+retain six exact braid-only source/plan captures made before implementation at
+`4be2375eff47c112ce8d8e24f8206ed5592130d8`. JSON strings and hashes were not
+regenerated. Existing circuit, Rydberg and Lindblad captures remain unchanged.
 
-## Remaining domain deliveries
+## Runnable native workflow
 
-1. Core adds the bounded builder operation and strict source 1.2 verification/
-   codec in the existing ProgramRecord. Test current-pair worldline semantics,
-   argument and duplicate refusals, declared null only for the new opcode, and
-   refusal of malformed, extra or inconsistent source data.
-2. Simulation extends the existing ordered action kernel with the fixed unread
-   channel. It adds no solver, physical time or result wrapper.
-3. Runtime admits matching native plan/source 1.2 through existing planning,
-   identity, preflight, replay and result authorities. Replace all four baseline
-   factories with the real path. Test rehashed inconsistent versions, allocation/
-   environment and options refusals, exact public replay and old bytes.
+```python
+import torch
+import flagquantum as fq
+from flagquantum.experimental.simulation import IsingBraidProgram
 
-Each PR needs separate user merge authorization and latest complete applicable
-CI/GPU. These deliveries do not admit sampled branches, feedback, classical bits,
-timestamps, Remote, hardware or another anyon sector.
+program = IsingBraidProgram().exchange(1).dephase_pair().exchange(1, clockwise=True)
+output = fq.expectation(program.projector("psi"), name="psi")
+plan = fq.plan(program, outputs=output)
+replay = fq.ExecutionPlan.from_json(plan.to_json())
+result = fq.run(replay)
+print(plan.schema_version)
+print(round(float(result.expectation("psi")[0]), 12))
+print(torch.equal(result.state, fq.run(plan).state))
+```
 
-## Runnable workflow supported today
+Executed output: `1.2`, `0.5`, `True`. The result state has shape `(1,2,2)`
+and is the mixed density I/2; the channel removes the coherence required by the
+inverse-braid echo. No outcome was selected or sampled.
 
-The proposal's current-API mathematical reference remains the executable user
-example. Run its code to obtain `0.5`, `0.0`, `True`: an unread first-pair channel
-between an exchange and its inverse destroys the coherence needed for the echo,
-leaving I/2. It is caller composition, not implemented native observation.
-
-Run the baseline consumers and existing Ising consumers with:
+Run the replacement, old-byte and admission tests with:
 
 ```bash
-python -m pytest tests/unit/test_ising_unread_contract.py tests/unit/test_ising_unread_compatibility.py tests/unit/test_ising_braid_contract.py -q
+python -m pytest tests/unit/test_ising_unread_contract.py tests/unit/test_ising_unread_compatibility.py tests/unit/test_ising_unread_runtime.py -q
 ```
+
+## Preserved limits
+
+CPU complex128, four sigma anyons with total vacuum, zero or one ideal unread
+observation of current positions 0/1. No gradients, shots on `fq.run`, noise,
+alternate backend, sampled intermediate branches, feedback, classical bits,
+timestamps, Remote, hardware or other anyon sectors. Existing explicit terminal
+sampling remains separate. Source/plan mismatch and relabelled braid-only 1.2
+sources fail even after rehashing. Memory and environment refusals remain in the
+existing preflight path. No qubit analysis or physical duration is fabricated.

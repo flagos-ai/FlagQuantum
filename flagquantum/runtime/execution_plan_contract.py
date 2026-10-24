@@ -213,7 +213,7 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
     """Restore a plan without replanning and verify every identity component."""
 
     normalized = validate_plan_payload(payload)
-    if normalized["version"] == "1.1":
+    if normalized["version"] in ("1.1", "1.2"):
         from ._ising_plan import restore_ising_plan
 
         return restore_ising_plan(normalized)
@@ -303,7 +303,7 @@ def plan_from_json(text: str) -> ExecutionPlan:
 
 def _validate_plan_schema(values: Mapping[str, Any]) -> None:
     expected = _TOP_LEVEL_FIELDS | (
-        {"outputs"} if values.get("version") == "1.1" else set()
+        {"outputs"} if values.get("version") in ("1.1", "1.2") else set()
     )
     unknown = set(values) - expected
     missing = expected - set(values)
@@ -318,7 +318,7 @@ def _validate_plan_schema(values: Mapping[str, Any]) -> None:
         raise ExecutionPlanContractError(
             "unsupported_schema", "invalid ExecutionPlan schema"
         )
-    if values["version"] not in (EXECUTION_PLAN_VERSION, "1.1"):
+    if values["version"] not in (EXECUTION_PLAN_VERSION, "1.1", "1.2"):
         raise ExecutionPlanContractError(
             "unsupported_schema",
             f"unsupported ExecutionPlan version {values['version']!r}",
@@ -415,7 +415,7 @@ def validate_plan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         raise TypeError("execution plan payload must be a mapping")
     values = dict(payload)
     _validate_plan_schema(values)
-    if values["version"] == "1.1":
+    if values["version"] in ("1.1", "1.2"):
         from ._ising_plan import validate_ising_payload
 
         return validate_ising_payload(values)
@@ -682,7 +682,7 @@ def _compiler_identity() -> dict[str, str]:
 
 
 def _identity(payload: Mapping[str, object], *, compiler: Mapping[str, str]) -> str:
-    if payload.get("version") == "1.1":
+    if payload.get("version") in ("1.1", "1.2"):
         return canonical_hash(
             {key: value for key, value in payload.items() if key != "identity"}
         )

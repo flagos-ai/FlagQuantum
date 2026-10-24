@@ -1,4 +1,4 @@
-"""Approved unread charge source semantics, with numerical admission still closed."""
+"""Approved unread charge source semantics, independent of numerical admission."""
 
 from __future__ import annotations
 
@@ -7,11 +7,9 @@ from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from typing import Literal
-from unittest.mock import patch
 
 import pytest
 
-import flagquantum as fq
 from flagquantum.core.ir.program.model import Operation, ProgramRecord
 from flagquantum.core.ir.program.physical import IsingContext, IsingExchange
 from flagquantum.core.ir.program.physical_codec import (
@@ -20,7 +18,7 @@ from flagquantum.core.ir.program.physical_codec import (
 )
 from flagquantum.core.ir.program.verifier import verify_program_record
 from flagquantum.core.ising import IsingBraidProgram
-from flagquantum.errors import CapabilityError, SerializationError
+from flagquantum.errors import SerializationError
 
 pytestmark = pytest.mark.unit
 
@@ -181,16 +179,3 @@ def test_empty_mutable_fields_are_not_immutable_source_records(field: str) -> No
     assert verify_program_record(broken)
     with pytest.raises(SerializationError):
         native_program_to_dict(broken)
-
-
-@pytest.mark.parametrize("entry", [fq.plan, fq.run])
-def test_source_encoding_does_not_grant_runtime_numerical_support(
-    entry: Callable[..., object],
-) -> None:
-    source = IsingBraidProgram().exchange(1).dephase_pair().exchange(1, clockwise=True)
-    with (
-        patch("flagquantum.simulation.ising_braid.evolve_ising_braid") as kernel,
-        pytest.raises(CapabilityError, match="source 1.1"),
-    ):
-        entry(source)
-    kernel.assert_not_called()

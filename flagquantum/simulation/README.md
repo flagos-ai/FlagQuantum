@@ -594,8 +594,8 @@ commutation, inverses and complete density matrices, all at atol=1e-12, rtol=0.
 Global unitary phase and phase-invariant density action have separate checks.
 The source is validated by Core before numerical work; other profiles are
 refused. Braid-only native execution is already available through Runtime.
-This change does not activate `fq.plan`/`fq.run` for source 1.2 or change
-executable schemas. Runtime admission and replacement of the four proposal 089
-baseline factories remain separate gates. `tests/unit/test_ising_unread_actions.py`
+Runtime admits source/plan 1.2 through existing `fq.plan`/`fq.run`. The four
+proposal 089 baseline factories now use real source, planning, execution and JSON
+replay; their independent consumer assertions remain unchanged. `tests/unit/test_ising_unread_actions.py`
 checks independent full-density and weighted conditional continuations, pure/
 mixed echoes, trace, coherence, positivity and unchanged RNG at the same budget.

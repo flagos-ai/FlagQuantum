@@ -1,36 +1,23 @@
-"""Replaceable numerical consumers for approved proposal 089.
-
-The reference factories below compose existing exchange and Kraus actions. Their
-saved recipe is explicitly test-only: it does not implement native source/plan
-1.2, source validation or Runtime admission. Replace all four fixtures when the
-real vertical path lands, retaining the independent consumer assertions.
-"""
+"""Unchanged proposal 089 consumers, now using the real native plan path."""
 
 from __future__ import annotations
 
-import json
 import math
 import random
 from collections.abc import Callable, Hashable, Sequence
-from dataclasses import dataclass
 from typing import Literal, Protocol
 
 import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.core.ir import _decode_value, _encode_value
-from flagquantum.core.ir.program.physical import IsingExchange
 from flagquantum.core.ising import IsingBraidProgram
 from flagquantum.observables import OutputRequest
-from flagquantum.operators import SuperOperator
-from flagquantum.runtime.execution_plan_contract import canonical_hash, canonical_json
-from flagquantum.runtime.result import ExecutionResult, MeasurementResult
-from flagquantum.simulation.ising_braid import _exchange_unitary
+from flagquantum.runtime.execution_plan import ExecutionPlan
+from flagquantum.runtime.result import ExecutionResult
 
 pytestmark = pytest.mark.unit
 Channel = Literal["1", "psi"]
-Action = tuple[int, bool] | None
 Word = tuple[tuple[int, bool], ...]
 DTYPE = torch.complex128
 
@@ -71,125 +58,40 @@ class Runner(Protocol):
     ) -> ExecutionResult: ...
 
 
-class _ReferenceSource:
-    def __init__(self, *, initial_channel: Channel = "1") -> None:
-        self.initial = initial_channel
-        self.actions: tuple[Action, ...] = ()
-        self.source = IsingBraidProgram(initial_channel=initial_channel)
-
-    def exchange(self, left: int, *, clockwise: bool = False) -> _ReferenceSource:
-        self.source.exchange(left, clockwise=clockwise)
-        self.actions += ((left, clockwise),)
-        return self
-
-    def dephase_pair(self) -> _ReferenceSource:
-        if None in self.actions:
-            raise ValueError("only one unread pair observation is admitted")
-        self.actions += (None,)
-        return self
-
-    def projector(self, channel: Channel) -> torch.Tensor:
-        return self.source.projector(channel)
-
-    def to_ir(self) -> Hashable:
-        # A frozen recipe, deliberately not a production ProgramRecord.
-        return self.initial, self.actions
-
-
-@dataclass(frozen=True)
-class _ReferencePlan:
-    encoded: str
-
-    @property
-    def identity(self) -> str:
-        return canonical_hash(json.loads(self.encoded))
-
-    def to_json(self, *, indent: int | None = None) -> str:
-        return (
-            self.encoded
-            if indent is None
-            else json.dumps(json.loads(self.encoded), indent=indent)
-        )
-
-
-def _reference_plan(
-    program: UnreadProgram, *, outputs: Sequence[OutputRequest] = ()
-) -> UnreadPlan:
-    assert isinstance(program, _ReferenceSource)
-    return _ReferencePlan(
-        canonical_json(
-            {
-                "schema": "test.ising_unread_recipe",
-                "initial": program.initial,
-                "actions": program.actions,
-                "outputs": [
-                    {"name": item.name, "matrix": _encode_value(item.observable)}
-                    for item in outputs
-                ],
-            }
-        )
-    )
-
-
-def _reference_run(
-    program: UnreadProgram | UnreadPlan,
-    *,
-    outputs: Sequence[OutputRequest] = (),
-) -> ExecutionResult:
-    if isinstance(program, _ReferenceSource):
-        program = _reference_plan(program, outputs=outputs)
-    assert isinstance(program, _ReferencePlan)
-    recipe = json.loads(program.encoded)
-    assert recipe["schema"] == "test.ising_unread_recipe"
-    source = IsingBraidProgram(initial_channel=recipe["initial"])
-    state = source.projector(recipe["initial"])
-    channel = SuperOperator.from_kraus([source.projector(c) for c in ("1", "psi")])
-    for action in recipe["actions"]:
-        if action is None:
-            state = channel.apply(state)
-        else:
-            unitary = _exchange_unitary(IsingExchange(*action))
-            state = SuperOperator.left_right_multiply(unitary, unitary.mH).apply(state)
-    measurements = []
-    values = []
-    for index, item in enumerate(recipe["outputs"]):
-        matrix = _decode_value(item["matrix"])
-        assert isinstance(matrix, torch.Tensor)
-        value = torch.trace(state @ matrix).real.unsqueeze(0)
-        values.append(value)
-        measurements.append(
-            MeasurementResult(
-                "expectation",
-                (),
-                value,
-                metadata={"fq_output_index": index, "fq_output_name": item["name"]},
-            )
-        )
-    return ExecutionResult(
-        state=state.unsqueeze(0),
-        value=torch.stack(values, dim=1) if values else None,
-        measurements=tuple(measurements),
-    )
-
-
 @pytest.fixture
 def unread_source() -> SourceFactory:
-    return _ReferenceSource
+    return IsingBraidProgram
 
 
 @pytest.fixture
 def unread_plan() -> Planner:
-    return _reference_plan
+    def plan(
+        program: UnreadProgram, *, outputs: Sequence[OutputRequest] = ()
+    ) -> UnreadPlan:
+        assert isinstance(program, IsingBraidProgram)
+        selected: ExecutionPlan = fq.plan(program, outputs=outputs or None)
+        return selected
+
+    return plan
 
 
 @pytest.fixture
 def unread_run() -> Runner:
-    return _reference_run
+    def run(
+        program: UnreadProgram | UnreadPlan,
+        *,
+        outputs: Sequence[OutputRequest] = (),
+    ) -> ExecutionResult:
+        assert isinstance(program, (IsingBraidProgram, fq.ExecutionPlan))
+        result: ExecutionResult = fq.run(program, outputs=outputs or None)
+        return result
+
+    return run
 
 
 @pytest.fixture
 def unread_read() -> Callable[[str], UnreadPlan]:
-    return _ReferencePlan
+    return ExecutionPlan.from_json
 
 
 def _append(program: UnreadProgram, word: Word) -> None:
