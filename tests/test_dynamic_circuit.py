@@ -379,9 +379,12 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
         supports_dynamic_circuits=True,
         max_classical_bits=4,
     )
-    accepted = fq.experimental.dynamic.assess_dynamic_backend(circuit, supported)
-    assert accepted.compatible
-    assert accepted.blockers == ()
+    rejected = fq.experimental.dynamic.assess_dynamic_backend(circuit, supported)
+    assert not rejected.compatible
+    assert "dynamic_capability_fact_missing:mid_circuit_measurement" in (
+        rejected.blockers
+    )
+    assert "missing_fact:qubits.logical_capacity" in rejected.blockers
 
     too_small = CloudBackendProfile(
         provider="test",
@@ -392,7 +395,7 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
         max_classical_bits=2,
     )
     rejected = fq.experimental.dynamic.assess_dynamic_backend(circuit, too_small)
-    assert rejected.blockers == ("required_classical_bits_exceed_backend_limit",)
+    assert "required_classical_bits_exceed_backend_limit" in rejected.blockers
 
     unsupported_condition = CloudBackendProfile(
         provider="test",
@@ -409,7 +412,7 @@ def test_dynamic_backend_capability_negotiation_fails_closed() -> None:
     rejected = fq.experimental.dynamic.assess_dynamic_backend(
         conditioned_h, unsupported_condition
     )
-    assert rejected.blockers == ("conditional_gate_not_in_backend_basis:h",)
+    assert "conditional_gate_not_in_backend_basis:h" in rejected.blockers
 
 
 def _dynamic_backend(**overrides) -> CloudBackendProfile:
@@ -602,7 +605,8 @@ def test_dynamic_deployment_routes_to_backend_topology_and_seals_evidence() -> N
         shots=32,
     )
 
-    assert report.compatible
+    assert not report.compatible
+    assert "dynamic_capability_fact_missing:mid_circuit_measurement" in report.blockers
     assert deployment.validate_deployment_package(package) is package
     assert package.metadata["compiled"] is True
     routing = package.metadata["routing_plan"]

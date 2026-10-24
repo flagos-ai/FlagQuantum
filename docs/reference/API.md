@@ -798,8 +798,15 @@ report = fq.experimental.dynamic.assess_dynamic_backend(
     circuit,
     backend,
 )
-assert report.compatible, report.blockers
+assert not report.compatible
+assert "dynamic_capability_fact_missing:mid_circuit_measurement" in report.blockers
 ```
+
+Assessment uses the same device-scoped requirement/snapshot matcher as stable
+remote `fq.run(...)`. Coarse profile fields such as
+`supports_dynamic_circuits=True` remain useful package diagnostics but are not
+admission evidence. Until a provider supplies a detailed snapshot, assessment
+and stable remote execution return the same fail-closed capability blockers.
 
 The Amazon Braket IQM integration has been validated locally through the real
 SDK serializer and mocked task contract only; no real IQM QPU execution is

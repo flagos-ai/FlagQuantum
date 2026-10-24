@@ -62,9 +62,11 @@ def _dynamic_program_ir_blockers(circuit: DynamicCircuit) -> tuple[str, ...]:
     return ()
 
 
-def assess_dynamic_backend(
+def _assess_dynamic_package_compatibility(
     circuit: DynamicCircuit, backend: Any
 ) -> DynamicBackendCompatibility:
+    """Check experimental package and dialect constraints only."""
+
     blockers: list[str] = []
     program_ir_blockers = _dynamic_program_ir_blockers(circuit)
     blockers.extend(program_ir_blockers)
@@ -107,13 +109,52 @@ def assess_dynamic_backend(
     )
 
 
+def assess_dynamic_backend(
+    circuit: DynamicCircuit, backend: Any
+) -> DynamicBackendCompatibility:
+    """Assess remote admission without treating coarse profile flags as proof."""
+
+    packaging = _assess_dynamic_package_compatibility(circuit, backend)
+    if not packaging.program_ir_verified:
+        return packaging
+
+    admission_blockers: tuple[str, ...]
+    provider = getattr(backend, "provider", None)
+    name = getattr(backend, "name", None)
+    if (
+        not isinstance(provider, str)
+        or not provider
+        or not isinstance(name, str)
+        or not name
+    ):
+        admission_blockers = ("dynamic_remote_target_invalid",)
+    else:
+        from .remote_preflight import evaluate_dynamic_remote_preflight
+
+        decision = evaluate_dynamic_remote_preflight(
+            circuit,
+            target=f"{provider}:{name}",
+        )
+        admission_blockers = decision.blocker_codes
+
+    blockers = tuple(dict.fromkeys((*admission_blockers, *packaging.blockers)))
+    return DynamicBackendCompatibility(
+        compatible=not blockers,
+        required_classical_bits=packaging.required_classical_bits,
+        blockers=blockers,
+        program_ir_verified=packaging.program_ir_verified,
+        qasm_version=packaging.qasm_version,
+        dynamic_dialect=packaging.dynamic_dialect,
+    )
+
+
 def _require_dynamic_compatibility(
     circuit: DynamicCircuit,
     backend: Any,
     *,
     stage: str,
 ) -> DynamicBackendCompatibility:
-    compatibility = assess_dynamic_backend(circuit, backend)
+    compatibility = _assess_dynamic_package_compatibility(circuit, backend)
     if not compatibility.compatible:
         raise CapabilityError(
             f"dynamic_backend_incompatible:{stage}: "

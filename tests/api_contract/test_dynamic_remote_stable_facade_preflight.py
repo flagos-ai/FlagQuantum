@@ -161,6 +161,28 @@ def test_preflight_reports_wrong_snapshot_identity_without_fallback() -> None:
     assert "dynamic_target_identity_mismatch" in decision.blocker_codes
 
 
+def test_experimental_assessment_and_stable_refusal_share_one_matcher() -> None:
+    circuit = _feedback_program()
+    backend = CloudBackendProfile(
+        provider="quafu",
+        name="Baihua",
+        n_qubits=156,
+        basis_gates=("x",),
+        supports_openqasm=True,
+        supports_dynamic_circuits=True,
+        max_classical_bits=1,
+    )
+
+    report = fq.experimental.dynamic.assess_dynamic_backend(circuit, backend)
+    decision = evaluate_dynamic_remote_preflight(circuit, target="quafu:Baihua")
+
+    assert not report.compatible
+    assert report.blockers == decision.blocker_codes
+    with pytest.raises(fqe.CapabilityError) as raised:
+        fq.run(circuit, target="quafu:Baihua", shots=8)
+    assert str(raised.value).endswith(", ".join(report.blockers))
+
+
 def test_local_dynamic_execution_and_static_remote_dispatch_are_not_reclassified(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

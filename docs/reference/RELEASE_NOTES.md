@@ -17,6 +17,11 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Make experimental dynamic backend assessment consume the same fail-closed
+  requirement/snapshot matcher as stable remote `fq.run(...)`. A coarse
+  `supports_dynamic_circuits=True` profile can still describe experimental
+  packaging constraints but cannot report execution admission without detailed
+  device-scoped facts and evidence.
 - Guard stable remote `DynamicCircuit` calls at the `fq.run(...)` facade before
   compiler or provider dispatch. Remote targets now fail closed with the exact
   target and ordered capability blockers until a detailed device-scoped
