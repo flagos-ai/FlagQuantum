@@ -128,8 +128,8 @@ def test_cuda_requests_refuse_cpu_fallback(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
     with pytest.raises(ValueError, match="requires CUDA"):
         cuda_metadata(None)
-    with pytest.raises(ValueError, match="available CUDA"):
-        on_device(lambda x: (x, x[:, :1]), torch.device("cuda:0"))
+    with pytest.raises(ValueError, match="CPU or CUDA"):
+        on_device(lambda x: (x, x[:, :1]), torch.device("meta"))
 
 
 def test_cuda_timing_fences_bracket_the_complete_cpu_match(
@@ -138,10 +138,8 @@ def test_cuda_timing_fences_bracket_the_complete_cpu_match(
     """CPU contract check of synchronization order, not GPU timing evidence."""
     events: list[str] = []
     clock = iter(range(0, 6000, 1000))
-    device = torch.device("cuda:0")
 
-    def synchronize(selected: torch.device) -> None:
-        assert selected == device
+    def synchronize() -> None:
         events.append("sync")
 
     def now() -> int:
@@ -152,12 +150,15 @@ def test_cuda_timing_fences_bracket_the_complete_cpu_match(
         events.append("matching")
         return x[:, :1]
 
-    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
-    monkeypatch.setattr(torch.cuda, "synchronize", synchronize)
     monkeypatch.setattr(time, "perf_counter_ns", now)
     bits = torch.zeros(2, 3, dtype=torch.int8)
     timing = measure(
-        bits, lambda x: (x, x[:, :1]), matching, warmup=1, repetitions=3, device=device
+        bits,
+        lambda x: (x, x[:, :1]),
+        matching,
+        warmup=1,
+        repetitions=3,
+        synchronize=synchronize,
     )
     assert events[2:] == ["sync", "clock", "matching", "sync", "clock"] * 3
     assert timing.p50_block_us == timing.p99_block_us == 1.0
@@ -231,7 +232,12 @@ def test_real_cuda_complete_hyperedge_correction_and_timing() -> None:
 
     require_parity(bits, model.correct, transferred, matching)
     timing = measure(
-        bits, transferred, matching, warmup=1, repetitions=3, device=device
+        bits,
+        transferred,
+        matching,
+        warmup=1,
+        repetitions=3,
+        synchronize=lambda: torch.cuda.synchronize(device),
     )
     assert timing.p99_block_us >= timing.p50_block_us > 0
     assert torch.cuda.max_memory_allocated(device) > 0

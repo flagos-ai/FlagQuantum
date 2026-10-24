@@ -442,7 +442,11 @@ def timing_worker(args: argparse.Namespace, config: Config, ref: Reference) -> N
                 decode_global,
                 warmup=3 if config.smoke or not config.a800 else 10,
                 repetitions=4 if config.smoke else (200 if config.a800 else 32),
-                device=config.device if config.a800 and name != "pymatching" else None,
+                synchronize=(
+                    (lambda: torch.cuda.synchronize(config.device))
+                    if config.a800 and name != "pymatching"
+                    else None
+                ),
             )
         )
         for size in ((1, 32, 128) if config.a800 else (1, 32))

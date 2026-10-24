@@ -23,8 +23,6 @@ def on_device(correction: Correction, device: torch.device) -> Correction:
     """
     if device.type not in ("cpu", "cuda"):
         raise ValueError("comparison supports only explicit CPU or CUDA devices")
-    if device.type == "cuda" and not torch.cuda.is_available():
-        raise ValueError("CUDA comparison requires an available CUDA device")
 
     def run(bits: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         transferred = bits.to(device)
@@ -104,24 +102,22 @@ def measure(
     *,
     warmup: int = 3,
     repetitions: int = 32,
-    device: torch.device | None = None,
+    synchronize: Callable[[], None] | None = None,
 ) -> Timing:
-    """Time complete batches, synchronizing an explicitly selected CUDA device."""
+    """Time complete batches; the device owner supplies its synchronization fence."""
     _positive(warmup, "warmup")
     _positive(repetitions, "repetitions")
-    if device is not None and (device.type != "cuda" or not torch.cuda.is_available()):
-        raise ValueError("timing synchronization requires an available CUDA device")
     expected = decode(detectors, correction, global_decode)
     for _ in range(warmup):
         decode(detectors, correction, global_decode)
     elapsed: list[float] = []
     for _ in range(repetitions):
-        if device is not None:
-            torch.cuda.synchronize(device)
+        if synchronize is not None:
+            synchronize()
         start = time.perf_counter_ns()
         actual = decode(detectors, correction, global_decode)
-        if device is not None:
-            torch.cuda.synchronize(device)
+        if synchronize is not None:
+            synchronize()
         elapsed.append((time.perf_counter_ns() - start) / 1000)
         if not torch.equal(actual, expected):
             raise ValueError("nondeterministic predictions in timing run")
