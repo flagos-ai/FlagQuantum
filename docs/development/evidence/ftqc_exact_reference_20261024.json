@@ -1,0 +1,930 @@
+{
+  "source_revision": "b4f4099844e921b062f40d4699ca2374fd58f30b",
+  "runner": "ftqc_exact_reference",
+  "schema": "flagquantum.ftqc_exact_reference.study.v1",
+  "non_release_evidence": true,
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "collection_command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. python -m flagquantum.benchmarking run ftqc_exact_reference --warmup 3 --iterations 10 --json-output <process.json>",
+  "profile": "Source checkout with Python3.12.14/Torch2.14.1 fresh core runtime; three fresh CPU processes, no optional SDK overlay.",
+  "runs": [
+    {
+      "process": 1,
+      "external_process_seconds": 0.9594586669991259,
+      "raw_sha256": "5864c3753a847051f6ed96ff95aa9b2ff0d4bff65268a2fe419b5281465bb9eb",
+      "report": {
+        "blockers": [
+          "one unencoded qubit; no mixed-engine or capacity evidence"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "explicit_pipeline_median_seconds": 0.0009167914977297187,
+        "flagquantum_source_version": "0.4.0",
+        "iterations": 10,
+        "local_world_size": 1,
+        "new_numerical_tolerance_enabled": false,
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "automatic_execution_seconds": 0.0012522920005721971,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.17011291701055598,
+            "construction_seconds": 0.014427125002839603,
+            "explicit_execution_seconds": 0.049553208009456284,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.10613258399826009,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.0008942920103436336,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0011072079942096025,
+            "construction_seconds": 4.083299427293241e-05,
+            "explicit_execution_seconds": 0.0006968329980736598,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00036954200186301023,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.0010123329993803054,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0010150000016437843,
+            "construction_seconds": 2.316600875928998e-05,
+            "explicit_execution_seconds": 0.0007007919921306893,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00029104200075380504,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.0008392080053454265,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009579999896232039,
+            "construction_seconds": 2.479099202901125e-05,
+            "explicit_execution_seconds": 0.0006034169928170741,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00032979200477711856,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008062090055318549,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008840410009725019,
+            "construction_seconds": 2.3832995793782175e-05,
+            "explicit_execution_seconds": 0.000575915997615084,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002842920075636357,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008062090055318549,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009003330051200464,
+            "construction_seconds": 2.0917010260745883e-05,
+            "explicit_execution_seconds": 0.0005908750026719645,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002885409921873361,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008093330106930807,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008661669999128208,
+            "construction_seconds": 2.0417006453499198e-05,
+            "explicit_execution_seconds": 0.0005862089892616495,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.000259541004197672,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008689160022186115,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009077499998966232,
+            "construction_seconds": 2.029100141953677e-05,
+            "explicit_execution_seconds": 0.0005922090058447793,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002952499926323071,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008543339936295524,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009477910061832517,
+            "construction_seconds": 2.4375010980293155e-05,
+            "explicit_execution_seconds": 0.0006364160071825609,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002869999880203977,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.000822375004645437,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008755000017117709,
+            "construction_seconds": 2.200000744778663e-05,
+            "explicit_execution_seconds": 0.000586042006034404,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002674579882295802,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.000800499998149462,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009258329955628142,
+            "construction_seconds": 2.0957988454028964e-05,
+            "explicit_execution_seconds": 0.0006426670006476343,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00026220800646115094,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0010399579914519563,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.016627000004518777,
+            "construction_seconds": 2.0958003005944192e-05,
+            "explicit_execution_seconds": 0.01634783300687559,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00025820899463724345,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008882919937605038,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0010975000041071326,
+            "construction_seconds": 2.5917004677467048e-05,
+            "explicit_execution_seconds": 0.0007424170034937561,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00032916599593590945,
+            "warmup": false
+          }
+        ],
+        "performance_targets_enabled": false,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "complex128 statevector / float64 probabilities",
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "runner": "ftqc_exact_reference",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.ftqc_exact_reference.local_observations.v1",
+        "timing_boundaries": {
+          "automatic_execution_includes_planning": true,
+          "explicit_pipeline_includes_automatic_execution": false,
+          "initial_imports_and_report_io_included": false,
+          "lazy_imports_in_called_apis_included": true,
+          "probability_validation_and_error_reduction_included": false,
+          "separate_paths_share_process_and_runtime_caches": true
+        },
+        "torch_threads": 1,
+        "torch_version": "2.14.1",
+        "warmup": 3,
+        "workload": "W1-A: |0> -> H -> T -> H; no noise; all probabilities",
+        "world_size": 1
+      }
+    },
+    {
+      "process": 2,
+      "external_process_seconds": 0.6166032909968635,
+      "raw_sha256": "5769017fed08ce3dc6d367d24b86dbf6b164d287c8f2949da24c9ff3bdee3655",
+      "report": {
+        "blockers": [
+          "one unencoded qubit; no mixed-engine or capacity evidence"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "explicit_pipeline_median_seconds": 0.0008805625038803555,
+        "flagquantum_source_version": "0.4.0",
+        "iterations": 10,
+        "local_world_size": 1,
+        "new_numerical_tolerance_enabled": false,
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "automatic_execution_seconds": 0.0011426249984651804,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.10854504200688098,
+            "construction_seconds": 0.010529417006182484,
+            "explicit_execution_seconds": 0.02750683401245624,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.07050879098824225,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.0008345420064870268,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009467499912716448,
+            "construction_seconds": 3.1499992473982275e-05,
+            "explicit_execution_seconds": 0.0006002500012982637,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0003149999974993989,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.0010591669997666031,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008682079933350906,
+            "construction_seconds": 2.0915991626679897e-05,
+            "explicit_execution_seconds": 0.0005700420006178319,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00027725000109057873,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.0008482080011162907,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009665419929660857,
+            "construction_seconds": 2.604199107736349e-05,
+            "explicit_execution_seconds": 0.0006304169946815819,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0003100830072071403,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008214999979827553,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008676249999552965,
+            "construction_seconds": 2.2084001102484763e-05,
+            "explicit_execution_seconds": 0.0005813750030938536,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00026416599575895816,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008170410001184791,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008442499965894967,
+            "construction_seconds": 2.0874998881481588e-05,
+            "explicit_execution_seconds": 0.0005657919973600656,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00025758300034794956,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008158329874277115,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008612500096205622,
+            "construction_seconds": 2.154200046788901e-05,
+            "explicit_execution_seconds": 0.0005842500104336068,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002554579987190664,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008133749943226576,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008512079948559403,
+            "construction_seconds": 2.1166997612453997e-05,
+            "explicit_execution_seconds": 0.0005665000062435865,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002635409909998998,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008177090057870373,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008935000078054145,
+            "construction_seconds": 2.0209001377224922e-05,
+            "explicit_execution_seconds": 0.0006119580066297203,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00026133299979846925,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008363749948330224,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008603750029578805,
+            "construction_seconds": 2.154200046788901e-05,
+            "explicit_execution_seconds": 0.0005733750003855675,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00026545800210442394,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.000811167003121227,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.000924667008803226,
+            "construction_seconds": 2.0750012481585145e-05,
+            "explicit_execution_seconds": 0.0006465420010499656,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002573749952716753,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0010483749938430265,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.01753100000496488,
+            "construction_seconds": 2.200000744778663e-05,
+            "explicit_execution_seconds": 0.017235292005352676,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002737079921644181,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008889169985195622,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009370000043418258,
+            "construction_seconds": 2.691699774004519e-05,
+            "explicit_execution_seconds": 0.0006249580037547275,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002851250028470531,
+            "warmup": false
+          }
+        ],
+        "performance_targets_enabled": false,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "complex128 statevector / float64 probabilities",
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "runner": "ftqc_exact_reference",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.ftqc_exact_reference.local_observations.v1",
+        "timing_boundaries": {
+          "automatic_execution_includes_planning": true,
+          "explicit_pipeline_includes_automatic_execution": false,
+          "initial_imports_and_report_io_included": false,
+          "lazy_imports_in_called_apis_included": true,
+          "probability_validation_and_error_reduction_included": false,
+          "separate_paths_share_process_and_runtime_caches": true
+        },
+        "torch_threads": 1,
+        "torch_version": "2.14.1",
+        "warmup": 3,
+        "workload": "W1-A: |0> -> H -> T -> H; no noise; all probabilities",
+        "world_size": 1
+      }
+    },
+    {
+      "process": 3,
+      "external_process_seconds": 0.7232329999969807,
+      "raw_sha256": "85442cb4702fbd9645e6852d5456d6f468f6a4d5b2dcf735557a6ebc77ba2feb",
+      "report": {
+        "blockers": [
+          "one unencoded qubit; no mixed-engine or capacity evidence"
+        ],
+        "communication_bytes": 0,
+        "device": "cpu",
+        "distribution_semantics": "single_process",
+        "explicit_pipeline_median_seconds": 0.000932479502807837,
+        "flagquantum_source_version": "0.4.0",
+        "iterations": 10,
+        "local_world_size": 1,
+        "new_numerical_tolerance_enabled": false,
+        "node_count": 1,
+        "non_release_evidence": true,
+        "observations": [
+          {
+            "automatic_execution_seconds": 0.0012195409944979474,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.11182945899781771,
+            "construction_seconds": 0.011491083991131745,
+            "explicit_execution_seconds": 0.028015375006361865,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0723230000003241,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.0008662500040372834,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009685829863883555,
+            "construction_seconds": 2.9999995604157448e-05,
+            "explicit_execution_seconds": 0.0006141669873613864,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00032441600342281163,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.000843208996229805,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009087499929592013,
+            "construction_seconds": 2.1624990040436387e-05,
+            "explicit_execution_seconds": 0.0006009999924572185,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002861250104615465,
+            "warmup": true
+          },
+          {
+            "automatic_execution_seconds": 0.0009653750021243468,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008886659925337881,
+            "construction_seconds": 2.104099257849157e-05,
+            "explicit_execution_seconds": 0.0005820410005981103,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00028558399935718626,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0009074169938685372,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.00107741700776387,
+            "construction_seconds": 2.7667003450915217e-05,
+            "explicit_execution_seconds": 0.0007059579947963357,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00034379200951661915,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008246659999713302,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009367500024382025,
+            "construction_seconds": 2.391599991824478e-05,
+            "explicit_execution_seconds": 0.0006386250024661422,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00027420900005381554,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008195840055122972,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008742079953663051,
+            "construction_seconds": 2.1375002688728273e-05,
+            "explicit_execution_seconds": 0.0005927080055698752,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002601249871077016,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008454579947283491,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008705420041223988,
+            "construction_seconds": 2.1083993487991393e-05,
+            "explicit_execution_seconds": 0.0005854580085724592,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002640000020619482,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008386249974137172,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0008820000075502321,
+            "construction_seconds": 2.058300015050918e-05,
+            "explicit_execution_seconds": 0.0005921250121900812,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00026929199520964175,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0009083750046556816,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009282090031774715,
+            "construction_seconds": 2.2209002054296434e-05,
+            "explicit_execution_seconds": 0.0006360419938573614,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00026995800726581365,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008290000114357099,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0010017919994425029,
+            "construction_seconds": 2.7583009796217084e-05,
+            "explicit_execution_seconds": 0.0006852499936940148,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002889589959522709,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0011354159942129627,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.016916167005547322,
+            "construction_seconds": 2.154200046788901e-05,
+            "explicit_execution_seconds": 0.016627208999125287,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.0002674160059541464,
+            "warmup": false
+          },
+          {
+            "automatic_execution_seconds": 0.0008541249990230426,
+            "automatic_max_absolute_error": 2.220446049250313e-16,
+            "automatic_normalization_error": 0.0,
+            "automatic_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "construction_plan_execution_seconds": 0.0009712079918244854,
+            "construction_seconds": 2.8457987355068326e-05,
+            "explicit_execution_seconds": 0.0006427079933928326,
+            "explicit_max_absolute_error": 2.220446049250313e-16,
+            "explicit_normalization_error": 0.0,
+            "explicit_probabilities": [
+              0.853553390593274,
+              0.14644660940672616
+            ],
+            "planning_seconds": 0.00030004201107658446,
+            "warmup": false
+          }
+        ],
+        "performance_targets_enabled": false,
+        "platform": "macOS-27.0-arm64-arm-64bit",
+        "precision": "complex128 statevector / float64 probabilities",
+        "python": "3.12.14",
+        "rank_ownership": {
+          "0": "whole_workload"
+        },
+        "release_gate_allowed": false,
+        "runner": "ftqc_exact_reference",
+        "scalability_claim_allowed": false,
+        "schema": "flagquantum.ftqc_exact_reference.local_observations.v1",
+        "timing_boundaries": {
+          "automatic_execution_includes_planning": true,
+          "explicit_pipeline_includes_automatic_execution": false,
+          "initial_imports_and_report_io_included": false,
+          "lazy_imports_in_called_apis_included": true,
+          "probability_validation_and_error_reduction_included": false,
+          "separate_paths_share_process_and_runtime_caches": true
+        },
+        "torch_threads": 1,
+        "torch_version": "2.14.1",
+        "warmup": 3,
+        "workload": "W1-A: |0> -> H -> T -> H; no noise; all probabilities",
+        "world_size": 1
+      }
+    }
+  ]
+}
