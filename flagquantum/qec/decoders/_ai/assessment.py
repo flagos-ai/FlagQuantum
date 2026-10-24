@@ -129,6 +129,7 @@ def assess(
     seed: int,
     threshold: float,
     batch_size: int = 128,
+    temperature: float = 1.0,
 ) -> PairedCounts:
     _positive(shots, "shots")
     _positive(batch_size, "batch_size")
@@ -138,7 +139,9 @@ def assess(
     for start in range(0, shots, batch_size):
         batch = model.sample(min(batch_size, shots - start), generator).sample
         first = baseline_decode(batch.detectors, backend, model.logical.shape[0])
-        second = model.decode(batch.detectors, backend, threshold=threshold)
+        second = model.decode(
+            batch.detectors, backend, threshold=threshold, temperature=temperature
+        )
         counts = paired_counts(batch.observables, first, second)
         for index, value in enumerate(
             (
