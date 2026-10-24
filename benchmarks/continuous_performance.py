@@ -232,21 +232,9 @@ def _measure_distributed(
     shard_size = 1 << 18
     shard = torch.full((shard_size,), rank + 1, dtype=torch.float32, device=device)
     heartbeat = torch.zeros((), dtype=torch.float32, device=device)
-    for _ in range(warmup):
-        shard.mul_(1.000001).sub_(0.000001 * (rank + 1))
-        heartbeat.copy_(shard.mean())
-        dist.all_reduce(heartbeat)
-    torch.cuda.synchronize(device)
-    initialization = time.perf_counter() - started
-    torch.cuda.reset_peak_memory_stats(device)
-    samples = []
-    communication = 0.0
-    allocated = []
-    reserved = []
-    heartbeat_gaps = []
-    last = time.perf_counter()
-    for _ in range(repetitions):
-        step_start = time.perf_counter()
+
+    def run_block() -> float:
+        # Warm the same compute/collective/synchronization path that is timed.
         step_communication = 0.0
         for _ in range(inner_loops):
             shard.mul_(1.000001).sub_(0.000001 * (rank + 1))
@@ -260,6 +248,22 @@ def _measure_distributed(
             torch.cuda.synchronize(device)
             step_communication += time.perf_counter() - communication_start
         torch.cuda.synchronize(device)
+        return step_communication
+
+    for _ in range(warmup):
+        run_block()
+    torch.cuda.synchronize(device)
+    initialization = time.perf_counter() - started
+    torch.cuda.reset_peak_memory_stats(device)
+    samples = []
+    communication = 0.0
+    allocated = []
+    reserved = []
+    heartbeat_gaps = []
+    last = time.perf_counter()
+    for _ in range(repetitions):
+        step_start = time.perf_counter()
+        step_communication = run_block()
         end = time.perf_counter()
         communication += step_communication
         samples.append(end - step_start)

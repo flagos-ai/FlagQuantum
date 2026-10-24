@@ -1,0 +1,166 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_for_staged_implementation",
+  "proposal": "docs/development/API_CHANGE_PROPOSAL_089_DYNAMIC_POST_ROUTING_CAPABILITY_REMATCH.md",
+  "approval": {
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-10-24",
+    "directive": "approve API-CHANGE-089-DYNAMIC-POST-ROUTING-CAPABILITY-REMATCH",
+    "approved_scope": "credential-free post-routing rematch contract and staged implementation"
+  },
+  "delivery_stage": {
+    "name": "failing_first_contract",
+    "runtime_activation": false,
+    "provider_activation": false,
+    "network_access": false,
+    "task_submission": false,
+    "public_behavior_change": false,
+    "successor": "pure_runtime_rematch"
+  },
+  "existing_authorities": {
+    "program": "flagquantum.dynamic.DynamicCircuit",
+    "semantic_ir": "flagquantum.CircuitIR@1.0",
+    "source_requirements": "flagquantum.core.target_capabilities.RequirementSet",
+    "target_snapshot": "flagquantum.core.target_capabilities.TargetCapabilitySnapshot",
+    "dynamic_requirement_codec": "org.flagquantum.dynamic-remote-v1",
+    "routing_evidence": "flagquantum.deployment.routing-evidence.v1",
+    "execution": "flagquantum.run"
+  },
+  "compatibility": {
+    "public_signature_change": false,
+    "root_export_change": false,
+    "circuit_ir_schema_change": false,
+    "execution_plan_schema_change": false,
+    "deployment_package_schema_change": false,
+    "execution_result_schema_change": false,
+    "positive_remote_target_enabled": false,
+    "dynamic_circuit_and_circuit_remain_distinct": true
+  },
+  "identity_inputs": [
+    "source_requirement_set_id",
+    "requested_target_identity",
+    "preflight_snapshot_id",
+    "postrouting_snapshot_id",
+    "routed_artifact_sha256",
+    "routing_evidence_sha256"
+  ],
+  "monotonicity": {
+    "source_requirement_set_is_immutable": true,
+    "effective_requirements": "preserved source requirements plus route-induced requirements",
+    "source_requirement_may_disappear": false,
+    "route_requirement_may_bypass_snapshot_match": false,
+    "coarse_dynamic_boolean_sufficient": false,
+    "silent_snapshot_refresh_allowed": false,
+    "silent_target_substitution_allowed": false,
+    "silent_local_fallback_allowed": false
+  },
+  "decision_order": [
+    "source_requirement_identity",
+    "source_semantic_preservation",
+    "target_identity",
+    "snapshot_identity",
+    "snapshot_freshness",
+    "route_induced_capability_facts",
+    "provider_specific_legality"
+  ],
+  "blocker_codes": {
+    "source_requirement_identity_missing": "dynamic_source_requirement_identity_missing",
+    "source_requirement_identity_changed": "dynamic_source_requirement_identity_changed",
+    "source_semantic_lost": "dynamic_source_semantic_lost:<requirement>",
+    "target_identity_mismatch": "dynamic_postrouting_target_identity_mismatch",
+    "snapshot_identity_mismatch": "dynamic_postrouting_snapshot_identity_mismatch",
+    "snapshot_stale": "dynamic_postrouting_snapshot_stale",
+    "route_fact_missing": "dynamic_route_capability_fact_missing:<requirement>",
+    "route_fact_unknown": "dynamic_route_capability_fact_unknown:<requirement>",
+    "route_fact_unmeasured": "dynamic_route_capability_fact_unmeasured:<requirement>",
+    "route_fact_unsupported": "dynamic_route_capability_fact_unsupported:<requirement>",
+    "route_fact_not_exposed": "dynamic_route_capability_fact_not_exposed:<requirement>",
+    "provider_legality_unavailable": "dynamic_provider_legality_unavailable",
+    "provider_legality_rejected": "dynamic_provider_legality_rejected"
+  },
+  "fact_states": [
+    "supported",
+    "unsupported",
+    "unknown",
+    "unmeasured",
+    "not_exposed",
+    "missing"
+  ],
+  "external_boundaries": {
+    "package_sealing": false,
+    "provider_sdk_import": false,
+    "credential_lookup": false,
+    "discovery": false,
+    "network_access": false,
+    "provider_dry_run": false,
+    "task_creation": false,
+    "task_submission": false,
+    "charging": false,
+    "result_construction": false,
+    "rng_consumption": false
+  },
+  "conformance_vectors": [
+    {
+      "name": "unchanged_legal_route",
+      "source_requirement_set_id": "req-source-1",
+      "presented_source_requirement_set_id": "req-source-1",
+      "source_requirements": ["classical_feed_forward", "mid_circuit_measurement"],
+      "preserved_source_requirements": ["classical_feed_forward", "mid_circuit_measurement"],
+      "requested_target_id": "provider:backend",
+      "postrouting_target_id": "provider:backend",
+      "preflight_snapshot_id": "snapshot-1",
+      "postrouting_snapshot_id": "snapshot-1",
+      "snapshot_fresh": true,
+      "route_requirements": ["directed_edge:0->1", "operation:cx"],
+      "route_facts": {
+        "directed_edge:0->1": "supported",
+        "operation:cx": "supported"
+      },
+      "provider_legality": "accepted",
+      "expected_blockers": []
+    },
+    {
+      "name": "changed_source_identity",
+      "source_requirement_set_id": "req-source-1",
+      "presented_source_requirement_set_id": "req-other",
+      "source_requirements": ["mid_circuit_measurement"],
+      "preserved_source_requirements": ["mid_circuit_measurement"],
+      "requested_target_id": "provider:backend",
+      "postrouting_target_id": "provider:backend",
+      "preflight_snapshot_id": "snapshot-1",
+      "postrouting_snapshot_id": "snapshot-1",
+      "snapshot_fresh": true,
+      "route_requirements": [],
+      "route_facts": {},
+      "provider_legality": "accepted",
+      "expected_blockers": ["dynamic_source_requirement_identity_changed"]
+    },
+    {
+      "name": "semantic_loss_and_route_fact_refusal",
+      "source_requirement_set_id": "req-source-1",
+      "presented_source_requirement_set_id": "req-source-1",
+      "source_requirements": ["classical_feed_forward", "mid_circuit_measurement"],
+      "preserved_source_requirements": ["mid_circuit_measurement"],
+      "requested_target_id": "provider:backend",
+      "postrouting_target_id": "provider:other",
+      "preflight_snapshot_id": "snapshot-1",
+      "postrouting_snapshot_id": "snapshot-2",
+      "snapshot_fresh": false,
+      "route_requirements": ["operation:cx", "physical_qubit:2"],
+      "route_facts": {
+        "operation:cx": "unsupported",
+        "physical_qubit:2": "not_exposed"
+      },
+      "provider_legality": "unavailable",
+      "expected_blockers": [
+        "dynamic_source_semantic_lost:classical_feed_forward",
+        "dynamic_postrouting_target_identity_mismatch",
+        "dynamic_postrouting_snapshot_identity_mismatch",
+        "dynamic_postrouting_snapshot_stale",
+        "dynamic_route_capability_fact_unsupported:operation:cx",
+        "dynamic_route_capability_fact_not_exposed:physical_qubit:2",
+        "dynamic_provider_legality_unavailable"
+      ]
+    }
+  ]
+}
