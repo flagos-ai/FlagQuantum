@@ -2,7 +2,8 @@
 
 ## Status
 
-**Proposal approved on 2026-10-23; implementation is not yet authorized.**
+**Proposal and candidate-contract baseline approved on 2026-10-23; Runtime and
+provider activation are not yet authorized.**
 
 The API owner authorized this decision scope with:
 
@@ -18,6 +19,15 @@ approved scope.
 This approval authorizes the architecture and delivery sequence below. It does
 not authorize a protected contract edit, Runtime activation, a new provider
 target, a network request, a paid task, or a stable hardware-support claim.
+
+The API owner separately authorized delivery-sequence item 1 with:
+
+```text
+approve API-CHANGE-086-DYNAMIC-REMOTE-CAPABILITY-CONTRACT
+```
+
+That directive authorizes the protected candidate contract and failing-first
+conformance baseline only. It does not authorize delivery-sequence items 2-6.
 
 Proposal 084 completed stable local planning and execution of a
 `DynamicCircuit` through `fq.plan` and `fq.run`. This proposal governs the next
@@ -286,11 +296,11 @@ not require credentials or paid hardware in its ordinary test path.
 
 - [x] The API owner approved the proposal scope; the administrative renumbering
       from the requested 085 label to 086 is recorded.
-- [ ] A protected candidate contract receives separate explicit authorization.
-- [ ] Dynamic program requirements are derived from IR rather than caller or
+- [x] A protected candidate contract receives separate explicit authorization.
+- [x] Dynamic program requirements are derived from IR rather than caller or
       provider claims.
-- [ ] One coarse boolean cannot make a target executable.
-- [ ] Missing, stale, unknown, unmeasured, unsupported, and not-exposed facts
+- [x] One coarse boolean cannot make a target executable.
+- [x] Missing, stale, unknown, unmeasured, unsupported, and not-exposed facts
       produce distinct actionable blockers.
 - [ ] Direct and inspectable remote paths use the same match and target identity.
 - [ ] Routing and dialect lowering cannot weaken requirements.

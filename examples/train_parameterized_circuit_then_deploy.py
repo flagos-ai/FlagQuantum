@@ -5,7 +5,10 @@ This example shows the intended FlagQuantum train-to-deploy flow:
 1. Train a parameterized circuit with PyTorch autograd on the native runtime.
 2. Bind the optimized values into a named-parameter circuit template.
 3. Compile/package the bound circuit for a quantum-cloud target.
-4. Submit it through a provider interface for inference.
+4. Execute it through the in-memory provider contract for inference.
+
+The local CPU sampling draw is reproducible. Its finite-shot energy estimate is
+reported separately from the variational energy used to assess training.
 """
 
 import sys
@@ -41,7 +44,10 @@ def ansatz(parameters: torch.Tensor) -> fq.Circuit:
     """Bind concrete parameter tensors for differentiable training."""
 
     return circuit_template().bind_parameters(
-        {parameter: value for parameter, value in zip(PARAMETERS, parameters)}
+        {
+            parameter: value
+            for parameter, value in zip(PARAMETERS, parameters, strict=True)
+        }
     )
 
 
@@ -58,7 +64,7 @@ def main() -> None:
         ansatz,
         initial_parameters,
         hamiltonian,
-        steps=100,
+        steps=200,
         lr=0.1,
     )
 
@@ -66,7 +72,10 @@ def main() -> None:
     # named-parameter template before exporting/submitting to a real backend.
     optimized_parameters = training_result.parameters
     trained_circuit = circuit_template().bind_parameters(
-        {parameter: value for parameter, value in zip(PARAMETERS, optimized_parameters)}
+        {
+            parameter: value
+            for parameter, value in zip(PARAMETERS, optimized_parameters, strict=True)
+        }
     )
 
     provider = InMemoryRemoteTarget()
@@ -87,7 +96,10 @@ def main() -> None:
             "training_energy": float(training_result.energy),
         },
     )
-    inference_result = provider.run(package)
+    sampling_generator = torch.Generator(device="cpu").manual_seed(7)
+    with torch.random.fork_rng(devices=[]):
+        torch.random.set_rng_state(sampling_generator.get_state())
+        inference_result = provider.run(package)
     deployed_energy = hamiltonian_expectation_from_counts(
         inference_result.counts,
         hamiltonian,
@@ -107,8 +119,11 @@ def main() -> None:
     print("=" * 60)
 
     print("\nVALIDATION:")
-    gap = float(deployed_energy) - (-1.2)
+    gap = float(training_result.energy) - (-1.2)
     print(f"  Gap to ground state: {gap:.10f}")
+    sampled_gap = float(deployed_energy) - (-1.2)
+    print(f"  Sampled deployment gap: {sampled_gap:.10f}")
+    print("  Deployment counts estimate energy from 1024 shots, not training error.")
 
     tolerance = 1e-6
     if gap >= -tolerance:
