@@ -12,6 +12,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/ai_predecoder.py`](qec/ai_predecoder.py) trains and evaluates the private
+  QEC predecoder through domain imports; it does not use the root-level alias.
+
 - [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
   commanded positions and the existing optional Matplotlib visualization extra.
 - [`terminal_instrument_sampling.py`](terminal_instrument_sampling.py) samples
