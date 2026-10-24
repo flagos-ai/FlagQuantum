@@ -131,6 +131,10 @@ These examples do not use that alias:
 - [`qec/stim_user_migration.py`](qec/stim_user_migration.py) — it imports the QEC
   subpackage surface, where the detector error model reader and the decoder
   registry live, and `stim`, because the circuit layer stays Stim's.
+- [`qec/stim_experiment_bridge.py`](qec/stim_experiment_bridge.py) uses the QEC
+  domain and opt-in Stim adapter imports rather than the root-level alias. Native
+  memory export and external annotated text share the existing sampler, decoder
+  and fixed-shot statistics; both original circuits generate their own samples.
 - [`qec/stim_pymatching_baseline.py`](qec/stim_pymatching_baseline.py) imports
   QEC sampling and decoder APIs from the subpackage to evaluate streamed Stim
   memory samples with PyMatching batch predictions. It reports fixed-shot logical
