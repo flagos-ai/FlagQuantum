@@ -133,7 +133,7 @@ def run_benchmark(
 ) -> dict[str, object]:
     """Measure a bounded CPU baseline; propagate failures without a partial report."""
     for name, value, lower, upper in (
-        ("shots", shots, 1, 4096),
+        ("shots", shots, 1, 65536),
         ("batch_size", batch_size, 1, 128),
         ("warmup", warmup, 0, 3),
         ("iterations", iterations, 1, 10),
