@@ -18,7 +18,7 @@ from flagquantum.runtime.execution_plan_contract import (
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize("version", ["1.0", "1.2", "2.0", 1.1, None])
+@pytest.mark.parametrize("version", ["1.0", "2.0", 1.1, None])
 def test_planning_refuses_unadmitted_source_before_outputs(version: object) -> None:
     source = IsingBraidProgram().exchange(1)
     payload = native_program_to_dict(source.to_ir())

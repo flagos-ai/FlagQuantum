@@ -83,8 +83,8 @@ def plan_ising(
     """Seal a validated native source using the shared options resolver."""
     record = program.to_ir()
     source = native_program_to_dict(record)
-    if source.get("version") != "1.1":
-        raise CapabilityError("Ising execution supports only native source 1.1")
+    if source.get("version") not in ("1.1", "1.2"):
+        raise CapabilityError("Ising execution supports only native source 1.1 or 1.2")
     requests = _outputs(outputs)
     try:
         resolved = resolve_execution_options(
@@ -145,7 +145,7 @@ def plan_ising(
     environment = _environment_requirements(decision)
     payload = {
         "schema": EXECUTION_PLAN_SCHEMA,
-        "version": "1.1",
+        "version": source["version"],
         "identity": "",
         "program": source,
         "requested_options": (options or ExecutionOptions()).to_dict(),
@@ -264,11 +264,13 @@ def validate_ising_payload(values: Mapping[str, Any]) -> dict[str, Any]:
 
     try:
         source = _require_mapping("program", values["program"])
-        if source.get("version") != "1.1":
-            raise ValueError("plan 1.1 requires native Ising source 1.1")
+        if source.get("version") != values["version"]:
+            raise ValueError(
+                f"plan {values['version']} requires native Ising source {values['version']}"
+            )
         record = native_program_from_dict(source)
         if not isinstance(record.physical_context, IsingContext):
-            raise ValueError("plan 1.1 requires the native Ising source")
+            raise ValueError("native plan requires the native Ising source")
     except (TypeError, ValueError) as exc:
         raise ExecutionPlanContractError(
             "program_fingerprint_mismatch", str(exc)
