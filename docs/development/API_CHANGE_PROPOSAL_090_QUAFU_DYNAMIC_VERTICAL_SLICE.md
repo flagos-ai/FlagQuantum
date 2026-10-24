@@ -185,8 +185,8 @@ discovery, task submission, charging, or hardware-support claim.
 ## Acceptance
 
 - [x] The API owner approves this proposal and its staged boundary.
-- [ ] Complete fixture facts produce one exact Quafu snapshot.
-- [ ] Missing or non-authoritative facts fail closed before provider activity.
+- [x] Complete fixture facts produce one exact offline Quafu snapshot.
+- [x] Missing or non-authoritative facts fail closed before provider activity.
 - [ ] The same snapshot identity survives preflight and post-routing rematch.
 - [ ] Quafu legality validates the exact routed artifact without network access.
 - [ ] Package sealing happens only after every credential-free gate succeeds.
