@@ -6,7 +6,9 @@ The implementation was first inspected at `3490aabd4` and is validated against
 main snapshot `63070070d91a0c892920ce7fa7aa796341b0fa45` after the QEC restructure
 and historical-import retirement. The reference is a private CPU research path;
 no existing export, registry entry, compatibility alias, dependency or frozen
-schema changes. `flagquantum.qec.decoders._neural` is intentionally private.
+schema changes. `flagquantum.qec.decoders._ai` is intentionally private. The original
+flat private modules have been removed; see the
+[AI module guide](../../flagquantum/qec/decoders/_ai/README.md).
 
 Reuse the canonical DEM (`dem.model`), parity matrices, memory builder,
 phenomenological noise, decoder protocol and the existing decoder factory.

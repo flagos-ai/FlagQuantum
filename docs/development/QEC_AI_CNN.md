@@ -1,7 +1,7 @@
 # Private spacetime predecoder (roadmap PR 3)
 
 Based on main `288fd3f0b65712a9887193812a78654693d4dafa`, after #775 merged.
-This change adds `_spacetime.SpacetimePredecoder` behind the existing private
+This change adds `_ai.spacetime.SpacetimePredecoder` behind the existing private
 training, sampling and hybrid-decoding interfaces. Public exports, registry,
 MLP defaults and checkpoint format are unchanged. It is a CPU offline research
 model, not a streaming decoder or an accelerator performance claim.

@@ -8,7 +8,7 @@ import torch
 from torch import nn
 
 from flagquantum.qec.circuits.memory import MemoryCircuit
-from flagquantum.qec.decoders._neural import Predecoder
+from flagquantum.qec.decoders._ai.predecoder import Predecoder
 from flagquantum.qec.dem.model import DetectorErrorModel
 from flagquantum.qec.noise import PhenomenologicalNoise
 

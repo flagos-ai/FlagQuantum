@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum.qec.decoders._neural import Predecoder, _positive
+from flagquantum.qec.decoders._ai.predecoder import Predecoder, _positive
 from flagquantum.qec.decoders.registry import DetectorErrorModelDecoder
 
 
@@ -203,4 +203,44 @@ def block_timings(
         "repetitions": repetitions,
         "baseline": quantiles(baseline),
         "hybrid": quantiles(hybrid),
+    }
+
+
+def evaluate(
+    model: Predecoder,
+    backend: DetectorErrorModelDecoder,
+    *,
+    shots: int,
+    seed: int,
+    batch_size: int = 128,
+    threshold: float = 0.9,
+) -> dict[str, int | float]:
+    """Paired held-out logical failure counts; never equate zero failures with zero risk."""
+    _positive(shots, "shots")
+    _positive(batch_size, "batch_size")
+    generator = torch.Generator().manual_seed(seed)
+    baseline = hybrid = 0
+    model.eval()
+    for start in range(0, shots, batch_size):
+        batch = model.sample(min(batch_size, shots - start), generator)
+        truth = batch.sample.observables
+        baseline += int(
+            (model.decode(batch.sample.detectors, backend, enabled=False) != truth)
+            .any(1)
+            .sum()
+        )
+        hybrid += int(
+            (
+                model.decode(batch.sample.detectors, backend, threshold=threshold)
+                != truth
+            )
+            .any(1)
+            .sum()
+        )
+    return {
+        "shots": shots,
+        "baseline_failures": baseline,
+        "hybrid_failures": hybrid,
+        "baseline_ler": baseline / shots,
+        "hybrid_ler": hybrid / shots,
     }

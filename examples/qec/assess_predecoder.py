@@ -20,9 +20,10 @@ from flagquantum.qec import (
     build_memory_circuit,
     get_decoder,
 )
-from flagquantum.qec.decoders._assessment import assess, block_timings, summarize
-from flagquantum.qec.decoders._neural import Predecoder, Trainer
-from flagquantum.qec.decoders._spacetime import SpacetimePredecoder
+from flagquantum.qec.decoders._ai.assessment import assess, block_timings, summarize
+from flagquantum.qec.decoders._ai.predecoder import Predecoder
+from flagquantum.qec.decoders._ai.spacetime import SpacetimePredecoder
+from flagquantum.qec.decoders._ai.training import Trainer
 
 
 def make_model(kind: str, distance: int, rounds: int, probability: float) -> Predecoder:
@@ -143,9 +144,10 @@ def run(smoke: bool) -> dict[str, object]:
         name: hashlib.sha256((source_root / name).read_bytes()).hexdigest()
         for name in (
             "examples/qec/assess_predecoder.py",
-            "flagquantum/qec/decoders/_assessment.py",
-            "flagquantum/qec/decoders/_neural.py",
-            "flagquantum/qec/decoders/_spacetime.py",
+            "flagquantum/qec/decoders/_ai/assessment.py",
+            "flagquantum/qec/decoders/_ai/predecoder.py",
+            "flagquantum/qec/decoders/_ai/training.py",
+            "flagquantum/qec/decoders/_ai/spacetime.py",
         )
     }
     configuration_hash = hashlib.sha256(

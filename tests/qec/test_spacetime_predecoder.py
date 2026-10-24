@@ -8,8 +8,9 @@ import pytest
 import torch
 
 from flagquantum.qec import get_decoder
-from flagquantum.qec.decoders._neural import Trainer, evaluate
-from flagquantum.qec.decoders._spacetime import SpacetimePredecoder
+from flagquantum.qec.decoders._ai.assessment import evaluate
+from flagquantum.qec.decoders._ai.spacetime import SpacetimePredecoder
+from flagquantum.qec.decoders._ai.training import Trainer
 from tests.qec.test_neural_training_data import _experiment
 
 pytestmark = pytest.mark.integration

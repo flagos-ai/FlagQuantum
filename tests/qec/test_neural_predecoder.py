@@ -6,7 +6,9 @@ import pytest
 import torch
 
 from flagquantum.qec import DetectorErrorModel, get_decoder
-from flagquantum.qec.decoders._neural import Predecoder, Trainer, evaluate
+from flagquantum.qec.decoders._ai.assessment import evaluate
+from flagquantum.qec.decoders._ai.predecoder import Predecoder
+from flagquantum.qec.decoders._ai.training import Trainer
 
 pytestmark = pytest.mark.integration
 

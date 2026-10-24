@@ -5,12 +5,23 @@ capabilities or performance promises. Existing public APIs remain unchanged.
 
 ## Current state
 
-PR #770 (`https://github.com/flagos-ai/FlagQuantum/pull/770`) establishes a private
-CPU reference for sampling, local neural scoring, training, checkpoint/resume,
-residual/global decoding and held-out evaluation. Its model is a shared local MLP,
-not the planned geometric 3D CNN. It demonstrates reproducibility, not accuracy
-or latency improvement. Its CI fixes were pushed at `2e2ac67`; full CI and review
-remain the merge gate. No automatic merge is authorized by this plan.
+PRs #770, #775, #780 and #786 are merged: the private CPU chain now includes
+independent training-data checks, a geometric 3D CNN and prospective paired
+assessment. PR #786 merged at `046384975775879efc4db9f38403614b0f3a35a1`
+after complete CI and the repaired two-GPU warmup gate passed. This is software
+verification, not evidence that the AI decoder improves accuracy or latency.
+
+The first frozen study retains all 54 seed/variant/cell groups at 16384 shots
+per group. Every selected threshold was 1.0, hybrid and baseline logical failure
+counts were equal, and every quality decision was inconclusive. No scientific
+gate or hardware capability is promoted.
+
+PR #795 consolidates the private implementation and retires its flat module
+paths. It is synchronized with merged main and remains subject to current-head
+CI and review; this plan does not authorize its automatic merge. The next
+scientific PR must diagnose label/loss imbalance and add calibration plus
+validation-only threshold selection under a separately frozen protocol and
+budget before new test experiments.
 
 ## Delivery sequence
 
@@ -30,6 +41,23 @@ PR 2 may be prepared as a draft stacked on #770. Retarget it to main after #770
 merges and rerun checks before merge. Do not bundle later-stage implementations
 into a prerequisite PR. Keep protected API/schema changes in separately reviewed
 contract proposals before their consumers change.
+
+## AI implementation organization
+
+The directory consolidation following PR #786 places the existing implementation
+under `flagquantum/qec/decoders/_ai/`: `predecoder.py`, `spacetime.py`,
+`training.py` and `assessment.py`. Examples and behavioral tests use these
+canonical private paths. The former flat private modules are removed without
+forwarding compatibility layers. Public QEC exports, decoder registration and
+training checkpoint contents remain unchanged. See the
+[local contributor guide](../../flagquantum/qec/decoders/_ai/README.md).
+
+This is a behavior-preserving prerequisite to the next scientific improvement,
+not a new model or an accuracy/performance result. Next diagnose label/loss
+imbalance, confidence calibration and validation-only threshold selection inside
+the same package, with a new frozen experimental budget before collecting test
+results. Preserve the original study's inconclusive results and hashes. Proceed
+to performance and hardware work only after the scientific gate above is met.
 
 ## PR 2 verification design
 
