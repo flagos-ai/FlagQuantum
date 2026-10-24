@@ -12,6 +12,10 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/compare_ising.py`](qec/compare_ising.py) connects the private QEC reference
+  to a pinned optional Ising checkout and a shared batched global decoder. Smoke
+  uses untrained weights and does not establish a pretrained-model ranking.
+
 - [`qec/assess_predecoder.py`](qec/assess_predecoder.py) runs the private paired
   QEC study through domain imports.
 

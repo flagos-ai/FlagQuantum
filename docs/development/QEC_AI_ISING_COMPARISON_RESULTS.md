@@ -62,15 +62,75 @@ Weights and raw Torch archives remain local; the committed command regenerates
 this software check. Smoke latency/accuracy numbers are not promoted as research
 comparison evidence. Original assessment and calibration evidence is unchanged.
 
+## Fixed-budget exploratory outcome after access
+
+The user subsequently logged in, accepted the repository conditions and granted
+access. The authenticated browser downloaded the official Fast file
+`ising_decoder_surface_code_1_fast_r9_v1.0.77_fp16.safetensors` (1826360 bytes),
+SHA-256 `22db7ad25b584d7588493d6ef815381c8d1263cfb29f212391a591b285ad0a05`.
+Its metadata states Model 1, R=9, FP16, channels [128,128,128,4] and four 3x3x3
+kernels. The existing loader promoted these stored weights to FP32 as declared.
+The original HTTP 401 was an anonymous-access restriction, not absent weights.
+
+The published protocol and implementation were unchanged during the full run.
+All three native seeds trained for 200 steps; all temperatures selected 0.5 and
+all raw/calibrated validation thresholds selected 1.0. All three checkpoints and
+then all choices were saved before constructing the shared 65536-shot test stream.
+
+| Pipeline | Test logical failures / 65536 | Wins / losses against global-only |
+| --- | --- | --- |
+| Global-only PyMatching | 528 | reference |
+| Native raw, each of seeds 11/22/33 | 528 | 0 / 0 |
+| Native calibrated, each of seeds 11/22/33 | 528 | 0 / 0 |
+| Official Ising Fast | 533 | 111 / 116 |
+| Boundary-mask-only control | 528 | 0 / 0 |
+
+The native calibrated-vs-Ising comparison has 116 wins and 111 losses. Every
+declared statistical summary remains **inconclusive**. Ising's repeated records
+reuse one frozen model and exactly the same physical shots; they are not three
+independent pretrained runs. No samples, seeds or thresholds were added afterward.
+
+The official model card states that distances below R=9 are outside its validated
+range. This d=3, CPU, unequal-training-history experiment therefore establishes
+the complete loading/sampling/comparison path, **not** a representative ranking,
+an Ising regression claim, or native superiority. Native correction remains
+inactive. Separate-process batch-one/batch-32 latency, throughput and RSS reports
+are retained for inspection, without comparison to published GPU latency claims.
+
+The producing directory is `qec-ai-ising-exploratory-20261024`. Checked-in
+[raw records](evidence/qec_ai_ising_exploratory_20261024/results.json), choices,
+manifest and four timing reports retain all outcomes. Binary shots/predictions,
+native checkpoints and official weights remain local. Full-run fingerprints:
+
+- Original manifest: `ce32721505464b9488b61f3310f57de9d4c7df01ac9058bf78765f5845a4a838`.
+- Results: `3879baab4da413a0a1f8cad6dcdea0dd98588cf4c608dd48fe921fce0474a2e8`.
+- Choices: `c66bef8657143bd096f91a015adc5069bab48ba2d3f553b5c4495690e196a4c2`.
+
+The archived manifest adds three post-run provenance fields: `ising_commit_origin`,
+`ising_repository` and `raw_manifest_sha256`. Removing only those fields and
+serializing with the producer's two-space indentation plus final newline exactly
+reconstructs the original manifest hash above. No experimental field or raw
+results/choices/timing file was edited.
+
 ## Remaining gates
 
-Official Fast weight access returned HTTP 401 `GatedRepo`; the user has no local
-checkpoint. The non-smoke command therefore correctly refuses before sampling.
-This external access requirement is separate from implemented loading support.
-Do not repeatedly retry access or replace it with random-model scores.
+Official Fast weights are now locally available; missing-access refusal remains
+tested for other users. The two CI failures were documentation-registration
+omissions: the optional upstream variable was absent from the testing manual,
+and the new domain-import example was absent from the examples index. Both were
+added and the two failing policy tests passed without changing their assertions.
 
 The initial implemented contender is the native MLP. A common-layout native CNN,
 matched-budget upstream retraining, larger-distance/noise/basis experiments and
 optimized device deployment remain separate future work. They require explicit
 prospective budgets and correctness checks. Completion of this integration does
 not satisfy the existing scientific benefit gate.
+
+GPU work is assigned to the user's A800-172/A800-171 hosts, not the local CPU
+workstation. A new protocol must use a validated distance and define device,
+precision, transfers, budgets and timing boundaries before collecting GPU data.
+An isolated auto-removed A800-172 container ran a four-element CUDA tensor check
+successfully (PyTorch 2.13.0+cu130); this checks availability only. The official
+weight file was copied to a private task directory there and its SHA-256 matched
+the local file. No credentials or browser session were transferred. A800-171
+still needs the matching isolated image; shared containers were not modified.

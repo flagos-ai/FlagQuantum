@@ -39,6 +39,21 @@ separate from comparisons with external pretrained checkpoints, and common CPU
 execution separate from independently optimized accelerator deployment. Smoke
 and single-cell exploratory results do not advance optimization/hardware gates.
 
+GPU research runs are authorized on the user's A800 hosts `a800-172` and
+`a800-171`; the local workstation has no GPU and remains a CPU correctness host.
+Read-only inspection on 2026-10-24 found eight A800-SXM4-80GB devices per host.
+This is availability inspection, not a reservation or benchmark. Preserve other
+sessions, use an isolated job directory, declare a device/precision/shot/timing
+protocol before experiments, and compare contenders on the same host/device.
+The existing frozen CPU protocol is not silently changed into a GPU study.
+Validate the official model's stated distance range (Fast: d >= 9) before
+making a representative comparison; the current d=3 cell remains exploratory.
+An isolated, auto-removed container on A800-172 successfully ran a four-element
+CUDA tensor check with PyTorch 2.13.0+cu130. The existing shared `fq-it-gpu`
+container has no usable CUDA mapping and was not changed. A800-171 has NVIDIA
+container runtime configured but does not yet have the same FlagQuantum image;
+prepare an isolated matching environment before cross-host replication.
+
 ## Delivery sequence
 
 | PR | Deliverable and reuse | Acceptance gate | Dependency |
