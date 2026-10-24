@@ -35,10 +35,21 @@ fixed-shot memory workflow with an explicit statistical estimand and interval.
 ## Decision A: Internal Clifford fault propagation
 
 Keep the signatures, defaults and result ordering of existing public DEM
-constructors unchanged. Implement the new propagation algorithm privately
-under `qec/dem/`; do not add a second public DEM type or a backend selector to
-the constructor. The existing execution implementation remains an independent
+constructors unchanged. Keep fault enumeration and DEM assembly in `qec/dem/`
+and layout composition in the existing `qec/execution/signatures.py` boundary;
+the numerical Clifford primitive belongs to Simulation. Do not add a second
+public DEM type or a backend selector to the constructor. The existing execution implementation remains an independent
 test reference rather than an undocumented runtime fallback.
+
+Reuse audit: [Simulation's stabilizer engine](../../flagquantum/simulation/stabilizer/README.md)
+already owns Clifford images, Pauli conjugation, positioned Pauli-mixture noise
+and optional Stim translation. Its `pauli_readout` answers a whole-circuit
+observable against the zero state; it is not a reset/measurement-record fault
+signature API. Reuse its algebra through a Simulation-owned private primitive
+and the QEC execution bridge, with focused owner tests. Do not import an engine's
+private helper directly into DEM assembly, duplicate its Clifford image tables,
+build another tableau simulator or add another mandatory engine dependency.
+Any necessary new public Simulation boundary needs separate API approval.
 
 For the already supported Clifford memory grammar, propagate Pauli faults and
 measurement flips through the actual lowered instruction order. Include resets,
