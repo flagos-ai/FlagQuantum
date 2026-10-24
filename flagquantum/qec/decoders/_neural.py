@@ -32,6 +32,10 @@ class TrainingBatch:
 class Predecoder(nn.Module):
     """Shared local mechanism scorer with explicit DEM-bound buffers."""
 
+    h: torch.Tensor
+    logical: torch.Tensor
+    prior: torch.Tensor
+
     def __init__(self, dem: DetectorErrorModel) -> None:
         super().__init__()
         if not dem.errors or dem.exclusive_groups():
@@ -56,7 +60,10 @@ class Predecoder(nn.Module):
         active = detectors.float() @ self.h
         degree = self.h.sum(0).expand_as(active)
         prior = torch.logit(self.prior).expand_as(active)
-        return self.network(torch.stack((active, degree, prior), dim=-1)).squeeze(-1)
+        logits: torch.Tensor = self.network(
+            torch.stack((active, degree, prior), dim=-1)
+        )
+        return logits.squeeze(-1)
 
     def sample(self, shots: int, generator: torch.Generator) -> TrainingBatch:
         """Draw a bounded training batch, preserving the latent mechanism vector."""
@@ -125,7 +132,7 @@ class Trainer:
             if not bool(torch.isfinite(loss)):
                 raise ValueError("nonfinite training loss")
             self.optimizer.zero_grad()
-            loss.backward()
+            torch.autograd.backward(loss)
             self.optimizer.step()
             self.step += 1
             losses.append(float(loss.detach()))

@@ -52,7 +52,8 @@ def test_resume_restores_optimizer_and_next_batches(tmp_path: Path) -> None:
     before = [p.detach().clone() for p in trainer.model.parameters()]
     trainer.train(3)
     assert any(
-        not torch.equal(a, b) for a, b in zip(before, trainer.model.parameters())
+        not torch.equal(a, b)
+        for a, b in zip(before, trainer.model.parameters(), strict=True)
     )
     checkpoint = tmp_path / "training.pt"
     trainer.save(checkpoint)
@@ -61,7 +62,9 @@ def test_resume_restores_optimizer_and_next_batches(tmp_path: Path) -> None:
     resumed.restore(checkpoint)
     assert resumed.train(2) == expected
     assert resumed.step == trainer.step
-    for a, b in zip(resumed.model.parameters(), trainer.model.parameters()):
+    for a, b in zip(
+        resumed.model.parameters(), trainer.model.parameters(), strict=True
+    ):
         assert torch.equal(a, b)
     decoder = get_decoder(
         "minimum_weight_matching",
