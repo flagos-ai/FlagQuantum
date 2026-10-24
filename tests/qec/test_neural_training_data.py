@@ -19,7 +19,9 @@ from flagquantum.qec import (
     sample_memory_circuit,
 )
 from flagquantum.qec.circuits.memory import MemoryCircuit
-from flagquantum.qec.decoders._neural import Predecoder, Trainer, evaluate
+from flagquantum.qec.decoders._ai.assessment import evaluate
+from flagquantum.qec.decoders._ai.predecoder import Predecoder
+from flagquantum.qec.decoders._ai.training import Trainer
 
 pytestmark = pytest.mark.integration
 

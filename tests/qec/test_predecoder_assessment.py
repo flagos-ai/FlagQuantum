@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from flagquantum.qec import get_decoder
-from flagquantum.qec.decoders._assessment import (
+from flagquantum.qec.decoders._ai.assessment import (
     PairedCounts,
     assess,
     baseline_decode,
@@ -18,7 +18,7 @@ from flagquantum.qec.decoders._assessment import (
     rate_interval,
     summarize,
 )
-from flagquantum.qec.decoders._neural import Predecoder
+from flagquantum.qec.decoders._ai.predecoder import Predecoder
 from tests.qec.test_neural_training_data import _experiment
 
 pytestmark = pytest.mark.integration

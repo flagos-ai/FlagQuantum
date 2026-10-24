@@ -31,6 +31,23 @@ merges and rerun checks before merge. Do not bundle later-stage implementations
 into a prerequisite PR. Keep protected API/schema changes in separately reviewed
 contract proposals before their consumers change.
 
+## AI implementation organization
+
+The directory consolidation following PR #786 places the existing implementation
+under `flagquantum/qec/decoders/_ai/`: `predecoder.py`, `spacetime.py`,
+`training.py` and `assessment.py`. Examples and behavioral tests use these
+canonical private paths. The former flat private modules are removed without
+forwarding compatibility layers. Public QEC exports, decoder registration and
+training checkpoint contents remain unchanged. See the
+[local contributor guide](../../flagquantum/qec/decoders/_ai/README.md).
+
+This is a behavior-preserving prerequisite to the next scientific improvement,
+not a new model or an accuracy/performance result. Next diagnose label/loss
+imbalance, confidence calibration and validation-only threshold selection inside
+the same package, with a new frozen experimental budget before collecting test
+results. Preserve the original study's inconclusive results and hashes. Proceed
+to performance and hardware work only after the scientific gate above is met.
+
 ## PR 2 verification design
 
 The native rotated-surface record declares logical Z only. For X/Z comparison,

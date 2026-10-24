@@ -18,8 +18,10 @@ from flagquantum.qec import (
     build_memory_circuit,
     get_decoder,
 )
-from flagquantum.qec.decoders._neural import Predecoder, Trainer, evaluate
-from flagquantum.qec.decoders._spacetime import SpacetimePredecoder
+from flagquantum.qec.decoders._ai.assessment import evaluate
+from flagquantum.qec.decoders._ai.predecoder import Predecoder
+from flagquantum.qec.decoders._ai.spacetime import SpacetimePredecoder
+from flagquantum.qec.decoders._ai.training import Trainer
 
 
 def main() -> None:

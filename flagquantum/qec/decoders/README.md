@@ -12,6 +12,7 @@ construction, DEM text parsing, circuit execution, SDK imports or provider tasks
 | `bposd.py` | Ordered-statistics decoder over the original model. |
 | `sliding_window.py` | Existing windowed matching and chunk-stream decoder/state. |
 | `registry.py` | Existing DEM decoder protocols and sole name table; duplicate/replacement and graph-carrier policy. |
+| [`_ai/`](_ai/README.md) | Private offline neural predecoding, training and paired assessment; no public exports or registry entries. |
 
 Allowed dependencies are standard-library utilities, PyTorch, QEC algebra,
 model/graph/chunk records and the optional adapter's class. The registry imports
