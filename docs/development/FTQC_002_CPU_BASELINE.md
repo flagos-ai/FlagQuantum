@@ -46,7 +46,7 @@ Keep the existing numerical checks and protected QEC export/class/pickle/registr
 
 W5 planning median is 0.000113646 s, p95 0.000141681 s across ten retained observations. The unchanged producer reports `budget_passed=true`. This is its existing wrapper-budget verdict, not the newly proposed throughput/capacity targets. Inspect `dynamic_cases` and `static_sentinel` for all raw execution observations and correctness checks.
 
-Environment: Apple M5; macOS-27.0-arm64-arm-64bit; Python 3.12.14, Torch 2.13.0, Stim 1.16.0, PyMatching 2.4.0; one Torch/OMP/MKL/OpenBLAS thread. Measurement timestamps and source tree are in the artifact. This source measurement environment differs from the clean-install default Torch 2.14.1 acceptance profile. Neither is relabeled as the other.
+Environment: Apple M5; macOS-27.0-arm64-arm-64bit; Python 3.12.14, Torch 2.13.0, Stim 1.16.0, PyMatching 2.4.0; one Torch/OMP/MKL/OpenBLAS thread. Measurement timestamps and the source tree digest are in the artifact. The tree is identified by SHA-256 of raw `git cat-file tree <source_revision>^{tree}` bytes, separately from the full checkout commit; a Git tree object is not a commit. This source measurement environment differs from the clean-install default Torch 2.14.1 acceptance profile. Neither is relabeled as the other.
 
 ## Runnable public-user example
 

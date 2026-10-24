@@ -1,6 +1,5 @@
 {
   "source_revision": "89221bdb88aca82a017fcce27b49b9eb9fca33ac",
-  "source_tree": "a766e9929997daaba072001754f8c54b2a909861",
   "tracked_tree_clean": true,
   "started_at": "2026-10-24T09:52:57.530797+00:00",
   "platform": "macOS-27.0-arm64-arm-64bit",
@@ -3264,5 +3263,7 @@
   "tracked_tree_clean_after": true,
   "retained_original_sha256": "a9d551c228867e08d44782cf2baa0df31659775acdefcce59a23d17645c41b18",
   "redaction": "Command interpreter and output paths normalized; producer hostname redacted; duplicate stdout omitted because its decoded payload is retained. Numerical payloads unchanged. Original stdout/stderr and collector retained locally.",
-  "collection_preflight_failure": "An initial startup stopped before measurements when the sandbox denied CPU-model sysctl. The empty output directory was removed and the same bounded collector ran with read-only CPU identity permitted. No failed measurement was discarded."
+  "collection_preflight_failure": "An initial startup stopped before measurements when the sandbox denied CPU-model sysctl. The empty output directory was removed and the same bounded collector ran with read-only CPU identity permitted. No failed measurement was discarded.",
+  "source_tree_sha256": "cab4ad67abcbb3457960df7619f959201e3711447100228bd32a905d266cd7e0",
+  "source_tree_digest_method": "SHA-256 of git cat-file tree <source_revision>^{tree} raw bytes; the commit field remains the checkout revision. A tree object ID is not a commit ID."
 }
