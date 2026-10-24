@@ -172,3 +172,57 @@ Its payload must continue to identify local construction evidence with scalabili
 - [ ] Pass complete required CI, single-/two-GPU, review and conflict gates, then accept merged main before the next delivery.
 
 Implementation of new APIs, approximation, FTQC package boundaries or hardware submission remains outside this proposal. DynamicCircuit #731, protected exports/identities, registration and all original frozen QEC fixtures remain unchanged.
+
+## FTS-02E bounded scale campaign proposal
+
+Status: **concrete proposal awaiting explicit resource/matrix approval**. Documentation merge, planning authorization and passing CI do not activate this campaign. The user's baseline-only decision still disables 1.5x/2x goals. No large run is performed by this proposal, no tolerance/CI threshold is changed, and no benchmark observation constitutes a capacity or performance improvement.
+
+### Why this is the next decision
+
+[W1-A phase observations and post-820 acceptance](FTQC_EXACT_REFERENCE_BASELINE.md) and [W6 phase observations](FTQC_SAMPLING_PHASE_BASELINE.md) are delivered. Existing `tests/team/simulation/test_stabilizer_sampling.py` already compares Clifford samples with dense probability references, including Bell/GHZ support; `test_prepared_stabilizer_sampling.py` independently authors Stim records and checks their joint distribution. These references should be reused during later W1-B/FTS-04 conformance work instead of adding a competing reference engine or claiming that parity alone verifies a Born distribution. Their mere presence does not close every W1-B fault/channel case or approve a new dynamic accuracy contract.
+
+The first CPU construction study stopped at d=7; the maintained sampling observer intentionally admits at most 4096 shots. Expanding these ranges needs a declared resource budget and reviewed benchmark-envelope change. Both preserve existing public QEC APIs. The original complete-result decoder/experiment contracts remain unapproved; this campaign uses only existing native PyMatching logical predictions, not a hypothetical batch-result API.
+
+### Stage A: recommended pilot, approval requested
+
+| Point | Frozen workload | Existing producer and proposed change | Records |
+| --- | --- | --- | --- |
+| A1 | Surface d=9, rounds=3, gate-bound `NoiseModel().add("cx", bit_flip_channel(0.01))`. | Existing `benchmarks/qec_clifford_dem_construction.py` unchanged. Construction only; no sampler/decoder/whole-circuit capacity conclusion. | One labelled host warm-up process, then three fresh measured processes. |
+| A2 | Surface d=3, Z readout, rounds=3, data/phase/measurement flips 0.005/0.007/0.009, seed=53, 16384 shots, batch=32. | Existing `qec_memory_sampling` observer; a separately reviewed benchmark-only shot-envelope extension after approval. | One labelled host warm-up process, then three fresh measured processes, each `warmup=0`, `iterations=1`. |
+| A3 | Same as A2, 65536 total shots, batch=32. | Same observer and explicit sample-count conservation. | Same four-process protocol; admit only after A2 completes within its resource budget. |
+
+Host warm-up is not an in-process cache warm-up: all measured processes start fresh, and their first called-API lazy imports remain in measured phases. All host warm-up outputs remain in raw evidence. Three measured processes characterize a pilot; they do not satisfy a final performance comparison or infer a rare-event threshold. Seed restarts mean logical counts are not independent statistical trials. Report full observations/ranges without a speedup significance claim.
+
+### Resource request and fail-closed admission
+
+The request is one local CPU-only campaign on the existing host, one process at a time, one Torch/OMP/MKL/OpenBLAS thread, captured exact Python/Torch/Stim/PyMatching versions, fixed precision/record types matching the current producers, and no external hardware/job/data access.
+
+| Resource | Proposed Stage A allocation | Handling |
+| --- | --- | --- |
+| Per A1 process wall | 300 seconds including startup. | Terminate owned process group and retain timeout evidence. |
+| Per A2/A3 process wall | 120 seconds including startup. | Same; do not hide compilation/import overhead in the external duration. |
+| Whole campaign wall | 45 minutes, including warm-ups and controller work. | Stop and mark remaining cases not attempted when exhausted. |
+| Observed workload-process RSS | 2 GiB stop threshold, observed at <=100 ms intervals. | Requires functioning process supervision before launch. On a sampled exceedance terminate owned participants; retain high-water result where available, sample maximum, interval and termination latency. This sampled threshold can overshoot and is not a hard allocator/cgroup limit. |
+| Retained evidence storage | At most 128 MiB; require at least 512 MiB filesystem free before launch. | Keep compact JSON/counts/logs, not all shot tensors. Refuse to start when space is insufficient; never delete unrelated files or original evidence. |
+
+Reuse the maintained watchdog for wall-time/process-group cancellation. Its current diagnostics do **not** enforce RSS: a reviewed minimal workload-process monitor is an admission dependency, not a capability claimed by this document. If RSS supervision is unavailable or permission is denied, record that blocker and do not start the expanded run. Do not substitute virtual-address limits for measured RSS. Parent/controller RSS, child high-water RSS, Python-traced allocations and visible tensors remain different measurements; none is renamed exclusive sampler memory. This proposal does not guarantee protection against an OS-level OOM.
+
+For every point retain command, clean obtainable producer revision, workload/noise, environment, measured phases and actual external wall, process memory semantics, raw counts, normal completion/refusal/timeout/termination status, and logs. A failure cannot enter the successful median or disappear from the manifest. On a failure stop escalation in that workload class; keep other classes unattempted until the failure is reviewed. No automatic reruns of failed points and no selecting the fastest surviving subset.
+
+The construction producer's traced peak excludes code/layout/import allocation and includes tracemalloc overhead in its construction timer. Preserve that distinction. Sampling's whole-process RSS includes imports and SDK preparation; visible detector/observable/prediction bytes do not establish a process-memory bound. Fixed batch and detector width are held constant for A2/A3; any memory change must be explained, without inventing an approved growth tolerance.
+
+### Stage B: explicitly outside the pilot request
+
+Distance 17, longer rounds, shots 10^6, batch-size comparisons, ten-repetition comparative studies and all new physical devices require a follow-up admission decision using Stage A observations. Stage A approval does not authorize Stage B or establish its budgets. W4 mixed-algorithm choice, approximate methods, ftqc package admission, public serialization/batch semantics, domestic device execution and experimental data remain separate contracts/decisions.
+
+### Mission checklist and acceptance
+
+- [x] Baseline evidence contributing to R01/R03/R08/R10, without closing these requirements: delivered small-code, sampling and exact-reference observations with phase/source/environment boundaries and accepted main installation.
+- [ ] R01/R08: run the approved A1/A2/A3 pilot and preserve all failures and unattempted cases; this still does not close whole-circuit scale or streaming quality.
+- [ ] R09/R10: select a future equivalence-preserving optimization and quantitative goals only after baseline review. No 1.5x/2x gate is active here.
+- [ ] R04: mixed Clifford/non-Clifford algorithm selection remains open; H-T-H is a small reference only.
+- [ ] R05/R06: reuse delivered feedback and independent small references, then close uncovered conditional/channel cases under authoritative contracts.
+- [ ] R11/R12/R15: name domestic resource and experimental data owners; no resource or dataset is fabricated.
+- [ ] Obtain explicit approval of **Stage A matrix, repetitions, wall/RSS/storage allocations and supervision prerequisite** before implementation/expanded collection. Approving this does not approve performance targets, new QEC APIs or Stage B.
+
+Every implementation/evidence PR must continue to include a real public-user code example, prerequisites, command, expected output/invariants and exact reviewed-head execution evidence. The current H-T-H/feedback example above and the accepted 17-shot compiled-memory example remain runnable without activating this proposal.

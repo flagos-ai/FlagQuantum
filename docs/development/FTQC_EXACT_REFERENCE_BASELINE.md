@@ -66,3 +66,16 @@ Expected invariants: 13 observations, first three labelled warmup, two probabili
 ## Remaining acceptance gaps
 
 This work advances measurement for R01/R03/R04/R10; none is declared fully satisfied by this one-qubit reference. W1-B fault/channel coverage, larger W3/W6 scale, mixed-engine selection, domestic device qualification and experimental data remain open. Matrix/resource/tolerance approvals, FTS-05 public batch semantics and FTQC package admission remain distinct approval gates. The original QEC exports, class/pickle identity, numerics, registry and frozen fixtures are unchanged.
+
+## Post-820 mainline acceptance
+
+Exact main `2a7d75b39b6e08741be2249ca0af1e5278472ead` passed [complete CI, 54 jobs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40102988295), [source/single/required two-GPU checks](https://github.com/flagos-ai/FlagQuantum/actions/runs/40102998091), and [smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40102937279). Three existing optional GPU pools were unselected. The package job's **Verify real QEC optional installations outside the checkout** step succeeded: four real wheel environments (core, Stim, PyMatching, both) and sdist with both SDKs, as implemented independently in #819. These CI installations are distinct from the previous local SDK overlay.
+
+The local source selection passes **2,356 tests with four existing conditional skips**, 248.29 seconds. One skip is the original phase-flip/repetition inapplicable case; the three others are #819 source-profile tests for core/Stim-only/PyMatching-only when this source environment contains both SDKs. No skip was introduced by #820. The five independent CI installation profiles above do not use this source-environment substitution.
+
+A new Python 3.12.14 / Torch 2.14.1 core install verifies every one of **826 package Python members** byte-for-byte across isolated sdist and wheel-from-sdist, dependency consistency, native/Bell sampling, both master examples and this document's H-T-H public example outside the checkout. The installed `ftqc_exact_reference` CLI also passes outside the checkout with no SDK overlay. No historical local twelve-profile run is relabeled.
+
+- sdist SHA256: `063de18d2e0fd6bda9760e5015787ae5526f15e0a4372238dd94e8bfe9c87a30`
+- wheel SHA256: `4820b197263ed1cc206de142249a6dd7661ae71cde4ce8b8060eafbc561924d0`
+
+This acceptance completes the W1-A observer delivery, not FTS-02 or a mixed-engine milestone. The next [bounded scale campaign proposal](FTQC_REFERENCE_WORKLOADS_AND_BUDGETS.md#fts-02e-bounded-scale-campaign-proposal) requires its own resource approval before larger cases run. Latest proposal base `20ce03cb5ddccd64f60f72d9d5cdc1ded7c9a175` adds independent #822 compatibility documentation only; it has the same package tree as this accepted revision. #822's evidence is reused rather than reimplemented.
