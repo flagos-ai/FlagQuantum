@@ -1,0 +1,1074 @@
+{
+  "runner": "qec_memory_sampling",
+  "schema": "flagquantum.qec_memory_sampling.study.v1",
+  "source_revision": "50cc12056b68df9f424ccf538a28c469e27a1746",
+  "processor": "Apple M5",
+  "processor_identity_note": "CPU model re-queried via read-only host sysctl during collection; sandbox hostname is masked, so no equality with host hostname is inferred.",
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "runs": [
+    {
+      "benchmark_evidence_class": "local_non_release",
+      "blockers": [
+        "local CPU observation; no hardware or capacity certification"
+      ],
+      "communication_bytes": 0,
+      "device": "cpu",
+      "distribution_semantics": "single_process",
+      "hostname": "redacted",
+      "local_world_size": 1,
+      "logical_cpu_count": 10,
+      "machine": "arm64",
+      "methodology": {
+        "iterations": 10,
+        "pipeline_includes_handle_close": true,
+        "repetitions_are_independent_statistical_trials": false,
+        "seed_restarted_each_repetition": true,
+        "warmup": 3
+      },
+      "node_count": 1,
+      "non_release_evidence": true,
+      "observations": [
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0006093340052757412,
+            "decoder_setup": 0.2117274170013843,
+            "decoding": 0.0010785399936139584,
+            "dem_construction": 0.01976137500605546,
+            "memory_construction": 0.0005984169984003529,
+            "sampler_compile": 0.13358458399306983,
+            "sampling": 0.0036071669892407954
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.3710135419969447,
+          "pipeline_shots_per_second": 345.00088409455975,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.691699774004519e-05,
+            "decoder_setup": 0.000225499999942258,
+            "decoding": 0.0001381659967591986,
+            "dem_construction": 0.002705582999624312,
+            "memory_construction": 0.0006279170047491789,
+            "sampler_compile": 0.07280479099426884,
+            "sampling": 0.0008188750070985407
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07738008299202193,
+          "pipeline_shots_per_second": 1654.1724310789007,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.5290995836257935e-05,
+            "decoder_setup": 0.0002311669959453866,
+            "decoding": 0.00012570798571687192,
+            "dem_construction": 0.0025276249943999574,
+            "memory_construction": 0.0005987500044284388,
+            "sampler_compile": 0.07300570799270645,
+            "sampling": 0.0007326680060941726
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07727783400332555,
+          "pipeline_shots_per_second": 1656.3611241289668,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.9124028515070677e-05,
+            "decoder_setup": 0.00022700001136399806,
+            "decoding": 0.00013779199798591435,
+            "dem_construction": 0.002553667000029236,
+            "memory_construction": 0.0006166250095702708,
+            "sampler_compile": 0.0732516249991022,
+            "sampling": 0.0007852069975342602
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07762987499882001,
+          "pipeline_shots_per_second": 1648.8497502017829,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.645899076014757e-05,
+            "decoder_setup": 0.00023158300609793514,
+            "decoding": 0.00012720798258669674,
+            "dem_construction": 0.0025463329948252067,
+            "memory_construction": 0.000650041998596862,
+            "sampler_compile": 0.07433945799130015,
+            "sampling": 0.0007544989930465817
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07870516598632094,
+          "pipeline_shots_per_second": 1626.322724765571,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.970799687318504e-05,
+            "decoder_setup": 0.00023212499218061566,
+            "decoding": 0.0001442079956177622,
+            "dem_construction": 0.0025577500055078417,
+            "memory_construction": 0.0006300420063780621,
+            "sampler_compile": 0.07289783399028238,
+            "sampling": 0.000797250002506189
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07731654201052152,
+          "pipeline_shots_per_second": 1655.5318780627993,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.7207002858631313e-05,
+            "decoder_setup": 0.00022029200044926256,
+            "decoding": 0.00013524900714401156,
+            "dem_construction": 0.0025379589933436364,
+            "memory_construction": 0.0006874590035295114,
+            "sampler_compile": 0.0730834170099115,
+            "sampling": 0.0007406669901683927
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07746079099888448,
+          "pipeline_shots_per_second": 1652.4489144687839,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 3.174999437760562e-05,
+            "decoder_setup": 0.00022191699827089906,
+            "decoding": 0.00013199998647905886,
+            "dem_construction": 0.002453791006701067,
+            "memory_construction": 0.000611708004726097,
+            "sampler_compile": 0.07324041599349584,
+            "sampling": 0.0007372090185526758
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07745724999404047,
+          "pipeline_shots_per_second": 1652.5244571663502,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.170800871681422e-05,
+            "decoder_setup": 0.00022595899645239115,
+            "decoding": 0.00010700001439545304,
+            "dem_construction": 0.0024892090004868805,
+            "memory_construction": 0.0005966669996269047,
+            "sampler_compile": 0.07201874999736901,
+            "sampling": 0.0006958330050110817
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07618041700334288,
+          "pipeline_shots_per_second": 1680.2218343643776,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.354201569687575e-05,
+            "decoder_setup": 0.0002138339914381504,
+            "decoding": 0.00011504100984893739,
+            "dem_construction": 0.0024549590016249567,
+            "memory_construction": 0.000574792007682845,
+            "sampler_compile": 0.07140454099862836,
+            "sampling": 0.0007002500060480088
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.0755069589940831,
+          "pipeline_shots_per_second": 1695.2079875184797,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 1.995899947360158e-05,
+            "decoder_setup": 0.0002046250010607764,
+            "decoding": 0.00010191599722020328,
+            "dem_construction": 0.0024779579980531707,
+            "memory_construction": 0.0005801250081276521,
+            "sampler_compile": 0.07068808400072157,
+            "sampling": 0.0006721679965266958
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07476362500165123,
+          "pipeline_shots_per_second": 1712.0625169950358,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 2.7999019948765635e-05,
+            "decoder_setup": 0.00024695799220353365,
+            "decoding": 0.00014499998360406607,
+            "dem_construction": 0.0024195000005420297,
+            "memory_construction": 0.0005771670112153515,
+            "sampler_compile": 0.07248512499791104,
+            "sampling": 0.000782584014814347
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07671108299109619,
+          "pipeline_shots_per_second": 1668.5985259112674,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 4,
+          "completed_shots": 128,
+          "detectors": 24,
+          "logical_failures": 0,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 3.112401464022696e-05,
+            "decoder_setup": 0.00022087499382905662,
+            "decoding": 0.00014575199747923762,
+            "dem_construction": 0.002614915996673517,
+            "memory_construction": 0.0006187090039020404,
+            "sampler_compile": 0.07214645900239702,
+            "sampling": 0.0007900829805294052
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07659720799711067,
+          "pipeline_shots_per_second": 1671.0791861346734,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        }
+      ],
+      "pipeline_median_seconds": 0.07701381250080885,
+      "platform": "macOS-27.0-arm64-arm-64bit",
+      "precision": "CPU int8 measurement records and bool logical predictions",
+      "process_max_rss_after_bytes": 244957184,
+      "process_max_rss_before_bytes": 201523200,
+      "python": "3.12.14",
+      "rank_ownership": {
+        "0": "whole_workload"
+      },
+      "release_gate_allowed": false,
+      "rss_available": true,
+      "runner": "qec_memory_sampling",
+      "scalability_claim_allowed": false,
+      "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+      "source_revision": "50cc12056b68df9f424ccf538a28c469e27a1746",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "torch_threads": 1,
+      "tracked_tree_clean": true,
+      "versions": {
+        "flagquantum_distribution": "0.4.0",
+        "flagquantum_source": "0.4.0",
+        "pymatching": "2.4.0",
+        "stim": "1.16.0",
+        "torch": "2.14.1"
+      },
+      "workload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "distance": 3,
+        "noise": {
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "readout_basis": "z",
+        "rounds": 3,
+        "seed": 53,
+        "shots": 128
+      },
+      "world_size": 1
+    },
+    {
+      "benchmark_evidence_class": "local_non_release",
+      "blockers": [
+        "local CPU observation; no hardware or capacity certification"
+      ],
+      "communication_bytes": 0,
+      "device": "cpu",
+      "distribution_semantics": "single_process",
+      "hostname": "redacted",
+      "local_world_size": 1,
+      "logical_cpu_count": 10,
+      "machine": "arm64",
+      "methodology": {
+        "iterations": 10,
+        "pipeline_includes_handle_close": true,
+        "repetitions_are_independent_statistical_trials": false,
+        "seed_restarted_each_repetition": true,
+        "warmup": 3
+      },
+      "node_count": 1,
+      "non_release_evidence": true,
+      "observations": [
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0008240009774453938,
+            "decoder_setup": 0.1836740829894552,
+            "decoding": 0.0014004590339027345,
+            "dem_construction": 0.017213917002663948,
+            "memory_construction": 0.0005666659999405965,
+            "sampler_compile": 0.1261697500012815,
+            "sampling": 0.007016917981673032
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.3369283749925671,
+          "pipeline_shots_per_second": 3039.221615046789,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00011795999307651073,
+            "decoder_setup": 0.00021445800666697323,
+            "decoding": 0.0005492100463015959,
+            "dem_construction": 0.0025717500102473423,
+            "memory_construction": 0.0006223329983185977,
+            "sampler_compile": 0.070095292001497,
+            "sampling": 0.00519454108143691
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07941608299734071,
+          "pipeline_shots_per_second": 12894.113652448576,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00011837702186312526,
+            "decoder_setup": 0.00021004199516028166,
+            "decoding": 0.0005571269866777584,
+            "dem_construction": 0.002445459002046846,
+            "memory_construction": 0.0005814169999212027,
+            "sampler_compile": 0.06892345800588373,
+            "sampling": 0.005198710990953259
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.0780792090081377,
+          "pipeline_shots_per_second": 13114.886959129863,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00011041699326597154,
+            "decoder_setup": 0.00020495799253694713,
+            "decoding": 0.0005300000484567136,
+            "dem_construction": 0.0024338750081369653,
+            "memory_construction": 0.0005681670008925721,
+            "sampler_compile": 0.0688435420015594,
+            "sampling": 0.0050709160132100806
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07780429199920036,
+          "pipeline_shots_per_second": 13161.22766094349,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00010875205043703318,
+            "decoder_setup": 0.00020420800137799233,
+            "decoding": 0.0005264589854050428,
+            "dem_construction": 0.00239408400375396,
+            "memory_construction": 0.0005912079941481352,
+            "sampler_compile": 0.0692083339963574,
+            "sampling": 0.005231915027252398
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.0783070420002332,
+          "pipeline_shots_per_second": 13076.729421051949,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00012375196092762053,
+            "decoder_setup": 0.00020187499467283487,
+            "decoding": 0.0005739180342061445,
+            "dem_construction": 0.0022773329983465374,
+            "memory_construction": 0.0006035419937688857,
+            "sampler_compile": 0.07001908299571369,
+            "sampling": 0.005405333009548485
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07925550000800285,
+          "pipeline_shots_per_second": 12920.238972646708,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0001291670196224004,
+            "decoder_setup": 0.00022983299277257174,
+            "decoding": 0.0006196270260261372,
+            "dem_construction": 0.002665541003807448,
+            "memory_construction": 0.0006157499883556738,
+            "sampler_compile": 0.07273658299527597,
+            "sampling": 0.005516501987585798
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.0825746249902295,
+          "pipeline_shots_per_second": 12400.904032215261,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00012395501835271716,
+            "decoder_setup": 0.00022095801250543445,
+            "decoding": 0.0005897909868508577,
+            "dem_construction": 0.0028482089983299375,
+            "memory_construction": 0.0006341669941321015,
+            "sampler_compile": 0.07012716699682642,
+            "sampling": 0.0053861640190007165
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07998454199696425,
+          "pipeline_shots_per_second": 12802.473758477796,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00011200096923857927,
+            "decoder_setup": 0.000222250004298985,
+            "decoding": 0.0005270459514576942,
+            "dem_construction": 0.0024115419946610928,
+            "memory_construction": 0.0005795840115752071,
+            "sampler_compile": 0.06866408299538307,
+            "sampling": 0.0051536230312194675
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07771337499434594,
+          "pipeline_shots_per_second": 13176.625002768204,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00011158395500387996,
+            "decoder_setup": 0.0002010000025620684,
+            "decoding": 0.000532119011040777,
+            "dem_construction": 0.0023483749973820522,
+            "memory_construction": 0.0006141250050859526,
+            "sampler_compile": 0.06854320800630376,
+            "sampling": 0.00511895700765308
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07751275000919122,
+          "pipeline_shots_per_second": 13210.729846103735,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00011199999426025897,
+            "decoder_setup": 0.00020083299023099244,
+            "decoding": 0.0005261249898467213,
+            "dem_construction": 0.002384457999141887,
+            "memory_construction": 0.0005727499956265092,
+            "sampler_compile": 0.06826616699981969,
+            "sampling": 0.005038997027440928
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07714016700629145,
+          "pipeline_shots_per_second": 13274.536985595118,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00010933802695944905,
+            "decoder_setup": 0.00021062500309199095,
+            "decoding": 0.0005206240166444331,
+            "dem_construction": 0.00239575000887271,
+            "memory_construction": 0.0005664159980369732,
+            "sampler_compile": 0.06887124999775551,
+            "sampling": 0.00500770793587435
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.07772270799614489,
+          "pipeline_shots_per_second": 13175.042743631517,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 32,
+          "completed_shots": 1024,
+          "detectors": 24,
+          "logical_failures": 2,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00011287699453532696,
+            "decoder_setup": 0.0002201669994974509,
+            "decoding": 0.000536039937287569,
+            "dem_construction": 0.0024383330019190907,
+            "memory_construction": 0.0005809159920318052,
+            "sampler_compile": 0.06897237499651965,
+            "sampling": 0.005164501024410129
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.0780722909985343,
+          "pipeline_shots_per_second": 13116.049073277793,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        }
+      ],
+      "pipeline_median_seconds": 0.07793829149886733,
+      "platform": "macOS-27.0-arm64-arm-64bit",
+      "precision": "CPU int8 measurement records and bool logical predictions",
+      "process_max_rss_after_bytes": 258457600,
+      "process_max_rss_before_bytes": 214908928,
+      "python": "3.12.14",
+      "rank_ownership": {
+        "0": "whole_workload"
+      },
+      "release_gate_allowed": false,
+      "rss_available": true,
+      "runner": "qec_memory_sampling",
+      "scalability_claim_allowed": false,
+      "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+      "source_revision": "50cc12056b68df9f424ccf538a28c469e27a1746",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "torch_threads": 1,
+      "tracked_tree_clean": true,
+      "versions": {
+        "flagquantum_distribution": "0.4.0",
+        "flagquantum_source": "0.4.0",
+        "pymatching": "2.4.0",
+        "stim": "1.16.0",
+        "torch": "2.14.1"
+      },
+      "workload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "distance": 3,
+        "noise": {
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "readout_basis": "z",
+        "rounds": 3,
+        "seed": 53,
+        "shots": 1024
+      },
+      "world_size": 1
+    },
+    {
+      "benchmark_evidence_class": "local_non_release",
+      "blockers": [
+        "local CPU observation; no hardware or capacity certification"
+      ],
+      "communication_bytes": 0,
+      "device": "cpu",
+      "distribution_semantics": "single_process",
+      "hostname": "redacted",
+      "local_world_size": 1,
+      "logical_cpu_count": 10,
+      "machine": "arm64",
+      "methodology": {
+        "iterations": 10,
+        "pipeline_includes_handle_close": true,
+        "repetitions_are_independent_statistical_trials": false,
+        "seed_restarted_each_repetition": true,
+        "warmup": 3
+      },
+      "node_count": 1,
+      "non_release_evidence": true,
+      "observations": [
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00046729197492823005,
+            "decoder_setup": 0.09556016699934844,
+            "decoding": 0.002158256102120504,
+            "dem_construction": 0.023278708991711028,
+            "memory_construction": 0.0006101659964770079,
+            "sampler_compile": 0.09715820899873506,
+            "sampling": 0.020201760082272813
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.23959041699708905,
+          "pipeline_shots_per_second": 17095.842360213286,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00042938097612932324,
+            "decoder_setup": 0.00021891600044909865,
+            "decoding": 0.0019788729841820896,
+            "dem_construction": 0.002525625008274801,
+            "memory_construction": 0.0005872500041732565,
+            "sampler_compile": 0.0721683750016382,
+            "sampling": 0.019815752079011872
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09785791698959656,
+          "pipeline_shots_per_second": 41856.60318557008,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0004302540182834491,
+            "decoder_setup": 0.00021229100821074098,
+            "decoding": 0.0019881700864061713,
+            "dem_construction": 0.002418042000499554,
+            "memory_construction": 0.000589292001677677,
+            "sampler_compile": 0.07097787500242703,
+            "sampling": 0.0195572949887719
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09631020900269505,
+          "pipeline_shots_per_second": 42529.24007137584,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": true
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0004210450279060751,
+            "decoder_setup": 0.00022345800243783742,
+            "decoding": 0.001989798984141089,
+            "dem_construction": 0.0025659169914433733,
+            "memory_construction": 0.0007334160036407411,
+            "sampler_compile": 0.0710577080026269,
+            "sampling": 0.01950874704925809
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09663383300357964,
+          "pipeline_shots_per_second": 42386.81083723824,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00044595908548217267,
+            "decoder_setup": 0.00022100000933278352,
+            "decoding": 0.0021044130699010566,
+            "dem_construction": 0.0024174169957404956,
+            "memory_construction": 0.0005823329993290827,
+            "sampler_compile": 0.0707499169948278,
+            "sampling": 0.020381743990583345
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09704733299440704,
+          "pipeline_shots_per_second": 42206.20880159641,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00044925601105205715,
+            "decoder_setup": 0.00037799999699927866,
+            "decoding": 0.0021214999142102897,
+            "dem_construction": 0.002516041000490077,
+            "memory_construction": 0.0006724160048179328,
+            "sampler_compile": 0.07339554200007115,
+            "sampling": 0.019883295928593725
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09956574998795986,
+          "pipeline_shots_per_second": 41138.64456899401,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0004135459166718647,
+            "decoder_setup": 0.00021329199080355465,
+            "decoding": 0.0019820449961116537,
+            "dem_construction": 0.002494041997124441,
+            "memory_construction": 0.0006158330070320517,
+            "sampler_compile": 0.07145329199556727,
+            "sampling": 0.019627465022495016
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09694666700670496,
+          "pipeline_shots_per_second": 42250.03423497494,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00041062805394176394,
+            "decoder_setup": 0.00021120900055393577,
+            "decoding": 0.001951370999449864,
+            "dem_construction": 0.0024512079980922863,
+            "memory_construction": 0.0005971249920548871,
+            "sampler_compile": 0.07024691700644325,
+            "sampling": 0.01965042001393158
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09564937499817461,
+          "pipeline_shots_per_second": 42823.0712440951,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0004349150403868407,
+            "decoder_setup": 0.00021704199025407434,
+            "decoding": 0.0020458740182220936,
+            "dem_construction": 0.0024265420070150867,
+            "memory_construction": 0.0005960830021649599,
+            "sampler_compile": 0.06980370900419075,
+            "sampling": 0.019764253971516155
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09542216600675602,
+          "pipeline_shots_per_second": 42925.036932299336,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00041359504393767565,
+            "decoder_setup": 0.00020595900423359126,
+            "decoding": 0.0019374630937818438,
+            "dem_construction": 0.0023519169917562976,
+            "memory_construction": 0.0005764579982496798,
+            "sampler_compile": 0.06881537499430124,
+            "sampling": 0.01972271488921251
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09415220899973065,
+          "pipeline_shots_per_second": 43504.02442508511,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0004169171006651595,
+            "decoder_setup": 0.00021337499492801726,
+            "decoding": 0.001963796094059944,
+            "dem_construction": 0.00243387499358505,
+            "memory_construction": 0.0006044579931767657,
+            "sampler_compile": 0.06962416600435972,
+            "sampling": 0.02007767504255753
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09546033400692977,
+          "pipeline_shots_per_second": 42907.8741721421,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.0004487929545575753,
+            "decoder_setup": 0.00020595900423359126,
+            "decoding": 0.0020868770370725542,
+            "dem_construction": 0.0024488339986419305,
+            "memory_construction": 0.0006336249934975058,
+            "sampler_compile": 0.07288237499597017,
+            "sampling": 0.020948831021087244
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09979991600266658,
+          "pipeline_shots_per_second": 41042.11871170872,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        },
+        {
+          "batches": 128,
+          "completed_shots": 4096,
+          "detectors": 24,
+          "logical_failures": 17,
+          "observables": 1,
+          "phases_seconds": {
+            "count_reduction": 0.00043004094914067537,
+            "decoder_setup": 0.00022033299319446087,
+            "decoding": 0.002039165876340121,
+            "dem_construction": 0.002503708004951477,
+            "memory_construction": 0.0006280829984461889,
+            "sampler_compile": 0.0736899580078898,
+            "sampling": 0.020071507009561174
+          },
+          "pipeline_seconds_excluding_imports_and_report_io": 0.09972095799457747,
+          "pipeline_shots_per_second": 41074.61543061718,
+          "visible_batch_tensor_bytes_max": 832,
+          "warmup": false
+        }
+      ],
+      "pipeline_median_seconds": 0.0967902500051423,
+      "platform": "macOS-27.0-arm64-arm-64bit",
+      "precision": "CPU int8 measurement records and bool logical predictions",
+      "process_max_rss_after_bytes": 259751936,
+      "process_max_rss_before_bytes": 216121344,
+      "python": "3.12.14",
+      "rank_ownership": {
+        "0": "whole_workload"
+      },
+      "release_gate_allowed": false,
+      "rss_available": true,
+      "runner": "qec_memory_sampling",
+      "scalability_claim_allowed": false,
+      "schema": "flagquantum.qec_memory_sampling.local_observations.v1",
+      "source_revision": "50cc12056b68df9f424ccf538a28c469e27a1746",
+      "thread_environment": {
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "torch_threads": 1,
+      "tracked_tree_clean": true,
+      "versions": {
+        "flagquantum_distribution": "0.4.0",
+        "flagquantum_source": "0.4.0",
+        "pymatching": "2.4.0",
+        "stim": "1.16.0",
+        "torch": "2.14.1"
+      },
+      "workload": {
+        "batch_size": 32,
+        "code": "RotatedSurfaceCode",
+        "distance": 3,
+        "noise": {
+          "data_flip": 0.005,
+          "measurement_flip": 0.009,
+          "phase_flip": 0.007
+        },
+        "readout_basis": "z",
+        "rounds": 3,
+        "seed": 53,
+        "shots": 4096
+      },
+      "world_size": 1
+    }
+  ],
+  "commands": [
+    {
+      "shots": 128,
+      "arguments": [
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "128",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "3",
+        "--iterations",
+        "10",
+        "--json-output",
+        "/tmp/qec-memory-128.json"
+      ],
+      "timeout_seconds": 120,
+      "returncode": 0,
+      "process_wall_seconds_including_imports_and_json_io": null,
+      "reused_valid_output_after_metadata_interruption": true
+    },
+    {
+      "shots": 1024,
+      "arguments": [
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "1024",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "3",
+        "--iterations",
+        "10",
+        "--json-output",
+        "/tmp/qec-memory-1024.json"
+      ],
+      "timeout_seconds": 120,
+      "returncode": 0,
+      "process_wall_seconds_including_imports_and_json_io": 2.4224900829867693,
+      "reused_valid_output_after_metadata_interruption": false
+    },
+    {
+      "shots": 4096,
+      "arguments": [
+        "-m",
+        "flagquantum.benchmarking",
+        "run",
+        "qec_memory_sampling",
+        "--shots",
+        "4096",
+        "--batch-size",
+        "32",
+        "--warmup",
+        "3",
+        "--iterations",
+        "10",
+        "--json-output",
+        "/tmp/qec-memory-4096.json"
+      ],
+      "timeout_seconds": 120,
+      "returncode": 0,
+      "process_wall_seconds_including_imports_and_json_io": 2.0909509579942096,
+      "reused_valid_output_after_metadata_interruption": false
+    }
+  ],
+  "original_json_sha256": {
+    "128": "0405652f43b372698898775e5bd6f52bb16ff666ce8f5553f8d45fe326db67ff",
+    "1024": "7f8e7ac749196c19944115176dab611df4f5fcfce223a519a980ca85e2303e1b",
+    "4096": "48e60602a3ed6ef778b6055c0b87b076c42e185ca2d8fabbd332de52fa319c35"
+  },
+  "collection_metadata_interruption": "Controller stopped after successful128-shot process because sandbox/host hostname comparison was invalid; CPU model subsequently re-queried. That valid raw output is retained, external process-wall duration unavailable for that point.",
+  "redaction": "Producer hostnames redacted; all measured values unchanged. Original JSON/logs retained with recorded digests."
+}

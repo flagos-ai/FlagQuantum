@@ -146,3 +146,29 @@ delivered #806-809. The later #813 source change is audited and tested on the
 new branch rather than inferred from this older acceptance. FTS-02 remains
 partial; W1 phase timing, larger construction/shot regimes, mixed-engine
 selection, domestic-device allocation and licensed experimental data remain open.
+
+## Initial observations
+
+[All raw phase observations and provenance](evidence/ftqc_sampling_phases_20261024.json)
+come from clean producer commit `50cc12056b68df9f424ccf538a28c469e27a1746`, with one fresh process
+per point and all 39 observations retained (nine labelled warmups). The producer
+code is unchanged by this subsequent evidence check-in. Platform: Apple M5,
+Python 3.12.14, Torch 2.14.1, Stim 1.16.0 and PyMatching 2.4.0; one Torch/OMP/MKL/
+OpenBLAS thread. These are current-source observations, not the earlier #810
+Torch 2.13 baseline. The controller initially stopped after the successful
+128-shot process because sandbox and host names differ; it retained that raw
+output, re-queried the CPU model, and collected the two remaining cases. The
+external process-wall duration for the first case is explicitly unavailable.
+No pipeline observations or numerical values were removed or replaced.
+
+| Shots | Pipeline median (s) | Compile median (s) | Sampling median (s) | Decode median (s) | Visible tensor max (bytes) | Whole-process RSS max (bytes) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 128 | 0.077014 | 0.072691 | 0.000748 | 0.000134 | 832 | 244957184 |
+| 1024 | 0.077938 | 0.068922 | 0.005159 | 0.000531 | 832 | 258457600 |
+| 4096 | 0.096790 | 0.070904 | 0.019824 | 0.002014 | 832 | 259751936 |
+
+Observed visible batch tensor storage is 832 bytes for these fixed-width cases;
+that quantity excludes engine/SDK scratch and is not the process peak. The RSS
+values are separate fresh-process high-water observations, without a capacity
+claim. These results provide a baseline for later decisions; there is no speedup
+comparison, new target or performance pass threshold.
