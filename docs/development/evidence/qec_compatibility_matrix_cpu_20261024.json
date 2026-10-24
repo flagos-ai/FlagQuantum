@@ -1,5 +1,8 @@
 {
   "non_release_evidence": true,
+  "producer_files_unchanged": [
+    "benchmarks/qec_compatibility_matrix.py"
+  ],
   "protocol": {
     "bases": [
       "x",
@@ -6423,9 +6426,6 @@
   "runner": "qec_compatibility_matrix",
   "scalability_claim_allowed": false,
   "schema": "flagquantum.qec_compatibility_matrix.study.v1",
-  "source_files_unchanged_by_evidence_commit": [
-    "benchmarks/qec_compatibility_matrix.py"
-  ],
   "source_revision": "d6deab509391bfdbd97ade7d92d05a18c41bdda6",
   "status": "incomplete: 36 completed cells, 12 process-budget timeouts; complete-matrix acceptance not met",
   "study_elapsed_seconds": 552.3350608329929
