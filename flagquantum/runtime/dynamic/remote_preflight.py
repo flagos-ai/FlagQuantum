@@ -49,8 +49,7 @@ def _explicit_target_identity(target: str) -> tuple[str, TargetIdentity]:
     provider, separator, backend = candidate.partition(":")
     if (
         candidate != target
-        or
-        separator != ":"
+        or separator != ":"
         or not provider
         or not backend
         or provider != provider.strip()
@@ -100,9 +99,11 @@ def _missing_snapshot(
 
 def _blocker_codes(result: CapabilityMatchResult) -> tuple[str, ...]:
     return tuple(
-        blocker.code
-        if blocker.capability_name is None
-        else f"{blocker.code}:{blocker.capability_name}"
+        (
+            blocker.code
+            if blocker.capability_name is None
+            else f"{blocker.code}:{blocker.capability_name}"
+        )
         for blocker in result.blockers
     )
 
@@ -170,8 +171,7 @@ def require_dynamic_remote_preflight(
     if not decision.compatible:
         raise CapabilityError(
             "dynamic_remote_preflight_failed: "
-            f"target={decision.target}; blockers="
-            + ", ".join(decision.blocker_codes)
+            f"target={decision.target}; blockers=" + ", ".join(decision.blocker_codes)
         )
     return decision
 

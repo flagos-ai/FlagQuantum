@@ -186,9 +186,7 @@ def run(
         ".runtime.dynamic.circuit", __package__
     ).DynamicCircuit
     if isinstance(program_or_plan, dynamic_circuit_type):
-        preflight = import_module(
-            ".runtime.dynamic.remote_preflight", __package__
-        )
+        preflight = import_module(".runtime.dynamic.remote_preflight", __package__)
         preflight.require_dynamic_remote_preflight(
             program_or_plan,
             target=target,
