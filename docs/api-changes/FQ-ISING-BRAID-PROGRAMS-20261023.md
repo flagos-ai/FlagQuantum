@@ -260,3 +260,119 @@ The public mathematical probe above was executed with the quoted output.
 Remote latest-head applicable checks and complete CI/GPU remain separate gates.
 The owner separately authorized #767's normal merge only after all such checks
 and repository rules pass; that grant does not cover this Simulation PR.
+
+## Runtime native admission and consumer replacement
+
+The Runtime delivery is stacked on Simulation #768. It reuses ExecutionPlan,
+ExecutionOptions, the existing resolver, versioned plan codec/identity helpers,
+environment/compiler identities, matrix validator, ExecutionResult and
+MeasurementResult. `_ising_plan.py` supplies only the reviewed native admission,
+payload checks and result assembly. The numerical action remains in Simulation.
+No new public keyword, root export, plan/result wrapper, registry or resolver is
+introduced. The approved root/Runtime program annotations admit the typed
+frontend; arbitrary ProgramRecord or duck-typed objects do not gain root input
+authority. Circuit, OpenQASM, Deployment, Remote and Lindblad refusals remain.
+
+The existing protected execution-plan and observable-output candidates record
+the approved signature expansion. Their historical schemas remain unchanged;
+the existing API reader now checks the exact 085 native admission, the Core
+frontend authority, nullable analysis and an actual plan 1.1 payload. The old
+EXECUTION_PLAN_VERSION constant stays 1.0. Only native 1.1 identities hash the
+whole payload except identity; circuit 1.0 keeps its original preimage. Source,
+ordered output tensor bytes/names, requested/resolved options and shared
+fingerprints are sealed. Encoded matrix shape, dtype and bounded data layout are
+checked before invoking the existing Core decoder on CPU.
+
+Native plans have no circuit analysis, layers or shardable qubits. The same
+summary keys report null qubit/gate-width fields and braid-word depth; the audit
+projection retains the sealed identity. Calibration refuses this profile before
+reading a circuit cost artifact. Dispatch authenticates the native version from
+the validated seal and refuses contradictory analysis projections, rather than
+using a null field alone as source authority. Circuit dispatch reuses the same
+payload validation it previously performed for its decision; no extra circuit
+plan decoding is added by the native branch.
+
+The four Integration baseline factories now bind to actual Core construction,
+root planning/run and ExecutionPlan.from_json. AST comparison against the
+pre-replacement commit confirms all nine test/oracle functions are unchanged;
+all 23 parameterized consumer cases pass. The initial replacement invocation
+had 20 passed and three NameErrors because two imports still used by those
+unchanged consumers were removed with the fakes; both imports were restored.
+The first typing invocation also caught the adapter's first-argument keyword
+name differing from its existing Runner protocol; the adapter was aligned,
+without changing that protocol or consumer assertions.
+
+The source/Simulation stages' temporary typed-frontend root-refusal assertions
+are replaced by admitted-path checks. Raw ProgramRecord and every circuit-only
+exit remain refused. Additional Runtime tests check supported and unsupported
+options, the resolver's complex128 program constraint and explicit demotion
+error, matrix errors, immutable capture, ordered/named outputs, cross-profile
+and rehashed contradictory plans, pre-allocation decoding bounds, environment
+drift and per-run override refusals. The final focused selection on the initial stacked base passes 194 cases,
+including a real cross-process replay and the runnable example below.
+
+Run `python -m examples.ising_braid_execution`. Expected output:
+
+```text
+Plan schema: 1.1
+Qubit count: None
+State shape: (1, 2, 2)
+P(psi): 0.5
+Exact replay: True
+Terminal shots: 2000
+Caller RNG unchanged: True
+```
+
+This demonstrates native source to shared plan, Simulation, shared result and
+explicit terminal instrument composition; it does not assert other sectors,
+hardware, gradients, GPU/distributed execution or full M3 closure. Final
+supported-Python/default/integration checks and latest remote CI/GPU remain
+acceptance gates. #767 and #768 have separate conditional merge grants; neither
+grant covers this new Runtime delivery.
+
+Initial stacked-base validation (8ea5d48e, before integrating concurrent main
+0.4.0) passed 15,162 default cases with 168 skips in 287.45 seconds and 1,863
+integration cases with 125 skips in 181.33 seconds; both XML reports have zero
+failures/errors. Strict typing covered 837 package/test/example files. The
+initial complete run before one extra saved-tensor regression also passed; that
+regression then exposed an unwrapped scalar OverflowError from the shared Core
+decoder. It failed before the native reader added this specific error to its
+existing structured plan-error conversion; no tensor codec was replaced. An
+initial combined mypy invocation duplicated an examples namespace module; the
+verification command uses explicit package bases rather than changing package
+files or suppressing checks. Typing also caught a native-profile boolean name
+colliding with the existing dynamic-result local; the boolean was renamed.
+
+Core #767 merged normally as 350793dcc8deee8f691b2a6e04f48b393c122e5c after
+57 applicable successful checks, three unchanged manual-pool skips, all 54 CI
+jobs and complete CI/GPU workflows succeeded. Concurrent main includes #766's
+0.4.0 QEC retirement and explicit producer-version handling for archived plans.
+Those accepted changes must be preserved during dependency integration; the
+initial stacked-base results above are not newer-head integration evidence.
+
+
+### Runtime acceptance after dependency integration
+
+The Runtime code at 3af27839 integrates Simulation c5e2a5a6 and accepted main
+350793dc (package 0.4.0). The concurrent QEC retirement and producer-version
+handling remain intact. All twelve retained non-factory functions, including
+the independent oracle and main's archived-version refusal test, are
+AST-identical to the integrated contract baseline; all 24 consumer cases pass.
+The four fixtures alone select production construction/planning/execution/replay.
+
+On this integrated code, 199 focused cases pass on each of Python 3.10, 3.11
+and 3.12. The complete default tier passes 15,164 cases with 168 original skips
+in 287.55 seconds; Runtime integration passes 1,863 cases with 125 original
+skips in 192.03 seconds. Both XML reports contain zero failures/errors. Strict
+CI-targeted mypy passes 813 package/test/example files, floor/current Black and
+Ruff pass, and all twelve repository checks pass. The example above was rerun
+with exactly its quoted output. This supersedes the initial stacked-base counts
+as integrated-code evidence, without erasing those original results.
+
+One verification invocation omitted CI's explicit Python 3.12 type target and
+used the project default 3.10 target instead. It reported four errors in three
+untouched numerical/JAX files and is retained as a failed invocation. Repeating
+with the existing CI command's explicit target passed, without suppressions or
+source/configuration changes. Latest applicable remote checks and complete
+CI/GPU are separate acceptance gates; this Runtime PR still requires its own
+merge authorization.

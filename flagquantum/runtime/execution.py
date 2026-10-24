@@ -44,6 +44,7 @@ from .planner import plan_advanced as build_plan
 
 if TYPE_CHECKING:
     from ..circuit import Circuit
+    from ..core.ising import IsingBraidProgram
     from ..noise import NoiseModel
     from .options import ExecutionOptions
     from .result import ExecutionResult
@@ -1067,7 +1068,7 @@ def _run_native(
 
 
 def run(
-    program_or_plan: Circuit | CircuitIR | ExecutionPlan,
+    program_or_plan: Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram,
     *,
     options: ExecutionOptions | None = None,
     measurements: Sequence[MeasurementNode] | None = None,

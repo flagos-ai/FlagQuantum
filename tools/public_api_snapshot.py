@@ -466,6 +466,39 @@ def _validate_authorized_execution_plan(
     for name in contract["contract"]["methods"]:
         if not callable(getattr(ExecutionPlan, str(name), None)):
             errors.append(f"ExecutionPlan stable method is missing: {name}")
+    native = contract.get("native_ising_admission")
+    expected_native = {
+        "proposal": "docs/development/API_CHANGE_PROPOSAL_085_ISING_BRAID_PROGRAMS.md",
+        "record": "docs/api-changes/FQ-ISING-BRAID-PROGRAMS-20261023.md",
+        "frontend": "flagquantum.experimental.simulation.IsingBraidProgram",
+        "plan_version": "1.1",
+        "analysis_annotation": "CircuitAnalysis | None",
+        "additional_payload_field": "outputs",
+    }
+    if native != expected_native:
+        errors.append("native Ising admission differs from approved proposal 085")
+    else:
+        from flagquantum.core.ising import IsingBraidProgram
+        from flagquantum.experimental import simulation
+        from flagquantum.runtime._ising_plan import plan_ising
+
+        if simulation.IsingBraidProgram is not IsingBraidProgram:
+            errors.append("native Ising frontend must resolve to its Core authority")
+        annotations = {
+            field.name: str(field.type) for field in dataclasses.fields(ExecutionPlan)
+        }
+        if annotations["analysis"] != native["analysis_annotation"]:
+            errors.append("ExecutionPlan.analysis differs from proposal 085")
+        selected = plan_ising(IsingBraidProgram())
+        if (
+            selected.schema_version != native["plan_version"]
+            or selected.analysis is not None
+        ):
+            errors.append("native Ising plan must use reviewed 1.1 semantics")
+        if native["additional_payload_field"] not in selected.to_dict():
+            errors.append("native Ising plan must seal ordered outputs")
+        if "IsingBraidProgram" in fq.__all__:
+            errors.append("IsingBraidProgram must remain an experimental export")
     return errors
 
 

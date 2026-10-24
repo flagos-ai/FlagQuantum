@@ -17,6 +17,10 @@ class CalibratedPlanCost:
 
 
 def calibrate_plan_cost(plan: Any, artifact: Mapping[str, Any]) -> CalibratedPlanCost:
+    if getattr(plan, "analysis", None) is None:
+        from ..errors import CapabilityError
+
+        raise CapabilityError("native Ising plans have no approved circuit cost model")
     gate = artifact.get("performance_gate", {})
     if not isinstance(gate, Mapping) or not gate.get("passed"):
         raise ValueError("planner calibration requires a passing performance artifact")

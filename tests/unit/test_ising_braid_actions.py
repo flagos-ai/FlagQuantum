@@ -277,8 +277,12 @@ def test_other_profiles_cannot_enter_the_finite_ising_action() -> None:
             evolve_ising_braid(source)
 
 
-def test_root_entry_stays_closed_until_runtime_admission() -> None:
+def test_root_entry_uses_the_admitted_runtime_path() -> None:
     program = IsingBraidProgram().exchange(1)
-    for entry in (fq.plan, fq.run):
-        with pytest.raises(CapabilityError, match="Ising"):
-            entry(program)
+    plan = fq.plan(program)
+    assert plan.analysis is None
+    result = fq.run(plan)
+    assert result.state is not None
+    torch.testing.assert_close(
+        result.state[0], evolve_ising_braid(program.to_ir()), atol=1e-12, rtol=0
+    )

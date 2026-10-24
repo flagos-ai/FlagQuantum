@@ -12,6 +12,7 @@ from ...compiler import lower_noise_model as lower_noise_model
 from ...compiler import schedule_layers as schedule_layers
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, MeasurementNode
+from ...core.ising import IsingBraidProgram
 from ...errors import CapabilityError, ValidationError
 from ..dynamic._conditions import instruction_is_dynamic
 from ..execution_plan import (
@@ -866,7 +867,7 @@ def _validate_dynamic_plan_request(
 
 
 def plan(
-    program: Circuit | CircuitIR,
+    program: Circuit | CircuitIR | IsingBraidProgram,
     *,
     options: ExecutionOptions | None = None,
     measurements: Sequence[MeasurementNode] | None = None,
@@ -891,6 +892,15 @@ def plan(
         circuit_execution_constraints,
         resolve_execution_options,
     )
+
+    if isinstance(program, IsingBraidProgram):
+        if measurements is not None or noise_model is not None:
+            raise CapabilityError(
+                "native Ising planning accepts matrix outputs through fq.plan"
+            )
+        from .._ising_plan import plan_ising
+
+        return plan_ising(program, options=options)
 
     if options is not None and not isinstance(options, ExecutionOptions):
         raise TypeError("options must be an ExecutionOptions or None")
