@@ -330,3 +330,33 @@ This acceptance does not rerun or replace the twelve Stage A observations and
 does not close FTS-02 or R01-R15. The next preparatory work is the
 [QEC/FTQC ownership proposal](../architecture/QEC_FTQC_PROTOCOL_BOUNDARY.md);
 its package and public-contract admission remain separate decisions.
+
+### Post-833 mainline acceptance
+
+The ownership proposal merged as [#833](https://github.com/flagos-ai/FlagQuantum/pull/833)
+after all 57 selected checks passed at head
+`7dab10c92c2d9debbaf63d2ec7154e711700bc99`. Actual main
+`1a5aa96891d56159de2a8273c2ddb2eb6c8d7fa8` passed
+[complete CI, all 54 jobs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40123869133),
+[source, single GPU and required two GPUs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40123861499),
+and [main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40123800965).
+Three original optional hardware pools were unselected. Package job
+`120961082305` successfully executed the real QEC optional installation step.
+
+A fresh isolated sdist and wheel-from-sdist match all 828 package Python members
+at this main revision. A new Python 3.12.14 / Torch 2.14.1 core installation
+passes dependency consistency, native/Bell sampling, master-plan examples,
+H-T-H and the exact-reference observer CLI outside the checkout. Both ownership
+proposal examples pass outside the checkout with no SDK overlay: the distance-3
+constructor and existing distance-below-two refusal, plus dynamic measurement
+and feedback shape/parity invariants. Warnings remain recorded on stderr.
+
+Only four Markdown files changed from accepted main2241 to main1a5; package,
+tests and tools trees are identical. The preceding 3053-test local result is
+retained as prior-revision evidence and was not represented as a new run. The
+new exact-head CI independently verifies this main revision. Stage A raw
+observations were not recollected. Documentation merge does not approve a new
+frame, schedule contract, API or FTQC package. The next bounded
+[schedule/feedback conformance proposal](QEC_SCHEDULE_FEEDBACK_CONFORMANCE_PROPOSAL.md)
+reuses the delivered repetition workflow and requests a separate finite semantic
+matrix decision before implementation.
