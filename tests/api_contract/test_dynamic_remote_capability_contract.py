@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+import flagquantum.errors as fqe
 import flagquantum.runtime.dynamic.conformance as fqdc
 from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
@@ -180,7 +181,7 @@ def test_candidate_target_stays_closed_before_provider_import(
 
     monkeypatch.setattr("builtins.__import__", record_import)
 
-    with pytest.raises(TypeError, match="requires both compiler and target"):
+    with pytest.raises(fqe.CapabilityError, match="dynamic_remote_preflight"):
         fq.run(
             _feedback_program(),
             target="amazon-braket:<device-arn>",
