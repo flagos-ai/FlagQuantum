@@ -218,7 +218,7 @@ Distance 17, longer rounds, shots 10^6, batch-size comparisons, ten-repetition c
 ### Mission checklist and acceptance
 
 - [x] Baseline evidence contributing to R01/R03/R08/R10, without closing these requirements: delivered small-code, sampling and exact-reference observations with phase/source/environment boundaries and accepted main installation.
-- [ ] R01/R08: run the approved A1/A2/A3 pilot and preserve all failures and unattempted cases; this still does not close whole-circuit scale or streaming quality.
+- [x] R01/R08 baseline contribution: the approved A1/A2/A3 pilot completed all twelve declared processes once, with no failures or unattempted cases. This does not close whole-circuit scale or streaming quality.
 - [ ] R09/R10: select a future equivalence-preserving optimization and quantitative goals only after baseline review. No 1.5x/2x gate is active here.
 - [ ] R04: mixed Clifford/non-Clifford algorithm selection remains open; H-T-H is a small reference only.
 - [ ] R05/R06: reuse delivered feedback and independent small references, then close uncovered conditional/channel cases under authoritative contracts.
@@ -293,3 +293,40 @@ python tools/run_with_watchdog.py --phase A2-16384 \
 Expected invariants: one producer observation with 16384 completed shots, 512 batches, one observable; supervisor reason completed, positive live samples and no resource-budget refusal. A3 changes only total shots to 65536 (2048 batches). A1 instead invokes the existing construction script with `--distance 9 --rounds 3 --output ...`, under the 300-second watchdog budget. RSS and timing values are host observations, not pinned outputs.
 
 Stage A is a completed bounded baseline campaign, not full FTS-02 closure. Its evidence can now inform a separately reviewed next resource or algorithm decision. Stage B and performance targets remain disabled; no automatic expansion to d=17, longer rounds or a million shots is authorized.
+
+### Post-832 mainline acceptance
+
+The pilot merged in [#832](https://github.com/flagos-ai/FlagQuantum/pull/832)
+with the validated head `702415b8de9522dce8c71fd8a8034a02f9583b81` bound to the
+merge. Actual main `2241e4b62c036d872706baf62afd6d17c5421853` passed
+[complete CI, all 54 jobs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40119676599),
+[source, single GPU and required two GPUs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40119689898),
+and [main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40119614284).
+Three existing optional hardware pools were unselected. Package job
+`120948309893` successfully executed the real QEC optional installation step
+(four wheel profiles and sdist-both); this is separate from local SDK overlays.
+
+A fresh isolated sdist and wheel-from-sdist match all 828 package Python members
+at this exact main revision. A new Python 3.12.14 / Torch 2.14.1 core installation
+passes dependency consistency, native/Bell sampling, both master-plan user
+examples, H-T-H and the exact-reference observer CLI outside the checkout.
+Installed-package RSS-supervised H-T-H, sampled-excess termination and SIGTERM
+owned-process cleanup pass outside the checkout with no PYTHONPATH. The existing
+17-shot compiled-memory example passes outside the checkout using the new wheel
+plus an explicitly existing Stim/PyMatching SDK overlay; it is not relabeled as
+a fresh optional installation. Its two application lines remain
+`Completed shots: 17` and `Logical observables: 1`.
+
+The broader local QEC, original retirement contract, benchmark-contract,
+watchdog, reachability and installed-profile selection reports 3053 passed,
+29 conditional skips and three warnings in 295.65 seconds. This selection is
+broader than the earlier 2503-test source selection; their counts are not a
+performance comparison. Skips include unavailable optional/upstream simulators,
+platform/device-dependent benchmarks, one original inapplicable noise case and
+three installed-profile tests mismatched to the source SDK environment. No skip
+or threshold was added. Exact-head CI supplies the actual supported profiles.
+
+This acceptance does not rerun or replace the twelve Stage A observations and
+does not close FTS-02 or R01-R15. The next preparatory work is the
+[QEC/FTQC ownership proposal](../architecture/QEC_FTQC_PROTOCOL_BOUNDARY.md);
+its package and public-contract admission remain separate decisions.
