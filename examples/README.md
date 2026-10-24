@@ -12,6 +12,12 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/diagnose_predecoder.py`](qec/diagnose_predecoder.py) inspects archived
+  CPU QEC checkpoints with exact H/L equivalence and MLP feature-label diagnostics.
+  `--fixture-smoke` runs an exact cycle probe with Core Torch alone. Archived
+  runs verify the previous study's inputs and producing environment before new
+  fixed-budget samples; they never retrain or access primary logical tests.
+
 - [`qec/compare_ising.py`](qec/compare_ising.py) connects the private QEC reference
   to a pinned optional Ising checkout and a shared batched global decoder. Smoke
   uses untrained weights and does not establish a pretrained-model ranking.
