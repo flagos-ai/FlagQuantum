@@ -1,6 +1,6 @@
 # QEC Stim and PyMatching delivery plan
 
-Status: active delivery plan, 2026-10-24. Core owns QEC composition and adapters;
+Status: phase-one acceptance record, 2026-10-24. Core owns QEC composition and adapters;
 Simulation owns numerical execution; Runtime owns execution policy and lifecycle.
 This document orders work and records the delivery authorization below. It does
 not approve new public APIs or declare proposed modules implemented.
@@ -122,10 +122,10 @@ is required by this plan.
   Main smoke `40084803885` succeeded; this is not complete main CI evidence.
   Exact exported-law acceptance continues below. Neither delivery activates
   the separate sparse batch or generic experiment contracts.
-- F/G/H must first reconcile the already approved correlated-Pauli contract 088
-  and existing circuit-noise/sampling/DEM implementations on current main. Extend
-  only demonstrated gaps in location coverage, distribution preservation and
-  independent evidence; do not reimplement those capabilities from old plans.
+- F/G/H reuse the already approved correlated-Pauli contract 088 and existing
+  circuit-noise/sampling/DEM implementations. The capability reconciliation
+  below maps their location, distribution and independent evidence to this
+  route; no duplicate noise grammar or implementation is required.
   The bridge audit also found configured decimal rates differ from default
   executed Kraus probabilities through existing tensor precision. Preserve the
   failed 1e-12 configured-rate comparison and actual-law evidence; resolve the
@@ -145,9 +145,9 @@ is required by this plan.
   Actual merge Main smoke `40089903875` succeeded; this is not full main CI.
 - The [noise support inventory](../reference/QEC_STIM_NOISE_SUPPORT.md) reconciles
   contract 088 and the bridge with current placement, exclusivity and precision
-  evidence. It changes no API or numerical policy. F/G/H remain open until the
-  configured-versus-executed precision distinction and remaining acceptance
-  gaps have a reviewed disposition; I installation gates remain separate.
+  evidence. It changes no API or numerical policy. The configured-versus-executed
+  precision disposition and capability reconciliation below are the current
+  review slice; I's final CI/GPU and delivery gates remain separate.
 - I closes the whole compatibility task, not merely an individual PR.
 
 The noise inventory merged in #815 as
@@ -163,7 +163,99 @@ memory, exported memory and original external text use the existing public
 sampler/DEM/decoder APIs, including 16 + 16 + 3 tail batches. The step is
 required by the existing package/CI-complete gate; failed installation is not
 an optional skip. The source smoke tests alone do not certify installed use.
-Retain the actual CI reports before marking this gate delivered.
+The actual CI reports and artifact verification are recorded below.
+
+### Installed-user delivery and remaining final gate
+
+[#819](https://github.com/flagos-ai/FlagQuantum/pull/819) merged as
+`0370a686a9fc0ba5ef9239de501f20ea8a22c425`. Its final head
+`241d0030e92a6f8270a2965abab328d73867b8e7` passed complete CI
+[40097069997](https://github.com/flagos-ai/FlagQuantum/actions/runs/40097069997)
+(all 54 jobs), and Local GPU Gate
+[40097070014](https://github.com/flagos-ai/FlagQuantum/actions/runs/40097070014)
+(three successes, three unchanged optional skips). All applicable checks,
+reviews and branch rules were verified before the normal fixed-head merge.
+Actual merge Main smoke
+[40099436354](https://github.com/flagos-ai/FlagQuantum/actions/runs/40099436354)
+succeeded; it is not a full main CI.
+
+The CI-tested synthetic merge source was
+`bb991ba2357de35904ac042366a3329df1d2731c`, whose Git parents were independently
+verified as main `d744e0efc74fa789817230d757e4ec4deed50c26` and the exact final
+PR head `241d0030e92a6f8270a2965abab328d73867b8e7`. The package job's actual
+`qec-installed-bb991ba2357de35904ac042366a3329df1d2731c` artifact
+(ID `12561238671`, ZIP SHA256
+`ff1e4ef851e82e24b014b640906954b0618296283d9a4142b0f857c40267280f`)
+contains five directly parseable complete JSON reports, isolated package paths,
+SDK availability, versions and installer/stderr logs. All five `pip check`
+results succeeded. The copied distribution manifest matched the separately
+downloaded distribution manifest, wheel and sdist sizes and SHA256 values:
+
+| Built artifact | Bytes | SHA256 |
+| --- | --- | --- |
+| `flagquantum-0.4.0-cp310-abi3-linux_x86_64.whl` | 3101900 | `5f3bc7d9a06b3493b1d6993a733d457fa27715210f9dde0d7c181200db55589d` |
+| `flagquantum-0.4.0.tar.gz` | 2396786 | `a9bbad9634b4915529d3980962f2bc4ab35d60174e3e98b82b60872e294edc88` |
+
+| Actual installed profile | Stim / PyMatching | Accepted user workflow |
+| --- | --- | --- |
+| Wheel core | absent / absent | Owned DEM, native decoder/extension, lazy imports and explicit unavailable-SDK refusal. |
+| Wheel Stim | present / absent | Native Repetition Z and Surface X/Z plus original external circuit, bounded sampling and strict DEM conversion. |
+| Wheel PyMatching | absent / present | Owned graph and native/PyMatching same-sample batch predictions; explicit unavailable-Stim refusal. |
+| Wheel both | present / present | Both experiment entrances, all four sampling cells and same-sample logical evaluation. |
+| Sdist both | present / present | Fresh native build and the same installed workflows outside the checkout. |
+
+Each environment used Linux x86_64, Python 3.12.15 and Torch 2.10.0+cpu;
+SDK-enabled profiles used Stim 1.16.0 and PyMatching 2.4.0. Each Stim-enabled
+profile completed 35 shots per cell in batches 16 + 16 + 3. Matching-enabled
+profiles observed zero failures per cell, which is small-sample execution
+evidence, not a threshold or performance claim. Core's real missing-NumPy Torch
+warning remains in `wheel-core-smoke.stderr.log`; NumPy was not added to core.
+The old head's contaminated core JSON is retained as failed report-format
+evidence and is not substituted for these five current-head reports.
+
+### Capability reconciliation
+
+| Exit concern | Delivered evidence and scope | Remaining boundary |
+| --- | --- | --- |
+| B/C: lifecycle and evaluation | #784/#788; `test_memory_sampler.py`, `test_fixed_shot_statistics.py`; one compiled stream, explicit close, tail batches, any-logical-bit failure and fixed-shot Wilson intervals. | Generic library experiment API and sparse full-result batch remain unapproved. |
+| D: code families | #792; `test_surface_batch_evidence.py`; Repetition and Surface X/Z, d=3/5/7 forced faults and bounded d=9/13/17 examples. | Fixed three rounds and 35 shots establish no distance trend, threshold or GPU benefit. |
+| E: two entrances | #806/#813; `test_stim_experiment_bridge.py`, `test_noise_law_bridge_evidence.py`; original-source sampling, reference normalization, shape, coordinates, repeat/control, strict refusal and cleanup/replacement boundaries. | No arbitrary reverse compiler or approximate DEM conversion. |
+| F/G/H: noise and numerical authority | Approved contract 088 plus the [noise support inventory](../reference/QEC_STIM_NOISE_SUPPORT.md); gate placement, categorical Pauli alternatives, target order, Cartesian joint law and independent executed-law detector/logical/selected-joint comparisons. | Nominal decimal versus finite-precision executed-law comparisons still fail at `1e-12`; no factory/default/operator change is delivered. |
+| I: installed users | #819's five actual isolated installed profiles, reports and independently checked built artifacts above. | Actual-main full CI/GPU passed at bd69; normal delivery and merge verification of this reconciliation remain gate 5. |
+
+The numerical disposition applies the existing approved bridge contract: actual
+positioned Kraus operators define execution, and source text must preserve that
+law. The strict independent `1e-12` comparisons remain unchanged. For an exact
+execution-paired DEM use native export followed by strict circuit-to-DEM
+conversion; nominal analytical construction is not certified as bit-equivalent
+to factory-quantized execution. This records a supported boundary without
+converting the retained failed nominal comparison into a pass. See the noise
+inventory for the explicit user path and factory limitation.
+
+Full actual-main CI
+[40099662374](https://github.com/flagos-ai/FlagQuantum/actions/runs/40099662374)
+was dispatched at the #819 merge source. Main advanced during dispatch, so a
+same-source pair was also started at
+`bd69c1def50771135f2b7d482a603d3dd3796f1a`: CI
+[40099910239](https://github.com/flagos-ai/FlagQuantum/actions/runs/40099910239)
+and Local GPU Gate
+[40099856383](https://github.com/flagos-ai/FlagQuantum/actions/runs/40099856383).
+The #819 merge-source CI completed successfully. The same-source bd69 CI also
+completed successfully with all 54 jobs, including CI complete; its GPU workflow
+completed successfully with three successful jobs and three unchanged optional
+skips. Actual bd69 Main smoke
+[40099682578](https://github.com/flagos-ai/FlagQuantum/actions/runs/40099682578)
+also succeeded. The full CI, rather than the smoke alone, supplies implementation
+main acceptance. No queued/running result is counted as successful evidence.
+
+The capability checks below are accepted at bd69 within the documented support
+and precision boundaries. Final delivery gate 5 closes only when acceptance
+record [#822](https://github.com/flagos-ai/FlagQuantum/pull/822) passes its complete
+current-head CI/GPU and repository rules, merges normally, and its actual merge
+and main checks are verified. The PR's delivery record retains those final
+source/run identifiers and conclusions; this avoids an endless sequence of
+commits that merely insert their own future merge SHA. Any subsequent numerical
+or QEC change requires its own relevant verification before claiming acceptance.
 
 The continuing task is complete only when all of the following are recorded:
 
@@ -221,17 +313,16 @@ The existing `PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py`
 workflow remains available with the Stim extra; it exercises measurement
 layouts, sampling and feedback.
 
-## Immediate action: preserve exported law and close noise evidence
+## Immediate action: reconcile final acceptance
 
 Work D and the expected structure are on main through #792; the explicitly
 approved [bridge proposal](../development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md)
-is implemented by #806. The next bounded correction preserves actual gate
-arguments across native circuit text export, with independent same-law detector,
-logical and selected joint comparisons for Repetition and Surface X/Z d=3/5.
-It preserves the approved signatures and existing public behavior rather than
-adding an API. Then complete F/G/H placement/distribution evidence and I's real
-installation acceptance, reconciling approved contract 088 before adding any
-noise grammar. Do not activate the separate unapproved QEC-FUNCTIONAL-005 sparse
+is implemented by #806. The executed-law correction is merged through #813, the noise inventory through
+#815, and actual installed-user acceptance through #819. The current slice
+reconciles the approved numerical authority, delivered evidence and remaining
+final normal delivery gate. Actual-main full CI/GPU at bd69 succeeded.
+This record changes no API, factory or scientific tolerance. Do not activate
+the separate unapproved QEC-FUNCTIONAL-005 sparse
 batch contract or broader functional proposal Decisions B/C.
 
 [PR #788](https://github.com/flagos-ai/FlagQuantum/pull/788) merged as
