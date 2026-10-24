@@ -15,7 +15,9 @@ accuracy or population Bayes bounds. The three-feature table does not claim CNN
 support. Follow the frozen
 [diagnostic protocol](../../../../docs/development/QEC_AI_LABEL_IDENTIFIABILITY.md)
 before collecting data. The archived-checkpoint runner is
-`examples/qec/diagnose_predecoder.py`; its scientific outcome remains pending.
+`examples/qec/diagnose_predecoder.py`; the fixed
+[outcome](../../../../docs/development/QEC_AI_LABEL_IDENTIFIABILITY_RESULTS.md)
+retains all three seeds and inactive controls without promoting a benefit gate.
 No retraining is licensed by the diagnostic implementation.
 
 ```bash
