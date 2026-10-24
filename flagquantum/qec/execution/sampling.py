@@ -19,13 +19,11 @@ per round per matching gate. Neither position exists in the source program, whos
 bounded hybrid capture refuses a channel call outright, so the placement is
 derived here from the lowered program rather than written into the experiment.
 
-Which Pauli an error is is the other half of the join, and it is the part the
-engine constrains. The engine executes one channel -- a single-qubit bit flip --
-so the record's Z and Y families are placed as that channel conjugated by the
-Clifford that turns the flip into the Pauli they name, which is one draw at that
-family's rate rather than a pair of independent bit flips. A family the
-conjugation cannot express has no route here and is refused rather than sampled
-as a nearby Pauli.
+The stabilizer engine reads the actual Pauli Kraus operators. A gate-bound
+one-/two-qubit mixture is one complete channel at its location, with mutually
+exclusive branches; separate channel locations remain independent. The existing
+round-boundary X/Z/Y factories and old gate-bound X/Z reconstruction are
+preserved. Unsupported channels are refused without substituting another Pauli.
 
 The derived placement rests on one property of the emitted program, checked
 rather than assumed: the syndrome loop lowers to `rounds` identical round
@@ -600,6 +598,41 @@ def _noisy_program(
     )
 
 
+def _positioned_noise_program(
+    circuit: MemoryCircuit,
+    plan: _MeasurementPlan,
+    noise: PhenomenologicalNoise | NoiseModel,
+) -> CircuitIR:
+    if not isinstance(noise, NoiseModel):
+        return _noisy_program(plan, _noise_locations(circuit, plan, noise))
+    from ..dem.circuit_noise import _circuit_noise_locations
+
+    by_index: dict[int, list[Instruction]] = {}
+    for location in _circuit_noise_locations(noise, plan.program):
+        by_index.setdefault(location.position + 1, []).append(
+            Instruction(
+                name=location.channel.name,
+                wires=location.qubits,
+                params=(
+                    {"probability": location.terms[0][1]}
+                    if location.independent
+                    else {}
+                ),
+                matrix=location.channel.kraus,
+                metadata={"is_channel": True},
+            )
+        )
+    instructions: list[Instruction] = []
+    for index, instruction in enumerate(plan.program.instructions):
+        instructions.extend(by_index.get(index, ()))
+        instructions.append(instruction)
+    return CircuitIR(
+        n_wires=plan.program.n_wires,
+        instructions=tuple(instructions),
+        metadata=dict(plan.program.metadata),
+    )
+
+
 def _parity_columns(
     memory: MemoryCircuit, plan: _MeasurementPlan
 ) -> tuple[tuple[tuple[int, ...], ...], tuple[tuple[int, ...], ...]]:
@@ -655,8 +688,7 @@ def _sample_record(
     """Lower, place and execute one experiment, returning its engine record."""
 
     plan = _measurement_plan(circuit)
-    locations = _noise_locations(circuit, plan, noise)
-    program = _noisy_program(plan, locations)
+    program = _positioned_noise_program(circuit, plan, noise)
     data_qubits = tuple(circuit.code.data_qubits)
     record = sample_noisy_measurements(
         program, shots=shots, terminal_qubits=data_qubits, seed=seed
@@ -727,7 +759,7 @@ def sample_memory_measurements(
         ValueError: ``shots`` is not positive, or the program does not lower to
             identical syndrome rounds that measure each check once.
         CapabilityError: The noise record names a fault this grammar cannot
-            place, or states a channel that is not a single-qubit Pauli fault.
+            place, or states a channel outside the supported one-/two-qubit Pauli mixture grammar.
         StabilizerDependencyError: The optional stabilizer engine is not
             installed.
     """
@@ -795,7 +827,7 @@ def sample_memory_circuit(
         ValueError: ``shots`` is not positive, or the program does not lower to
             identical syndrome rounds that measure each check once.
         CapabilityError: The noise record names a fault this grammar cannot
-            place, or states a channel that is not a single-qubit Pauli fault.
+            place, or states a channel outside the supported one-/two-qubit Pauli mixture grammar.
         StabilizerDependencyError: The optional stabilizer engine is not
             installed.
     """
@@ -950,8 +982,7 @@ def compile_memory_sampler(
         )
     seed = _checked_seed(seed)
     plan = _measurement_plan(circuit)
-    locations = _noise_locations(circuit, plan, noise)
-    program = _noisy_program(plan, locations)
+    program = _positioned_noise_program(circuit, plan, noise)
     detectors, observables = _parity_columns(circuit, plan)
     prepared = _prepare_noisy_measurements(
         program, terminal_qubits=tuple(circuit.code.data_qubits), seed=seed

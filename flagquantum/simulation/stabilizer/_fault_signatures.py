@@ -10,10 +10,17 @@ from __future__ import annotations
 from functools import lru_cache
 from numbers import Integral
 
-from ...core.ir import CircuitIR, ensure_circuit_ir
+from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError
-from .engine import _ADJOINT_GATES, _GATE_NAMES, _conjugate_step, _declares_channel
+from ...noise import KrausChannel
+from .engine import (
+    _ADJOINT_GATES,
+    _GATE_NAMES,
+    _conjugate_step,
+    _declares_channel,
+    _frame_weights,
+)
 
 
 @lru_cache(maxsize=256)
@@ -97,6 +104,38 @@ def _clifford_fault_signatures(
     that is not deterministic is refused exactly, including randomness erased
     by a later reset or cancelled by comparing two recorded measurements.
     """
+    for _, _, pauli in faults:
+        if pauli not in ("X", "Y", "Z"):
+            raise ValueError(f"fault Pauli must be X, Y or Z, got {pauli!r}")
+    return _clifford_product_signatures(
+        program,
+        parities=parities,
+        faults=tuple((position, (qubit,), pauli) for position, qubit, pauli in faults),
+    )
+
+
+def _pauli_channel_terms(channel: KrausChannel) -> tuple[tuple[str, float], ...]:
+    """Classify one-/two-qubit channels using the engine's numerical authority."""
+    if channel.n_qubits not in (1, 2):
+        raise CapabilityError(
+            "QEC circuit noise supports one- or two-qubit Pauli channels"
+        )
+    qubits = tuple(range(channel.n_qubits))
+    labels, weights = _frame_weights(
+        Instruction(channel.name, qubits, matrix=channel), 0, qubits
+    )
+    return tuple(
+        (label, weight) for label, weight in zip(labels, weights, strict=True) if weight
+    )
+
+
+def _clifford_product_signatures(
+    program: CircuitIR,
+    *,
+    parities: tuple[tuple[tuple[int, ...], tuple[int, ...]], ...],
+    faults: tuple[tuple[int, tuple[int, ...], str], ...],
+) -> tuple[int, ...]:
+    """Propagate simultaneous Pauli products, preserving deterministic baselines."""
     ir = ensure_circuit_ir(program)
     if ir.measurements:
         raise CapabilityError(
@@ -104,23 +143,31 @@ def _clifford_fault_signatures(
         )
     operations = _operations(ir)
     count = sum(gate == "measure" for gate, _, _ in operations)
-    by_position: dict[int, list[tuple[int, int, str]]] = {}
-    for index, (position, wire, pauli) in enumerate(faults):
+    by_position: dict[int, list[tuple[int, int, int]]] = {}
+    for index, (position, qubits, letters) in enumerate(faults):
         _check_index(position, len(operations), "fault instruction")
-        _check_index(wire, ir.n_wires, "fault wire")
-        if pauli not in ("X", "Y", "Z"):
-            raise ValueError(f"fault Pauli must be X, Y or Z, got {pauli!r}")
-        by_position.setdefault(position, []).append((index, wire, pauli))
+        if not qubits or len(qubits) != len(letters) or len(set(qubits)) != len(qubits):
+            raise ValueError("a Pauli product needs one letter per distinct qubit")
+        fault_x = fault_z = 0
+        for qubit, letter in zip(qubits, letters, strict=True):
+            _check_index(qubit, ir.n_wires, "fault qubit")
+            if letter not in "IXYZ":
+                raise ValueError(f"fault Pauli must be I, X, Y or Z, got {letter!r}")
+            if letter in "XY":
+                fault_x |= 1 << int(qubit)
+            if letter in "ZY":
+                fault_z |= 1 << int(qubit)
+        by_position.setdefault(position, []).append((index, fault_x, fault_z))
     signatures = [0] * len(faults)
     for parity_index, (recorded, terminal) in enumerate(parities):
         selected = _parity_mask(recorded, count, "measurement")
         x, z, phase = 0, _parity_mask(terminal, ir.n_wires, "terminal wire"), 0
         parity_bit = 1 << parity_index
         for position in range(len(operations) - 1, -1, -1):
-            for index, wire, pauli in by_position.get(position, ()):
-                anticommutes = ((x >> wire) & 1 if pauli in "ZY" else 0) ^ (
-                    (z >> wire) & 1 if pauli in "XY" else 0
-                )
+            for index, fault_x, fault_z in by_position.get(position, ()):
+                anticommutes = (
+                    (x & fault_z).bit_count() ^ (z & fault_x).bit_count()
+                ) & 1
                 if anticommutes:
                     signatures[index] |= parity_bit
             gate, wires, measurement = operations[position]

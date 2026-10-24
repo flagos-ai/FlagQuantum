@@ -12,6 +12,11 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/correlated_circuit_noise.py`](qec/correlated_circuit_noise.py) uses the
+  public QEC and Noise namespaces to build exclusive two-qubit Pauli faults,
+  sample their declared detector model and demonstrate independent-only export
+  refusal. Core Torch is sufficient; circuit execution separately needs Stim.
+
 - [`qec/ai_predecoder.py`](qec/ai_predecoder.py) trains and evaluates the private
   QEC predecoder through domain imports; it does not use the root-level alias.
 

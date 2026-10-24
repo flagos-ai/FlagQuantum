@@ -18,7 +18,12 @@ from ...runtime.dynamic.hybrid_session import (
     _validate_session_ir,
     execute_hybrid_dynamic_session,
 )
-from ...simulation.stabilizer._fault_signatures import _clifford_fault_signatures
+from ...simulation.stabilizer._fault_signatures import (
+    _clifford_product_signatures,
+)
+from ...simulation.stabilizer._fault_signatures import (
+    _pauli_channel_terms as _pauli_channel_terms,
+)
 from ..circuits.memory import MeasurementRef, MemoryCircuit
 
 # One shared vocabulary for the physical fault families enumerated by both routes.
@@ -253,6 +258,19 @@ def _gate_fault_signatures(
     program: CircuitIR,
     faults: tuple[tuple[int, int, str], ...],
 ) -> tuple[tuple[tuple[int, ...], tuple[int, ...]], ...]:
+    """Read exact single-qubit fault responses through the existing QEC layouts."""
+    return _gate_product_signatures(
+        circuit,
+        program,
+        tuple((position, (qubit,), pauli) for position, qubit, pauli in faults),
+    )
+
+
+def _gate_product_signatures(
+    circuit: MemoryCircuit,
+    program: CircuitIR,
+    faults: tuple[tuple[int, tuple[int, ...], str], ...],
+) -> tuple[tuple[tuple[int, ...], tuple[int, ...]], ...]:
     """Read exact Simulation fault responses through the existing QEC layouts."""
     if not faults:
         return ()
@@ -296,7 +314,7 @@ def _gate_fault_signatures(
     parities = tuple(parity(detector.parity) for detector in detectors) + tuple(
         ((), observable.pauli.support) for observable in observables
     )
-    responses = _clifford_fault_signatures(program, parities=parities, faults=faults)
+    responses = _clifford_product_signatures(program, parities=parities, faults=faults)
     return tuple(
         (
             tuple(d.index for i, d in enumerate(detectors) if (response >> i) & 1),
