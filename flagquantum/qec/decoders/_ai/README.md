@@ -153,3 +153,17 @@ references (no SciPy runtime dependency). These are synthetic statistical
 fixtures, not measured logical-quality benefit. The physical study runner and
 new data collection remain separate prerequisites in
 [the frozen protocol](../../../../docs/development/QEC_AI_CONTINUED_PHYSICAL_ASSESSMENT.md).
+
+The optional `examples/qec/continued_selection.py` module has internal `calibrate` and `freeze_choices`
+stages. Calibration saves 128 batches of 32 labels and both horizons' logits per
+seed, then calls the existing temperature fitter. Physical validation replays
+saved circuit shards through the complete residual/global/logical-XOR path,
+retains every threshold trial and uses the same conservative tie rule as
+`select_threshold`. Choices bind checkpoint, protocol, calibration, validation
+and source hashes; subsequent stages must verify the externally frozen choices
+hash. Existing default calibration behavior and checkpoint contents are unchanged.
+Run `python -m pytest tests/qec/test_continued_assessment.py
+ tests/qec/test_predecoder_calibration.py -q` for synthetic software scenarios.
+The CLI remains verification-only. Two-host device receipts, primary prediction
+shards, complete orchestration and matching-environment preflight are pending;
+these stages do not authorize collecting the registered physical study yet.

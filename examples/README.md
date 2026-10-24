@@ -12,6 +12,8 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/continued_selection.py`: internal calibration and physical-validation decision stages for the registered continued-checkpoint study; no sampling CLI.
+
 - `qec/continued_assessment.py`: verifies six frozen QEC checkpoint inputs; the CLI does not expose physical sampling.
 
 - `qec/study_training_budget.py`: preregistered CPU continuation of audited QEC checkpoints; see `docs/development/QEC_AI_TRAINING_SUFFICIENCY.md`.

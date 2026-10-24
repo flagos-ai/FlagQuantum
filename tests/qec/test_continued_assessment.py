@@ -11,6 +11,7 @@ import pytest
 import torch
 
 from examples.qec import continued_assessment as study
+from examples.qec import continued_selection as selection
 from examples.qec import diagnose_predecoder as archive
 from flagquantum.qec.decoders._ai.predecoder import Predecoder
 from flagquantum.qec.decoders._ai.training import Trainer
@@ -282,3 +283,254 @@ def test_other_circuit_capture_cannot_be_silently_reused(tmp_path: Path) -> None
     study.capture_validation(SyntheticCircuit(), output)
     with pytest.raises(ValueError, match="frozen stage"):
         next(study.replay_validation(output, circuit_sha256="0" * 64))
+
+
+@pytest.fixture
+def selection_inputs(
+    inputs: tuple[Path, Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[list[study.VerifiedCheckpoint], Path, Path]:
+    original, continued, _ = inputs
+    models, _ = study.load_six(original, continued)
+    # A tiny exact signal model; synthetic metadata is not a trained trajectory.
+    from dataclasses import replace
+
+    for index, item in enumerate(models):
+        with torch.no_grad():
+            for parameter in item.model.parameters():
+                parameter.zero_()
+            first, last = item.model.network[0], item.model.network[2]
+            assert isinstance(first, torch.nn.Linear)
+            assert isinstance(last, torch.nn.Linear)
+            first.weight[0, 0] = 1
+            last.weight[0, 0] = 2
+            last.bias[0] = -1
+        models[index] = replace(
+            item, model_state_sha256=archive.state_digest(item.model.state_dict())
+        )
+    calibration = tmp_path / "calibration"
+    selection.calibrate(models, calibration)
+    # Shrink only this software fixture, never the registered physical study.
+    monkeypatch.setattr(study, "VALIDATION_SHOTS", 64)
+    monkeypatch.setattr(study, "CHUNK", 32)
+
+    class SignalCircuit(SyntheticCircuit):
+        num_detectors = 1
+
+        def sample(
+            self, shots: int, *, separate_observables: bool
+        ) -> tuple[torch.Tensor, torch.Tensor]:
+            self.calls.append(shots)
+            bits = (torch.arange(shots) % 2).to(torch.int8).reshape(-1, 1)
+            return bits, bits.clone()
+
+    validation = tmp_path / "selection-validation"
+    study.capture_validation(SignalCircuit(), validation)
+    return models, calibration, validation
+
+
+def zero_decode(bits: torch.Tensor) -> torch.Tensor:
+    return torch.zeros((len(bits), 1), dtype=torch.int8)
+
+
+def test_temperature_physical_selection_and_frozen_choices(
+    selection_inputs: tuple[list[study.VerifiedCheckpoint], Path, Path],
+    tmp_path: Path,
+) -> None:
+    from flagquantum.qec.decoders._ai.calibration import fit_temperature
+
+    models, calibration, validation = selection_inputs
+    report = json.loads((calibration / "manifest.json").read_text())
+    assert len(report["score_files"]) == 384
+    for index, record in enumerate(report["records"]):
+        seed, step = record["seed"], record["step"]
+        shards = [
+            torch.load(calibration / f"seed-{seed}-chunk-{i:04d}.pt", weights_only=True)
+            for i in range(128)
+        ]
+        labels = torch.cat([r["labels"] for r in shards])
+        logits = torch.cat([r[f"step{step}_logits"] for r in shards])
+        fit = fit_temperature(logits, labels)
+        assert record["fit"]["temperature"] == fit.temperature
+        assert record["fit"]["calibrated_mean_bce"] == fit.calibrated_mean_bce
+        assert len(labels) == 4096
+        if index % 2:
+            assert (
+                record["mechanisms_sha256"]
+                == report["records"][index - 1]["mechanisms_sha256"]
+            )
+            assert (
+                record["detectors_sha256"]
+                == report["records"][index - 1]["detectors_sha256"]
+            )
+    output = tmp_path / "frozen"
+    result = selection.freeze_choices(
+        models,
+        calibration,
+        validation,
+        output,
+        circuit_sha256=CIRCUIT_SHA,
+        calibration_sha256=archive.digest(calibration / "manifest.json"),
+        global_decode=zero_decode,
+        device=torch.device("cpu"),
+    )
+    assert len(result.paths) == 12
+    for path in result.paths:
+        assert path.selection.threshold == (0.5 if path.mode == "raw" else 0.7)
+        # Independent scalar oracle: odd bits have logit 2*tanh(1)-1.
+        import math
+
+        for trial in path.selection.trials:
+            probability = 1 / (1 + math.exp(-(2 * math.tanh(1) - 1) / path.temperature))
+            expected = 0 if probability >= trial.threshold else 32
+            assert trial.counts.shots == 64
+            assert trial.counts.baseline_failures == 32
+            assert trial.counts.hybrid_failures == expected
+            assert trial.counts.wins == 32 - expected
+            assert trial.counts.losses == 0
+    digest = archive.digest(output / "choices.json")
+    assert (output / "choices.sha256").read_text().strip() == digest
+    selection.verify_choices(
+        output, expected_sha256=digest, models=models, circuit_sha256=CIRCUIT_SHA
+    )
+    with pytest.raises(FileExistsError):
+        selection.freeze_choices(
+            models,
+            calibration,
+            validation,
+            output,
+            circuit_sha256=CIRCUIT_SHA,
+            calibration_sha256=archive.digest(calibration / "manifest.json"),
+            global_decode=zero_decode,
+            device=torch.device("cpu"),
+        )
+    raw = json.loads((output / "choices.json").read_text())
+    raw["paths"][0]["selection"]["threshold"] = 0.99
+    (output / "choices.json").write_text(json.dumps(raw))
+    with pytest.raises(ValueError, match="hash mismatch"):
+        selection.verify_choices(
+            output, expected_sha256=digest, models=models, circuit_sha256=CIRCUIT_SHA
+        )
+
+
+@pytest.mark.parametrize("failure", ["fit", "late_score", "model", "validation"])
+def test_bad_selection_input_refuses_before_decoder_or_output(
+    selection_inputs: tuple[list[study.VerifiedCheckpoint], Path, Path],
+    tmp_path: Path,
+    failure: str,
+) -> None:
+    models, calibration, validation = selection_inputs
+    expected = archive.digest(calibration / "manifest.json")
+    if failure == "fit":
+        path = calibration / "manifest.json"
+        raw = json.loads(path.read_text())
+        raw["records"][-1]["fit"]["temperature"] = 0.125
+        path.write_text(json.dumps(raw))
+    elif failure == "late_score":
+        (calibration / "seed-33-chunk-0127.pt").write_bytes(b"changed")
+    elif failure == "model":
+        with torch.no_grad():
+            next(models[-1].model.parameters()).add_(1)
+    else:
+        (validation / "chunk-0001.pt").write_bytes(b"changed")
+
+    def forbidden(bits: torch.Tensor) -> torch.Tensor:
+        raise AssertionError("invalid selection reached decoding")
+
+    output = tmp_path / "invalid-choices"
+    with pytest.raises(ValueError):
+        selection.freeze_choices(
+            models,
+            calibration,
+            validation,
+            output,
+            circuit_sha256=CIRCUIT_SHA,
+            calibration_sha256=expected,
+            global_decode=forbidden,
+            device=torch.device("cpu"),
+        )
+    assert not output.exists()
+
+
+def test_interrupted_selection_preserves_partial_without_choices(
+    selection_inputs: tuple[list[study.VerifiedCheckpoint], Path, Path],
+    tmp_path: Path,
+) -> None:
+    models, calibration, validation = selection_inputs
+
+    def failed(bits: torch.Tensor) -> torch.Tensor:
+        raise RuntimeError("synthetic decoder failure")
+
+    output = tmp_path / "partial-choices"
+    with pytest.raises(RuntimeError, match="synthetic decoder failure"):
+        selection.freeze_choices(
+            models,
+            calibration,
+            validation,
+            output,
+            circuit_sha256=CIRCUIT_SHA,
+            calibration_sha256=archive.digest(calibration / "manifest.json"),
+            global_decode=failed,
+            device=torch.device("cpu"),
+        )
+    assert (output / "plan.json").exists()
+    assert not (output / "choices.json").exists()
+
+
+def test_calibration_preflight_precedes_draw_and_partial_cannot_retry(
+    inputs: tuple[Path, Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original, continued, _ = inputs
+    models, _ = study.load_six(original, continued)
+
+    def failed(*args: object) -> None:
+        raise RuntimeError("synthetic sampler failure")
+
+    monkeypatch.setattr(Predecoder, "sample", failed)
+    with pytest.raises(ValueError, match="all six"):
+        selection.calibrate(models[:-1], tmp_path / "missing")
+    assert not (tmp_path / "missing").exists()
+    with pytest.raises(RuntimeError, match="sampler failure"):
+        selection.calibrate(models, tmp_path / "failed")
+    assert (tmp_path / "failed/plan.json").exists()
+    assert not (tmp_path / "failed/manifest.json").exists()
+    with pytest.raises(FileExistsError):
+        selection.calibrate(models, tmp_path / "failed")
+
+
+def test_perfect_global_ties_choose_inactivity_without_new_draws(
+    selection_inputs: tuple[list[study.VerifiedCheckpoint], Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    models, calibration, validation = selection_inputs
+
+    def forbidden(*args: object) -> None:
+        raise AssertionError("selection attempted calibration or new sampling")
+
+    monkeypatch.setattr(Predecoder, "sample", forbidden)
+    monkeypatch.setattr(selection, "fit_temperature", forbidden)
+    result = selection.freeze_choices(
+        models,
+        calibration,
+        validation,
+        tmp_path / "ties",
+        circuit_sha256=CIRCUIT_SHA,
+        calibration_sha256=archive.digest(calibration / "manifest.json"),
+        global_decode=lambda bits: bits.clone(),
+        device=torch.device("cpu"),
+    )
+    assert all(p.selection.threshold == 1 for p in result.paths)
+    assert all(
+        t.counts.hybrid_failures == 0 for p in result.paths for t in p.selection.trials
+    )
+    with pytest.raises(ValueError, match="binding mismatch"):
+        selection.verify_choices(
+            tmp_path / "ties",
+            expected_sha256=archive.digest(tmp_path / "ties/choices.json"),
+            models=models,
+            circuit_sha256="0" * 64,
+        )
