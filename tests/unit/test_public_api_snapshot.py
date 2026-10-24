@@ -102,3 +102,26 @@ def test_snapshot_diagnostic_forbids_unreviewed_regeneration(
 
     assert len(errors) == 1
     assert "do not regenerate" in errors[0]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("operation", "ising.sample_pair"),
+        ("production_implemented", True),
+        ("braid_only_source_and_plan_version", "1.2"),
+        ("new_operation_source_and_plan_version", "1.1"),
+        ("unapproved_field", "anything"),
+    ],
+)
+def test_unread_contract_authorization_does_not_accept_unreviewed_changes(
+    field: str, value: object
+) -> None:
+    contract = json.loads(
+        (ROOT / "contracts/execution-plan-v1-candidate.json").read_text()
+    )
+    contract["native_ising_admission"]["unread_observation"][field] = value
+    errors = public_api_snapshot._validate_authorized_execution_plan(
+        contract, ["ExecutionPlan"]
+    )
+    assert errors == ["native Ising admission differs from approved proposals 085/089"]
