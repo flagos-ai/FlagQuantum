@@ -25,6 +25,9 @@ retain version 1.0 and their actual CircuitAnalysis. Dispatch authenticates the
 profile from the sealed payload and delegates finite F/R actions to Simulation.
 Source snapshots, matrix snapshots and exact environment preflight also apply
 to JSON replay. No qubit count or elapsed time is inferred from fusion labels.
+The planner and reader explicitly bind native plan 1.1 to source 1.1, before
+output allocation or source decoding. Core accepting a newer source version does
+not grant Runtime numerical support for it; rehashing cannot bypass this boundary.
 
 Run `python -m examples.ising_braid_execution` for direct execution, exact JSON
 replay and explicit terminal QND charge sampling. It reports plan 1.1, null qubit
