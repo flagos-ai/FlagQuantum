@@ -1,0 +1,41 @@
+{
+  "purpose": "fixed_budget_unchanged_model_training_response",
+  "protocol_sha256": "8065763be33a88bca2ea4538a691971e57269fa5e61bd701aae7b5a54413759a",
+  "source_sha256": {
+    "examples/qec/study_training_budget.py": "f7511b01fe0971942bca3a38836c00731626689b9acd78a98a5532e9ae8b21e2",
+    "examples/qec/diagnose_predecoder.py": "39361ae54dc6317e583cce23d0e6dba3ae1ff8ff6a5a8005544db0a4011760c9",
+    "flagquantum/qec/decoders/_ai/training.py": "427c10ad5a27890cffd358478a35d429803226aa3945ae32d09176b73c853d21",
+    "flagquantum/qec/decoders/_ai/predecoder.py": "bf6a3464338897e19410d65706efb86570a954d6c3479bd0b26e70cdf02099eb",
+    "flagquantum/qec/decoders/_ai/diagnostics.py": "1f575674810e176db91fa95315ba97ab7e3bb7379d349702d47abdef9aab90e1"
+  },
+  "input_sha256": {
+    "manifest.json": "77685c98cf0e6d17492dda796ec18b8506edeed81416437d36fdca81e83262b4",
+    "results.json": "04ef68e915f46231aebdc21edf10d16656dc7dce6c6e5b2a1c2c98b4393b9123",
+    "choices.json": "9661f22c03d4b65f978ebd2e46cf7ad520695351196fc4affc932d6be7130a35",
+    "audit.json": "cbee755dad03b53976008a6991176ba2206863f8f1dd31f9e77db240baa75e69",
+    "training.dem": "cd96d502913b7f5000679d89d9bfe6d3ebfdcf12aaec3cf6acdb4d89b01a24d8",
+    "native-11.pt": "ee53240c4e1769d48585bbdeeb7727bd73fc82808ec381c72805dc01f9435576",
+    "native-22.pt": "f18bf2766bd72b390dfeca876acd4cec3f6b78233ef665726e56aa232247b34b",
+    "native-33.pt": "19a0a0fae5f3637d997bc7be3536f86e544586409953d16aff922888425d15f9"
+  },
+  "seeds": [
+    11,
+    22,
+    33
+  ],
+  "horizons": [
+    200,
+    600,
+    2000
+  ],
+  "heldout_shots_per_seed": 4096,
+  "heldout_seed_offset": 12100000,
+  "batch_size": 128,
+  "new_training_steps_per_seed": 1800,
+  "new_calibration_shots": 0,
+  "new_validation_shots": 0,
+  "new_primary_test_shots": 0,
+  "threads": 1,
+  "torch": "2.13.0+cu130",
+  "scientific_benefit_claim_allowed": false
+}
