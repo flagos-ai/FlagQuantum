@@ -1,6 +1,6 @@
 # QEC Stim and PyMatching delivery plan
 
-Status: active delivery plan, 2026-10-24. Core owns QEC composition and adapters;
+Status: phase-one acceptance record, 2026-10-24. Core owns QEC composition and adapters;
 Simulation owns numerical execution; Runtime owns execution policy and lifecycle.
 This document orders work and records the delivery authorization below. It does
 not approve new public APIs or declare proposed modules implemented.
@@ -221,9 +221,9 @@ evidence and is not substituted for these five current-head reports.
 | D: code families | #792; `test_surface_batch_evidence.py`; Repetition and Surface X/Z, d=3/5/7 forced faults and bounded d=9/13/17 examples. | Fixed three rounds and 35 shots establish no distance trend, threshold or GPU benefit. |
 | E: two entrances | #806/#813; `test_stim_experiment_bridge.py`, `test_noise_law_bridge_evidence.py`; original-source sampling, reference normalization, shape, coordinates, repeat/control, strict refusal and cleanup/replacement boundaries. | No arbitrary reverse compiler or approximate DEM conversion. |
 | F/G/H: noise and numerical authority | Approved contract 088 plus the [noise support inventory](../reference/QEC_STIM_NOISE_SUPPORT.md); gate placement, categorical Pauli alternatives, target order, Cartesian joint law and independent executed-law detector/logical/selected-joint comparisons. | Nominal decimal versus finite-precision executed-law comparisons still fail at `1e-12`; no factory/default/operator change is delivered. |
-| I: installed users | #819's five actual isolated installed profiles, reports and independently checked built artifacts above. | Actual-main full CI/GPU and normal delivery of this reconciliation are still required. |
+| I: installed users | #819's five actual isolated installed profiles, reports and independently checked built artifacts above. | Actual-main full CI/GPU passed at bd69; normal delivery and merge verification of this reconciliation remain gate 5. |
 
-The numerical disposition uses the existing approved bridge contract: actual
+The numerical disposition applies the existing approved bridge contract: actual
 positioned Kraus operators define execution, and source text must preserve that
 law. The strict independent `1e-12` comparisons remain unchanged. For an exact
 execution-paired DEM use native export followed by strict circuit-to-DEM
@@ -240,9 +240,22 @@ same-source pair was also started at
 [40099910239](https://github.com/flagos-ai/FlagQuantum/actions/runs/40099910239)
 and Local GPU Gate
 [40099856383](https://github.com/flagos-ai/FlagQuantum/actions/runs/40099856383).
-These runs are pending acceptance, not successful evidence yet. Record their
-actual conclusions and source before marking the whole route complete. Normal
-queueing is not a code failure and does not justify duplicate dispatches.
+The #819 merge-source CI completed successfully. The same-source bd69 CI also
+completed successfully with all 54 jobs, including CI complete; its GPU workflow
+completed successfully with three successful jobs and three unchanged optional
+skips. Actual bd69 Main smoke
+[40099682578](https://github.com/flagos-ai/FlagQuantum/actions/runs/40099682578)
+also succeeded. The full CI, rather than the smoke alone, supplies implementation
+main acceptance. No queued/running result is counted as successful evidence.
+
+The capability checks below are accepted at bd69 within the documented support
+and precision boundaries. Final delivery gate 5 closes only when acceptance
+record [#822](https://github.com/flagos-ai/FlagQuantum/pull/822) passes its complete
+current-head CI/GPU and repository rules, merges normally, and its actual merge
+and main checks are verified. The PR's delivery record retains those final
+source/run identifiers and conclusions; this avoids an endless sequence of
+commits that merely insert their own future merge SHA. Any subsequent numerical
+or QEC change requires its own relevant verification before claiming acceptance.
 
 The continuing task is complete only when all of the following are recorded:
 
@@ -307,7 +320,9 @@ approved [bridge proposal](../development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md
 is implemented by #806. The executed-law correction is merged through #813, the noise inventory through
 #815, and actual installed-user acceptance through #819. The current slice
 reconciles the approved numerical authority, delivered evidence and remaining
-actual-main CI/GPU gate. It changes no API, factory or scientific tolerance. Do not activate the separate unapproved QEC-FUNCTIONAL-005 sparse
+final normal delivery gate. Actual-main full CI/GPU at bd69 succeeded.
+This record changes no API, factory or scientific tolerance. Do not activate
+the separate unapproved QEC-FUNCTIONAL-005 sparse
 batch contract or broader functional proposal Decisions B/C.
 
 [PR #788](https://github.com/flagos-ai/FlagQuantum/pull/788) merged as

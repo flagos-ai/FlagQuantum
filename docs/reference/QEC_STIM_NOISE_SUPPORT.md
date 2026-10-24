@@ -166,5 +166,6 @@ Installation acceptance for the bridge is now delivered by
 [#819](https://github.com/flagos-ai/FlagQuantum/pull/819), rather than inferred
 from historical contract-088 installations. The delivery plan records the five
 actual installed reports and their source/artifact checks. Whole-route closure
-still requires normal delivery of the acceptance record and completed actual
-main CI/GPU; successful installation alone is insufficient.
+still requires normal delivery and merge verification of the acceptance
+record. Actual-main full CI/GPU at bd69 passed as recorded in the plan;
+successful installation alone is insufficient.
