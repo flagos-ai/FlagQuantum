@@ -1,9 +1,9 @@
 """Tests for the native FlagQuantum circuit core."""
 
 import os
-import socket
 from collections import Counter
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 import torch
@@ -50,13 +50,6 @@ from flagquantum.simulation.statevector.operations import (
 from flagquantum.simulation.tensor_network.entrypoints import build_tensor_network
 
 pytestmark = pytest.mark.integration
-
-
-def _free_tcp_init_method():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        _, port = sock.getsockname()
-    return f"tcp://127.0.0.1:{port}"
 
 
 def _skip_inside_outer_torchrun():
@@ -2011,11 +2004,11 @@ def test_distributed_tensor_network_alias_and_backend_capability():
     assert get_backend_capabilities().supports_mode("distributed_tensor_network")
 
 
-def test_distributed_tensor_network_torch_executor_single_rank():
+def test_distributed_tensor_network_torch_executor_single_rank(tmp_path: Path) -> None:
     _skip_inside_outer_torchrun()
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=0.2)
-    init_uri = _free_tcp_init_method()
+    init_uri = (tmp_path / "rendezvous").as_uri()
 
     try:
         result = fqr.run_native(
@@ -2054,12 +2047,12 @@ def test_distributed_tensor_network_torch_executor_single_rank():
         destroy_torch_distributed()
 
 
-def test_distributed_mps_torch_executor_single_rank():
+def test_distributed_mps_torch_executor_single_rank(tmp_path: Path) -> None:
     _skip_inside_outer_torchrun()
     theta = torch.tensor(0.2, requires_grad=True)
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=theta)
-    init_uri = _free_tcp_init_method()
+    init_uri = (tmp_path / "rendezvous").as_uri()
 
     try:
         result = fqr.run_native(
@@ -2122,11 +2115,13 @@ def test_distributed_mps_torch_executor_single_rank():
         destroy_torch_distributed()
 
 
-def test_distributed_mps_site_local_two_qubit_gate_uses_tensor_sync():
+def test_distributed_mps_site_local_two_qubit_gate_uses_tensor_sync(
+    tmp_path: Path,
+) -> None:
     _skip_inside_outer_torchrun()
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
-    init_uri = _free_tcp_init_method()
+    init_uri = (tmp_path / "rendezvous").as_uri()
 
     try:
         result = fqr.run_native(
