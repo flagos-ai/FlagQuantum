@@ -166,6 +166,14 @@ raw payload, or provider response body enters an exception or retained evidence.
    provider contract, cost envelope, target, shots, and result contract are
    confirmed.
 
+Batch B's offline legality preview confirms that the current task-API request
+shape carries the target, shots, circuit text, and client reference but does not
+expose a compiler-disable or physical-mapping binding. It therefore reports
+`quafu_dynamic_request_shape_unsupported:physical_mapping_unbound` rather than
+claiming that the routed artifact can be submitted unchanged. Package sealing
+remains blocked until an authoritative Quafu request contract resolves that
+mapping boundary.
+
 Stages 1 through 5 must use fixtures or mocks. This proposal authorizes no
 provider SDK import during preflight, credential access, network request, live
 discovery, task submission, charging, or hardware-support claim.
