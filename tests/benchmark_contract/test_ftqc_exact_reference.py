@@ -8,6 +8,8 @@ import torch
 import flagquantum as fq
 from flagquantum.benchmarking import ftqc_exact_reference as reference
 
+pytestmark = pytest.mark.benchmark_contract
+
 
 def test_real_reference_preserves_interference_and_phase_accounting() -> None:
     report = reference.run_benchmark(warmup=1, iterations=2)
