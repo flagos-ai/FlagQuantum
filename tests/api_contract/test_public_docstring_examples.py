@@ -375,6 +375,6 @@ def test_every_module_with_examples_is_covered() -> None:
     covered.add(owner.__name__)
     uncovered = sorted(_modules_with_examples() - covered)
 
-    assert uncovered == [], (
-        f"docstring examples in modules that no doctest entry runs: {uncovered}"
-    )
+    assert (
+        uncovered == []
+    ), f"docstring examples in modules that no doctest entry runs: {uncovered}"

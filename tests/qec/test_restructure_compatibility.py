@@ -216,9 +216,9 @@ def test_surviving_module_public_apis_match_pre_migration_baseline() -> None:
         for name, root_name in expected["root_aliases"].items():
             assert getattr(module, name) is getattr(qec, root_name)
         for name, description in expected["symbols"].items():
-            assert _describe(getattr(module, name)) == description, (
-                f"{module_name}.{name}"
-            )
+            assert (
+                _describe(getattr(module, name)) == description
+            ), f"{module_name}.{name}"
 
 
 def test_seeded_dem_numerical_baseline() -> None:

@@ -165,6 +165,10 @@ No frozen fixture, root export, registry entry or existing method was changed.
 - No performance, GPU, threshold or logical-suppression claim is made. Persistent
   Stim sampler ownership is still a follow-up, not part of this batch method.
 
-The local implementation commit is `4a50004`. Publishing the branch and opening
-a draft PR require explicit authorization for the GitHub destination after the
-automatic push review rejected publication; no push or PR creation succeeded.
+The local implementation commit is `4a50004`. After explicit publication
+authorization, the branch was pushed and draft
+[PR #772](https://github.com/flagos-ai/FlagQuantum/pull/772) was opened.
+The initial remote quality job found Black formatting differences in two test
+files. They were formatted with the CI-selected tool; the full Black check
+(1,997 files) and the 14 affected compatibility/doctest cases passed locally.
+Remote required checks still decide acceptance; this is not a merge approval.
