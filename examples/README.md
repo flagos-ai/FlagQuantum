@@ -12,6 +12,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/assess_predecoder.py`](qec/assess_predecoder.py) runs the private paired
+  QEC study through domain imports.
+
 - [`qec/ai_predecoder.py`](qec/ai_predecoder.py) trains and evaluates the private
   QEC predecoder through domain imports; it does not use the root-level alias.
 
