@@ -16,12 +16,43 @@ per group. Every selected threshold was 1.0, hybrid and baseline logical failure
 counts were equal, and every quality decision was inconclusive. No scientific
 gate or hardware capability is promoted.
 
-PR #795 consolidates the private implementation and retires its flat module
-paths. It is synchronized with merged main and remains subject to current-head
-CI and review; this plan does not authorize its automatic merge. The next
-scientific PR must diagnose label/loss imbalance and add calibration plus
-validation-only threshold selection under a separately frozen protocol and
-budget before new test experiments.
+PR #795 merged the private-package consolidation; the flat paths are retired.
+PR #801 merged diagnostics, calibration and validation-only threshold selection.
+Its fixed-budget study improved probability scores descriptively, but every
+selected threshold remained 1.0 and every paired LER gate remained inconclusive.
+See the retained [calibration outcome](../development/QEC_AI_CALIBRATION_RESULTS.md).
+
+The next priority is to remove functional blockers for a reproducible comparison
+against NVIDIA Ising-Decoding: preserve complete circuit-level hyperedges, share
+batched global decoding and timing boundaries, and verify upstream input/frame
+mapping. The [prospective CPU protocol](../development/QEC_AI_ISING_COMPARISON.md)
+declares the initial exploratory cell and the explicit disjoint-noise approximation.
+Official weights require external access; missing access must remain a blocker,
+not an untrained-model score presented as a pretrained baseline.
+
+After those prerequisites, diagnose label equivalence and training sufficiency
+before selecting a single scientific intervention. Ising is a mandatory external
+baseline alongside global-only decoding and native BCE controls. Compare common
+circuits/shots, global-decoder settings, hardware and precision; report paired LER,
+full software latency, throughput and memory. Keep equal-budget training studies
+separate from comparisons with external pretrained checkpoints, and common CPU
+execution separate from independently optimized accelerator deployment. Smoke
+and single-cell exploratory results do not advance optimization/hardware gates.
+
+GPU research runs are authorized on the user's A800 hosts `a800-172` and
+`a800-171`; the local workstation has no GPU and remains a CPU correctness host.
+Read-only inspection on 2026-10-24 found eight A800-SXM4-80GB devices per host.
+This is availability inspection, not a reservation or benchmark. Preserve other
+sessions, use an isolated job directory, declare a device/precision/shot/timing
+protocol before experiments, and compare contenders on the same host/device.
+The existing frozen CPU protocol is not silently changed into a GPU study.
+Validate the official model's stated distance range (Fast: d >= 9) before
+making a representative comparison; the current d=3 cell remains exploratory.
+An isolated, auto-removed container on A800-172 successfully ran a four-element
+CUDA tensor check with PyTorch 2.13.0+cu130. The existing shared `fq-it-gpu`
+container has no usable CUDA mapping and was not changed. A800-171 has NVIDIA
+container runtime configured but does not yet have the same FlagQuantum image;
+prepare an isolated matching environment before cross-host replication.
 
 ## Delivery sequence
 

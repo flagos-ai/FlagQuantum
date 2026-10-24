@@ -1,0 +1,27 @@
+{
+  "path": "flagquantum_raw",
+  "timings": [
+    {
+      "batch_size": 1,
+      "warmup": 3,
+      "repetitions": 32,
+      "p50_block_us": 62.458,
+      "p95_block_us": 133.667,
+      "p99_block_us": 287.375,
+      "shots_per_second": 13258.96160784798
+    },
+    {
+      "batch_size": 32,
+      "warmup": 3,
+      "repetitions": 32,
+      "p50_block_us": 352.792,
+      "p95_block_us": 1061.458,
+      "p99_block_us": 1157.625,
+      "shots_per_second": 64216.73549584444
+    }
+  ],
+  "isolated_process_peak_rss_bytes": 309493760,
+  "memory_scope": "whole_worker_including_imports_active_model_and_graph_not_training",
+  "manifest_sha256": "ce32721505464b9488b61f3310f57de9d4c7df01ac9058bf78765f5845a4a838",
+  "smoke": false
+}

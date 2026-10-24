@@ -13,6 +13,7 @@ There are no public exports from this package.
 | `assessment.py` | Held-out evaluation, paired logical counts, confidence intervals and CPU whole-block timing. |
 | `diagnostics.py` | Label sparsity, positive/negative BCE accounting and probability diagnostics. |
 | `calibration.py` | Calibration-only temperature fitting and separate validation threshold selection. |
+| `comparison.py` | Shared batched global decoding boundary, binary residual/frame checks and whole-batch CPU timing. |
 
 Dependencies flow from training and assessment to the predecoder; the CNN
 extends it. Allowed dependencies are PyTorch, the standard library and existing
@@ -66,9 +67,20 @@ behavior. Calibration settings are explicit in the report; training checkpoint
 contents are unchanged. Neither probability diagnostics nor smoke results are
 evidence of a logical-error-rate benefit.
 
-Retain the small CPU, independent graphlike DEM support boundary. The CNN is
+Retain the small CPU, independent DEM support boundary. The MLP accepts visible
+hyperedges only with `allow_hyperedges=True`; each complete signature remains one
+latent mechanism. Default construction still rejects them. Exclusive-location
+groups and invisible mechanisms remain unsupported. The new `correct()` method
+returns residual/frame bits; the existing `decode()` composes them as before.
+The CNN is
 offline and reads both past and future. No accuracy, latency, hardware or
 production capability is promoted by reorganizing these modules.
+
+The optional [Ising comparison protocol](../../../../docs/development/QEC_AI_ISING_COMPARISON.md)
+uses a pinned external checkout from the example entry point, without importing
+vendor code in this package. It keeps circuit-shot sampling distinct from the
+explicit independent-DEM approximation used for training and matching. Its smoke
+executes real upstream code with untrained weights and is never a ranking.
 
 ## Retired private paths
 

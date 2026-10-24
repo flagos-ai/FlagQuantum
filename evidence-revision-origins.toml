@@ -1050,3 +1050,13 @@ origin = "unreferenced_object"
 [[artifact.revision]]
 value = "ef3affbd99cc5f0bbabc6ff6403ec1dbdfc48ddc"
 origin = "unreferenced_object"
+
+
+# Pinned upstream used by the exploratory Ising comparison, not FlagQuantum history.
+[[artifact]]
+path = "docs/development/evidence/qec_ai_ising_exploratory_20261024/manifest.json"
+
+[[artifact.revision]]
+value = "ea7c1bb3b823fc6a38472d0d95974b6d01932288"
+origin = "external_dependency"
+repository = "NVIDIA/Ising-Decoding"

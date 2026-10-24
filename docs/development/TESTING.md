@@ -304,6 +304,7 @@ the device and run the file directly.
 
 | Variable | Test | What it runs |
 | --- | --- | --- |
+| `FLAGQUANTUM_ISING_SOURCE` | `tests/qec/test_ising_comparison.py` | Path to the pinned NVIDIA Ising-Decoding checkout; runs real-upstream CPU smoke, X/Z boundary-mask conformance and SafeTensors loading checks. Install the optional inference dependencies described in [the comparison protocol](QEC_AI_ISING_COMPARISON.md), then run this file directly. No gated weights are needed for these explicitly untrained integration checks. |
 | `FLAGQUANTUM_DOMESTIC_ATTESTATION` | `tests/test_domestic_single_card_certification.py` | `tools/validate_domestic_single_card.py --attestation <value>` over the P0-P5 phases |
 | `FLAGQUANTUM_TEST_FLAGOS_CUDA` | `tests/test_flagos_cuda_reference.py` | `tools/validate_flagos_cuda_reference.py` |
 | `FLAGQUANTUM_TEST_FLAGOS_DISTRIBUTED` | `tests/test_flagos_distributed_conformance.py` | `tools/validate_flagos_distributed_conformance.py` |
