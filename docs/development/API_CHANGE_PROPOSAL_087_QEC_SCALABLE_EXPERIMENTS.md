@@ -2,11 +2,16 @@
 
 ## Status and decision scope
 
-Proposed; API-owner approval pending. The user approved the functional delivery
+**Decision A approved by the API owner on 2026-10-24; B and C remain proposed
+and unapproved.** After being asked explicitly to approve Decision A for
+QEC-FUNCTIONAL-003, the owner replied `approve` (translated) in the delivery chat.
+This authorizes the private Clifford fault-signature implementation and its
+verification, not B/C activation or a new public Simulation boundary.
+
+The user approved the functional delivery
 sequence and requested execution on 2026-10-24. That authorizes this proposal,
-not implementation of the new public surfaces below. QEC maintainers own it.
-No production code, protected snapshot, frozen fixture or registry is changed
-by this document.
+not implementation of the B/C public surfaces below. QEC maintainers own it.
+This approval record changes no protected snapshot, frozen fixture or registry.
 
 This is QEC-FUNCTIONAL-002 from the
 [functional roadmap PR #774](https://github.com/flagos-ai/FlagQuantum/pull/774). Review the

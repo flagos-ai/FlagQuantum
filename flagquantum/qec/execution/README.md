@@ -14,7 +14,10 @@ execution, core IR, noise channels and the optional stabilizer sampler.
 - `context.py`: declaration-to-DEM and per-basis measurement maps, without shot
   execution. It consumes declarations and DEMs; declarations never import it.
 - `signatures.py`: source injection, exact lowering, forced reference execution
-  and the existing shared fault vocabulary. DEM construction consumes these
+  and the existing shared fault vocabulary. Gate-bound signatures now compose
+  a private Simulation-owned Clifford parity primitive with the detector and
+  observable layouts, without executing an amplitude store. The original forced
+  execution remains the independent small-system test reference. DEM construction consumes these
   functions/constants without a reverse import, avoiding a module cycle.
 - `noise_sweep.py`: the existing finite-shot loop over repetition execution.
 

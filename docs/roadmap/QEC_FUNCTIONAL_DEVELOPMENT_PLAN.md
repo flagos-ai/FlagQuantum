@@ -41,7 +41,10 @@ not GitHub issue or PR numbers. Split a row if its reviewed scope requires it.
 | QEC-FUNCTIONAL-011 | `feat(qec): execute a subsystem memory experiment` | 010 approval | Complete one small subsystem-code schedule-to-DEM-to-sampling-to-decoding workflow, independently checked. |
 | QEC-FUNCTIONAL-012 | `feat(qec): execute a Floquet memory experiment` | 010 approval | Complete one Floquet memory workflow with inter-cycle detectors and logical tracking. Distinguish instantaneous code distance from spacetime fault distance. |
 
-001–002 are the immediate tranche. 003–009 depend on the approved contract scope.
+001–002 were delivered in #774 and #776. Decision A was explicitly approved on
+2026-10-24; 003 is the current implementation tranche. Decisions B/C and the
+exact channel-extension scope remain unapproved. 004–009 depend on their
+respective approved contract scope.
 010–012 are later candidates; their contract review may require additional PRs.
 This is a delivery sequence, not a promise of exactly twelve PRs or fixed dates.
 
@@ -100,7 +103,8 @@ normalization remain candidate work, not capabilities implied by this plan.
 
 | ID | State | Evidence |
 | --- | --- | --- |
-| 001 | In progress | [Post-retirement mainline acceptance](../development/QEC_RETIREMENT_MAINLINE_ACCEPTANCE.md); final CI and cleanup gates remain required. |
-| 002 | Planned next | Contract proposal only; implementation approval pending. |
-| 003–009 | Pending contracts | No new implementation or performance claims. |
+| 001 | Merged in [#774](https://github.com/flagos-ai/FlagQuantum/pull/774) | [Post-retirement mainline acceptance](../development/QEC_RETIREMENT_MAINLINE_ACCEPTANCE.md): main and PR full CI/GPU checks passed; old clean merged QEC worktrees and branches were cleaned. |
+| 002 | Proposal merged in [#776](https://github.com/flagos-ai/FlagQuantum/pull/776) | Decision A explicitly approved by the API owner on 2026-10-24; B/C remain unapproved. |
+| 003 | Implementation review in [#779](https://github.com/flagos-ai/FlagQuantum/pull/779) | [Implementation and resource evidence](../development/QEC_FUNCTIONAL_003.md); local numerical and installed-profile acceptance passed; final required PR-head CI is the delivery gate. No merge authorized. |
+| 004–009 | Pending respective contracts | No B/C activation, correlated-noise expansion or later performance/threshold claims. |
 | 010–012 | Candidate tranche | Separate contract review required. |

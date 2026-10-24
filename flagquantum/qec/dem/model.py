@@ -778,9 +778,12 @@ class DetectorErrorModel:
     ) -> DetectorErrorModel:
         """Build the exact model of every noise location a memory circuit has.
 
-        Each location the stated record configures is forced through the circuit
-        on its own and its signature is read off the layouts, so the model is
-        derived from the program rather than asserted about it. The record is
+        Each location the stated record configures has its signature derived
+        through the circuit's layouts. Round-boundary responses use the declared
+        check geometry; gate-bound responses propagate parities through the
+        lowered Clifford program, including measurements and resets. Neither
+        route needs a dense statevector. Forced execution remains an independent
+        small-system test reference. The record is
         what selects the placement grammar: a
         `~flagquantum.qec.PhenomenologicalNoise` names round boundaries and check
         readouts, and a `~flagquantum.noise.NoiseModel` names gates, whose faults
