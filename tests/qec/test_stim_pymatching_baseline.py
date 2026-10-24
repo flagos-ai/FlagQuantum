@@ -62,3 +62,11 @@ def test_example_counts_tail_batch_without_discarding_shots() -> None:
     assert report["sampling"] == "circuit"
     assert 0 <= report["logical_failures"] <= 35
     assert report["observables"] == 1
+    assert report["requested_shots"] == report["shots"]
+    assert report["observable_failures"] == [report["logical_failures"]]
+    assert report["logical_error_rate"] == report["logical_failures"] / 35
+    low, high = report["confidence_interval"]
+    assert 0 <= low <= report["logical_error_rate"] <= high <= 1
+    assert report["stopping_rule"] == "fixed_shots"
+    assert report["seed_schedule"] == "continuous_stream"
+    assert report == example["run_baseline"](shots=35, batch_size=16)

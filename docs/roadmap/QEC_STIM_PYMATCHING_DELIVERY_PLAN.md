@@ -24,16 +24,17 @@ PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py
 It circuit-samples 128 repetition-memory shots in bounded chunks and predicts
 logical flips in batches: 8 detector columns, 1 observable, and an observed
 logical failure count. The random count is version/architecture scoped.
-The approved work B branch updates this example to reuse one compiled sampler
-with a continuous seed-53 stream across chunks. That sampling change is pending
-review and merge; main at #772 still recompiles per chunk. No performance claim
-follows from the example.
+[PR #784](https://github.com/flagos-ai/FlagQuantum/pull/784) merged as
+`a5fc00898af53ab85037bec10c2db7579c68823b`, adding compiled sampler reuse and a
+continuous seed-53 stream across chunks. Its final head `8c942053` passed all
+54 main CI jobs and both local GPU gates. No performance claim follows from the
+example.
 
 The existing `PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py`
 workflow remains available with the Stim extra; it exercises measurement
 layouts, sampling and feedback.
 
-## Immediate action: review work B
+## Immediate action: review work C's fixed-shot report
 
 The #772 CI repair corrected Black formatting in two tests and registered the
 new baseline example in `examples/README.md`. All 54 main CI jobs passed, as
@@ -41,10 +42,16 @@ did the single-GPU and required two-GPU jobs. No test assertions or frozen
 fixtures were weakened to obtain this result.
 
 The API owner approved the [reusable sampling proposal](../development/QEC_REUSABLE_SAMPLING_PROPOSAL.md)
-on 2026-10-24. Work B implements the two additive QEC exports and the approved
-lifecycle; it must pass required CI and review before merging. Next is work C's
-fixed-shot statistics design, reusing existing result concepts before proposing
-new public records. Approval of A/B does not approve C's public API.
+on 2026-10-24. Work B's two additive QEC exports and lifecycle are now on main.
+The first work C slice extends the existing runnable example using those public
+APIs. It adds an illustrative JSON report and private example statistics helpers,
+without adding a library result class, export or serialized-artifact contract.
+The existing proposed library experiment API in
+[proposal 087, Decision C](../development/API_CHANGE_PROPOSAL_087_QEC_SCALABLE_EXPERIMENTS.md#decision-c-fixed-shot-memory-experiment)
+remains a separate unapproved decision. RepetitionMemoryResult retains all
+per-shot reference records, while NoiseSweepPoint carries repetition-specific
+noise-event counts; neither expresses this bounded general logical-bit summary
+without changing a protected record.
 
 ## Ordered PRs
 
@@ -75,9 +82,9 @@ remain retired; frozen restructuring evidence is not regenerated to hide drift.
                                +-> F noise -> G sampling -> H DEM --+
 ```
 
-C's test scenarios can be prepared while A is reviewed; they do not depend on an
-unapproved sampling signature. The graph is a dependency plan, not a request to
-spawn parallel agents. Avoid long-lived stacks of unmerged implementation PRs.
+C's example statistics use the merged sampling API. The graph is a dependency
+plan, not a request to spawn parallel agents. Avoid long-lived stacks of
+unmerged implementation PRs.
 
 Exit gates:
 
@@ -90,8 +97,7 @@ Exit gates:
 
 ## Prepared acceptance cases for work C
 
-These scenarios are ready for the statistics change without depending on A's
-unapproved sampler API. They specify behavior, not a new result schema:
+These scenarios specify behavior, not a new library result schema:
 
 - Fixed inputs: 100 completed shots with zero failures must report a positive
   upper confidence bound; 100 failures must report a lower bound below one.
@@ -112,6 +118,48 @@ unapproved sampler API. They specify behavior, not a new result schema:
 Any new public evaluation entry or result requires a concrete consumer/API
 review. The first implementation should reuse the existing example and
 statistics utilities where their semantics match.
+
+## Work C: fixed-shot report semantics
+
+The example retains its `run_baseline(shots=128, batch_size=32)` call and existing
+report keys. The statistics change adds `requested_shots`; existing `shots`
+means completed shots. Successful evaluations complete the entire request,
+including a partial final batch. One shot fails if any logical observable
+differs from the sampled flip; `observable_failures` additionally counts each
+column. These counts are distinct: two wrong logical bits in a shot still mean
+one failed shot.
+
+`logical_error_rate` is `logical_failures / shots`, for one complete memory
+experiment. `confidence_interval` is the two-sided fixed-shot Wilson 95% score
+interval without continuity correction, following the
+[NIST definition](https://www.itl.nist.gov/div898/handbook/prc/section2/prc241.htm).
+The original report makes no uncertainty claim; this slice adds that explicit
+interpretation. Zero observed failures have a positive upper bound. Zero
+requested shots are refused, and zero completed shots have no estimated rate
+or interval. An invalid or failed batch terminates with the original error and
+logged batch/completed-shot context, releases the sampling context and returns
+no partial success report. No row is retried, dropped or silently counted as
+correct.
+
+The report records code class/distance, rounds, the actual uniform Pauli noise
+settings, initial seed, continuous-stream schedule, batch size, package/Python
+versions and platform. It records `sampling="circuit"` and
+`stopping_rule="fixed_shots"`. This is an example report for the existing
+repetition workload, not an approved portable artifact schema or a generic
+experiment service. It does not divide a failure rate by rounds, apply an
+ordinary Wilson interval after adaptive stopping, or claim a threshold.
+
+Verification uses score-test inversion by numerical bisection, an optional
+independent [SciPy Wilson reference](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats._result_classes.BinomTestResult.proportion_ci.html),
+controlled multi-observable batches, batch failure/cleanup and tail-count tests,
+plus actual Stim/PyMatching runs with reproducible identical call sequences.
+The statistics tests run without optional SDKs; the real-engine integration
+tests retain their dependency guards.
+
+```bash
+python -m pytest tests/qec/test_fixed_shot_statistics.py tests/qec/test_stim_pymatching_baseline.py -q
+PYTHONPATH=. python examples/qec/stim_pymatching_baseline.py
+```
 
 ## Later internal implementations
 
