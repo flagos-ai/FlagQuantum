@@ -1,6 +1,7 @@
 # Private AI predecoding
 
-Core owns this offline CPU research implementation. It composes the canonical
+Core owns this offline research implementation. Training remains CPU-based; an
+explicit experimental comparison lane transfers inference to CUDA. It composes the canonical
 QEC DEM, memory circuits and existing global decoder protocol. It does not own
 code construction, circuit execution, SDK adapters or a second decoder registry.
 There are no public exports from this package.
@@ -13,7 +14,7 @@ There are no public exports from this package.
 | `assessment.py` | Held-out evaluation, paired logical counts, confidence intervals and CPU whole-block timing. |
 | `diagnostics.py` | Label sparsity, positive/negative BCE accounting and probability diagnostics. |
 | `calibration.py` | Calibration-only temperature fitting and separate validation threshold selection. |
-| `comparison.py` | Shared batched global decoding boundary, binary residual/frame checks and whole-batch CPU timing. |
+| `comparison.py` | Shared CPU global decoding boundary, explicit device transfers, exact correction-bit parity and whole-batch timing with caller-owned synchronization. |
 
 Dependencies flow from training and assessment to the predecoder; the CNN
 extends it. Allowed dependencies are PyTorch, the standard library and existing
@@ -81,6 +82,18 @@ uses a pinned external checkout from the example entry point, without importing
 vendor code in this package. It keeps circuit-shot sampling distinct from the
 explicit independent-DEM approximation used for training and matching. Its smoke
 executes real upstream code with untrained weights and is never a ranking.
+
+The separate [A800 protocol](../../../../docs/development/QEC_AI_ISING_A800.md)
+fixes d=9/R=9, actual pinned Fast weights, FP32 and complete CPU-input-to-CPU-output
+timing, including transfers and matching. On an isolated A800 container exposing
+one device, add `--a800 --image-id "$IMAGE_ID" --ising-checkpoint /task/fast.safetensors`
+to the existing comparison command and use a fresh directory. `--a800 --smoke`
+reports 32 primary test shots and `scientific_ranking_allowed=false`; it never
+substitutes random weights for missing authorized weights. CUDA availability and
+source/weight/image metadata are checked before training. Exact residual/frame
+parity on declared probes and final predictions on physical probe shots must pass
+before primary test sampling. This is not a streaming decoder or optimized
+TensorRT deployment. Public exports and training checkpoints are unchanged.
 
 ## Retired private paths
 

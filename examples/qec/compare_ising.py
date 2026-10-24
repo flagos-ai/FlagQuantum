@@ -197,7 +197,11 @@ def training_dem(circuit: Any) -> DetectorErrorModel:
                     tuple(t.val for t in targets if t.is_logical_observable_id()),
                 )
             )
-    return DetectorErrorModel(dem.num_detectors, dem.num_observables, tuple(errors))
+    # Flattening may leave repeated complete signatures (observed at d=9).
+    # Exact independent-parity merging preserves the declared DEM distribution.
+    return DetectorErrorModel(
+        dem.num_detectors, dem.num_observables, tuple(errors)
+    ).merge_duplicate_mechanisms()
 
 
 def sample(circuit: Any, shots: int, seed: int) -> tuple[torch.Tensor, torch.Tensor]:
@@ -498,6 +502,7 @@ def run(args: argparse.Namespace, config: Config, ref: Reference) -> None:
         "source_sha256": {str(p): digest(p) for p in sources},
         "noise_parameters": ref.noise,
         "training_dem_approximate_disjoint_errors": True,
+        "training_dem_duplicate_rule": "independent_parity_complete_detector_logical_signature",
         "test_sampling": "original_stim_circuit_no_dem_sampling",
         "matching": "shared_pymatching_uncorrelated_batch_decode",
         "ising_terminal_complement_input": "upstream_masks_it_including_without_local_correction",

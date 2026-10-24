@@ -11,6 +11,7 @@ import sys
 import time
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import pytest
 import torch
@@ -69,6 +70,31 @@ def test_hyperedge_opt_in_does_not_admit_invisible_mechanisms() -> None:
             DetectorErrorModel.from_stim_text("error(0.1) L0\ndetector D0\n"),
             allow_hyperedges=True,
         )
+
+
+def test_external_dem_merges_only_identical_complete_signatures() -> None:
+    from examples.qec.compare_ising import training_dem
+
+    stim = pytest.importorskip("stim")
+
+    class Circuit:
+        def detector_error_model(
+            self, *, decompose_errors: bool, approximate_disjoint_errors: bool
+        ) -> Any:
+            assert not decompose_errors and approximate_disjoint_errors
+            return stim.DetectorErrorModel(
+                "error(0.1) D0 D1 D2 L0\nerror(0.2) D0 D1 D2 L0\n"
+                "error(0.3) D0 D1 D2\n"
+            )
+
+    dem = training_dem(Circuit())
+    dem.require_unique_mechanisms()
+    assert dem.num_detectors == 3 and dem.num_observables == 1
+    assert len(dem.errors) == 2
+    by_logical = {error.observables: error for error in dem.errors}
+    assert by_logical[(0,)].probability == pytest.approx(0.1 * 0.8 + 0.9 * 0.2)
+    assert by_logical[()].probability == 0.3
+    assert all(error.detectors == (0, 1, 2) for error in dem.errors)
 
 
 def test_shared_decoder_observes_residual_and_composes_frame() -> None:

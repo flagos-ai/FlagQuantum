@@ -16,6 +16,10 @@ minimum; it does not establish generalization across distances, bases or noise.
 Preserve the upstream terminal complement mask and its mask-only control.
 Training/matching use the disclosed independent approximation of disjoint Pauli
 alternatives; validation and test samples come from the original circuit.
+Flattened duplicate complete detector/logical signatures are canonicalized with
+the existing DEM `merge_duplicate_mechanisms()` independent-parity rule. This
+preserves the declared independent distribution; detector-identical signatures
+with different logical contributions remain separate.
 
 Keep global-only PyMatching, native raw MLP, native calibrated MLP and actual
 pretrained Fast paths. All use the same uncorrelated batched CPU PyMatching.
