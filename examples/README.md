@@ -12,6 +12,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/assess_predecoder.py`](qec/assess_predecoder.py) runs the private paired
+  QEC study through domain imports.
+
 - [`qec/correlated_circuit_noise.py`](qec/correlated_circuit_noise.py) uses the
   public QEC and Noise namespaces to build exclusive two-qubit Pauli faults,
   sample their declared detector model and demonstrate independent-only export

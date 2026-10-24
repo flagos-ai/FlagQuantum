@@ -834,6 +834,15 @@ on Monday. Hardware manifests and raw logs are uploaded even on failure; skips
 must carry a reason and are not evidence of success, and neither is an artifact
 whose `measurement_validity` is not `clean` evidence of performance.
 
+In `continuous_performance.py --mode distributed-shard`, a warmup is one complete
+block of `inner_loops` operations with the same compute, collective and device
+synchronizations used for a measured sample. Warmup time is initialization;
+measured samples and communication totals exclude it. Earlier revisions warmed
+only individual asynchronous operations. Their raw records retain their original
+meaning and must not be relabeled as having used the complete-block warmup.
+This correction does not change the sample count or variance threshold and does
+not establish that warmup was the only cause of a failed performance gate.
+
 ## Coverage gate
 
 CI measures the maintained package with the seeded smoke, unit, integration, and
