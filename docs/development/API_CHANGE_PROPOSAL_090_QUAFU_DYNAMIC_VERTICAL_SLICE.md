@@ -1,6 +1,6 @@
 # API Change Proposal 090: Quafu Dynamic Provider Vertical Slice
 
-**Status:** Proposed; implementation requires explicit API-owner approval
+**Status:** Approved for staged implementation on 2026-10-24
 
 **Owner:** Remote, with Runtime and Deployment contract review
 
@@ -184,7 +184,7 @@ discovery, task submission, charging, or hardware-support claim.
 
 ## Acceptance
 
-- [ ] The API owner approves this proposal and its staged boundary.
+- [x] The API owner approves this proposal and its staged boundary.
 - [ ] Complete fixture facts produce one exact Quafu snapshot.
 - [ ] Missing or non-authoritative facts fail closed before provider activity.
 - [ ] The same snapshot identity survives preflight and post-routing rematch.

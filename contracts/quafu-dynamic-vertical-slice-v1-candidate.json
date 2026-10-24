@@ -1,11 +1,19 @@
 {
   "schema_version": "1.0",
-  "status": "proposed",
+  "status": "approved_for_staged_implementation",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_090_QUAFU_DYNAMIC_VERTICAL_SLICE.md",
   "approval": {
-    "required_directive": "approve API-CHANGE-090-QUAFU-DYNAMIC-VERTICAL-SLICE",
-    "approved": false,
-    "authorized_stages": []
+    "approved_by": "API owner via explicit user directive",
+    "approved_at": "2026-10-24",
+    "directive": "approve API-CHANGE-090-QUAFU-DYNAMIC-VERTICAL-SLICE",
+    "approved": true,
+    "authorized_stages": [
+      "snapshot_normalization",
+      "provider_legality_preview",
+      "offline_package_sealing",
+      "mocked_exactly_once_submission",
+      "stable_facade_wiring"
+    ]
   },
   "provider_slice": {
     "provider": "quafu",

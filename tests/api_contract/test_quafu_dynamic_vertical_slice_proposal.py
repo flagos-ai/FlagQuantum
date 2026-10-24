@@ -36,14 +36,22 @@ def _feedback_program() -> DynamicCircuit:
     return circuit.conditional("x", 1, classical_bit=0)
 
 
-def test_proposal_requires_approval_and_makes_no_support_claim() -> None:
+def test_proposal_records_approval_and_makes_no_support_claim() -> None:
     contract = _contract()
 
-    assert contract["status"] == "proposed"
+    assert contract["status"] == "approved_for_staged_implementation"
     assert contract["approval"] == {
-        "required_directive": ("approve API-CHANGE-090-QUAFU-DYNAMIC-VERTICAL-SLICE"),
-        "approved": False,
-        "authorized_stages": [],
+        "approved_by": "API owner via explicit user directive",
+        "approved_at": "2026-10-24",
+        "directive": "approve API-CHANGE-090-QUAFU-DYNAMIC-VERTICAL-SLICE",
+        "approved": True,
+        "authorized_stages": [
+            "snapshot_normalization",
+            "provider_legality_preview",
+            "offline_package_sealing",
+            "mocked_exactly_once_submission",
+            "stable_facade_wiring",
+        ],
     }
     assert contract["provider_slice"] == {
         "provider": "quafu",
