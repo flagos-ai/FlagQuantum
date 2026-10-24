@@ -138,6 +138,16 @@ is required by this plan.
   native seeded stream or nominal-versus-executed precision policy. Its strict
   detector/logical/selected-joint comparisons retain the 1e-12 gate; the original
   transport failure and nominal-rate discrepancy remain distinct evidence.
+- The executed-law text correction merged in [#813](https://github.com/flagos-ai/FlagQuantum/pull/813)
+  as `fa586473e365aa30871e376e7aec7cff76538321`. Final head `a93ce86d`
+  passed all 54 CI jobs (run `40088006267`) and Local GPU Gate
+  `40088006059` (three successful jobs, three existing optional skips).
+  Actual merge Main smoke `40089903875` succeeded; this is not full main CI.
+- The [noise support inventory](../reference/QEC_STIM_NOISE_SUPPORT.md) reconciles
+  contract 088 and the bridge with current placement, exclusivity and precision
+  evidence. It changes no API or numerical policy. F/G/H remain open until the
+  configured-versus-executed precision distinction and remaining acceptance
+  gaps have a reviewed disposition; I installation gates remain separate.
 - I closes the whole compatibility task, not merely an individual PR.
 
 The continuing task is complete only when all of the following are recorded:
