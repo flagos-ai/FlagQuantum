@@ -41,8 +41,11 @@ at batch 16, 32 held-out/test shots, and 3 warmups/4 timing repetitions. It stil
 requires the actual pinned Fast checkpoint; it is never a performance ranking.
 
 Freeze every training checkpoint, then every calibration/validation decision,
-before constructing the primary test sampler. Check exact CPU/CUDA residual,
-logical-frame and final-prediction equality for each selected path and seed.
+before constructing the primary test sampler. Check exact CPU/CUDA residual and
+logical-frame equality on every probe for each selected path and seed. Check
+final-prediction equality on the 64 physical circuit shots: arbitrary synthetic
+one-hot/all-one detector inputs need not admit a perfect matching. This distinction
+is declared during implementation review, before any CUDA probe data collection.
 Any mismatch or nonfinite output aborts before primary test collection. No
 threshold adjustment to pass parity, silent CPU fallback, seed omission, sample
 extension or optional stopping is allowed. Retain aborted evidence separately.
@@ -87,6 +90,24 @@ all seeds/controls retained, bounded timing workers and reviewable CI. Report
 negative and inconclusive quality outcomes. Architecture superiority, release
 latency and production feedback claims remain outside this protocol.
 
-The runnable entry point and exact commands will be added with implementation.
-Always use a fresh output directory. Missing CUDA, weights, pinned source or
-required metadata must fail before training or output creation.
+## Run
+
+Use a fresh isolated container exposing exactly one idle physical GPU, with
+the repository, pinned upstream checkout, authorized weights and optional
+dependencies available. From the repository root:
+
+```bash
+PYTHONPATH=.:/task/deps python examples/qec/compare_ising.py \
+  --a800 --smoke --image-id "$IMAGE_ID" \
+  --ising-source /task/Ising-Decoding \
+  --ising-checkpoint /task/fast.safetensors \
+  --output-directory /task/smoke
+```
+
+`IMAGE_ID` is the full `sha256:...` value from `docker image inspect`, not a tag.
+Expect `purpose="smoke"`, four paths, 32 distinct test shots and
+`scientific_ranking_allowed=false`. Remove `--smoke` for the fixed full budget
+and use a different output directory. Always retain the manifest, parity record,
+choices, checkpoints, primary shots/predictions, counts and timing reports.
+Missing CUDA, weights, pinned source or required metadata fails before training
+or output creation. Never put model weights or account credentials in Git.
