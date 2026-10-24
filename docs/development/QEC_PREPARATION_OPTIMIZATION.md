@@ -77,6 +77,64 @@ The baseline's scoped observed stdout was `native 17 0` and
 `exported_stim 17 0`; the candidate is rerun and recorded with its evidence.
 Normal users do not call private compiler verification or manage a cache.
 
+## Observed candidate and retained evidence
+
+The clean candidate producer is
+`816efce527e72bd596c6bfd8f28f85489a4f0711`. The
+[raw observations and protocols](evidence/qec_preparation_cpu_20261024.json)
+retain every paired row, both attribution profiles and all 48 new matrix cells.
+The unchanged observer and verifier source are obtainable from that producer;
+this evidence/documentation follow-up does not modify them.
+
+All six paired processes completed in 56.831 seconds. Across the nine measured
+rows per implementation, pipeline medians were 2.152390 seconds for the baseline
+and 1.226332 seconds for the candidate: a local ratio of 1.7551, or 43.0% less
+pipeline wall time. These are descriptive observations for this fixed workload,
+not a statistical confidence interval or a minimum performance promise. Both
+implementations produced identical source-text, detector, observable and decoder
+prediction SHA256 values in every diagnostic run, with 8061 detector events over
+1025 shots. The all-zero logical observable/prediction witnesses alone would not
+have established this equality.
+
+Under the same original matrix budget, the candidate completed all 48 cells in
+272.010 seconds, including d=13 native and d=17. Each has one warmup and three
+measured repetitions, with the original one-shot tail and seed semantics. The
+original 552.335-second study, its 36 completed cells and twelve timeouts remain
+immutable. The newly completed cells have no prior completed timing and therefore
+no observed speedup ratio. This result describes completion within the original
+budget on this host; it does not establish memory scaling or GPU performance.
+
+The repeated attribution run used the same component protocol in separate fresh
+processes. Its residual lowering costs include semantic identity serialization
+(`semantic_identity`, 16 calls, approximately 0.241/0.244 cumulative seconds per
+component). This is a reason to investigate the existing preparation path before
+choosing another internal replacement; it does not authorize a cache or removal
+of semantic checks. Instrumented attribution times must not be substituted for
+the uninstrumented paired pipeline measurements.
+
+The compiler suite passed 384 tests; related real-SDK QEC suites passed 186 with
+one structural skip. Strict typing, formatting, architecture and read-only API
+checks passed. The local default run encountered disk exhaustion while pytest
+wrote captures (9772 passed, 84 skipped, five failures and five setup errors).
+Its raw log is retained; these failures are not reclassified as all baseline or
+passing. Full current-head remote CI remains required for delivery.
+
+## Next decision and actual resources
+
+This slice improves existing CPU preparation without replacing Stim or
+PyMatching. A subsequent preparation investigation should first establish
+whether repeated semantic serialization can be reduced without changing IR
+identity, pass validation or lexical semantics. It needs function-level evidence
+and independent same-input correctness checks, as this slice did.
+
+A single-GPU decision requires actual device access, device/driver/CUDA/Torch
+versions, free VRAM and an agreed bounded workload. Start with one accessible
+A800 and record host preparation, transfers, numerical work, decoding and total
+wall time separately. The user's sixteen A800s have not been accessed. No result
+here demonstrates a GPU kernel payoff or calls for multi-card orchestration;
+independent shot throughput would also not establish single-state capacity
+expansion. Further implementation is a separate scope after this finite slice.
+
 The change is accepted only with preserved compiler/QEC semantics, recorded
 same-workload observations, necessary quality checks and current-head full
 CI/GPU plus normal merge. Local CPU observations do not certify A800, multi-card,
