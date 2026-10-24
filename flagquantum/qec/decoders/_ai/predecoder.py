@@ -36,12 +36,18 @@ class Predecoder(nn.Module):
     logical: torch.Tensor
     prior: torch.Tensor
 
-    def __init__(self, dem: DetectorErrorModel) -> None:
+    def __init__(
+        self, dem: DetectorErrorModel, *, allow_hyperedges: bool = False
+    ) -> None:
         super().__init__()
+        if not isinstance(allow_hyperedges, bool):
+            raise ValueError("allow_hyperedges must be boolean")
         if not dem.errors or dem.exclusive_groups():
             raise ValueError("requires nonempty independent mechanisms")
         dem.require_unique_mechanisms()
-        if any(len(e.detectors) not in (1, 2) for e in dem.errors):
+        if any(not e.detectors for e in dem.errors):
+            raise ValueError("requires mechanisms with visible detectors")
+        if not allow_hyperedges and any(len(e.detectors) > 2 for e in dem.errors):
             raise ValueError("requires graphlike mechanisms with visible detectors")
         if any(not 0 < e.probability < 0.5 for e in dem.errors):
             raise ValueError("requires mechanism probabilities in (0, 0.5)")
@@ -80,16 +86,19 @@ class Predecoder(nn.Module):
         )
 
     @torch.no_grad()
-    def decode(
+    def correct(
         self,
         detectors: torch.Tensor,
-        backend: DetectorErrorModelDecoder,
         *,
         threshold: float = 0.9,
         enabled: bool = True,
         temperature: float = 1.0,
-    ) -> torch.Tensor:
-        """Combine the local correction's logical contribution with residual decode."""
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return residual detector bits and the local logical frame before decoding.
+
+        Hyperedges retain their complete detector signature; this operation does
+        not decompose or independently sample their individual detector flips.
+        """
         if isinstance(threshold, bool) or not 0 < threshold <= 1:
             raise ValueError("threshold must be in (0, 1]")
         if (
@@ -112,6 +121,22 @@ class Predecoder(nn.Module):
         ).float()
         residual = (detectors.float() + correction @ self.h.T).remainder(2)
         prediction = (correction @ self.logical.T).remainder(2).to(torch.int8)
+        return residual.to(torch.int8), prediction
+
+    @torch.no_grad()
+    def decode(
+        self,
+        detectors: torch.Tensor,
+        backend: DetectorErrorModelDecoder,
+        *,
+        threshold: float = 0.9,
+        enabled: bool = True,
+        temperature: float = 1.0,
+    ) -> torch.Tensor:
+        """Combine the local correction's logical contribution with residual decode."""
+        residual, prediction = self.correct(
+            detectors, threshold=threshold, enabled=enabled, temperature=temperature
+        )
         for i, row in enumerate(residual):
             result = backend.decode(row.nonzero().flatten().tolist())
             for observable in result.observables:

@@ -178,3 +178,21 @@ Do not reduce this wide asset to a single column. Summarize long classical
 chains or split detailed circuits when needed. Arbitrary branching graphs,
 automatic PyTorch tracing and model execution are not provided.
 See [drawer usage and dependency matrix](../../flagquantum/drawer/README.md).
+
+## Experimental AI QEC comparison
+
+The private CPU MLP can explicitly opt into visible independent hyperedges;
+default construction retains its graphlike restriction. Complete signatures are
+preserved, while invisible mechanisms and categorical-location groups are still
+refused. This does not extend the global matcher's support or promote a public
+AI-decoder API. The existing CNN remains tied to native square-grid memories.
+
+The optional pinned Ising comparison covers one exploratory CPU cell and uses
+the same original-circuit shots and batched uncorrelated PyMatching for all
+contenders. Training/matching explicitly approximate disjoint Pauli alternatives;
+testing samples the original circuit. Upstream terminal complement masking is
+preserved and has a separate mask-only control. Official weights require access;
+untrained smoke and loader fixtures are integration evidence only. Common-layout
+CNN, equal-budget training and optimized device comparisons are not implemented.
+See the [protocol](../development/QEC_AI_ISING_COMPARISON.md) and
+[integration outcome](../development/QEC_AI_ISING_COMPARISON_RESULTS.md).
