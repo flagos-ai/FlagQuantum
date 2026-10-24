@@ -19,10 +19,12 @@ from flagquantum.qec import (
     get_decoder,
 )
 from flagquantum.qec.decoders._neural import Predecoder, Trainer, evaluate
+from flagquantum.qec.decoders._spacetime import SpacetimePredecoder
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", choices=("mlp", "cnn"), default="mlp")
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--shots", type=int, default=256)
     parser.add_argument("--checkpoint", type=Path, default=Path("predecoder.pt"))
@@ -36,11 +38,12 @@ def main() -> None:
     )
     args = parser.parse_args()
     torch.manual_seed(0)
-    dem = DetectorErrorModel.from_memory_circuit(
-        build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3),
-        noise=PhenomenologicalNoise(data_flip=0.02, measurement_flip=0.02),
+    memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3)
+    noise = PhenomenologicalNoise(data_flip=0.02, measurement_flip=0.02)
+    dem = DetectorErrorModel.from_memory_circuit(memory, noise=noise)
+    model = (
+        SpacetimePredecoder(memory, noise) if args.model == "cnn" else Predecoder(dem)
     )
-    model = Predecoder(dem)
     trainer = Trainer(model, seed=1)
     if args.resume or args.evaluate_only:
         trainer.restore(args.checkpoint)
@@ -57,6 +60,7 @@ def main() -> None:
     print(
         json.dumps(
             {
+                "model": args.model,
                 "training_step": trainer.step,
                 "first_loss": losses[0] if losses else None,
                 "last_loss": losses[-1] if losses else None,
