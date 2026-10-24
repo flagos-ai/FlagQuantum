@@ -770,3 +770,25 @@ not evidence that its truncation error disappeared.
 The example composes existing mixed dimensions, boson algebra, parameter binding,
 Lindblad planning, Krylov evolution and PyTorch. It adds no ion-trap frontend,
 heating, laser calibration, hardware execution or distributed-capacity claim.
+
+### Driven three-level leakage and time-grid convergence
+
+Run `python -m examples.driven_three_level` for a rotating-frame, weakly
+anharmonic three-level model with four noncommuting in-phase/quadrature pulses.
+The model includes the sqrt(2) ladder coupling to level 2, detuning 0.15 and
+anharmonicity -3, in inverse time units. A segment lasts 0.25. There is no
+dissipation, calibrated device, hardware pulse emission or ion-trap model.
+
+Existing interval parameters bind all eight control values. Named outputs
+report ground/excited/leakage populations. Independent 3x3 unitary products
+check the entire complex density at pulse boundaries; reversed pulse order must
+give a different result. All eight leakage derivatives are compared against
+four-point finite differences of that independent reference.
+
+Refinement subdivides the same constant segments and repeats the same bindings.
+It does not change or resample the waveform: Runge-Kutta errors decrease by
+about 16 per doubling, while the existing Krylov path is checked at 1e-10.
+The optimizer minimizes `(1-P1)**2 + 2*P2`; its improved population and leakage
+are not a unitary-gate fidelity claim. Detached numeric plans replay exactly,
+but JSON does not preserve the training graph. All solvers, bindings, outputs
+and artifacts reuse the existing shared dynamics workflow.
