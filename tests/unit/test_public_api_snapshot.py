@@ -125,3 +125,25 @@ def test_unread_contract_authorization_does_not_accept_unreviewed_changes(
         contract, ["ExecutionPlan"]
     )
     assert errors == ["native Ising admission differs from approved proposals 085/089"]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("operation", "ising.unapproved_sample"),
+        ("production_implemented", True),
+        ("environment_protocol_version", "1.0"),
+        ("new_operation_source_and_plan_version", "1.2"),
+        ("unapproved_field", "anything"),
+    ],
+)
+def test_sampled_contract_authorization_rejects_unreviewed_changes(
+    field: str, value: object
+) -> None:
+    contract = json.loads(
+        (ROOT / "contracts/execution-plan-v1-candidate.json").read_text()
+    )
+    contract["native_ising_admission"]["sampled_observation"][field] = value
+    assert public_api_snapshot._validate_authorized_execution_plan(
+        contract, ["ExecutionPlan"]
+    ) == ["native Ising admission differs from approved proposals 085/089"]

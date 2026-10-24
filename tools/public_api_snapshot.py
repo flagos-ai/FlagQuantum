@@ -487,6 +487,19 @@ def _validate_authorized_execution_plan(
             "compatibility_tests": "tests/unit/test_ising_unread_compatibility.py",
         },
     }
+    expected_native["sampled_observation"] = {
+        "proposal": "docs/development/API_CHANGE_PROPOSAL_091_ISING_SAMPLED_OBSERVATION.md",
+        "record": "docs/api-changes/FQ-ISING-SAMPLED-OBSERVATION-20261024.md",
+        "implementation_authorized": True,
+        "delivery_stage": "contract_baseline",
+        "operation": "ising.measure_pair",
+        "new_operation_source_and_plan_version": "1.3",
+        "environment_protocol_version": "1.1",
+        "rng_requirement": "rng_torch_version",
+        "production_implemented": False,
+        "consumer_tests": "tests/unit/test_ising_sampled_contract.py",
+        "compatibility_tests": "tests/unit/test_ising_sampled_compatibility.py",
+    }
     if native != expected_native:
         errors.append("native Ising admission differs from approved proposals 085/089")
     else:
