@@ -106,10 +106,14 @@ native checkpoints and official weights remain local. Full-run fingerprints:
 - Results: `3879baab4da413a0a1f8cad6dcdea0dd98588cf4c608dd48fe921fce0474a2e8`.
 - Choices: `c66bef8657143bd096f91a015adc5069bab48ba2d3f553b5c4495690e196a4c2`.
 
-The archived manifest adds three post-run provenance fields: `ising_commit_origin`,
-`ising_repository` and `raw_manifest_sha256`. Removing only those fields and
-serializing with the producer's two-space indentation plus final newline exactly
-reconstructs the original manifest hash above. No experimental field or raw
+The archived manifest normalizes upstream provenance after the run: the original
+`ising_commit` value is retained as `ising_source.commit`, alongside
+`ising_source.repository`. The existing evidence origin table registers this
+exact upstream commit as `external_dependency` from `NVIDIA/Ising-Decoding`.
+To reconstruct the original manifest, remove `raw_manifest_sha256` and
+`ising_source`, then insert `ising_commit` with the retained commit immediately
+after `config`. Serialize with two-space indentation and a final newline; its
+SHA-256 must equal the original manifest hash above. No experimental value or raw
 results/choices/timing file was edited.
 
 ## Remaining gates
@@ -119,6 +123,11 @@ tested for other users. The two CI failures were documentation-registration
 omissions: the optional upstream variable was absent from the testing manual,
 and the new domain-import example was absent from the examples index. Both were
 added and the two failing policy tests passed without changing their assertions.
+A subsequent CI run found that the archived manifest introduced an unregistered
+revision field and an inline origin unsupported by the generic provenance tests.
+The archive now uses the existing `commit` vocabulary and the external dependency
+origin table; future manifests emit the same nested source record. No provenance
+gate, supported-origin vocabulary or test assertion was changed.
 
 The initial implemented contender is the native MLP. A common-layout native CNN,
 matched-budget upstream retraining, larger-distance/noise/basis experiments and

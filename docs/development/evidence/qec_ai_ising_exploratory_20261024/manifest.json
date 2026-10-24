@@ -8,7 +8,6 @@
     "rotation": "XV",
     "threads": 1
   },
-  "ising_commit": "ea7c1bb3b823fc6a38472d0d95974b6d01932288",
   "ising_source_sha256": "ed9e6c56f263e0cd9fcc04a494e9cf6544c9f78cbb54c788fcce71b2e961b70e",
   "weights": {
     "status": "external_checkpoint_training_history_unverified",
@@ -85,7 +84,9 @@
   "training_budget_comparable": false,
   "scientific_ranking_allowed": false,
   "purpose": "fixed_budget_exploratory_cpu_comparison",
-  "ising_commit_origin": "external_dependency",
-  "ising_repository": "NVIDIA/Ising-Decoding",
-  "raw_manifest_sha256": "ce32721505464b9488b61f3310f57de9d4c7df01ac9058bf78765f5845a4a838"
+  "raw_manifest_sha256": "ce32721505464b9488b61f3310f57de9d4c7df01ac9058bf78765f5845a4a838",
+  "ising_source": {
+    "repository": "NVIDIA/Ising-Decoding",
+    "commit": "ea7c1bb3b823fc6a38472d0d95974b6d01932288"
+  }
 }
