@@ -2,6 +2,10 @@
 
 Status: concrete measurement proposal, awaiting approval of new quantitative commitments. This is FTS-02A, not a completed high-performance simulator or a new public experiment API. The delivery sequence is authorized; the proposed numerical/performance targets are not activated by a documentation merge.
 
+## Baseline-only decision
+
+On 2026-10-24 the user explicitly selected baseline collection first and deferred activation of the proposed 1.5x throughput and 2x capacity targets. [Initial clean-main CPU observations](FTQC_002_CPU_BASELINE.md) reuse existing producers without a new API or performance threshold. This decision does not approve all proposed resource, statistical, approximation or hardware commitments. FTS-02 remains partial.
+
 ## Purpose and boundaries
 
 Make the [FTQC master roadmap](../roadmap/FTQC_SIMULATION_MASTER_PLAN.md) measurable before optimizing. Freeze workload definitions, independent references, resource limits, statistical procedures, and timing boundaries. Reuse maintained benchmark infrastructure and delivered user workflows rather than introducing another benchmark registry, numerical engine, decoder API, or evidence hierarchy.

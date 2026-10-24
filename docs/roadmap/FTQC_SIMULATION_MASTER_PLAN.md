@@ -426,7 +426,7 @@ Subsequent reports should state verified capability gains, closed requirements, 
 | Item | State | Evidence / next gate |
 | --- | --- | --- |
 | FTS-01 | Merged in [#799](https://github.com/flagos-ai/FlagQuantum/pull/799); post-merge acceptance complete | [Exact main, CI, source, fresh artifacts/install and examples](../development/FTQC_001_MAINLINE_ACCEPTANCE.md). |
-| FTS-02 | Concrete workload/budget proposal prepared; commitments and baseline freeze pending | [FTS-02A](../development/FTQC_REFERENCE_WORKLOADS_AND_BUDGETS.md) reuses existing workflows and producers; documentation merge does not approve new metrics. |
+| FTS-02 | #805 merged; baseline-only collection explicitly authorized; first CPU observations recorded; remaining scope/review pending | [FTS-02A decision](../development/FTQC_REFERENCE_WORKLOADS_AND_BUDGETS.md#baseline-only-decision) and [FTS-02B raw observations](../development/FTQC_002_CPU_BASELINE.md). Proposed 1.5x/2x targets remain disabled; no capability promotion or full FTS-02 closure. |
 | FTS-05 / QEC-FUNCTIONAL-005 | Contract document merged in #794; implementation approval pending | Do not activate the new cross-decoder operation until its concrete contract is explicitly approved. |
 | FTS-27 / FTS-33 | Resource and data decisions pending | Name the device, owner, dataset, permissions, and budgets before hardware/experimental certification. |
 
