@@ -24,6 +24,10 @@ def main() -> None:
 
     print(f"compatible: {report.compatible}")
     print(f"blockers: {report.blockers}")
+    assert not report.compatible
+    assert "dynamic_capability_fact_missing:mid_circuit_measurement" in (
+        report.blockers
+    )
 
     try:
         fq.run(circuit, target="quafu:Baihua", shots=128)

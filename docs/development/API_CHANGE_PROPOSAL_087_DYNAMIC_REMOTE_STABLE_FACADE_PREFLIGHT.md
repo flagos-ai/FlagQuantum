@@ -283,15 +283,15 @@ this path.
 ## Acceptance
 
 - [x] API owner approves this proposal and its no-submit boundary.
-- [ ] Direct stable dispatch and inspectable assessment use one matcher.
-- [ ] Equivalent inputs produce the same target identity and blocker ordering.
-- [ ] Quafu, Azure, non-IQM Braket, incomplete IQM, and unknown targets create no
+- [x] Direct stable dispatch and inspectable assessment use one matcher.
+- [x] Equivalent inputs produce the same target identity and blocker ordering.
+- [x] Quafu, Azure, non-IQM Braket, incomplete IQM, and unknown targets create no
       compiler, package, provider, network, or task activity.
-- [ ] The coarse dynamic-support boolean cannot admit execution.
-- [ ] Static remote and stable local DynamicCircuit behavior remains unchanged.
+- [x] The coarse dynamic-support boolean cannot admit execution.
+- [x] Static remote and stable local DynamicCircuit behavior remains unchanged.
 - [ ] Routing cannot weaken or erase the preserved requirement identity.
-- [ ] Root exports, stable signatures, and serialized schemas remain unchanged.
-- [ ] The PR includes a runnable credential-free user example.
+- [x] Root exports, stable signatures, and serialized schemas remain unchanged.
+- [x] The PR includes a runnable credential-free user example.
 
 ## Non-goals
 
