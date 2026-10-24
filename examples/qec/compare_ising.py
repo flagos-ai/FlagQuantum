@@ -326,7 +326,7 @@ def run(args: argparse.Namespace, config: Config, ref: Reference) -> None:
     ]
     manifest = {
         "config": asdict(config),
-        "ising_commit": ISING_COMMIT,
+        "ising_source": {"repository": "NVIDIA/Ising-Decoding", "commit": ISING_COMMIT},
         "ising_source_sha256": source_digest(args.ising_source),
         "weights": ref.weights,
         "protocol_sha256": digest(protocol),
