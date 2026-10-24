@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.7.0
+rootdir: /task/source
+configfile: pytest.ini
+collected 41 items
+
+tests/qec/test_training_budget.py ..............                         [ 34%]
+tests/qec/test_label_study.py ..........                                 [ 58%]
+tests/qec/test_label_identifiability.py .................                [100%]
+
+============================= 41 passed in 10.20s ==============================
+{"preflight": "passed_before_formal_training_or_samples", "seeds": [{"seed": 11, "step": 200, "model_state_sha256": "7d7b21493c52e79299db6a74f29c2ce98735313e82ba357ae62c98f723d16940", "optimizer_tensors_sha256": "d177495f83e739e3f09115eafbdada758037916f5dbbdb1d5b757c5f2a30c223", "generator_sha256": "4191517668d9451d5118771f5a028a18e63261542044a669cc2e10595786061a", "learning_rate": 0.001}, {"seed": 22, "step": 200, "model_state_sha256": "928098c93c6f59f7f16c3424037f487be9d693f33dd63377766af13c41878ea8", "optimizer_tensors_sha256": "5df277f229852e167457cb4ed27ba7036e4f6ed78ac8cc17ae6edeb18e602d27", "generator_sha256": "3544b7759d902b3bab853c299864427823881a83f1ed978c018e23a6392a3d1d", "learning_rate": 0.001}, {"seed": 33, "step": 200, "model_state_sha256": "7dfb531d192d6f04773ee88dd5452349a6b821233a1aada01deea738ec67d2cc", "optimizer_tensors_sha256": "fe8e8dbe5b13209cef8076113f6078d6a8fe6c1e6ce7c7f3d8ed4774ec7c309e", "generator_sha256": "7808b1abbc8df478deacd98f80e7ba6317c3aa432e55c7ba591d118c007e5824", "learning_rate": 0.001}], "input_sha256": {"manifest.json": "77685c98cf0e6d17492dda796ec18b8506edeed81416437d36fdca81e83262b4", "results.json": "04ef68e915f46231aebdc21edf10d16656dc7dce6c6e5b2a1c2c98b4393b9123", "choices.json": "9661f22c03d4b65f978ebd2e46cf7ad520695351196fc4affc932d6be7130a35", "audit.json": "cbee755dad03b53976008a6991176ba2206863f8f1dd31f9e77db240baa75e69", "training.dem": "cd96d502913b7f5000679d89d9bfe6d3ebfdcf12aaec3cf6acdb4d89b01a24d8", "native-11.pt": "ee53240c4e1769d48585bbdeeb7727bd73fc82808ec381c72805dc01f9435576", "native-22.pt": "f18bf2766bd72b390dfeca876acd4cec3f6b78233ef665726e56aa232247b34b", "native-33.pt": "19a0a0fae5f3637d997bc7be3536f86e544586409953d16aff922888425d15f9"}, "cuda_visible_count": 0, "torch": "2.13.0+cu130"}
