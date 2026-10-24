@@ -104,13 +104,20 @@ def native_program_to_dict(record: ProgramRecord) -> dict[str, Any]:
     """Encode a validated native source; never replace it by a circuit payload."""
     _checked(record)
     assert record.physical_context is not None
+    version = "1.1" if isinstance(record.physical_context, IsingContext) else "1.0"
     functions = []
     for function in record.functions:
         blocks = []
         for block in function.blocks:
             operations: list[dict[str, Any]] = []
             for operation in block.operations:
-                assert operation.physical_data is not None
+                physical_data: dict[str, Any] | None
+                if operation.opcode == "ising.dephase_pair":
+                    physical_data = None
+                    version = "1.2"
+                else:
+                    assert operation.physical_data is not None
+                    physical_data = _control_payload(operation.physical_data)
                 operations.append(
                     {
                         "opcode": operation.opcode,
@@ -119,7 +126,7 @@ def native_program_to_dict(record: ProgramRecord) -> dict[str, Any]:
                         "parameters": [],
                         "literal": None,
                         "condition_clauses": [],
-                        "physical_data": _control_payload(operation.physical_data),
+                        "physical_data": physical_data,
                     }
                 )
             blocks.append(
@@ -136,9 +143,7 @@ def native_program_to_dict(record: ProgramRecord) -> dict[str, Any]:
         )
     return {
         "schema": "flagquantum.program_ir",
-        "version": (
-            "1.1" if isinstance(record.physical_context, IsingContext) else "1.0"
-        ),
+        "version": version,
         "functions": functions,
         "physical_context": _context_payload(record.physical_context),
     }
@@ -287,10 +292,19 @@ def _block_from_dict(value: object) -> BlockRecord:
             raise SerializationError(
                 "physical operations cannot carry circuit/SSA data"
             )
+        physical_data: RydbergTransport | RydbergPulse | IsingExchange | None
+        if operation["opcode"] == "ising.dephase_pair":
+            if operation["physical_data"] is not None:
+                raise SerializationError(
+                    "ising.dephase_pair physical_data must be null"
+                )
+            physical_data = None
+        else:
+            physical_data = _control_from_dict(operation["physical_data"])
         operations.append(
             Operation(
                 operation["opcode"],
-                physical_data=_control_from_dict(operation["physical_data"]),
+                physical_data=physical_data,
             )
         )
     return BlockRecord(
@@ -307,6 +321,7 @@ def native_program_from_dict(value: Mapping[str, Any]) -> ProgramRecord:
         if payload["schema"] != "flagquantum.program_ir" or payload["version"] not in (
             "1.0",
             "1.1",
+            "1.2",
         ):
             raise SerializationError("unsupported native Program IR schema/version")
         context = _context_from_dict(payload["physical_context"])

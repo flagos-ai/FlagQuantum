@@ -29,9 +29,13 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   scheduled Remote normalizer replacement. Neither file executes dynamics.
 - `ising.py`: the experimental four-sigma, total-vacuum Ising source builder.
   It reuses the same ProgramRecord, typed physical profiles and source codec.
-  Source version 1.1 applies only to Ising; Rydberg source 1.0 is unchanged.
+  Braid-only sources retain version 1.1; exactly one `dephase_pair()` observation
+  selects source 1.2. It observes the current first pair without an outcome,
+  physical time or classical bit. Rydberg source 1.0 is unchanged.
   Charge projectors are CPU mathematical inputs. Native braid execution,
-  executable plan 1.1 and numerical F/R actions remain outside this source gate.
+  executable plans and numerical F/R/Kraus actions remain outside this source gate.
+  Runtime currently refuses source 1.2; source encoding alone does not enable
+  numerical observation support.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.
 - `contracts.py`: versioned cross-domain execution and evidence records.
