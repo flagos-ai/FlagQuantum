@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import importlib.metadata
 import json
 import os
 import resource
@@ -237,6 +238,7 @@ def test_a800_parity_failure_aborts_before_primary_sampling(
     )
     monkeypatch.setattr(study, "global_decoder", lambda circuit: lambda x: x[:, :1])
     monkeypatch.setattr(study, "choices", lambda *args: {})
+    monkeypatch.setattr(importlib.metadata, "version", lambda name: "test-fixture")
 
     def refuse(*args: object) -> None:
         raise ValueError("declared probe parity failed")
