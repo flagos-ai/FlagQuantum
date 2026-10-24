@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposal prepared on 2026-10-24; implementation is not yet authorized.**
+**Proposal approved on 2026-10-24; Batch A establishes the candidate contract.**
 
 API Change 086 requires capability matching both before and after routing. API
 Change 087 installed the stable, fail-closed preflight and preserved the source
@@ -11,14 +11,14 @@ package, network, and task boundaries. This proposal defines the next internal
 gate: proving that routing and dialect lowering did not weaken the requirements
 that admitted the source program.
 
-Approval token:
+The API owner approved this scope with:
 
 ```text
 approve API-CHANGE-089-DYNAMIC-POST-ROUTING-CAPABILITY-REMATCH
 ```
 
-Approval would authorize a credential-free, non-submitting implementation of
-the contract below. It would not authorize a provider SDK, credential lookup,
+The approval authorizes a credential-free, non-submitting implementation of
+the contract below. It does not authorize a provider SDK, credential lookup,
 network request, deployment package, remote task, live-QPU claim, or new stable
 public API.
 
@@ -242,8 +242,8 @@ support claim merely because this proposal exists.
 
 ## Acceptance
 
-- [ ] The API owner approves this proposal and no-submit boundary.
-- [ ] A failing-first contract freezes post-routing blocker semantics.
+- [x] The API owner approves this proposal and no-submit boundary.
+- [x] A failing-first contract freezes post-routing blocker semantics.
 - [ ] The original requirement identity survives routing and lowering.
 - [ ] Route-induced requirements are additive rather than replacements.
 - [ ] Preflight and rematch use one exact target and snapshot.
