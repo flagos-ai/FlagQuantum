@@ -6,13 +6,24 @@ QEC DEM, memory circuits and existing global decoder protocol. It does not own
 code construction, circuit execution, SDK adapters or a second decoder registry.
 There are no public exports from this package.
 
+The correction-label study uses `diagnose_equivalence(h, logical, target,
+candidate)` to distinguish latent mismatch from equal complete H/L output.
+`FeatureTable.update(model._features(detectors), logits, labels)` streams exact
+three-feature MLP groups; `summarize()` returns counts, score aggregates and
+empirical conditional BCE. These are CPU research diagnostics, not final logical
+accuracy or population Bayes bounds. The three-feature table does not claim CNN
+support. Follow the frozen
+[diagnostic protocol](../../../../docs/development/QEC_AI_LABEL_IDENTIFIABILITY.md)
+before collecting data. The fixed archived-checkpoint study runner and its
+outcome are pending; no retraining is licensed by the diagnostic implementation.
+
 | Module | Responsibility |
 | --- | --- |
 | `predecoder.py` | Shared local MLP, DEM-bound buffers and latent training batches; local correction, residual syndrome and logical contribution composition. |
 | `spacetime.py` | Square-grid detector layout, masks and local 3D CNN; reuses the same sampling and hybrid decode implementation. |
 | `training.py` | CPU Adam training and exact optimizer, batch-generator and step recovery. |
 | `assessment.py` | Held-out evaluation, paired logical counts, confidence intervals and CPU whole-block timing. |
-| `diagnostics.py` | Label sparsity, positive/negative BCE accounting and probability diagnostics. |
+| `diagnostics.py` | Label sparsity, positive/negative BCE, complete H/L correction equivalence and streaming exact MLP feature/label groups. |
 | `calibration.py` | Calibration-only temperature fitting and separate validation threshold selection. |
 | `comparison.py` | Shared CPU global decoding boundary, explicit device transfers, exact correction-bit parity and whole-batch timing with caller-owned synchronization. |
 

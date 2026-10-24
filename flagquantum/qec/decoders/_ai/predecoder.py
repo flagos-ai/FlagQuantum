@@ -59,6 +59,11 @@ class Predecoder(nn.Module):
 
     def forward(self, detectors: torch.Tensor) -> torch.Tensor:
         """Return one logit per mechanism, from syndrome bits only."""
+        logits: torch.Tensor = self.network(self._features(detectors))
+        return logits.squeeze(-1)
+
+    def _features(self, detectors: torch.Tensor) -> torch.Tensor:
+        """The exact MLP inputs, shared with representation diagnostics."""
         if detectors.ndim != 2 or detectors.shape[1] != self.h.shape[0]:
             raise ValueError("detector batch has incompatible shape")
         if not bool(((detectors == 0) | (detectors == 1)).all()):
@@ -66,10 +71,7 @@ class Predecoder(nn.Module):
         active = detectors.float() @ self.h
         degree = self.h.sum(0).expand_as(active)
         prior = torch.logit(self.prior).expand_as(active)
-        logits: torch.Tensor = self.network(
-            torch.stack((active, degree, prior), dim=-1)
-        )
-        return logits.squeeze(-1)
+        return torch.stack((active, degree, prior), dim=-1)
 
     def sample(self, shots: int, generator: torch.Generator) -> TrainingBatch:
         """Draw a bounded training batch, preserving the latent mechanism vector."""
