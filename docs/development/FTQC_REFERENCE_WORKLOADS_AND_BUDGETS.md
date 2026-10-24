@@ -175,7 +175,7 @@ Implementation of new APIs, approximation, FTQC package boundaries or hardware s
 
 ## FTS-02E bounded scale campaign proposal
 
-Status: **Stage A matrix and resources explicitly approved by the user on 2026-10-25 (Asia/Shanghai), with supervisor review required first**. This does not approve Stage B or waive the supervisor admission gate. The user's baseline-only decision still disables 1.5x/2x goals. No large run is performed by this proposal, no tolerance/CI threshold is changed, and no benchmark observation constitutes a capacity or performance improvement.
+Status: **Stage A matrix and resources explicitly approved by the user on 2026-10-25 (Asia/Shanghai), with supervisor review required first**. This does not approve Stage B or waive the supervisor admission gate. The user's baseline-only decision still disables 1.5x/2x goals. The proposal itself launched no large run; the subsequently approved pilot is recorded below. No tolerance/CI threshold is changed, and no benchmark observation constitutes a capacity or performance improvement.
 
 ### Why this is the next decision
 
@@ -224,7 +224,7 @@ Distance 17, longer rounds, shots 10^6, batch-size comparisons, ten-repetition c
 - [ ] R05/R06: reuse delivered feedback and independent small references, then close uncovered conditional/channel cases under authoritative contracts.
 - [ ] R11/R12/R15: name domestic resource and experimental data owners; no resource or dataset is fabricated.
 - [x] Explicit user approval of **Stage A matrix, repetitions, wall/RSS/storage allocations and supervision prerequisite** received on 2026-10-25 (Asia/Shanghai). This does not approve performance targets, new QEC APIs or Stage B.
-- [ ] Complete supervisor review and mainline acceptance before extending the benchmark envelope or collecting Stage A cases.
+- [x] Supervisor #826 reviewed through the required checks and accepted on exact main before extending the benchmark envelope and collecting Stage A.
 
 Every implementation/evidence PR must continue to include a real public-user code example, prerequisites, command, expected output/invariants and exact reviewed-head execution evidence. The current H-T-H/feedback example above and the accepted 17-shot compiled-memory example remain runnable without activating this proposal.
 
@@ -234,7 +234,7 @@ Every implementation/evidence PR must continue to include a real public-user cod
 
 The monitor queries `ps` with a 50 ms query timeout, checks actual observation gaps against 100 ms, and stops on an unavailable/malformed query or excessive gap. An unavailable initial query prevents command launch (exit 125). A live RSS exceedance, lost accounting, excessive sampling gap, no live positive-RSS observation, or children outliving the launcher stops the owned group (exit 124). Otherwise the command's exit code is preserved. SIGTERM and Python interruption run owned-group cleanup; SIGKILL of the supervisor cannot run Python cleanup. Reuse parent/campaign supervision for that external failure boundary.
 
-Reports retain sampled aggregate peak RSS, positive-RSS observation count, maximum actual interval, the last 32 timestamp/RSS pairs (a bounded recent trend, not every RSS sample), process return code and measured termination duration. Normal RSS-supervised completion writes `watchdog.json`; failures retain existing diagnostics. OS high-water RSS from producers and the supervisor's sampled process-group peak are distinct. All timing/memory fields are observed, not success thresholds for the numerical algorithms. A sampling-gap refusal never counts as an accepted resource observation. This change does not expand the current 4096-shot observer envelope or run the Stage A matrix.
+Reports retain sampled aggregate peak RSS, positive-RSS observation count, maximum actual interval, the last 32 timestamp/RSS pairs (a bounded recent trend, not every RSS sample), process return code and measured termination duration. Normal RSS-supervised completion writes `watchdog.json`; failures retain existing diagnostics. OS high-water RSS from producers and the supervisor's sampled process-group peak are distinct. All timing/memory fields are observed, not success thresholds for the numerical algorithms. A sampling-gap refusal never counts as an accepted resource observation. The supervisor PR itself left the then-current 4096-shot envelope unchanged and ran no Stage A matrix; the separately approved pilot extension is recorded below.
 
 Runnable public-user example (core CPU installation; source checkout for the watchdog). Save as `/tmp/ftqc_rss_example.py`:
 
@@ -257,3 +257,39 @@ PYTHONPATH=. python tools/run_with_watchdog.py --phase ftqc-reference \
 ```
 
 Expected application output line: `HTH probabilities: 0.85355339 0.14644661`. The existing watchdog merges command stderr into its output, so dependency warnings may also appear and are retained. Exit zero requires the example to succeed and RSS monitoring to remain within the declared observation budget. Inspect `watchdog.json` for `reason="completed"`, `command_returncode=0`, a positive observation count, sampled peak no greater than the configured limit, actual maximum gap at most 0.1 seconds and `hard_allocation_limit=false`. Timings/RSS values depend on the host and are not pinned. This small example is not the approved larger campaign.
+
+### Supervisor admission and Stage A pilot observations
+
+The supervisor review prerequisite landed in #826. Exact main `f4474ba249f2850280c7d0d253cc6c7374d383ac` passed [complete CI, 54 jobs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40114361014), [source/single/required two-GPU](https://github.com/flagos-ai/FlagQuantum/actions/runs/40114363760) and [smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40114287320). Existing optional GPU pools were unselected. Real four-wheel and sdist-both installation reports were downloaded and checked against the exact artifact manifest; the API exposed stale pending step metadata despite completed job success, so the retained reports, not that inconsistent metadata, establish the installations. Local source: 2,503 passed, eight existing conditional skips (one inapplicable noise case, three SDK-profile mismatches in the both-SDK source environment, four optional upstream Ising tests without a pinned checkout), 251.43 seconds. This is not local upstream Ising qualification.
+
+A fresh Python 3.12.14 / Torch 2.14.1 core install preserves all 828 package Python files exactly across isolated sdist and wheel-from-sdist and passes dependencies, native/Bell sampling, public examples and CLI. Actual installed-code RSS tests ran outside the checkout with no PYTHONPATH/SDK overlay: H-T-H completion, RSS excess termination and SIGTERM cleanup pass. sdist SHA256 `161a76f1373b22dfcbe67bb6ab6cb4ff908defd76c1cca087b967ab2ca277069`; wheel SHA256 `b65f1dd1220b85d6ec592832af4b75dc0b76e09169d6bdc75e65a9f0222e6d48`.
+
+After admission, the maintained observer's shot envelope alone extends from 4096 to 65536, as explicitly approved for Stage A. Batch limits, defaults, numerical code, sampler/decoder APIs and CI performance thresholds are unchanged. The independent #825 matrix already covers distance/entry/batch combinations at 1025 shots; this pilot measures the different gate-bound construction workload and increased **total shots** at fixed d=3/batch=32. It does not duplicate that matrix or replace its producer. Independent #830 compiler preparation optimization is part of the new base, not an optimization credited to this pilot.
+
+[All twelve process records](evidence/ftqc_stage_a_20261025.json) bind clean obtainable producer `03d7c7b9b292e806856a301fb547d336cd452953`, based on main `dabc1050062fe97c466839434454b7bd379a9331`. Subsequent commits add only documentation/data. Apple M5 CPU, Python 3.12.14 / Torch 2.14.1 / Stim 1.16.0 / PyMatching 2.4.0, one Torch/OMP/MKL/OpenBLAS thread. Source measurements use the existing optional SDK overlay with the fresh core runtime; this is distinct from the separate real installed profiles. Every point completed once, with one retained host warm-up and three fresh measured processes. The campaign took 35.85182929200528 seconds; original retained files occupy 175635 bytes, below the approved 45-minute / 128-MiB budgets. There were no failed or retried cases. All RSS sampled peaks and actual observation gaps remained within approved limits. Hostname and absolute-path metadata alone are redacted in the public copy, all numerical values are unchanged, and original producer digests are retained.
+
+| Point | Producer phase/pipeline median (s) | External case median (s) | Maximum sampled group RSS (bytes) | Maximum observed gap (s) | Logical failures per seeded measured process |
+| --- | --- | --- | --- | --- | --- |
+| A1-d9 | 5.486174875 | 6.416197250 | 231915520 | 0.059805625 | not a sampling point |
+| A2-16384 | 0.305847500 | 1.060179500 | 269074432 | 0.034675166 | 60 |
+| A3-65536 | 0.584622625 | 1.345996916 | 269074432 | 0.033190542 | 205 |
+
+A1's producer timer measures DEM construction **with tracemalloc**, excluding code/layout/import work before that timer; its external case includes startup and completion validation/cleanup. A2/A3's pipeline includes memory/DEM/decoder preparation, sampler compilation, sampling, decoding, reductions and handle close through the existing runner. Initial imports/report I/O remain excluded from that inner pipeline; called-API lazy imports remain included. External case duration includes wrapper startup and output validation/cleanup. Supervisor RSS is a sampled owned-group aggregate, not the producer high-water RSS, traced Python allocation, visible tensor storage or an exclusive sampler peak. Keep all of these raw fields separate.
+
+The sampling inner observation has `warmup=false` because each invocation uses `warmup=0,iterations=1`; the outer host-warm-up role is a separate label. All three measured repetitions restart seed 53 and are not independent statistical trials. Counts 60/16384 and 205/65536 are observations on this recorded environment, not portable seeded golden outputs, combined confidence intervals or threshold estimates. Three timings do not establish a comparative performance benefit. The 832-byte visible batch-tensor maximum is not a total-memory bound. No 1.5x/2x, large logical capacity or mixed-engine claim is made.
+
+A reader can reproduce each declared process through the existing tools. The following is **one** A2 process, not the whole campaign; repeat only under the approved one-host-warm-up/three-measurement schedule and overall budget, retaining failures and stopping escalation. All command arguments are also in the artifact. Code for the public H-T-H example above remains the runnable short user workflow; it does not consume another Stage A case.
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. \
+python tools/run_with_watchdog.py --phase A2-16384 \
+  --stall-seconds 120 --timeout-seconds 120 --rss-limit-bytes 2147483648 \
+  --diagnostics /tmp/ftqc-a2-supervisor -- \
+  python -m flagquantum.benchmarking run qec_memory_sampling \
+  --shots 16384 --batch-size 32 --warmup 0 --iterations 1 \
+  --json-output /tmp/ftqc-a2-producer.json
+```
+
+Expected invariants: one producer observation with 16384 completed shots, 512 batches, one observable; supervisor reason completed, positive live samples and no resource-budget refusal. A3 changes only total shots to 65536 (2048 batches). A1 instead invokes the existing construction script with `--distance 9 --rounds 3 --output ...`, under the 300-second watchdog budget. RSS and timing values are host observations, not pinned outputs.
+
+Stage A is a completed bounded baseline campaign, not full FTS-02 closure. Its evidence can now inform a separately reviewed next resource or algorithm decision. Stage B and performance targets remain disabled; no automatic expansion to d=17, longer rounds or a million shots is authorized.
