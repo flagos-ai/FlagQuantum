@@ -207,6 +207,16 @@ def run(
             noise_model=noise_model,
         )
 
+    dynamic_circuit_type = import_module(
+        ".runtime.dynamic.circuit", __package__
+    ).DynamicCircuit
+    if isinstance(program_or_plan, dynamic_circuit_type):
+        preflight = import_module(".runtime.dynamic.remote_preflight", __package__)
+        preflight.require_dynamic_remote_preflight(
+            program_or_plan,
+            target=target,
+        )
+
     provider_name, separator, _ = (target or "").partition(":")
     if target is not None and separator == ":" and provider_name.lower() == "jiuding":
         from .remote.compute.execution import execute_jiuding

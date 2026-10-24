@@ -17,6 +17,13 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Guard stable remote `DynamicCircuit` calls at the `fq.run(...)` facade before
+  compiler or provider dispatch. Remote targets now fail closed with the exact
+  target and ordered capability blockers until a detailed device-scoped
+  snapshot satisfies the existing provider-neutral matcher. This does not
+  activate any remote dynamic provider or perform discovery, credential,
+  network, package, or task work; local dynamic execution and static remote
+  dispatch remain unchanged.
 - Target QEC retirement for **0.4.0**: remove the 23 approved historical flat
   module imports and their pickle lookup paths. Keep all 108 ordered
   `flagquantum.qec` exports, signatures, numerical results and registration
