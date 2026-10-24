@@ -121,3 +121,80 @@ exported_stim 17 0
 ```
 
 These are scoped small-sample observations, not a fixed failure-count contract.
+
+## Collected bounded observations
+
+The clean producer was `d6deab509391bfdbd97ade7d92d05a18c41bdda6`.
+[All cell outcomes and raw successful reports](evidence/qec_compatibility_matrix_cpu_20261024.json)
+retain all four observations per completed cell, including warmup, source and
+versions, exact workload, thread settings and resource meaning. Collection
+commands retain their arguments with only the destination path normalized;
+original commands/logs remain in the local work evidence. No timing or numerical
+observation is replaced. The evidence commit does not change the producer code.
+
+The declared 48 cells were all attempted in 552.34 seconds, within the 600-second
+study limit. **36 completed and 12 timed out at the original 30-second process
+limit. Complete-matrix acceptance is not met.** All d=13 native cells and all
+d=17 cells timed out; their full-pipeline timing, memory peak and shot outcomes
+are unavailable. A timeout bounds the entire process (imports plus four runs),
+not an individual compilation. Child process groups were terminated/reaped.
+The controller retained every outcome and returned failure for the incomplete
+study; no retry, budget increase, seed change or extra sample was used.
+
+Completed cells used macOS arm64, Python3.12.14, Torch2.13.0, Stim1.16.0 and
+PyMatching2.4.0, one Torch/OMP/MKL/OpenBLAS thread. Table ranges span X/Z and
+batch32/128 cell medians; they are not a confidence interval or phase minimum.
+Only the three measured repeats per completed cell contribute to its median.
+
+| Distance | Native median pipeline range (s) | Exported-Stim median pipeline range (s) | Native / exported completion |
+| --- | --- | --- | --- |
+| 3 | 0.110341–0.124346 | 0.059877–0.065700 | 4/4 / 4/4 |
+| 5 | 0.396576–0.449270 | 0.204851–0.235704 | 4/4 / 4/4 |
+| 7 | 1.011134–1.201008 | 0.517772–0.589179 | 4/4 / 4/4 |
+| 9 | 1.914069–2.336420 | 1.014342–1.216978 | 4/4 / 4/4 |
+| 13 | unavailable (timeouts) | 3.545308–4.692846 | 0/4 / 4/4 |
+| 17 | unavailable (timeouts) | unavailable (timeouts) | 0/4 / 0/4 |
+
+### Bottleneck disposition and next slice
+
+Across the 36 completed cells, the per-cell median share of pipeline wall spent
+in construction/export/strict-DEM/decoder-setup/sampler-compile was 93.89%–99.44%.
+The corresponding sampling-plus-decoding share was 0.56%–5.83%. These ratios
+are computed within each measured row before taking a median; no phase minima
+are summed into an artificial pipeline. Count reduction also includes visible
+tensor-byte bookkeeping, so it is not a pure product-kernel cost.
+
+The next optimization investigation should profile native export/preparation
+and native sampler compilation on a completed distance-nine case, establish
+which existing internal work is repeated, then fix one demonstrated cost while
+preserving approved APIs, parity/reference semantics and actual noise law. This
+phase-level observation alone does not identify a particular function or prove
+that repeated work can safely be cached. A cProfile/implementation investigation
+is still required before selecting a concrete optimization.
+
+Rerun the identical matrix after a justified optimization, retaining this
+original incomplete study and its timeout outcomes. A successful future large
+cell cannot be presented as an observed speedup against an unavailable baseline
+timing. No GPU-payoff, d=17 throughput, memory scaling, threshold or speedup
+criterion is established here. Keep the existing historical d=3 baseline
+separate: the strict source-derived DEM and extra export phase make this a
+different complete workflow. Do not relabel those older timings.
+
+## Delivery sequence
+
+1. Deliver this measurement/budget-boundary record with actual SDK, CI selection,
+   type/format/architecture/API and default-layer evidence. The 12 timeouts
+   remain incomplete measurements, not passing cells.
+2. Profile one completed d=9 case, change one demonstrated preparation cost,
+   and compare the same workload against the preserved producer. Keep public
+   contracts/noise/parity semantics unchanged. Rerun the original matrix.
+3. Decide on a single internal replacement or single-card experiment only
+   after the new profile identifies a remaining bottleneck and an accessible
+   device/budget is recorded. Multi-card independent-shot throughput requires
+   its own actual evidence and is not single-state capacity scaling.
+
+The integration/benchmark-contract tests are deliberately both marked so the
+existing coverage lane that installs Stim/PyMatching actually selects them. No
+workflow/dependency policy or scientific assertion is weakened. Initial fixture
+context handling and the missing integration selection were caught and fixed
+before formal collection; original failure logs remain in work evidence.
