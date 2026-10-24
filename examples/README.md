@@ -726,3 +726,21 @@ omega control is bound per interval by the training example. Display samples
 are not the numerical integration grid. This example reuses the moving-pair
 source from train_rydberg_controls and adds no public drawing API or renderer
 registry. The exported SVG/PNG is suitable for inspection without a GUI.
+
+### Ising fusion observation
+
+Run `python -m examples.ising_fusion_measurement` after
+`python -m examples.ising_braid_execution` to inspect ideal pair-charge QND
+measurement. Both initial fusion channels use the same native braid, sealed
+plan replay and explicit terminal instrument. The example shows input coherence
+0.5 becoming zero when the result is unread, while each normalized conditional
+state preserves its measured charge on a second observation. These conditional
+states are calculated explicitly using existing Kraus maps; the sampler itself
+returns outcome indices, not post-measurement states or feedback events.
+
+At 20,000 shots, both probabilities are 0.5 and their binomial standard error is
+about 0.003536. The numerical probability error is checked separately against
+1e-12; sampled frequencies use a six-standard-error bound plus two counts. A
+private seed reproduces outcomes without changing caller RNG state. This is the
+fixed four-sigma, total-vacuum CPU model, not hardware, other anyon sectors, or a
+universal gate set.
