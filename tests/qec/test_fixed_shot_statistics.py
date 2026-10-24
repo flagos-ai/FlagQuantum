@@ -64,9 +64,13 @@ def test_wilson_interval_matches_independent_score_inversion(
 
 
 def test_wilson_matches_optional_external_reference() -> None:
-    stats = pytest.importorskip("scipy.stats")
+    # The declared PyMatching extra supplies SciPy. It is not a separate
+    # optional integration or a new dependency of the statistics example.
+    pytest.importorskip("pymatching")
+    from scipy.stats import binomtest
+
     for failures, shots in _CASES:
-        expected = stats.binomtest(failures, shots).proportion_ci(
+        expected = binomtest(failures, shots).proportion_ci(
             confidence_level=0.95, method="wilson"
         )
         assert baseline._wilson_interval(failures, shots) == pytest.approx(
@@ -81,6 +85,12 @@ def test_no_failures_is_not_a_zero_probability_claim() -> None:
     assert 0 < lower < 1 and upper == 1
     with pytest.raises(ValueError, match="positive shots"):
         baseline._wilson_interval(0, 0)
+
+
+def test_boundary_intervals_include_exact_zero_and_one_despite_roundoff() -> None:
+    for shots in (4, 9, 15, 17, 21, 128, 1000, 1_000_000):
+        assert baseline._wilson_interval(0, shots)[0] == 0.0
+        assert baseline._wilson_interval(shots, shots)[1] == 1.0
 
 
 @pytest.mark.parametrize(("failures", "shots"), [(-1, 10), (11, 10), (0, -1)])

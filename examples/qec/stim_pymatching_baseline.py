@@ -98,7 +98,11 @@ def _wilson_interval(failures: int, shots: int) -> tuple[float, float]:
         )
         / denominator
     )
-    return max(0.0, center - half_width), min(1.0, center + half_width)
+    # The mathematical endpoints are exact at all-success/all-failure counts;
+    # subtracting rounded center/width values can otherwise exclude 0 or 1.
+    lower = 0.0 if failures == 0 else max(0.0, center - half_width)
+    upper = 1.0 if failures == shots else min(1.0, center + half_width)
+    return lower, upper
 
 
 def _logical_failure_counts(
