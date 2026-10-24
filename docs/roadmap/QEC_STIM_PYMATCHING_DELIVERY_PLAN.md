@@ -8,9 +8,11 @@ This document orders work, not approvals of future public APIs or merges.
 
 The structural/retirement baseline is main commit
 `d286e4172cb9af4d1553a79199ee71f919af8c7a` (PR #766).
-[PR #772](https://github.com/flagos-ai/FlagQuantum/pull/772) introduces the approved
-Tensor-only PyMatching batch method. It is a draft, not an accepted prerequisite.
-Implementation PRs must start from the actual merged baseline, not assume it.
+[PR #772](https://github.com/flagos-ai/FlagQuantum/pull/772) merged on 2026-10-24
+as `0cb4086270ddc47dc431ee9d5e76984198a2d997`, adding the approved Tensor-only
+PyMatching batch method. Its final head was `c1f5a65`; the main CI and Local GPU
+Gate workflows both succeeded. Future implementation PRs must start from main
+containing this merge and inspect subsequent changes before implementation.
 
 The workflow #772 supports is:
 
@@ -24,22 +26,21 @@ logical flips in batches: 8 detector columns, 1 observable, and an observed
 logical failure count. The random count is version/architecture scoped.
 Stim compilation is still repeated per chunk. No performance claim follows.
 
-Before #772 merges, this command is a branch workflow, not a main capability.
-The corresponding main workflow is
-`PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py` with the Stim
-extra; it exercises the existing measurement layouts, sampling and feedback.
+The existing `PYTHONPATH=. python examples/qec/memory_layout_and_sampling.py`
+workflow remains available with the Stim extra; it exercises measurement
+layouts, sampling and feedback.
 
-## Immediate action: finish #772
+## Immediate action: review work A
 
-The quality job at head `8d0a0da` failed Black formatting in
-`tests/api_contract/test_public_docstring_examples.py` and
-`tests/qec/test_restructure_compatibility.py`. This is distinct from the local
-default-tier QFT/native-region and Gloo failures reproduced on frozen main.
-Apply Black, preserve assertions/fixtures, and rerun the actual quality tools.
-Do not classify unrelated remote failures without inspecting their logs.
+The #772 CI repair corrected Black formatting in two tests and registered the
+new baseline example in `examples/README.md`. All 54 main CI jobs passed, as
+did the single-GPU and required two-GPU jobs. No test assertions or frozen
+fixtures were weakened to obtain this result.
 
-Update draft validation and publication status; merge only after required gates
-and maintainer review. No automatic merge is authorized by this plan.
+Review the [reusable sampling proposal](../development/QEC_REUSABLE_SAMPLING_PROPOSAL.md)
+next. Approve the exact additive public surface and lifecycle semantics before
+work B adds implementation. Work C's prepared acceptance cases can inform the
+next statistics review without assuming A's API is approved.
 
 ## Ordered PRs
 

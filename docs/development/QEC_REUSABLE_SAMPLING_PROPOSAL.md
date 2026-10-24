@@ -3,6 +3,10 @@
 Status: proposed for API review, not approved or implemented. Work A of the
 [delivery plan](../roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md).
 
+Prerequisite: PR #772 merged at `0cb4086270ddc47dc431ee9d5e76984198a2d997`.
+This is the next review decision; the earlier approval of proposal 087 covers
+batch decoding only and does not approve this new sampling interface.
+
 ## Existing implementation and reuse decision
 
 `qec/execution/sampling.py::_sample_record` lowers the memory, derives noise
@@ -36,14 +40,18 @@ compile_memory_sampler(
 MemorySampler.sample(*, shots: int) -> DemSample
 MemorySampler.close() -> None
 MemorySampler.__enter__() -> MemorySampler
-MemorySampler.__exit__(exc_type, exc_value, traceback) -> None
+MemorySampler.__exit__(
+    exc_type: type[BaseException] | None,
+    exc_value: BaseException | None,
+    traceback: TracebackType | None,
+) -> None
 ```
 
 `MemorySampler` has a private constructor: users obtain it from the factory.
-The final typed context-manager signature must be specified in the approved
-contract, not copied literally from this abbreviated notation. Proposed root
-exports are exactly the factory and returned handle class; no SDK type enters
-those signatures. The existing one-shot APIs and defaults remain unchanged.
+`TracebackType` is the standard-library type from `types`. Proposed exports at
+`flagquantum.qec` are exactly `compile_memory_sampler` and `MemorySampler`;
+neither is added to the package-level `flagquantum` namespace. No SDK type
+enters those signatures. The existing one-shot APIs and defaults remain unchanged.
 
 Candidate workflow after implementation:
 
@@ -52,6 +60,11 @@ with compile_memory_sampler(memory, noise=noise, seed=53) as sampler:
     first = sampler.sample(shots=1024)
     second = sampler.sample(shots=1024)
 ```
+
+The intended consumer imports the factory from `flagquantum.qec`, builds
+`memory` and `noise` through the existing QEC APIs, and feeds each returned
+`DemSample.detectors` batch to #772's `PyMatchingDecoder.decode_batch`.
+The factory signature requires explicit noise, as existing sampling does.
 
 The handle returns detection/observable batches only in this slice. Raw
 measurement sampling remains on the existing interface; do not add an output
