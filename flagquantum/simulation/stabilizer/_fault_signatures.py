@@ -87,7 +87,7 @@ def _clifford_fault_signatures(
     """Return a parity bitmask per post-instruction Pauli fault.
 
     A parity names recorded measurements by occurrence, followed by terminal Z
-    readout wires. A fault names an instruction position, a wire and X/Y/Z.
+    readout qubits. A fault names an instruction position, a qubit and X/Y/Z.
     Initial states and resets are |0>. Baseline parity signs are retained, so a
     deterministic odd parity still reads odd when a fault commutes with it.
     No QEC layouts, optional engine, random sampling or amplitude store is used.

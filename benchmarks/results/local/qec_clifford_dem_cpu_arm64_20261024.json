@@ -97,5 +97,13 @@
   "communication_bytes": 0,
   "distribution_semantics": "single_process",
   "scalability_claim_allowed": false,
-  "blockers": []
+  "blockers": [
+    "local_cpu_construction_not_release_scalability_evidence"
+  ],
+  "release_gate_allowed": false,
+  "non_release_evidence": true,
+  "benchmark_evidence_class": "local_non_release",
+  "scalability_blockers": [
+    "local_cpu_construction_not_release_scalability_evidence"
+  ]
 }

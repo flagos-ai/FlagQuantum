@@ -75,7 +75,13 @@ def main() -> None:
         "communication_bytes": 0,
         "distribution_semantics": "single_process",
         "scalability_claim_allowed": False,
-        "blockers": [],
+        "release_gate_allowed": False,
+        "non_release_evidence": True,
+        "benchmark_evidence_class": "local_non_release",
+        "scalability_blockers": [
+            "local_cpu_construction_not_release_scalability_evidence"
+        ],
+        "blockers": ["local_cpu_construction_not_release_scalability_evidence"],
         "distance": args.distance,
         "rounds": args.rounds,
         "physical_qubits": program.n_wires,

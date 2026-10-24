@@ -135,7 +135,7 @@ parity counts. This is a polynomial construction path, not a constant-memory or
 hardware scalability claim. Artifact measurements and final CI evidence are
 recorded in the PR handoff; a pending run is not a passing result.
 
-Measured local CPU results from the [resource artifact](../../benchmarks/results/comparison/qec_clifford_dem_cpu_arm64_20261024.json), produced by published implementation commit
+Measured local CPU results from the [resource artifact](../../benchmarks/results/local/qec_clifford_dem_cpu_arm64_20261024.json), produced by published implementation commit
 `42ff10d4b0f081dd1465dd5338e6b26f89af7368`:
 
 | Distance | Physical qubits | Reverse instruction visits | Fault responses | Traced Python peak (MiB) | Instrumented seconds |
