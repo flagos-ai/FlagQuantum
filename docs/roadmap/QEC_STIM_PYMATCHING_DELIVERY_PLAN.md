@@ -83,6 +83,31 @@ Exit gates:
    noise and DEM remain consistent.
 4. I: stop broadening phase one and start data/AI or bottleneck-driven kernels.
 
+## Prepared acceptance cases for work C
+
+These scenarios are ready for the statistics change without depending on A's
+unapproved sampler API. They specify behavior, not a new result schema:
+
+- Fixed inputs: 100 completed shots with zero failures must report a positive
+  upper confidence bound; 100 failures must report a lower bound below one.
+- For a vector of observables, any differing bit counts as one failed shot;
+  two differing bits in one shot do not count as two failed shots.
+- Requested 35 shots with chunks of 16 must count 16 + 16 + 3. Invalid or failed
+  batches must not silently decrease the denominator.
+- Use fixed-shot Wilson 95% intervals as the initial candidate. Freeze the
+  formula and validate against an independent analytical reference; do not use
+  the same helper to compute expected values. Zero completed shots have no
+  estimated rate or interval and must be represented explicitly, not as zero.
+- Keep logical failure distinct from decoder execution failure. Under #772's
+  atomic semantics a failed batch terminates evaluation with its failure
+  context; row-level retry/discard is a separate policy change.
+- Record seed schedule, batching, code, rounds, noise and actual library
+  versions. Do not derive a per-round failure rate by dividing by rounds.
+
+Any new public evaluation entry or result requires a concrete consumer/API
+review. The first implementation should reuse the existing example and
+statistics utilities where their semantics match.
+
 ## Later internal implementations
 
 - GPU DEM sampling consumes the owned mechanism semantics and bit batches.
