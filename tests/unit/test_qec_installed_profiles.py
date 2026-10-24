@@ -63,6 +63,23 @@ def test_failed_install_is_not_reclassified_as_a_success(tmp_path: Path) -> None
     assert "preserved failure" in log.read_text()
 
 
+def test_dependency_warning_does_not_corrupt_the_json_report(tmp_path: Path) -> None:
+    report = tmp_path / "smoke.json"
+    _run(
+        [
+            sys.executable,
+            "-c",
+            "import json,sys; print('dependency warning', file=sys.stderr); "
+            "print(json.dumps({'profile': 'core'}))",
+        ],
+        cwd=tmp_path,
+        log=report,
+        seconds=10,
+    )
+    assert json.loads(report.read_text()) == {"profile": "core"}
+    assert "dependency warning" in report.with_suffix(".stderr.log").read_text()
+
+
 def test_hanging_child_is_bounded_and_its_log_is_retained(tmp_path: Path) -> None:
     log = tmp_path / "timed-out.log"
     with pytest.raises(subprocess.TimeoutExpired):

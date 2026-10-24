@@ -29,13 +29,16 @@ def _run(command: list[str], *, cwd: Path, log: Path, seconds: int = 240) -> Non
         MAX_JOBS="2",
         PIP_DISABLE_PIP_VERSION_CHECK="1",
     )
-    with log.open("w", encoding="utf-8") as output:
+    with (
+        log.open("w", encoding="utf-8") as output,
+        log.with_suffix(".stderr.log").open("w", encoding="utf-8") as errors,
+    ):
         process = subprocess.Popen(
             command,
             cwd=cwd,
             env=env,
             stdout=output,
-            stderr=subprocess.STDOUT,
+            stderr=errors,
             start_new_session=True,
         )
         try:
@@ -116,6 +119,7 @@ def _profile(artifact: Path, profile: str, reports: Path, label: str) -> None:
             log=reports / f"{label}-smoke.json",
             seconds=60,
         )
+        json.loads((reports / f"{label}-smoke.json").read_text(encoding="utf-8"))
 
 
 def main() -> int:
