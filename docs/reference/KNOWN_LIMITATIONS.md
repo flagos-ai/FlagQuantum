@@ -194,5 +194,11 @@ testing samples the original circuit. Upstream terminal complement masking is
 preserved and has a separate mask-only control. Official weights require access;
 untrained smoke and loader fixtures are integration evidence only. Common-layout
 CNN, equal-budget training and optimized device comparisons are not implemented.
+An explicit experimental [A800 lane](../development/QEC_AI_ISING_A800.md) reuses
+the existing MLP/official Fast paths at d=9/R=9, with CPU training, FP32 CUDA
+inference, device-bit parity checks and synchronized transfer-inclusive timing.
+Global matching remains on CPU. It requires one exposed A800 and the pinned
+authorized Fast checkpoint; there is no CPU fallback. This is an offline
+checkpoint comparison, not a production, TensorRT or real-time feedback claim.
 See the [protocol](../development/QEC_AI_ISING_COMPARISON.md) and
 [integration outcome](../development/QEC_AI_ISING_COMPARISON_RESULTS.md).

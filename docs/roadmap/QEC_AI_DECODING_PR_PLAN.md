@@ -22,15 +22,33 @@ Its fixed-budget study improved probability scores descriptively, but every
 selected threshold remained 1.0 and every paired LER gate remained inconclusive.
 See the retained [calibration outcome](../development/QEC_AI_CALIBRATION_RESULTS.md).
 
-The next priority is to remove functional blockers for a reproducible comparison
-against NVIDIA Ising-Decoding: preserve complete circuit-level hyperedges, share
-batched global decoding and timing boundaries, and verify upstream input/frame
-mapping. The [prospective CPU protocol](../development/QEC_AI_ISING_COMPARISON.md)
-declares the initial exploratory cell and the explicit disjoint-noise approximation.
-Official weights require external access; missing access must remain a blocker,
-not an untrained-model score presented as a pretrained baseline.
+PR #812 is merged with complete CI: full circuit-level hyperedges, shared batched
+global decoding and timing, and upstream input/frame checks are implemented.
+The [CPU protocol](../development/QEC_AI_ISING_COMPARISON.md) and
+[outcome](../development/QEC_AI_ISING_COMPARISON_RESULTS.md) retain the initial
+d=3 exploratory comparison and its disjoint-noise approximation. Official Fast
+weights are now authorized and hash-verified; missing access still fails closed.
+Native thresholds remained 1.0 and all paired quality summaries were inconclusive.
 
-After those prerequisites, diagnose label equivalence and training sufficiency
+The user-authorized
+[A800 checkpoint comparison](../development/QEC_AI_ISING_A800.md): d=9/R=9,
+explicit FP32 GPU inference, CPU/GPU correction-bit parity before test sampling,
+and synchronized end-to-end timing including transfers and CPU matching.
+Native training stays on the existing CPU trainer; the official checkpoint is
+not an equal-budget architecture control. The new lane measures the missing
+external baseline; it does not advance the gated optimization, export or domestic
+accelerator stages below.
+
+Both full A800 host runs are now retained in the
+[outcome report](../development/QEC_AI_ISING_A800_RESULTS.md). On 65536 shared
+physical shots, global-only and native paths each failed 83 times; Fast failed
+72 times (61 wins, 50 losses). Every paired gate is inconclusive and every
+native threshold is 1.0. Global-only remains fastest in this unoptimized software
+configuration. CUDA allocator peaks are valid; raw host RSS values are explicitly
+quarantined because Linux workers inherited the parent's high-water mark. A
+post-run reporting fix does not retroactively recover that measurement.
+
+Next diagnose label equivalence and training sufficiency
 before selecting a single scientific intervention. Ising is a mandatory external
 baseline alongside global-only decoding and native BCE controls. Compare common
 circuits/shots, global-decoder settings, hardware and precision; report paired LER,
@@ -50,9 +68,9 @@ Validate the official model's stated distance range (Fast: d >= 9) before
 making a representative comparison; the current d=3 cell remains exploratory.
 An isolated, auto-removed container on A800-172 successfully ran a four-element
 CUDA tensor check with PyTorch 2.13.0+cu130. The existing shared `fq-it-gpu`
-container has no usable CUDA mapping and was not changed. A800-171 has NVIDIA
-container runtime configured but does not yet have the same FlagQuantum image;
-prepare an isolated matching environment before cross-host replication.
+container has no usable CUDA mapping and was not changed. Both A800 hosts subsequently completed the frozen d9 comparison in the same
+image and dependency environment; see the linked outcome for UUIDs, hashes,
+quality limitations and measurement boundaries.
 
 ## Delivery sequence
 

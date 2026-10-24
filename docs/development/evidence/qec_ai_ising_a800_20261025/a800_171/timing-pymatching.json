@@ -1,0 +1,39 @@
+{
+  "path": "pymatching",
+  "timings": [
+    {
+      "batch_size": 1,
+      "warmup": 10,
+      "repetitions": 200,
+      "p50_block_us": 104.203,
+      "p95_block_us": 109.433,
+      "p99_block_us": 114.565,
+      "shots_per_second": 9541.631929162924
+    },
+    {
+      "batch_size": 32,
+      "warmup": 10,
+      "repetitions": 200,
+      "p50_block_us": 580.667,
+      "p95_block_us": 597.813,
+      "p99_block_us": 606.286,
+      "shots_per_second": 55057.054550297384
+    },
+    {
+      "batch_size": 128,
+      "warmup": 10,
+      "repetitions": 200,
+      "p50_block_us": 1922.331,
+      "p95_block_us": 1942.0,
+      "p99_block_us": 1958.486,
+      "shots_per_second": 66235.08129179003
+    }
+  ],
+  "isolated_process_peak_rss_bytes": 5155254272,
+  "memory_scope": "whole_worker_including_imports_active_model_and_graph_not_training",
+  "manifest_sha256": "995fb2bf698ec059dcf5a4b396a38d21c9da954d2b798a5939c0e64838c60331",
+  "smoke": false,
+  "cuda_peak_allocated_bytes": 0,
+  "cuda_peak_reserved_bytes": 0,
+  "cuda_memory_scope": "active_model_and_dem_plus_inference_buffers_not_training_or_total_device_usage"
+}
