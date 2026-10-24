@@ -20,6 +20,12 @@ not create evidence for hardware that was not observed.
 - `*_local.py`: measured single-process workloads.
 - `*_scaling.py`: validation and aggregation entry points.
 - `*_scaling_report.py`: versioned report construction.
+- `qec_memory_sampling.py`: observe the existing compiled Surface memory pipeline
+  through public QEC calls, with separate phase times and fixed-shot chunks.
+  Install the Stim/PyMatching extras. Run one process per shot-count case; process
+  RSS includes imports, warmups and repetitions and is not exclusive sampler
+  memory. Visible batch tensor bytes exclude engine/SDK scratch and temporaries.
+  See [the baseline protocol](../../docs/development/FTQC_SAMPLING_PHASE_BASELINE.md).
 
 Research plots and one-off comparisons belong under `benchmarks/`, not in this
 importable package. A runner may contain an explicit reference implementation
