@@ -599,3 +599,22 @@ proposal 089 baseline factories now use real source, planning, execution and JSO
 replay; their independent consumer assertions remain unchanged. `tests/unit/test_ising_unread_actions.py`
 checks independent full-density and weighted conditional continuations, pure/
 mixed echoes, trace, coherence, positivity and unchanged RNG at the same budget.
+
+The approved sampled extension uses two private numerical seams in the same
+module: `_ising_sampled_prefix` evolves to the single declared observation,
+and `_continue_ising_sampled` applies the Runtime-selected projector, divides
+by its original positive trace, and evolves the ordered suffix. Both reuse the
+same exchange actions and Kraus machinery as the unread path. Simulation does
+not draw an outcome or create measurement results. The full-density entry
+rejects sampled sources before exchange arithmetic; native `fq.plan`/`fq.run`
+admission remains closed until the separate Runtime delivery.
+
+Validate this numerical boundary with:
+
+```bash
+python -m pytest tests/unit/test_ising_sampled_actions.py tests/unit/test_ising_unread_actions.py -q
+```
+
+The conditional tests compare independent complex F/R densities and weighted
+unread continuation at atol=1e-12, rtol=0, including zero and tiny positive
+branches, original-trace normalization, unchanged inputs and unchanged RNG.
