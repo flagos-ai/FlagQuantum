@@ -474,9 +474,21 @@ def _validate_authorized_execution_plan(
         "plan_version": "1.1",
         "analysis_annotation": "CircuitAnalysis | None",
         "additional_payload_field": "outputs",
+        "unread_observation": {
+            "proposal": "docs/development/API_CHANGE_PROPOSAL_089_ISING_UNREAD_OBSERVATION.md",
+            "record": "docs/api-changes/FQ-ISING-UNREAD-OBSERVATION-20261024.md",
+            "implementation_authorized": True,
+            "delivery_stage": "replaceable_contract_baseline",
+            "operation": "ising.dephase_pair",
+            "new_operation_source_and_plan_version": "1.2",
+            "braid_only_source_and_plan_version": "1.1",
+            "production_implemented": False,
+            "consumer_tests": "tests/unit/test_ising_unread_contract.py",
+            "compatibility_tests": "tests/unit/test_ising_unread_compatibility.py",
+        },
     }
     if native != expected_native:
-        errors.append("native Ising admission differs from approved proposal 085")
+        errors.append("native Ising admission differs from approved proposals 085/089")
     else:
         from flagquantum.core.ising import IsingBraidProgram
         from flagquantum.experimental import simulation
