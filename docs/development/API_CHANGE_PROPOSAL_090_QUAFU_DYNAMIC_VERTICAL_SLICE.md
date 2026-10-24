@@ -174,6 +174,14 @@ claiming that the routed artifact can be submitted unchanged. Package sealing
 remains blocked until an authoritative Quafu request contract resolves that
 mapping boundary.
 
+Batch C adds the provider-neutral offline sealing gate. It binds the source
+requirement set, exact snapshot and calibration, routed artifact, routing
+evidence, provider-legality decision, and deployment artifact into one private
+identity chain. The current Quafu legality preview cannot reach that gate: its
+unbound physical mapping is refused before a `DeploymentPackage` is created.
+This records the final sealing behavior without weakening the Batch B blocker
+or making a live-support claim.
+
 Stages 1 through 5 must use fixtures or mocks. This proposal authorizes no
 provider SDK import during preflight, credential access, network request, live
 discovery, task submission, charging, or hardware-support claim.
