@@ -150,6 +150,21 @@ is required by this plan.
   gaps have a reviewed disposition; I installation gates remain separate.
 - I closes the whole compatibility task, not merely an individual PR.
 
+The noise inventory merged in #815 as
+`e873723bd359832de3e718235373affd19544bab`, after final head `e1088bd3`
+passed all 54 CI jobs (`40090617506`) and Local GPU Gate (`40090617508`).
+Its actual merge Main smoke `40092131772` succeeded. Installation acceptance
+now runs in the existing package job: four fresh wheel environments (core,
+Stim, PyMatching, both) and a fresh sdist/both environment execute installed
+QEC workflows outside the checkout. Each environment is released before the
+next; reports retain the existing artifact manifest, package paths, versions,
+actual optional-dependency availability and all installer/smoke logs. Native
+memory, exported memory and original external text use the existing public
+sampler/DEM/decoder APIs, including 16 + 16 + 3 tail batches. The step is
+required by the existing package/CI-complete gate; failed installation is not
+an optional skip. The source smoke tests alone do not certify installed use.
+Retain the actual CI reports before marking this gate delivered.
+
 The continuing task is complete only when all of the following are recorded:
 
 1. Supported native-memory and external-Stim experiment entrances have runnable

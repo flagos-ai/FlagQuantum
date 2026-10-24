@@ -1558,6 +1558,20 @@ jobs:
           popd
       - name: Write checksummed artifact manifest
         run: python tools/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+      - name: Verify real QEC optional installations outside the checkout
+        id: qec-installed
+        timeout-minutes: 15
+        run: >-
+          python tools/check_qec_installed_profiles.py
+          --dist-dir dist
+          --report-dir "${{ runner.temp }}/qec-installed-reports"
+      - name: Retain installed QEC evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: qec-installed-${{ github.sha }}
+          path: ${{ runner.temp }}/qec-installed-reports/
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: flagquantum-distributions-${{ github.sha }}

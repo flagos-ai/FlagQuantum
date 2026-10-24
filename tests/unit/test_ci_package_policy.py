@@ -110,6 +110,26 @@ def test_clean_install_checks_do_not_import_the_checkout() -> None:
     assert workflow.rfind("pushd /tmp", 0, sdist_check) > wheel_check
 
 
+def test_qec_real_installation_acceptance_is_a_required_package_step() -> None:
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    steps = workflow["jobs"]["package"]["steps"]
+    gate = next(step for step in steps if step.get("id") == "qec-installed")
+    assert "if" not in gate and not gate.get("continue-on-error", False)
+    assert "tools/check_qec_installed_profiles.py" in gate["run"]
+    assert "--dist-dir dist" in gate["run"]
+    manifest = next(
+        step
+        for step in steps
+        if step.get("name") == "Write checksummed artifact manifest"
+    )
+    assert steps.index(manifest) < steps.index(gate)
+    assert "package" in workflow["jobs"]["ci-complete"]["needs"]
+    retained = next(
+        step for step in steps if step.get("name") == "Retain installed QEC evidence"
+    )
+    assert "always()" in retained["if"]
+
+
 def test_distribution_quarantine_rejects_repo_only_members():
     assert _forbidden("flagquantum/__pycache__/module.pyc")
     assert _forbidden("source/tests/test_api.py")
