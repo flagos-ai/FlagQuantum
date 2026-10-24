@@ -9,7 +9,7 @@ import torch
 
 from benchmarks import qec_compatibility_matrix as matrix
 
-pytestmark = pytest.mark.benchmark_contract
+pytestmark = [pytest.mark.benchmark_contract, pytest.mark.integration]
 
 
 @pytest.mark.parametrize("basis", ["x", "z"])
