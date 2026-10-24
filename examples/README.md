@@ -747,3 +747,26 @@ about 0.003536. The numerical probability error is checked separately against
 private seed reproduces outcomes without changing caller RNG state. This is the
 fixed four-sigma, total-vacuum CPU model, not hardware, other anyon sectors, or a
 universal gate set.
+
+### Spin-mode thermal truncation
+
+Run `python -m examples.spin_mode_convergence` for resonant, lossless spin-mode
+exchange, with spin first and a thermal oscillator second. Unlike the vacuum
+one-excitation training example, this input has a nonzero tail at every Fock
+cutoff. The example compares mode dimensions 3, 5 and 7 to independent closed
+Rabi blocks and a 64-term geometric thermal sum (omitted mass below 0.2**64).
+It checks full complex density matrices, total excitation conservation, coupling
+gradients, named outputs, optimizer updates and detached numeric JSON replay.
+
+Finite initial thermal weights are explicitly normalized after truncation. The
+highest excited spin/mode state is artificially dark because the next Fock level
+is absent. Both conditioning away the tail and this blocked transition enter
+the reported probability-error bound `q**N + (1-q)*q**(N-1)/(1-q**N)`. Increasing
+cutoff reduces the observed final-time error for this declared parameter set;
+this is not a universal monotonic-convergence rule. Integration error is checked
+separately at 1e-10. The fitted target uses the same finite model, so fitting is
+not evidence that its truncation error disappeared.
+
+The example composes existing mixed dimensions, boson algebra, parameter binding,
+Lindblad planning, Krylov evolution and PyTorch. It adds no ion-trap frontend,
+heating, laser calibration, hardware execution or distributed-capacity claim.
