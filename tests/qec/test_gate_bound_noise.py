@@ -314,20 +314,15 @@ def test_the_measurement_route_reads_the_same_run() -> None:
 @pytest.mark.parametrize(
     "channel",
     (
-        pytest.param(fqn.depolarizing_channel(0.1), id="depolarizing"),
         pytest.param(fqn.amplitude_damping_channel(0.1), id="amplitude-damping"),
         pytest.param(fqn.phase_damping_channel(0.1), id="phase-damping"),
     ),
 )
 def test_a_channel_that_is_not_a_pauli_fault_is_refused_by_name(channel) -> None:
-    """A mixture is not one Pauli fault, so it has no placement in this grammar.
+    """Non-Pauli channels retain the named fail-closed boundary.
 
-    Placing one of a depolarizing channel's terms as the whole fault would state
-    a fault the record does not: its rate would be a fraction of the channel's and
-    its Pauli would be whichever term happened to come first. The refusal names
-    the channel and the two it does place, and both routes state it, because a
-    record one route can place and the other cannot is a sampler and a model that
-    describe different experiments.
+    Proposal 088 now admits Pauli depolarization as exclusive alternatives;
+    amplitude and phase damping remain outside the supported channel grammar.
     """
 
     memory = _memory(RotatedSurfaceCode(distance=3), 2)

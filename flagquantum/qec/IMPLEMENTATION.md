@@ -442,10 +442,12 @@ channel beside a Z channel, because the two would fire independently and that is
 different mechanism. The suite states the difference where it lives rather than
 only in the marginals: a one-branch Y model and a two-fault reading of it agree on
 every single-detector rate and disagree on the pair rates between the two detector
-bands, and the sampled pair rates follow the one-branch model. What the sampler
-still does not reach is a channel placed after a named gate and a depolarizing or
-damping channel, and that narrower state is recorded in the sampling entry's own
-limitations rather than approximated here.
+bands, and the sampled pair rates follow the one-branch model. The original sampler limitation is superseded by
+[QEC-FUNCTIONAL-004](../../docs/development/QEC_FUNCTIONAL_004.md): gate-bound
+one-/two-qubit Pauli Kraus mixtures, including depolarization, now retain
+exclusive alternatives in construction and circuit sampling. Non-Pauli Kraus
+branches, including damping, remain refused. No correlated-decoder or threshold
+claim follows from exact noise construction.
 
 The earlier revision that the paragraph above retracts, kept verbatim rather than
 dropped:

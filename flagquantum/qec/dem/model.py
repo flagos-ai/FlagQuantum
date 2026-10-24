@@ -793,19 +793,15 @@ class DetectorErrorModel:
         name them, an X fault is the forced ``X``, and the Z and Y faults are that
         Pauli conjugated by the ``h`` and ``sdg`` the circuit's source language
         carries, so they are forced as one fault at one rate rather than as two
-        independent draws. A gate-bound record states its families through the
-        channel a rule carries instead: the two channels this route places are
-        the bit flip and the phase flip, each forced as the Pauli it is by the
-        same identity. A Z fault on the Z-memory layout this route requires
-        reaches no detector in round zero and never flips the logical observable,
-        so it is enumerated only where it is a mechanism -- and where that is
-        nowhere, it is no mechanism rather than a mechanism at a rate the model
-        would have to invent. The refusals of the injection engine reach the
-        caller unchanged: a hand-built circuit whose source does not match its
-        layouts fails closed with a stated reason instead of building a model that
-        misdescribes it, and a record naming a fault this route cannot place --
-        a depolarizing or damping channel, a two-qubit channel, a readout or a
-        preparation -- is refused rather than placed as a nearby fault.
+        independent draws. A gate-bound record accepts the existing bit-flip
+        and phase-flip channels and one-/two-qubit Kraus mixtures of Pauli
+        products, including Y flips, biased mixtures and depolarization. Branches
+        at one location are mutually exclusive and retain one ``error_id``;
+        separate locations remain independent. Equal signatures within a
+        location sum their disjoint probabilities, and invisible effects remain
+        no-effect mass. Unsupported channels, readout/preparation attachments
+        and faults after the last instruction are refused. Consumers unable to
+        preserve error-id groups continue to refuse these models.
 
         ``decompose_composite_faults`` decides whether the Y family is read as
         one fault or as the X and Z faults it is the XOR of. Upstream states the
@@ -830,16 +826,32 @@ class DetectorErrorModel:
 
         from flagquantum.qec.dem.construction import _memory_circuit_entries
 
-        num_detectors, num_observables, entries = _memory_circuit_entries(
-            circuit,
-            noise,
-            decompose_composite_faults=decompose_composite_faults,
-        )
-        return cls._merge_mechanisms(
+        if not isinstance(circuit, MemoryCircuit):
+            raise TypeError("circuit must be a MemoryCircuit")
+        if not isinstance(decompose_composite_faults, bool):
+            raise TypeError("decompose_composite_faults must be a bool")
+        grouped: tuple[DemError, ...] = ()
+        if isinstance(noise, NoiseModel) and not decompose_composite_faults:
+            from .circuit_noise import _circuit_noise_entries
+
+            entries, grouped = _circuit_noise_entries(circuit, noise)
+            num_detectors, num_observables = len(circuit.detectors), len(
+                circuit.observables
+            )
+        else:
+            num_detectors, num_observables, entries = _memory_circuit_entries(
+                circuit,
+                noise,
+                decompose_composite_faults=decompose_composite_faults,
+            )
+        merged = cls._merge_mechanisms(
             entries,
             num_detectors=num_detectors,
             num_observables=num_observables,
         )
+        if not grouped:
+            return merged
+        return cls(num_detectors, num_observables, merged.errors + grouped)
 
     @classmethod
     def from_code_matrices(
