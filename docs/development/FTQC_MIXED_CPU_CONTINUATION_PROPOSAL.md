@@ -1,6 +1,8 @@
 # FTS-10A: Bounded Seven-Point Continuation Proposal
 
-Status: proposed resource and recovery admission, not approved or executed.
+Status: explicitly approved by the human user on 2026-10-25, controller review
+and mainline acceptance required before the one admitted probe and collection.
+No continuation process or supervision probe has been launched.
 The [original partial study](FTQC_MIXED_CPU_PARTIAL_BASELINE.md) remains immutable:
 164 completed processes, one failed host warm-up and 27 unattempted slots.
 Original #846 admission stopped on the first monitoring failure. Neither #859's
@@ -24,6 +26,80 @@ stop threshold, 50-ms query timeout and maximum 100-ms sampling gap. Combined
 retained evidence from original plus continuation stays at most 128 MiB; require
 at least 512 MiB free before startup. RSS sampling can overshoot; it is not an allocator/cgroup limit. No new qubit count, T count, topology,
 backend, precision, device or performance target is requested.
+
+## Controller implementation under review
+
+The human answer was "Approve the bounded continuation; review the controller
+first." This authorizes the exact budget above, including cumulative 193
+attempts, without widening the monitoring policy. It does not authorize another
+recovery round after a new failure.
+
+`tools/collect_ftqc_mixed_continuation.py` is a separately named private controller.
+The original task-local collector and original campaign remain untouched. This
+replacement reads/hashes the watchdog first and retains its complete report;
+monitoring failure keeps supervision as the primary cause, with producer state
+`absent` or `available`. Only healthy supervision permits producer JSON parsing.
+Command/numerical failure, malformed reports and capability refusal stop the new
+campaign and preserve all unattempted slots. The controller does not fall back.
+
+Admission checks the original manifest/controller identities, original slot
+mapping, retained wheel hash and installed package bytes, exact Python/Torch/CPU
+profile and unchanged watchdog hash. It removes PYTHONPATH/SDK overlays from
+child environments and fixes numerical thread counts to one. The supplied
+controller digest must equal the separately reviewed script; this is an identity
+check, not a claim that a command-line argument grants review approval.
+
+The single new output directory is `fts10-cpu-continuation-20261025` below the
+existing evidence root. Existing output is refused. Whole wall time includes
+admission, the one idle-process supervision probe and cleanup. The outer process
+reserves 20 seconds of the 120-second cap for watchdog cancellation/cleanup;
+this may stop earlier than the watchdog's unchanged 120-second phase limit.
+Storage checks include original plus new evidence with 2 MiB reserved headroom.
+Sampled RSS and storage checks can overshoot between observations; neither is a
+hard allocator/filesystem quota. Any detected budget breach retains a failure.
+
+After this implementation is reviewed and its mainline accepted, the one admitted
+invocation is:
+
+```bash
+python tools/collect_ftqc_mixed_continuation.py \
+  --evidence-root /path/to/retained-evidence \
+  --output /path/to/retained-evidence/fts10-cpu-continuation-20261025 \
+  --watchdog /path/to/unchanged/run_with_watchdog.py \
+  --reviewed-controller-sha256 REVIEWED_SCRIPT_SHA256
+```
+
+This command is not an instruction to run before review. Its expected success
+stdout is `completed`, exit 0, with 28 completed new workload entries and one
+separate successful supervision probe. Failure prints `failed`, exits 1 and
+retains the primary report, new failure/refusal and remaining unattempted ledger.
+A missing admission artifact or changed profile starts no probe or study point.
+The probe uses an owned idle Python process, not a study circuit. A successful
+probe is not a guarantee of future monitoring availability.
+
+Controller tests use fake process/report boundaries only: primary monitor loss
+with absent/malformed producer, missing/corrupt watchdog, malformed producer,
+numerical error, refusal, cancellation and bounded cleanup, combined storage,
+wall/disk preflight, no overwrite, exact slot mapping and one-probe/28-workload
+ceiling. They are not supervision-availability or study measurements. No actual
+probe or continuation has been executed during controller development.
+
+## Post-860 mainline acceptance
+
+The budget proposal merged to actual main
+`8e40de646493321c25b3286a21828ce7d5150b25` and passed
+[all 54 complete-CI jobs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40173499759),
+[source/single-GPU/required two-GPU validation](https://github.com/flagos-ai/FlagQuantum/actions/runs/40173508053)
+and [main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40173461083).
+Three original optional pools were unselected. Package job 121109219977 passed
+real QEC optional installation and evidence retention. Fresh isolated sdist and
+wheel-from-sdist preserve 833 package Python members exactly; new Python
+3.12.14/Torch 2.14.1 core dependencies, native Bell/master/HTH/CLI, public three-mode
+example and observer CLI pass outside the checkout without PYTHONPATH or SDK
+overlays. These are engineering checks, not another formal campaign. The three
+Markdown merge did not change package/tests/tools, so no local numerical suite
+was repeated. The original study producer remains the separately retained main
+5cd installation; this documentation acceptance does not replace it.
 
 ## Exact remaining matrix
 
@@ -185,7 +261,7 @@ continuation launch. Its success does not establish supervision availability.
 - [x] Preserve the original monitor failure and all completed/missing evidence.
 - [x] Specify a concrete seven-point/28-process ceiling and unchanged monitor
   policy, with the cumulative 193-attempt implication stated explicitly.
-- [ ] Obtain explicit approval for this continuation budget and controller scope.
+- [x] Obtain explicit approval for this continuation budget and controller scope.
 - [ ] Review and qualify the diagnostic-order repair and bounded preflight.
 - [ ] Run at most one newly admitted continuation and review its complete ledger.
 - [ ] FTS-10 final method selection, FTS-02/09 and R01-R15 system acceptance remain
