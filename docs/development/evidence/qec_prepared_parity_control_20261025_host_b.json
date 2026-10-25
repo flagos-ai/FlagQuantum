@@ -1,0 +1,3296 @@
+{
+  "schema": "flagquantum.qec_prepared_parity_control.host_observations.v1",
+  "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+  "host_label": "host_b",
+  "redactions": "Host labels remapped; GPU UUIDs and container identifiers omitted from public controller metadata only. Timing/correctness reports and all warmups unchanged. Originals retained privately.",
+  "original_transfer_archive": "4eb13e10f523c9c988d2d1787b333b3efd6a789117041be1872d8866400bf6db",
+  "controller": {
+    "records": [
+      {
+        "case": "b128-0-cpu",
+        "mode": "cpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b128-1-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b128-2-gpu",
+        "mode": "gpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b128-3-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b128-4-gpu",
+        "mode": "gpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 1
+            },
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b128-5-cpu",
+        "mode": "cpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b128-6-gpu",
+        "mode": "gpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b128-7-cpu",
+        "mode": "cpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b128-8-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 128,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-0-cpu",
+        "mode": "cpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-1-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-2-gpu",
+        "mode": "gpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-3-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-4-gpu",
+        "mode": "gpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-5-cpu",
+        "mode": "cpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-6-gpu",
+        "mode": "gpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-7-cpu",
+        "mode": "cpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b4096-8-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 4096,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-0-cpu",
+        "mode": "cpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-1-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-2-gpu",
+        "mode": "gpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-3-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-4-gpu",
+        "mode": "gpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-5-cpu",
+        "mode": "cpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-6-gpu",
+        "mode": "gpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-7-cpu",
+        "mode": "cpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 9
+            },
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      },
+      {
+        "case": "b65536-8-prepared_cpu",
+        "mode": "prepared_cpu",
+        "batch_size": 65536,
+        "source_before": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        },
+        "gpu_preflight": {
+          "free_mib": 81149,
+          "utilization_percent": 0,
+          "idle_wait_observations": [
+            {
+              "free_mib": 81149,
+              "utilization_percent": 8
+            },
+            {
+              "free_mib": 81149,
+              "utilization_percent": 0
+            }
+          ]
+        },
+        "exit": 0,
+        "status": "complete",
+        "source_after": {
+          "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+          "tracked_tree_clean": true
+        }
+      }
+    ],
+    "elapsed_seconds": 506.9297748208046,
+    "complete": true
+  },
+  "reports": {
+    "b128-0-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.7470248974859715,
+        "prepare_seconds": 2.673826474696398,
+        "prepare_plus_loop_seconds": 3.4208513721823692,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1022926848
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.7451997995376587,
+        "prepare_seconds": 2.09677523560822,
+        "prepare_plus_loop_seconds": 2.841975035145879,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1022926848
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.7472701072692871,
+        "prepare_seconds": 2.011764284223318,
+        "prepare_plus_loop_seconds": 2.759034391492605,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1022926848
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.7548384573310614,
+        "prepare_seconds": 2.0990280248224735,
+        "prepare_plus_loop_seconds": 2.853866482153535,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1022926848
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b128-1-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6569735705852509,
+        "prepare_seconds": 2.542520049959421,
+        "prepare_plus_loop_seconds": 3.199493620544672,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023193088
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6540480796247721,
+        "prepare_seconds": 2.1011403910815716,
+        "prepare_plus_loop_seconds": 2.7551884707063437,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023193088
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.655982717871666,
+        "prepare_seconds": 2.0120264291763306,
+        "prepare_plus_loop_seconds": 2.6680091470479965,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023193088
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6557730287313461,
+        "prepare_seconds": 2.1096174754202366,
+        "prepare_plus_loop_seconds": 2.7653905041515827,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023193088
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b128-2-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6252592615783215,
+        "prepare_seconds": 2.7060192804783583,
+        "prepare_plus_loop_seconds": 3.3312785420566797,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1023090688
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6296361833810806,
+        "prepare_seconds": 2.195389796048403,
+        "prepare_plus_loop_seconds": 2.8250259794294834,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1023090688
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6227104254066944,
+        "prepare_seconds": 2.063639510422945,
+        "prepare_plus_loop_seconds": 2.6863499358296394,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1023090688
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6246907878667116,
+        "prepare_seconds": 2.1347597148269415,
+        "prepare_plus_loop_seconds": 2.759450502693653,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1023090688
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b128-3-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.671521021053195,
+        "prepare_seconds": 2.640895674005151,
+        "prepare_plus_loop_seconds": 3.312416695058346,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023451136
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6648297272622585,
+        "prepare_seconds": 2.2302273083478212,
+        "prepare_plus_loop_seconds": 2.8950570356100798,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023451136
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6628877185285091,
+        "prepare_seconds": 2.1371477264910936,
+        "prepare_plus_loop_seconds": 2.8000354450196028,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023451136
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6623187866061926,
+        "prepare_seconds": 2.200579235330224,
+        "prepare_plus_loop_seconds": 2.8628980219364166,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023451136
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b128-4-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6204577423632145,
+        "prepare_seconds": 2.6077569853514433,
+        "prepare_plus_loop_seconds": 3.228214727714658,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1022640128
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6202057767659426,
+        "prepare_seconds": 2.1565789487212896,
+        "prepare_plus_loop_seconds": 2.776784725487232,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1022640128
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6177073400467634,
+        "prepare_seconds": 1.9964376203715801,
+        "prepare_plus_loop_seconds": 2.6141449604183435,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1022640128
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.619940310716629,
+        "prepare_seconds": 2.0719764437526464,
+        "prepare_plus_loop_seconds": 2.6919167544692755,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1022640128
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b128-5-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.7597900554537773,
+        "prepare_seconds": 2.6128892190754414,
+        "prepare_plus_loop_seconds": 3.3726792745292187,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1022935040
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.7582112345844507,
+        "prepare_seconds": 2.1974489875137806,
+        "prepare_plus_loop_seconds": 2.9556602220982313,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1022935040
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.759257547557354,
+        "prepare_seconds": 2.100557819008827,
+        "prepare_plus_loop_seconds": 2.859815366566181,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1022935040
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.7554120142012835,
+        "prepare_seconds": 2.1818180941045284,
+        "prepare_plus_loop_seconds": 2.937230108305812,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1022935040
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b128-6-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6296307686716318,
+        "prepare_seconds": 2.636252600699663,
+        "prepare_plus_loop_seconds": 3.265883369371295,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1023143936
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6361142620444298,
+        "prepare_seconds": 2.1683777160942554,
+        "prepare_plus_loop_seconds": 2.8044919781386852,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1023143936
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6336014475673437,
+        "prepare_seconds": 2.1520599108189344,
+        "prepare_plus_loop_seconds": 2.785661358386278,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1023143936
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.635689552873373,
+        "prepare_seconds": 2.196798412129283,
+        "prepare_plus_loop_seconds": 2.832487965002656,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 143360,
+        "process_max_rss_bytes": 1023143936
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b128-7-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.7417207714170218,
+        "prepare_seconds": 2.5630602929741144,
+        "prepare_plus_loop_seconds": 3.304781064391136,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023156224
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.7525260243564844,
+        "prepare_seconds": 2.1279638949781656,
+        "prepare_plus_loop_seconds": 2.88048991933465,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023156224
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.7478948943316936,
+        "prepare_seconds": 2.056358527392149,
+        "prepare_plus_loop_seconds": 2.8042534217238426,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023156224
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.746840126812458,
+        "prepare_seconds": 2.113228127360344,
+        "prepare_plus_loop_seconds": 2.860068254172802,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023156224
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b128-8-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 128,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6603572871536016,
+        "prepare_seconds": 2.690086467191577,
+        "prepare_plus_loop_seconds": 3.3504437543451786,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023270912
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6621652245521545,
+        "prepare_seconds": 2.2530755791813135,
+        "prepare_plus_loop_seconds": 2.915240803733468,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023270912
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6596260592341423,
+        "prepare_seconds": 2.1506580654531717,
+        "prepare_plus_loop_seconds": 2.810284124687314,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023270912
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6646609697490931,
+        "prepare_seconds": 2.24067591316998,
+        "prepare_plus_loop_seconds": 2.905336882919073,
+        "completed_shots": 65537,
+        "detector_events": 513280,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1023270912
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "505a604c1e7ae2533c1bcd8c73bea13081a3965b34f3d82552ebfc32e6f9b553",
+          "observables": "b14fa46f52886b84f45aaf939ab2e303b6d28d5fade29dfa12ef0d73fb9fdf92",
+          "predictions": "1bbd65835fdecf666cf6fbc1c570cca6946f04ac1077ef9883d3ceff541b1237"
+        }
+      }
+    ],
+    "b4096-0-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.7029786966741085,
+        "prepare_seconds": 2.6404336374253035,
+        "prepare_plus_loop_seconds": 3.343412334099412,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046122496
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6854115650057793,
+        "prepare_seconds": 2.1327090729027987,
+        "prepare_plus_loop_seconds": 2.818120637908578,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046228992
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6530755665153265,
+        "prepare_seconds": 2.0575389098376036,
+        "prepare_plus_loop_seconds": 2.71061447635293,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046228992
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6723412051796913,
+        "prepare_seconds": 2.1700827442109585,
+        "prepare_plus_loop_seconds": 2.84242394939065,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046228992
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b4096-1-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6857368182390928,
+        "prepare_seconds": 2.7445330154150724,
+        "prepare_plus_loop_seconds": 3.4302698336541653,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1045778432
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6792384013533592,
+        "prepare_seconds": 2.2056723032146692,
+        "prepare_plus_loop_seconds": 2.8849107045680285,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1045778432
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6602198928594589,
+        "prepare_seconds": 2.172960178926587,
+        "prepare_plus_loop_seconds": 2.833180071786046,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1045778432
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6525731198489666,
+        "prepare_seconds": 2.315524373203516,
+        "prepare_plus_loop_seconds": 2.9680974930524826,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1045848064
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b4096-2-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.45849372260272503,
+        "prepare_seconds": 2.642456518486142,
+        "prepare_plus_loop_seconds": 3.100950241088867,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1044176896
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.4564722627401352,
+        "prepare_seconds": 2.1046050619333982,
+        "prepare_plus_loop_seconds": 2.5610773246735334,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1044176896
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.4917540680617094,
+        "prepare_seconds": 2.0495036989450455,
+        "prepare_plus_loop_seconds": 2.541257767006755,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1044410368
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.48672062903642654,
+        "prepare_seconds": 2.165639655664563,
+        "prepare_plus_loop_seconds": 2.6523602847009897,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1044410368
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b4096-3-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.647210419178009,
+        "prepare_seconds": 2.6569125838577747,
+        "prepare_plus_loop_seconds": 3.3041230030357838,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046405120
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6325066611170769,
+        "prepare_seconds": 2.18481183052063,
+        "prepare_plus_loop_seconds": 2.8173184916377068,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046405120
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6466066464781761,
+        "prepare_seconds": 2.0893795918673277,
+        "prepare_plus_loop_seconds": 2.735986238345504,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046405120
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6422878243029118,
+        "prepare_seconds": 2.192338138818741,
+        "prepare_plus_loop_seconds": 2.8346259631216526,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046405120
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b4096-4-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.4546585399657488,
+        "prepare_seconds": 2.7169138081371784,
+        "prepare_plus_loop_seconds": 3.171572348102927,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1046360064
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.4697804842144251,
+        "prepare_seconds": 2.1616081204265356,
+        "prepare_plus_loop_seconds": 2.6313886046409607,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1046421504
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.46610623598098755,
+        "prepare_seconds": 2.1409923285245895,
+        "prepare_plus_loop_seconds": 2.607098564505577,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1046421504
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.4673612080514431,
+        "prepare_seconds": 2.213855303823948,
+        "prepare_plus_loop_seconds": 2.681216511875391,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1046589440
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b4096-5-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6984246075153351,
+        "prepare_seconds": 2.6165348924696445,
+        "prepare_plus_loop_seconds": 3.3149594999849796,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046278144
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6875431165099144,
+        "prepare_seconds": 2.2084573302417994,
+        "prepare_plus_loop_seconds": 2.8960004467517138,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046278144
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6625569704920053,
+        "prepare_seconds": 2.0828432869166136,
+        "prepare_plus_loop_seconds": 2.745400257408619,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046278144
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6577130258083344,
+        "prepare_seconds": 2.1172874346375465,
+        "prepare_plus_loop_seconds": 2.775000460445881,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046278144
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b4096-6-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.4530692379921675,
+        "prepare_seconds": 2.5791166685521603,
+        "prepare_plus_loop_seconds": 3.0321859065443277,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1045954560
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.45202757976949215,
+        "prepare_seconds": 2.1185024864971638,
+        "prepare_plus_loop_seconds": 2.570530066266656,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1046167552
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.43332171998918056,
+        "prepare_seconds": 2.0510960202664137,
+        "prepare_plus_loop_seconds": 2.4844177402555943,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1046167552
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.4312950875610113,
+        "prepare_seconds": 2.101341087371111,
+        "prepare_plus_loop_seconds": 2.5326361749321222,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 4273664,
+        "process_max_rss_bytes": 1046167552
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b4096-7-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6211865078657866,
+        "prepare_seconds": 2.5398220885545015,
+        "prepare_plus_loop_seconds": 3.161008596420288,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046159360
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6358771491795778,
+        "prepare_seconds": 2.142443008720875,
+        "prepare_plus_loop_seconds": 2.7783201579004526,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046372352
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6389388367533684,
+        "prepare_seconds": 2.0850139260292053,
+        "prepare_plus_loop_seconds": 2.7239527627825737,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046372352
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6362859979271889,
+        "prepare_seconds": 2.1587077267467976,
+        "prepare_plus_loop_seconds": 2.7949937246739864,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046372352
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b4096-8-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 4096,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6307005900889635,
+        "prepare_seconds": 2.504640057682991,
+        "prepare_plus_loop_seconds": 3.1353406477719545,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046020096
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6232213489711285,
+        "prepare_seconds": 2.0470958035439253,
+        "prepare_plus_loop_seconds": 2.6703171525150537,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046245376
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6280053351074457,
+        "prepare_seconds": 2.0103436205536127,
+        "prepare_plus_loop_seconds": 2.6383489556610584,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046245376
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6083695609122515,
+        "prepare_seconds": 2.073297180235386,
+        "prepare_plus_loop_seconds": 2.6816667411476374,
+        "completed_shots": 65537,
+        "detector_events": 513498,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1046245376
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "02f4175cb9edcecae7ae309ab5cc38e02e48e22fe0640530590e34bf8957b808",
+          "observables": "9c3c4a47b891a020eeb61e7c15ad1acd942fd2b6783e9a4f63f71b0c0971af0e",
+          "predictions": "f0e3ec08e419285c61a431797d16e0fe72ec7aa2fdc52d6b434357d844d5622f"
+        }
+      }
+    ],
+    "b65536-0-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.8644461426883936,
+        "prepare_seconds": 2.4808503072708845,
+        "prepare_plus_loop_seconds": 3.345296449959278,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261150208
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.843514958396554,
+        "prepare_seconds": 2.0630479753017426,
+        "prepare_plus_loop_seconds": 2.9065629336982965,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261535232
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.8408956713974476,
+        "prepare_seconds": 2.016932934522629,
+        "prepare_plus_loop_seconds": 2.8578286059200764,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261535232
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.8373381588608027,
+        "prepare_seconds": 2.0743258222937584,
+        "prepare_plus_loop_seconds": 2.911663981154561,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261535232
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ],
+    "b65536-1-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.8272040504962206,
+        "prepare_seconds": 2.6379151791334152,
+        "prepare_plus_loop_seconds": 3.465119229629636,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1255415808
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.7989066187292337,
+        "prepare_seconds": 2.1573891695588827,
+        "prepare_plus_loop_seconds": 2.9562957882881165,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260056576
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.7955640237778425,
+        "prepare_seconds": 2.1040972862392664,
+        "prepare_plus_loop_seconds": 2.899661310017109,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260056576
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.8065880034118891,
+        "prepare_seconds": 2.2075023595243692,
+        "prepare_plus_loop_seconds": 3.0140903629362583,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260138496
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ],
+    "b65536-2-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6164431553333998,
+        "prepare_seconds": 2.753254745155573,
+        "prepare_plus_loop_seconds": 3.3696979004889727,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1253130240
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6134799923747778,
+        "prepare_seconds": 2.2333984822034836,
+        "prepare_plus_loop_seconds": 2.8468784745782614,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260634112
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6285225264728069,
+        "prepare_seconds": 2.1395837049931288,
+        "prepare_plus_loop_seconds": 2.7681062314659357,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260634112
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6045509744435549,
+        "prepare_seconds": 2.196311742067337,
+        "prepare_plus_loop_seconds": 2.800862716510892,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260634112
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ],
+    "b65536-3-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.8006011322140694,
+        "prepare_seconds": 2.531239153817296,
+        "prepare_plus_loop_seconds": 3.3318402860313654,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1256148992
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.8875199127942324,
+        "prepare_seconds": 2.2044724076986313,
+        "prepare_plus_loop_seconds": 3.0919923204928637,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260605440
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.8141845408827066,
+        "prepare_seconds": 2.0441372767090797,
+        "prepare_plus_loop_seconds": 2.8583218175917864,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260605440
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.85179646871984,
+        "prepare_seconds": 2.096889354288578,
+        "prepare_plus_loop_seconds": 2.948685823008418,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260605440
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ],
+    "b65536-4-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6604108791798353,
+        "prepare_seconds": 2.692390102893114,
+        "prepare_plus_loop_seconds": 3.3528009820729494,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1253052416
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6524134632200003,
+        "prepare_seconds": 2.21060155890882,
+        "prepare_plus_loop_seconds": 2.8630150221288204,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260560384
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.6551416423171759,
+        "prepare_seconds": 2.1345216874033213,
+        "prepare_plus_loop_seconds": 2.789663329720497,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260560384
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6258129980415106,
+        "prepare_seconds": 2.2447418831288815,
+        "prepare_plus_loop_seconds": 2.870554881170392,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260560384
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ],
+    "b65536-5-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.8428456839174032,
+        "prepare_seconds": 2.654180133715272,
+        "prepare_plus_loop_seconds": 3.497025817632675,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260838912
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.9212386086583138,
+        "prepare_seconds": 2.2071670815348625,
+        "prepare_plus_loop_seconds": 3.1284056901931763,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261228032
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.8609155360609293,
+        "prepare_seconds": 2.1017865389585495,
+        "prepare_plus_loop_seconds": 2.962702075019479,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261228032
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.8967184796929359,
+        "prepare_seconds": 2.1887842174619436,
+        "prepare_plus_loop_seconds": 3.0855026971548796,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261228032
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ],
+    "b65536-6-gpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "gpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cuda:0",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.6510256305336952,
+        "prepare_seconds": 2.6368866432458162,
+        "prepare_plus_loop_seconds": 3.2879122737795115,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1253175296
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.6444824412465096,
+        "prepare_seconds": 2.1838871221989393,
+        "prepare_plus_loop_seconds": 2.828369563445449,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260679168
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.632542073726654,
+        "prepare_seconds": 2.078466970473528,
+        "prepare_plus_loop_seconds": 2.711009044200182,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260679168
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.6328559797257185,
+        "prepare_seconds": 2.178370015695691,
+        "prepare_plus_loop_seconds": 2.8112259954214096,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 69281280,
+        "process_max_rss_bytes": 1260679168
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ],
+    "b65536-7-cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "cpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": false,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.8478993121534586,
+        "prepare_seconds": 2.581540424376726,
+        "prepare_plus_loop_seconds": 3.4294397365301847,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261514752
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.8263027016073465,
+        "prepare_seconds": 2.1587620452046394,
+        "prepare_plus_loop_seconds": 2.985064746811986,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261719552
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.8141667358577251,
+        "prepare_seconds": 2.081440255045891,
+        "prepare_plus_loop_seconds": 2.895606990903616,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261752320
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.8223422318696976,
+        "prepare_seconds": 2.130217904224992,
+        "prepare_plus_loop_seconds": 2.9525601360946894,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1261752320
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ],
+    "b65536-8-prepared_cpu": [
+      {
+        "kind": "metadata",
+        "source_revision": "29605a979d66d95809eca785bb81bdd5b57bdc20",
+        "source_path": "/task/source/flagquantum/__init__.py",
+        "mode": "prepared_cpu",
+        "batch_size": 65536,
+        "gpu": "NVIDIA A800-SXM4-80GB",
+        "cuda": "13.0",
+        "compute_device": "cpu",
+        "indices_prepared_once": true,
+        "prepared_controls_share_one_record_conversion": true,
+        "versions": {
+          "torch": "2.13.0",
+          "stim": "1.16.0",
+          "pymatching": "2.4.0",
+          "numpy": "2.4.6"
+        },
+        "torch_threads": 1,
+        "independent_oracle_passed": true,
+        "world_size": 1,
+        "local_world_size": 1,
+        "node_count": 1,
+        "distribution_semantics": "single_device_fast_path",
+        "rank_ownership": {
+          "0": "whole workload"
+        },
+        "scalability_claim_allowed": false,
+        "non_release_evidence": true
+      },
+      {
+        "kind": "observation",
+        "repeat": 0,
+        "warmup": true,
+        "sample_decode_seconds": 0.8450531959533691,
+        "prepare_seconds": 2.7055079992860556,
+        "prepare_plus_loop_seconds": 3.5505611952394247,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1256144896
+      },
+      {
+        "kind": "observation",
+        "repeat": 1,
+        "warmup": false,
+        "sample_decode_seconds": 0.8057796321809292,
+        "prepare_seconds": 2.236962655559182,
+        "prepare_plus_loop_seconds": 3.0427422877401114,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260601344
+      },
+      {
+        "kind": "observation",
+        "repeat": 2,
+        "warmup": false,
+        "sample_decode_seconds": 0.81734399497509,
+        "prepare_seconds": 2.116850534453988,
+        "prepare_plus_loop_seconds": 2.934194529429078,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260601344
+      },
+      {
+        "kind": "observation",
+        "repeat": 3,
+        "warmup": false,
+        "sample_decode_seconds": 0.8058827724307775,
+        "prepare_seconds": 2.1459703855216503,
+        "prepare_plus_loop_seconds": 2.951853157952428,
+        "completed_shots": 65537,
+        "detector_events": 514432,
+        "logical_failures": 1,
+        "cuda_peak_allocated_bytes": 0,
+        "process_max_rss_bytes": 1260601344
+      },
+      {
+        "kind": "diagnostics",
+        "completed_shots": 65537,
+        "cpu_equal_every_batch": true,
+        "sha256": {
+          "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+          "dem": "5432d16fd1906da501dda256aa8fac1af38c1f089a2fb3f92674e1fcdeca08ae",
+          "detectors": "3d5cedc4ac9822f8cf71353644322d5ce6305ff97fcc539f73040341ec04da59",
+          "observables": "26a6cf95c48f462ed26e6cd8f63e764aab98bef05ab18d7b29381d7c880ebef1",
+          "predictions": "49eb1e72b508f8245d3b870471b539f91eacec2c4540d67bac66ccd3a9bdc6e7"
+        }
+      }
+    ]
+  },
+  "stderr": {
+    "b128-0-cpu.stderr.log": "",
+    "b128-1-prepared_cpu.stderr.log": "",
+    "b128-2-gpu.stderr.log": "",
+    "b128-3-prepared_cpu.stderr.log": "",
+    "b128-4-gpu.stderr.log": "",
+    "b128-5-cpu.stderr.log": "",
+    "b128-6-gpu.stderr.log": "",
+    "b128-7-cpu.stderr.log": "",
+    "b128-8-prepared_cpu.stderr.log": "",
+    "b4096-0-cpu.stderr.log": "",
+    "b4096-1-prepared_cpu.stderr.log": "",
+    "b4096-2-gpu.stderr.log": "",
+    "b4096-3-prepared_cpu.stderr.log": "",
+    "b4096-4-gpu.stderr.log": "",
+    "b4096-5-cpu.stderr.log": "",
+    "b4096-6-gpu.stderr.log": "",
+    "b4096-7-cpu.stderr.log": "",
+    "b4096-8-prepared_cpu.stderr.log": "",
+    "b65536-0-cpu.stderr.log": "",
+    "b65536-1-prepared_cpu.stderr.log": "",
+    "b65536-2-gpu.stderr.log": "",
+    "b65536-3-prepared_cpu.stderr.log": "",
+    "b65536-4-gpu.stderr.log": "",
+    "b65536-5-cpu.stderr.log": "",
+    "b65536-6-gpu.stderr.log": "",
+    "b65536-7-cpu.stderr.log": "",
+    "b65536-8-prepared_cpu.stderr.log": ""
+  }
+}

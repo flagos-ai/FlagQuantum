@@ -111,6 +111,10 @@ and does not approve a GPU API, automatic device selection or custom kernel.
 The next decision is that matched control, under a separately declared budget,
 rather than promoting this research prototype.
 
+The subsequent [matched prepared CPU control](QEC_PREPARED_PARITY_CONTROL.md)
+records a separate three-mode study. Its new observations do not replace or
+pool with this study's raw measurements or incomplete coverage.
+
 Every completed process passed the independent XOR witness and full-shot
 CPU/GPU equivalence diagnostic. Source, strict DEM, detector, observable and
 prediction hashes agree across all completed processes within each host/batch.
