@@ -662,13 +662,18 @@ This closes only the specifically admitted finite observation collection. FTS-10
 method selection, FTS-02/09 and R01-R15 remain partial; no performance target,
 capacity, API, approximation, hardware or further recovery admission follows.
 
-### FTS-10B / FTS-11A coherent-reference contract proposed
+### FTS-10B / FTS-11A finite coherent-reference conformance under review
 
 Pilot-evidence main7720 passed complete CI/GPU, real installation evidence,
 fresh core/public examples and exact data/inventory checks. The
 [finite coherent-branch proposal](../development/FTQC_COHERENT_BRANCH_CONFORMANCE_PROPOSAL.md)
-now requests n=2/3, t=0/1/2/4 private reference conformance, analytic anchors,
-phase/mixture negatives and explicit numerical values before any test
-implementation. No production phase contract, public API, new engine, benchmark
-collection or performance target is approved by this proposal. FTS-10 selection
-and FTS-02/09/R01-R15 system acceptance remain partial.
+received specific human approval on 2026-10-25 for n=2/3, t=0/1/2/4 private
+reference conformance, two analytic anchors, phase/mixture/cancellation negatives
+and complex128 atol=1e-12/rtol=0. Proposal main0e7a then completed all admission
+gates, including 54 CI jobs, required GPUs, fresh installation and installed user
+examples. The independent test-only implementation is under review: 50 private
+scalar branch vectors and ten existing public unexpanded CPU calls per module
+verification, with prior thread settings restored. No production phase contract,
+public API, new engine, benchmark collection or performance target follows.
+This contributes to R04 reference correctness; FTS-10 selection and
+FTS-02/09/R01-R15 system acceptance remain partial.
