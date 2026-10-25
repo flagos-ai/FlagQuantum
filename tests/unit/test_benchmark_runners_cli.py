@@ -99,6 +99,7 @@ def test_runner_registry_is_lazy_and_sorted() -> None:
         "dynamic_unified_run",
         "environment_probe",
         "ftqc_exact_reference",
+        "ftqc_mixed_reference",
         "numa_memory_traffic",
         "qec_memory_sampling",
         "simulator_compare",
