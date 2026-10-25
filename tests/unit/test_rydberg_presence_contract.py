@@ -282,6 +282,9 @@ def test_complete_conditional_density_and_time_outputs(
         atol=1e-10,
         rtol=0,
     )
+    initial_present = 0.4 if initial == "lost_coherence" else 1.0
+    analytic_flag = eta * (1 - initial_present * math.exp(-0.23 * 0.5))
+    assert abs(float(observed.metadata["probabilities"][0][1]) - analytic_flag) < 1e-10
     assert result.runtime["time_grid"] == times.tolist()
     assert result.runtime["state_axes"] == ["sample", "basis_row", "basis_column"]
     assert result.runtime["expectation_axes"] == ["time"]
@@ -357,6 +360,7 @@ def test_private_rng_snapshots_and_output_selection(
         options=fq.ExecutionOptions(shots=1, seed=2**64 - 1),
     )
     saved = plan.to_json()
+    source.pulse("a", start=1.0, duration=0.5, amplitude=0.9, channel="laser_a")
     state.zero_()
     times.fill_(5)
     operator.zero_()
