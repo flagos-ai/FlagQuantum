@@ -12,6 +12,7 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/matched_selection.py`: internal final-six temperature fitting on shared, saved independent calibration streams; no physical validation, CLI or formal launch authorization.
 - `qec/matched_training.py`: internal fixed-budget paired Trainer composition with observed batch hashes and shared stored held-out scoring and a complete-artifact gate returning all six final models; no CLI or formal launch authorization.
 - `qec/matched_initialization.py`: freezes and verifies all six seed/architecture initial states and Torch RNG without samples or optimizer updates.
 - `qec/matched_checkpoints.py`: binds unchanged private Trainer checkpoints to the verified layout, both prospective documents and an externally frozen inventory; no standalone study launch.
