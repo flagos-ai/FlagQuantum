@@ -24,6 +24,15 @@ class RunnerSpec:
 
 
 _RUNNERS: dict[str, RunnerSpec] = {
+    "ftqc_mixed_reference": RunnerSpec(
+        name="ftqc_mixed_reference",
+        module="flagquantum.benchmarking.ftqc_mixed_reference",
+        attribute="main",
+        category="simulation",
+        summary="Observe one approved exact CPU Clifford+T study point.",
+        hardware="CPU; core Torch only; n=4/8; external RSS watchdog for collection",
+        example="flagquantum-benchmark run ftqc_mixed_reference --n 4 --t 2 --mode mps --json-output results/mixed.json",
+    ),
     "ftqc_exact_reference": RunnerSpec(
         name="ftqc_exact_reference",
         module="flagquantum.benchmarking.ftqc_exact_reference",
