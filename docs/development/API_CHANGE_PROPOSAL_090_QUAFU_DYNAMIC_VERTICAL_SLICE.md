@@ -182,6 +182,14 @@ unbound physical mapping is refused before a `DeploymentPackage` is created.
 This records the final sealing behavior without weakening the Batch B blocker
 or making a live-support claim.
 
+Batch D adds a private task-API contract exercised only with an in-memory mock.
+Its `client_ref` is deterministically bound to the sealed package, one execution
+attempt performs at most one POST, and an exception or missing task identity is
+reported as ambiguous without retry or legacy fallback. The closed mock result
+shape preserves the package, snapshot, calibration, provider-legality, shot,
+and bit-order identities. It rejects mid-circuit data because no live Quafu
+result contract has confirmed that field.
+
 Stages 1 through 5 must use fixtures or mocks. This proposal authorizes no
 provider SDK import during preflight, credential access, network request, live
 discovery, task submission, charging, or hardware-support claim.
