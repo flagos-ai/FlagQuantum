@@ -1,0 +1,27 @@
+{
+  "purpose": "continued_physical_assessment_publication",
+  "source": {
+    "revision": "67706be8a4c65fb8645611f032d1c0157a990830",
+    "archive_sha256": "763f321d7452881b9fb9026783b291063969404c957ce82233905f160c19d36b",
+    "tree_dirty": false
+  },
+  "integration": {
+    "revision": "937e323573861328ea2a37924aeb349868082978",
+    "purpose": "Later main integration, not producing source"
+  },
+  "protocol_sha256": "9f48cc9ad7b28a787e98211a9b436c795d7251c02d87e600eb2d26a4dffacd31",
+  "new_optimizer_steps": 0,
+  "calibration_independent_shots": 12288,
+  "validation_independent_physical_shots": 131072,
+  "primary_independent_physical_shots": 4194304,
+  "physical_probe_shots": 64,
+  "probe_replayed_on_hosts": 2,
+  "primary_hosts": 1,
+  "timing_repetitions": 0,
+  "raw_binary_policy": "All 18 scientific JSONs and frozen choices.sha256 are preserved byte-for-byte in raw-metadata.tar.gz. Eleven smaller original newline-terminated JSONs are also exposed directly, unchanged. Six non-newline-terminated stage plans and the 1.96MB complete primary manifest remain only in the archive. Full binary score/input/prediction shards and private controller/container records remain in the verified private archives; no weights are published.",
+  "audit_script_sha256": "3bf8cd83b464998288b6288f903a8705e447739cc62c44697a004e04e77d56ab",
+  "public_metadata_archive": "raw-metadata.tar.gz",
+  "metadata_file_sha256": "raw-metadata-sha256.json",
+  "scientific_json_files_in_archive": 18,
+  "direct_scientific_json_copies": 11
+}

@@ -1,0 +1,144 @@
+{
+  "purpose": "post_run_retained_bytes_audit",
+  "all_checks_passed": true,
+  "new_samples": 0,
+  "new_optimizer_steps": 0,
+  "primary_shots": 4194304,
+  "validation_shots": 131072,
+  "calibration_shots_per_seed": 4096,
+  "calibration_score_files": 384,
+  "primary_shards": 1024,
+  "registered_comparisons": 26,
+  "calibration_rows": [
+    {
+      "seed": 11,
+      "step": 200,
+      "shots": 4096,
+      "mechanism_labels": 48738304,
+      "positives": 60160,
+      "temperature": 0.5,
+      "score_means": {
+        "0.25": 0.015788546520419583,
+        "0.5": 0.009815322493053084,
+        "1.0": 0.04673931574573827,
+        "2.0": 0.19169611541901535,
+        "4.0": 0.3773551940286704
+      }
+    },
+    {
+      "seed": 11,
+      "step": 2000,
+      "shots": 4096,
+      "mechanism_labels": 48738304,
+      "positives": 60160,
+      "temperature": 0.5,
+      "score_means": {
+        "0.25": 0.0074995834301032575,
+        "0.5": 0.004080216985105476,
+        "1.0": 0.00438647645382422,
+        "2.0": 0.04114644783446271,
+        "4.0": 0.18261228958698775
+      }
+    },
+    {
+      "seed": 22,
+      "step": 200,
+      "shots": 4096,
+      "mechanism_labels": 48738304,
+      "positives": 59864,
+      "temperature": 0.25,
+      "score_means": {
+        "0.25": 0.012464638256090559,
+        "0.5": 0.013694304055935452,
+        "1.0": 0.08501663271829087,
+        "2.0": 0.2570114299958936,
+        "4.0": 0.4319548900591944
+      }
+    },
+    {
+      "seed": 22,
+      "step": 2000,
+      "shots": 4096,
+      "mechanism_labels": 48738304,
+      "positives": 59864,
+      "temperature": 0.5,
+      "score_means": {
+        "0.25": 0.00910264084034763,
+        "0.5": 0.0047867556108362195,
+        "1.0": 0.005913227441471656,
+        "2.0": 0.054081357372166,
+        "4.0": 0.20855102023237107
+      }
+    },
+    {
+      "seed": 33,
+      "step": 200,
+      "shots": 4096,
+      "mechanism_labels": 48738304,
+      "positives": 60466,
+      "temperature": 0.5,
+      "score_means": {
+        "0.25": 0.01359964390289744,
+        "0.5": 0.011221497127380235,
+        "1.0": 0.0678515507155513,
+        "2.0": 0.23119476953203946,
+        "4.0": 0.41155289309884907
+      }
+    },
+    {
+      "seed": 33,
+      "step": 2000,
+      "shots": 4096,
+      "mechanism_labels": 48738304,
+      "positives": 60466,
+      "temperature": 0.5,
+      "score_means": {
+        "0.25": 0.008233309515022765,
+        "0.5": 0.004385105696652419,
+        "1.0": 0.0050933648023991675,
+        "2.0": 0.047950838945571735,
+        "4.0": 0.19687829253469136
+      }
+    }
+  ],
+  "path_failure_counts": {
+    "global": 5319,
+    "fast": 5147,
+    "mask-only": 5319,
+    "native-11-step-200-raw": 5319,
+    "native-11-step-200-calibrated": 5319,
+    "native-11-step-2000-raw": 5319,
+    "native-11-step-2000-calibrated": 5319,
+    "native-22-step-200-raw": 5319,
+    "native-22-step-200-calibrated": 5319,
+    "native-22-step-2000-raw": 5319,
+    "native-22-step-2000-calibrated": 5319,
+    "native-33-step-200-raw": 5319,
+    "native-33-step-200-calibrated": 5319,
+    "native-33-step-2000-raw": 5319,
+    "native-33-step-2000-calibrated": 5319
+  },
+  "summary_sha256": "ded6df12ead60497bdb6d52ff41157d364ff780aa05790f1455e65ede1cabd40",
+  "choices_sha256": "3b8c50ecd3513f676134acf37812c34ea2bca62096974e9417ae6ef92adac5d0",
+  "probe_sha256": "78d6a4b0be97d1a5b71fea7af8644280054f093a41576fceeaee3a4c06f9b11d",
+  "source_sha256": {
+    "examples/qec/continued_primary.py": "bda8bf7b15f9cfdec5bb0de37c00c30bbd5f8e6acc16427b753874590030029c",
+    "examples/qec/continued_parity.py": "70294285c406e2b364a7935ac27726450460526ef3e20d9ffb09f12af19505d9",
+    "examples/qec/continued_selection.py": "f6aca5ccdecceaf17af39179102ce89ff7335063ca1adcafcd552c17589377b8",
+    "examples/qec/continued_assessment.py": "77eff7e88ee53df46390aedc98501cc899f7cb65e9c1aa9bbba3c6ee9564bb99",
+    "flagquantum/qec/decoders/_ai/exact_statistics.py": "3d085b38b193364289b9477f6c487a198a12107745b1574a8094ae87f57844a8",
+    "examples/qec/compare_ising.py": "1089936137c1095da2f0e17ac1362da36b42be88bb73b37fc050cb2602ffe078",
+    "examples/qec/diagnose_predecoder.py": "39361ae54dc6317e583cce23d0e6dba3ae1ff8ff6a5a8005544db0a4011760c9",
+    "flagquantum/qec/decoders/_ai/__init__.py": "98190f335763fa2f0d50ea0035acd237b4691ccb03a864b574ab9963f3114f02",
+    "flagquantum/qec/decoders/_ai/assessment.py": "c48e1e5650b07a96fb06cc2e4d394539833e5040ee09d00107f7a7e2b4e97922",
+    "flagquantum/qec/decoders/_ai/calibration.py": "09ada8143020e595dac5d7ce6fa9e672d22529dc25eef3d5b34413323431775b",
+    "flagquantum/qec/decoders/_ai/comparison.py": "3c622839a42d1b2fecd49369d4b8b8cfddd4bc854c4beb36e9fc99da710772bc",
+    "flagquantum/qec/decoders/_ai/diagnostics.py": "1f575674810e176db91fa95315ba97ab7e3bb7379d349702d47abdef9aab90e1",
+    "flagquantum/qec/decoders/_ai/predecoder.py": "bf6a3464338897e19410d65706efb86570a954d6c3479bd0b26e70cdf02099eb",
+    "flagquantum/qec/decoders/_ai/spacetime.py": "1bfcc839e4e07130b81ee52925cf58ea67e884ba7091d1de24cc64d8711c6ef3",
+    "flagquantum/qec/decoders/_ai/training.py": "427c10ad5a27890cffd358478a35d429803226aa3945ae32d09176b73c853d21",
+    "examples/qec/run_continued_assessment.py": "e98899e26a3f7ae4a899d4cbb3580d617485c53b2ba4afe95e8a8590277f9ad9"
+  },
+  "audit_source_sha256": "3bf8cd83b464998288b6288f903a8705e447739cc62c44697a004e04e77d56ab",
+  "notes": "Saved logits/counts are reduced only for audit; no model inference, fitting new choices, sampler or optimizer updates."
+}
