@@ -216,5 +216,3 @@ tensor_network 0.42677670 0.07322330 0.07322330 0.42677670
 
 This existing two-qubit sanity example is not a failed-study-point retry or a
 continuation launch. Its success does not establish supervision availability.
-
-
