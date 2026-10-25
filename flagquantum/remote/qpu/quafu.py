@@ -1,4 +1,4 @@
-"""Quafu SQC execution provider."""
+"""Quafu SDK execution provider with a staged read-only legacy bridge."""
 
 from __future__ import annotations
 
@@ -6,10 +6,9 @@ import hashlib
 import os
 import re
 import time
-import uuid
 from collections.abc import Mapping, Sequence
 from typing import Any
-from urllib import error, parse
+from urllib import parse
 
 from ...deployment.cloud import (
     CloudBackendProfile,
@@ -37,10 +36,7 @@ from .result_parsing import _extract_counts
 
 _QREG_DECLARATION = re.compile(r"\bqreg\s+q\s*\[\s*(\d+)\s*\]\s*;")
 _QUBIT_REFERENCE = re.compile(r"\bq\s*\[\s*(\d+)\s*\]")
-_TASK_API_PROTOCOL = "task_api_v1"
-_SQC_PROTOCOL = "sqc_legacy"
 _SDK_PROTOCOL = "quafu_sdk_v1"
-_TASK_API_ROUTING_TARGETS = {"all-race", "all-redispatch"}
 _MAX_SHOTS = 8192
 
 
@@ -58,13 +54,8 @@ def _is_simulator_target(target: str) -> bool:
     return backend == "sim" or backend.endswith("-sim")
 
 
-def _requires_task_api(target: str) -> bool:
-    backend = _quafu_backend_name(target)
-    return _is_simulator_target(backend) or backend in _TASK_API_ROUTING_TARGETS
-
-
 def _validate_quafu_shots(target: str, shots: int | None) -> None:
-    """Validate the task API's simulator and hardware shot ranges."""
+    """Validate the maintained service's simulator and hardware shot ranges."""
 
     if type(shots) is not int:
         raise ValueError("Quafu shots must be an integer")
@@ -91,7 +82,7 @@ def _service_options(n_wires: int, raw_qubits: Sequence[int]) -> dict[str, Any]:
         raise ValueError(
             "target_qubits must map every logical wire to a unique nonnegative integer"
         )
-    return {"compiler": "quarkcircuit", "target_qubits": qubits}
+    return {"compiler": "qiskit", "target_qubits": qubits}
 
 
 def _submission_options(
@@ -102,7 +93,7 @@ def _submission_options(
 ) -> dict[str, Any]:
     """Validate the selected service-compilation or precompiled submission contract."""
 
-    if options.get("compiler") == "quarkcircuit":
+    if options.get("compiler") in {"qiskit", "quarkcircuit"}:
         resolved = _service_options(n_wires, options.get("target_qubits", ()))
         declaration = _QREG_DECLARATION.search(qasm)
         if declaration is None or int(declaration.group(1)) != n_wires:
@@ -147,10 +138,9 @@ def _submission_options(
 class QuafuProvider(HttpQuantumProvider):
     """FlagQuantum adapter for Quafu discovery and remote execution.
 
-    Read-only discovery, calibration, and static single-circuit task lifecycles
-    use the official Quafu SDK. An explicitly injected HTTP transport retains
-    the compatibility path used by offline contract tests while collection
-    migration remains staged.
+    Read-only discovery, calibration, and every static execution lifecycle use
+    the official Quafu SDK. An explicitly injected HTTP transport retains only
+    the staged read compatibility path used by offline contract tests.
     """
 
     def __init__(
@@ -172,7 +162,6 @@ class QuafuProvider(HttpQuantumProvider):
         self._sdk_read_adapter = sdk_adapter
         self._sdk_submission_adapter = sdk_adapter
         self._prefer_sdk_reads = sdk_adapter is not None or not transport_supplied
-        self._prefer_sdk_lifecycle = sdk_adapter is not None or not transport_supplied
         resolved_token = token or os.getenv("QUAFU_API_TOKEN")
         self.task_server_url = (
             task_server_url
@@ -228,21 +217,13 @@ class QuafuProvider(HttpQuantumProvider):
 
     @staticmethod
     def _protocol(handle: ProviderTaskHandle) -> str:
-        protocol = handle.payload.get("quafu_protocol", _SQC_PROTOCOL)
-        if protocol in {_SDK_PROTOCOL, _TASK_API_PROTOCOL}:
-            return str(protocol)
-        return _SQC_PROTOCOL
-
-    def _task_api_is_healthy(self) -> bool:
-        if not self.api_key:
-            return False
-        try:
-            response = self.transport.get_json(
-                self._task_api_url("/healthz"), {}, self.timeout
+        protocol = handle.payload.get("quafu_protocol")
+        if protocol != _SDK_PROTOCOL:
+            raise ValidationError(
+                "This Quafu receipt uses a retired transport protocol; only "
+                "quafu_sdk_v1 jobs can be queried, cancelled, or restored."
             )
-        except Exception:
-            return False
-        return isinstance(response, Mapping) and response.get("healthy") is True
+        return _SDK_PROTOCOL
 
     def verify(self) -> Any:
         """Verify the configured token using the official platform endpoint."""
@@ -260,37 +241,6 @@ class QuafuProvider(HttpQuantumProvider):
         if self.credentials.token:
             headers["token"] = self.credentials.token
         return headers
-
-    def _require_legacy_credential(self, target: str) -> None:
-        """Refuse an unauthenticated POST to the legacy SQC platform.
-
-        The legacy SQC contract authenticates with the ``token`` header that
-        :meth:`_headers` builds from ``QUAFU_API_TOKEN``. Without it the request
-        still leaves the machine, and the platform's transport-level rejection is
-        what reaches the caller -- a report of the platform's verdict, not of the
-        missing prerequisite. Both entry points that post to that endpoint call
-        this before assembling a request, so an unconfigured credential fails at
-        the earliest knowable stage instead of surfacing as a rejected
-        submission.
-        """
-
-        if self.credentials.token:
-            return
-        remedy = (
-            "A Quafu credential is required to submit to the legacy SQC platform: "
-            "pass token=... or set QUAFU_API_TOKEN."
-        )
-        if self.api_key:
-            raise ValidationError(
-                f"{remedy} QUAFU_API_KEY is set, but the task API is not answering "
-                f"for target {target!r}, and that key does not authorize the legacy "
-                "endpoint. No request was sent."
-            )
-        raise ValidationError(
-            f"{remedy} Neither QUAFU_API_KEY nor QUAFU_API_TOKEN is configured, so a "
-            f"request for target {target!r} would carry no authentication header. "
-            "No request was sent."
-        )
 
     def list_devices(
         self, n_qubits: int | None = None
@@ -579,51 +529,16 @@ class QuafuProvider(HttpQuantumProvider):
             n_wires=package.n_qubits,
             options=dict(package.metadata.get("provider_options", {})),
         )
-        if (
-            self._prefer_sdk_lifecycle
-            and options.get("compiler") == "quarkcircuit"
-            and not options.get("target_qubits")
+        if options.get("compiler") in {"qiskit", "quarkcircuit"} and not options.get(
+            "target_qubits"
         ):
             return self._submit_sdk_logical(package)
-        if self._prefer_sdk_lifecycle and options.get("compiler") is None:
+        if options.get("compiler") is None:
             return self._submit_sdk_physical(package, options)
-        task_api_required = _requires_task_api(package.backend.name)
-        if task_api_required and (
-            options.get("compiler") != "quarkcircuit" or options.get("target_qubits")
-        ):
-            # The exception class here is unchanged: this refusal is about the
-            # option combination the caller passed, not about a credential, and
-            # `FQ-QUAFU-CREDENTIAL-FAIL-CLOSED-20260930.md` enumerates only the
-            # hardware and the routing-target classes. Widening an unapproved API
-            # change is not this patch's business.
-            raise ValueError(
-                f"Quafu target {package.backend.name!r} requires logical-circuit "
-                "submission through the task API"
-            )
-        if (
-            options.get("compiler") == "quarkcircuit"
-            and not options.get("target_qubits")
-            and self._task_api_is_healthy()
-        ):
-            try:
-                return self._submit_task_api(package)
-            except error.HTTPError as exc:
-                if 400 <= exc.code < 500:
-                    # A client rejection means the platform did not accept the
-                    # task. Server and transport failures after POST remain
-                    # ambiguous and must not create a second hardware task.
-                    if task_api_required:
-                        raise
-                else:
-                    raise
-        if task_api_required:
-            raise ValidationError(
-                f"Quafu target {package.backend.name!r} requires the task API, and "
-                "the task API needs a credential this provider does not have: pass "
-                "api_key=... or set QUAFU_API_KEY. The legacy SQC platform is not an "
-                "equivalent route to this target, so there is no fallback to take."
-            )
-        return self._submit_legacy(package, options)
+        raise ValueError(
+            "Quafu SDK service compilation does not accept target_qubits; use "
+            "compiler='qsteed' for an explicit physical mapping"
+        )
 
     def _submit_sdk_logical(self, package: DeploymentPackage) -> ProviderTaskHandle:
         response = self._submission_sdk_adapter().submit_logical(
@@ -715,62 +630,6 @@ class QuafuProvider(HttpQuantumProvider):
             calibration_id.strip(),
         )
 
-    def _submit_task_api(self, package: DeploymentPackage) -> ProviderTaskHandle:
-        client_ref = str(uuid.uuid4())
-        response = self.transport.post_json(
-            self._task_api_url("/jobs"),
-            {
-                "mode": "single",
-                "target": package.backend.name,
-                "shots": package.shots,
-                "circuits": [{"qasm": package.qasm}],
-                "client_ref": client_ref,
-            },
-            self._task_api_headers(),
-            self.timeout,
-        )
-        job_id = response.get("job_id") if isinstance(response, Mapping) else None
-        if not isinstance(job_id, str) or not job_id.strip():
-            raise RuntimeError("quafu task API response does not contain a job id.")
-        receipt = build_submission_receipt(package, response)
-        receipt["quafu_protocol"] = _TASK_API_PROTOCOL
-        receipt["client_ref"] = client_ref
-        return ProviderTaskHandle("quafu", job_id, package.backend.name, receipt)
-
-    def _submit_legacy(
-        self, package: DeploymentPackage, options: Mapping[str, Any]
-    ) -> ProviderTaskHandle:
-        self._require_legacy_credential(package.backend.name)
-        query = parse.urlencode(
-            {"name": package.name, "chip": package.backend.name, "shots": package.shots}
-        )
-        response = self.transport.post_json(
-            self._url(f"/task/run/?{query}"),
-            {
-                "circuit": package.qasm,
-                "options": options,
-            },
-            self._headers(),
-            self.timeout,
-        )
-        task_id = (
-            response
-            if isinstance(response, int)
-            else response.get("task_id", response.get("tid", response.get("id")))
-        )
-        if task_id is None:
-            raise RuntimeError("quafu submit response does not contain a task id.")
-        receipt = build_submission_receipt(
-            package, response if isinstance(response, Mapping) else {}
-        )
-        receipt["quafu_protocol"] = _SQC_PROTOCOL
-        return ProviderTaskHandle(
-            "quafu",
-            str(task_id),
-            package.backend.name,
-            receipt,
-        )
-
     def submit_qasm(
         self,
         qasm: str,
@@ -800,192 +659,75 @@ class QuafuProvider(HttpQuantumProvider):
             options={"compiler": None, "target_qubits": target_qubits},
         )
         digest = hashlib.sha256(program.encode()).hexdigest()
-        if self._prefer_sdk_lifecycle:
-            response, physical_qasm, measurements, backend_snapshot, calibration_id = (
-                self._submit_sdk_mapped_qasm(
-                    program,
-                    backend=backend,
-                    shots=shots,
-                    name=task_name,
-                    target_qubits=options["target_qubits"],
-                )
+        response, physical_qasm, measurements, backend_snapshot, calibration_id = (
+            self._submit_sdk_mapped_qasm(
+                program,
+                backend=backend,
+                shots=shots,
+                name=task_name,
+                target_qubits=options["target_qubits"],
             )
-            receipt = {
-                "deployment_receipt_schema": DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
-                "deployment_package_schema": "flagquantum_submitted_qasm_v1",
-                "deployment_program_format": "openqasm-2",
-                "routing_evidence_sha256": digest,
-                "deployment_artifact_sha256": digest,
-                "source_qasm_sha256": digest,
-                "submitted_qasm_sha256": hashlib.sha256(
-                    physical_qasm.encode()
-                ).hexdigest(),
-                "compiler": None,
-                "service_compiler": "none",
-                "target_qubits": options["target_qubits"],
-                "quafu_protocol": _SDK_PROTOCOL,
-                "backend_snapshot_sha256": backend_snapshot_sha256(backend_snapshot),
-                "calibration_id": calibration_id,
-                "measurement_mapping": [dict(item) for item in measurements],
-            }
-            return ProviderTaskHandle(
-                "quafu", str(response["job_id"]), backend, receipt
-            )
-
-        self._require_legacy_credential(backend)
-        query = parse.urlencode(
-            {"name": task_name, "chip": backend, "shots": int(shots)}
         )
-        response = self.transport.post_json(
-            self._url(f"/task/run/?{query}"),
-            {"circuit": program, "options": options},
-            self._headers(),
-            self.timeout,
-        )
-        task_id = (
-            response
-            if isinstance(response, int)
-            else response.get("task_id", response.get("tid", response.get("id")))
-        )
-        if task_id is None:
-            raise RuntimeError("quafu submit response does not contain a task id.")
         receipt = {
             "deployment_receipt_schema": DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
             "deployment_package_schema": "flagquantum_submitted_qasm_v1",
             "deployment_program_format": "openqasm-2",
             "routing_evidence_sha256": digest,
             "deployment_artifact_sha256": digest,
-            "submitted_qasm_sha256": digest,
+            "source_qasm_sha256": digest,
+            "submitted_qasm_sha256": hashlib.sha256(physical_qasm.encode()).hexdigest(),
             "compiler": None,
+            "service_compiler": "none",
             "target_qubits": options["target_qubits"],
-            "quafu_protocol": _SQC_PROTOCOL,
+            "quafu_protocol": _SDK_PROTOCOL,
+            "backend_snapshot_sha256": backend_snapshot_sha256(backend_snapshot),
+            "calibration_id": calibration_id,
+            "measurement_mapping": [dict(item) for item in measurements],
         }
-        if isinstance(response, Mapping):
-            receipt["submit"] = dict(response)
-        return ProviderTaskHandle("quafu", str(task_id), backend, receipt)
+        return ProviderTaskHandle("quafu", str(response["job_id"]), backend, receipt)
 
     def query_status(self, handle: ProviderTaskHandle) -> str:
-        protocol = self._protocol(handle)
-        if protocol == _SDK_PROTOCOL:
-            return self._submission_sdk_adapter().job_status(handle.task_id)
-        if protocol == _TASK_API_PROTOCOL:
-            response = self.transport.get_json(
-                self._task_api_url("/jobs/{task_id}/status", task_id=handle.task_id),
-                self._task_api_headers(),
-                self.timeout,
-            )
-        else:
-            response = self.transport.get_json(
-                self._url("/task/status/{task_id}", task_id=handle.task_id),
-                self._headers(),
-                self.timeout,
-            )
-        if isinstance(response, Mapping):
-            status = str(
-                response.get(
-                    "status",
-                    response.get("state", response.get("task_status", "Running")),
-                )
-            )
-        else:
-            status = str(response)
-        return {
-            "completed": "Finished",
-            "finished": "Finished",
-            "done": "Finished",
-            "failed": "Failed",
-            "cancelled": "Cancelled",
-            "canceled": "Cancelled",
-        }.get(status.lower(), status)
+        self._protocol(handle)
+        return self._submission_sdk_adapter().job_status(handle.task_id)
 
     def cancel(self, handle: ProviderTaskHandle) -> Any:
         """Request cancellation through the API that accepted the task."""
 
-        protocol = self._protocol(handle)
-        if protocol == _SDK_PROTOCOL:
-            return self._submission_sdk_adapter().cancel_job(handle.task_id)
-        if protocol == _TASK_API_PROTOCOL:
-            return self.transport.post_json(
-                self._task_api_url("/jobs/{task_id}/cancel", task_id=handle.task_id),
-                {},
-                self._task_api_headers(),
-                self.timeout,
-            )
-
-        return self.transport.get_json(
-            self._url("/task/cancel/{task_id}", task_id=handle.task_id),
-            self._headers(),
-            self.timeout,
-        )
+        self._protocol(handle)
+        return self._submission_sdk_adapter().cancel_job(handle.task_id)
 
     def fetch_result(self, handle: ProviderTaskHandle) -> DeploymentResult:
         protocol = self._protocol(handle)
-        response: Mapping[str, Any]
-        if protocol == _SDK_PROTOCOL:
-            response = self._submission_sdk_adapter().job_result(handle.task_id)
-        elif protocol == _TASK_API_PROTOCOL:
-            response = self.transport.get_json(
-                self._task_api_url("/jobs/{task_id}/results", task_id=handle.task_id),
-                self._task_api_headers(),
-                self.timeout,
-            )
-        else:
-            response = self.transport.get_json(
-                self._url("/task/result/{task_id}", task_id=handle.task_id),
-                self._headers(),
-                self.timeout,
-            )
+        response: Mapping[str, Any] = self._submission_sdk_adapter().job_result(
+            handle.task_id
+        )
         if not response:
             raise RuntimeError(
                 f"quafu task {handle.task_id} has no result yet; query status and retry"
             )
-        result_payload: Mapping[str, Any] = response
-        if protocol == _TASK_API_PROTOCOL:
-            rows = response.get("counts")
-            if (
-                isinstance(rows, Sequence)
-                and not isinstance(rows, (str, bytes))
-                and len(rows) == 1
-                and rows[0] is None
-            ):
-                raise RuntimeError(
-                    f"quafu task {handle.task_id} has no result yet; "
-                    "query status and retry"
-                )
-            if (
-                not isinstance(rows, Sequence)
-                or isinstance(rows, (str, bytes))
-                or len(rows) != 1
-                or not isinstance(rows[0], Mapping)
-            ):
-                raise RuntimeError("quafu task API result does not contain counts.")
-            result_payload = {"counts": rows[0]}
         counts = _extract_counts(
-            result_payload, provider="quafu", flip=self.reverse_result_bits
+            response, provider="quafu", flip=self.reverse_result_bits
         )
-        if protocol == _SDK_PROTOCOL:
-            if response.get("bit_order") != "c0_rightmost":
-                raise RuntimeError(
-                    "Quafu SDK result does not declare c0_rightmost bit order"
-                )
-            returned = response.get("shots_returned")
-            if type(returned) is not int or returned != sum(counts.values()):
-                raise RuntimeError(
-                    "Quafu SDK returned-shot count does not match result counts"
-                )
-            if handle.payload.get("service_compiler") == "none":
-                validate_physical_result(
-                    expected_measurements=handle.payload.get("measurement_mapping"),
-                    expected_calibration_id=handle.payload.get("calibration_id"),
-                    response=response,
-                )
-            executed = response.get("executed_qasm")
-            if isinstance(executed, str) and executed:
-                response = dict(response) | {
-                    "executed_qasm_sha256": hashlib.sha256(
-                        executed.encode()
-                    ).hexdigest()
-                }
+        if response.get("bit_order") != "c0_rightmost":
+            raise RuntimeError(
+                "Quafu SDK result does not declare c0_rightmost bit order"
+            )
+        returned = response.get("shots_returned")
+        if type(returned) is not int or returned != sum(counts.values()):
+            raise RuntimeError(
+                "Quafu SDK returned-shot count does not match result counts"
+            )
+        if handle.payload.get("service_compiler") == "none":
+            validate_physical_result(
+                expected_measurements=handle.payload.get("measurement_mapping"),
+                expected_calibration_id=handle.payload.get("calibration_id"),
+                response=response,
+            )
+        executed = response.get("executed_qasm")
+        if isinstance(executed, str) and executed:
+            response = dict(response) | {
+                "executed_qasm_sha256": hashlib.sha256(executed.encode()).hexdigest()
+            }
         return DeploymentResult(
             handle=handle,
             counts=counts,

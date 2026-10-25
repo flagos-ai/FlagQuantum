@@ -7,7 +7,7 @@ for preparation and the provider's acknowledgement, not for execution completion
 
 ## Quafu
 
-Configure `QUAFU_API_TOKEN` in the local environment, then submit once:
+Install the Quafu extra and configure `QUAFU_API_KEY`, then submit once:
 
 ```python
 import flagquantum as fq
@@ -32,6 +32,8 @@ if state == "succeeded":
 finished and maps to `queued`; it does not mean hardware execution is finished.
 `raw_status` preserves the last queried provider state. Unknown or missing states
 never count as success. Calls still take time for their individual network I/O.
+The complete lifecycle uses `quafu-sdk`; there is no fallback to a retired
+SQC or FlagQuantum-owned Task API transport.
 
 `result()` does not poll: it raises `ExecutionError` unless the job has succeeded.
 To intentionally block the current cell, use `result = job.wait(timeout=600)`.
@@ -115,9 +117,10 @@ apply to the whole job. A partially finished collection is reported as failed;
 missing or failed rows are never silently dropped. Result pagination is aligned
 by task sequence, and returned counts/shot accounting are checked per circuit.
 
-Use the matching updated client to restore collection receipts. Older single
-circuit receipts remain supported. Offline tests do not establish that a live
-platform accepted a collection or that a specific device is available.
+Use the matching updated client to restore collection receipts. Receipts whose
+protocol is `sqc_legacy` or `task_api_v1` are intentionally rejected and never
+resubmitted. Offline tests do not establish that a live platform accepted a
+collection or that a specific device is available.
 
 ## Restore after restarting the Notebook
 

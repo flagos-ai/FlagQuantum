@@ -1,6 +1,7 @@
 """Prospectively validate one connected regional Twin circuit on Quafu.
 
-Set ``QUAFU_API_TOKEN`` before running. Adjust the cell artifact paths, physical
+Set ``QUAFU_API_KEY`` and the temporary calibration-only ``QUAFU_API_TOKEN``
+before running. Adjust the cell artifact paths, physical
 mapping, and backend to artifacts captured from the same calibration. Running
 this example explicitly submits exactly ``REPETITIONS`` hardware tasks.
 """
@@ -50,8 +51,11 @@ def _wait_for_result(
 
 
 def main() -> None:
-    if not os.getenv("QUAFU_API_TOKEN"):
-        raise RuntimeError("Set QUAFU_API_TOKEN before submitting to Quafu SQC")
+    if not os.getenv("QUAFU_API_KEY") or not os.getenv("QUAFU_API_TOKEN"):
+        raise RuntimeError(
+            "Set QUAFU_API_KEY for SDK execution and QUAFU_API_TOKEN for "
+            "legacy calibration reads"
+        )
 
     twin_a = fq.twin.load_twin(CELL_A_TWIN)
     support_a = fq.twin.load_circuit_support(CELL_A_SUPPORT)

@@ -16,9 +16,9 @@ jobs.
 Read-only discovery and calibration do not require credentials. Keep task
 submission credentials outside source control. `QUAFU_API_KEY` authenticates
 SDK logical and QSteed-compiled submission, status, result, cancellation, and
-job restoration. During the staged migration, `QUAFU_API_TOKEN` remains
-available only to explicitly injected legacy-transport compatibility paths and
-is scheduled for removal after the remaining cutover gates pass.
+job restoration. Static execution never falls back to the retired SQC or
+FlagQuantum-owned Task API transports. Historical receipts from those
+transports are rejected without resubmission.
 
 A logical submission with no API key is rejected before the SDK or network is
 used:
@@ -28,13 +28,15 @@ ValidationError: Quafu submission requires api_key=... or QUAFU_API_KEY;
 FlagQuantum does not start interactive SDK login.
 ```
 
-The temporary legacy compatibility endpoint authenticates with
-`QUAFU_API_TOKEN`; `QUAFU_API_KEY` is not silently reused for that endpoint.
+`QUAFU_API_TOKEN` remains only for the legacy `fetch_chip_info()` calibration
+read used by noise-model workflows. It does not authorize task execution and
+is scheduled for removal once the maintained SDK exposes every required noise
+quantity with authoritative units.
 
 ```bash
 export QUAFU_API_KEY=qf_replace_with_your_api_key
 export QUAFU_TASK_SERVER_URL=https://quafu.com.cn/api/v1
-export QUAFU_API_TOKEN=replace_with_your_legacy_token
+export QUAFU_API_TOKEN=replace_with_your_legacy_calibration_token  # optional
 ```
 
 `QUAFU_TASK_SERVER_URL` is optional and defaults to the production URL above.
@@ -45,7 +47,7 @@ To use a local `.env` file:
 
 ```bash
 cp .env.example .env
-# Add QUAFU_API_KEY and QUAFU_TASK_SERVER_URL, and replace the legacy token.
+# Add QUAFU_API_KEY. Add the legacy token only for fetch_chip_info workflows.
 set -a
 . ./.env
 set +a

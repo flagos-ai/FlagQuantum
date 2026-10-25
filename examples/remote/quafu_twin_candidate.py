@@ -1,6 +1,7 @@
 """Compare two frozen Twins using one future Quafu hardware result.
 
-Set ``QUAFU_API_TOKEN`` and create ``twin-incumbent.json`` with
+Set ``QUAFU_API_KEY`` and the temporary calibration-only ``QUAFU_API_TOKEN``,
+then create ``twin-incumbent.json`` with
 ``fq.twin.dump_twin`` before running this example. Running the example
 explicitly submits one 1,024-shot Shenglian task.
 """
@@ -47,8 +48,11 @@ def _wait_for_result(
 
 
 def main() -> None:
-    if not os.getenv("QUAFU_API_TOKEN"):
-        raise RuntimeError("Set QUAFU_API_TOKEN before submitting to Quafu SQC")
+    if not os.getenv("QUAFU_API_KEY") or not os.getenv("QUAFU_API_TOKEN"):
+        raise RuntimeError(
+            "Set QUAFU_API_KEY for SDK execution and QUAFU_API_TOKEN for "
+            "legacy calibration reads"
+        )
 
     incumbent = fq.twin.load_twin(INCUMBENT_PATH)
     if (
