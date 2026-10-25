@@ -1,0 +1,2048 @@
+{
+  "device": "cpu",
+  "distribution_semantics": "single_process",
+  "world_size": 1,
+  "local_world_size": 1,
+  "node_count": 1,
+  "rank_ownership": {
+    "0": "whole_workload"
+  },
+  "communication_bytes": 0,
+  "non_release_evidence": true,
+  "scalability_claim_allowed": false,
+  "release_gate_allowed": false,
+  "blockers": [
+    "One local CPU and fixed d9 workload only; repeated rows are not independent trials or confidence intervals.",
+    "No GPU, full-distance matrix, threshold, release performance or capacity claim."
+  ],
+  "base_commit": "ebc2f4985eaaa5e40b81f426dad4e872fa3f559b",
+  "implementation_commit": "3ec3d3e949d9717f2ad35601ece2ea660011453e",
+  "paired": {
+    "protocol": {
+      "declared_at_utc": "2026-10-25T17:32:09.444796+00:00",
+      "observer_sha256": "542cef38592d533a0669aa389d4eae64ad2c38c5c0c9334700f4ae96b7050889",
+      "environment": "one local macOS arm64 CPU host; existing Python3.12.14/Torch2.13/Stim1.16/PyMatching2.4 SDK environment, no remote hardware",
+      "workload": {
+        "distance": 9,
+        "basis": "x",
+        "entrance": "native",
+        "rounds": 3,
+        "shots": 65537,
+        "batches": [
+          128,
+          4096
+        ],
+        "seed": 53,
+        "noise": [
+          0.005,
+          0.007,
+          0.009
+        ]
+      },
+      "process_order_per_batch": [
+        "baseline",
+        "candidate",
+        "candidate",
+        "baseline",
+        "baseline",
+        "candidate"
+      ],
+      "each_process": {
+        "warmup": 1,
+        "measured": 3,
+        "fresh_process": true,
+        "seconds_budget": 30
+      },
+      "study_seconds_budget": 360,
+      "numerical_threads": 1,
+      "no_other_local_test_or_profile_overlap": true,
+      "timer": "reuse existing _observe; memory construction, export, strictactual-law DEM, decoder setup, sampler compilation, sample/decode/count loop and close included; imports/metadata/independent full-shot hash diagnostics excluded",
+      "validation": "source/strictDEM/detector/observable/prediction SHA256 and logical/event counts must match all successfulprocesses for eachbatch; existing SDK same engine stream, one-shot tail65537",
+      "summary": "all raw rows andwarmups preserved; nine measuredrows perimplementation perbatch only ifallcomplete; descriptive medians only, no significance/generalspeedclaim; no posthoc speed gate; keep regressions and incompletecases withoutsummaryratio",
+      "rss": "wholefreshprocess including imports/warmup/diagnostics, notphasepeak; platformcorrect units",
+      "no_scientific_retry_or_extra_samples": true,
+      "no_historical_dataset_changes": true,
+      "status": "Frozen before first collection; all candidate/baseline/local tests ended; actual main ebc unchanged.",
+      "controller_sha256": "5bc0498b3eead2cd705e64b621df0dbd867d35b296464cf3e80ee6fbab8bd3cd",
+      "independent_study": "New local comparison of cloned channel templates; no pooling with prior prepared-parity/profile/GPU datasets."
+    },
+    "elapsed_seconds": 82.50771399997757,
+    "all_processes_completed": true,
+    "summaries": [
+      {
+        "batch": 128,
+        "all_six_processes_same_diagnostics": true,
+        "diagnostic": {
+          "completed_shots": 65537,
+          "detector_events": 512157,
+          "logical_failures": 2,
+          "sha256": {
+            "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+            "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+            "detectors": "7ea28135f61e9cecee31193b5a743cf0bb12d1c49c27add3f159a64011a6c15b",
+            "observables": "4010a3290cb93a5f03b9b75f1c3a9d2c9fb8c8a49a31849df92994d6cb2aa6ff",
+            "predictions": "67cbe7cd8dc2dce9feb22401f70ec1d94cfe597ac73df58862e6e34bb8c863a0"
+          }
+        },
+        "pipeline_median_seconds": {
+          "baseline": 1.2744721670169383,
+          "candidate": 1.1937462920031976
+        },
+        "loop_median_seconds": {
+          "baseline": 0.24140619873651303,
+          "candidate": 0.24382838417659514
+        },
+        "process_max_rss_bytes": {
+          "baseline": [
+            268468224,
+            267567104,
+            267649024
+          ],
+          "candidate": [
+            267403264,
+            267632640,
+            267583488
+          ]
+        },
+        "pipeline_ratio": 1.067623979696956,
+        "loop_ratio": 0.9900660234932788
+      },
+      {
+        "batch": 4096,
+        "all_six_processes_same_diagnostics": true,
+        "diagnostic": {
+          "completed_shots": 65537,
+          "detector_events": 513809,
+          "logical_failures": 0,
+          "sha256": {
+            "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+            "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+            "detectors": "9a034825eddedf8a336c0413200753f832d3fe45d722232392aed5ad718ccf20",
+            "observables": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91",
+            "predictions": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91"
+          }
+        },
+        "pipeline_median_seconds": {
+          "baseline": 1.2136122499941848,
+          "candidate": 1.15922658299678
+        },
+        "loop_median_seconds": {
+          "baseline": 0.18979166290955618,
+          "candidate": 0.1895087850280106
+        },
+        "process_max_rss_bytes": {
+          "baseline": [
+            284622848,
+            285229056,
+            284901376
+          ],
+          "candidate": [
+            285016064,
+            284966912,
+            285016064
+          ]
+        },
+        "pipeline_ratio": 1.0469154760554311,
+        "loop_ratio": 1.0014926900697705
+      }
+    ],
+    "raw": [
+      {
+        "batch": 128,
+        "mode": "baseline",
+        "order_index": 0,
+        "raw_file_sha256": "e7f8074822bed734e0ca4b688d82b1556082931d06e0a2329414287f54ceaf34",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "ebc2f4985eaaa5e40b81f426dad4e872fa3f559b",
+            "source_tree": "git-tree-sha1:aee119b384bdce58c90de7d8bd20dac4cff3e1ae",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 128,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009068292012671009,
+              "native_export": 0.5770840419863816,
+              "strict_dem_construction": 0.005529124988242984,
+              "decoder_setup": 0.19148695800686255,
+              "sampler_compile": 0.4949836249870714,
+              "sampling": 0.17826282980968244,
+              "decoding": 0.06327574915485457,
+              "count_reduction": 0.0025108739209827036
+            },
+            "pipeline_seconds": 1.5225030420115218,
+            "shots_per_second": 43045.56259763719,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009432541992282495,
+              "native_export": 0.5209325000178069,
+              "strict_dem_construction": 0.00408362498274073,
+              "decoder_setup": 0.002228708006441593,
+              "sampler_compile": 0.48825520800892264,
+              "sampling": 0.17495722652529366,
+              "decoding": 0.06275112490402535,
+              "count_reduction": 0.002169576211599633
+            },
+            "pipeline_seconds": 1.2650960840110201,
+            "shots_per_second": 51803.97032944188,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009531832998618484,
+              "native_export": 0.5320780840120278,
+              "strict_dem_construction": 0.0038560829998459667,
+              "decoder_setup": 0.002246457996079698,
+              "sampler_compile": 0.5054746250098106,
+              "sampling": 0.17492509970907122,
+              "decoding": 0.0629110393638257,
+              "count_reduction": 0.0021754928748123348
+            },
+            "pipeline_seconds": 1.293471667013364,
+            "shots_per_second": 50667.5187956188,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009796375001315027,
+              "native_export": 0.5298539159994107,
+              "strict_dem_construction": 0.004083459003595635,
+              "decoder_setup": 0.0024488750204909593,
+              "sampler_compile": 0.5132739169930574,
+              "sampling": 0.17453179848962463,
+              "decoding": 0.06343861602363177,
+              "count_reduction": 0.002194283821154386
+            },
+            "pipeline_seconds": 1.2999019580020104,
+            "shots_per_second": 50416.879208900034,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 512157,
+            "logical_failures": 2,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "7ea28135f61e9cecee31193b5a743cf0bb12d1c49c27add3f159a64011a6c15b",
+              "observables": "4010a3290cb93a5f03b9b75f1c3a9d2c9fb8c8a49a31849df92994d6cb2aa6ff",
+              "predictions": "67cbe7cd8dc2dce9feb22401f70ec1d94cfe597ac73df58862e6e34bb8c863a0"
+            },
+            "process_max_rss_bytes": 268468224
+          }
+        ]
+      },
+      {
+        "batch": 128,
+        "mode": "candidate",
+        "order_index": 1,
+        "raw_file_sha256": "5cf7981165e4025622fdb9c90084aa9f94b5ea1cb1a1341592f437177c52d150",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "3ec3d3e949d9717f2ad35601ece2ea660011453e",
+            "source_tree": "git-tree-sha1:8caeb9c9073c611129417b91ea646c3ce45b6123",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 128,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009075958019820973,
+              "native_export": 0.4791062920121476,
+              "strict_dem_construction": 0.003908375016180798,
+              "decoder_setup": 0.10800083298818208,
+              "sampler_compile": 0.4674149999918882,
+              "sampling": 0.18250508114579134,
+              "decoding": 0.06532546994276345,
+              "count_reduction": 0.002229809819255024
+            },
+            "pipeline_seconds": 1.3178600000101142,
+            "shots_per_second": 49729.86508392168,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009270208975067362,
+              "native_export": 0.49369466700591147,
+              "strict_dem_construction": 0.003935959015507251,
+              "decoder_setup": 0.0022215829812921584,
+              "sampler_compile": 0.44552341700182296,
+              "sampling": 0.17499902096460573,
+              "decoding": 0.06180601121741347,
+              "count_reduction": 0.0020394408784341067
+            },
+            "pipeline_seconds": 1.1937462920031976,
+            "shots_per_second": 54900.27524192255,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.008961958985310048,
+              "native_export": 0.47343145799823105,
+              "strict_dem_construction": 0.00395858398405835,
+              "decoder_setup": 0.0022177500068210065,
+              "sampler_compile": 0.4297614159877412,
+              "sampling": 0.17442998496699147,
+              "decoding": 0.062015732924919575,
+              "count_reduction": 0.0020259669981896877
+            },
+            "pipeline_seconds": 1.157047499989858,
+            "shots_per_second": 56641.581266607005,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.008913500001654029,
+              "native_export": 0.4771900000050664,
+              "strict_dem_construction": 0.0039457089733332396,
+              "decoder_setup": 0.0021865000016987324,
+              "sampler_compile": 0.4489257090026513,
+              "sampling": 0.17847981382510625,
+              "decoding": 0.06320005824090913,
+              "count_reduction": 0.002148512110579759
+            },
+            "pipeline_seconds": 1.1852399999916088,
+            "shots_per_second": 55294.28638964597,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 512157,
+            "logical_failures": 2,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "7ea28135f61e9cecee31193b5a743cf0bb12d1c49c27add3f159a64011a6c15b",
+              "observables": "4010a3290cb93a5f03b9b75f1c3a9d2c9fb8c8a49a31849df92994d6cb2aa6ff",
+              "predictions": "67cbe7cd8dc2dce9feb22401f70ec1d94cfe597ac73df58862e6e34bb8c863a0"
+            },
+            "process_max_rss_bytes": 267403264
+          }
+        ]
+      },
+      {
+        "batch": 128,
+        "mode": "candidate",
+        "order_index": 2,
+        "raw_file_sha256": "7ba57622c024cffbed578255197d3ce5f79f8f7c2c706c9c1aa19dfec2ef7ffb",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "3ec3d3e949d9717f2ad35601ece2ea660011453e",
+            "source_tree": "git-tree-sha1:8caeb9c9073c611129417b91ea646c3ce45b6123",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 128,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009193416975904256,
+              "native_export": 0.4843135830014944,
+              "strict_dem_construction": 0.004032333003124222,
+              "decoder_setup": 0.10951737500727177,
+              "sampler_compile": 0.4588485840067733,
+              "sampling": 0.17511985206510872,
+              "decoding": 0.062446389376418665,
+              "count_reduction": 0.002088505105348304
+            },
+            "pipeline_seconds": 1.3058352499792818,
+            "shots_per_second": 50187.80125673572,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.008990625006845221,
+              "native_export": 0.4823194170021452,
+              "strict_dem_construction": 0.004032500000903383,
+              "decoder_setup": 0.002225709002232179,
+              "sampler_compile": 0.47211316699394956,
+              "sampling": 0.18197441592928953,
+              "decoding": 0.06521838757907972,
+              "count_reduction": 0.0023453269386664033
+            },
+            "pipeline_seconds": 1.2194948340184055,
+            "shots_per_second": 53741.105064009535,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009076334012206644,
+              "native_export": 0.4933840000012424,
+              "strict_dem_construction": 0.003991708013927564,
+              "decoder_setup": 0.0022270829940680414,
+              "sampler_compile": 0.4427385840099305,
+              "sampling": 0.17541598380194046,
+              "decoding": 0.06239082003594376,
+              "count_reduction": 0.0020645898475777358
+            },
+            "pipeline_seconds": 1.1915339170082007,
+            "shots_per_second": 55002.21106970717,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009064459009096026,
+              "native_export": 0.48902862501563504,
+              "strict_dem_construction": 0.004097500001080334,
+              "decoder_setup": 0.002320208994206041,
+              "sampler_compile": 0.4802787500084378,
+              "sampling": 0.18331908097025007,
+              "decoding": 0.0656528249674011,
+              "count_reduction": 0.0022484554501716048
+            },
+            "pipeline_seconds": 1.2362705419945996,
+            "shots_per_second": 53011.859276580806,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 512157,
+            "logical_failures": 2,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "7ea28135f61e9cecee31193b5a743cf0bb12d1c49c27add3f159a64011a6c15b",
+              "observables": "4010a3290cb93a5f03b9b75f1c3a9d2c9fb8c8a49a31849df92994d6cb2aa6ff",
+              "predictions": "67cbe7cd8dc2dce9feb22401f70ec1d94cfe597ac73df58862e6e34bb8c863a0"
+            },
+            "process_max_rss_bytes": 267632640
+          }
+        ]
+      },
+      {
+        "batch": 128,
+        "mode": "baseline",
+        "order_index": 3,
+        "raw_file_sha256": "bf8a1b0438756341b92557a85524174bc61026957009fca2b8fda1e6deb98c08",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "ebc2f4985eaaa5e40b81f426dad4e872fa3f559b",
+            "source_tree": "git-tree-sha1:aee119b384bdce58c90de7d8bd20dac4cff3e1ae",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 128,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009136000007856637,
+              "native_export": 0.517838915984612,
+              "strict_dem_construction": 0.004007125011412427,
+              "decoder_setup": 0.10945383299258538,
+              "sampler_compile": 0.48908062500413507,
+              "sampling": 0.17687094406574033,
+              "decoding": 0.06269373421673663,
+              "count_reduction": 0.002094263822073117
+            },
+            "pipeline_seconds": 1.3714635829965118,
+            "shots_per_second": 47786.175887228565,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009035791998030618,
+              "native_export": 0.5311644590110518,
+              "strict_dem_construction": 0.004019207990495488,
+              "decoder_setup": 0.002217875007772818,
+              "sampler_compile": 0.4723048750020098,
+              "sampling": 0.17665125709027052,
+              "decoding": 0.06266342476010323,
+              "count_reduction": 0.0020915168861392885
+            },
+            "pipeline_seconds": 1.2604003750020638,
+            "shots_per_second": 51996.9696136378,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009037875017384067,
+              "native_export": 0.5223485409806017,
+              "strict_dem_construction": 0.003904374985722825,
+              "decoder_setup": 0.002213250001659617,
+              "sampler_compile": 0.49608520898618735,
+              "sampling": 0.1761240026971791,
+              "decoding": 0.062462876026984304,
+              "count_reduction": 0.0020481877436395735
+            },
+            "pipeline_seconds": 1.2744721670169383,
+            "shots_per_second": 51422.85700392936,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009295042022131383,
+              "native_export": 0.5270258329983335,
+              "strict_dem_construction": 0.0038967080181464553,
+              "decoder_setup": 0.002194417000282556,
+              "sampler_compile": 0.49231183298979886,
+              "sampling": 0.1768496129079722,
+              "decoding": 0.06253758820821531,
+              "count_reduction": 0.0020310870022512972
+            },
+            "pipeline_seconds": 1.2763782500114758,
+            "shots_per_second": 51346.064538008824,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 512157,
+            "logical_failures": 2,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "7ea28135f61e9cecee31193b5a743cf0bb12d1c49c27add3f159a64011a6c15b",
+              "observables": "4010a3290cb93a5f03b9b75f1c3a9d2c9fb8c8a49a31849df92994d6cb2aa6ff",
+              "predictions": "67cbe7cd8dc2dce9feb22401f70ec1d94cfe597ac73df58862e6e34bb8c863a0"
+            },
+            "process_max_rss_bytes": 267567104
+          }
+        ]
+      },
+      {
+        "batch": 128,
+        "mode": "baseline",
+        "order_index": 4,
+        "raw_file_sha256": "994583be5a7a69652a7ad6af37a2fe23faf7962f846df400966d39982026f297",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "ebc2f4985eaaa5e40b81f426dad4e872fa3f559b",
+            "source_tree": "git-tree-sha1:aee119b384bdce58c90de7d8bd20dac4cff3e1ae",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 128,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009186291979858652,
+              "native_export": 0.5187502079934347,
+              "strict_dem_construction": 0.004068583977641538,
+              "decoder_setup": 0.12139329200726934,
+              "sampler_compile": 0.5022069590049796,
+              "sampling": 0.18183632774162106,
+              "decoding": 0.06499825484934263,
+              "count_reduction": 0.0022650319733656943
+            },
+            "pipeline_seconds": 1.4050139999890234,
+            "shots_per_second": 46645.0868108873,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009192583005642518,
+              "native_export": 0.5083924579957966,
+              "strict_dem_construction": 0.004024832975119352,
+              "decoder_setup": 0.002227582997875288,
+              "sampler_compile": 0.4624137079808861,
+              "sampling": 0.1774302400299348,
+              "decoding": 0.06284263878478669,
+              "count_reduction": 0.0020716749713756144
+            },
+            "pipeline_seconds": 1.2288439580006525,
+            "shots_per_second": 53332.23927522066,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.00908970899763517,
+              "native_export": 0.5083590830035973,
+              "strict_dem_construction": 0.0038852499856147915,
+              "decoder_setup": 0.002250416000606492,
+              "sampler_compile": 0.4813170830020681,
+              "sampling": 0.17815544319455512,
+              "decoding": 0.06297334609553218,
+              "count_reduction": 0.0020766370289493352
+            },
+            "pipeline_seconds": 1.2483525840216316,
+            "shots_per_second": 52498.78987622968,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009562583989463747,
+              "native_export": 0.5137435829965398,
+              "strict_dem_construction": 0.004299416992580518,
+              "decoder_setup": 0.0023444579856004566,
+              "sampler_compile": 0.5047056250041351,
+              "sampling": 0.1780806019087322,
+              "decoding": 0.06301405423437245,
+              "count_reduction": 0.0021012972574681044
+            },
+            "pipeline_seconds": 1.2781002089905087,
+            "shots_per_second": 51276.887006977,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 512157,
+            "logical_failures": 2,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "7ea28135f61e9cecee31193b5a743cf0bb12d1c49c27add3f159a64011a6c15b",
+              "observables": "4010a3290cb93a5f03b9b75f1c3a9d2c9fb8c8a49a31849df92994d6cb2aa6ff",
+              "predictions": "67cbe7cd8dc2dce9feb22401f70ec1d94cfe597ac73df58862e6e34bb8c863a0"
+            },
+            "process_max_rss_bytes": 267649024
+          }
+        ]
+      },
+      {
+        "batch": 128,
+        "mode": "candidate",
+        "order_index": 5,
+        "raw_file_sha256": "fb5bacb755082d965a4e52ec5365698394534c1ef5133624ade394977f20e1e0",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "3ec3d3e949d9717f2ad35601ece2ea660011453e",
+            "source_tree": "git-tree-sha1:8caeb9c9073c611129417b91ea646c3ce45b6123",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 128,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009356499998830259,
+              "native_export": 0.4851228340121452,
+              "strict_dem_construction": 0.0039392500184476376,
+              "decoder_setup": 0.10980229201959446,
+              "sampler_compile": 0.4573859999945853,
+              "sampling": 0.17887294714455493,
+              "decoding": 0.06378259111079387,
+              "count_reduction": 0.0021590837568510324
+            },
+            "pipeline_seconds": 1.3107067910023034,
+            "shots_per_second": 50001.26683549382,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009129665995715186,
+              "native_export": 0.4933657499786932,
+              "strict_dem_construction": 0.0039880420081317425,
+              "decoder_setup": 0.0022680409892927855,
+              "sampler_compile": 0.467134000005899,
+              "sampling": 0.17874691216275096,
+              "decoding": 0.06349576785578392,
+              "count_reduction": 0.002102185506373644
+            },
+            "pipeline_seconds": 1.2204935409827158,
+            "shots_per_second": 53697.12972608686,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.009199124993756413,
+              "native_export": 0.48459766700398177,
+              "strict_dem_construction": 0.004013209021650255,
+              "decoder_setup": 0.0021819999965373427,
+              "sampler_compile": 0.4359483750013169,
+              "sampling": 0.17784539761487395,
+              "decoding": 0.06285118174855597,
+              "count_reduction": 0.002079338184557855
+            },
+            "pipeline_seconds": 1.1789665830146987,
+            "shots_per_second": 55588.51365610158,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 2,
+            "batches": 513,
+            "phases_seconds": {
+              "memory_construction": 0.00919220902142115,
+              "native_export": 0.4835214159975294,
+              "strict_dem_construction": 0.0039017079980112612,
+              "decoder_setup": 0.0022260419791564345,
+              "sampler_compile": 0.4694641660025809,
+              "sampling": 0.18333919989527203,
+              "decoding": 0.06567816316965036,
+              "count_reduction": 0.0022448075760621578
+            },
+            "pipeline_seconds": 1.2198436670005322,
+            "shots_per_second": 53725.736971811006,
+            "visible_batch_tensor_bytes_max": 30976,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 512157,
+            "logical_failures": 2,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "7ea28135f61e9cecee31193b5a743cf0bb12d1c49c27add3f159a64011a6c15b",
+              "observables": "4010a3290cb93a5f03b9b75f1c3a9d2c9fb8c8a49a31849df92994d6cb2aa6ff",
+              "predictions": "67cbe7cd8dc2dce9feb22401f70ec1d94cfe597ac73df58862e6e34bb8c863a0"
+            },
+            "process_max_rss_bytes": 267583488
+          }
+        ]
+      },
+      {
+        "batch": 4096,
+        "mode": "baseline",
+        "order_index": 0,
+        "raw_file_sha256": "58363172ce4a46efd2dc9fbd0c2cd705489a4f177b71cae9efd255344b196017",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "ebc2f4985eaaa5e40b81f426dad4e872fa3f559b",
+            "source_tree": "git-tree-sha1:aee119b384bdce58c90de7d8bd20dac4cff3e1ae",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 4096,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009240125014912337,
+              "native_export": 0.5210605000029318,
+              "strict_dem_construction": 0.004003040987299755,
+              "decoder_setup": 0.11051662499085069,
+              "sampler_compile": 0.4901636660215445,
+              "sampling": 0.13397258595796302,
+              "decoding": 0.056092958053341135,
+              "count_reduction": 0.0001728739880491048
+            },
+            "pipeline_seconds": 1.3252980000106618,
+            "shots_per_second": 49450.76503508854,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009098834008909762,
+              "native_export": 0.5174071660148911,
+              "strict_dem_construction": 0.003994041006080806,
+              "decoder_setup": 0.002380833000643179,
+              "sampler_compile": 0.4668012500042096,
+              "sampling": 0.1331001259968616,
+              "decoding": 0.05572887399466708,
+              "count_reduction": 0.00017679002485238016
+            },
+            "pipeline_seconds": 1.188736375013832,
+            "shots_per_second": 55131.65187633584,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009156082989647985,
+              "native_export": 0.5118104160064831,
+              "strict_dem_construction": 0.003898666996974498,
+              "decoder_setup": 0.002227582997875288,
+              "sampler_compile": 0.4824368749978021,
+              "sampling": 0.1329054580128286,
+              "decoding": 0.05540316691622138,
+              "count_reduction": 0.00015308201545849442
+            },
+            "pipeline_seconds": 1.1980342080059927,
+            "shots_per_second": 54703.7802109839,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009095250017708167,
+              "native_export": 0.5103142499865498,
+              "strict_dem_construction": 0.003903792006894946,
+              "decoder_setup": 0.0021926249901298434,
+              "sampler_compile": 0.4876660830050241,
+              "sampling": 0.13354062498547137,
+              "decoding": 0.05581066498416476,
+              "count_reduction": 0.00016129197319969535
+            },
+            "pipeline_seconds": 1.2027301249909215,
+            "shots_per_second": 54490.1957955819,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 513809,
+            "logical_failures": 0,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "9a034825eddedf8a336c0413200753f832d3fe45d722232392aed5ad718ccf20",
+              "observables": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91",
+              "predictions": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91"
+            },
+            "process_max_rss_bytes": 284622848
+          }
+        ]
+      },
+      {
+        "batch": 4096,
+        "mode": "candidate",
+        "order_index": 1,
+        "raw_file_sha256": "b04593ffd8c07e88b6965317b82a297a25db19d63350784e25f18ba2ecd28623",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "3ec3d3e949d9717f2ad35601ece2ea660011453e",
+            "source_tree": "git-tree-sha1:8caeb9c9073c611129417b91ea646c3ce45b6123",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 4096,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009170709003228694,
+              "native_export": 0.4823947500262875,
+              "strict_dem_construction": 0.003999957989435643,
+              "decoder_setup": 0.10761787500814535,
+              "sampler_compile": 0.46343620799598284,
+              "sampling": 0.13986274902708828,
+              "decoding": 0.058248543966328725,
+              "count_reduction": 0.00026391801657155156
+            },
+            "pipeline_seconds": 1.2650907499773894,
+            "shots_per_second": 51804.18875181193,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009411333012394607,
+              "native_export": 0.5082099169958383,
+              "strict_dem_construction": 0.0040239169902633876,
+              "decoder_setup": 0.00225424999371171,
+              "sampler_compile": 0.4592247079999652,
+              "sampling": 0.13334904101793654,
+              "decoding": 0.0559141669946257,
+              "count_reduction": 0.00016504101222380996
+            },
+            "pipeline_seconds": 1.1726064160175156,
+            "shots_per_second": 55890.023374237666,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009013041999423876,
+              "native_export": 0.48627712499001063,
+              "strict_dem_construction": 0.003991083998698741,
+              "decoder_setup": 0.0022071669809520245,
+              "sampler_compile": 0.4420370840234682,
+              "sampling": 0.1330795020039659,
+              "decoding": 0.05565887602278963,
+              "count_reduction": 0.00015158401220105588
+            },
+            "pipeline_seconds": 1.1324535830062814,
+            "shots_per_second": 57871.687620097786,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009159167006146163,
+              "native_export": 0.4894865409878548,
+              "strict_dem_construction": 0.00397783299558796,
+              "decoder_setup": 0.0022891670232638717,
+              "sampler_compile": 0.463332832994638,
+              "sampling": 0.13316374892019667,
+              "decoding": 0.055531458114273846,
+              "count_reduction": 0.000153791974298656
+            },
+            "pipeline_seconds": 1.1571448750037234,
+            "shots_per_second": 56636.81481524871,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 513809,
+            "logical_failures": 0,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "9a034825eddedf8a336c0413200753f832d3fe45d722232392aed5ad718ccf20",
+              "observables": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91",
+              "predictions": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91"
+            },
+            "process_max_rss_bytes": 285016064
+          }
+        ]
+      },
+      {
+        "batch": 4096,
+        "mode": "candidate",
+        "order_index": 2,
+        "raw_file_sha256": "7d3ef8575cfe9aefac5fc23e176fff14da5164548b5449e4b9704be13c98960f",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "3ec3d3e949d9717f2ad35601ece2ea660011453e",
+            "source_tree": "git-tree-sha1:8caeb9c9073c611129417b91ea646c3ce45b6123",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 4096,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009108541999012232,
+              "native_export": 0.48793624999234453,
+              "strict_dem_construction": 0.003990458004409447,
+              "decoder_setup": 0.11597924999659881,
+              "sampler_compile": 0.4574199999915436,
+              "sampling": 0.13507275201845914,
+              "decoding": 0.05610229400917888,
+              "count_reduction": 0.00016254096408374608
+            },
+            "pipeline_seconds": 1.2658510000037495,
+            "shots_per_second": 51773.07597798309,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.008996374992420897,
+              "native_export": 0.49514574999921024,
+              "strict_dem_construction": 0.004016374994534999,
+              "decoder_setup": 0.0021916670084465295,
+              "sampler_compile": 0.4596097089815885,
+              "sampling": 0.13336079005966894,
+              "decoding": 0.055701666948152706,
+              "count_reduction": 0.00015804299619048834
+            },
+            "pipeline_seconds": 1.15922658299678,
+            "shots_per_second": 56535.1079428982,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009313375019701198,
+              "native_export": 0.49184916599188,
+              "strict_dem_construction": 0.004035374993691221,
+              "decoder_setup": 0.0022344589815475047,
+              "sampler_compile": 0.44523800001479685,
+              "sampling": 0.13323078997200355,
+              "decoding": 0.05609670598641969,
+              "count_reduction": 0.0001812890695873648
+            },
+            "pipeline_seconds": 1.1422192910104059,
+            "shots_per_second": 57376.89821542591,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.008976165991043672,
+              "native_export": 0.4880951250088401,
+              "strict_dem_construction": 0.003981040994403884,
+              "decoder_setup": 0.0023045830021146685,
+              "sampler_compile": 0.4651756670209579,
+              "sampling": 0.13931429205695167,
+              "decoding": 0.05933758104220033,
+              "count_reduction": 0.00028270899201743305
+            },
+            "pipeline_seconds": 1.1675180830061436,
+            "shots_per_second": 56133.60594060721,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 513809,
+            "logical_failures": 0,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "9a034825eddedf8a336c0413200753f832d3fe45d722232392aed5ad718ccf20",
+              "observables": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91",
+              "predictions": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91"
+            },
+            "process_max_rss_bytes": 284966912
+          }
+        ]
+      },
+      {
+        "batch": 4096,
+        "mode": "baseline",
+        "order_index": 3,
+        "raw_file_sha256": "db8548cc0c9124d56da7e67b82cfe182b955a72c1c380fe651a44d70e32b3732",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "ebc2f4985eaaa5e40b81f426dad4e872fa3f559b",
+            "source_tree": "git-tree-sha1:aee119b384bdce58c90de7d8bd20dac4cff3e1ae",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 4096,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.00932562499656342,
+              "native_export": 0.5243108750146348,
+              "strict_dem_construction": 0.004081499995663762,
+              "decoder_setup": 0.1366592499834951,
+              "sampler_compile": 0.5016793750110082,
+              "sampling": 0.13473662396427244,
+              "decoding": 0.056266914936713874,
+              "count_reduction": 0.00017554295482113957
+            },
+            "pipeline_seconds": 1.3673084580223076,
+            "shots_per_second": 47931.39369209604,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009243750013411045,
+              "native_export": 0.5308195830148179,
+              "strict_dem_construction": 0.0041023749799933285,
+              "decoder_setup": 0.0022916250163689256,
+              "sampler_compile": 0.4780503329820931,
+              "sampling": 0.13381550105987117,
+              "decoding": 0.05624104000162333,
+              "count_reduction": 0.00016287501784972847
+            },
+            "pipeline_seconds": 1.2147704579983838,
+            "shots_per_second": 53950.11013684628,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009212458011461422,
+              "native_export": 0.5347634160134476,
+              "strict_dem_construction": 0.004135333001613617,
+              "decoder_setup": 0.00228604199946858,
+              "sampler_compile": 0.49460516599356197,
+              "sampling": 0.13341783289797604,
+              "decoding": 0.056216996017610654,
+              "count_reduction": 0.00015683399396948516
+            },
+            "pipeline_seconds": 1.2348322910256684,
+            "shots_per_second": 53073.60398355317,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009192540979711339,
+              "native_export": 0.5200535830226727,
+              "strict_dem_construction": 0.004002042027423158,
+              "decoder_setup": 0.0022126249969005585,
+              "sampler_compile": 0.4949093330069445,
+              "sampling": 0.13838383194524795,
+              "decoding": 0.05740654101828113,
+              "count_reduction": 0.0002507930330466479
+            },
+            "pipeline_seconds": 1.2264632909791544,
+            "shots_per_second": 53435.761577240635,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 513809,
+            "logical_failures": 0,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "9a034825eddedf8a336c0413200753f832d3fe45d722232392aed5ad718ccf20",
+              "observables": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91",
+              "predictions": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91"
+            },
+            "process_max_rss_bytes": 285229056
+          }
+        ]
+      },
+      {
+        "batch": 4096,
+        "mode": "baseline",
+        "order_index": 4,
+        "raw_file_sha256": "bd6abb0b5ebda92bb00ba1776866c34f497ebe997688dffdbe6ee2678694dc97",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "ebc2f4985eaaa5e40b81f426dad4e872fa3f559b",
+            "source_tree": "git-tree-sha1:aee119b384bdce58c90de7d8bd20dac4cff3e1ae",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 4096,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009344707999844104,
+              "native_export": 0.5194015000015497,
+              "strict_dem_construction": 0.004119666991755366,
+              "decoder_setup": 0.10979366698302329,
+              "sampler_compile": 0.4916552919894457,
+              "sampling": 0.13981483501265757,
+              "decoding": 0.05856995700742118,
+              "count_reduction": 0.0002600430743768811
+            },
+            "pipeline_seconds": 1.3330399160040542,
+            "shots_per_second": 49163.56908235348,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009422707982594147,
+              "native_export": 0.539331707987003,
+              "strict_dem_construction": 0.004274333012290299,
+              "decoder_setup": 0.002356833021622151,
+              "sampler_compile": 0.4795452499820385,
+              "sampling": 0.13363166904309765,
+              "decoding": 0.05656745791202411,
+              "count_reduction": 0.00016500006313435733
+            },
+            "pipeline_seconds": 1.225339416996576,
+            "shots_per_second": 53484.77253807558,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.00927591699291952,
+              "native_export": 0.517728624981828,
+              "strict_dem_construction": 0.004059291997691616,
+              "decoder_setup": 0.0023884169931989163,
+              "sampler_compile": 0.4904677089944016,
+              "sampling": 0.13349562403163873,
+              "decoding": 0.056011875945841894,
+              "count_reduction": 0.00014433605247177184
+            },
+            "pipeline_seconds": 1.2136122499941848,
+            "shots_per_second": 54001.59729791293,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009464625007240102,
+              "native_export": 0.5178996670001652,
+              "strict_dem_construction": 0.004013083002064377,
+              "decoder_setup": 0.0022169160074554384,
+              "sampler_compile": 0.4892094169917982,
+              "sampling": 0.13356204106821679,
+              "decoding": 0.05626150197349489,
+              "count_reduction": 0.00015783397248014808
+            },
+            "pipeline_seconds": 1.2128242499893531,
+            "shots_per_second": 54036.68338638127,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 513809,
+            "logical_failures": 0,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "9a034825eddedf8a336c0413200753f832d3fe45d722232392aed5ad718ccf20",
+              "observables": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91",
+              "predictions": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91"
+            },
+            "process_max_rss_bytes": 284901376
+          }
+        ]
+      },
+      {
+        "batch": 4096,
+        "mode": "candidate",
+        "order_index": 5,
+        "raw_file_sha256": "20faefaf9fe69302046c1016067bf810966e5bd3bbdd09e66455423d93b4e034",
+        "records": [
+          {
+            "kind": "metadata",
+            "runner": "qec_channel_templates_paired",
+            "schema": "flagquantum.qec_channel_templates_paired.cpu_observations.v1",
+            "hostname": "anonymous-local-cpu-host",
+            "platform": "macOS-27.0-arm64-arm-64bit",
+            "python": "3.12.14",
+            "world_size": 1,
+            "source_revision": "3ec3d3e949d9717f2ad35601ece2ea660011453e",
+            "source_tree": "git-tree-sha1:8caeb9c9073c611129417b91ea646c3ce45b6123",
+            "device": "cpu",
+            "distribution_semantics": "single_process",
+            "local_world_size": 1,
+            "node_count": 1,
+            "rank_ownership": {
+              "0": "whole_workload"
+            },
+            "scalability_claim_allowed": false,
+            "release_gate_allowed": false,
+            "non_release_evidence": true,
+            "precision": "CPU int64 engine records, int8 detector/observable, bool logical predictions",
+            "torch_threads": 1,
+            "versions": {
+              "torch": "2.13.0",
+              "stim": "1.16.0",
+              "pymatching": "2.4.0",
+              "numpy": "2.5.4",
+              "scipy": "1.18.1"
+            },
+            "source_path": "verified-source-root/flagquantum/__init__.py",
+            "workload": {
+              "shots": 65537,
+              "batch_size": 4096,
+              "distance": 9,
+              "basis": "x",
+              "rounds": 3,
+              "seed": 53,
+              "noise": [
+                0.005,
+                0.007,
+                0.009
+              ]
+            },
+            "methodology": {
+              "warmup": 1,
+              "measured_repeats": 3,
+              "independent_trials": false,
+              "diagnostics_excluded_from_pipeline": true,
+              "rss": "whole process including warmup/imports/diagnostics, not phase-specific"
+            }
+          },
+          {
+            "warmup": true,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009178458974929526,
+              "native_export": 0.4931360839982517,
+              "strict_dem_construction": 0.004018291016109288,
+              "decoder_setup": 0.11024441698100418,
+              "sampler_compile": 0.46603545799735,
+              "sampling": 0.13808187597896904,
+              "decoding": 0.05727733191451989,
+              "count_reduction": 0.00023687703651376069
+            },
+            "pipeline_seconds": 1.278287041990552,
+            "shots_per_second": 51269.392434695736,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 0
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009621082979720086,
+              "native_export": 0.4970138340140693,
+              "strict_dem_construction": 0.004063083993969485,
+              "decoder_setup": 0.002226000011432916,
+              "sampler_compile": 0.44458683297852986,
+              "sampling": 0.13374283304437995,
+              "decoding": 0.05635446004453115,
+              "count_reduction": 0.00016029193648137152
+            },
+            "pipeline_seconds": 1.1478105830028653,
+            "shots_per_second": 57097.40001572751,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 1
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009331250010291114,
+              "native_export": 0.49353216600138694,
+              "strict_dem_construction": 0.003992749989265576,
+              "decoder_setup": 0.002258333988720551,
+              "sampler_compile": 0.4621853750140872,
+              "sampling": 0.133583831920987,
+              "decoding": 0.056384748982964084,
+              "count_reduction": 0.00015841497224755585
+            },
+            "pipeline_seconds": 1.161465290992055,
+            "shots_per_second": 56426.13731833705,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 2
+          },
+          {
+            "warmup": false,
+            "completed_shots": 65537,
+            "logical_failures": 0,
+            "batches": 17,
+            "phases_seconds": {
+              "memory_construction": 0.009185750008327886,
+              "native_export": 0.4964194999774918,
+              "strict_dem_construction": 0.003930708015104756,
+              "decoder_setup": 0.002205333992606029,
+              "sampler_compile": 0.4731500420020893,
+              "sampling": 0.13740766808041371,
+              "decoding": 0.05787287498242222,
+              "count_reduction": 0.000256668048677966
+            },
+            "pipeline_seconds": 1.1804802090045996,
+            "shots_per_second": 55517.2373921134,
+            "visible_batch_tensor_bytes_max": 991232,
+            "kind": "observation",
+            "index": 3
+          },
+          {
+            "kind": "diagnostics",
+            "completed_shots": 65537,
+            "detector_events": 513809,
+            "logical_failures": 0,
+            "sha256": {
+              "source": "adb7c8c6c4ae38899db8cd4e00aa9d2623a9e31a59ebedf387f34be51a59ddb0",
+              "dem": "1f03335ac7bf8c77db882894f2902e5d52114e332f3163596e340c62e87a9380",
+              "detectors": "9a034825eddedf8a336c0413200753f832d3fe45d722232392aed5ad718ccf20",
+              "observables": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91",
+              "predictions": "c1fb46339e43141e402e58f301a52fd20b7f301ffdd9aa211124f9fb5fdd4e91"
+            },
+            "process_max_rss_bytes": 285016064
+          }
+        ]
+      }
+    ]
+  },
+  "observer_source": "import sys,os,json,hashlib,resource,platform,importlib.metadata as m\nfrom pathlib import Path\nsource_root=Path(sys.argv[1]).resolve()\nsys.path.insert(0,str(source_root));sys.path.insert(0,str(source_root/'benchmarks'))\nimport torch,flagquantum\nfrom qec_compatibility_matrix import _observe\nfrom flagquantum.qec import Pauli,RotatedSurfaceCode,build_memory_circuit,PhenomenologicalNoise,compile_memory_sampler,DetectorErrorModel,PyMatchingDecoder\nfrom flagquantum.qec.adapters.stim import memory_to_stim_text,stim_circuit_to_dem_text\nfrom flagquantum.benchmarking.contract import runtime_metadata\nassert Path(flagquantum.__file__).resolve().is_relative_to(source_root/'flagquantum')\ntorch.set_num_threads(1);batch=int(sys.argv[2]);assert batch in (128,4096)\nmetadata=runtime_metadata(runner='qec_channel_templates_paired',schema='flagquantum.qec_channel_templates_paired.cpu_observations.v1',source_revision=os.environ['FQ_SOURCE_REVISION'],source_tree=os.environ['FQ_SOURCE_TREE'],device='cpu',distribution_semantics='single_process',local_world_size=1,node_count=1,rank_ownership={'0':'whole_workload'},scalability_claim_allowed=False,release_gate_allowed=False,non_release_evidence=True,precision='CPU int64 engine records, int8 detector/observable, bool logical predictions',torch_threads=torch.get_num_threads(),versions={n:m.version(n) for n in ['torch','stim','pymatching','numpy','scipy']},source_path=flagquantum.__file__,workload={'shots':65537,'batch_size':batch,'distance':9,'basis':'x','rounds':3,'seed':53,'noise':[.005,.007,.009]},methodology={'warmup':1,'measured_repeats':3,'independent_trials':False,'diagnostics_excluded_from_pipeline':True,'rss':'whole process including warmup/imports/diagnostics, not phase-specific'})\nprint(json.dumps(dict(kind='metadata',**metadata)),flush=True)\nfor index in range(4):\n row=_observe(distance=9,basis='x',entrance='native',shots=65537,batch_size=batch)\n row.update(kind='observation',index=index,warmup=index==0)\n print(json.dumps(row),flush=True)\ncode=RotatedSurfaceCode(9);memory=build_memory_circuit(code,rounds=3,product=Pauli(x_qubits=code.data_qubits));noise=PhenomenologicalNoise(data_flip=.005,phase_flip=.007,measurement_flip=.009)\nsource=memory_to_stim_text(memory,noise=noise);dem_text=stim_circuit_to_dem_text(source);model=DetectorErrorModel.from_stim_text(dem_text);decoder=PyMatchingDecoder.from_detector_error_model(model.merge_duplicate_mechanisms())\nhashes=[hashlib.sha256() for _ in range(3)];completed=events=failures=0\nwith compile_memory_sampler(memory,noise=noise,seed=53) as sampler:\n while completed<65537:\n  sample=sampler.sample(shots=min(batch,65537-completed));predicted=decoder.decode_batch(sample.detectors)\n  for h,tensor in zip(hashes,[sample.detectors,sample.observables,predicted]):h.update(tensor.numpy().tobytes())\n  completed+=sample.shots;events+=int(sample.detectors.sum());failures+=int((predicted!=sample.observables).any(dim=1).sum())\nprint(json.dumps({'kind':'diagnostics','completed_shots':completed,'detector_events':events,'logical_failures':failures,'sha256':dict(source=hashlib.sha256(source.encode()).hexdigest(),dem=hashlib.sha256(dem_text.encode()).hexdigest(),detectors=hashes[0].hexdigest(),observables=hashes[1].hexdigest(),predictions=hashes[2].hexdigest()),'process_max_rss_bytes':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if sys.platform=='darwin' else 1024)}),flush=True)\n",
+  "disclosure": {
+    "hostname": "anonymous local CPU identifier",
+    "source_path": "verified-source-root placeholder",
+    "numeric_rows_warmups_and_correctness_hashes": "unchanged",
+    "original_jsonl_sha256": "recorded per process; original private files retained"
+  },
+  "producer_files_unchanged": [
+    "flagquantum/qec/execution/sampling.py",
+    "tests/qec/test_noise_channel_templates.py"
+  ],
+  "interpretation": "Descriptive medians only. No pooling or multiplication with earlier studies; imports/metadata/independent diagnostics excluded equally; preparation retained in total. RSS whole process, not phase peak."
+}

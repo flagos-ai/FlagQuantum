@@ -32,19 +32,59 @@ DEM precision, Surface and fixed-shot tests passed with real SDKs. All 22 new
 tests also passed in a core-only environment where Stim/PyMatching were absent.
 Strict typing of the
 modified production module, Black, Ruff, architecture, dependency and read-only
-API checks passed. The required default tier completed with 11,420 passed,
+API checks passed. The CI-style whole-package strict mypy command also passed
+834 source files with incremental caching disabled and the documented SDK/stub
+environment; this does not certify other environments. The required default tier completed with 11,420 passed,
 85 skipped, four native-fusion expectation failures and four Gloo setup errors in
 187.09 seconds, with the configured failure cutoff. A source archive of the exact
 unmodified main, with the imported package path asserted, reproduced those four
 failures and six errors in the complete focused Gloo module (237 passed).
 The local default suite is not green; final delivery gates remain pending.
 
-Private cold profiling motivated investigation of repeated preparation work.
-Those instrumented observations are attribution only. There is no measured
-uninstrumented performance result for this candidate yet, no speedup claim and no
-new full-distance, GPU, threshold, statistical-significance or capacity evidence.
-A bounded comparison must freeze the implementation and protocol before timing;
-all results and any regressions must be retained.
+## Bounded local comparison
+
+[Protocol, observer and complete raw observations](evidence/qec_noise_channel_templates_20261026.json)
+pin exact main `ebc2f4985eaaa5e40b81f426dad4e872fa3f559b` and frozen
+implementation `3ec3d3e949d9717f2ad35601ece2ea660011453e`. Source and tests
+remain unchanged in the later evidence commit. Earlier private cold profiles
+motivated investigation only; their instrumented times are not speed baselines.
+
+This independent local macOS arm64 CPU comparison used Python 3.12.14,
+Torch 2.13, Stim 1.16 and PyMatching 2.4, one numerical thread, d9 X memory,
+three rounds, 65,537 shots, seed 53 and noise .005/.007/.009. Each batch used
+six fresh processes in baseline/candidate, candidate/baseline, baseline/candidate
+order. Each process retained one warmup and three measured rows. Limits were
+30 seconds per process and 360 seconds total, with no concurrent local tests.
+All 12 processes completed in 82.50771399997757 seconds, with no retries,
+additional samples or seed changes. Nine measured rows per implementation and
+batch are repeated same-seed observations, not independent statistical trials.
+
+| Batch | Baseline pipeline median (s) | Candidate pipeline median (s) | Baseline loop median (s) | Candidate loop median (s) |
+| --- | --- | --- | --- | --- |
+| 128 | 1.274472167 | 1.193746292 | .241406199 | .243828384 |
+| 4,096 | 1.213612250 | 1.159226583 | .189791663 | .189508785 |
+
+Pipeline ratios are 1.0676 and 1.0469: descriptive differences of about 6.3%
+and 4.5% less wall time for this fixed workload. The small-batch loop is about
+1% slower in this observation; the large-batch loop is nearly unchanged. This
+preparation-only change does not claim loop acceleration, statistical significance
+or general throughput benefit. No earlier study ratios are pooled or multiplied.
+Pipeline includes memory construction, export, strict actual-law DEM, decoder
+setup, sampler compilation, sampling/decoding/count reduction and close. Imports,
+metadata and independent full-shot diagnostics are excluded equally. All warmups
+are retained and excluded from medians.
+
+All six processes per batch have identical source, strict DEM, detector,
+observable and prediction SHA256 and event/logical counts. Diagnostics include
+the one-shot tail: batch128 records 512,157 detector events and two logical
+mismatches; batch4096 records 513,809 and zero. Cross-batch bit identity is not a
+seed contract, and these counts are not suppression or threshold evidence.
+Whole-process RSS includes imports, warmup and diagnostics: roughly 267–269 MB
+at batch128 and 284–286 MB at batch4096, with overlapping ranges. It is not a
+phase-specific peak or capacity certificate. No new full-distance matrix, GPU,
+threshold, release performance or state-capacity result is claimed. Public
+host/source paths are anonymous; numerical rows, warmups and original raw-file
+SHA256s are retained.
 
 The existing nominal-decimal versus finite-precision Kraus limitation remains.
 Strict actual-law interoperability retains its existing tolerance and original
