@@ -2,8 +2,10 @@
 
 Status: The user explicitly approved the finite CPU matrix, comparison values
 and resource procedure on 2026-10-25, with observer review before collection.
-This observer implementation remains subject to exact-head review and CI. No
-algorithm selection, new engine, approximation policy or campaign is activated.
+Observer #848 is merged and its actual main is accepted. The admitted campaign
+stopped on its first RSS monitoring failure; [partial evidence and missing points](FTQC_MIXED_CPU_PARTIAL_BASELINE.md)
+are retained without retry. No algorithm selection, new engine or approximation
+policy is activated.
 
 Baseline: main `773b55387c735f86afe3caa8d7bcaf64285e1f0f`. The
 [master plan](../roadmap/FTQC_SIMULATION_MASTER_PLAN.md#14-immediate-next-steps-and-decisions-required)
@@ -286,3 +288,10 @@ new installed package outside the checkout without PYTHONPATH or SDK overlays,
 with all three exact expected stdout lines. This is one fresh core profile;
 historical local matrix profiles are not relabeled as reruns. The prior main
 change was only three Markdown files, so no local numerical suite was repeated.
+
+## Partial campaign outcome
+
+[One admitted campaign and post-848 main acceptance](FTQC_MIXED_CPU_PARTIAL_BASELINE.md)
+record 164 completed processes, one monitor failure and 27 unattempted slots.
+This is 41 complete points out of 48, not study closure. No automatic retry or
+resource-policy relaxation is authorized by publishing this report.
