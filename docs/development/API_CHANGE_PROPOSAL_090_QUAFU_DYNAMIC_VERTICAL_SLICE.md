@@ -190,6 +190,14 @@ shape preserves the package, snapshot, calibration, provider-legality, shot,
 and bit-order identities. It rejects mid-circuit data because no live Quafu
 result contract has confirmed that field.
 
+API Change 092 supersedes the hand-written Task API transport assumed by Batch
+D. Its QSteed physical-program stage can resolve the request-shape blocker by
+encoding physical qubit numbers in the submitted program and selecting the SDK
+`compiler="none"` mode. That transport resolution does not confirm the dynamic
+program dialect. After the physical-program contract lands, the remaining
+format gate is `quafu_dynamic_program_format_unconfirmed` until authoritative
+Quafu evidence establishes the accepted dynamic syntax and semantics.
+
 Stages 1 through 5 must use fixtures or mocks. This proposal authorizes no
 provider SDK import during preflight, credential access, network request, live
 discovery, task submission, charging, or hardware-support claim.
