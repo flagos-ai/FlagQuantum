@@ -2,6 +2,7 @@
 
 import inspect
 import json
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -10,43 +11,73 @@ import flagquantum as fq
 from flagquantum.errors import CapabilityError, ExecutionError
 from flagquantum.remote import jobs
 from flagquantum.remote.compute import JiudingCredentials
+from flagquantum.remote.qpu import _quafu_sdk
 from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
 
 
-class Transport:
+class SdkJob:
+    def __init__(self, client):
+        self.client = client
+        self.id = "job-123"
+        self.n_tasks = 1
+
+    def status(self):
+        self.client.gets.append(f"/status/{self.id}")
+        return self.client.state
+
+    def result(self, timeout=0):
+        self.client.gets.append(f"/result/{self.id}")
+        return SimpleNamespace(
+            status="Finished",
+            task_id=f"{self.id}-0",
+            target="Baihua",
+            backend="Baihua",
+            bit_order="c0_rightmost",
+            n_clbits=2,
+            shots_requested=1024,
+            shots_returned=1024,
+            counts={"01": 1000, "00": 24},
+            measurements=None,
+            executed_qasm="physical circuit",
+            compiler={"name": "qiskit", "version": "2.5"},
+            calibration_id="cal-1",
+        )
+
+    def cancel(self):
+        self.client.gets.append(f"/cancel/{self.id}")
+        self.client.state = "Cancelled"
+        return {"status": "Cancelled", "cancelled_now": 1}
+
+
+class SdkClient:
     def __init__(self):
         self.posts = []
         self.gets = []
         self.state = "Transpiled"
+        self.job_handle = SdkJob(self)
 
-    def post_json(self, url, payload, headers, timeout):
-        self.posts.append(payload)
-        return {"task_id": "job-123"}
+    def submit(self, circuit, **options):
+        self.posts.append((circuit, options))
+        return self.job_handle
 
-    def get_json(self, url, headers, timeout):
-        self.gets.append(url)
-        if "/status/" in url:
-            return self.state
-        if "/result/" in url:
-            return {"count": {"01": 1000, "00": 24}, "transpiled": "physical circuit"}
-        if "/cancel/" in url:
-            self.state = "Cancelled"
-            return {}
-        raise AssertionError(url)
+    def job(self, job_id):
+        assert job_id == self.job_handle.id
+        return self.job_handle
 
 
 @pytest.fixture
 def quafu(monkeypatch):
-    transport = Transport()
+    client = SdkClient()
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
 
     class Client(QuafuProvider):
         def __init__(self, **kwargs):
-            super().__init__(token="test-private-token", transport=transport, **kwargs)
+            super().__init__(_sdk_adapter=adapter, **kwargs)
 
     monkeypatch.setattr(jobs, "QuafuProvider", Client)
-    return transport
+    return client
 
 
 def test_quafu_submit_result_and_restore(quafu, tmp_path):
@@ -66,7 +97,7 @@ def test_quafu_submit_result_and_restore(quafu, tmp_path):
     assert not any("/result/" in url for url in quafu.gets)
     receipt = tmp_path / "job.json"
     job.save(receipt)
-    assert "test-private-token" not in receipt.read_text()
+    assert "QUAFU_API_KEY" not in receipt.read_text()
     assert receipt.stat().st_mode & 0o777 == 0o600
     with pytest.raises(FileExistsError):
         job.save(receipt)
@@ -76,55 +107,21 @@ def test_quafu_submit_result_and_restore(quafu, tmp_path):
     result = restored.result()
     assert result.counts == [{"10": 1000, "00": 24}]
     assert result.measurements[0].metadata["name"] == "readout"
-    assert result.provenance["service_compiler"] == "quarkcircuit"
+    assert result.provenance["service_compiler"] == "qiskit"
     assert len(quafu.posts) == 1
 
 
-def test_new_quafu_task_api_protocol_survives_receipt_restore(monkeypatch, tmp_path):
-    class TaskApiTransport:
-        def __init__(self):
-            self.posts = []
-
-        def post_json(self, url, payload, headers, timeout):
-            self.posts.append((url, payload))
-            return {"job_id": "u-job-123", "status": "Queued"}
-
-        def get_json(self, url, headers, timeout):
-            if url.endswith("/healthz"):
-                return {"healthy": True}
-            if url.endswith("/status"):
-                return {"status": "Finished"}
-            if url.endswith("/results"):
-                return {
-                    "counts": [{"01": 1000}],
-                    "shots_returned": [1000],
-                    "bit_order": "c0_rightmost",
-                }
-            raise AssertionError(url)
-
-    transport = TaskApiTransport()
-
-    class Client(QuafuProvider):
-        def __init__(self, **kwargs):
-            super().__init__(
-                api_key="qf_test",
-                task_server_url="https://quafu.test/api/v1",
-                transport=transport,
-                **kwargs,
-            )
-
-    monkeypatch.setattr(jobs, "QuafuProvider", Client)
-    job = fq.submit(fq.Circuit(2).x(0), target="quafu:Baihua-sim", shots=1000)
-    path = tmp_path / "task-api-job.json"
+def test_sdk_protocol_survives_receipt_restore(quafu, tmp_path):
+    job = fq.submit(fq.Circuit(2).x(0), target="quafu:Baihua", shots=1024)
+    path = tmp_path / "sdk-job.json"
     job.save(path)
 
     receipt = json.loads(path.read_text())
-    assert receipt["submission_identity"]["quafu_protocol"] == "task_api_v1"
+    assert receipt["submission_identity"]["quafu_protocol"] == "quafu_sdk_v1"
+    quafu.state = "Finished"
     restored = fq.restore_job(path)
-    assert restored.result().counts == [{"10": 1000}]
-    assert transport.posts[0][0] == "https://quafu.test/api/v1/jobs"
-    assert transport.posts[0][1]["target"] == "Baihua-sim"
-    assert transport.posts[0][1]["shots"] == 1000
+    assert restored.result().counts == [{"10": 1000, "00": 24}]
+    assert len(quafu.posts) == 1
 
 
 def test_wait_cancel_and_unknown_state(quafu):
@@ -177,8 +174,8 @@ def test_rejected_outputs_and_shots_never_submit(quafu):
 
 def test_no_retry_after_uncertain_submission(quafu, monkeypatch):
     post = Mock(side_effect=TimeoutError("response lost"))
-    monkeypatch.setattr(quafu, "post_json", post)
-    with pytest.raises(TimeoutError):
+    monkeypatch.setattr(quafu, "submit", post)
+    with pytest.raises(ExecutionError, match="TimeoutError"):
         fq.submit(fq.Circuit(2), target="quafu:Baihua", shots=1024)
     assert post.call_count == 1
 
@@ -338,23 +335,19 @@ def test_approved_job_state_and_receipt_contract(quafu, tmp_path):
     assert receipt["submission_identity"]["deployment_artifact_sha256"]
 
 
-def test_wait_handles_delayed_quafu_result(quafu, monkeypatch):
+def test_unavailable_sdk_result_never_resubmits(quafu, monkeypatch):
     job = fq.submit(fq.Circuit(2), target="quafu:Baihua", shots=1024)
     quafu.state = "Finished"
-    original = quafu.get_json
     result_reads = []
 
-    def delayed(url, headers, timeout):
-        if "/result/" in url:
-            result_reads.append(url)
-            if len(result_reads) == 1:
-                return {}
-        return original(url, headers, timeout)
+    def unavailable(timeout=0):
+        result_reads.append("result")
+        raise RuntimeError("result not ready")
 
-    monkeypatch.setattr(quafu, "get_json", delayed)
-    monkeypatch.setattr(jobs.time, "sleep", lambda delay: None)
-    assert job.wait(timeout=5).counts == [{"10": 1000, "00": 24}]
-    assert len(result_reads) == 2
+    monkeypatch.setattr(quafu.job_handle, "result", unavailable)
+    with pytest.raises(ExecutionError, match="result failed"):
+        job.wait(timeout=5)
+    assert len(result_reads) == 1
     assert len(quafu.posts) == 1
 
 

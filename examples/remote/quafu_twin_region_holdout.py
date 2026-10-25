@@ -174,8 +174,11 @@ def main() -> None:
     if args.command == "prepare":
         prepare()
         return
-    if not os.getenv("QUAFU_API_TOKEN"):
-        raise RuntimeError("Set QUAFU_API_TOKEN before contacting Quafu SQC")
+    if not os.getenv("QUAFU_API_KEY") or not os.getenv("QUAFU_API_TOKEN"):
+        raise RuntimeError(
+            "Set QUAFU_API_KEY for SDK execution and QUAFU_API_TOKEN for "
+            "legacy calibration reads"
+        )
     provider = QuafuProvider()
     if args.command == "submit":
         submit_one(provider, args.index)

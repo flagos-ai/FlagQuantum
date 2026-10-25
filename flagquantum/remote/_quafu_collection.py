@@ -5,11 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import Any, TypedDict
-from urllib.parse import quote, urlencode
 
 from ..deployment.cloud import DeploymentPackage, validate_deployment_package
 from ..errors import CapabilityError, ExecutionError, ValidationError
@@ -26,7 +24,6 @@ from .qpu.quafu import QuafuProvider
 from .qpu.result_parsing import _extract_counts
 
 _SCHEMA = "flagquantum.quafu-collection.v1"
-_PAGE_SIZE = 200
 
 
 class _CollectionReceipt(TypedDict):
@@ -70,7 +67,7 @@ def validate_context(
         ):
             raise ValueError("Invalid Quafu collection submission identity")
         build_result_metadata(ProviderTaskHandle("quafu", "validation", "", item))
-        if item.get("quafu_protocol") not in {"task_api_v1", "quafu_sdk_v1"} or any(
+        if item.get("quafu_protocol") != "quafu_sdk_v1" or any(
             re.fullmatch(r"[0-9a-f]{64}", item.get(key, "")) is None
             for key in ("routing_evidence_sha256", "deployment_artifact_sha256")
         ):
@@ -87,25 +84,8 @@ def submit_collection(
     for package in packages:
         validate_deployment_package(package)
     first = packages[0]
-    metadata: Mapping[str, Any]
-    if client._prefer_sdk_lifecycle:
-        adapter = client._submission_sdk_adapter()
-        metadata = adapter.backend_metadata(first.backend.name)
-        protocol = "quafu_sdk_v1"
-    else:
-        if not client.api_key:
-            raise ValidationError(
-                "Quafu collections require QUAFU_API_KEY; no legacy fallback"
-            )
-        metadata = client.transport.get_json(
-            client._task_api_url(
-                "/backends/{backend}/metadata",
-                backend=quote(first.backend.name, safe=""),
-            ),
-            {},
-            client.timeout,
-        )
-        protocol = "task_api_v1"
+    adapter = client._submission_sdk_adapter()
+    metadata: Mapping[str, Any] = adapter.backend_metadata(first.backend.name)
     limits = metadata.get("limits") if isinstance(metadata, Mapping) else None
     maximum = limits.get("max_tasks_per_job") if isinstance(limits, Mapping) else None
     if type(maximum) is not int or maximum < 1:
@@ -113,7 +93,7 @@ def submit_collection(
     if len(packages) > maximum:
         raise CapabilityError(f"Quafu collection exceeds max_tasks_per_job={maximum}")
     items = [
-        build_submission_receipt(package, {"quafu_protocol": protocol})
+        build_submission_receipt(package, {"quafu_protocol": "quafu_sdk_v1"})
         for package in packages
     ]
     digest = _digest(items, first.shots, first.n_qubits)
@@ -124,29 +104,12 @@ def submit_collection(
         "n_qubits": first.n_qubits,
         "sha256": digest,
     }
-    response: Mapping[str, Any]
-    if protocol == "quafu_sdk_v1":
-        response = adapter.submit_collection(
-            [package.qasm for package in packages],
-            target=first.backend.name,
-            shots=first.shots,
-            name=first.name,
-        )
-    else:
-        response = client.transport.post_json(
-            client._task_api_url("/jobs"),
-            {
-                "mode": "collection",
-                "circuit_level": "logical",
-                "target": first.backend.name,
-                "shots": first.shots,
-                "circuits": [{"qasm": package.qasm} for package in packages],
-                "name": first.name,
-                "client_ref": str(uuid.uuid4()),
-            },
-            client._task_api_headers(),
-            client.timeout,
-        )
+    response: Mapping[str, Any] = adapter.submit_collection(
+        [package.qasm for package in packages],
+        target=first.backend.name,
+        shots=first.shots,
+        name=first.name,
+    )
     job_id = response.get("job_id") if isinstance(response, Mapping) else None
     if not isinstance(job_id, str) or not job_id.strip():
         raise ExecutionError(
@@ -179,102 +142,12 @@ def _fetch_results(
     shots: int,
     width: int,
 ) -> list[DeploymentResult]:
-    if handle.payload.get("quafu_protocol") == "quafu_sdk_v1":
-        return _fetch_sdk_results(client, handle, items, shots, width)
-    results: dict[int, DeploymentResult] = {}
-    offset = 0
-    while len(results) < len(items):
-        query = urlencode(
-            {
-                "offset": offset,
-                "limit": min(_PAGE_SIZE, len(items) - offset),
-                "fields": "counts",
-            }
+    if handle.payload.get("quafu_protocol") != "quafu_sdk_v1":
+        raise ValidationError(
+            "This Quafu collection uses a retired transport protocol; only "
+            "quafu_sdk_v1 collections can be restored."
         )
-        response = client.transport.get_json(
-            client._task_api_url("/jobs/{task_id}/results", task_id=handle.task_id)
-            + "?"
-            + query,
-            client._task_api_headers(),
-            client.timeout,
-        )
-        if not isinstance(response, Mapping):
-            raise ExecutionError("Invalid Quafu collection result page")
-        if response.get("job_id", handle.task_id) != handle.task_id:
-            raise ExecutionError("Quafu collection result job ID mismatch")
-        indices = response.get("seq")
-        if not isinstance(indices, list) or not indices:
-            raise ExecutionError("Quafu collection results are incomplete")
-        columns = ("counts", "status", "shots_returned", "n_clbits")
-        if any(
-            not isinstance(response.get(key), list)
-            or len(response[key]) != len(indices)
-            for key in columns
-        ):
-            raise ExecutionError("Quafu collection result columns are misaligned")
-        order = response.get("bit_order")
-        if not isinstance(order, str) or order not in {"c0_rightmost", "c0_leftmost"}:
-            raise ExecutionError("Unknown Quafu collection result bit order")
-        for row, index in enumerate(indices):
-            if (
-                type(index) is not int
-                or not 0 <= index < len(items)
-                or index in results
-            ):
-                raise ExecutionError("Duplicate or invalid Quafu collection task index")
-            status = response["status"][row]
-            if not isinstance(status, str) or status not in {"Finished", "Completed"}:
-                raise ExecutionError(f"Quafu collection task #{index} is {status}")
-            raw = response["counts"][row]
-            if raw is None:
-                raise RuntimeError(f"quafu task {handle.task_id} has no result yet")
-            returned = response["shots_returned"][row]
-            if (
-                not isinstance(raw, Mapping)
-                or not raw
-                or type(returned) is not int
-                or not 0 < returned <= shots
-                or type(response["n_clbits"][row]) is not int
-                or response["n_clbits"][row] != width
-                or any(
-                    not isinstance(key, str)
-                    or len(key) != width
-                    or set(key) - {"0", "1"}
-                    or type(value) is not int
-                    or value < 0
-                    for key, value in raw.items()
-                )
-                or sum(raw.values()) != returned
-            ):
-                raise ExecutionError(
-                    f"Invalid Quafu collection counts for task #{index}"
-                )
-            counts = _extract_counts(
-                {"counts": raw},
-                provider="quafu",
-                flip=client.reverse_result_bits and order == "c0_rightmost",
-            )
-            task_handle = ProviderTaskHandle(
-                "quafu", handle.task_id, handle.backend_name, items[index]
-            )
-            results[index] = validate_deployment_result(
-                DeploymentResult(
-                    task_handle,
-                    counts,
-                    returned,
-                    build_result_metadata(
-                        task_handle,
-                        {
-                            "quafu_protocol": "task_api_v1",
-                            "task_index": index,
-                            "bit_order": order,
-                            "status": status,
-                        },
-                    ),
-                )
-            )
-        offset += len(indices)
-    return [results[index] for index in range(len(items))]
+    return _fetch_sdk_results(client, handle, items, shots, width)
 
 
 def _fetch_sdk_results(

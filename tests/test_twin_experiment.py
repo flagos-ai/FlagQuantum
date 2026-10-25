@@ -14,7 +14,6 @@ from examples.remote import quafu_twin_evidence
 from flagquantum.remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
-    QuafuProvider,
     build_result_metadata,
 )
 from flagquantum.twin import TwinExperiment
@@ -86,6 +85,7 @@ def _handle(experiment, *, digest=None):
             "routing_evidence_sha256": program_identity,
             "deployment_artifact_sha256": program_identity,
             "submitted_qasm_sha256": program_identity,
+            "quafu_protocol": "quafu_sdk_v1",
             "compiler": None,
             "target_qubits": list(experiment.target_qubits),
         },
@@ -273,6 +273,7 @@ def test_complete_quafu_twin_evidence_example_executes_offline(monkeypatch, tmp_
     destination = tmp_path / "twin-evidence.json"
     validation_destination = tmp_path / "twin-validation.json"
     monkeypatch.setenv("QUAFU_API_TOKEN", "offline-test-token")
+    monkeypatch.setenv("QUAFU_API_KEY", "offline-test-key")
     monkeypatch.setattr(quafu_twin_evidence, "QuafuProvider", lambda: provider)
     monkeypatch.setattr(quafu_twin_evidence, "TARGET", "quafu:Baihua")
     monkeypatch.setattr(quafu_twin_evidence, "BACKEND", "Baihua")
@@ -506,12 +507,18 @@ def test_real_quafu_response_shape_distinguishes_submitted_and_executed_qasm():
     )
     receipt = _handle(experiment)
 
-    class Transport:
-        def get_json(self, url, headers, timeout):
-            return response
-
-    provider = QuafuProvider(base_url="https://quafu.test", transport=Transport())
-    result = provider.fetch_result(receipt)
+    result = DeploymentResult(
+        handle=receipt,
+        counts=response["count"],
+        shots=response["shots"],
+        metadata=build_result_metadata(
+            receipt,
+            {
+                "circuit": response["circuit"],
+                "transpiled": response["transpiled"],
+            },
+        ),
+    )
     report = experiment.validate_result(result, receipt=receipt)
 
     assert result.metadata["circuit"] == experiment.submitted_qasm

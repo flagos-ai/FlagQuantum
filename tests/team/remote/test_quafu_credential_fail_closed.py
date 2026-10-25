@@ -1,18 +1,4 @@
-"""A submission with no credential fails before a request is assembled.
-
-The defect this pins: `submit()` chose the legacy SQC route whenever the task
-API probe answered `False`, and that probe answers `False` when `api_key` is
-unset. So "no credential configured" and "the service is unhealthy" produced the
-same branch, and the branch posted to the legacy endpoint with no authentication
-header. The platform's rejection was what reached the caller, which describes the
-platform's verdict rather than the missing prerequisite, and the request had
-already left the machine.
-
-Two entry points reach that endpoint -- `submit()` through `_submit_legacy()` and
-`submit_qasm()` directly -- so both are pinned here. The tests assert on the
-outbound call list, not only on the exception: a guard that raises *after*
-posting would satisfy an exception-only assertion.
-"""
+"""Credential and retired-transport boundaries for Quafu execution."""
 
 from __future__ import annotations
 
@@ -23,14 +9,16 @@ import pytest
 import flagquantum as fq
 import flagquantum.deployment as fqd
 from flagquantum.deployment import CloudBackendProfile
-from flagquantum.errors import FlagQuantumError, ValidationError
+from flagquantum.errors import ValidationError
+from flagquantum.remote.qpu import _quafu_sdk
+from flagquantum.remote.qpu.contracts import ProviderTaskHandle
 from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
 
 
 class SpyTransport:
-    """Records every outbound request and refuses to answer any of them."""
+    """Record legacy HTTP requests; static execution must never use it."""
 
     def __init__(self) -> None:
         self.posts: list[tuple[str, dict[str, str]]] = []
@@ -44,153 +32,88 @@ class SpyTransport:
         timeout: float,
     ) -> Any:
         self.posts.append((url, dict(headers)))
-        raise RuntimeError("the spy reached a server; this test expects no request")
+        raise AssertionError("retired execution transport was used")
 
     def get_json(self, url: str, headers: dict[str, str], timeout: float) -> Any:
         self.gets.append(url)
-        raise RuntimeError("unreachable")
+        raise AssertionError("retired execution transport was used")
 
 
-def _provider(transport: SpyTransport, **options: Any) -> QuafuProvider:
-    return QuafuProvider(
-        base_url="https://legacy.test",
-        task_server_url="https://quafu.test/api/v1",
-        transport=transport,
-        **options,
-    )
-
-
-def _package(*, target: str = "ScQ-P18") -> Any:
-    circuit = fq.Circuit(2)
-    circuit.h(0).cx(0, 1)
-    backend = CloudBackendProfile(provider="quafu", name=target, n_qubits=18)
-    metadata: dict[str, Any] = {
-        "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
-    }
+def _package() -> Any:
+    backend = CloudBackendProfile(provider="quafu", name="Baihua", n_qubits=156)
     return fqd.create_deployment_package(
-        circuit, backend=backend, shots=1024, metadata=metadata
+        fq.Circuit(2).h(0).cx(0, 1),
+        backend=backend,
+        shots=1024,
+        metadata={
+            "provider_options": {"compiler": "quarkcircuit", "target_qubits": []}
+        },
     )
 
 
-def test_no_credential_refuses_before_the_legacy_post(monkeypatch) -> None:
+def test_no_sdk_key_refuses_before_loading_sdk_or_using_legacy_http(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("QUAFU_API_KEY", raising=False)
-    monkeypatch.delenv("QUAFU_API_TOKEN", raising=False)
+    monkeypatch.setenv("QUAFU_API_TOKEN", "legacy-token-must-not-authorize-execution")
+    monkeypatch.setattr(
+        _quafu_sdk,
+        "_load_quafu_sdk",
+        lambda: pytest.fail("credential validation must precede SDK loading"),
+    )
     transport = SpyTransport()
-    provider = _provider(transport)
+    provider = QuafuProvider(transport=transport)
 
-    with pytest.raises(ValidationError) as error:
+    with pytest.raises(ValidationError, match="QUAFU_API_KEY"):
         provider.submit(_package())
 
-    assert transport.posts == []
-    assert "QUAFU_API_TOKEN" in str(error.value)
+    assert transport.posts == [] and transport.gets == []
 
 
-def test_no_credential_refuses_the_qasm_entry_point(monkeypatch) -> None:
-    """`submit_qasm` posts to the same endpoint; it needs the same guard.
-
-    The proposal that records this defect names only `submit()`. The second entry
-    point was reachable with the same empty credential and the same absent
-    header, so pinning only the first would leave half the defect live.
-    """
-
+def test_qasm_entry_point_has_the_same_sdk_only_credential_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("QUAFU_API_KEY", raising=False)
-    monkeypatch.delenv("QUAFU_API_TOKEN", raising=False)
+    monkeypatch.setenv("QUAFU_API_TOKEN", "legacy-token-must-not-authorize-execution")
+    monkeypatch.setattr(
+        _quafu_sdk,
+        "_load_quafu_sdk",
+        lambda: pytest.fail("credential validation must precede SDK loading"),
+    )
     transport = SpyTransport()
-    provider = _provider(transport)
+    provider = QuafuProvider(transport=transport)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="QUAFU_API_KEY"):
         provider.submit_qasm(
             "OPENQASM 2.0;\nqreg q[2];\n",
-            chip="ScQ-P18",
+            chip="Baihua",
             name="job",
             shots=1024,
-            target_qubits=[0, 1],
+            target_qubits=(0, 1),
         )
 
-    assert transport.posts == []
+    assert transport.posts == [] and transport.gets == []
 
 
-def test_the_failure_names_both_credential_sources(monkeypatch) -> None:
-    """The message must let a caller act without reading the source."""
-
-    monkeypatch.delenv("QUAFU_API_KEY", raising=False)
-    monkeypatch.delenv("QUAFU_API_TOKEN", raising=False)
-    provider = _provider(SpyTransport())
-
-    with pytest.raises(ValidationError) as error:
-        provider.submit(_package())
-
-    message = str(error.value)
-    assert "QUAFU_API_KEY" in message
-    assert "QUAFU_API_TOKEN" in message
-    assert "No request was sent" in message
-    assert error.value.category == "validation"
-    assert isinstance(error.value, FlagQuantumError)
-
-
-def test_a_configured_key_without_a_token_says_which_one_is_missing(
-    monkeypatch,
+@pytest.mark.parametrize("protocol", ["sqc_legacy", "task_api_v1", None])
+def test_retired_receipts_are_rejected_without_sdk_or_http(
+    monkeypatch: pytest.MonkeyPatch, protocol: str | None
 ) -> None:
-    """`QUAFU_API_KEY` does not authenticate the legacy endpoint.
-
-    A caller who has set one credential needs to be told that the *other* one is
-    the one this route needs, not that both are absent.
-    """
-
-    monkeypatch.setenv("QUAFU_API_KEY", "qf_test")
-    monkeypatch.delenv("QUAFU_API_TOKEN", raising=False)
+    monkeypatch.setattr(
+        _quafu_sdk,
+        "_load_quafu_sdk",
+        lambda: pytest.fail("retired receipts must fail before SDK loading"),
+    )
     transport = SpyTransport()
-    provider = _provider(transport)
+    provider = QuafuProvider(transport=transport)
+    payload = {} if protocol is None else {"quafu_protocol": protocol}
+    handle = ProviderTaskHandle("quafu", "old-job", "Baihua", payload)
 
-    with pytest.raises(ValidationError) as error:
-        provider.submit(_package())
+    with pytest.raises(ValidationError, match="retired transport protocol"):
+        provider.query_status(handle)
+    with pytest.raises(ValidationError, match="retired transport protocol"):
+        provider.cancel(handle)
+    with pytest.raises(ValidationError, match="retired transport protocol"):
+        provider.fetch_result(handle)
 
-    message = str(error.value)
-    assert transport.posts == []
-    assert "QUAFU_API_TOKEN" in message
-    assert "No request was sent" in message
-
-
-def test_the_legitimate_fallback_still_posts_with_its_token(monkeypatch) -> None:
-    """The guard must not close the route it exists to authenticate.
-
-    A configured token with an unhealthy task API is a genuine fallback, so the
-    request must still go out, and it must carry the token header. An
-    implementation that simply refused every legacy submission would pass the
-    tests above and fail this one.
-    """
-
-    monkeypatch.setenv("QUAFU_API_KEY", "qf_test")
-    monkeypatch.setenv("QUAFU_API_TOKEN", "legacy-secret")
-    transport = SpyTransport()
-    provider = _provider(transport)
-
-    with pytest.raises(RuntimeError, match="reached a server"):
-        provider.submit(_package())
-
-    assert len(transport.posts) == 1
-    url, headers = transport.posts[0]
-    assert url.startswith("https://legacy.test/task/run/")
-    assert headers["token"] == "legacy-secret"
-
-
-def test_a_task_api_only_target_blames_the_missing_credential(monkeypatch) -> None:
-    """The routing refusal used to name an absent fallback, not the absent key.
-
-    `sim` and the routing targets have no legacy route at all, so the old message
-    ("no equivalent legacy SQC fallback is available") described a structural
-    fact and hid the actionable one: the task API was probed without a key.
-    """
-
-    monkeypatch.delenv("QUAFU_API_KEY", raising=False)
-    monkeypatch.delenv("QUAFU_API_TOKEN", raising=False)
-    transport = SpyTransport()
-    provider = _provider(transport)
-
-    with pytest.raises(ValidationError) as error:
-        provider.submit(_package(target="sim"))
-
-    message = str(error.value)
-    assert transport.posts == []
-    assert "QUAFU_API_KEY" in message
-    assert "no equivalent legacy SQC fallback is available" not in message
+    assert transport.posts == [] and transport.gets == []

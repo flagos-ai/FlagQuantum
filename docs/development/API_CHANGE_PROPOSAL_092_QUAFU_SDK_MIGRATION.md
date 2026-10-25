@@ -245,12 +245,41 @@ by the existing Twin noise model, including T2, one-qubit gate fidelity, and
 one- and two-qubit gate duration with units. Batch F must not infer or fabricate
 those values from topology-only fields.
 
-- remove `QUAFU_API_TOKEN`, the SQC hostname, token-header authentication, and
-  `/task/*` request paths;
-- remove legacy discovery, submission, status, result, calibration, and
-  fallback code;
-- remove obsolete tests, examples, documentation, and environment guidance;
-  and
+The third Batch F slice retires the old execution lifecycle. Static logical,
+QSteed physical, Twin, collection, status, result, cancellation, and restore
+operations now accept only `quafu_sdk_v1`. A legacy token cannot authorize
+execution, transport failure never activates another protocol, and historical
+`sqc_legacy` or `task_api_v1` receipts fail before SDK loading or network I/O.
+
+```python
+import flagquantum as fq
+
+job = fq.submit(
+    fq.Circuit(2).h(0).cx(0, 1),
+    target="quafu:Baihua",
+    shots=1024,
+)
+job.save("bell.receipt.json")
+
+# In a later process with QUAFU_API_KEY configured:
+restored = fq.restore_job("bell.receipt.json")
+print(restored.status())
+```
+
+Expected behavior: submission and restoration use the SDK job identity. Restore
+never creates another task. A receipt created by a retired transport produces
+an actionable validation error instead of an implicit migration or resubmit.
+
+The remaining compatibility surface is read-only: explicitly injected HTTP
+transports used by offline adapters, plus `fetch_chip_info()` for legacy noise
+metadata. DynamicCircuit retains its separately governed API Change 090 path;
+this slice makes no OpenQASM 3 or live dynamic-QPU support claim.
+
+- after SDK noise-schema parity, remove `QUAFU_API_TOKEN`, the SQC hostname,
+  token-header authentication, `fetch_chip_info()`, and remaining `/task/*`
+  read paths;
+- remove the remaining injected-HTTP discovery/calibration compatibility code;
+- remove remaining calibration-only examples and environment guidance; and
 - remove `quarkcircuit` from FlagQuantum extras if the post-cutover dependency
   audit finds no maintained use.
 

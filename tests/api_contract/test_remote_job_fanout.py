@@ -1,9 +1,12 @@
 """One program across several targets: independent streams, no shared claim."""
 
+from types import SimpleNamespace
+
 import pytest
 
 import flagquantum as fq
 from flagquantum.remote import jobs
+from flagquantum.remote.qpu import _quafu_sdk
 
 pytestmark = pytest.mark.unit
 
@@ -15,28 +18,50 @@ CALLER_ORDER = ("quafu:Dongling", "quafu:Baihua")
 
 
 class Transport:
-    """One target's own transport, with the state that target is in."""
+    """One target's private SDK adapter, with that target's state."""
 
     def __init__(self):
         self.posts = []
         self.gets = []
         self.state = "Transpiled"
         self.counts = {"01": 1000}
+        self.id = "job-123"
+        self.n_tasks = 1
 
-    def post_json(self, url, payload, headers, timeout):
-        self.posts.append(payload)
-        return {"task_id": "job-123"}
+    def submit(self, qasm, **options):
+        self.posts.append({"qasm": qasm, **options})
+        return self
 
-    def get_json(self, url, headers, timeout):
-        self.gets.append(url)
-        if "/status/" in url:
-            return self.state
-        if "/result/" in url:
-            return {"count": dict(self.counts), "transpiled": "physical circuit"}
-        if "/cancel/" in url:
-            self.state = "Cancelled"
-            return {}
-        raise AssertionError(url)
+    def job(self, job_id):
+        assert job_id == self.id
+        return self
+
+    def status(self):
+        self.gets.append(f"/status/{self.id}")
+        return self.state
+
+    def result(self, timeout=0):
+        self.gets.append(f"/result/{self.id}")
+        return SimpleNamespace(
+            status="Finished",
+            task_id=f"{self.id}-0",
+            target=None,
+            backend=None,
+            counts=dict(self.counts),
+            shots_returned=sum(self.counts.values()),
+            shots_requested=1024,
+            n_clbits=2,
+            bit_order="c0_rightmost",
+            compiler={"name": "qiskit", "version": "2.5"},
+            measurements=None,
+            executed_qasm=None,
+            calibration_id=None,
+        )
+
+    def cancel(self):
+        self.gets.append(f"/cancel/{self.id}")
+        self.state = "Cancelled"
+        return {"status": "Cancelled", "cancelled_now": 1}
 
 
 def _install(monkeypatch, refusal=None):
@@ -53,7 +78,10 @@ def _install(monkeypatch, refusal=None):
         def __init__(self, **kwargs):
             self._stream = Transport()
             super().__init__(
-                token="test-private-token", transport=self._stream, **kwargs
+                _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(
+                    client=self._stream
+                ),
+                **kwargs,
             )
 
         def submit(self, package):
@@ -212,7 +240,10 @@ def test_targets_are_contacted_concurrently_not_one_after_another(monkeypatch):
         def __init__(self, **kwargs):
             self._stream = Transport()
             super().__init__(
-                token="test-private-token", transport=self._stream, **kwargs
+                _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(
+                    client=self._stream
+                ),
+                **kwargs,
             )
 
         def submit(self, package):
