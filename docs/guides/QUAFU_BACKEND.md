@@ -1,8 +1,9 @@
 # Quafu backend
 
-FlagQuantum prefers Quafu's current task API and falls back to the legacy SQC
-HTTP contract when the new platform is unavailable before submission.
-Installing `quafusqc` is not required.
+FlagQuantum uses the official `quafu-sdk` package for read-only device
+discovery, backend metadata, limits, and calibration snapshots. Task
+submission is being migrated in stages and still uses the existing transport
+in this release. Installing `quafusqc` is not required.
 
 For detached multi-circuit jobs, pass a same-width circuit list to `fq.submit`;
 see [one collection, one receipt](REMOTE_JOBS.md#multiple-circuits-in-one-quafu-job).
@@ -12,9 +13,11 @@ fall back to SQC or silently create separate parent jobs.
 
 ## Configure credentials
 
-Keep credentials outside source control. `QUAFU_API_KEY` authenticates the
-current task API. `QUAFU_API_TOKEN` is optional, but is required for an
-authenticated fallback to the legacy SQC platform.
+Read-only discovery and calibration do not require credentials. Keep task
+submission credentials outside source control. `QUAFU_API_KEY` authenticates
+the current task API. During the staged migration, `QUAFU_API_TOKEN` remains
+available only for the legacy submission compatibility path and is scheduled
+for removal after SDK submission reaches parity.
 
 A submission with **no** Quafu credential is rejected before any request is sent.
 `QUAFU_API_TOKEN` is the credential the legacy SQC endpoint authenticates with, so
@@ -212,7 +215,7 @@ for the required TVD, QPU-repeatability, finite-shot, and provenance evidence.
 ## Run on a real device
 
 Inspect the current device list before choosing a target. Python discovery uses
-the new `/devices` endpoint first and falls back to legacy SQC discovery:
+the official SDK and returns FlagQuantum-owned `CloudBackendProfile` objects:
 
 ```python
 from flagquantum.remote import QuafuProvider
@@ -224,9 +227,13 @@ for device in provider.list_devices():
         device.n_qubits,
         device.metadata.get("status"),
         device.metadata.get("queue"),
-        device.metadata.get("simulator_available"),
+        device.metadata.get("limits"),
     )
 ```
+
+Expected result: each row contains the provider device name, authoritative
+logical width, current status and queue, and maintained service limits. No SDK
+client or SDK-native model escapes through the FlagQuantum API.
 
 Fetch the current public calibration in Python. Preserve its `id` with every
 result, then restore that exact snapshot later instead of silently substituting
@@ -244,9 +251,10 @@ same_snapshot = provider.fetch_calibration(
 assert same_snapshot["id"] == current["id"]
 ```
 
-`fetch_calibration(...)` uses the public Task API and does not send a Key. The
-current endpoint can change while a job waits; use the `calibration_ids` stored
-by the job and `/calibrations/{id}` semantics for reproducible analysis.
+`fetch_calibration(...)` uses the SDK's public read-only API and does not
+require a Key. The current snapshot can change while a job waits; use the
+`calibration_ids` stored by the job and historical calibration identity for
+reproducible analysis.
 
 Choose a device whose status is `online`, then use its case-sensitive name after
 `quafu:`. Real-device execution consumes quota and may wait in a queue.

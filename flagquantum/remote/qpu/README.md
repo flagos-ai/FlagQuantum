@@ -11,9 +11,16 @@ Use the categorized public entry point:
 from flagquantum.remote.qpu import QuafuProvider
 
 provider = QuafuProvider()
-provider.verify()
-devices = provider.list_devices(n_qubits=2)
+devices = provider.list_devices()
+for device in devices:
+    print(device.name, device.n_qubits, device.metadata.get("limits"))
 ```
+
+Expected result: discovery returns FlagQuantum-owned backend profiles populated
+from the official `quafu-sdk`; SDK-native objects do not cross the provider
+boundary. Discovery and calibration are read-only and credential-free. Task
+submission remains on the staged compatibility path until later migration
+batches complete.
 
 For the shortest supported user path, let the public runtime own the complete
 compile, pre-submission validation, submission, wait, and result sequence:

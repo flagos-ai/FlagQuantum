@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from flagquantum.errors import ValidationError
-from flagquantum.remote.qpu import _quafu_sdk
+from flagquantum.remote.qpu import QuafuProvider, _quafu_sdk
 
 pytestmark = pytest.mark.unit
 
@@ -127,3 +127,152 @@ def test_loader_reports_namespace_conflict(monkeypatch: pytest.MonkeyPatch) -> N
 
     with pytest.raises(RuntimeError, match="cannot share an environment with pyquafu"):
         _quafu_sdk._load_quafu_sdk()
+
+
+class _ReadOnlyClient:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str | None]] = []
+
+    def devices(self) -> list[dict[str, object]]:
+        self.calls.append(("devices", None))
+        return [
+            {
+                "name": "Baihua",
+                "kind": "real",
+                "status": "online",
+                "n_qubits": 156,
+                "queue": 4,
+                "limits": {"max_shots": 8192},
+            },
+            {
+                "name": "sim",
+                "kind": "sim",
+                "status": "online",
+                "n_qubits": 24,
+                "queue": None,
+                "limits": {"max_shots": 8192},
+            },
+        ]
+
+    def metadata(self, target: str) -> dict[str, object]:
+        self.calls.append(("metadata", target))
+        width = 156 if target == "Baihua" else 24
+        return {
+            "n_qubits": width,
+            "basis_gates": ["h", "rx", "ry", "rz", "cz"],
+            "limits": {"max_qubits": width, "max_shots": 8192},
+            "calibration_id": "cal-1" if target == "Baihua" else None,
+        }
+
+    def device_calibration(self, device: str) -> SimpleNamespace:
+        self.calls.append(("device_calibration", device))
+        return SimpleNamespace(raw=_calibration())
+
+    def calibration(self, calibration_id: str) -> SimpleNamespace:
+        self.calls.append(("calibration", calibration_id))
+        return SimpleNamespace(raw=_calibration())
+
+
+def _calibration() -> dict[str, object]:
+    return {
+        "id": "cal-1",
+        "chip": "Baihua",
+        "calibrated_at": "2026-10-25T10:00:00+08:00",
+        "qubits": [{"index": 0, "t1_us": 70.5}],
+        "couplers": [],
+    }
+
+
+def test_sdk_discovery_normalizes_profiles_without_native_objects() -> None:
+    client = _ReadOnlyClient()
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(client=client)
+    provider = QuafuProvider(_sdk_adapter=adapter)
+
+    devices = provider.list_devices()
+
+    assert [(item.name, item.n_qubits) for item in devices] == [
+        ("Baihua", 156),
+        ("sim", 24),
+    ]
+    assert devices[0].basis_gates == ("h", "rx", "ry", "rz", "cz")
+    assert devices[0].is_simulator is False
+    assert devices[1].is_simulator is True
+    assert devices[0].metadata == {
+        "source": "quafu-sdk",
+        "kind": "real",
+        "limits": {"max_qubits": 156, "max_shots": 8192},
+        "status": "online",
+        "queue": 4,
+        "calibration_id": "cal-1",
+    }
+    assert client.calls == [
+        ("devices", None),
+        ("metadata", "Baihua"),
+        ("metadata", "sim"),
+    ]
+
+
+def test_default_read_path_builds_credential_free_sdk_adapter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _ReadOnlyClient()
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(client=client)
+    calls: list[dict[str, object]] = []
+
+    def factory(**kwargs: object) -> _quafu_sdk._QuafuSdkAdapter:
+        calls.append(kwargs)
+        return adapter
+
+    monkeypatch.setattr(_quafu_sdk._QuafuSdkAdapter, "for_discovery", factory)
+    provider = QuafuProvider(task_server_url="https://quafu.test/api/v1")
+
+    devices = provider.list_devices()
+
+    assert devices[0].name == "Baihua"
+    assert calls == [{"base_url": "https://quafu.test"}]
+
+
+def test_sdk_calibration_is_copied_and_identity_checked() -> None:
+    client = _ReadOnlyClient()
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(client=client)
+    provider = QuafuProvider(_sdk_adapter=adapter)
+
+    current = provider.fetch_calibration("Baihua")
+    historical = provider.fetch_calibration("Baihua", calibration_id="cal-1")
+
+    assert current == _calibration()
+    assert historical == _calibration()
+    assert isinstance(current, dict)
+    assert client.calls == [
+        ("device_calibration", "Baihua"),
+        ("calibration", "cal-1"),
+    ]
+
+
+def test_sdk_discovery_rejects_missing_authoritative_width() -> None:
+    class MissingWidthClient(_ReadOnlyClient):
+        def devices(self) -> list[dict[str, object]]:
+            return [{"name": "Baihua", "kind": "real"}]
+
+        def metadata(self, target: str) -> dict[str, object]:
+            return {"basis_gates": ["cz"], "limits": {}}
+
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(client=MissingWidthClient())
+    provider = QuafuProvider(_sdk_adapter=adapter)
+
+    with pytest.raises(RuntimeError, match="has no positive n_qubits"):
+        provider.list_devices(n_qubits=2)
+
+
+def test_sdk_boundary_rejects_non_plain_payloads() -> None:
+    class NativeValue:
+        pass
+
+    class InvalidClient(_ReadOnlyClient):
+        def devices(self) -> list[dict[str, object]]:
+            return [{"name": "Baihua", "native": NativeValue()}]
+
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(client=InvalidClient())
+
+    with pytest.raises(RuntimeError, match="unsupported NativeValue data"):
+        adapter.devices()

@@ -127,6 +127,14 @@ discovery remains credential-free when the maintained service permits it.
 - preserve backend and calibration identities without guessed defaults; and
 - prove with fake SDK clients that read-only calls send no credential.
 
+The implementation keeps SDK clients and native response models behind a
+private adapter. `QuafuProvider().list_devices()` and
+`fetch_calibration(...)` use that adapter by default, return only
+FlagQuantum-owned values, reject missing authoritative widths or malformed
+identities, and remain covered by offline fake-client tests. An explicitly
+injected HTTP transport retains the compatibility path solely for staged
+contract tests until Batch F removes it.
+
 ### Batch C: static logical task lifecycle
 
 - migrate submission, status, wait, restore, cancellation, and result reads;
