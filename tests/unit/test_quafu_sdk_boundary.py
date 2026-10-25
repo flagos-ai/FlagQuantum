@@ -182,8 +182,12 @@ def _calibration() -> dict[str, object]:
         "id": "cal-1",
         "chip": "Baihua",
         "calibrated_at": "2026-10-25T10:00:00+08:00",
-        "qubits": [{"index": 0, "t1_us": 70.5}],
-        "couplers": [],
+        "basis_gates": ["h", "rx", "ry", "rz", "cz"],
+        "qubits": [
+            {"index": 0, "t1_us": 70.5},
+            {"index": 1, "t1_us": 61.2, "fidelity": 0.999},
+        ],
+        "couplers": [{"qubits": [0, 1], "cz_fidelity": 0.987}],
     }
 
 
@@ -251,6 +255,62 @@ def test_sdk_calibration_is_copied_and_identity_checked() -> None:
         ("device_calibration", "Baihua"),
         ("calibration", "cal-1"),
     ]
+
+
+def test_qsteed_topology_is_derived_from_credential_free_sdk_calibration() -> None:
+    client = _ReadOnlyClient()
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(client=client)
+    provider = QuafuProvider(_sdk_adapter=adapter)
+
+    info = provider._qsteed_chip_info("Baihua")
+
+    assert info == {
+        "calibration_time": "2026-10-25T10:00:00+08:00",
+        "basis_gates": ["h", "rx", "ry", "rz", "cz"],
+        "qubits_info": {
+            "Q0": {"index": 0, "t1_us": 70.5},
+            "Q1": {"index": 1, "t1_us": 61.2, "fidelity": 0.999},
+        },
+        "couplers_info": {
+            "C0": {
+                "qubits": [0, 1],
+                "cz_fidelity": 0.987,
+                "qubits_index": [0, 1],
+                "fidelity": 0.987,
+            }
+        },
+    }
+    assert client.calls == [("device_calibration", "Baihua")]
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("index", True, "nonnegative integer"),
+        ("qubits", [0, 2], "unknown qubit"),
+        ("cz_fidelity", None, "is not a number"),
+        ("cz_fidelity", 0.0, r"must be in \(0, 1\]"),
+    ],
+)
+def test_qsteed_topology_rejects_malformed_sdk_calibration(
+    field: str, value: object, message: str
+) -> None:
+    payload = _calibration()
+    if field == "index":
+        payload["qubits"][0][field] = value  # type: ignore[index]
+    else:
+        payload["couplers"][0][field] = value  # type: ignore[index]
+
+    class InvalidCalibrationClient(_ReadOnlyClient):
+        def device_calibration(self, device: str) -> SimpleNamespace:
+            return SimpleNamespace(raw=payload)
+
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(
+        client=InvalidCalibrationClient()
+    )
+
+    with pytest.raises(RuntimeError, match=message):
+        QuafuProvider(_sdk_adapter=adapter)._qsteed_chip_info("Baihua")
 
 
 def test_sdk_discovery_rejects_missing_authoritative_width() -> None:

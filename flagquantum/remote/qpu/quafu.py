@@ -17,6 +17,7 @@ from ...deployment.cloud import (
     validate_deployment_package,
 )
 from ...errors import ValidationError
+from ._quafu_calibration import qsteed_chip_info
 from ._quafu_physical import (
     backend_snapshot_sha256,
     prepare_physical_qasm,
@@ -562,6 +563,13 @@ class QuafuProvider(HttpQuantumProvider):
                 "quafu chip-info response is missing " + ", ".join(missing)
             )
         return response
+
+    def _qsteed_chip_info(self, chip: str) -> Mapping[str, Any]:
+        """Resolve QSteed topology through the maintained SDK read path."""
+
+        if not self._prefer_sdk_reads:
+            return self.fetch_chip_info(chip)
+        return qsteed_chip_info(self.fetch_calibration(chip))
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
         validate_deployment_package(package)

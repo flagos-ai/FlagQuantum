@@ -196,6 +196,28 @@ a credential nor creates a platform task.
 
 ### Batch F: SQC retirement
 
+Batch F starts with a compiler-topology bridge: the default QSteed target
+resolution now derives its existing private `chip_info` input from the
+credential-free SDK calibration snapshot. The bridge maps SDK `qubits` and
+`couplers[].cz_fidelity` into the shape consumed by the current QSteed plugin,
+validates every physical index and calibrated edge, and does not invent a
+missing one-qubit fidelity. This removes QSteed compilation's dependency on
+the SQC `/task/backendtest/*` path without changing the public compiler call.
+
+```python
+import flagquantum as fq
+
+compiled = fq.compile(
+    fq.Circuit(2).h(0).cx(0, 1),
+    compiler="qsteed",
+    target="quafu:Baihua",
+)
+print(compiled.metadata["execution_target"]["backend"])
+```
+
+Expected result: `Baihua`. The read is credential-free, and compilation does
+not submit a task.
+
 - remove `QUAFU_API_TOKEN`, the SQC hostname, token-header authentication, and
   `/task/*` request paths;
 - remove legacy discovery, submission, status, result, calibration, and
