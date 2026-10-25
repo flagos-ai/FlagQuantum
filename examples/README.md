@@ -12,6 +12,8 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/study_training_budget.py`: preregistered CPU continuation of audited QEC checkpoints; see `docs/development/QEC_AI_TRAINING_SUFFICIENCY.md`.
+
 - [`qec/diagnose_predecoder.py`](qec/diagnose_predecoder.py) inspects archived
   CPU QEC checkpoints with exact H/L equivalence and MLP feature-label diagnostics.
   `--fixture-smoke` runs an exact cycle probe with Core Torch alone. Archived
