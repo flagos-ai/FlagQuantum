@@ -190,5 +190,25 @@ descriptive horizon count tables. Quality requires the conjunction across the
 three fixed step-2000 calibrated seeds. Repeated models do not multiply the sample
 size. Test with `python -m pytest tests/qec/test_continued_primary.py -q`. Synthetic
 fixtures can pass their numerical rule without providing scientific evidence.
-The formal coordinator, matching-environment preflight and real two-host/primary
-execution are still pending; there is no new research collection CLI.
+The coordinator is `examples/qec/run_continued_assessment.py`; matching-environment
+preflight and actual two-host/primary execution still require their recorded evidence.
+
+The coordinator's `preflight` stage validates the external hashed Docker inspect
+record, current container/host label, pinned image, sole GPU UUID, network-none,
+eight-CPU/16-GiB limits and read-only source/input mounts. Input directories are
+whitelisted to exclude previous test/score arrays; all six checkpoints, producing
+dependency versions/lock, official weights, circuit and DEM must verify before new
+data. A trusted SSH controller authenticates host labels and enforces the hard
+container timeout. `run` exclusively creates a study directory and launch lock,
+executes calibration/validation/frozen choices/probes/172 receipt, retains its CUDA
+process while waiting for a peer receipt hash on a read-only controller mount,
+then finishes primary capture and reporting once. The peer command replays the
+same probe. All phases share one persisted 24-hour deadline; partial failures and
+locks remain and cannot restart data collection. Run
+`python -m pytest tests/qec/test_continued_coordinator.py -q` for software stage
+replacement/failure scenarios; these fakes are not container or A800 evidence.
+
+The controller must package source without historical raw datasets. The runtime
+source-evidence whitelist permits only four original A800-172 metadata JSONs,
+the original dependency lock and the training-response audit. Old primary arrays
+and held-out per-shot score reports must not enter the new source/input mounts.
