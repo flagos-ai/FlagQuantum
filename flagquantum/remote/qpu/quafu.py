@@ -17,6 +17,11 @@ from ...deployment.cloud import (
     validate_deployment_package,
 )
 from ...errors import ValidationError
+from ._quafu_physical import (
+    backend_snapshot_sha256,
+    prepare_physical_qasm,
+    validate_physical_result,
+)
 from ._quafu_sdk import _QuafuSdkAdapter
 from .contracts import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
@@ -141,11 +146,10 @@ def _submission_options(
 class QuafuProvider(HttpQuantumProvider):
     """FlagQuantum adapter for Quafu discovery and remote execution.
 
-    Read-only discovery and calibration use the official Quafu SDK. During
-    the staged migration, static logical task lifecycles also use the SDK.
-    Physical QSteed and collection paths retain their existing transports
-    until their dedicated migration batches, and an explicitly injected HTTP
-    transport retains the compatibility path used by offline contract tests.
+    Read-only discovery, calibration, and static single-circuit task lifecycles
+    use the official Quafu SDK. An explicitly injected HTTP transport retains
+    the compatibility path used by offline contract tests while collection
+    migration remains staged.
     """
 
     def __init__(
@@ -573,6 +577,8 @@ class QuafuProvider(HttpQuantumProvider):
             and not options.get("target_qubits")
         ):
             return self._submit_sdk_logical(package)
+        if self._prefer_sdk_lifecycle and options.get("compiler") is None:
+            return self._submit_sdk_physical(package, options)
         task_api_required = _requires_task_api(package.backend.name)
         if task_api_required and (
             options.get("compiler") != "quarkcircuit" or options.get("target_qubits")
@@ -621,6 +627,46 @@ class QuafuProvider(HttpQuantumProvider):
         receipt = build_submission_receipt(package, response)
         receipt["quafu_protocol"] = _SDK_PROTOCOL
         receipt["service_compiler"] = "qiskit"
+        return ProviderTaskHandle(
+            "quafu", str(response["job_id"]), package.backend.name, receipt
+        )
+
+    def _submit_sdk_physical(
+        self, package: DeploymentPackage, options: Mapping[str, Any]
+    ) -> ProviderTaskHandle:
+        adapter = self._submission_sdk_adapter()
+        backend_snapshot = adapter.backend_metadata(package.backend.name)
+        calibration_id = backend_snapshot.get("calibration_id")
+        if not isinstance(calibration_id, str) or not calibration_id.strip():
+            raise RuntimeError(
+                "Quafu SDK backend metadata has no current calibration identity"
+            )
+        target_qubits = tuple(int(qubit) for qubit in options["target_qubits"])
+        physical_qasm, measurements = prepare_physical_qasm(
+            package.qasm,
+            target_qubits=target_qubits,
+            backend_metadata=backend_snapshot,
+        )
+        response = adapter.submit_physical(
+            physical_qasm,
+            target=package.backend.name,
+            shots=package.shots,
+            name=package.name,
+        )
+        receipt = build_submission_receipt(package, response)
+        receipt.update(
+            {
+                "quafu_protocol": _SDK_PROTOCOL,
+                "service_compiler": "none",
+                "target_qubits": list(target_qubits),
+                "submitted_qasm_sha256": hashlib.sha256(
+                    physical_qasm.encode()
+                ).hexdigest(),
+                "backend_snapshot_sha256": backend_snapshot_sha256(backend_snapshot),
+                "calibration_id": calibration_id.strip(),
+                "measurement_mapping": [dict(item) for item in measurements],
+            }
+        )
         return ProviderTaskHandle(
             "quafu", str(response["job_id"]), package.backend.name, receipt
         )
@@ -851,6 +897,12 @@ class QuafuProvider(HttpQuantumProvider):
             if type(returned) is not int or returned != sum(counts.values()):
                 raise RuntimeError(
                     "Quafu SDK returned-shot count does not match result counts"
+                )
+            if handle.payload.get("service_compiler") == "none":
+                validate_physical_result(
+                    expected_measurements=handle.payload.get("measurement_mapping"),
+                    expected_calibration_id=handle.payload.get("calibration_id"),
+                    response=response,
                 )
             executed = response.get("executed_qasm")
             if isinstance(executed, str) and executed:

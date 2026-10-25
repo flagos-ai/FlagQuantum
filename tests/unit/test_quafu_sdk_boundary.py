@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -162,6 +163,7 @@ class _ReadOnlyClient:
         return {
             "n_qubits": width,
             "basis_gates": ["h", "rx", "ry", "rz", "cz"],
+            "coupling_map": [[17, 18], [18, 17]],
             "limits": {"max_qubits": width, "max_shots": 8192},
             "calibration_id": "cal-1" if target == "Baihua" else None,
         }
@@ -325,6 +327,16 @@ class _LifecycleClient:
         self.submissions.append((circuit, kwargs))
         return self.job_handle
 
+    def metadata(self, target: str) -> dict[str, object]:
+        assert target == "Baihua"
+        return {
+            "n_qubits": 156,
+            "basis_gates": ["h", "rx", "ry", "rz", "cz"],
+            "coupling_map": [[17, 18], [18, 17]],
+            "limits": {"max_qubits": 156, "max_shots": 8192},
+            "calibration_id": "cal-1",
+        }
+
     def job(self, job_id: str) -> _SdkJob:
         self.restores.append(job_id)
         self.job_handle.id = job_id
@@ -345,6 +357,27 @@ def _logical_package():
             },
             "compilation_location": "service",
         },
+    )
+
+
+def _physical_package(*, target_qubits: tuple[int, int] = (17, 18)):
+    source = fq.Circuit(2).h(0).cz(0, 1).to_ir()
+    compiled = replace(
+        source,
+        metadata={
+            "execution_target": {
+                "provider": "quafu",
+                "backend": "Baihua",
+                "compiler": None,
+                "target_qubits": target_qubits,
+            }
+        },
+    )
+    return create_deployment_package(
+        compiled,
+        name="sdk physical bell",
+        shots=1024,
+        optimize=False,
     )
 
 
@@ -383,6 +416,105 @@ def test_sdk_static_logical_lifecycle_preserves_flagquantum_contracts() -> None:
         ("result", 0),
         ("cancel", None),
     ]
+
+
+def test_sdk_qsteed_submission_encodes_and_binds_physical_program() -> None:
+    client = _LifecycleClient()
+    result = client.job_handle.result(timeout=0)
+    result.measurements = [
+        {"cbit": 0, "physical_qubit": 17, "virtual_qubit": 0},
+        {"cbit": 1, "physical_qubit": 18, "virtual_qubit": 1},
+    ]
+    result.compiler = {"name": "none", "version": None}
+    result.executed_qasm = None
+    client.job_handle.result = lambda timeout=None: result  # type: ignore[method-assign]
+    provider = QuafuProvider(
+        _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
+    )
+
+    handle = provider.submit(_physical_package())
+
+    submitted, options = client.submissions[0]
+    assert isinstance(submitted, str)
+    assert "qreg q[156];" in submitted
+    assert "h q[17];" in submitted
+    assert "cz q[17], q[18];" in submitted
+    assert "measure q[17] -> c[0];" in submitted
+    assert "measure q[18] -> c[1];" in submitted
+    assert options == {
+        "target": "Baihua",
+        "shots": 1024,
+        "compiler": "none",
+        "name": "sdk physical bell",
+    }
+    assert handle.payload["service_compiler"] == "none"
+    assert handle.payload["target_qubits"] == [17, 18]
+    assert len(handle.payload["submitted_qasm_sha256"]) == 64
+    assert len(handle.payload["backend_snapshot_sha256"]) == 64
+    assert handle.payload["calibration_id"] == "cal-1"
+    assert provider.fetch_result(handle).counts == {"00": 512, "11": 512}
+
+
+@pytest.mark.parametrize(
+    ("metadata_update", "mapping", "message"),
+    [
+        ({"n_qubits": 18}, (17, 18), "capacity"),
+        ({"basis_gates": ["h"]}, (17, 18), "not native"),
+        ({"coupling_map": [[18, 17]]}, (17, 18), "17->18"),
+        ({"calibration_id": None}, (17, 18), "calibration identity"),
+    ],
+)
+def test_sdk_qsteed_submission_fails_closed_before_creating_job(
+    metadata_update: dict[str, object], mapping: tuple[int, int], message: str
+) -> None:
+    client = _LifecycleClient()
+    original = client.metadata
+    client.metadata = lambda target: original(target) | metadata_update  # type: ignore[method-assign]
+    provider = QuafuProvider(
+        _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
+    )
+
+    with pytest.raises((ValueError, RuntimeError), match=message):
+        provider.submit(_physical_package(target_qubits=mapping))
+
+    assert client.submissions == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        (
+            "measurements",
+            [
+                {"cbit": 0, "physical_qubit": 18},
+                {"cbit": 1, "physical_qubit": 17},
+            ],
+            "logical measurement mapping",
+        ),
+        ("n_clbits", 1, "bit width"),
+        ("calibration_id", "cal-2", "calibration identity"),
+        ("compiler", {"name": "qiskit"}, "compiler='none'"),
+    ],
+)
+def test_sdk_qsteed_result_semantics_fail_closed(
+    field: str, value: object, message: str
+) -> None:
+    client = _LifecycleClient()
+    result = client.job_handle.result(timeout=0)
+    result.measurements = [
+        {"cbit": 0, "physical_qubit": 17},
+        {"cbit": 1, "physical_qubit": 18},
+    ]
+    result.compiler = {"name": "none"}
+    setattr(result, field, value)
+    client.job_handle.result = lambda timeout=None: result  # type: ignore[method-assign]
+    provider = QuafuProvider(
+        _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
+    )
+    handle = provider.submit(_physical_package())
+
+    with pytest.raises(RuntimeError, match=message):
+        provider.fetch_result(handle)
 
 
 @pytest.mark.parametrize(

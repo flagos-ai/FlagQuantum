@@ -153,12 +153,45 @@ class _QuafuSdkAdapter:
         shots: int,
         name: str,
     ) -> dict[str, Any]:
+        return self._submit_program(
+            qasm,
+            target=target,
+            shots=shots,
+            name=name,
+            compiler="qiskit",
+        )
+
+    def submit_physical(
+        self,
+        qasm: str,
+        *,
+        target: str,
+        shots: int,
+        name: str,
+    ) -> dict[str, Any]:
+        return self._submit_program(
+            qasm,
+            target=target,
+            shots=shots,
+            name=name,
+            compiler="none",
+        )
+
+    def _submit_program(
+        self,
+        qasm: str,
+        *,
+        target: str,
+        shots: int,
+        name: str,
+        compiler: str,
+    ) -> dict[str, Any]:
         try:
             job = self._client.submit(
                 qasm,
                 target=target,
                 shots=shots,
-                compiler="qiskit",
+                compiler=compiler,
                 name=name,
             )
         except Exception as exc:

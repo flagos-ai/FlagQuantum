@@ -162,6 +162,19 @@ D and E respectively.
   and
 - submit through the SDK with `compiler="none"`.
 
+The implementation keeps the public `fq.run(..., compiler="qsteed")` call
+unchanged. Immediately before submission, the provider resolves one public SDK
+backend snapshot, checks the routed program against its authoritative capacity,
+native gates, and directed coupling map, then rewrites logical `q[i]` references
+to the selected physical qubit numbers. Classical bits retain logical order, so
+the result remains a normal FlagQuantum counts result. The receipt binds the
+physical-program digest, ordered mapping, backend-snapshot digest, calibration
+identity, and expected measurement map. Result decoding fails closed if the SDK
+does not confirm that map, calibration, bit width, or `compiler="none"`.
+
+All Batch D verification uses an injected in-memory SDK client. It neither uses
+a credential nor creates a platform task.
+
 ### Batch E: collections and cutover
 
 - migrate collections, detached jobs, pagination, partial failure, and
