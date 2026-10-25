@@ -646,7 +646,18 @@ The human explicitly approved the seven-point continuation in
 28 new workload processes, cumulative 193 attempts, unchanged RSS/query/gap
 policy, controller review first. The separate private controller retains primary
 supervision failures before producer validation and has fake boundary tests.
-Implementation review and mainline admission are pending; no actual probe or
-continuation has run. Proposal main8e40 passed full CI/GPU/fresh-install/public
+Implementation review and mainline admission completed before the separately
+reported one-time probe and continuation below. Proposal main8e40 passed full CI/GPU/fresh-install/public
 examples. FTS-10, FTS-02/09 and R01-R15 remain partial; no method selection,
 performance target, new API or hardware admission follows from this work.
+
+### FTS-10A admitted pilot observation matrix completed
+
+The [separate seven-point continuation](../development/FTQC_MIXED_CPU_COMPLETED_PILOT.md)
+completed once after #863 controller review and main admission: one non-study
+probe, 28 new workloads (seven warm-ups/21 measurements), no retry. Original
+663-file inventory is unchanged. Combined pilot evidence contains 48 complete
+points/192 successful processes plus one original monitor failure, 193 attempts.
+This closes only the specifically admitted finite observation collection. FTS-10
+method selection, FTS-02/09 and R01-R15 remain partial; no performance target,
+capacity, API, approximation, hardware or further recovery admission follows.
