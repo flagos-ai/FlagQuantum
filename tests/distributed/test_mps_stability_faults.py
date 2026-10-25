@@ -100,4 +100,9 @@ def test_participant_failure_terminates_launcher(mode, tmp_path):
         check=False,
     )
     assert completed.returncode != 0
+    if mode == "collective_timeout":
+        assert completed.stdout.count("collective_timeout_armed") == 2, (
+            completed.stdout + completed.stderr
+        )
+        assert "timed out" in completed.stderr.lower(), completed.stderr
     assert not list((tmp_path / mode).glob("*.tmp")) or mode == "interrupted"
