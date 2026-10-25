@@ -116,19 +116,22 @@ class _Verifier:
                         live_linear.remove(operand.id)
 
             self._verify_operation_semantics(operation)
-            visible_non_linear = {
-                value_id: value_type
-                for value_id, value_type in environment.items()
-                if not value_type.linear
-            }
-            for region in operation.regions:
-                if len(region.blocks) != 1:
-                    self.error(
-                        "region.block_count",
-                        f"{operation.name!r} region requires exactly one block",
+            if operation.regions:
+                visible_non_linear = {
+                    value_id: value_type
+                    for value_id, value_type in environment.items()
+                    if not value_type.linear
+                }
+                for region in operation.regions:
+                    if len(region.blocks) != 1:
+                        self.error(
+                            "region.block_count",
+                            f"{operation.name!r} region requires exactly one block",
+                        )
+                        continue
+                    self._verify_block(
+                        region.blocks[0], visible_non_linear, "scf.yield"
                     )
-                    continue
-                self._verify_block(region.blocks[0], visible_non_linear, "scf.yield")
 
             for result in operation.results:
                 self._define(result, environment)

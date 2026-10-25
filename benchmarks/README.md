@@ -590,3 +590,11 @@ four commands above need no extra argument. `--baseline-directory` overrides it
 for a set whose baseline was measured elsewhere, which is what the contract
 tests use to hold a self-contained candidate set; the baseline is evaluated with
 the candidates and never moved, because one device has no ranks to shard across.
+
+### QEC compatibility matrix observations
+
+`qec_compatibility_matrix.py` is a bounded one-off CPU study of Surface X/Z,
+native memory and exported-Stim sampling, with execution-paired strict DEMs.
+The existing maintained d=3 runner is unchanged. See the
+[predeclared matrix, budget and user Python](../docs/development/QEC_COMPATIBILITY_PERFORMANCE_BASELINE.md).
+No GPU, threshold, release or performance-gate claim follows from this study.

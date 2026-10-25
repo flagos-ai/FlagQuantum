@@ -112,9 +112,11 @@ def native_program_to_dict(record: ProgramRecord) -> dict[str, Any]:
             operations: list[dict[str, Any]] = []
             for operation in block.operations:
                 physical_data: dict[str, Any] | None
-                if operation.opcode == "ising.dephase_pair":
+                if operation.opcode in ("ising.dephase_pair", "ising.measure_pair"):
                     physical_data = None
-                    version = "1.2"
+                    version = (
+                        "1.3" if operation.opcode == "ising.measure_pair" else "1.2"
+                    )
                 else:
                     assert operation.physical_data is not None
                     physical_data = _control_payload(operation.physical_data)
@@ -293,10 +295,10 @@ def _block_from_dict(value: object) -> BlockRecord:
                 "physical operations cannot carry circuit/SSA data"
             )
         physical_data: RydbergTransport | RydbergPulse | IsingExchange | None
-        if operation["opcode"] == "ising.dephase_pair":
+        if operation["opcode"] in ("ising.dephase_pair", "ising.measure_pair"):
             if operation["physical_data"] is not None:
                 raise SerializationError(
-                    "ising.dephase_pair physical_data must be null"
+                    f"{operation['opcode']} physical_data must be null"
                 )
             physical_data = None
         else:
@@ -322,6 +324,7 @@ def native_program_from_dict(value: Mapping[str, Any]) -> ProgramRecord:
             "1.0",
             "1.1",
             "1.2",
+            "1.3",
         ):
             raise SerializationError("unsupported native Program IR schema/version")
         context = _context_from_dict(payload["physical_context"])

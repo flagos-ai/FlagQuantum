@@ -30,12 +30,16 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 - `ising.py`: the experimental four-sigma, total-vacuum Ising source builder.
   It reuses the same ProgramRecord, typed physical profiles and source codec.
   Braid-only sources retain version 1.1; exactly one `dephase_pair()` observation
-  selects source 1.2. It observes the current first pair without an outcome,
-  physical time or classical bit. Rydberg source 1.0 is unchanged.
+  selects source 1.2. Exactly one `measure_pair()` selects source 1.3 for a
+  declared sampled observation; the two forms are mutually exclusive. Both
+  observe the current first pair without adding physical time or a classical
+  bit. The sampled builder returns the source, never an outcome. Rydberg
+  source 1.0 is unchanged.
   Charge projectors are CPU mathematical inputs. Native braid execution,
   executable plans and numerical F/R/Kraus actions remain outside this source gate.
-  Runtime admits matching native plan 1.2 separately; Core owns no numerical
-  observation algorithm or execution state.
+  Runtime separately admits matching native plans, including one explicitly
+  seeded CPU trajectory for sampled source 1.3. Core owns no numerical observation algorithm, RNG,
+  execution state or plan/environment version activation.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.
 - `contracts.py`: versioned cross-domain execution and evidence records.
@@ -88,6 +92,7 @@ For discrete braid source construction and its admission/refusal boundaries:
 python -m examples.ising_braid_source
 python -m pytest tests/unit/test_ising_braid_source.py \
   tests/unit/test_ising_braid_contract.py \
+  tests/unit/test_ising_sampled_source.py \
   tests/unit/test_rydberg_program_compatibility.py -q
 ```
 

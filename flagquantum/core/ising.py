@@ -69,7 +69,7 @@ class IsingBraidProgram:
         order, without adding physical time, classical bits or feedback.
 
         Raises:
-            ValueError: An unread observation is already present.
+            ValueError: An unread or sampled observation is already present.
 
         Examples:
             >>> from flagquantum.experimental.simulation import IsingBraidProgram
@@ -77,12 +77,35 @@ class IsingBraidProgram:
             >>> program.to_ir().functions[0].blocks[0].operations[-1].opcode
             'ising.dephase_pair'
         """
+        return self._append_pair_observation("ising.dephase_pair")
+
+    def measure_pair(self) -> IsingBraidProgram:
+        """Record one sampled QND charge observation of the current first pair.
+
+        This source declaration returns the program, not an outcome or a
+        classical bit. Runtime owns explicit shot/seed admission and execution.
+
+        Raises:
+            ValueError: An unread or sampled observation is already present.
+
+        Examples:
+            >>> from flagquantum.experimental.simulation import IsingBraidProgram
+            >>> program = IsingBraidProgram().exchange(1).measure_pair()
+            >>> program.to_ir().functions[0].blocks[0].operations[-1].opcode
+            'ising.measure_pair'
+        """
+        return self._append_pair_observation("ising.measure_pair")
+
+    def _append_pair_observation(
+        self, opcode: Literal["ising.dephase_pair", "ising.measure_pair"]
+    ) -> IsingBraidProgram:
         if any(
-            operation.opcode == "ising.dephase_pair"
+            operation.opcode in ("ising.dephase_pair", "ising.measure_pair")
             for operation in self._record.functions[0].blocks[0].operations
         ):
-            raise ValueError("only one unread pair observation is admitted")
-        return self._append(Operation("ising.dephase_pair"))
+            kind = "unread" if opcode == "ising.dephase_pair" else "sampled"
+            raise ValueError(f"only one {kind} pair observation is admitted")
+        return self._append(Operation(opcode))
 
     def _append(self, operation: Operation) -> IsingBraidProgram:
         function = self._record.functions[0]

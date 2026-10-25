@@ -91,14 +91,29 @@ def test_decoder_failure_or_malformed_output_closes_stream(
     "arguments",
     (
         {"shots": 0},
-        {"shots": 4097},
+        {"shots": 65537},
         {"batch_size": True},
         {"iterations": 0},
         {"warmup": 4},
     ),
 )
-def test_outside_initial_measurement_envelope_is_refused(
+def test_outside_approved_measurement_envelope_is_refused(
     arguments: dict[str, int],
 ) -> None:
     with pytest.raises(ValueError, match="must be an integer"):
         benchmark.run_benchmark(**arguments)
+
+
+@pytest.mark.parametrize("shots", [16384, 65535, 65536])
+def test_approved_stage_a_counts_do_not_change_batch_storage(
+    stream: SimpleNamespace, shots: int
+) -> None:
+    result = benchmark.run_benchmark(shots=shots, batch_size=32, warmup=0, iterations=1)
+    row = result["observations"][0]
+    assert row["completed_shots"] == shots
+    assert row["logical_failures"] == shots // 2
+    assert sum(stream.requests) == shots
+    assert max(stream.requests) == 32
+    assert len(stream.requests) == (shots + 31) // 32
+    assert row["visible_batch_tensor_bytes_max"] == 32 * 26
+    assert stream.closed
