@@ -120,3 +120,27 @@ python -m pytest tests/unit/test_ising_sampled_contract.py tests/unit/test_ising
 The accepted scope remains one CPU trajectory, four sigma anyons and total
 vacuum. No multiple observations, feedback, classical register, atom-loss
 inference, gradient, alternate backend, Remote or hardware support is claimed.
+
+## Simulation conditional actions
+
+Core #824 merged after its separate authorization and complete CI/GPU.
+Simulation now computes the prefix density and a selected branch's continuation
+inside the existing Ising action module. It reuses the ordered exchange kernel,
+`SuperOperator.from_kraus`, and the existing density validator. No random draw,
+planner, result wrapper, new IR or solver is added. Branch normalization uses the
+original positive trace; zero-weight or invalid selections raise ExecutionError
+without division. The unread and braid-only full-density entry retains its old
+arithmetic and rejects sampled sources before any exchange arithmetic.
+
+The independent Simulation tests enumerate both branches for both initial
+channels and noncommuting prefixes/suffixes. Full complex density, trace,
+purity and weighted unread equivalence retain atol=1e-12, rtol=0. Additional
+cases distinguish original-trace normalization from corrected sampling weights,
+preserve tiny positive branches, and reject invalid density/index inputs.
+Source, prefix density and Torch/Python RNG snapshots remain unchanged.
+The shared baseline's four factories and independent consumers remain untouched.
+
+This is an internal numerical delivery. The runnable current user workflow above
+still prints `0.5` and `True`; `fq.plan`/`fq.run` still reject source 1.3.
+Runtime admission, private sampling, plan/environment versions, measurement
+records and real JSON replay remain the next separately delivered domain.
