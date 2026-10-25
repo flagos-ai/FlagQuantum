@@ -139,8 +139,8 @@ class QuafuProvider(HttpQuantumProvider):
     """FlagQuantum adapter for Quafu discovery and remote execution.
 
     Read-only discovery, calibration, and every static execution lifecycle use
-    the official Quafu SDK. An explicitly injected HTTP transport retains only
-    the staged read compatibility path used by offline contract tests.
+    the official Quafu SDK. The legacy HTTP transport remains private to
+    ``fetch_chip_info()`` until the SDK exposes the complete Twin noise schema.
     """
 
     def __init__(
@@ -155,13 +155,11 @@ class QuafuProvider(HttpQuantumProvider):
         reverse_result_bits: bool = False,
         **kwargs: Any,
     ) -> None:
-        transport_supplied = "transport" in kwargs
         sdk_adapter = kwargs.pop("_sdk_adapter", None)
         if sdk_adapter is not None and not isinstance(sdk_adapter, _QuafuSdkAdapter):
             raise TypeError("_sdk_adapter must be a private Quafu SDK adapter")
         self._sdk_read_adapter = sdk_adapter
         self._sdk_submission_adapter = sdk_adapter
-        self._prefer_sdk_reads = sdk_adapter is not None or not transport_supplied
         resolved_token = token or os.getenv("QUAFU_API_TOKEN")
         self.task_server_url = (
             task_server_url
@@ -192,14 +190,6 @@ class QuafuProvider(HttpQuantumProvider):
         self.result_timeout = float(result_timeout)
         self.reverse_result_bits = bool(reverse_result_bits)
 
-    def _task_api_url(self, path: str, **values: Any) -> str:
-        return self.task_server_url + path.format(**values)
-
-    def _task_api_headers(self) -> dict[str, str]:
-        if not self.api_key:
-            return {}
-        return {"Authorization": f"Bearer {self.api_key}"}
-
     def _read_sdk_adapter(self) -> _QuafuSdkAdapter:
         if self._sdk_read_adapter is None:
             base_url = self.task_server_url.removesuffix("/api/v1")
@@ -225,17 +215,6 @@ class QuafuProvider(HttpQuantumProvider):
             )
         return _SDK_PROTOCOL
 
-    def verify(self) -> Any:
-        """Verify the configured token using the official platform endpoint."""
-
-        if not self.credentials.token:
-            raise RuntimeError(
-                "A Quafu token is required; pass token=... or set QUAFU_API_TOKEN."
-            )
-        return self.transport.get_json(
-            self._url("/task/verify"), self._headers(), self.timeout
-        )
-
     def _headers(self) -> dict[str, str]:
         headers = dict(self.credentials.extra_headers)
         if self.credentials.token:
@@ -245,22 +224,9 @@ class QuafuProvider(HttpQuantumProvider):
     def list_devices(
         self, n_qubits: int | None = None
     ) -> tuple[CloudBackendProfile, ...]:
-        """Discover devices through the official Quafu SDK.
+        """Discover authoritative devices through the official Quafu SDK."""
 
-        SDK data is normalized into FlagQuantum-owned backend profiles. During
-        the staged migration, only an explicitly injected HTTP transport uses
-        the compatibility path retained for offline contract tests.
-        """
-
-        if self._prefer_sdk_reads:
-            return self._sdk_backends(self._read_sdk_adapter())
-        try:
-            response = self.transport.get_json(
-                self._task_api_url("/devices"), {}, self.timeout
-            )
-            return self._task_api_backends(response, n_qubits=n_qubits)
-        except Exception:
-            return self._legacy_backends(n_qubits=n_qubits)
+        return self._sdk_backends(self._read_sdk_adapter())
 
     @staticmethod
     def _sdk_backends(
@@ -323,87 +289,6 @@ class QuafuProvider(HttpQuantumProvider):
             raise RuntimeError("Quafu SDK devices result contains no devices")
         return tuple(profiles)
 
-    def _task_api_backends(
-        self, response: Mapping[str, Any], *, n_qubits: int | None
-    ) -> tuple[CloudBackendProfile, ...]:
-        raw_devices = response.get("devices")
-        if not isinstance(raw_devices, Sequence) or isinstance(
-            raw_devices, (str, bytes)
-        ):
-            raise RuntimeError("quafu task API devices response is not a sequence")
-        rows = list(raw_devices)
-        simulator = response.get("simulator")
-        if isinstance(simulator, Mapping):
-            rows.append(simulator)
-        profiles = []
-        for row in rows:
-            if not isinstance(row, Mapping):
-                raise RuntimeError("quafu task API device is not a mapping")
-            name = row.get("name")
-            capacity = row.get("n_qubits", row.get("max_qubits"))
-            if not isinstance(name, str) or not name.strip():
-                raise RuntimeError("quafu task API device has no name")
-            if type(capacity) is not int or capacity <= 0:
-                capacity = n_qubits or self.default_n_qubits
-            metadata_fields = (
-                "status",
-                "queue",
-                "simulator_available",
-                "calibration_id",
-                "calibrated_at",
-                "calibration_source",
-                "data_fetched_at",
-                "data_origin",
-                "live_status_at",
-                "live_status_stale",
-                "usable",
-            )
-            profiles.append(
-                CloudBackendProfile(
-                    provider="quafu",
-                    name=name,
-                    n_qubits=capacity,
-                    basis_gates=tuple(map(str, row.get("basis_gates", ()))),
-                    is_simulator=name == "sim",
-                    metadata={
-                        "source": "quafu-task-api-devices",
-                        **{key: row[key] for key in metadata_fields if key in row},
-                    },
-                )
-            )
-        if not profiles:
-            raise RuntimeError("quafu task API devices response contains no devices")
-        return tuple(profiles)
-
-    def _legacy_backends(
-        self, *, n_qubits: int | None
-    ) -> tuple[CloudBackendProfile, ...]:
-        response = self.transport.get_json(
-            self._url("/task/status/0"), self._headers(), self.timeout
-        )
-        rows: Any = response
-        if isinstance(response, Mapping):
-            rows = response.get("data", response.get("status", response))
-        if not isinstance(rows, Mapping):
-            raise RuntimeError("quafu backend status response is not a mapping")
-        profiles = []
-        for name, queue_status in rows.items():
-            profiles.append(
-                CloudBackendProfile(
-                    provider="quafu",
-                    name=str(name),
-                    n_qubits=n_qubits or self.default_n_qubits,
-                    metadata={
-                        "source": "quafu-task-status",
-                        "queue_status": queue_status,
-                        "n_wires_source": "requested-or-fallback",
-                    },
-                )
-            )
-        if not profiles:
-            raise RuntimeError("quafu backend status response contains no chips")
-        return tuple(profiles)
-
     def fetch_calibration(
         self,
         device: str,
@@ -420,55 +305,14 @@ class QuafuProvider(HttpQuantumProvider):
         name = str(device).strip()
         if not name:
             raise ValueError("Quafu device name cannot be empty")
-        if self._prefer_sdk_reads:
-            sdk_response = self._read_sdk_adapter().calibration(
-                name, calibration_id=calibration_id
-            )
-            return self._validate_sdk_calibration(
-                sdk_response,
-                device=name,
-                calibration_id=calibration_id,
-            )
-        expected_identity = None
-        if calibration_id is None:
-            path = "/devices/{device}/calibration"
-            values = {"device": parse.quote(name, safe="")}
-        else:
-            expected_identity = str(calibration_id).strip()
-            if not expected_identity:
-                raise ValueError("Quafu calibration_id cannot be empty")
-            path = "/calibrations/{calibration_id}"
-            values = {
-                "calibration_id": parse.quote(expected_identity, safe=""),
-            }
-        response = self.transport.get_json(
-            self._task_api_url(path, **values),
-            {},
-            self.timeout,
+        sdk_response = self._read_sdk_adapter().calibration(
+            name, calibration_id=calibration_id
         )
-        if not isinstance(response, Mapping):
-            raise RuntimeError("quafu calibration response is not a mapping")
-        required = {
-            "id",
-            "chip",
-            "calibrated_at",
-            "qubits",
-            "couplers",
-        }
-        missing = sorted(required.difference(response))
-        if missing:
-            raise RuntimeError(
-                "quafu calibration response is missing " + ", ".join(missing)
-            )
-        if response["chip"] != name:
-            raise RuntimeError(
-                f"quafu calibration belongs to {response['chip']!r}, not {name!r}"
-            )
-        if expected_identity is not None and response["id"] != expected_identity:
-            raise RuntimeError(
-                "quafu historical calibration identity does not match the request"
-            )
-        return response
+        return self._validate_sdk_calibration(
+            sdk_response,
+            device=name,
+            calibration_id=calibration_id,
+        )
 
     @staticmethod
     def _validate_sdk_calibration(
@@ -517,8 +361,6 @@ class QuafuProvider(HttpQuantumProvider):
     def _qsteed_chip_info(self, chip: str) -> Mapping[str, Any]:
         """Resolve QSteed topology through the maintained SDK read path."""
 
-        if not self._prefer_sdk_reads:
-            return self.fetch_chip_info(chip)
         return qsteed_chip_info(self.fetch_calibration(chip))
 
     def submit(self, package: DeploymentPackage) -> ProviderTaskHandle:
