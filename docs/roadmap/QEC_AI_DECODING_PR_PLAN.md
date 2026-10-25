@@ -48,8 +48,20 @@ configuration. CUDA allocator peaks are valid; raw host RSS values are explicitl
 quarantined because Linux workers inherited the parent's high-water mark. A
 post-run reporting fix does not retroactively recover that measurement.
 
-Next diagnose label equivalence and training sufficiency
-before selecting a single scientific intervention. Ising is a mandatory external
+PR #831 adds exact correction-label equivalence, streaming MLP feature groups
+and a verified archived-checkpoint runner. Its fixed
+[diagnostic outcome](../development/QEC_AI_LABEL_IDENTIFIABILITY_RESULTS.md)
+retains three 4096-shot independent-DEM streams: all four controls stayed
+inactive, with negative raw logits despite some high observed group positive
+fractions. This is descriptive training-distribution evidence, not a new logical
+accuracy or performance result. Next freeze a training-sufficiency study for the
+unchanged model before choosing a loss or feature intervention. The separately frozen
+[training-response outcome](../development/QEC_AI_TRAINING_SUFFICIENCY_RESULTS.md)
+retains all three continued trajectories at steps 200/600/2000: all three pass
+the descriptive held-out BCE response rule, while only two activate at raw
+threshold 0.5. This is not convergence or logical-quality evidence. Next freeze
+fresh calibration/validation and physical-test precision budgets before any
+logical-quality comparison; retain global-only and official Ising Fast controls. Ising is a mandatory external
 baseline alongside global-only decoding and native BCE controls. Compare common
 circuits/shots, global-decoder settings, hardware and precision; report paired LER,
 full software latency, throughput and memory. Keep equal-budget training studies
