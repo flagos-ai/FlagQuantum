@@ -619,3 +619,13 @@ python -m pytest tests/unit/test_ising_sampled_actions.py tests/unit/test_ising_
 The conditional tests compare independent complex F/R densities and weighted
 unread continuation at atol=1e-12, rtol=0, including zero and tiny positive
 branches, original-trace normalization, unchanged inputs and unchanged RNG.
+
+## Intermediate Rydberg presence evolution
+
+The private seams in `rydberg_presence.py` assemble the existing full native
+control schedule once, preserving absolute grid times and interval bindings.
+They evolve its prefix, apply a Runtime-selected Kraus branch using its original
+positive trace, and continue the existing numerical engine on the remaining
+bound intervals. Boundary rows are post-observation; earlier rows remain forward
+states. Runtime owns private draws and canonical result records. These seams do
+not enable unconditional `fql.plan` or the future native sampled plan reader.
