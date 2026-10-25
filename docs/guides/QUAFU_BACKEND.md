@@ -2,9 +2,9 @@
 
 FlagQuantum uses the official `quafu-sdk` package for read-only device
 discovery, backend metadata, limits, calibration snapshots, and the complete
-single-circuit logical task lifecycle. Physical QSteed submission and circuit
-collections remain on their existing transports until their dedicated
-migration batches. Installing `quafusqc` is not required.
+single-circuit logical and QSteed-compiled task lifecycle. Circuit collections
+remain on their existing transport until their dedicated migration batch.
+Installing `quafusqc` is not required.
 
 For detached multi-circuit jobs, pass a same-width circuit list to `fq.submit`;
 see [one collection, one receipt](REMOTE_JOBS.md#multiple-circuits-in-one-quafu-job).
@@ -16,10 +16,10 @@ fall back to SQC or silently create separate parent jobs.
 
 Read-only discovery and calibration do not require credentials. Keep task
 submission credentials outside source control. `QUAFU_API_KEY` authenticates
-SDK logical submission, status, result, cancellation, and job restoration.
-During the staged migration, `QUAFU_API_TOKEN` remains available only for the
-physical QSteed compatibility path and is scheduled for removal after SDK
-physical submission reaches parity.
+SDK logical and QSteed-compiled submission, status, result, cancellation, and
+job restoration. During the staged migration, `QUAFU_API_TOKEN` remains
+available only to explicitly injected legacy-transport compatibility paths and
+is scheduled for removal after the remaining cutover gates pass.
 
 A logical submission with no API key is rejected before the SDK or network is
 used:
@@ -29,7 +29,7 @@ ValidationError: Quafu submission requires api_key=... or QUAFU_API_KEY;
 FlagQuantum does not start interactive SDK login.
 ```
 
-The temporary physical compatibility endpoint authenticates with
+The temporary legacy compatibility endpoint authenticates with
 `QUAFU_API_TOKEN`; `QUAFU_API_KEY` is not silently reused for that endpoint.
 
 ```bash
@@ -371,9 +371,8 @@ FlagQuantum passes the logical OpenQASM 2.0 program, target, shots and name to
 `Client.submit(..., compiler="qiskit")`; it does not retry a failed SDK
 submission against another protocol or create a second hardware task.
 
-During the remaining migration batches, physical QSteed submissions with an
-explicit `target_qubits` mapping continue to use these legacy Quafu SQC
-endpoints:
+During the remaining migration batches, explicitly injected HTTP transports
+continue to exercise these legacy Quafu SQC endpoints for compatibility tests:
 
 - `GET /task/verify` for token verification;
 - `GET /task/status/0` for chip availability and queue depth;
@@ -381,15 +380,15 @@ endpoints:
 - `GET /task/status/{tid}` and `GET /task/result/{tid}` for asynchronous jobs;
 - `GET /task/cancel/{tid}` for cancellation.
 
-That temporary path is removed only after SDK `compiler="none"` physical
-submission reaches parity in Batch D. A submission failure is never retried
-against a different protocol because the first service may already have
-accepted the task.
+That temporary path remains only for staged compatibility and is removed in
+the SQC-retirement batch. A submission failure is never retried against a
+different protocol because the first service may already have accepted the
+task.
 
 | Submission | Selected protocol |
 |---|---|
 | Logical circuit, no explicit physical mapping | `quafu_sdk_v1` |
-| Explicit `target_qubits` or locally precompiled mapped circuit | `sqc_legacy` |
+| Explicit `target_qubits` or locally precompiled mapped circuit | `quafu_sdk_v1`, `compiler="none"` |
 | SDK submission has any definite or ambiguous failure | Raise without cross-protocol resubmission |
 
 These endpoints do not expose a compile-only request that returns the
@@ -401,10 +400,19 @@ hardware comparisons as post-execution diagnostics. A returned `transpiled`
 circuit is retained as execution evidence, never presented as a circuit known
 before submission.
 
-Precompiled submission uses one explicit contract: the OpenQASM program keeps
-logical indices `q[0]` through `q[N-1]`; `options.target_qubits[i]` names the
-physical qubit for logical qubit `i`; and `options.compiler` is `None`. The
-obsolete top-level `compile` flag is neither sent nor accepted by the adapter.
+Precompiled submission uses one explicit boundary contract. QSteed returns a
+logical-width routed program plus its ordered logical-to-physical mapping.
+FlagQuantum validates that program against the SDK backend snapshot and emits a
+physical OpenQASM program in which each `q[i]` has already become the selected
+chip qubit. The SDK receives that program with `compiler="none"`; the retired
+SQC `options.target_qubits` field is not sent. Measurements continue to write
+logical `c[i]`, and FlagQuantum verifies the returned physical-qubit mapping
+before exposing logical counts.
+
+The submission receipt records the physical-program SHA-256, mapping,
+backend-snapshot SHA-256, and calibration identity. These fields establish
+which candidate was submitted; they do not independently prove hardware
+execution.
 
 For explicit backend selection:
 
