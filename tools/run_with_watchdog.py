@@ -86,20 +86,42 @@ def _cancel(signum: int, frame: FrameType | None) -> None:
     raise SystemExit(128 + signum)
 
 
-def _stop_group(process: subprocess.Popen[bytes]) -> None:
-    # The launcher may exit while same-group children still own its output pipe.
+def _signal_group(group: int, signum: int) -> None:
     try:
-        os.killpg(process.pid, signal.SIGTERM)
+        os.killpg(group, signum)
     except ProcessLookupError:
         pass
+    except PermissionError as error:
+        # macOS can report EPERM after TERM removes the last group member.
+        # Accept that race only when independent accounting confirms absence.
+        try:
+            result = subprocess.run(
+                ["ps", "-axo", "pgid="],
+                text=True,
+                capture_output=True,
+                check=True,
+                timeout=0.05,
+            )
+            rows = result.stdout.splitlines()
+            if not rows or any(len(row.split()) != 1 for row in rows):
+                raise ValueError("ps returned missing or malformed process groups")
+            groups = [int(row.strip()) for row in rows]
+            if any(owner < 0 for owner in groups):
+                raise ValueError("ps returned invalid process groups")
+        except (OSError, ValueError, subprocess.SubprocessError) as accounting_error:
+            raise error from accounting_error
+        if group in groups:
+            raise
+
+
+def _stop_group(process: subprocess.Popen[bytes]) -> None:
+    # The launcher may exit while same-group children still own its output pipe.
+    _signal_group(process.pid, signal.SIGTERM)
     try:
         process.wait(timeout=10)
     except subprocess.TimeoutExpired:
         pass
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
+    _signal_group(process.pid, signal.SIGKILL)
     process.wait(timeout=5)
 
 
