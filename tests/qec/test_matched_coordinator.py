@@ -142,7 +142,7 @@ def context(
 
 
 def test_zero_sample_preflight_uses_shared_container_guards_and_preserves_rng(
-    context: tuple[run.Options, dict[str, Any], list[str]]
+    context: tuple[run.Options, dict[str, Any], list[str]],
 ) -> None:
     options, parts, calls = context
     rng = torch.get_rng_state().clone()
