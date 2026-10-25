@@ -1,7 +1,7 @@
 # API Change Proposal 092: Quafu SDK Migration
 
-**Status:** Approved for staged implementation on 2026-10-25  
-**Scope:** Quafu Task API transport, provider integration, and SQC retirement  
+**Status:** Approved for staged implementation on 2026-10-25
+**Scope:** Quafu Task API transport, provider integration, and SQC retirement
 **Public entry points preserved:** `fq.run`, `fq.submit`, `fq.restore_job`
 
 ## Decision summary
