@@ -1,8 +1,10 @@
 # QEC Schedule and Feedback Conformance Proposal
 
-Status: Proposed; explicit approval of this finite semantic matrix is required
-before its implementation. This document does not add a public API or authorize
-a generic feedback adapter, new frame representation or FTQC package.
+Status: The repository owner explicitly approved this finite Groups A-E matrix
+and complex128 absolute error <=1e-12 / rtol=0 on 2026-10-25 (Asia/Shanghai) in
+the delivery chat. Conformance implementation is under review. This approval
+does not add a public API or authorize a generic feedback adapter, new frame
+representation or FTQC package.
 
 Prepared from main `1a5aa96891d56159de2a8273c2ddb2eb6c8d7fa8`, following the
 [ownership proposal](../architecture/QEC_FTQC_PROTOCOL_BOUNDARY.md). This is a
@@ -32,7 +34,7 @@ superposition. Do not create another production circuit builder, decoder,
 sampler, state engine, registry or result type. Reuse existing tests rather than
 copying their deterministic parameter grids.
 
-## Finite domain requested for approval
+## Approved finite domain
 
 CPU only; five physical qubits, two rounds, Z checks, no stochastic noise.
 Data wires are 0, 1, 2 and check ancillas are 3, 4. Ancillas start in zero and
@@ -124,11 +126,11 @@ Group D checks analytic branch weights and conditional states before sampling;
 observed random frequencies alone cannot certify the joint distribution or
 coherence. Zero-probability branches have zero weight and are never normalized;
 the test must fail if an implementation invents a nonzero branch or loses the
-normalization mass. The proposed comparison for this small complex128 oracle is
+normalization mass. The approved comparison for this small complex128 oracle is
 absolute error at most `1e-12`, relative tolerance zero, separately applied to
-branch weights, normalization and normalized density matrices. This is a
-**proposed new test acceptance value requiring approval**, not an active gate,
-new runtime precision guarantee or the deferred 1.5x/2x performance target.
+branch weights, normalization and normalized density matrices. This is the
+**approved value for this finite conformance slice**, not a general runtime
+precision guarantee or the deferred 1.5x/2x performance target.
 Density-matrix comparisons remove irrelevant global phase without ignoring
 relative phase. Probability-one terminal outcomes must also satisfy the exact
 bit invariant in executed shots; no seeded bit sequence or statistical
@@ -142,9 +144,9 @@ public behavior change gets a separate proposal and explicit approval.
 
 ## Delivery and approval boundary
 
-Requested decision: approve Groups A-E, their five-qubit/two-round domain,
-independent reference boundaries, frame interpretation and proposed complex128
-comparison value for a subsequent independent conformance PR. Implementation
+Approved decision: Groups A-E, their five-qubit/two-round domain,
+independent reference boundaries, frame interpretation and approved complex128
+comparison value for this independent conformance PR. Implementation
 should change tests and minimal internal code only if a separately reported
 defect requires it; no public additions or new serialized objects are approved.
 Existing original frozen fixtures remain byte-identical. No GPU performance
@@ -208,10 +210,57 @@ implemented or that the three-bit code protects against arbitrary quantum noise.
 
 - [x] Reuse delivered repetition, decoder-feedback, frame and dynamic paths;
   identify precise independent-reference and measurement-mapping obligations.
-- [ ] Explicitly approve this bounded semantic/numerical acceptance matrix.
+- [x] Explicitly approve this bounded semantic/numerical acceptance matrix.
 - [ ] Implement missing conformance and show independent branch/coherence
   comparisons plus meaningful negative cases without altering frozen fixtures.
 - [ ] R05/R06: qualify this finite cross-path profile; broader QEC feedback,
   non-Clifford frame semantics and latency evidence remain open.
 - [ ] R02/R03/R04/R07: obtain separate logical-protocol, algorithm and package
   admissions and executable evidence; this slice closes no system requirement.
+
+
+## Conformance implementation under review
+
+`tests/qec/test_schedule_feedback_conformance.py` adds 87 cases with no skips:
+seven declaration/lowered/direct-extraction comparisons; the sixteen online
+fault-label pairs for compiled trajectory/batched and runtime physical/frame
+trajectory paths; eight offline single-fault/radius-boundary cases; four dense
+joint-probability/coherence references; relative-phase, reset and mapping
+mutations; invalid records/frames/dependencies/events; and two explicit existing
+batched-runtime-feedback refusals. The independent references do not call the
+production decoder, frame-adjustment or numerical gate/measurement helpers.
+Existing compiler lowering and fault-injection test helpers are reused.
+
+The runtime decoder paths deliberately retain their existing trajectory-only
+restriction. Explicit batched requests fail with the existing diagnostic;
+there is no fallback, skipped matrix entry or expanded execution support.
+The complex128 oracle enumerates all sixteen syndrome branches, leaves zero
+branches unnormalized, compares actual measurement/reset probability inputs,
+checks the final joint data distribution and conditional density matrix, and
+checks inverse-encoding readout. A relative-Z-phase mutation preserves basis
+probabilities but fails density/coherence acceptance, demonstrating why final
+sample counts alone cannot establish coherence.
+
+Only tests and documentation change. No production defect has been identified
+by these cases, no original frozen fixture changes, and no new public type,
+export, pickle path, registry, noise, frame semantics beyond this approved
+terminal profile, or FTQC package is introduced. This small-domain conformance
+contributes to R05/R06; system requirements and non-Clifford feedback stay open.
+
+
+## Accepted proposal mainline
+
+The proposal merged in [#835](https://github.com/flagos-ai/FlagQuantum/pull/835).
+Actual main `a660077023dde2d461d204e0bba6619d064f3939` passed
+[all 54 complete-CI jobs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40130667081),
+[source, single GPU and required two GPUs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40130662360),
+and [smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40130620338).
+Three existing optional hardware pools were unselected. Package job
+120981579481 passed the real QEC optional-installation step. Fresh isolated
+sdist/wheel match 828 package Python members; a new Python 3.12.14 / Torch
+2.14.1 core installation, dependency/native/Bell checks, master-plan examples,
+H-T-H and the exact-reference CLI passed. The four-mode public example above
+also passed outside the checkout with no SDK overlay. Original Stage A raw
+observations were retained without recollection. The owner's later explicit
+finite-contract approval, rather than these green checks or documentation merge,
+authorizes the conformance work in this PR.
