@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import os
+from collections.abc import Mapping, Sequence
 from importlib import metadata
 from types import ModuleType
 from typing import Any
@@ -51,6 +52,34 @@ def _submission_api_key(explicit: str | None) -> str:
     return value.strip()
 
 
+def _plain_value(value: Any, *, field: str) -> Any:
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise RuntimeError(f"Quafu SDK {field} contains a non-string key")
+        return {
+            key: _plain_value(item, field=f"{field}.{key}")
+            for key, item in value.items()
+        }
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        return [
+            _plain_value(item, field=f"{field}[{index}]")
+            for index, item in enumerate(value)
+        ]
+    raise RuntimeError(
+        f"Quafu SDK {field} contains unsupported {type(value).__name__} data"
+    )
+
+
+def _plain_mapping(value: Any, *, field: str) -> dict[str, Any]:
+    raw = getattr(value, "raw", value)
+    normalized = _plain_value(raw, field=field)
+    if not isinstance(normalized, dict):
+        raise RuntimeError(f"Quafu SDK {field} is not a mapping")
+    return normalized
+
+
 class _QuafuSdkAdapter:
     """Keep SDK clients and their native objects inside the Remote boundary."""
 
@@ -87,6 +116,33 @@ class _QuafuSdkAdapter:
         key = _submission_api_key(api_key)
         sdk = _load_quafu_sdk()
         return cls(sdk.Client(api_key=key, base_url=base_url))
+
+    def devices(self) -> tuple[dict[str, Any], ...]:
+        rows = self._client.devices()
+        if not isinstance(rows, Sequence) or isinstance(rows, (str, bytes)):
+            raise RuntimeError("Quafu SDK devices result is not a sequence")
+        return tuple(
+            _plain_mapping(row, field=f"devices[{index}]")
+            for index, row in enumerate(rows)
+        )
+
+    def backend_metadata(self, target: str) -> dict[str, Any]:
+        return _plain_mapping(
+            self._client.metadata(target), field=f"metadata[{target}]"
+        )
+
+    def calibration(
+        self,
+        device: str,
+        *,
+        calibration_id: str | None = None,
+    ) -> dict[str, Any]:
+        value = (
+            self._client.device_calibration(device)
+            if calibration_id is None
+            else self._client.calibration(calibration_id)
+        )
+        return _plain_mapping(value, field="calibration")
 
 
 __all__: tuple[str, ...] = ()
