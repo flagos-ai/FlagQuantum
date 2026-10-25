@@ -660,23 +660,35 @@ def _parity_columns(
     return tuple(detectors), tuple(observables)
 
 
-def _parity_bits(
-    columns: tuple[tuple[int, ...], ...], record: torch.Tensor
-) -> torch.Tensor:
-    result = torch.zeros((record.shape[0], len(columns)), dtype=torch.int8)
+def _prepare_parity_groups(
+    columns: tuple[tuple[int, ...], ...],
+) -> tuple[tuple[torch.Tensor, torch.Tensor], ...]:
     groups: dict[int, list[tuple[int, tuple[int, ...]]]] = {}
     for index, parity in enumerate(columns):
         if parity:
             groups.setdefault(len(parity), []).append((index, parity))
+    return tuple(
+        (
+            torch.tensor([index for index, _ in group], dtype=torch.long),
+            torch.tensor([parity for _, parity in group], dtype=torch.long),
+        )
+        for group in groups.values()
+    )
+
+
+def _parity_bits(
+    columns: tuple[tuple[int, ...], ...],
+    record: torch.Tensor,
+    groups: tuple[tuple[torch.Tensor, torch.Tensor], ...] | None = None,
+) -> torch.Tensor:
+    result = torch.zeros((record.shape[0], len(columns)), dtype=torch.int8)
+    if groups is None:
+        groups = _prepare_parity_groups(columns)
     if not groups:
         return result
-    # Equal-width byte gathers avoid padding long observables or materializing
-    # int64 records per reference. Byte sums wrap modulo 256, preserving parity
-    # even for products wider than 255; empty parities remain zero.
+    # Byte sums wrap modulo 256 without changing GF(2), even for long products.
     binary_record = record.to(torch.uint8)
-    for group in groups.values():
-        outputs = torch.tensor([index for index, _ in group], dtype=torch.long)
-        sources = torch.tensor([parity for _, parity in group], dtype=torch.long)
+    for outputs, sources in groups:
         bits = binary_record[:, sources].sum(dim=2, dtype=torch.uint8).bitwise_and_(1)
         result[:, outputs] = bits.to(torch.int8)
     return result
@@ -873,6 +885,8 @@ class MemorySampler:
         "_sampler",
         "_detector_columns",
         "_observable_columns",
+        "_detector_groups",
+        "_observable_groups",
         "_owner_pid",
         "_owner_thread",
     )
@@ -880,6 +894,8 @@ class MemorySampler:
     _sampler: _PreparedMeasurements | None
     _detector_columns: tuple[tuple[int, ...], ...]
     _observable_columns: tuple[tuple[int, ...], ...]
+    _detector_groups: tuple[tuple[torch.Tensor, torch.Tensor], ...]
+    _observable_groups: tuple[tuple[torch.Tensor, torch.Tensor], ...]
     _owner_pid: int
     _owner_thread: threading.Thread
 
@@ -912,10 +928,14 @@ class MemorySampler:
         prepared = self._open_sampler()
         shots = _checked_shots(shots)
         try:
-            record = prepared.sample(shots=shots)
+            record = prepared.sample(shots=shots).to(torch.uint8)
             return DemSample(
-                detectors=_parity_bits(self._detector_columns, record),
-                observables=_parity_bits(self._observable_columns, record),
+                detectors=_parity_bits(
+                    self._detector_columns, record, self._detector_groups
+                ),
+                observables=_parity_bits(
+                    self._observable_columns, record, self._observable_groups
+                ),
             )
         except BaseException:
             # RNG advancement cannot be rolled back, including interrupted draws.
@@ -930,6 +950,8 @@ class MemorySampler:
             self._sampler = None
             self._detector_columns = ()
             self._observable_columns = ()
+            self._detector_groups = ()
+            self._observable_groups = ()
 
     def __enter__(self) -> MemorySampler:
         self._open_sampler()
@@ -1000,7 +1022,11 @@ def compile_memory_sampler(
     prepared = _prepare_noisy_measurements(
         program, terminal_qubits=tuple(circuit.code.data_qubits), seed=seed
     )
-    return _memory_sampler(prepared, detectors, observables)
+    try:
+        return _memory_sampler(prepared, detectors, observables)
+    except BaseException:
+        prepared.close()
+        raise
 
 
 def _memory_sampler(
@@ -1010,6 +1036,8 @@ def _memory_sampler(
 ) -> MemorySampler:
     """Attach the same owned lifecycle to native records or normalized flips."""
     handle = object.__new__(MemorySampler)
+    handle._detector_groups = _prepare_parity_groups(detectors)
+    handle._observable_groups = _prepare_parity_groups(observables)
     handle._sampler = prepared
     handle._detector_columns = detectors
     handle._observable_columns = observables
