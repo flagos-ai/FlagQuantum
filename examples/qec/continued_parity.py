@@ -7,7 +7,7 @@ import functools
 import hashlib
 import json
 import re
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -26,6 +26,7 @@ from flagquantum.qec.decoders._ai.comparison import (
     on_device,
     require_parity,
 )
+from flagquantum.qec.decoders._ai.predecoder import Predecoder
 
 IMAGE = "sha256:9465e1fca0a8c22af1b2ee657c8a6ee7e9f9f8e74d873b0add84b274da58b9e2"
 PROBE_SEED = 17000011
@@ -72,6 +73,28 @@ def capture_probes(
         models=models,
         circuit_sha256=circuit_sha256,
     )
+    return _capture_probes(
+        circuit,
+        output,
+        choices_sha256=expected_choices_sha256,
+        circuit_sha256=circuit_sha256,
+        protocol_sha256=archive.digest(inputs.PROTOCOL),
+        seed=PROBE_SEED,
+        purpose="continued_physical_probe",
+    )
+
+
+def _capture_probes(
+    circuit: Any,
+    output: Path,
+    *,
+    choices_sha256: str,
+    circuit_sha256: str,
+    protocol_sha256: str,
+    seed: int,
+    purpose: str,
+    verify: Callable[[], None] | None = None,
+) -> ProbeManifest:
     if hashlib.sha256(str(circuit).encode()).hexdigest() != circuit_sha256:
         raise ValueError("probe circuit differs from the frozen input")
     widths = circuit.num_detectors, circuit.num_observables
@@ -81,13 +104,13 @@ def capture_probes(
     with (output / "plan.json").open("x") as stream:
         json.dump(
             {
-                "choices_sha256": expected_choices_sha256,
+                "choices_sha256": choices_sha256,
                 "circuit_sha256": circuit_sha256,
-                "seed": PROBE_SEED,
+                "seed": seed,
             },
             stream,
         )
-    sampler = circuit.compile_detector_sampler(seed=PROBE_SEED)
+    sampler = circuit.compile_detector_sampler(seed=seed)
     bits, truth = sampler.sample(64, separate_observables=True)
     bits = inputs._bits(torch.as_tensor(bits), shots=64, width=widths[0])
     truth = inputs._bits(torch.as_tensor(truth), shots=64, width=widths[1])
@@ -95,17 +118,19 @@ def capture_probes(
     with path.open("xb") as stream:
         torch.save({"detectors": bits, "truth": truth}, stream)
     result = ProbeManifest(
-        "continued_physical_probe",
-        archive.digest(inputs.PROTOCOL),
-        expected_choices_sha256,
+        purpose,
+        protocol_sha256,
+        choices_sha256,
         circuit_sha256,
-        PROBE_SEED,
+        seed,
         64,
         *widths,
         archive.digest(path),
         inputs._bit_hash(bits),
         inputs._bit_hash(truth),
     )
+    if verify is not None:
+        verify()
     with (output / "manifest.json").open("x") as stream:
         stream.write(json.dumps(asdict(result), indent=2) + "\n")
     return result
@@ -118,15 +143,36 @@ def load_probes(
     choices_sha256: str,
     circuit_sha256: str,
 ) -> torch.Tensor:
+    return _load_probes(
+        directory,
+        expected_manifest_sha256=expected_manifest_sha256,
+        choices_sha256=choices_sha256,
+        circuit_sha256=circuit_sha256,
+        protocol_sha256=archive.digest(inputs.PROTOCOL),
+        seed=PROBE_SEED,
+        purpose="continued_physical_probe",
+    )
+
+
+def _load_probes(
+    directory: Path,
+    *,
+    expected_manifest_sha256: str,
+    choices_sha256: str,
+    circuit_sha256: str,
+    protocol_sha256: str,
+    seed: int,
+    purpose: str,
+) -> torch.Tensor:
     if archive.digest(directory / "manifest.json") != expected_manifest_sha256:
         raise ValueError("probe manifest hash mismatch")
     raw = json.loads((directory / "manifest.json").read_text())
     if (
-        raw["purpose"] != "continued_physical_probe"
-        or raw["protocol_sha256"] != archive.digest(inputs.PROTOCOL)
+        raw["purpose"] != purpose
+        or raw["protocol_sha256"] != protocol_sha256
         or raw["choices_sha256"] != choices_sha256
         or raw["circuit_sha256"] != circuit_sha256
-        or raw["seed"] != PROBE_SEED
+        or raw["seed"] != seed
         or raw["physical_shots"] != 64
         or archive.digest(directory / "physical.pt") != raw["file_sha256"]
     ):
@@ -184,7 +230,18 @@ def check_paths(
     Only physical rows require matching. Arbitrary one-hot syndromes may be
     unmatchable and are tested for full residual/frame equality alone.
     """
-    if tuple(pairs) != PATHS or physical.ndim != 2 or physical.shape[0] != 64:
+    return _check_paths(pairs, physical, global_decode, expected_paths=PATHS)
+
+
+@torch.inference_mode()
+def _check_paths(
+    pairs: Mapping[str, tuple[Correction, Correction]],
+    physical: torch.Tensor,
+    global_decode: GlobalDecode,
+    *,
+    expected_paths: tuple[str, ...],
+) -> list[PathEvidence]:
+    if tuple(pairs) != expected_paths or physical.ndim != 2 or physical.shape[0] != 64:
         raise ValueError("requires all fifteen ordered paths and 64 physical probes")
     inputs._bits(physical, shots=64, width=physical.shape[1])
     result = []
@@ -226,6 +283,27 @@ def path_pairs(
     ]
     if [(p["seed"], p["step"], p["mode"]) for p in paths] != expected:
         raise ValueError("requires all twelve frozen native paths")
+    native = [
+        (
+            f"native-{model.seed}-step-{model.step}-{mode}",
+            model.model,
+            path["selection"]["threshold"],
+            path["temperature"],
+        )
+        for index, model in enumerate(models)
+        for mode, path in zip(
+            ("raw", "calibrated"), paths[2 * index : 2 * index + 2], strict=True
+        )
+    ]
+    return _path_pairs(native, pipeline, device=device)
+
+
+def _path_pairs(
+    native: list[tuple[str, Predecoder, float, float]],
+    pipeline: nn.Module,
+    *,
+    device: torch.device,
+) -> dict[str, tuple[Correction, Correction]]:
     config = comparison.Config(False, distance=9, rounds=9, a800=True)
     upstream = copy.deepcopy(pipeline).to(device).eval()
     global_only = comparison.correction("pymatching", None, pipeline)
@@ -243,19 +321,25 @@ def path_pairs(
         ),
         "mask-only": (mask, on_device(mask, device)),
     }
-    for index, model in enumerate(models):
-        accelerated = copy.deepcopy(model.model).to(device).eval()
-        for mode, path in zip(
-            ("raw", "calibrated"), paths[2 * index : 2 * index + 2], strict=True
-        ):
-            args = {
-                "threshold": path["selection"]["threshold"],
-                "temperature": path["temperature"],
-            }
-            pairs[f"native-{model.seed}-step-{model.step}-{mode}"] = (
-                functools.partial(model.model.correct, **args),
-                on_device(functools.partial(accelerated.correct, **args), device),
-            )
+    accelerated: dict[int, Predecoder] = {}
+    for name, model, threshold, temperature in native:
+        if name in pairs:
+            raise ValueError("duplicate correction path identity")
+        if id(model) not in accelerated:
+            accelerated[id(model)] = copy.deepcopy(model).to(device).eval()
+        pairs[name] = (
+            functools.partial(
+                model.correct, threshold=threshold, temperature=temperature
+            ),
+            on_device(
+                functools.partial(
+                    accelerated[id(model)].correct,
+                    threshold=threshold,
+                    temperature=temperature,
+                ),
+                device,
+            ),
+        )
     return pairs
 
 
@@ -273,6 +357,30 @@ class ParityReceipt:
     pipeline_state_sha256: str
     hardware: dict[str, object]
     paths: list[PathEvidence]
+
+
+def _device_reference(
+    source: Path,
+    weights: Path,
+    *,
+    circuit_sha256: str,
+    dem_sha256: str,
+) -> tuple[dict[str, Any], comparison.Reference]:
+    hardware = comparison.cuda_metadata(IMAGE)
+    reference = comparison.reference(
+        source,
+        weights,
+        comparison.Config(False, distance=9, rounds=9, a800=True),
+    )
+    if (
+        hashlib.sha256(str(reference.circuit).encode()).hexdigest() != circuit_sha256
+        or hashlib.sha256(
+            comparison.training_dem(reference.circuit).to_stim_text().encode()
+        ).hexdigest()
+        != dem_sha256
+    ):
+        raise ValueError("pinned reference differs from the archived circuit/DEM")
+    return hardware, reference
 
 
 @torch.inference_mode()
@@ -319,20 +427,12 @@ def record_device_receipt(
     )
     if output.exists():
         raise FileExistsError(output)
-    hardware = comparison.cuda_metadata(IMAGE)
-    reference = comparison.reference(
+    hardware, reference = _device_reference(
         ising_source,
         ising_weights,
-        comparison.Config(False, distance=9, rounds=9, a800=True),
+        circuit_sha256=circuit_sha,
+        dem_sha256=anchor["training_dem_sha256"],
     )
-    if (
-        hashlib.sha256(str(reference.circuit).encode()).hexdigest() != circuit_sha
-        or hashlib.sha256(
-            comparison.training_dem(reference.circuit).to_stim_text().encode()
-        ).hexdigest()
-        != anchor["training_dem_sha256"]
-    ):
-        raise ValueError("pinned reference differs from the archived circuit/DEM")
     pipeline_hash = archive.state_digest(reference.pipeline.state_dict())
     output.mkdir(parents=True, exist_ok=False)
     with (output / "plan.json").open("x") as stream:
@@ -402,6 +502,54 @@ def verify_two_hosts(
     expected_torch = json.loads((archive.ARCHIVE / "manifest.json").read_text())[
         "torch"
     ]
+    _verify_two_hosts(
+        receipts,
+        choices_sha256=choices_sha256,
+        probes_sha256=probes_sha256,
+        circuit_sha256=circuit_sha256,
+        width=bits.shape[1],
+        expected_torch=expected_torch,
+        purpose="continued_cuda_bit_parity",
+        protocol_sha256=archive.digest(inputs.PROTOCOL),
+        source_sha256=archive.digest(Path(__file__)),
+        paths=PATHS,
+    )
+
+
+def _hardware_uuid(hardware: dict[str, Any]) -> str:
+    if (
+        hardware["device"] != "cuda:0"
+        or "A800" not in hardware["name"]
+        or hardware["image_id"] != IMAGE
+        or hardware["tf32"] is not False
+        or hardware["autocast"] is not False
+        or hardware["deterministic_algorithms"] is not True
+    ):
+        raise ValueError("invalid isolated A800 hardware scope")
+    uuid = hardware["nvidia_smi_uuid_name_driver"].split(",")[0].strip()
+    if (
+        re.fullmatch(r"GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", uuid)
+        is None
+    ):
+        raise ValueError("invalid GPU UUID")
+    return str(uuid).lower()
+
+
+def _verify_two_hosts(
+    receipts: dict[str, tuple[Path, str]],
+    *,
+    choices_sha256: str,
+    probes_sha256: str,
+    circuit_sha256: str,
+    width: int,
+    expected_torch: str,
+    purpose: str,
+    protocol_sha256: str,
+    source_sha256: str,
+    paths: tuple[str, ...],
+) -> None:
+    if set(receipts) != {"a800-172", "a800-171"}:
+        raise ValueError("requires both registered hosts")
     rows = []
     for host in ("a800-172", "a800-171"):
         path, expected = receipts[host]
@@ -410,23 +558,17 @@ def verify_two_hosts(
         raw = json.loads(path.read_text())
         hardware = raw["hardware"]
         if (
-            raw["purpose"] != "continued_cuda_bit_parity"
+            raw["purpose"] != purpose
             or raw["host"] != host
-            or raw["protocol_sha256"] != archive.digest(inputs.PROTOCOL)
+            or raw["protocol_sha256"] != protocol_sha256
             or raw["choices_sha256"] != choices_sha256
             or raw["probes_sha256"] != probes_sha256
             or raw["circuit_sha256"] != circuit_sha256
             or raw["image"] != IMAGE
-            or raw["source_sha256"] != archive.digest(Path(__file__))
-            or hardware["device"] != "cuda:0"
-            or "A800" not in hardware["name"]
-            or hardware["image_id"] != IMAGE
-            or hardware["tf32"] is not False
-            or hardware["autocast"] is not False
-            or hardware["deterministic_algorithms"] is not True
-            or [r["name"] for r in raw["paths"]] != list(PATHS)
+            or raw["source_sha256"] != source_sha256
+            or [r["name"] for r in raw["paths"]] != list(paths)
             or any(
-                r["physical_rows"] != 64 or r["synthetic_rows"] != bits.shape[1] + 2
+                r["physical_rows"] != 64 or r["synthetic_rows"] != width + 2
                 for r in raw["paths"]
             )
         ):
@@ -437,13 +579,9 @@ def verify_two_hosts(
             for key in ("residual_frame_sha256", "physical_predictions_sha256")
         ):
             raise ValueError("invalid path evidence fingerprint")
-        uuid = hardware["nvidia_smi_uuid_name_driver"].split(",")[0].strip()
+        _hardware_uuid(hardware)
         if (
-            re.fullmatch(
-                r"GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", uuid
-            )
-            is None
-            or re.fullmatch(r"[0-9a-f]{64}", raw["pipeline_state_sha256"]) is None
+            re.fullmatch(r"[0-9a-f]{64}", raw["pipeline_state_sha256"]) is None
             or raw["torch_version"] != expected_torch
         ):
             raise ValueError("invalid device identity or producing environment")
@@ -452,7 +590,13 @@ def verify_two_hosts(
         rows[0]["paths"] != rows[1]["paths"]
         or rows[0]["pipeline_state_sha256"] != rows[1]["pipeline_state_sha256"]
         or rows[0]["torch_version"] != rows[1]["torch_version"]
-        or rows[0]["hardware"]["nvidia_smi_uuid_name_driver"].split(",")[0]
-        == rows[1]["hardware"]["nvidia_smi_uuid_name_driver"].split(",")[0]
+        or rows[0]["hardware"]["nvidia_smi_uuid_name_driver"]
+        .split(",")[0]
+        .strip()
+        .lower()
+        == rows[1]["hardware"]["nvidia_smi_uuid_name_driver"]
+        .split(",")[0]
+        .strip()
+        .lower()
     ):
         raise ValueError("two-host device evidence does not agree or repeats a device")

@@ -12,6 +12,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/matched_primary.py`: private fixed 32-comparison count reduction using existing paired and exact statistics; no primary collection, authenticated replay, file writer or CLI.
+- `qec/matched_parity.py`: verifies frozen decisions before a single shared probe and composes explicit CNN/MLP parity paths; hardware-only receipt guards and two-host verification; no primary sampler or CLI.
+- `qec/matched_validation.py`: internal shared physical-validation capture and all sixty threshold trials with explicit architecture identities; no primary sampler or launch CLI.
 - `qec/matched_selection.py`: internal final-six temperature fitting on shared, saved independent calibration streams; no physical validation, CLI or formal launch authorization.
 - `qec/matched_training.py`: internal fixed-budget paired Trainer composition with observed batch hashes and shared stored held-out scoring and a complete-artifact gate returning all six final models; no CLI or formal launch authorization.
 - `qec/matched_initialization.py`: freezes and verifies all six seed/architecture initial states and Torch RNG without samples or optimizer updates.

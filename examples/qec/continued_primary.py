@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, TypedDict
@@ -341,6 +341,57 @@ class RegisteredSummary(TypedDict):
     speed_claim_allowed: bool
 
 
+def _accumulate_counts(
+    chunks: Iterable[tuple[torch.Tensor, dict[str, torch.Tensor]]],
+    totals: dict[tuple[str, str], list[int]],
+    *,
+    paths: tuple[str, ...],
+    shots: int,
+) -> None:
+    """Stream complete predictions into paired counts without pooling identities."""
+    seen = 0
+    width: int | None = None
+    for truth, predictions in chunks:
+        if tuple(predictions) != paths:
+            raise ValueError("primary prediction path order mismatch")
+        if truth.ndim != 2 or truth.shape[1] == 0:
+            raise ValueError("invalid primary observable dimensions")
+        if width is not None and truth.shape[1] != width:
+            raise ValueError("primary observable dimensions changed between shards")
+        width = truth.shape[1]
+        seen += len(truth)
+        if seen > shots:
+            raise ValueError("excess primary comparison shots")
+        for (candidate, reference), values in totals.items():
+            count = paired_counts(truth, predictions[reference], predictions[candidate])
+            for index, value in enumerate(asdict(count).values()):
+                values[index] += value
+    if seen != shots or any(v[0] != shots for v in totals.values()):
+        raise ValueError("incomplete primary comparison counts")
+
+
+def _comparison_reports(
+    totals: dict[tuple[str, str], list[int]], *, alpha: float
+) -> tuple[list[ComparisonReport], dict[tuple[str, str], float | None]]:
+    """Use the existing exact and descriptive methods for one explicit family."""
+    records: list[ComparisonReport] = []
+    bounds = {}
+    for (candidate, reference), values in totals.items():
+        count = PairedCounts(*values)
+        exact = exact_statistics.summarize_exact(count, alpha=alpha)
+        records.append(
+            {
+                "candidate": candidate,
+                "reference": reference,
+                "counts": asdict(count),
+                "exact": asdict(exact),
+                "legacy_hoeffding": summarize(count, alpha=alpha),
+            }
+        )
+        bounds[(candidate, reference)] = exact.ratio_upper
+    return records, bounds
+
+
 def summarize_primary(directory: Path, output: Path, *, manifest_sha256: str) -> None:
     """Only complete frozen shards supply the registered 26 comparisons."""
     totals = {pair: [0] * 5 for pair in COMPARISONS}
@@ -349,30 +400,13 @@ def summarize_primary(directory: Path, output: Path, *, manifest_sha256: str) ->
         for s in archive.SEEDS
         for m in ("raw", "calibrated")
     }
-    for truth, predictions in replay_primary(
-        directory, expected_manifest_sha256=manifest_sha256
-    ):
-        for (candidate, reference), values in (totals | horizons).items():
-            count = paired_counts(truth, predictions[reference], predictions[candidate])
-            for index, value in enumerate(asdict(count).values()):
-                values[index] += value
-    if any(v[0] != SHOTS for v in totals.values()):
-        raise ValueError("incomplete primary comparison counts")
-    records: list[ComparisonReport] = []
-    bounds = {}
-    for (candidate, reference), values in totals.items():
-        count = PairedCounts(*values)
-        exact = exact_statistics.summarize_exact(count, alpha=ALPHA)
-        records.append(
-            {
-                "candidate": candidate,
-                "reference": reference,
-                "counts": asdict(count),
-                "exact": asdict(exact),
-                "legacy_hoeffding": summarize(count, alpha=ALPHA),
-            }
-        )
-        bounds[(candidate, reference)] = exact.ratio_upper
+    _accumulate_counts(
+        replay_primary(directory, expected_manifest_sha256=manifest_sha256),
+        totals | horizons,
+        paths=parity.PATHS,
+        shots=SHOTS,
+    )
+    records, bounds = _comparison_reports(totals, alpha=ALPHA)
     primary = [f"native-{s}-step-2000-calibrated" for s in archive.SEEDS]
 
     def passes(reference: str, limit: float) -> bool:
