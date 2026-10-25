@@ -642,41 +642,77 @@ class QuafuProvider(HttpQuantumProvider):
     def _submit_sdk_physical(
         self, package: DeploymentPackage, options: Mapping[str, Any]
     ) -> ProviderTaskHandle:
-        adapter = self._submission_sdk_adapter()
-        backend_snapshot = adapter.backend_metadata(package.backend.name)
-        calibration_id = backend_snapshot.get("calibration_id")
-        if not isinstance(calibration_id, str) or not calibration_id.strip():
-            raise RuntimeError(
-                "Quafu SDK backend metadata has no current calibration identity"
+        response, physical_qasm, measurements, backend_snapshot, calibration_id = (
+            self._submit_sdk_mapped_qasm(
+                package.qasm,
+                backend=package.backend.name,
+                shots=package.shots,
+                name=package.name,
+                target_qubits=options["target_qubits"],
             )
+        )
         target_qubits = tuple(int(qubit) for qubit in options["target_qubits"])
-        physical_qasm, measurements = prepare_physical_qasm(
-            package.qasm,
-            target_qubits=target_qubits,
-            backend_metadata=backend_snapshot,
-        )
-        response = adapter.submit_physical(
-            physical_qasm,
-            target=package.backend.name,
-            shots=package.shots,
-            name=package.name,
-        )
         receipt = build_submission_receipt(package, response)
         receipt.update(
             {
                 "quafu_protocol": _SDK_PROTOCOL,
                 "service_compiler": "none",
                 "target_qubits": list(target_qubits),
+                "source_qasm_sha256": hashlib.sha256(package.qasm.encode()).hexdigest(),
                 "submitted_qasm_sha256": hashlib.sha256(
                     physical_qasm.encode()
                 ).hexdigest(),
                 "backend_snapshot_sha256": backend_snapshot_sha256(backend_snapshot),
-                "calibration_id": calibration_id.strip(),
+                "calibration_id": calibration_id,
                 "measurement_mapping": [dict(item) for item in measurements],
             }
         )
         return ProviderTaskHandle(
             "quafu", str(response["job_id"]), package.backend.name, receipt
+        )
+
+    def _submit_sdk_mapped_qasm(
+        self,
+        qasm: str,
+        *,
+        backend: str,
+        shots: int,
+        name: str,
+        target_qubits: Sequence[int],
+    ) -> tuple[
+        Mapping[str, Any],
+        str,
+        tuple[dict[str, int], ...],
+        Mapping[str, Any],
+        str,
+    ]:
+        """Validate, materialize, and submit one physical SDK program."""
+
+        adapter = self._submission_sdk_adapter()
+        backend_snapshot = adapter.backend_metadata(backend)
+        calibration_id = backend_snapshot.get("calibration_id")
+        if not isinstance(calibration_id, str) or not calibration_id.strip():
+            raise RuntimeError(
+                "Quafu SDK backend metadata has no current calibration identity"
+            )
+        mapping = tuple(int(qubit) for qubit in target_qubits)
+        physical_qasm, measurements = prepare_physical_qasm(
+            qasm,
+            target_qubits=mapping,
+            backend_metadata=backend_snapshot,
+        )
+        response = adapter.submit_physical(
+            physical_qasm,
+            target=backend,
+            shots=shots,
+            name=name,
+        )
+        return (
+            response,
+            physical_qasm,
+            measurements,
+            backend_snapshot,
+            calibration_id.strip(),
         )
 
     def _submit_task_api(self, package: DeploymentPackage) -> ProviderTaskHandle:
@@ -758,13 +794,45 @@ class QuafuProvider(HttpQuantumProvider):
         if not backend or not task_name:
             raise ValueError("Quafu QASM submission requires chip and name")
         _validate_quafu_shots(backend, shots)
-        self._require_legacy_credential(backend)
         options = _submission_options(
             program,
             n_wires=len(target_qubits),
             options={"compiler": None, "target_qubits": target_qubits},
         )
         digest = hashlib.sha256(program.encode()).hexdigest()
+        if self._prefer_sdk_lifecycle:
+            response, physical_qasm, measurements, backend_snapshot, calibration_id = (
+                self._submit_sdk_mapped_qasm(
+                    program,
+                    backend=backend,
+                    shots=shots,
+                    name=task_name,
+                    target_qubits=options["target_qubits"],
+                )
+            )
+            receipt = {
+                "deployment_receipt_schema": DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
+                "deployment_package_schema": "flagquantum_submitted_qasm_v1",
+                "deployment_program_format": "openqasm-2",
+                "routing_evidence_sha256": digest,
+                "deployment_artifact_sha256": digest,
+                "source_qasm_sha256": digest,
+                "submitted_qasm_sha256": hashlib.sha256(
+                    physical_qasm.encode()
+                ).hexdigest(),
+                "compiler": None,
+                "service_compiler": "none",
+                "target_qubits": options["target_qubits"],
+                "quafu_protocol": _SDK_PROTOCOL,
+                "backend_snapshot_sha256": backend_snapshot_sha256(backend_snapshot),
+                "calibration_id": calibration_id,
+                "measurement_mapping": [dict(item) for item in measurements],
+            }
+            return ProviderTaskHandle(
+                "quafu", str(response["job_id"]), backend, receipt
+            )
+
+        self._require_legacy_credential(backend)
         query = parse.urlencode(
             {"name": task_name, "chip": backend, "shots": int(shots)}
         )
@@ -928,6 +996,10 @@ class QuafuProvider(HttpQuantumProvider):
                 | {
                     "quafu_protocol": protocol,
                     "service_compiler": handle.payload.get("service_compiler"),
+                    "source_qasm_sha256": handle.payload.get("source_qasm_sha256"),
+                    "submitted_qasm_sha256": handle.payload.get(
+                        "submitted_qasm_sha256"
+                    ),
                 },
             ),
         )

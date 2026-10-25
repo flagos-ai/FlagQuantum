@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import subprocess
 import sys
 from dataclasses import replace
@@ -513,6 +514,59 @@ def test_sdk_qsteed_submission_encodes_and_binds_physical_program() -> None:
     assert len(handle.payload["backend_snapshot_sha256"]) == 64
     assert handle.payload["calibration_id"] == "cal-1"
     assert provider.fetch_result(handle).counts == {"00": 512, "11": 512}
+
+
+def test_sdk_twin_qasm_lifecycle_binds_logical_and_physical_programs() -> None:
+    client = _LifecycleClient()
+    result = client.job_handle.result(timeout=0)
+    result.measurements = [
+        {"cbit": 0, "physical_qubit": 17, "virtual_qubit": 0},
+        {"cbit": 1, "physical_qubit": 18, "virtual_qubit": 1},
+    ]
+    result.compiler = {"name": "none", "version": None}
+    client.job_handle.result = lambda timeout=None: result  # type: ignore[method-assign]
+    provider = QuafuProvider(
+        _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
+    )
+    qasm = (
+        "OPENQASM 2.0;\n"
+        'include "qelib1.inc";\n'
+        "qreg q[2];\n"
+        "creg c[2];\n"
+        "h q[0];\n"
+        "cx q[0], q[1];\n"
+        "measure q[0] -> c[0];\n"
+        "measure q[1] -> c[1];"
+    )
+
+    handle = provider.submit_qasm(
+        qasm,
+        chip="Baihua",
+        name="sdk twin bell",
+        shots=1024,
+        target_qubits=(17, 18),
+    )
+
+    submitted, options = client.submissions[0]
+    assert isinstance(submitted, str)
+    assert "qreg q[156];" in submitted
+    assert "h q[18];\ncz q[17], q[18];\nh q[18];" in submitted
+    assert options["compiler"] == "none"
+    assert (
+        handle.payload["source_qasm_sha256"]
+        == hashlib.sha256(qasm.encode()).hexdigest()
+    )
+    assert (
+        handle.payload["submitted_qasm_sha256"]
+        == hashlib.sha256(submitted.encode()).hexdigest()
+    )
+    assert handle.payload["quafu_protocol"] == "quafu_sdk_v1"
+    result = provider.fetch_result(handle)
+    assert result.metadata["source_qasm_sha256"] == handle.payload["source_qasm_sha256"]
+    assert (
+        result.metadata["submitted_qasm_sha256"]
+        == handle.payload["submitted_qasm_sha256"]
+    )
 
 
 @pytest.mark.parametrize(
