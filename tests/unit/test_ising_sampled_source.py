@@ -1,4 +1,4 @@
-"""Approved sampled source construction, with numerical admission still closed."""
+"""Approved sampled source construction and strict payload boundaries."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from flagquantum.core.ir.program.physical_codec import (
 )
 from flagquantum.core.ir.program.verifier import verify_program_record
 from flagquantum.core.ising import IsingBraidProgram
-from flagquantum.errors import CapabilityError, SerializationError
+from flagquantum.errors import SerializationError
 from flagquantum.runtime.execution_plan_contract import (
     ExecutionPlanContractError,
     canonical_hash,
@@ -219,15 +219,10 @@ def test_sampled_operation_cannot_borrow_the_rydberg_profile() -> None:
 
 
 @pytest.mark.parametrize("plan_version", ["1.1", "1.2", "1.3"])
-def test_runtime_refuses_the_real_new_source_before_numerical_execution(
+def test_old_or_incomplete_plans_refuse_the_real_new_source(
     plan_version: str,
 ) -> None:
     source = IsingBraidProgram().exchange(1).measure_pair().exchange(0)
-    options = fq.ExecutionOptions(shots=1, seed=17)
-    with pytest.raises(CapabilityError, match="source 1.1 or 1.2"):
-        fq.plan(source, options=options)
-    with pytest.raises(CapabilityError, match="source 1.1 or 1.2"):
-        fq.run(source, options=options)
     old = fq.plan(IsingBraidProgram().exchange(1).dephase_pair()).to_dict()
     old["program"] = native_program_to_dict(source.to_ir())
     fingerprints = old["fingerprints"]

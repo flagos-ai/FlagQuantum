@@ -11,18 +11,12 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.core.ising import IsingBraidProgram
 from flagquantum.errors import CapabilityError
 from flagquantum.observables import OutputRequest
+from flagquantum.runtime.execution_plan import ExecutionPlan
 from flagquantum.runtime.measurements import _draw_probability_indices
 from flagquantum.runtime.result import ExecutionResult
-
-from .ising_sampled_reference import (
-    ReferenceRecipe,
-    ReferenceSource,
-    plan_reference,
-    read_reference,
-    run_reference,
-)
 
 pytestmark = pytest.mark.unit
 Channel = Literal["1", "psi"]
@@ -75,7 +69,7 @@ class Runner(Protocol):
 
 @pytest.fixture
 def sampled_source() -> SourceFactory:
-    return ReferenceSource
+    return IsingBraidProgram
 
 
 @pytest.fixture
@@ -86,8 +80,10 @@ def sampled_plan() -> Planner:
         options: fq.ExecutionOptions,
         outputs: tuple[OutputRequest, ...] = (),
     ) -> SampledPlan:
-        assert isinstance(source, ReferenceSource)
-        return plan_reference(source, options=options, outputs=outputs)
+        assert isinstance(source, IsingBraidProgram)
+        result = fq.plan(source, options=options, outputs=outputs or None)
+        assert isinstance(result, ExecutionPlan)
+        return result
 
     return plan
 
@@ -100,15 +96,17 @@ def sampled_run() -> Runner:
         options: fq.ExecutionOptions | None = None,
         outputs: tuple[OutputRequest, ...] = (),
     ) -> ExecutionResult:
-        assert isinstance(source, (ReferenceSource, ReferenceRecipe))
-        return run_reference(source, options=options, outputs=outputs)
+        assert isinstance(source, (IsingBraidProgram, fq.ExecutionPlan))
+        result = fq.run(source, options=options, outputs=outputs or None)
+        assert isinstance(result, ExecutionResult)
+        return result
 
     return run
 
 
 @pytest.fixture
 def sampled_read() -> Callable[[str], SampledPlan]:
-    return read_reference
+    return ExecutionPlan.from_json
 
 
 def _append(source: SampledSource, word: Word) -> None:

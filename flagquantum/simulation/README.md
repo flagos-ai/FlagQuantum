@@ -606,8 +606,9 @@ and `_continue_ising_sampled` applies the Runtime-selected projector, divides
 by its original positive trace, and evolves the ordered suffix. Both reuse the
 same exchange actions and Kraus machinery as the unread path. Simulation does
 not draw an outcome or create measurement results. The full-density entry
-rejects sampled sources before exchange arithmetic; native `fq.plan`/`fq.run`
-admission remains closed until the separate Runtime delivery.
+rejects sampled sources before exchange arithmetic. Runtime now composes the
+two private seams for native `fq.plan`/`fq.run` admission with one explicit shot
+and seed, and owns the resulting intermediate measurement record.
 
 Validate this numerical boundary with:
 

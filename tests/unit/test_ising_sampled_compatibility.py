@@ -94,16 +94,3 @@ def test_terminal_seed_behavior_retains_its_original_record() -> None:
     old_instrument["torch_version"] = str(torch.__version__)
     old_metadata["terminal_instrument"] = old_instrument
     assert metadata == old_metadata
-
-
-def test_reference_recipe_is_not_an_executable_native_plan() -> None:
-    from .ising_sampled_reference import ReferenceSource, plan_reference
-
-    recipe = plan_reference(
-        ReferenceSource().measure_pair(), options=fq.ExecutionOptions(shots=1, seed=17)
-    )
-    assert json.loads(recipe.to_json())["schema"] == "test.ising_sampled_recipe"
-    with pytest.raises((ValueError, TypeError)):
-        fq.ExecutionPlan.from_json(recipe.to_json())
-    # Core may now declare the approved operation; it still is not an executable
-    # native plan until the separately delivered Runtime admission is accepted.

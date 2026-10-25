@@ -9,14 +9,16 @@ from typing import Any
 import torch
 
 from ..core.ir import _decode_value, _encode_value
-from ..core.ir.program.physical import IsingContext
+from ..core.ir.program.model import ProgramRecord
+from ..core.ir.program.physical import IsingContext, IsingExchange
 from ..core.ir.program.physical_codec import (
     native_program_from_dict,
     native_program_to_dict,
 )
 from ..core.ising import IsingBraidProgram
-from ..errors import CapabilityError, ValidationError
+from ..errors import CapabilityError, ExecutionError, ValidationError
 from ..observables import OutputRequest
+from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES
 from ..simulation.lindblad_request import _normalize_observables
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
@@ -35,6 +37,8 @@ from .execution_plan_contract import (
 from .options import ExecutionOptions
 from .options_resolver import resolve_execution_options
 from .result import ExecutionResult, MeasurementResult
+
+_SAMPLED_NUMERIC_BYTES = 64 + 128 + 16 + 8
 
 
 def _outputs(
@@ -83,8 +87,11 @@ def plan_ising(
     """Seal a validated native source using the shared options resolver."""
     record = program.to_ir()
     source = native_program_to_dict(record)
-    if source.get("version") not in ("1.1", "1.2"):
-        raise CapabilityError("Ising execution supports only native source 1.1 or 1.2")
+    if source.get("version") not in ("1.1", "1.2", "1.3"):
+        raise CapabilityError(
+            "Ising execution supports only native source 1.1, 1.2 or 1.3"
+        )
+    sampled = source["version"] == "1.3"
     requests = _outputs(outputs)
     try:
         resolved = resolve_execution_options(
@@ -98,7 +105,9 @@ def plan_ising(
         or resolved.device not in {"auto", "cpu"}
         or resolved.target not in {"auto", "state", "expectation"}
         or resolved.batch_size != 1
-        or resolved.shots is not None
+        or (resolved.shots != 1 if sampled else resolved.shots is not None)
+        or (sampled and (resolved.seed is None or resolved.seed >= 2**64))
+        or (sampled and (options is None or options.shots != 1 or options.seed is None))
         or resolved.require_gradients
         or resolved.allow_approximate
         or resolved.allow_backend_fallback
@@ -108,8 +117,16 @@ def plan_ising(
         )
     if resolved.target == "expectation" and not requests:
         raise ValidationError("expectation target requires output requests")
-    if resolved.memory_limit_bytes is not None and resolved.memory_limit_bytes < 64:
-        raise CapabilityError("Ising density state requires 64 bytes")
+    numeric_bytes = _SAMPLED_NUMERIC_BYTES if sampled else 64
+    if numeric_bytes > DEFAULT_DENSE_MATRIX_BYTES or (
+        resolved.memory_limit_bytes is not None
+        and resolved.memory_limit_bytes < numeric_bytes
+    ):
+        if not sampled:
+            raise CapabilityError("Ising density state requires 64 bytes")
+        raise CapabilityError(
+            f"Ising actions require {numeric_bytes} accounted numeric bytes"
+        )
     from .distributed.backend_policy import resolve_distributed_backend_policy
 
     if resolve_distributed_backend_policy().effective_world_size != 1:
@@ -142,7 +159,9 @@ def plan_ising(
     }
     decision.update(world_size=1, state_bytes=64, recommended_mode="density_matrix")
     concrete = _resolved_mapping(resolved)
-    environment = _environment_requirements(decision)
+    environment = _environment_requirements(
+        decision, rng_torch_version=str(torch.__version__) if sampled else None
+    )
     payload = {
         "schema": EXECUTION_PLAN_SCHEMA,
         "version": source["version"],
@@ -280,6 +299,7 @@ def validate_ising_payload(values: Mapping[str, Any]) -> dict[str, Any]:
     except (TypeError, ValueError, OverflowError, CapabilityError) as exc:
         raise ExecutionPlanContractError("identity_mismatch", str(exc)) from exc
     resolved = _validate_plan_options(values)
+    sampled = values["version"] == "1.3"
     expected = ExecutionOptions(
         mode="density_matrix",
         backend="pytorch",
@@ -287,7 +307,7 @@ def validate_ising_payload(values: Mapping[str, Any]) -> dict[str, Any]:
         target=resolved["target"],
         batch_size=1,
         precision="complex128",
-        shots=None,
+        shots=1 if sampled else None,
         seed=resolved["seed"],
         memory_limit_bytes=resolved["memory_limit_bytes"],
         require_gradients=False,
@@ -298,17 +318,29 @@ def validate_ising_payload(values: Mapping[str, Any]) -> dict[str, Any]:
     expected.pop("version")
     if (
         resolved != expected
+        or (_SAMPLED_NUMERIC_BYTES if sampled else 64) > DEFAULT_DENSE_MATRIX_BYTES
         or resolved["target"] not in {"state", "expectation"}
         or (resolved["target"] == "expectation" and not requests)
         or (
             resolved["memory_limit_bytes"] is not None
-            and resolved["memory_limit_bytes"] < 64
+            and resolved["memory_limit_bytes"]
+            < (_SAMPLED_NUMERIC_BYTES if sampled else 64)
         )
     ):
         raise ExecutionPlanContractError(
             "options_fingerprint_mismatch", "unsupported native resolved options"
         )
     requested = _require_mapping("requested_options", values["requested_options"])
+    if sampled and (
+        requested["shots"] != 1
+        or requested["seed"] is None
+        or resolved["seed"] is None
+        or resolved["seed"] >= 2**64
+    ):
+        raise ExecutionPlanContractError(
+            "options_fingerprint_mismatch",
+            "sampled Ising plans require one explicit shot and seed below 2**64",
+        )
     for name, concrete in resolved.items():
         value = requested[name]
         if value is None or (
@@ -371,13 +403,77 @@ def braid_depth(plan: ExecutionPlan) -> int:
     return len(record.functions[0].blocks[0].operations)
 
 
+def _execute_pair_observation(
+    record: ProgramRecord, *, seed: int
+) -> tuple[torch.Tensor, MeasurementResult]:
+    """Compose existing probability/draw and Simulation authorities once."""
+    from ..simulation.ising_braid import (
+        _charge_projectors,
+        _continue_ising_sampled,
+        _ising_sampled_prefix,
+    )
+    from ._terminal_instruments import _instrument_probabilities
+    from .measurements import _draw_probability_indices
+
+    before = _ising_sampled_prefix(record)
+    branches: list[tuple[str, tuple[torch.Tensor, ...]]] = [
+        (label, (projector,))
+        for label, projector in zip(("1", "psi"), _charge_projectors(), strict=True)
+    ]
+    weights, probabilities = _instrument_probabilities(
+        before.unsqueeze(0), branches, 1e-10
+    )
+    generator = torch.Generator(device="cpu").manual_seed(seed)
+    selected = _draw_probability_indices(probabilities, 1, generator=generator)
+    if (
+        selected.shape != (1, 1)
+        or selected.dtype != torch.int64
+        or selected.device.type != "cpu"
+    ):
+        raise ExecutionError("sampled Ising draw must be one CPU int64 index")
+    state = _continue_ising_sampled(record, before, int(selected[0, 0]))
+    context = record.physical_context
+    assert isinstance(context, IsingContext)
+    pair_ids = list(context.anyon_ids)
+    for index, operation in enumerate(record.functions[0].blocks[0].operations):
+        if operation.opcode == "ising.measure_pair":
+            event = MeasurementResult(
+                "mid_circuit_measurement",
+                (),
+                selected,
+                shots=1,
+                metadata={
+                    "stage": "intermediate",
+                    "outcome_labels": [label for label, _ in branches],
+                    "probabilities": weights.tolist(),
+                    "probability_correction": float(
+                        (probabilities - weights).abs().max()
+                    ),
+                    "source_operation_index": index,
+                    "pair_anyon_ids": pair_ids[:2],
+                },
+            )
+            return state.unsqueeze(0), event
+        exchange = operation.physical_data
+        assert isinstance(exchange, IsingExchange)
+        left = exchange.left
+        pair_ids[left], pair_ids[left + 1] = pair_ids[left + 1], pair_ids[left]
+    raise AssertionError("verified sampled source has no observation")
+
+
 def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
     """Assemble the shared result from Simulation's exact finite action."""
     from ..simulation.ising_braid import evolve_ising_braid
 
     payload = plan.to_dict()
     record = native_program_from_dict(_require_mapping("program", payload["program"]))
-    state = evolve_ising_braid(record).unsqueeze(0)
+    event = None
+    if payload["version"] == "1.3":
+        seed = _require_mapping("resolved_options", payload["resolved_options"])["seed"]
+        assert type(seed) is int
+        state, event = _execute_pair_observation(record, seed=seed)
+    else:
+        state = evolve_ising_braid(record).unsqueeze(0)
     measurements = []
     values = []
     for index, request in enumerate(_read_outputs(payload)):
@@ -394,6 +490,13 @@ def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
         measurements.append(
             MeasurementResult("expectation", (), value, metadata=metadata)
         )
+    if event is not None:
+        measurements.append(event)
+    sampled_runtime = (
+        {"shots": 1, "seed": seed, "mid_circuit_measurements_available": True}
+        if event is not None
+        else {}
+    )
     return ExecutionResult(
         state=state,
         plan=plan,
@@ -412,5 +515,6 @@ def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
             "scalability_claim_allowed": False,
             "release_gate_allowed": False,
             "exact_plan_execution": True,
+            **sampled_runtime,
         },
     )
