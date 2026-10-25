@@ -22,20 +22,20 @@ from .contract import runtime_metadata, write_json_atomic
 
 def _circuit(n: int, t: int, topology: str) -> fq.Circuit:
     circuit = fq.Circuit(n)
-    for wire in range(n):
-        circuit.h(wire)
+    for qubit in range(n):
+        circuit.h(qubit)
     for layer in range(4):
         circuit.s((layer + 1) % n)
-        for wire in range(n - 1):
-            circuit.cx(wire, wire + 1)
+        for qubit in range(n - 1):
+            circuit.cx(qubit, qubit + 1)
         if topology == "ring":
             circuit.cx(n - 1, 0)
         if layer < t:
             circuit.t(layer % n)
         if layer + 4 < t:
             circuit.t((layer + 1) % n)
-    for wire in range(n):
-        circuit.h(wire)
+    for qubit in range(n):
+        circuit.h(qubit)
     return circuit
 
 
@@ -44,16 +44,16 @@ def _reference(n: int, t: int, topology: str) -> torch.Tensor:
     state = [0j] * (1 << n)
     state[0] = 1 + 0j
 
-    def hadamard(wire: int) -> None:
-        mask = 1 << (n - 1 - wire)
+    def hadamard(qubit: int) -> None:
+        mask = 1 << (n - 1 - qubit)
         for index in range(1 << n):
             if index & mask == 0:
                 a, b = state[index], state[index | mask]
                 state[index] = (a + b) / math.sqrt(2)
                 state[index | mask] = (a - b) / math.sqrt(2)
 
-    for wire in range(n):
-        hadamard(wire)
+    for qubit in range(n):
+        hadamard(qubit)
     for layer in range(4):
         for index in range(1 << n):
             if index & (1 << (n - 1 - ((layer + 1) % n))):
@@ -70,12 +70,12 @@ def _reference(n: int, t: int, topology: str) -> torch.Tensor:
             state = permuted
         for ordinal in (layer, layer + 4):
             if ordinal < t:
-                wire = (layer + (ordinal >= 4)) % n
+                qubit = (layer + (ordinal >= 4)) % n
                 for index in range(1 << n):
-                    if index & (1 << (n - 1 - wire)):
+                    if index & (1 << (n - 1 - qubit)):
                         state[index] *= cmath.exp(1j * math.pi / 4)
-    for wire in range(n):
-        hadamard(wire)
+    for qubit in range(n):
+        hadamard(qubit)
     return torch.tensor(state, dtype=torch.complex128)
 
 
