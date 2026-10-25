@@ -227,3 +227,11 @@ The [seven-point continuation proposal](FTQC_MIXED_CPU_CONTINUATION_PROPOSAL.md)
 states the additional 28-process budget, unchanged monitoring policy and required
 diagnostic-order repair. It is not approved or executed; all original records
 remain immutable. Post-859 main acceptance is recorded there.
+
+## Separately approved continuation
+
+The [completed bounded pilot report](FTQC_MIXED_CPU_COMPLETED_PILOT.md) adds a
+separately admitted seven-point campaign after controller review/main acceptance.
+This original failed campaign and its raw manifest remain unchanged. Combined
+evidence has 48 complete points, 192 successful processes plus this original
+monitor failure, 193 attempts total; it is not a method-selection or speedup claim.

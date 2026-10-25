@@ -1,8 +1,10 @@
 # FTS-10A: Bounded Seven-Point Continuation Proposal
 
-Status: explicitly approved by the human user on 2026-10-25, controller review
-and mainline acceptance required before the one admitted probe and collection.
-No continuation process or supervision probe has been launched.
+Status: explicitly approved by the human user on 2026-10-25; controller review
+and mainline acceptance completed before the one admitted probe and collection.
+The one admitted continuation and supervision probe have now completed; see
+[the completed bounded pilot](FTQC_MIXED_CPU_COMPLETED_PILOT.md). No further
+recovery or rerun is authorized.
 The [original partial study](FTQC_MIXED_CPU_PARTIAL_BASELINE.md) remains immutable:
 164 completed processes, one failed host warm-up and 27 unattempted slots.
 Original #846 admission stopped on the first monitoring failure. Neither #859's
@@ -27,7 +29,7 @@ retained evidence from original plus continuation stays at most 128 MiB; require
 at least 512 MiB free before startup. RSS sampling can overshoot; it is not an allocator/cgroup limit. No new qubit count, T count, topology,
 backend, precision, device or performance target is requested.
 
-## Controller implementation under review
+## Reviewed controller implementation
 
 The human answer was "Approve the bounded continuation; review the controller
 first." This authorizes the exact budget above, including cumulative 193
@@ -58,8 +60,8 @@ Storage checks include original plus new evidence with 2 MiB reserved headroom.
 Sampled RSS and storage checks can overshoot between observations; neither is a
 hard allocator/filesystem quota. Any detected budget breach retains a failure.
 
-After this implementation is reviewed and its mainline accepted, the one admitted
-invocation is:
+After review and mainline acceptance, the one admitted invocation was as follows.
+It is retained as command provenance, not authorization to run another campaign:
 
 ```bash
 python tools/collect_ftqc_mixed_continuation.py \
@@ -262,8 +264,8 @@ continuation launch. Its success does not establish supervision availability.
 - [x] Specify a concrete seven-point/28-process ceiling and unchanged monitor
   policy, with the cumulative 193-attempt implication stated explicitly.
 - [x] Obtain explicit approval for this continuation budget and controller scope.
-- [ ] Review and qualify the diagnostic-order repair and bounded preflight.
-- [ ] Run at most one newly admitted continuation and review its complete ledger.
+- [x] Review and qualify the diagnostic-order repair and bounded preflight.
+- [x] Run at most one newly admitted continuation and review its complete ledger.
 - [ ] FTS-10 final method selection, FTS-02/09 and R01-R15 system acceptance remain
   open. New API, approximation, larger scale, domestic hardware and experiment
   decisions remain separate.
