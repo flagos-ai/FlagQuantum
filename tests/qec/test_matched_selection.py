@@ -17,6 +17,7 @@ from examples.qec import diagnose_predecoder as archive
 from examples.qec import ising_layout
 from examples.qec import matched_checkpoints as checkpoints
 from examples.qec import matched_initialization as initialization
+from examples.qec import matched_parity as probes
 from examples.qec import matched_selection as selection
 from examples.qec import matched_training as training
 from examples.qec import matched_validation as validation
@@ -527,3 +528,288 @@ def test_registered_validation_constants_and_unchanged_old_defaults() -> None:
         old_shards.VALIDATION_SHOTS,
         old_shards.CHUNK,
     ) == (15000011, 131072, 4096)
+
+
+@pytest.fixture
+def decisions(
+    tmp_path: Path, calibrated: tuple[Path, Path, str, Path, str]
+) -> tuple[Path, Path, Path, Path, str]:
+    initial, trained, digest, cal, cal_hash = calibrated
+    output = tmp_path / "choices"
+    validation.validate_and_freeze(
+        tmp_path,
+        initial,
+        trained,
+        cal,
+        output,
+        training_sha256=digest,
+        calibration_sha256=cal_hash,
+        circuit=PhysicalFixture(),
+        global_decode=global_fixture,
+        device=torch.device("cpu"),
+    )
+    return initial, trained, cal, output, archive.digest(output / "choices.json")
+
+
+class ProbeFixture(PhysicalFixture):
+    def __init__(self) -> None:
+        super().__init__()
+        self.bits = self.bits.repeat(8, 1)
+        self.truth = self.truth.repeat(8, 1)
+
+
+def test_frozen_choices_single_probe_peer_replay_and_parity_oracles(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    decisions: tuple[Path, Path, Path, Path, str],
+) -> None:
+    initial, trained, cal, choices, sha = decisions
+    monkeypatch.setattr(Predecoder, "sample", forbidden)
+    monkeypatch.setattr(Trainer, "train", forbidden)
+    models, raw = validation.restore_choices(
+        tmp_path, initial, trained, cal, choices, expected_sha256=sha
+    )
+    assert [(s, a, t.step) for s, a, t in models] == [
+        (s, a, 4) for s in (11, 22, 33) for a in ("cnn", "mlp")
+    ]
+    circuit = ProbeFixture()
+    output = tmp_path / "probes"
+    record = probes.capture_probes(
+        tmp_path,
+        initial,
+        trained,
+        cal,
+        choices,
+        output,
+        expected_choices_sha256=sha,
+        circuit=circuit,
+    )
+    assert circuit.compiled == [23000011] and circuit.calls == [64]
+    assert record.purpose == "matched_physical_probe"
+    bits = probes.load_probes(
+        output,
+        expected_manifest_sha256=archive.digest(output / "manifest.json"),
+        choices_sha256=sha,
+        circuit_sha256=raw["inputs"]["circuit_sha256"],
+    )
+    assert torch.equal(bits, circuit.bits) and circuit.calls == [64]
+
+    def identity(bits: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return bits, torch.zeros(len(bits), 1, dtype=torch.int8)
+
+    pairs = dict.fromkeys(probes.PATHS, (identity, identity))
+    evidence = probes.check_paths(pairs, bits, global_fixture)
+    assert len(evidence) == 15
+    assert all(e.synthetic_rows == 6 and e.physical_rows == 64 for e in evidence)
+    assert len({e.physical_predictions_sha256 for e in evidence}) == 1
+    with pytest.raises(FileExistsError):
+        probes.capture_probes(
+            tmp_path,
+            initial,
+            trained,
+            cal,
+            choices,
+            output,
+            expected_choices_sha256=sha,
+            circuit=circuit,
+        )
+    assert circuit.calls == [64]
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "external",
+        "record_order",
+        "missing_mode",
+        "temperature",
+        "threshold_tie",
+        "baseline",
+        "counts",
+        "source",
+        "shard",
+        "extra",
+    ],
+)
+def test_frozen_decision_refusals_precede_probe_sampler(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    decisions: tuple[Path, Path, Path, Path, str],
+    damage: str,
+) -> None:
+    initial, trained, cal, choices, sha = decisions
+    path = choices / "choices.json"
+    raw = json.loads(path.read_text())
+    if damage == "external":
+        sha = "a" * 64
+    elif damage == "shard":
+        (choices / "validation/chunk-0001.pt").write_bytes(b"changed")
+    elif damage == "extra":
+        (choices / "extra.json").write_text("{}")
+    else:
+        if damage == "record_order":
+            raw["paths"].reverse()
+        if damage == "missing_mode":
+            raw["paths"].pop()
+        if damage == "temperature":
+            raw["paths"][0]["temperature"] = 2.0
+        if damage == "threshold_tie":
+            raw["paths"][0]["selection"]["threshold"] = 0.123
+        if damage == "baseline":
+            raw["paths"][0]["selection"]["threshold"] = 1.0
+            for trial in raw["paths"][0]["selection"]["trials"]:
+                trial["counts"] = dict(
+                    shots=8, baseline_failures=1, hybrid_failures=1, wins=0, losses=0
+                )
+        if damage == "counts":
+            raw["paths"][0]["selection"]["trials"][0]["counts"]["shots"] = True
+        if damage == "source":
+            raw["source_sha256"] = {"changed": "a" * 64}
+        path.write_text(json.dumps(raw))
+        sha = archive.digest(path)
+        (choices / "choices.sha256").write_text(sha + "\n")
+    monkeypatch.setattr(Predecoder, "sample", forbidden)
+    monkeypatch.setattr(Trainer, "train", forbidden)
+    circuit = ProbeFixture()
+    output = tmp_path / "probes"
+    with pytest.raises(ValueError):
+        probes.capture_probes(
+            tmp_path,
+            initial,
+            trained,
+            cal,
+            choices,
+            output,
+            expected_choices_sha256=sha,
+            circuit=circuit,
+        )
+    assert not output.exists() and circuit.compiled == []
+
+
+@pytest.mark.parametrize("damage", ["nonbinary", "choice_change", "protocol_change"])
+def test_partial_probe_never_writes_success_or_repeats_sampling(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    decisions: tuple[Path, Path, Path, Path, str],
+    damage: str,
+) -> None:
+    initial, trained, cal, choices, sha = decisions
+
+    class Damaged(ProbeFixture):
+        def sample(
+            self, shots: int, *, separate_observables: bool
+        ) -> tuple[torch.Tensor, torch.Tensor]:
+            bits, truth = super().sample(
+                shots, separate_observables=separate_observables
+            )
+            if damage == "nonbinary":
+                bits[0, 0] = 2
+            elif damage == "choice_change":
+                (choices / "choices.json").write_text("{}")
+            else:
+                digest = archive.digest
+                monkeypatch.setattr(
+                    archive,
+                    "digest",
+                    lambda path: (
+                        "a" * 64 if path == checkpoints.PROTOCOLS[1] else digest(path)
+                    ),
+                )
+            return bits, truth
+
+    circuit = Damaged()
+    output = tmp_path / "probes"
+    monkeypatch.setattr(Predecoder, "sample", forbidden)
+    with pytest.raises(ValueError):
+        probes.capture_probes(
+            tmp_path,
+            initial,
+            trained,
+            cal,
+            choices,
+            output,
+            expected_choices_sha256=sha,
+            circuit=circuit,
+        )
+    assert (output / "plan.json").exists() and not (output / "manifest.json").exists()
+    with pytest.raises(FileExistsError):
+        probes.capture_probes(
+            tmp_path,
+            initial,
+            trained,
+            cal,
+            choices,
+            output,
+            expected_choices_sha256=sha,
+            circuit=circuit,
+        )
+    assert circuit.calls == [64]
+
+
+@pytest.mark.parametrize("damage", ["seed", "purpose", "payload"])
+def test_peer_replay_rejects_changed_probe_binding(
+    tmp_path: Path, decisions: tuple[Path, Path, Path, Path, str], damage: str
+) -> None:
+    initial, trained, cal, choices, sha = decisions
+    output = tmp_path / "probes"
+    probes.capture_probes(
+        tmp_path,
+        initial,
+        trained,
+        cal,
+        choices,
+        output,
+        expected_choices_sha256=sha,
+        circuit=ProbeFixture(),
+    )
+    manifest = output / "manifest.json"
+    raw = json.loads(manifest.read_text())
+    if damage == "seed":
+        raw["seed"] = 17000011
+    if damage == "purpose":
+        raw["purpose"] = "continued_physical_probe"
+    if damage == "payload":
+        (output / "physical.pt").write_bytes(b"changed")
+    manifest.write_text(json.dumps(raw))
+    with pytest.raises(ValueError):
+        probes.load_probes(
+            output,
+            expected_manifest_sha256=archive.digest(manifest),
+            choices_sha256=sha,
+            circuit_sha256=raw["circuit_sha256"],
+        )
+
+
+def test_registered_explicit_path_factory_and_wrong_mode_refusal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    decisions: tuple[Path, Path, Path, Path, str],
+) -> None:
+    # This factory fixture supplies synthetic step2000 identities only. It does
+    # not claim real training at that horizon or authenticate a device/pipeline.
+    initial, trained, cal, choices, sha = decisions
+    models, raw = validation.restore_choices(
+        tmp_path, initial, trained, cal, choices, expected_sha256=sha
+    )
+    for _, _, trainer in models:
+        trainer.step = 2000
+    for row in raw["paths"]:
+        row["step"] = 2000
+
+    class Pipeline(torch.nn.Module):
+        def forward(self, bits: torch.Tensor) -> torch.Tensor:
+            return torch.cat((torch.zeros(len(bits), 1, dtype=torch.int8), bits), dim=1)
+
+    pairs = probes.path_pairs(models, raw, Pipeline(), device=torch.device("cpu"))
+    assert tuple(pairs) == probes.PATHS
+    for name, (first, second) in pairs.items():
+        if name.startswith(("cnn-", "mlp-")):
+            bits = torch.tensor([[0, 0, 0, 0], [1, 0, 1, 0]], dtype=torch.int8)
+            assert all(
+                torch.equal(a, b)
+                for a, b in zip(first(bits), second(bits), strict=True)
+            )
+    raw["paths"][0]["mode"] = "unknown"
+    with pytest.raises(ValueError):
+        probes.path_pairs(models, raw, Pipeline(), device=torch.device("cpu"))
+    assert probes.PROBE_SEED == 23000011 and len(set(probes.PATHS)) == 15

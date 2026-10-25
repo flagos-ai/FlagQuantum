@@ -7,7 +7,7 @@ import functools
 import hashlib
 import json
 import re
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -26,6 +26,7 @@ from flagquantum.qec.decoders._ai.comparison import (
     on_device,
     require_parity,
 )
+from flagquantum.qec.decoders._ai.predecoder import Predecoder
 
 IMAGE = "sha256:9465e1fca0a8c22af1b2ee657c8a6ee7e9f9f8e74d873b0add84b274da58b9e2"
 PROBE_SEED = 17000011
@@ -72,6 +73,28 @@ def capture_probes(
         models=models,
         circuit_sha256=circuit_sha256,
     )
+    return _capture_probes(
+        circuit,
+        output,
+        choices_sha256=expected_choices_sha256,
+        circuit_sha256=circuit_sha256,
+        protocol_sha256=archive.digest(inputs.PROTOCOL),
+        seed=PROBE_SEED,
+        purpose="continued_physical_probe",
+    )
+
+
+def _capture_probes(
+    circuit: Any,
+    output: Path,
+    *,
+    choices_sha256: str,
+    circuit_sha256: str,
+    protocol_sha256: str,
+    seed: int,
+    purpose: str,
+    verify: Callable[[], None] | None = None,
+) -> ProbeManifest:
     if hashlib.sha256(str(circuit).encode()).hexdigest() != circuit_sha256:
         raise ValueError("probe circuit differs from the frozen input")
     widths = circuit.num_detectors, circuit.num_observables
@@ -81,13 +104,13 @@ def capture_probes(
     with (output / "plan.json").open("x") as stream:
         json.dump(
             {
-                "choices_sha256": expected_choices_sha256,
+                "choices_sha256": choices_sha256,
                 "circuit_sha256": circuit_sha256,
-                "seed": PROBE_SEED,
+                "seed": seed,
             },
             stream,
         )
-    sampler = circuit.compile_detector_sampler(seed=PROBE_SEED)
+    sampler = circuit.compile_detector_sampler(seed=seed)
     bits, truth = sampler.sample(64, separate_observables=True)
     bits = inputs._bits(torch.as_tensor(bits), shots=64, width=widths[0])
     truth = inputs._bits(torch.as_tensor(truth), shots=64, width=widths[1])
@@ -95,17 +118,19 @@ def capture_probes(
     with path.open("xb") as stream:
         torch.save({"detectors": bits, "truth": truth}, stream)
     result = ProbeManifest(
-        "continued_physical_probe",
-        archive.digest(inputs.PROTOCOL),
-        expected_choices_sha256,
+        purpose,
+        protocol_sha256,
+        choices_sha256,
         circuit_sha256,
-        PROBE_SEED,
+        seed,
         64,
         *widths,
         archive.digest(path),
         inputs._bit_hash(bits),
         inputs._bit_hash(truth),
     )
+    if verify is not None:
+        verify()
     with (output / "manifest.json").open("x") as stream:
         stream.write(json.dumps(asdict(result), indent=2) + "\n")
     return result
@@ -118,15 +143,36 @@ def load_probes(
     choices_sha256: str,
     circuit_sha256: str,
 ) -> torch.Tensor:
+    return _load_probes(
+        directory,
+        expected_manifest_sha256=expected_manifest_sha256,
+        choices_sha256=choices_sha256,
+        circuit_sha256=circuit_sha256,
+        protocol_sha256=archive.digest(inputs.PROTOCOL),
+        seed=PROBE_SEED,
+        purpose="continued_physical_probe",
+    )
+
+
+def _load_probes(
+    directory: Path,
+    *,
+    expected_manifest_sha256: str,
+    choices_sha256: str,
+    circuit_sha256: str,
+    protocol_sha256: str,
+    seed: int,
+    purpose: str,
+) -> torch.Tensor:
     if archive.digest(directory / "manifest.json") != expected_manifest_sha256:
         raise ValueError("probe manifest hash mismatch")
     raw = json.loads((directory / "manifest.json").read_text())
     if (
-        raw["purpose"] != "continued_physical_probe"
-        or raw["protocol_sha256"] != archive.digest(inputs.PROTOCOL)
+        raw["purpose"] != purpose
+        or raw["protocol_sha256"] != protocol_sha256
         or raw["choices_sha256"] != choices_sha256
         or raw["circuit_sha256"] != circuit_sha256
-        or raw["seed"] != PROBE_SEED
+        or raw["seed"] != seed
         or raw["physical_shots"] != 64
         or archive.digest(directory / "physical.pt") != raw["file_sha256"]
     ):
@@ -184,7 +230,18 @@ def check_paths(
     Only physical rows require matching. Arbitrary one-hot syndromes may be
     unmatchable and are tested for full residual/frame equality alone.
     """
-    if tuple(pairs) != PATHS or physical.ndim != 2 or physical.shape[0] != 64:
+    return _check_paths(pairs, physical, global_decode, expected_paths=PATHS)
+
+
+@torch.inference_mode()
+def _check_paths(
+    pairs: Mapping[str, tuple[Correction, Correction]],
+    physical: torch.Tensor,
+    global_decode: GlobalDecode,
+    *,
+    expected_paths: tuple[str, ...],
+) -> list[PathEvidence]:
+    if tuple(pairs) != expected_paths or physical.ndim != 2 or physical.shape[0] != 64:
         raise ValueError("requires all fifteen ordered paths and 64 physical probes")
     inputs._bits(physical, shots=64, width=physical.shape[1])
     result = []
@@ -226,6 +283,27 @@ def path_pairs(
     ]
     if [(p["seed"], p["step"], p["mode"]) for p in paths] != expected:
         raise ValueError("requires all twelve frozen native paths")
+    native = [
+        (
+            f"native-{model.seed}-step-{model.step}-{mode}",
+            model.model,
+            path["selection"]["threshold"],
+            path["temperature"],
+        )
+        for index, model in enumerate(models)
+        for mode, path in zip(
+            ("raw", "calibrated"), paths[2 * index : 2 * index + 2], strict=True
+        )
+    ]
+    return _path_pairs(native, pipeline, device=device)
+
+
+def _path_pairs(
+    native: list[tuple[str, Predecoder, float, float]],
+    pipeline: nn.Module,
+    *,
+    device: torch.device,
+) -> dict[str, tuple[Correction, Correction]]:
     config = comparison.Config(False, distance=9, rounds=9, a800=True)
     upstream = copy.deepcopy(pipeline).to(device).eval()
     global_only = comparison.correction("pymatching", None, pipeline)
@@ -243,19 +321,25 @@ def path_pairs(
         ),
         "mask-only": (mask, on_device(mask, device)),
     }
-    for index, model in enumerate(models):
-        accelerated = copy.deepcopy(model.model).to(device).eval()
-        for mode, path in zip(
-            ("raw", "calibrated"), paths[2 * index : 2 * index + 2], strict=True
-        ):
-            args = {
-                "threshold": path["selection"]["threshold"],
-                "temperature": path["temperature"],
-            }
-            pairs[f"native-{model.seed}-step-{model.step}-{mode}"] = (
-                functools.partial(model.model.correct, **args),
-                on_device(functools.partial(accelerated.correct, **args), device),
-            )
+    accelerated: dict[int, Predecoder] = {}
+    for name, model, threshold, temperature in native:
+        if name in pairs:
+            raise ValueError("duplicate correction path identity")
+        if id(model) not in accelerated:
+            accelerated[id(model)] = copy.deepcopy(model).to(device).eval()
+        pairs[name] = (
+            functools.partial(
+                model.correct, threshold=threshold, temperature=temperature
+            ),
+            on_device(
+                functools.partial(
+                    accelerated[id(model)].correct,
+                    threshold=threshold,
+                    temperature=temperature,
+                ),
+                device,
+            ),
+        )
     return pairs
 
 
