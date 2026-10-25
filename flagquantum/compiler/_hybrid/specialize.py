@@ -483,8 +483,8 @@ def specialize_program(
             "branchwise smooth gradients are undefined",
         )
     return SpecializedTrace(
-        program_identity=program.semantic_identity,
-        optimized_program_identity=optimized_program.semantic_identity,
+        program_identity=optimization.source_identity,
+        optimized_program_identity=optimization.optimized_identity,
         optimization_records=optimization.records,
         input_signature_identity=input_identity,
         gates=tuple(specializer.gates),
