@@ -67,8 +67,11 @@ def matrix() -> list[Attempt]:
 
 
 def digest(path: Path) -> str:
+    checksum = hashlib.sha256()
     with path.open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            checksum.update(chunk)
+    return checksum.hexdigest()
 
 
 def read_json(path: Path) -> dict[str, Any]:
