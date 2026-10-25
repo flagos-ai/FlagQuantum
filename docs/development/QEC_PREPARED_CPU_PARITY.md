@@ -54,10 +54,65 @@ indices; no shared mutable state is added there.
    retain and compare real baseline failures. Deliver only after exact-head
    complete CI/GPU, review and branch rules pass, then verify actual merge/main.
 
-At candidate-review time, the original no-rebuild regression failed at the
-baseline's `torch.tensor` index construction. Candidate parity/lifecycle/bridge
-checks passed. Production timing, complete local verification and PR delivery
-remain pending; no speedup or completed delivery is claimed here.
+The unmodified baseline failed the no-rebuild regression at its per-draw
+`torch.tensor` construction. The candidate passed 156 related real-SDK checks
+(including seven new checks), the final eight-test cost/lifecycle group and a
+22-test core-only profile with Stim/PyMatching actually absent. Strict typing
+of the modified production module and format, architecture, read-only API,
+dependency, retirement, vocabulary, language and documentation checks passed.
+
+The required local default run completed with 11,681 passed, 91 skipped, four
+native-fusion expectation failures and four sandbox Gloo setup errors in
+183.26 seconds. An exact unmodified-main archive, with the imported package path
+asserted, reproduced the same four failures and six setup errors in the full
+focused Gloo module. Raw logs are retained; local default is not called green.
+Complete final-head CI/GPU and normal PR delivery are still required. Whole-package strict mypy
+reported four errors in three unrelated Simulation/JAX files; the identical
+errors were reproduced on the exact unmodified main archive with the same SDK
+and stub environment. Whole-package typing is not claimed green.
+
+## Bounded local comparison
+
+[Complete protocol, observer source, raw observations and hashes](evidence/qec_prepared_cpu_parity_20261025.json)
+pin the actual main and frozen implementation commit. The producer's sampling
+source and tests remain unchanged in the later documentation/evidence commit.
+A single local macOS arm64 CPU host used Python 3.12.14, Torch 2.13, Stim 1.16
+and PyMatching 2.4. Workload: d9 X memory, three rounds, 65,537 shots, batches
+128/4,096, seed 53, noise .005/.007/.009 and one numerical-library thread.
+
+Each batch ran six fresh processes in baseline/candidate, candidate/baseline,
+baseline/candidate order. Every process retained one warmup and three measured
+repetitions. The predeclared limits were 30 seconds per process and 360 seconds
+for the complete study, with no concurrent local tests. All 12 processes
+completed in 83.925118667 seconds. No retries, extra samples or seed changes
+were used. Warmups are retained but excluded from medians; repeated same-seed
+rows are not independent statistical trials.
+
+| Batch | Baseline pipeline median (s) | Candidate pipeline median (s) | Baseline loop median (s) | Candidate loop median (s) |
+| --- | --- | --- | --- | --- |
+| 128 | 1.282442625 | 1.258787167 | .270640290 | .243457467 |
+| 4,096 | 1.219854334 | 1.212773000 | .191597997 | .189111372 |
+
+There are nine measured rows per implementation per batch. Pipeline ratios are
+1.0188 and 1.0058, small descriptive differences of about 1.8% and 0.6% less
+wall time; they do not establish statistical significance or general throughput
+benefit. Loop ratios are 1.1117 and 1.0131. Pipeline includes memory construction,
+export, strict DEM, decoder setup, sampler compilation, sampling/decoding/count
+reduction and close. Imports, metadata and independent full-shot diagnostics
+are excluded equally. The change is justified by eliminating verified repeated
+allocation while preserving semantics, not by a claimed general speed threshold.
+
+All six processes for each batch have identical source/strict-DEM/detector/
+observable/prediction SHA256 and detector/logical counts. Diagnostics process
+all 65,537 shots, including the one-shot tail. Batch128 has 512,157 detector
+events and two logical mismatches; batch4096 has 513,809 events and zero
+mismatches. Cross-batch bit identity is not a seed contract, and these counts
+are not threshold or suppression evidence. RSS is the entire process high-water
+mark including imports, warmup and diagnostics: roughly 267–269 MB at batch128
+and 284–286 MB at batch4096, with overlapping baseline/candidate ranges.
+It is neither a phase-specific peak nor a capacity certificate. Public resource
+identifiers are anonymous; original raw-file SHA256s and all numerical rows are
+preserved. Earlier CPU/GPU study data and its incomplete grid remain untouched.
 
 ## Existing user workflow
 
