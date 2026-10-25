@@ -99,3 +99,13 @@ python -m pytest tests/unit/test_ising_braid_source.py \
 Append order is braid order, never a timestamp. Keep typed source verification
 in the existing physical-profile boundary and exact serialization in its codec;
 do not introduce circuit lowering, a Hamiltonian logarithm or another executor.
+
+## Rydberg presence source
+
+`RydbergProgram.measure_presence(atom, *, at, efficiency)` records one named-atom
+observation in the existing physical IR. It uses source 1.4 only when present.
+Snapshot validation requires the time strictly inside the original control
+horizon. Core owns scalar, roster and source validation; output-grid placement,
+private sampling and conditional numerical execution belong to later domains.
+The existing unconditional Lindblad assembler refuses this source before grid
+assembly. Ordinary pulse/transport sources retain source 1.0 bytes.

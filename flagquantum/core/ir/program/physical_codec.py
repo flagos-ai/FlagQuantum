@@ -19,10 +19,12 @@ from .physical import (
     IsingContext,
     IsingExchange,
     RydbergContext,
+    RydbergPresence,
     RydbergPulse,
     RydbergTransport,
     check_ising_exchange,
     control_scalar,
+    identifier,
 )
 from .verifier import verify_program_record
 
@@ -84,8 +86,15 @@ def _context_payload(context: RydbergContext | IsingContext) -> dict[str, Any]:
 
 
 def _control_payload(
-    data: RydbergTransport | RydbergPulse | IsingExchange,
+    data: RydbergTransport | RydbergPulse | RydbergPresence | IsingExchange,
 ) -> dict[str, Any]:
+    if isinstance(data, RydbergPresence):
+        return {
+            "kind": "presence",
+            "atom": data.atom,
+            "at": finite_real(data.at, "at"),
+            "efficiency": finite_real(data.efficiency, "efficiency"),
+        }
     if isinstance(data, IsingExchange):
         return {"kind": "exchange", "left": data.left, "clockwise": data.clockwise}
     payload = {
@@ -120,6 +129,8 @@ def native_program_to_dict(record: ProgramRecord) -> dict[str, Any]:
                 else:
                     assert operation.physical_data is not None
                     physical_data = _control_payload(operation.physical_data)
+                    if isinstance(operation.physical_data, RydbergPresence):
+                        version = "1.4"
                 operations.append(
                     {
                         "opcode": operation.opcode,
@@ -203,10 +214,17 @@ def _context_from_dict(value: object) -> RydbergContext | IsingContext:
 
 def _control_from_dict(
     value: object,
-) -> RydbergTransport | RydbergPulse | IsingExchange:
+) -> RydbergTransport | RydbergPulse | RydbergPresence | IsingExchange:
     if not isinstance(value, Mapping):
         raise SerializationError("physical_data must be an object")
     kind = value.get("kind")
+    if kind == "presence":
+        payload = _keys(value, {"kind", "atom", "at", "efficiency"}, "physical_data")
+        return RydbergPresence(
+            identifier(payload["atom"], "atom"),
+            finite_real(payload["at"], "at"),
+            finite_real(payload["efficiency"], "efficiency"),
+        )
     if kind == "exchange":
         payload = _keys(value, {"kind", "left", "clockwise"}, "physical_data")
         data = IsingExchange(payload["left"], payload["clockwise"])
@@ -294,7 +312,9 @@ def _block_from_dict(value: object) -> BlockRecord:
             raise SerializationError(
                 "physical operations cannot carry circuit/SSA data"
             )
-        physical_data: RydbergTransport | RydbergPulse | IsingExchange | None
+        physical_data: (
+            RydbergTransport | RydbergPulse | RydbergPresence | IsingExchange | None
+        )
         if operation["opcode"] in ("ising.dephase_pair", "ising.measure_pair"):
             if operation["physical_data"] is not None:
                 raise SerializationError(
@@ -325,6 +345,7 @@ def native_program_from_dict(value: Mapping[str, Any]) -> ProgramRecord:
             "1.1",
             "1.2",
             "1.3",
+            "1.4",
         ):
             raise SerializationError("unsupported native Program IR schema/version")
         context = _context_from_dict(payload["physical_context"])

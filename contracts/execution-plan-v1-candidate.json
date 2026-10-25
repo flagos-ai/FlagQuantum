@@ -167,7 +167,7 @@
     "proposal": "docs/development/API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md",
     "record": "docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md",
     "implementation_authorized": true,
-    "delivery_stage": "contract_baseline",
+    "delivery_stage": "core_source",
     "production_implemented": false,
     "operation": "rydberg.measure_presence",
     "source_version": "1.4",
