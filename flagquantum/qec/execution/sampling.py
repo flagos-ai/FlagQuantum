@@ -58,6 +58,7 @@ from flagquantum.qec.dem.construction import (
 from flagquantum.qec.execution.signatures import _MechanismKind
 
 from ...core.ir import CircuitIR, Instruction
+from ...core.runtime_config import get_runtime_config
 from ...noise import (
     KrausChannel,
     NoiseModel,
@@ -577,16 +578,33 @@ def _noisy_program(
         by_index.setdefault(location.instruction_index, []).append(
             (location.channel, location.wire, float(location.probability))
         )
+    templates: dict[
+        tuple[Callable[[float], KrausChannel], float, str, torch.dtype, torch.device],
+        tuple[torch.Tensor, ...],
+    ] = {}
     instructions: list[Instruction] = []
     for index, instruction in enumerate(plan.program.instructions):
         for channel, wire, probability in by_index.get(index, ()):
             factory = _DATA_FAULT_CHANNELS[channel]
+            key = (
+                factory,
+                probability,
+                get_runtime_config().complex_dtype,
+                torch.get_default_dtype(),
+                torch.get_default_device(),
+            )
+            operators = templates.get(key)
+            if operators is None:
+                operators = factory(probability).kraus
+                templates[key] = operators
             instructions.append(
                 Instruction(
                     name=channel,
                     wires=(wire,),
                     params={"probability": float(probability)},
-                    matrix=factory(probability).kraus,
+                    # Instructions retain mutable tensors: each location must own
+                    # its operators even when their factory calculation repeats.
+                    matrix=tuple(operator.clone() for operator in operators),
                     metadata={"is_channel": True},
                 )
             )
