@@ -8,15 +8,15 @@ applicable CI/GPU. Each later PR requires separate merge authorization.
 ## Replaceable baseline
 
 The [existing execution-plan candidate](../../contracts/execution-plan-v1-candidate.json)
-records the approved extension as `core_source`, with
-`production_implemented=false`. No production source 1.3, environment 1.1,
+now records the approved extension as `implemented`, with
+`production_implemented=true` after the Runtime delivery below. The baseline
+itself did not activate production execution. No production source 1.3, environment 1.1,
 new IR, result class or execution path was activated by the baseline.
 The exact candidate guard continues to reject unapproved changes.
 
 Four factories in the
 [consumer tests](../../tests/unit/test_ising_sampled_contract.py) own source,
-planning, execution and JSON reading. Their disposable
-[reference](../../tests/unit/ising_sampled_reference.py) composes existing
+planning, execution and JSON reading. Their disposable reference, removed by the Runtime delivery, composed existing
 Core exchange validation, native option/output admission, tensor encoding,
 canonical hashing, Simulation exchange/Kraus actions, terminal sampling and
 ExecutionResult/MeasurementResult. It uses a `test.ising_sampled_recipe`, never
@@ -144,3 +144,28 @@ This is an internal numerical delivery. The runnable current user workflow above
 still prints `0.5` and `True`; `fq.plan`/`fq.run` still reject source 1.3.
 Runtime admission, private sampling, plan/environment versions, measurement
 records and real JSON replay remain the next separately delivered domain.
+
+## Runtime delivery
+
+Simulation #827 is merged. The existing native executor now admits one sampled
+trajectory using source/plan 1.3, explicit shots=1 and seed, and the reviewed
+1.1 environment mapping with the exact RNG Torch version. Existing probability
+checks retain original weights alongside corrected draw probabilities; the
+existing private CPU draw selects an index, and Simulation performs the
+conditional normalization and suffix. Runtime appends the existing intermediate
+measurement after requested output records and computes current pair IDs from
+the captured exchange order. No public signatures or result fields change.
+
+The four shared baseline factories now use actual Core construction,
+`fq.plan`, `fq.run` and `ExecutionPlan.from_json`; the obsolete reference is
+deleted. Independent consumer/oracle assertions are unchanged. Staged tests
+that asserted root execution was still closed are replaced by real strict
+version, explicit option, rehashed environment and failure-before-draw tests.
+The candidate's implementation flag and exact checker are activated only for
+the already approved 091 extension; their negative mutation tests remain.
+
+The user example in the Runtime README now executes through the real plan and
+JSON reader. Its output is `1.3`, `True`, `True`. Old braid, unread, circuit,
+Rydberg and Lindblad source/plan bytes retain their original authorities.
+No sampled feedback, multi-shot native batching, new IR, result class,
+registry, controller, solver or physical hardware support is added.

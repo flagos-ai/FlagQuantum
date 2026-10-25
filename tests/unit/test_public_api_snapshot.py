@@ -131,7 +131,7 @@ def test_unread_contract_authorization_does_not_accept_unreviewed_changes(
     "field,value",
     [
         ("operation", "ising.unapproved_sample"),
-        ("production_implemented", True),
+        ("production_implemented", False),
         ("environment_protocol_version", "1.0"),
         ("new_operation_source_and_plan_version", "1.2"),
         ("unapproved_field", "anything"),

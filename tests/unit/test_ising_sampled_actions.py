@@ -174,7 +174,7 @@ def test_original_positive_trace_normalizes_selected_branch(
     )
 
 
-def test_full_kernel_and_root_admission_remain_closed(
+def test_full_kernel_requires_selection_and_planning_does_no_arithmetic(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def unexpected(*args: Any, **kwargs: Any) -> torch.Tensor:
@@ -186,8 +186,10 @@ def test_full_kernel_and_root_admission_remain_closed(
     )
     with pytest.raises(CapabilityError, match="selected"):
         evolve_ising_braid(source.to_ir())
-    with pytest.raises(CapabilityError):
-        fq.plan(source, options=fq.ExecutionOptions(shots=1, seed=17))
+    assert (
+        fq.plan(source, options=fq.ExecutionOptions(shots=1, seed=17)).schema_version
+        == "1.3"
+    )
 
 
 @pytest.mark.parametrize("unread", [False, True])

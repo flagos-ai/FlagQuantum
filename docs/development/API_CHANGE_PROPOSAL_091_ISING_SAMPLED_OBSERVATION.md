@@ -61,7 +61,7 @@ Concurrent [post-routing dynamic work](API_CHANGE_PROPOSAL_089_DYNAMIC_POST_ROUT
 and [Quafu integration](API_CHANGE_PROPOSAL_090_QUAFU_DYNAMIC_VERTICAL_SLICE.md)
 retain their separate scope. This proposal makes no provider capability claim.
 
-## Proposed user workflow (unavailable before implementation)
+## Sampled user workflow
 
 ```python
 import torch
@@ -83,13 +83,14 @@ print(abs(float(result.expectation("psi")[0]) - index) < 1e-12)
 print(torch.equal(result.state, fq.run(plan).state))
 ```
 
-Proposed output: `1.3`, `True`, `True`, `True`. No particular random label is
+Executed output after the staged Runtime delivery: `1.3`, `True`, `True`, `True`. No particular random label is
 promised across PyTorch builds. Within the reviewed environment, repeating the
 sealed seeded plan must return identical indices, conditional state and outputs.
 The first exchange gives both labels nonzero probability; the final outer
 exchange preserves their populations, so the conditional P(psi) equals the
-selected index. Core source construction is delivered separately; this complete
-execution workflow remains unavailable until Runtime admission is implemented.
+selected index. Core, Simulation and Runtime deliveries are recorded separately in the
+[approved delivery record](../api-changes/FQ-ISING-SAMPLED-OBSERVATION-20261024.md).
+The sampled execution workflow is now connected through those existing domains.
 
 ## Exact source and physics semantics
 

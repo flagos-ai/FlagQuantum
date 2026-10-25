@@ -278,7 +278,7 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
 
     validate_plan_environment(execution_plan)
     payload = execution_plan.to_dict()
-    native_profile = payload["version"] in ("1.1", "1.2")
+    native_profile = payload["version"] in ("1.1", "1.2", "1.3")
     if native_profile != (execution_plan.analysis is None):
         raise ExecutionPlanContractError(
             "identity_mismatch", "plan analysis contradicts its sealed program profile"
