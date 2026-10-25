@@ -662,7 +662,7 @@ This closes only the specifically admitted finite observation collection. FTS-10
 method selection, FTS-02/09 and R01-R15 remain partial; no performance target,
 capacity, API, approximation, hardware or further recovery admission follows.
 
-### FTS-10B / FTS-11A finite coherent-reference conformance under review
+### FTS-10B / FTS-11A finite coherent-reference conformance delivered
 
 Pilot-evidence main7720 passed complete CI/GPU, real installation evidence,
 fresh core/public examples and exact data/inventory checks. The
@@ -671,9 +671,25 @@ received specific human approval on 2026-10-25 for n=2/3, t=0/1/2/4 private
 reference conformance, two analytic anchors, phase/mixture/cancellation negatives
 and complex128 atol=1e-12/rtol=0. Proposal main0e7a then completed all admission
 gates, including 54 CI jobs, required GPUs, fresh installation and installed user
-examples. The independent test-only implementation is under review: 50 private
+examples. The independent test-only implementation is delivered: 50 private
 scalar branch vectors and ten existing public unexpanded CPU calls per module
 verification, with prior thread settings restored. No production phase contract,
 public API, new engine, benchmark collection or performance target follows.
 This contributes to R04 reference correctness; FTS-10 selection and
 FTS-02/09/R01-R15 system acceptance remain partial.
+
+Conformance main1f3916 passed all 54 CI jobs, required GPUs, real QEC installation
+checks, fresh 834-member core installation and installed runnable user examples.
+Its focused source check passed 68 tests without skips, including 23 new finite
+reference checks and original retirement contracts. No pilot campaign was rerun.
+
+### FTS-11B dynamic coherent-reference proposal
+
+The [three-case finite proposal](../development/FTQC_DYNAMIC_COHERENT_REFERENCE_PROPOSAL.md)
+requests separate review of private Born weights, conditional normalization,
+record-preserving reset and coherent measurement continuation. It proposes 20
+private four-amplitude projected vectors and three existing public density calls
+per module verification, with complex128 atol=1e-12/rtol=0 requiring specific
+approval. It does not qualify trajectory sampling, create a branch API/engine,
+or activate a collection budget. No proposed reference is implemented yet.
+R04/R05, FTS-10/11 and the system-level milestones remain partial.

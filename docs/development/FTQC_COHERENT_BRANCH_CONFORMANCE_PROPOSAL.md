@@ -2,7 +2,7 @@
 
 Status: the human explicitly approved the finite A-D reference contract and
 complex128 atol=1e-12/rtol=0 on 2026-10-25. The private conformance implementation
-is now submitted for review. No new engine, public API, benchmark campaign or
+has merged and completed actual-main admission. No new engine, public API, benchmark campaign or
 performance target is activated. Approval came from the specific human answer,
 not document merge or green CI.
 
@@ -181,7 +181,7 @@ phase contract is needed, form and approve it separately.
    target-scale candidate comparison, dynamic Born/conditional semantics and
    final FTS-10 selection as separate unmet decisions.
 
-### Approved private conformance submitted for review
+### Approved private conformance delivered
 
 [The private integration test](../../tests/integration/test_ftqc_coherent_reference.py)
 computes exactly 46 matrix branch vectors and four anchor vectors once per test
@@ -201,7 +201,7 @@ Invalid shapes, nonfinite entries, precision and norm loss are refused rather
 than repaired by normalization. Private matrix inputs outside A are rejected
 before branch allocation.
 
-This is a finite test-reference qualification under review, not a production
+This is a delivered finite test-reference qualification, not a production
 decomposition implementation or selection result. Both prior raw campaigns and
 their collectors remain immutable; no candidate benchmark or probe is launched.
 
@@ -217,10 +217,29 @@ master-plan examples, HTH and CLI passed. The installed three-route public examp
 below and observer CLI passed outside the checkout without PYTHONPATH or an SDK
 overlay. These engineering checks were not new retained study observations.
 
-The first CI attempt failed in 13 action-download initialization steps, with five
+The first proposal CI attempt failed in 13 action-download initialization steps, with five
 downstream aggregates failing. Raw logs and diagnosis remain retained. The one
 controlled same-SHA recovery completed the missing checks without changing code,
 workflows, thresholds or skips; it does not establish an environment repair.
+
+Conformance main `1f3916e789d2400fae678a3b7c6f30cab6404aad` subsequently passed
+CI 40210265884 (all 54 jobs), GPU 40210268365 (source, single and required two
+GPUs), and smoke 40210233977. Package job 121219845507 passed real QEC optional
+installations and retained evidence. Isolated sdist/wheel checks matched all
+834 package Python members; fresh Python 3.12.14/Torch 2.14.1 core, dependencies,
+native Bell, master examples, HTH and CLI passed. The installed three-route user
+example and observer CLI passed outside the checkout without PYTHONPATH or SDK
+overlay. No retained research observations were collected.
+
+Actual-main focused verification passed 68 tests without skips: 23 finite
+coherent checks, 37 original retirement contracts and eight independent prepared
+CPU parity tests. That source check used developer Torch 2.13 with the explicitly
+existing SDK overlay, not a new optional installation profile. Independent #872
+parity changes in the merge base are not this conformance slice's contribution.
+All three own paths matched the reviewed head. The
+[dynamic coherent-reference proposal](FTQC_DYNAMIC_COHERENT_REFERENCE_PROPOSAL.md)
+is a separate unapproved follow-on; static qualification does not approve its
+Born or conditional-state semantics.
 
 ## Runnable current user example
 
