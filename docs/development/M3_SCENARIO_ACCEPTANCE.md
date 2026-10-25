@@ -240,7 +240,10 @@ The fixed-sector Ising sampled continuation is now delivered; it does not close
 the moving neutral-atom scenario's intermediate detector requirement. The next
 contract review should connect one declared observation boundary on an existing
 native Rydberg schedule to the existing presence instrument and subsequent
-evolution. This is a review target, not an approved API or implementation.
+evolution. This is a review target, not an approved API or implementation. The concrete
+[proposal 092](API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md) now
+proposes one seeded trajectory through the existing dynamics plan and root
+result authority; it remains unapproved and unimplemented.
 
 First inspect the current native ProgramRecord, interval binding, Liouvillian,
 integrators, terminal presence instrument and canonical result authorities.
