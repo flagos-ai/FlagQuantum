@@ -16,8 +16,8 @@ from flagquantum.qec.noise import PhenomenologicalNoise
 class SpacetimePredecoder(Predecoder):
     """Encode syndrome sites and masks; pool local features onto DEM mechanisms.
 
-    The memory constructor assumes row-major square-grid data wires. The
-    separate DEM constructor requires a caller-verified detector layout.
+    Data qubit j*side+i denotes grid coordinate (i,j). This is an explicit
+    geometry assumption, not a claim that arbitrary codes have a square layout.
     Offline convolutions use both past and future; this is not streaming decode.
     """
 
