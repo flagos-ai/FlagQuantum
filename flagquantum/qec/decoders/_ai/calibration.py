@@ -61,6 +61,20 @@ class ThresholdSelection:
     trials: tuple[ThresholdTrial, ...]
 
 
+def _select_threshold_trials(trials: tuple[ThresholdTrial, ...]) -> ThresholdSelection:
+    """Share the conservative tie rule with saved physical-validation trials."""
+    thresholds = tuple(trial.threshold for trial in trials)
+    if not thresholds or len(set(thresholds)) != len(thresholds):
+        raise ValueError("threshold grid must be nonempty and unique")
+    for value in thresholds:
+        if isinstance(value, bool) or not math.isfinite(value) or not 0 < value <= 1:
+            raise ValueError("thresholds must be finite and in (0, 1]")
+    selected = min(
+        trials, key=lambda trial: (trial.counts.hybrid_failures, -trial.threshold)
+    )
+    return ThresholdSelection(selected.threshold, trials)
+
+
 def select_threshold(
     model: Predecoder,
     backend: DetectorErrorModelDecoder,
@@ -89,7 +103,4 @@ def select_threshold(
         )
         for threshold in thresholds
     )
-    selected = min(
-        trials, key=lambda trial: (trial.counts.hybrid_failures, -trial.threshold)
-    )
-    return ThresholdSelection(selected.threshold, trials)
+    return _select_threshold_trials(trials)

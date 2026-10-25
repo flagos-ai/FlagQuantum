@@ -38,6 +38,7 @@ be retained, not retried as a newly selected completion.
 | `spacetime.py` | Square-grid detector layout, masks and local 3D CNN; reuses the same sampling and hybrid decode implementation. |
 | `training.py` | CPU Adam training and exact optimizer, batch-generator and step recovery. |
 | `assessment.py` | Held-out evaluation, paired logical counts, confidence intervals and CPU whole-block timing. |
+| `exact_statistics.py` | Separately named, outward-bracketed exact-binomial intervals and conservative paired-count ratio summaries; old assessment defaults stay unchanged. |
 | `diagnostics.py` | Label sparsity, positive/negative BCE, complete H/L correction equivalence and streaming exact MLP feature/label groups. |
 | `calibration.py` | Calibration-only temperature fitting and separate validation threshold selection. |
 | `comparison.py` | Shared CPU global decoding boundary, explicit device transfers, exact correction-bit parity and whole-batch timing with caller-owned synchronization. |
@@ -135,3 +136,59 @@ unchanged. Existing MLP and CNN training checkpoints remain loadable. Historical
 assessment JSON and hashes continue to describe their original source revision;
 new runs fingerprint all four current implementation modules. Do not rewrite
 old evidence or present the reorganization as a new experiment.
+
+
+For the prospectively registered continued-checkpoint study, `exact_statistics.py`
+uses standard-library Decimal directed rounding and positive binomial recurrences.
+Its certified scope is 1 to 4194304 shots and marginal alpha in [1e-12, 1).
+Callers allocate family error explicitly; `summarize_exact` splits comparison alpha
+across its two marginal intervals. It preserves `PairedCounts` and the existing
+exact paired p-value; zero reference lower bounds remain inconclusive. It does
+not change `assessment.rate_interval` or `assessment.summarize`. Tail summation
+cost grows with the smaller failure/success count; it is not a latency primitive.
+
+Run `python -m pytest tests/qec/test_exact_statistics.py -q` for independent
+rational-binomial tail/coverage tests and pinned SciPy1.17.1 beta-quantile numeric
+references (no SciPy runtime dependency). These are synthetic statistical
+fixtures, not measured logical-quality benefit. The physical study runner and
+new data collection remain separate prerequisites in
+[the frozen protocol](../../../../docs/development/QEC_AI_CONTINUED_PHYSICAL_ASSESSMENT.md).
+
+The optional `examples/qec/continued_selection.py` module has internal `calibrate` and `freeze_choices`
+stages. Calibration saves 128 batches of 32 labels and both horizons' logits per
+seed, then calls the existing temperature fitter. Physical validation replays
+saved circuit shards through the complete residual/global/logical-XOR path,
+retains every threshold trial and uses the same conservative tie rule as
+`select_threshold`. Choices bind checkpoint, protocol, calibration, validation
+and source hashes; subsequent stages must verify the externally frozen choices
+hash. Existing default calibration behavior and checkpoint contents are unchanged.
+Run `python -m pytest tests/qec/test_continued_assessment.py
+ tests/qec/test_predecoder_calibration.py -q` for synthetic software scenarios.
+The CLI remains verification-only. Actual two-host execution, complete orchestration and matching-environment
+preflight are pending;
+these stages do not authorize collecting the registered physical study yet.
+
+The optional `examples/qec/continued_parity.py` module captures one post-choice
+64-shot physical probe and replays the same file on both hosts. Its exact bit
+oracles cover all fifteen paths, all zero/one/one-hot detector rows, and final
+predictions on physical rows. The hardware receipt writer requires explicit CUDA
+and the pinned Fast reference. Two receipt hashes must bind the same choices,
+probes, source and per-path evidence on distinct recorded GPU UUIDs. This checks
+stored bindings, not independent authentication of the remote host: the authorized
+launcher and complete environment preflight remain required. Tests use synthetic
+CPU paths and fabricated parser documents, never A800 evidence. Run
+`python -m pytest tests/qec/test_continued_parity.py -q`. Complete formal orchestration and actual two-host execution remain pending; no new real
+research data are authorized by these primitives alone.
+
+`examples/qec/continued_primary.py` implements the separate primary stage. Its
+CUDA entry verifies frozen choices, both externally hashed receipts, the current
+172 GPU UUID and pinned reference before constructing the single primary sampler.
+It retains complete detector/truth/all-fifteen-prediction shards; replay checks
+the entire inventory and per-bit fingerprints. Offline reporting reuses the exact
+and legacy statistics and reports all 26 registered comparisons plus six
+descriptive horizon count tables. Quality requires the conjunction across the
+three fixed step-2000 calibrated seeds. Repeated models do not multiply the sample
+size. Test with `python -m pytest tests/qec/test_continued_primary.py -q`. Synthetic
+fixtures can pass their numerical rule without providing scientific evidence.
+The formal coordinator, matching-environment preflight and real two-host/primary
+execution are still pending; there is no new research collection CLI.
