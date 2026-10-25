@@ -359,6 +359,30 @@ class ParityReceipt:
     paths: list[PathEvidence]
 
 
+def _device_reference(
+    source: Path,
+    weights: Path,
+    *,
+    circuit_sha256: str,
+    dem_sha256: str,
+) -> tuple[dict[str, Any], comparison.Reference]:
+    hardware = comparison.cuda_metadata(IMAGE)
+    reference = comparison.reference(
+        source,
+        weights,
+        comparison.Config(False, distance=9, rounds=9, a800=True),
+    )
+    if (
+        hashlib.sha256(str(reference.circuit).encode()).hexdigest() != circuit_sha256
+        or hashlib.sha256(
+            comparison.training_dem(reference.circuit).to_stim_text().encode()
+        ).hexdigest()
+        != dem_sha256
+    ):
+        raise ValueError("pinned reference differs from the archived circuit/DEM")
+    return hardware, reference
+
+
 @torch.inference_mode()
 def record_device_receipt(
     models: list[inputs.VerifiedCheckpoint],
@@ -403,20 +427,12 @@ def record_device_receipt(
     )
     if output.exists():
         raise FileExistsError(output)
-    hardware = comparison.cuda_metadata(IMAGE)
-    reference = comparison.reference(
+    hardware, reference = _device_reference(
         ising_source,
         ising_weights,
-        comparison.Config(False, distance=9, rounds=9, a800=True),
+        circuit_sha256=circuit_sha,
+        dem_sha256=anchor["training_dem_sha256"],
     )
-    if (
-        hashlib.sha256(str(reference.circuit).encode()).hexdigest() != circuit_sha
-        or hashlib.sha256(
-            comparison.training_dem(reference.circuit).to_stim_text().encode()
-        ).hexdigest()
-        != anchor["training_dem_sha256"]
-    ):
-        raise ValueError("pinned reference differs from the archived circuit/DEM")
     pipeline_hash = archive.state_digest(reference.pipeline.state_dict())
     output.mkdir(parents=True, exist_ok=False)
     with (output / "plan.json").open("x") as stream:
@@ -486,6 +502,54 @@ def verify_two_hosts(
     expected_torch = json.loads((archive.ARCHIVE / "manifest.json").read_text())[
         "torch"
     ]
+    _verify_two_hosts(
+        receipts,
+        choices_sha256=choices_sha256,
+        probes_sha256=probes_sha256,
+        circuit_sha256=circuit_sha256,
+        width=bits.shape[1],
+        expected_torch=expected_torch,
+        purpose="continued_cuda_bit_parity",
+        protocol_sha256=archive.digest(inputs.PROTOCOL),
+        source_sha256=archive.digest(Path(__file__)),
+        paths=PATHS,
+    )
+
+
+def _hardware_uuid(hardware: dict[str, Any]) -> str:
+    if (
+        hardware["device"] != "cuda:0"
+        or "A800" not in hardware["name"]
+        or hardware["image_id"] != IMAGE
+        or hardware["tf32"] is not False
+        or hardware["autocast"] is not False
+        or hardware["deterministic_algorithms"] is not True
+    ):
+        raise ValueError("invalid isolated A800 hardware scope")
+    uuid = hardware["nvidia_smi_uuid_name_driver"].split(",")[0].strip()
+    if (
+        re.fullmatch(r"GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", uuid)
+        is None
+    ):
+        raise ValueError("invalid GPU UUID")
+    return str(uuid).lower()
+
+
+def _verify_two_hosts(
+    receipts: dict[str, tuple[Path, str]],
+    *,
+    choices_sha256: str,
+    probes_sha256: str,
+    circuit_sha256: str,
+    width: int,
+    expected_torch: str,
+    purpose: str,
+    protocol_sha256: str,
+    source_sha256: str,
+    paths: tuple[str, ...],
+) -> None:
+    if set(receipts) != {"a800-172", "a800-171"}:
+        raise ValueError("requires both registered hosts")
     rows = []
     for host in ("a800-172", "a800-171"):
         path, expected = receipts[host]
@@ -494,23 +558,17 @@ def verify_two_hosts(
         raw = json.loads(path.read_text())
         hardware = raw["hardware"]
         if (
-            raw["purpose"] != "continued_cuda_bit_parity"
+            raw["purpose"] != purpose
             or raw["host"] != host
-            or raw["protocol_sha256"] != archive.digest(inputs.PROTOCOL)
+            or raw["protocol_sha256"] != protocol_sha256
             or raw["choices_sha256"] != choices_sha256
             or raw["probes_sha256"] != probes_sha256
             or raw["circuit_sha256"] != circuit_sha256
             or raw["image"] != IMAGE
-            or raw["source_sha256"] != archive.digest(Path(__file__))
-            or hardware["device"] != "cuda:0"
-            or "A800" not in hardware["name"]
-            or hardware["image_id"] != IMAGE
-            or hardware["tf32"] is not False
-            or hardware["autocast"] is not False
-            or hardware["deterministic_algorithms"] is not True
-            or [r["name"] for r in raw["paths"]] != list(PATHS)
+            or raw["source_sha256"] != source_sha256
+            or [r["name"] for r in raw["paths"]] != list(paths)
             or any(
-                r["physical_rows"] != 64 or r["synthetic_rows"] != bits.shape[1] + 2
+                r["physical_rows"] != 64 or r["synthetic_rows"] != width + 2
                 for r in raw["paths"]
             )
         ):
@@ -521,13 +579,9 @@ def verify_two_hosts(
             for key in ("residual_frame_sha256", "physical_predictions_sha256")
         ):
             raise ValueError("invalid path evidence fingerprint")
-        uuid = hardware["nvidia_smi_uuid_name_driver"].split(",")[0].strip()
+        _hardware_uuid(hardware)
         if (
-            re.fullmatch(
-                r"GPU-[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", uuid
-            )
-            is None
-            or re.fullmatch(r"[0-9a-f]{64}", raw["pipeline_state_sha256"]) is None
+            re.fullmatch(r"[0-9a-f]{64}", raw["pipeline_state_sha256"]) is None
             or raw["torch_version"] != expected_torch
         ):
             raise ValueError("invalid device identity or producing environment")
@@ -536,7 +590,13 @@ def verify_two_hosts(
         rows[0]["paths"] != rows[1]["paths"]
         or rows[0]["pipeline_state_sha256"] != rows[1]["pipeline_state_sha256"]
         or rows[0]["torch_version"] != rows[1]["torch_version"]
-        or rows[0]["hardware"]["nvidia_smi_uuid_name_driver"].split(",")[0]
-        == rows[1]["hardware"]["nvidia_smi_uuid_name_driver"].split(",")[0]
+        or rows[0]["hardware"]["nvidia_smi_uuid_name_driver"]
+        .split(",")[0]
+        .strip()
+        .lower()
+        == rows[1]["hardware"]["nvidia_smi_uuid_name_driver"]
+        .split(",")[0]
+        .strip()
+        .lower()
     ):
         raise ValueError("two-host device evidence does not agree or repeats a device")

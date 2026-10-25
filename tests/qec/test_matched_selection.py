@@ -12,7 +12,9 @@ from typing import Any
 import pytest
 import torch
 
+from examples.qec import compare_ising as comparison
 from examples.qec import continued_assessment as old_shards
+from examples.qec import continued_parity as old_parity
 from examples.qec import diagnose_predecoder as archive
 from examples.qec import ising_layout
 from examples.qec import matched_checkpoints as checkpoints
@@ -54,6 +56,7 @@ def inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path,
             template,
             {
                 "layout_sha256": "a" * 64,
+                "dem_sha256": hashlib.sha256(template.dem_text.encode()).hexdigest(),
                 "circuit_sha256": hashlib.sha256(
                     b"matched synthetic circuit"
                 ).hexdigest(),
@@ -813,3 +816,328 @@ def test_registered_explicit_path_factory_and_wrong_mode_refusal(
     with pytest.raises(ValueError):
         probes.path_pairs(models, raw, Pipeline(), device=torch.device("cpu"))
     assert probes.PROBE_SEED == 23000011 and len(set(probes.PATHS)) == 15
+
+
+@pytest.fixture
+def receipt_fixture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    decisions: tuple[Path, Path, Path, Path, str],
+) -> dict[str, Any]:
+    # Every hardware/file boundary below is an explicit software fake. No CUDA
+    # execution, official weight load or actual host receipt occurs in this test.
+    initial, trained, cal, choices, sha = decisions
+    probe = tmp_path / "probe"
+    probes.capture_probes(
+        tmp_path,
+        initial,
+        trained,
+        cal,
+        choices,
+        probe,
+        expected_choices_sha256=sha,
+        circuit=ProbeFixture(),
+    )
+    pipeline = torch.nn.Linear(1, 1)
+    metadata = tmp_path / "metadata"
+    metadata.mkdir()
+    (metadata / "manifest.json").write_text(
+        json.dumps({"torch": str(torch.__version__)})
+    )
+    monkeypatch.setattr(archive, "ARCHIVE", metadata)
+    weight = tmp_path / "synthetic.safetensors"
+    weight.write_bytes(b"not official weights: software fixture only")
+    digest = archive.digest
+    monkeypatch.setattr(
+        archive,
+        "digest",
+        lambda p: comparison.FAST_SHA256 if p == weight else digest(p),
+    )
+    monkeypatch.setattr(torch.backends.cuda.matmul, "allow_tf32", False)
+    monkeypatch.setattr(torch.backends.cudnn, "allow_tf32", False)
+    monkeypatch.setattr(torch, "are_deterministic_algorithms_enabled", lambda: True)
+    calls: list[object] = []
+
+    def hardware(image: str) -> dict[str, object]:
+        calls.append(image)
+        return {
+            "device": "cuda:0",
+            "name": "A800 software fixture",
+            "image_id": image,
+            "tf32": False,
+            "autocast": False,
+            "deterministic_algorithms": True,
+            "nvidia_smi_uuid_name_driver": f"GPU-abcdef01-0000-0000-0000-{len(calls):012d},A800,fixture",
+        }
+
+    monkeypatch.setattr(comparison, "cuda_metadata", hardware)
+    monkeypatch.setattr(
+        comparison,
+        "reference",
+        lambda *a, **k: comparison.Reference(
+            ProbeFixture(), pipeline, {}, {"sha256": comparison.FAST_SHA256}
+        ),
+    )
+    models, raw = validation.restore_choices(
+        tmp_path, initial, trained, cal, choices, expected_sha256=sha
+    )
+    dem = DetectorErrorModel.from_stim_text(models[0][2].model.dem_text)
+    monkeypatch.setattr(comparison, "training_dem", lambda _: dem)
+    monkeypatch.setattr(comparison, "global_decoder", lambda _: global_fixture)
+
+    def identity(bits: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return bits, torch.zeros(len(bits), 1, dtype=torch.int8)
+
+    def pairs(*args: Any, device: torch.device) -> dict[str, tuple[Any, Any]]:
+        assert device == torch.device("cuda:0")
+        return dict.fromkeys(probes.PATHS, (identity, identity))
+
+    monkeypatch.setattr(probes, "path_pairs", pairs)
+    monkeypatch.setattr(ProbeFixture, "compile_detector_sampler", forbidden)
+    monkeypatch.setattr(Predecoder, "sample", forbidden)
+    monkeypatch.setattr(Trainer, "train", forbidden)
+
+    def record(host: str, output: Path) -> dict[str, Any]:
+        return probes.record_device_receipt(
+            tmp_path,
+            initial,
+            trained,
+            cal,
+            choices,
+            probe,
+            output,
+            host=host,
+            choices_sha256=sha,
+            probes_sha256=archive.digest(probe / "manifest.json"),
+            ising_weights=weight,
+        )
+
+    def verify(receipts: dict[str, tuple[Path, str]]) -> None:
+        probes.verify_two_hosts(
+            tmp_path,
+            initial,
+            trained,
+            cal,
+            choices,
+            probe,
+            receipts,
+            choices_sha256=sha,
+            probes_sha256=archive.digest(probe / "manifest.json"),
+        )
+
+    return dict(
+        record=record,
+        verify=verify,
+        pipeline=pipeline,
+        calls=calls,
+        initial=initial,
+        trained=trained,
+        cal=cal,
+        choices=choices,
+        choice_sha=sha,
+        probes=probe,
+        weights=weight,
+        metadata=metadata,
+    )
+
+
+def test_hardware_writer_and_two_host_guards_with_explicit_software_boundaries(
+    tmp_path: Path, receipt_fixture: dict[str, Any]
+) -> None:
+    fixture = receipt_fixture
+    receipts = {}
+    for host in ("a800-172", "a800-171"):
+        output = tmp_path / host
+        raw = fixture["record"](host, output)
+        assert raw["purpose"] == "matched_cuda_bit_parity"
+        assert [p["name"] for p in raw["paths"]] == list(probes.PATHS)
+        assert all(
+            p["physical_rows"] == 64 and p["synthetic_rows"] == 6 for p in raw["paths"]
+        )
+        receipts[host] = (
+            output / "receipt.json",
+            archive.digest(output / "receipt.json"),
+        )
+    fixture["verify"](receipts)
+    assert len(fixture["calls"]) == 2
+    with pytest.raises(FileExistsError):
+        fixture["record"]("a800-172", tmp_path / "a800-172")
+    assert len(fixture["calls"]) == 2
+
+
+@pytest.mark.parametrize("damage", ["choices", "probe", "weights", "torch", "host"])
+def test_receipt_inputs_refused_before_device_access(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    receipt_fixture: dict[str, Any],
+    damage: str,
+) -> None:
+    f = receipt_fixture
+    host = "a800-172"
+    if damage == "choices":
+        (f["choices"] / "choices.json").write_text("{}")
+    if damage == "probe":
+        (f["probes"] / "physical.pt").write_bytes(b"changed")
+    if damage == "weights":
+        digest = archive.digest
+        monkeypatch.setattr(
+            archive, "digest", lambda p: "b" * 64 if p == f["weights"] else digest(p)
+        )
+    if damage == "torch":
+        (f["metadata"] / "manifest.json").write_text(json.dumps({"torch": "wrong"}))
+    if damage == "host":
+        host = "unregistered"
+    with pytest.raises(ValueError):
+        f["record"](host, tmp_path / "receipt")
+    assert f["calls"] == [] and not (tmp_path / "receipt").exists()
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "cpu",
+        "uuid",
+        "tf32",
+        "pipeline",
+        "input",
+        "numerical",
+        "autocast",
+        "fp64",
+        "precision",
+        "native_state",
+        "extra",
+        "source",
+    ],
+)
+def test_receipt_failure_has_no_success_and_refuses_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    receipt_fixture: dict[str, Any],
+    damage: str,
+) -> None:
+    f = receipt_fixture
+    output = tmp_path / "receipt"
+    if damage == "fp64":
+        f["pipeline"].double()
+    if damage == "native_state":
+        factory = probes.path_pairs
+
+        def changed_pairs(
+            *args: Any, device: torch.device
+        ) -> dict[str, tuple[Any, Any]]:
+            args[0][0][2].generator.manual_seed(99)
+            return factory(*args, device=device)
+
+        monkeypatch.setattr(probes, "path_pairs", changed_pairs)
+    if damage in ("cpu", "uuid", "tf32"):
+        metadata = comparison.cuda_metadata
+
+        def changed(image: str) -> dict[str, Any]:
+            result = metadata(image)
+            if damage == "cpu":
+                result["device"] = "cpu"
+            if damage == "uuid":
+                result["nvidia_smi_uuid_name_driver"] = "invalid"
+            if damage == "tf32":
+                result["tf32"] = True
+            return result
+
+        monkeypatch.setattr(comparison, "cuda_metadata", changed)
+    else:
+        check = probes.check_paths
+
+        def failed(*args: Any, **kwargs: Any) -> list[old_parity.PathEvidence]:
+            evidence = check(*args, **kwargs)
+            if damage == "precision":
+                monkeypatch.setattr(torch.backends.cuda.matmul, "allow_tf32", True)
+            if damage == "extra":
+                (output / "extra.json").write_text("{}")
+            if damage == "source":
+                monkeypatch.setattr(probes, "_sources", lambda: {"changed": "a" * 64})
+            if damage == "pipeline":
+                next(f["pipeline"].parameters()).add_(1)
+            if damage == "input":
+                (f["cal"] / "manifest.json").write_text("{}")
+            if damage == "numerical":
+                raise ValueError("injected parity failure")
+            if damage == "autocast":
+                monkeypatch.setattr(torch, "is_autocast_enabled", lambda *a: True)
+            return evidence
+
+        monkeypatch.setattr(probes, "check_paths", failed)
+    with pytest.raises(ValueError):
+        f["record"]("a800-172", output)
+    assert not (output / "receipt.json").exists()
+    if output.exists():
+        before = len(f["calls"])
+        # Restore only the read-side autocast flag; a partial output still cannot retry.
+        monkeypatch.setattr(torch, "is_autocast_enabled", lambda *a: False)
+        with pytest.raises(FileExistsError):
+            f["record"]("a800-172", output)
+        assert len(f["calls"]) == before
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "missing",
+        "hash",
+        "paths",
+        "counts",
+        "torch",
+        "pipeline",
+        "protocols",
+        "source_files",
+        "weights",
+        "training",
+        "calibration",
+        "repeat_uuid",
+        "cpu",
+    ],
+)
+def test_two_host_receipt_parser_refuses_rehashed_inconsistent_fixtures(
+    tmp_path: Path, receipt_fixture: dict[str, Any], damage: str
+) -> None:
+    f = receipt_fixture
+    receipts = {}
+    for host in ("a800-172", "a800-171"):
+        output = tmp_path / host
+        f["record"](host, output)
+        path = output / "receipt.json"
+        receipts[host] = (path, archive.digest(path))
+    if damage == "missing":
+        del receipts["a800-171"]
+    elif damage == "hash":
+        receipts["a800-171"] = (receipts["a800-171"][0], "a" * 64)
+    else:
+        path = receipts["a800-171"][0]
+        raw = json.loads(path.read_text())
+        if damage == "paths":
+            raw["paths"].reverse()
+        if damage == "counts":
+            raw["paths"][0]["physical_rows"] = 63
+        if damage == "pipeline":
+            raw["pipeline_state_sha256"] = "a" * 64
+        if damage == "torch":
+            raw["torch_version"] = "wrong"
+        if damage == "protocols":
+            raw["protocols"] = {}
+        if damage == "source_files":
+            raw["source_files"] = {}
+        if damage == "weights":
+            raw["fast_weights_sha256"] = "a" * 64
+        if damage == "training":
+            raw["training_sha256"] = "a" * 64
+        if damage == "calibration":
+            raw["calibration_sha256"] = "a" * 64
+        if damage == "repeat_uuid":
+            first = json.loads(receipts["a800-172"][0].read_text())
+            raw["hardware"]["nvidia_smi_uuid_name_driver"] = (
+                " " + first["hardware"]["nvidia_smi_uuid_name_driver"].upper()
+            )
+        if damage == "cpu":
+            raw["hardware"]["device"] = "cpu"
+        path.write_text(json.dumps(raw))
+        receipts["a800-171"] = (path, archive.digest(path))
+    with pytest.raises(ValueError):
+        f["verify"](receipts)
