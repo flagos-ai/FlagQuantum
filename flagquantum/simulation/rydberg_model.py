@@ -134,6 +134,17 @@ def native_model(
     parameter_values: Any = None,
 ) -> tuple[dict[str, Any], list[dict[str, float]] | None]:
     """Assemble interval matrices; existing normalizers and engines execute them."""
+    supported = {"rydberg.move": RydbergTransport, "rydberg.pulse": RydbergPulse}
+    for operation in record.functions[0].blocks[0].operations:
+        payload_type = supported.get(operation.opcode)
+        if payload_type is None or not isinstance(
+            operation.physical_data, payload_type
+        ):
+            raise CapabilityError(
+                "unconditional native Rydberg evolution requires only pulse "
+                "and transport controls; observation operations require a "
+                "conditional trajectory"
+            )
     context = record.physical_context
     assert isinstance(context, RydbergContext)
     count = len(context.atoms)

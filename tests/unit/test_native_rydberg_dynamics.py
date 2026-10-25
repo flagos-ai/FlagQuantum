@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from copy import deepcopy
+from dataclasses import replace
 
 import pytest
 import torch
@@ -475,3 +476,33 @@ def test_simultaneous_pair_drive_matches_dense_unitary_and_rydberg_blockade() ->
         double_excitation.append(result.populations[-1, 4].item())
     assert double_excitation[0] == pytest.approx(math.sin(1.0) ** 4, abs=1e-10)
     assert double_excitation[1] < double_excitation[0] / 10
+
+
+@pytest.mark.parametrize("opcode", ["rydberg.measure_presence", "rydberg.unknown"])
+def test_unconditional_assembly_refuses_observations_before_grid_work(
+    opcode: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from flagquantum.simulation import rydberg_model
+
+    record = pulse().to_ir()
+    function = record.functions[0]
+    block = function.blocks[0]
+    observation = replace(block.operations[0], opcode=opcode)
+    changed = replace(
+        record,
+        functions=(
+            replace(
+                function,
+                blocks=(replace(block, operations=(*block.operations, observation)),),
+            ),
+        ),
+    )
+
+    def forbidden_grid(*args: object, **kwargs: object) -> None:
+        pytest.fail("an unadmitted observation reached numerical grid assembly")
+
+    monkeypatch.setattr(rydberg_model, "_grid", forbidden_grid)
+    with pytest.raises(CapabilityError, match="conditional trajectory"):
+        rydberg_model.native_model(
+            changed, [0.0, 0.5], dtype=torch.complex128, device="cpu"
+        )
