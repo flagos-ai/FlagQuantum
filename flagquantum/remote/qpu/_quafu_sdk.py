@@ -7,9 +7,9 @@ import os
 from collections.abc import Mapping, Sequence
 from importlib import metadata
 from types import ModuleType
-from typing import Any
+from typing import Any, NoReturn
 
-from ...errors import ValidationError
+from ...errors import ExecutionError, ValidationError
 
 _DISTRIBUTION = "quafu-sdk"
 _EXTRA = "quafu"
@@ -85,6 +85,7 @@ class _QuafuSdkAdapter:
 
     def __init__(self, client: Any) -> None:
         self._client = client
+        self._jobs: dict[str, Any] = {}
 
     @classmethod
     def for_discovery(
@@ -143,6 +144,129 @@ class _QuafuSdkAdapter:
             else self._client.calibration(calibration_id)
         )
         return _plain_mapping(value, field="calibration")
+
+    def submit_logical(
+        self,
+        qasm: str,
+        *,
+        target: str,
+        shots: int,
+        name: str,
+    ) -> dict[str, Any]:
+        try:
+            job = self._client.submit(
+                qasm,
+                target=target,
+                shots=shots,
+                compiler="qiskit",
+                name=name,
+            )
+        except Exception as exc:
+            _raise_sdk_failure(exc, operation="submission")
+        job_id = getattr(job, "id", None)
+        if not isinstance(job_id, str) or not job_id.strip():
+            raise RuntimeError("Quafu SDK submission returned no job id")
+        n_tasks = getattr(job, "n_tasks", None)
+        if n_tasks is not None and n_tasks != 1:
+            raise RuntimeError("Quafu SDK single submission returned multiple tasks")
+        self._jobs[job_id] = job
+        return {
+            "job_id": job_id,
+            "n_tasks": n_tasks,
+            "target": target,
+        }
+
+    def job_status(self, job_id: str) -> str:
+        job = self._job(job_id)
+        try:
+            status = job.status()
+        except Exception as exc:
+            _raise_sdk_failure(exc, operation="status")
+        if not isinstance(status, str) or not status.strip():
+            raise RuntimeError("Quafu SDK job returned no status")
+        return status
+
+    def cancel_job(self, job_id: str) -> dict[str, Any]:
+        job = self._job(job_id)
+        try:
+            response = job.cancel()
+        except Exception as exc:
+            _raise_sdk_failure(exc, operation="cancellation")
+        return _plain_mapping(response, field="cancel")
+
+    def job_result(self, job_id: str) -> dict[str, Any]:
+        job = self._job(job_id)
+        try:
+            result = job.result(timeout=0)
+        except Exception as exc:
+            _raise_sdk_failure(exc, operation="result")
+        counts = _plain_value(getattr(result, "counts", None), field="result.counts")
+        if not isinstance(counts, dict):
+            raise RuntimeError("Quafu SDK result contains no counts")
+        fields = (
+            "status",
+            "task_id",
+            "target",
+            "backend",
+            "bit_order",
+            "n_clbits",
+            "shots_requested",
+            "shots_returned",
+            "measurements",
+            "executed_qasm",
+            "compiler",
+            "calibration_id",
+        )
+        return {
+            "counts": counts,
+            **{
+                field: _plain_value(
+                    getattr(result, field, None), field=f"result.{field}"
+                )
+                for field in fields
+            },
+        }
+
+    def _job(self, job_id: str) -> Any:
+        if not isinstance(job_id, str) or not job_id.strip():
+            raise ValueError("Quafu job id cannot be empty")
+        cached = self._jobs.get(job_id)
+        if cached is not None:
+            return cached
+        try:
+            job = self._client.job(job_id)
+        except Exception as exc:
+            _raise_sdk_failure(exc, operation="restore")
+        self._jobs[job_id] = job
+        return job
+
+
+def _raise_sdk_failure(exc: Exception, *, operation: str) -> NoReturn:
+    name = type(exc).__name__
+    code = getattr(exc, "code", None)
+    category = getattr(exc, "category", None)
+    detail = ", ".join(
+        f"{key}={value}"
+        for key, value in (("code", code), ("category", category))
+        if isinstance(value, str) and value
+    )
+    message = f"Quafu SDK {operation} failed with {name}"
+    if detail:
+        message += f" ({detail})"
+    if name in {
+        "AuthError",
+        "BadRequest",
+        "CredentialsError",
+        "LoginExpired",
+        "LoginRevoked",
+        "NotLoggedIn",
+        "PrecheckError",
+        "QuotaError",
+    }:
+        raise ValidationError(message) from None
+    if name == "Timeout":
+        raise TimeoutError(message) from None
+    raise ExecutionError(message) from None
 
 
 __all__: tuple[str, ...] = ()

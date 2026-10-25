@@ -143,6 +143,15 @@ contract tests until Batch F removes it.
   returned-shot counts; and
 - record the actual maintained service compiler in provenance.
 
+The implementation routes default single-circuit logical submissions through
+`Client.submit(..., compiler="qiskit")`, preserves the SDK job identity in the
+existing FlagQuantum receipt, and reconnects status, result, cancellation, and
+restoration through that identity. SDK-native jobs and results remain private;
+provider fields are copied into FlagQuantum-owned metadata, and SDK failures
+are translated to stable FlagQuantum validation, execution, or timeout
+categories. Physical QSteed and collection paths remain unchanged for Batches
+D and E respectively.
+
 ### Batch D: QSteed physical submission
 
 - define and implement physical-program emission after QSteed routing;
