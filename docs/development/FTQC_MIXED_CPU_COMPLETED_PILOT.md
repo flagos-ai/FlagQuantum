@@ -154,3 +154,31 @@ No automatic rerun or further recovery is authorized. Preserve both raw
 campaigns, the original failure, all controller identities and successful point
 records. FTS-05 public batch API, approximation, FTQC package boundary, larger
 scale/Stage B, domestic hardware and experiments need their separate decisions.
+
+## Post-868 mainline acceptance and next reference decision
+
+Evidence PR #868 merged to actual main
+`7720ee678c542c81082b8bd4b719ed6428db03b8` and passed
+[complete CI, all 54 jobs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40183439574),
+[source/single-GPU/required two-GPU checks](https://github.com/flagos-ai/FlagQuantum/actions/runs/40183448933)
+and [main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40183372095).
+Three existing optional pools were unselected. Package job 121139172095 passed
+real QEC optional installation and evidence retention. Fresh isolated sdist and
+wheel-from-sdist preserve all 833 package Python members exactly. New core
+Python3.12.14/Torch2.14.1 dependencies/native Bell/master/HTH/CLI and the installed
+public three-mode example/observer CLI passed outside checkout without
+PYTHONPATH or SDK overlays. These were engineering checks, not new study runs.
+
+Actual-main public JSON exactly equals the checked projection; both raw
+inventories remain unchanged. The metadata field repair preserved 11827 numeric
+leaf paths/types/values and the full controller identity, using existing
+`controller.source_revision` vocabulary. Original field-failure and independent
+unseeded Stim sampling-failure logs remain; the new PR and main CI passed that
+existing test without changing its seed, sample count or 0.004 threshold. The
+earlier failure's cause remains undetermined. Independent #865/#867 main changes
+were audited; this report's five paths stayed exact to reviewed head. No local
+numerical suite was relabeled as a new run for the docs/data merge.
+
+The [coherent-branch reference proposal](FTQC_COHERENT_BRANCH_CONFORMANCE_PROPOSAL.md)
+specifies the next missing finite correctness question. Its new domain and
+comparison values are unapproved; this pilot's completion does not activate it.
