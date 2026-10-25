@@ -317,8 +317,21 @@ independent physical assertions and 1e-12/rtol=0 budgets stay fixed. The
 [delivery record](../api-changes/FQ-ISING-UNREAD-OBSERVATION-20261024.md) runs an
 exchange/channel/inverse program with P(psi)=0.5 and exact JSON replay. It
 produces a mixed density without selecting an intermediate outcome or creating
-an event/feedback record. Sampled native branches, intermediate atom-presence
-instruments and hardware feedback still require separate reviewed contracts.
+an event/feedback record. The separately approved sampled slice below selects one branch; intermediate
+atom-presence instruments and hardware feedback retain separate contract gates.
+
+[Proposal 091](../development/API_CHANGE_PROPOSAL_091_ISING_SAMPLED_OBSERVATION.md)
+was approved before baseline #821, Core #824, Simulation #827 and Runtime #838.
+One `measure_pair()` reuses the native IR, existing Kraus continuation, terminal
+probability/private-draw authority and canonical results. Explicit `shots=1`
+and seed admit a CPU conditional trajectory with native source/plan 1.3 and a
+PyTorch-version-bound RNG environment; braid-only 1.1, unread 1.2 and other old
+artifacts retain exact bytes. Four baseline factories now use the real path,
+with unchanged independent F/R consumers. The
+[M3 acceptance review](../development/M3_SCENARIO_ACCEPTANCE.md#current-api-user-workflow)
+contains runnable JSON replay and the expected `1.3 / True / True / True` output.
+This fixed four-sigma vacuum profile adds no multi-shot native batch, classical
+register, feedback, detector event time, other sector or hardware support.
 
 ### Reference scenarios
 
@@ -326,11 +339,13 @@ The [M3 scenario acceptance review](../development/M3_SCENARIO_ACCEPTANCE.md)
 links executable witnesses, shared boundaries and separate numerical,
 truncation, gradient and sampling budgets. It includes the merged driven
 three-level (#787), thermal spin-mode (#782) and native fusion-observation
-(#778) and unread native continuation (#809) slices. These are bounded CPU
-references, not full M3/M4 or hardware certification. Sampled native observation
-and its relationship to existing qubit dynamic measurement/feedback remain a
-contract-review boundary. That work must reuse existing authorities; this
-inventory approves no new protected interface.
+(#778), unread continuation (#809) and single sampled continuation (#838)
+slices. These are bounded CPU references, not full M3/M4 or hardware
+certification. The next bounded review targets one intermediate atom-presence
+instrument on the existing native Rydberg schedule, with explicit identity,
+physical loss versus observed flags and post-observation continuation. It must
+reuse existing IR, binding, Liouvillian, integrators and result authorities;
+this inventory approves no new protected interface or feedback implementation.
 
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |
