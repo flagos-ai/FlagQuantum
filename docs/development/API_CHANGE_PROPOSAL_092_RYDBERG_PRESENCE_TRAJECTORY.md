@@ -42,6 +42,10 @@ latest complete applicable CI/GPU verification.
 
 ## Existing owners and the result boundary
 
+The [staged delivery record](../api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md)
+tracks the replaceable shared baseline and subsequent domain replacements.
+Its test recipe does not activate native source/plan or root execution support.
+
 | Existing owner | Reuse and constraint |
 | --- | --- |
 | Core RydbergProgram and ProgramRecord | Named atom/site roster, timestamped controls, strict native source codec and validation. Append order is not physical time. |
