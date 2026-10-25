@@ -1,6 +1,8 @@
 {
   "source_revision": "5cd642a69a0142b7c7e42013851c38dee701a3d5",
-  "controller_revision": "8d85a602622f124a0b88db370cf6032d25ae2d7d",
+  "controller": {
+    "source_revision": "8d85a602622f124a0b88db370cf6032d25ae2d7d"
+  },
   "manifest": {
     "status": "completed",
     "original_manifest_sha256": "8e19e5ca2fc45467430bcf9eaf641d500d620b8163104a0deb1c697616fa2b3a",
