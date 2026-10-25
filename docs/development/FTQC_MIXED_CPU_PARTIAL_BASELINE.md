@@ -220,3 +220,10 @@ repeat this stopped campaign.
   evidence remain open; FTS-02/09 are not waived by this pilot.
 - [ ] R07/R09/R10 scale/performance and R11/R12/R15 domestic/experimental evidence
   remain open. No new API, approximation, FTQC package or 1.5x/2x target is enabled.
+
+## Proposed separate continuation admission
+
+The [seven-point continuation proposal](FTQC_MIXED_CPU_CONTINUATION_PROPOSAL.md)
+states the additional 28-process budget, unchanged monitoring policy and required
+diagnostic-order repair. It is not approved or executed; all original records
+remain immutable. Post-859 main acceptance is recorded there.
