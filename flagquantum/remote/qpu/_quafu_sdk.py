@@ -177,14 +177,35 @@ class _QuafuSdkAdapter:
             compiler="none",
         )
 
+    def submit_collection(
+        self,
+        qasms: Sequence[str],
+        *,
+        target: str,
+        shots: int,
+        name: str,
+    ) -> dict[str, Any]:
+        programs = tuple(qasms)
+        if not programs:
+            raise ValueError("Quafu SDK collection cannot be empty")
+        return self._submit_program(
+            list(programs),
+            target=target,
+            shots=shots,
+            name=name,
+            compiler="qiskit",
+            expected_tasks=len(programs),
+        )
+
     def _submit_program(
         self,
-        qasm: str,
+        qasm: str | list[str],
         *,
         target: str,
         shots: int,
         name: str,
         compiler: str,
+        expected_tasks: int = 1,
     ) -> dict[str, Any]:
         try:
             job = self._client.submit(
@@ -200,8 +221,11 @@ class _QuafuSdkAdapter:
         if not isinstance(job_id, str) or not job_id.strip():
             raise RuntimeError("Quafu SDK submission returned no job id")
         n_tasks = getattr(job, "n_tasks", None)
-        if n_tasks is not None and n_tasks != 1:
-            raise RuntimeError("Quafu SDK single submission returned multiple tasks")
+        if n_tasks is not None and n_tasks != expected_tasks:
+            raise RuntimeError(
+                "Quafu SDK submission returned an unexpected task count; "
+                "do not resubmit"
+            )
         self._jobs[job_id] = job
         return {
             "job_id": job_id,
@@ -233,9 +257,30 @@ class _QuafuSdkAdapter:
             result = job.result(timeout=0)
         except Exception as exc:
             _raise_sdk_failure(exc, operation="result")
+        return self._result_payload(result, require_counts=True)
+
+    def job_results(self, job_id: str) -> tuple[dict[str, Any], ...]:
+        job = self._job(job_id)
+        try:
+            results = job.results(timeout=0)
+        except Exception as exc:
+            _raise_sdk_failure(exc, operation="results")
+        if not isinstance(results, Sequence) or isinstance(results, (str, bytes)):
+            raise RuntimeError("Quafu SDK collection results are not a sequence")
+        expected = getattr(job, "n_tasks", None)
+        if type(expected) is int and len(results) != expected:
+            raise RuntimeError("Quafu SDK collection returned an unexpected task count")
+        return tuple(
+            self._result_payload(result, require_counts=False) for result in results
+        )
+
+    @staticmethod
+    def _result_payload(result: Any, *, require_counts: bool) -> dict[str, Any]:
         counts = _plain_value(getattr(result, "counts", None), field="result.counts")
-        if not isinstance(counts, dict):
+        if require_counts and not isinstance(counts, dict):
             raise RuntimeError("Quafu SDK result contains no counts")
+        if counts is not None and not isinstance(counts, dict):
+            raise RuntimeError("Quafu SDK result has invalid counts")
         fields = (
             "status",
             "task_id",
@@ -249,6 +294,8 @@ class _QuafuSdkAdapter:
             "executed_qasm",
             "compiler",
             "calibration_id",
+            "seq",
+            "error",
         )
         return {
             "counts": counts,

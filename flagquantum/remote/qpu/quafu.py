@@ -791,8 +791,7 @@ class QuafuProvider(HttpQuantumProvider):
     def query_status(self, handle: ProviderTaskHandle) -> str:
         protocol = self._protocol(handle)
         if protocol == _SDK_PROTOCOL:
-            status = self._submission_sdk_adapter().job_status(handle.task_id)
-            return "Failed" if status == "PartiallyFinished" else status
+            return self._submission_sdk_adapter().job_status(handle.task_id)
         if protocol == _TASK_API_PROTOCOL:
             response = self.transport.get_json(
                 self._task_api_url("/jobs/{task_id}/status", task_id=handle.task_id),

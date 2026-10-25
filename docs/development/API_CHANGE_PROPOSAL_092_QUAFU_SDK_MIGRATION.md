@@ -182,6 +182,18 @@ a credential nor creates a platform task.
 - switch maintained Quafu paths to the SDK only after parity tests pass; and
 - prohibit fallback to another protocol, backend, or compiler after failure.
 
+The implementation routes default logical collections through one SDK
+`Client.submit([...], compiler="qiskit")` call and retains the parent SDK job
+identity in the existing FlagQuantum receipt. Status, cancellation,
+restoration, and ordered child results remain available through `RemoteJob`;
+SDK pagination and native objects stay private. FlagQuantum still rejects
+missing, duplicate, failed, malformed, or out-of-order child identities instead
+of returning partial success. Historical `task_api_v1` receipts and explicitly
+injected HTTP transports remain readable until Batch F removes SQC code.
+
+All Batch E verification uses an injected in-memory SDK client. It neither uses
+a credential nor creates a platform task.
+
 ### Batch F: SQC retirement
 
 - remove `QUAFU_API_TOKEN`, the SQC hostname, token-header authentication, and

@@ -2,15 +2,14 @@
 
 FlagQuantum uses the official `quafu-sdk` package for read-only device
 discovery, backend metadata, limits, calibration snapshots, and the complete
-single-circuit logical and QSteed-compiled task lifecycle. Circuit collections
-remain on their existing transport until their dedicated migration batch.
-Installing `quafusqc` is not required.
+logical, QSteed-compiled, and collection task lifecycles. Installing
+`quafusqc` is not required.
 
 For detached multi-circuit jobs, pass a same-width circuit list to `fq.submit`;
 see [one collection, one receipt](REMOTE_JOBS.md#multiple-circuits-in-one-quafu-job).
-Collections require the current task API, verified target limits and logical
-service compilation. Unlike the single-circuit compatibility path, they never
-fall back to SQC or silently create separate parent jobs.
+Collections use one SDK parent job, verified target limits, and logical service
+compilation. They never fall back to SQC or silently create separate parent
+jobs.
 
 ## Configure credentials
 
@@ -389,6 +388,7 @@ task.
 |---|---|
 | Logical circuit, no explicit physical mapping | `quafu_sdk_v1` |
 | Explicit `target_qubits` or locally precompiled mapped circuit | `quafu_sdk_v1`, `compiler="none"` |
+| Same-width logical circuit collection | one `quafu_sdk_v1` parent job, `compiler="qiskit"` |
 | SDK submission has any definite or ambiguous failure | Raise without cross-protocol resubmission |
 
 These endpoints do not expose a compile-only request that returns the
