@@ -51,7 +51,10 @@ a finite-basis algebra witness, not a hardware preparation claim.
 Output names, order and axes, private Python/Torch RNG invariance, immutable
 input/output snapshots, explicit seeds and exact same-environment JSON replay
 are consumer assertions. The existing 4,096 single-index draw witness retains
-its declared 1,856..2,240 interval. No random label is promised across builds.
+its declared 1,856..2,240 interval. Full interval bindings change across the
+observation and remain independent of later caller edits; the moving-pair
+conditional density is checked against the same scalar physical oracle.
+No random label is promised across builds.
 
 The legacy fixture copies five complete source strings and six complete plan
 strings captured before any 092 implementation. Stored artifacts retain exact

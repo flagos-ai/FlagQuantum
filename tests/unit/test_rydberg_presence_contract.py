@@ -53,7 +53,13 @@ def presence_read() -> Callable[[str], Any]:
     return read
 
 
-def _program(factory: Callable[..., Any], pair: bool, reverse: bool = False) -> Any:
+def _program(
+    factory: Callable[..., Any],
+    pair: bool,
+    reverse: bool = False,
+    *,
+    parameterized: bool = False,
+) -> Any:
     roster = (
         (("b", "near"), ("a", "home")) if reverse else (("a", "home"), ("b", "near"))
     )
@@ -83,7 +89,7 @@ def _program(factory: Callable[..., Any], pair: bool, reverse: bool = False) -> 
             name,
             start=0.5,
             duration=0.5,
-            amplitude=0.4,
+            amplitude=fq.Parameter("omega") if parameterized and name == "a" else 0.4,
             detuning=-0.5,
             phase=0.8,
             channel=f"laser_{name}",
@@ -92,7 +98,11 @@ def _program(factory: Callable[..., Any], pair: bool, reverse: bool = False) -> 
             name,
             start=0.0,
             duration=0.5,
-            amplitude=1.2 if name == "a" else 0.7,
+            amplitude=(
+                fq.Parameter("omega")
+                if parameterized and name == "a"
+                else (1.2 if name == "a" else 0.7)
+            ),
             detuning=0.2,
             phase=0.3,
             channel=f"laser_{name}",
@@ -807,3 +817,38 @@ def test_duplicate_observation_is_not_a_second_event(
     )
     with pytest.raises(IRValidationError):
         source.measure_presence("a", at=0.75, efficiency=0.8)
+
+
+def test_full_interval_bindings_survive_the_observation_and_caller_edits(
+    presence_source: Callable[..., Any],
+    presence_plan: Callable[..., Any],
+    presence_run: Callable[..., ExecutionResult],
+    presence_read: Callable[[str], Any],
+) -> None:
+    source = _program(presence_source, True, parameterized=True).measure_presence(
+        "a", at=0.5, efficiency=0.8
+    )
+    initial = _initial(True, "coherent")
+    bindings = [
+        {"omega": torch.tensor(1.2 if index < 64 else 0.4, dtype=torch.float64)}
+        for index in range(128)
+    ]
+    plan = presence_plan(
+        source,
+        initial,
+        torch.linspace(0, 1, 129, dtype=torch.float64),
+        parameter_values=bindings,
+        options=fq.ExecutionOptions(shots=1, seed=17),
+    )
+    saved = plan.to_json()
+    for row in bindings:
+        row["omega"].fill_(9)
+    result = presence_run(plan)
+    index_value = result.measurement(-1).value
+    assert isinstance(index_value, torch.Tensor)
+    expected, _ = _oracle(True, initial, 0.8, int(index_value[0, 0]))
+    assert result.state is not None
+    torch.testing.assert_close(result.state[0], expected[-1], atol=1e-10, rtol=0)
+    replay = presence_run(presence_read(saved))
+    assert replay.state is not None and torch.equal(result.state, replay.state)
+    assert plan.to_json() == saved
