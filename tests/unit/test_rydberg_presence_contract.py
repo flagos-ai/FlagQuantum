@@ -852,3 +852,74 @@ def test_full_interval_bindings_survive_the_observation_and_caller_edits(
     replay = presence_run(presence_read(saved))
     assert replay.state is not None and torch.equal(result.state, replay.state)
     assert plan.to_json() == saved
+
+
+def test_extending_the_output_grid_does_not_extend_the_control_horizon(
+    presence_source: Callable[..., Any],
+    presence_plan: Callable[..., Any],
+) -> None:
+    source = _program(presence_source, False)
+    with pytest.raises(IRValidationError):
+        source.measure_presence("a", at=1.5, efficiency=0.8)
+        presence_plan(
+            source,
+            _initial(False, "ground"),
+            torch.tensor([0.0, 0.5, 1.0, 1.5, 2.0], dtype=torch.float64),
+            options=fq.ExecutionOptions(shots=1, seed=17),
+        )
+
+
+@pytest.mark.parametrize("ambiguous", [False, True])
+def test_observation_uses_existing_ulp_time_precision(
+    presence_source: Callable[..., Any],
+    presence_plan: Callable[..., Any],
+    ambiguous: bool,
+) -> None:
+    at = 0.5 if ambiguous else 0.5 + 32 * math.ulp(0.5)
+    grid = [0.0, 0.5, math.nextafter(0.5, 1.0), 1.0] if ambiguous else [0.0, 0.5, 1.0]
+    source = _program(presence_source, False).measure_presence(
+        "a", at=at, efficiency=0.8
+    )
+    with pytest.raises(EvolutionValidationError) as caught:
+        presence_plan(
+            source,
+            _initial(False, "ground"),
+            torch.tensor(grid, dtype=torch.float64),
+            options=fq.ExecutionOptions(shots=1, seed=17),
+        )
+    assert (
+        caught.value.code == "invalid_native_request" and caught.value.field == "times"
+    )
+
+
+def test_more_than_two_actors_refuses_before_operator_allocation(
+    presence_source: Callable[..., Any],
+    presence_plan: Callable[..., Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = presence_source(
+        atoms=(("a", "s0"), ("b", "s1"), ("c", "s2")),
+        sites={"s0": (0.0, 0.0), "s1": (2.0, 0.0), "s2": (4.0, 0.0)},
+        length_unit="um",
+        time_unit="us",
+        c6=0.0,
+        loss_rate=0.0,
+        minimum_separation=1.0,
+        drive_channels=("laser",),
+    )
+    source.pulse("a", start=0.0, duration=1.0, amplitude=0.0, channel="laser")
+    source.measure_presence("a", at=0.5, efficiency=0.8)
+    initial = torch.zeros(27, dtype=DTYPE)
+    initial[0] = 1
+
+    def forbidden(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("unsupported profile allocated exponential operators")
+
+    monkeypatch.setattr(torch, "kron", forbidden)
+    with pytest.raises(CapabilityError):
+        presence_plan(
+            source,
+            initial,
+            torch.tensor([0.0, 0.5, 1.0], dtype=torch.float64),
+            options=fq.ExecutionOptions(shots=1, seed=17),
+        )

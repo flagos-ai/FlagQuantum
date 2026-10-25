@@ -15,8 +15,14 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
+from flagquantum.core.geometry import finite_real, same_time
 from flagquantum.core.ir import IRValidationError
-from flagquantum.core.ir.program.physical import operation_key
+from flagquantum.core.ir.program.physical import (
+    RydbergPulse,
+    RydbergTransport,
+    _boundary_times,
+    operation_key,
+)
 from flagquantum.core.rydberg import RydbergProgram
 from flagquantum.errors import CapabilityError, ExecutionError, SerializationError
 from flagquantum.lindblad import _execution_settings, _observables
@@ -47,15 +53,16 @@ class ReferenceSource(RydbergProgram):
     def measure_presence(
         self, atom: str, *, at: float, efficiency: float
     ) -> ReferenceSource:
-        if not isinstance(atom, str) or any(
-            type(value) not in (int, float) for value in (at, efficiency)
-        ):
-            raise TypeError("presence requires an atom ID and real Python scalars")
+        if not isinstance(atom, str):
+            raise TypeError("presence requires an atom ID")
+        try:
+            at = finite_real(at, "at")
+            efficiency = finite_real(efficiency, "efficiency")
+        except ValueError as exc:
+            raise IRValidationError(str(exc)) from exc
         if (
             atom not in self.atom_ids
             or self.observation is not None
-            or not math.isfinite(at)
-            or not math.isfinite(efficiency)
             or at <= 0
             or not 0 <= efficiency <= 1
         ):
@@ -135,13 +142,25 @@ def plan(
     ):
         raise CapabilityError("presence controls and outputs cannot require gradients")
     atom, at, efficiency = observation
-    instrument_key = (at, "rydberg.measure_presence", (atom,), "")
-    operation_index = sum(
-        operation_key(op) < instrument_key
-        for op in source.to_ir().functions[0].blocks[0].operations
+    operations = source.to_ir().functions[0].blocks[0].operations
+    controls = tuple(
+        op.physical_data
+        for op in operations
+        if isinstance(op.physical_data, (RydbergPulse, RydbergTransport))
     )
-    matches = (times - at).abs() <= 1e-12
-    if int(matches.sum()) != 1 or not bool(matches[1:-1].any()):
+    horizon = max(_boundary_times(controls).values())
+    if at >= horizon or same_time(at, horizon) or same_time(at, 0.0):
+        raise IRValidationError(
+            "presence must lie strictly inside the source control horizon"
+        )
+    instrument_key = (at, "rydberg.measure_presence", (atom,), "")
+    operation_index = sum(operation_key(op) < instrument_key for op in operations)
+    matches = [
+        i
+        for i, value in enumerate(times.tolist())
+        if same_time(value, at, precision="float64")
+    ]
+    if len(matches) != 1 or not 0 < matches[0] < times.numel() - 1:
         raise EvolutionValidationError(
             "invalid_native_request",
             "presence needs one internal grid boundary",
@@ -223,7 +242,11 @@ def run(plan: ReferencePlan) -> ExecutionResult:
             )
         operators.append(full)
     grid = torch.tensor(request["times"], dtype=torch.float64)
-    boundary = int(torch.nonzero((grid - at).abs() <= 1e-12)[0, 0])
+    boundary = next(
+        i
+        for i, value in enumerate(grid.tolist())
+        if same_time(value, at, precision="float64")
+    )
     rho = request["initial_state"]
     collapse = _normalize_collapse_operators(
         request["collapse_operators"],

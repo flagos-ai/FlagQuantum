@@ -20,6 +20,9 @@ canonical ExecutionResult/MeasurementResult. It assembles the full native grid
 once and does not restart native time at the observation.
 The source-operation index is its canonical timed position, not an append count;
 the reference reuses existing control-operation keys to locate that position.
+Scalar and time checks reuse the existing finite-real, physical-boundary and
+ULP-time authorities. Extending the output grid cannot extend the source control
+horizon; ambiguous or out-of-budget time matches and a third actor are refused.
 
 The source double holds an observation outside its unchanged source 1.0.
 Its serialization is explicitly `test.rydberg_presence_recipe`, containing
