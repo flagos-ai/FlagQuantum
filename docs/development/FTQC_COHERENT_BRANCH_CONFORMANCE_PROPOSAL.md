@@ -1,8 +1,10 @@
 # FTS-10B / FTS-11A: Bounded Coherent-Branch Reference Proposal
 
-Status: proposed finite private-test semantics and numerical admission; not
-approved or implemented. No new engine, public API, benchmark campaign or
-performance target is activated. Document merge or green CI is not approval.
+Status: the human explicitly approved the finite A-D reference contract and
+complex128 atol=1e-12/rtol=0 on 2026-10-25. The private conformance implementation
+is now submitted for review. No new engine, public API, benchmark campaign or
+performance target is activated. Approval came from the specific human answer,
+not document merge or green CI.
 
 The [completed static pilot](FTQC_MIXED_CPU_COMPLETED_PILOT.md) establishes small
 existing-route observations, not a coherent decomposition candidate. The
@@ -13,11 +15,11 @@ FTS-02/09 or final FTS-10 dependencies.
 
 ## Decision requested and selection consequence
 
-Approve only groups A-D below: eight noise-free static circuits with n=2/3 and
+The specific approval covers only groups A-D below: eight noise-free static circuits with n=2/3 and
 T count 0/1/2/4, two named analytic anchors, private phase/mixture/cancellation
 negative cases, and CPU complex128 comparisons with atol=1e-12 and rtol=0.
-The numerical value needs explicit approval for this coherent-branch domain;
-its use in the prior QEC conformance or static pilot is not inherited admission.
+The numerical value was explicitly approved for this coherent-branch domain;
+its use in the prior QEC conformance or static pilot was not inherited admission.
 
 Implementation would be one private conformance slice in the existing Simulation
 test tree, reusing current public unexpanded execution and independent small
@@ -179,9 +181,46 @@ phase contract is needed, form and approve it separately.
    target-scale candidate comparison, dynamic Born/conditional semantics and
    final FTS-10 selection as separate unmet decisions.
 
-No new tests, branch enumeration or candidate research run has been implemented
-or executed for this proposal. Both prior raw campaigns and their collectors
-remain immutable; their consumed budgets do not authorize another attempt.
+### Approved private conformance submitted for review
+
+[The private integration test](../../tests/integration/test_ftqc_coherent_reference.py)
+computes exactly 46 matrix branch vectors and four anchor vectors once per test
+module. Ten parameterized cases each make one existing public unexpanded CPU
+execution. The remaining phase, mixture, cancellation and refusal checks reuse
+those vectors without additional public executions. A module fixture restores
+the previous CPU thread count after verification. Canonical complex amplitudes
+are compared only between the private references; the public state is compared
+through phase-invariant density, probabilities and a separate norm check.
+
+The existing scalar direct-T basis oracle supplies the eight matrix references.
+The Clifford-only scalar evaluator uses no production gate, compiler, state
+engine or decoder helper. Analytic amplitudes and probabilities independently
+anchor HTH and Bell-T-HH. The wrong normalized Bell mixture, missing cross terms,
+uncompensated branch phase and zero cancellation remain discriminating negatives.
+Invalid shapes, nonfinite entries, precision and norm loss are refused rather
+than repaired by normalization. Private matrix inputs outside A are rejected
+before branch allocation.
+
+This is a finite test-reference qualification under review, not a production
+decomposition implementation or selection result. Both prior raw campaigns and
+their collectors remain immutable; no candidate benchmark or probe is launched.
+
+### Post-merge proposal admission
+
+Proposal main `0e7a95649152ba54b7674c937147948f1dd99034` passed CI run
+40187783441 (54 successful jobs after one same-SHA failed-job recovery), GPU run
+40187786320 (source, single GPU and required two GPUs), and smoke 40187732270.
+Package job 121157742619 passed real QEC optional installations and evidence
+retention. Fresh isolated sdist/wheel checks matched all 833 Python package
+members; Python 3.12.14/Torch 2.14.1 core installation, dependencies, native Bell,
+master-plan examples, HTH and CLI passed. The installed three-route public example
+below and observer CLI passed outside the checkout without PYTHONPATH or an SDK
+overlay. These engineering checks were not new retained study observations.
+
+The first CI attempt failed in 13 action-download initialization steps, with five
+downstream aggregates failing. Raw logs and diagnosis remain retained. The one
+controlled same-SHA recovery completed the missing checks without changing code,
+workflows, thresholds or skips; it does not establish an environment repair.
 
 ## Runnable current user example
 
