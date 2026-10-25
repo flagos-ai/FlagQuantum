@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "probe_shots": 786,
+  "probe_seed": 8100011,
+  "seeds": [
+    11,
+    22,
+    33
+  ],
+  "scope": "exact_residual_frame_bits_all_probes_and_final_prediction_bits_64_physical_shots"
+}

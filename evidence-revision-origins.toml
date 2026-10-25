@@ -1060,3 +1060,13 @@ path = "docs/development/evidence/qec_ai_ising_exploratory_20261024/manifest.jso
 value = "ea7c1bb3b823fc6a38472d0d95974b6d01932288"
 origin = "external_dependency"
 repository = "NVIDIA/Ising-Decoding"
+
+
+# Pinned upstream for the prospective two-host A800 checkpoint comparison.
+[[artifact]]
+path = "docs/development/evidence/qec_ai_ising_a800_20261025"
+
+[[artifact.revision]]
+value = "ea7c1bb3b823fc6a38472d0d95974b6d01932288"
+origin = "external_dependency"
+repository = "NVIDIA/Ising-Decoding"
