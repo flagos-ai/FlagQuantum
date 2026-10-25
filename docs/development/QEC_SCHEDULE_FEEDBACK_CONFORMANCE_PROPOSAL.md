@@ -2,7 +2,8 @@
 
 Status: The repository owner explicitly approved this finite Groups A-E matrix
 and complex128 absolute error <=1e-12 / rtol=0 on 2026-10-25 (Asia/Shanghai) in
-the delivery chat. Conformance implementation is under review. This approval
+the delivery chat. Conformance implementation merged in #837 and its mainline acceptance is
+complete. This approval
 does not add a public API or authorize a generic feedback adapter, new frame
 representation or FTQC package.
 
@@ -211,7 +212,7 @@ implemented or that the three-bit code protects against arbitrary quantum noise.
 - [x] Reuse delivered repetition, decoder-feedback, frame and dynamic paths;
   identify precise independent-reference and measurement-mapping obligations.
 - [x] Explicitly approve this bounded semantic/numerical acceptance matrix.
-- [ ] Implement missing conformance and show independent branch/coherence
+- [x] Implement missing conformance and show independent branch/coherence
   comparisons plus meaningful negative cases without altering frozen fixtures.
 - [ ] R05/R06: qualify this finite cross-path profile; broader QEC feedback,
   non-Clifford frame semantics and latency evidence remain open.
@@ -219,7 +220,7 @@ implemented or that the three-bit code protects against arbitrary quantum noise.
   admissions and executable evidence; this slice closes no system requirement.
 
 
-## Conformance implementation under review
+## Delivered conformance implementation
 
 `tests/qec/test_schedule_feedback_conformance.py` adds 87 cases with no skips:
 seven declaration/lowered/direct-extraction comparisons; the sixteen online
@@ -264,3 +265,44 @@ also passed outside the checkout with no SDK overlay. Original Stage A raw
 observations were retained without recollection. The owner's later explicit
 finite-contract approval, rather than these green checks or documentation merge,
 authorizes the conformance work in this PR.
+
+
+## Post-837 mainline acceptance
+
+Implementation [#837](https://github.com/flagos-ai/FlagQuantum/pull/837) merged
+with validated head `16c61758beb8dab5f313e1c022e02a2eeb18ef44`. Actual main
+`786f7cce8bf72fe4cd243dfe2b5f166385c2ab52` passed
+[complete CI, all 54 jobs, attempt 2](https://github.com/flagos-ai/FlagQuantum/actions/runs/40151474800),
+[source, single GPU and required two GPUs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40151474795),
+and [smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40151411553).
+Three original optional hardware pools were unselected. Package job
+121047992861 passed the real QEC optional installation step. The first complete
+CI attempt's Python 3.10/3.11 tests passed, but final diagnostic artifact uploads
+failed with ECONNRESET. One same-SHA failed-jobs rerun completed both tests and
+uploads; the original logs remain retained. No test, upload, threshold or check
+was skipped to obtain a green result.
+
+A fresh isolated sdist and wheel match all 829 package Python members at actual
+main786f. A new Python 3.12.14 / Torch 2.14.1 core installation passes dependency,
+native/Bell, master-plan, H-T-H and observer-CLI checks. The four-feedback-mode
+public example plus the existing non-X refusal pass outside the checkout with
+no SDK overlay. The 87 conformance cases, 37 original retirement-contract cases
+and two independent compiler-cost cases pass on this main: 126 passed, no skips.
+Original frozen fixtures, production code and approved API identities were not
+changed by #837. Independent #840 compiler changes were audited and combined
+with the PR in 126 passing local checks before merge; that tested combined tree
+matches the actual merge tree.
+
+The PR's first required two-GPU run failed its existing robust-CV limit
+(0.10194045105120624 > 0.1). Exactly one controlled same-source rerun passed
+(0.01960235196152377), preserving both sets of 30 samples and ordinary CVs
+0.4563049006807384 / 0.6128318311233156. No production or gate change was made;
+root cause remains undetermined, and no environment-repair or speedup claim is
+made. This PR evidence is separate from the successful post-merge GPU run.
+
+R05/R06 now have this finite pure-X five-qubit/two-round cross-path qualification.
+Broader feedback/noise/non-Clifford semantics and all system-level R01-R15 gates
+remain open. The next preparatory
+[mixed-strategy experiment design](FTQC_MIXED_STRATEGY_STUDY_PROPOSAL.md) is a
+separate proposal; this conformance approval does not activate its accuracy,
+resource, representation or approximation choices.
