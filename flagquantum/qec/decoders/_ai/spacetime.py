@@ -1,4 +1,4 @@
-"""Private row-major square-grid memory predecoder with local 3D convolutions."""
+"""Private DEM-bound detector-grid predecoder with local 3D convolutions."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ class SpacetimePredecoder(Predecoder):
         if side < 2 or memory.code.data_qubits != tuple(range(side * side)):
             raise ValueError("requires row-major square-grid data wires")
         width = 2 * side - 1
-        self.grid_shape = (memory.rounds + 1, width, width)
+        grid_shape = (memory.rounds + 1, width, width)
         checks = {check.ancilla_qubit: check for check in memory.code.checks}
         sites: list[int] = []
         kinds: list[int] = []
@@ -55,8 +55,56 @@ class SpacetimePredecoder(Predecoder):
             time = memory.rounds if terminal else max(rounds)
             sites.append((time * width + y) * width + x)
             kinds.append(1 if check.stabilizer.x_qubits else 2)
+        self._set_geometry(grid_shape, tuple(sites), tuple(kinds))
+
+    @classmethod
+    def from_dem(
+        cls,
+        dem: DetectorErrorModel,
+        *,
+        grid_shape: tuple[int, int, int],
+        sites: tuple[int, ...],
+        kinds: tuple[int, ...],
+    ) -> SpacetimePredecoder:
+        """Use original DEM columns and a verified flattened detector-site map.
+
+        Kinds are 1 for X and 2 for Z. Structural checks cannot authenticate
+        physical coordinates or measurement-record identities; the caller must.
+        Visible hyperedges remain complete, as in the explicit MLP path.
+        """
+        model = cls.__new__(cls)
+        Predecoder.__init__(model, dem, allow_hyperedges=True)
+        model._set_geometry(grid_shape, sites, kinds)
+        return model
+
+    def _set_geometry(
+        self,
+        grid_shape: tuple[int, int, int],
+        sites: tuple[int, ...],
+        kinds: tuple[int, ...],
+    ) -> None:
+        if (
+            not isinstance(grid_shape, tuple)
+            or len(grid_shape) != 3
+            or any(type(size) is not int or size < 1 for size in grid_shape)
+        ):
+            raise ValueError("grid shape must contain three positive integers")
+        volume = math.prod(grid_shape)
+        if (
+            not isinstance(sites, tuple)
+            or len(sites) != self.h.shape[0]
+            or any(type(site) is not int or not 0 <= site < volume for site in sites)
+        ):
+            raise ValueError("sites must map every detector into the grid")
         if len(set(sites)) != len(sites):
             raise ValueError("detector geometry has colliding sites")
+        if (
+            not isinstance(kinds, tuple)
+            or len(kinds) != len(sites)
+            or any(type(kind) is not int or kind not in (1, 2) for kind in kinds)
+        ):
+            raise ValueError("kinds must label every detector as X=1 or Z=2")
+        self.grid_shape = grid_shape
         self.register_buffer("sites", torch.tensor(sites, dtype=torch.long))
         masks = torch.zeros(3, math.prod(self.grid_shape))
         masks[0, self.sites] = 1

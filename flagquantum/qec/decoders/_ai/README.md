@@ -35,7 +35,7 @@ be retained, not retried as a newly selected completion.
 | Module | Responsibility |
 | --- | --- |
 | `predecoder.py` | Shared local MLP, DEM-bound buffers and latent training batches; local correction, residual syndrome and logical contribution composition. |
-| `spacetime.py` | Square-grid detector layout, masks and local 3D CNN; reuses the same sampling and hybrid decode implementation. |
+| `spacetime.py` | Memory-derived or caller-verified DEM detector grids, masks and local 3D CNN; reuses the same sampling and hybrid decode implementation. |
 | `training.py` | CPU Adam training and exact optimizer, batch-generator and step recovery. |
 | `assessment.py` | Held-out evaluation, paired logical counts, confidence intervals and CPU whole-block timing. |
 | `exact_statistics.py` | Separately named, outward-bracketed exact-binomial intervals and conservative paired-count ratio summaries; old assessment defaults stay unchanged. |
@@ -49,6 +49,42 @@ QEC records/protocols. Importing `decoders` does not eagerly import this package
 Keep AI implementation here, and add modules only when they contain implemented
 behavior. Accelerator and streaming support remain gated by
 the [delivery plan](../../../../docs/roadmap/QEC_AI_DECODING_PR_PLAN.md).
+
+`SpacetimePredecoder.from_dem(dem, grid_shape=..., sites=..., kinds=...)` accepts
+an existing independent DEM, including complete visible hyperedges. `sites` maps
+every detector, in canonical DEM row order, to a unique flattened grid site;
+`kinds` labels those rows X=1 or Z=2. Shapes, coverage, collisions, index bounds
+and kinds are checked before allocating the convolutional encoder. The existing
+`SpacetimePredecoder(memory, noise)` constructor retains its graphlike support,
+state-dictionary keys, initialization and default behavior.
+
+The explicit layout path performs structural checks; it cannot certify that
+coordinates, time or check types match a physical circuit. Caller-owned study
+validation must establish those identities and bind the layout before and after
+checkpoint restoration. Checkpoint payloads remain version 1. The actual Ising
+measurement-record layout adapter and matched-study runner are still pending in
+the [prospective protocol](../../../../docs/development/QEC_AI_ISING_CNN_COMPARISON.md).
+This synthetic construction draws no samples and performs no optimizer steps:
+
+```python
+import torch
+from flagquantum.qec.dem.model import DemError, DetectorErrorModel
+from flagquantum.qec.decoders._ai.spacetime import SpacetimePredecoder
+
+dem = DetectorErrorModel(4, 1, (DemError(0.01, (0, 1, 2), (0,)),))
+model = SpacetimePredecoder.from_dem(
+    dem, grid_shape=(2, 2, 2), sites=(0, 3, 5, 6), kinds=(1, 2, 1, 2)
+)
+print(tuple(model.encode_input(torch.zeros(2, 4)).shape))
+print(sum(p.numel() for p in model.parameters()))
+```
+
+Expected output is `(2, 4, 2, 2, 2)` and `2817`. Run
+`python -m pytest tests/qec/test_dem_bound_spacetime.py
+ tests/qec/test_spacetime_predecoder.py -q` for independent scalar hyperedge
+pooling/XOR composition, layout refusal, old-constructor equivalence and exact
+synthetic training/resume checks. These are software fixtures, not real Ising
+layout verification or new logical-quality evidence.
 
 ## Ten-minute workflow
 
