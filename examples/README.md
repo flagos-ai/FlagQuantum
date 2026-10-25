@@ -12,7 +12,7 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
-- `qec/matched_primary.py`: private fixed 32-comparison count reduction using existing paired and exact statistics; no primary collection, authenticated replay, file writer or CLI.
+- `qec/matched_primary.py`: guarded fixed primary capture and externally hash-bound replay/32-comparison summaries; reuses shared prediction shards and existing statistics; no trusted controller or formal execution CLI.
 - `qec/matched_parity.py`: verifies frozen decisions before a single shared probe and composes explicit CNN/MLP parity paths; hardware-only receipt guards and two-host verification; no primary sampler or CLI.
 - `qec/matched_validation.py`: internal shared physical-validation capture and all sixty threshold trials with explicit architecture identities; no primary sampler or launch CLI.
 - `qec/matched_selection.py`: internal final-six temperature fitting on shared, saved independent calibration streams; no physical validation, CLI or formal launch authorization.
@@ -21,6 +21,7 @@ These examples do not use that alias:
 - `qec/matched_checkpoints.py`: binds unchanged private Trainer checkpoints to the verified layout, both prospective documents and an externally frozen inventory; no standalone study launch.
 - `qec/ising_layout.py`: verifies pinned Ising measurement-record geometry and the private CNN input mapping without sampling, training or loading weights.
 
+- `qec/run_matched_assessment.py`: inspected-container zero-sample preflight and internal fixed-deadline prepare/peer/finish/run composition; trusted SSH orchestration and launch CLI remain pending.
 - `qec/run_continued_assessment.py`: controller-bound, fixed-budget A800 study coordination with preflight and immutable handoffs; see the frozen physical protocol.
 
 - `qec/continued_primary.py`: guarded fixed primary prediction shards and registered offline summaries; no formal execution CLI.

@@ -72,39 +72,50 @@ def _read_only(raw: dict[str, Any], path: Path) -> None:
 
 
 def _container(options: Options) -> dict[str, Any]:
-    if archive.digest(options.inspect) != options.inspect_sha256:
+    return _container_scope(
+        options.inspect,
+        expected_sha256=options.inspect_sha256,
+        host=options.host,
+        readonly_paths=(
+            archive.ROOT,
+            options.original,
+            options.continued,
+            options.ising_source,
+            options.ising_weights,
+            options.inspect,
+            options.dependency_lock,
+        ),
+    )
+
+
+def _container_scope(
+    inspect: Path, *, expected_sha256: str, host: str, readonly_paths: tuple[Path, ...]
+) -> dict[str, Any]:
+    if archive.digest(inspect) != expected_sha256:
         raise ValueError("controller inspect hash mismatch")
-    records = json.loads(options.inspect.read_text())
+    records = json.loads(inspect.read_text())
     if not isinstance(records, list) or len(records) != 1:
         raise ValueError("requires one controller-inspected container")
     raw: dict[str, Any] = records[0]
-    host = raw["HostConfig"]
+    host_config = raw["HostConfig"]
     if (
         platform.system() != "Linux"
-        or options.host not in ("a800-172", "a800-171")
+        or host not in ("a800-172", "a800-171")
         or raw["Config"]["Hostname"] != platform.node()
         or raw["Config"]["Hostname"] != raw["Id"][:12]
-        or raw["Config"]["Labels"].get("flagquantum.host") != options.host
+        or raw["Config"]["Labels"].get("flagquantum.host") != host
         or raw["Image"] != parity.IMAGE
-        or host["NetworkMode"] != "none"
-        or host["NanoCpus"] != 8_000_000_000
-        or host["Memory"] != 16 * 1024**3
+        or host_config["NetworkMode"] != "none"
+        or host_config["NanoCpus"] != 8_000_000_000
+        or host_config["Memory"] != 16 * 1024**3
     ):
         raise ValueError("controller container identity/resource binding mismatch")
-    for path in (
-        archive.ROOT,
-        options.original,
-        options.continued,
-        options.ising_source,
-        options.ising_weights,
-        options.inspect,
-        options.dependency_lock,
-    ):
+    for path in readonly_paths:
         _read_only(raw, path)
     return raw
 
 
-def _source_evidence() -> None:
+def _source_evidence(expected: set[str] | None = None) -> None:
     root = archive.ROOT / "docs/development/evidence"
     allowed = {
         "qec_ai_ising_a800_20261025/a800_172/" + n
@@ -114,6 +125,8 @@ def _source_evidence() -> None:
         "qec_ai_ising_a800_20261025/requirements.lock",
         "qec_ai_training_response_20261025/audit.json",
     }
+    if expected is not None:
+        allowed = expected
     paths = [p for p in root.rglob("*") if p.is_file()]
     if {str(p.relative_to(root)) for p in paths} != allowed or any(
         p.is_symlink() for p in paths

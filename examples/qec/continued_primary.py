@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, TypedDict
@@ -92,37 +92,86 @@ def _capture(
     output: Path,
     binding: Binding,
 ) -> PrimaryManifest:
+    def verify() -> None:
+        if (
+            binding.source_sha256 != _sources()
+            or binding.protocol_sha256 != archive.digest(inputs.PROTOCOL)
+        ):
+            raise ValueError("primary source or protocol changed during capture")
+
+    return _capture_predictions(
+        circuit,
+        corrections,
+        global_decode,
+        output,
+        binding,
+        seed=SEED,
+        shots=SHOTS,
+        chunk=CHUNK,
+        paths=parity.PATHS,
+        purpose="continued_primary_prediction_capture",
+        verify=verify,
+    )
+
+
+@torch.inference_mode()
+def _capture_predictions(
+    circuit: Any,
+    corrections: dict[str, Correction],
+    global_decode: GlobalDecode,
+    output: Path,
+    binding: Binding,
+    *,
+    seed: int,
+    shots: int,
+    chunk: int,
+    paths: tuple[str, ...],
+    purpose: str,
+    verify: Callable[[], None],
+) -> PrimaryManifest:
     """Internal capture after all guards; exact software fixtures replace budgets."""
-    if tuple(corrections) != parity.PATHS:
+    if tuple(corrections) != paths:
         raise ValueError("requires all fifteen ordered prediction paths")
     widths = circuit.num_detectors, circuit.num_observables
     if any(type(n) is not int or n < 1 for n in widths):
         raise ValueError("requires positive primary dimensions")
     if hashlib.sha256(str(circuit).encode()).hexdigest() != binding.circuit_sha256:
         raise ValueError("primary circuit hash mismatch")
+    if (
+        type(seed) is not int
+        or type(shots) is not int
+        or type(chunk) is not int
+        or shots < 1
+        or chunk < 1
+        or shots % chunk
+    ):
+        raise ValueError("invalid fixed primary sampling budget")
+    verify()
     output.mkdir(parents=True, exist_ok=False)
-    plan = PrimaryManifest(
-        "continued_primary_prediction_capture", SEED, SHOTS, CHUNK, *widths, binding, []
-    )
+    plan = PrimaryManifest(purpose, seed, shots, chunk, *widths, binding, [])
     with (output / "plan.json").open("x") as stream:
         json.dump(asdict(plan), stream, indent=2, allow_nan=False)
-    sampler = circuit.compile_detector_sampler(seed=SEED)
+    plan_hash = archive.digest(output / "plan.json")
+    sampler = circuit.compile_detector_sampler(seed=seed)
     records = []
-    for index in range(SHOTS // CHUNK):
-        bits, truth = sampler.sample(CHUNK, separate_observables=True)
-        bits = inputs._bits(torch.as_tensor(bits), shots=CHUNK, width=widths[0])
-        truth = inputs._bits(torch.as_tensor(truth), shots=CHUNK, width=widths[1])
+    for index in range(shots // chunk):
+        bits, truth = sampler.sample(chunk, separate_observables=True)
+        bits = inputs._bits(torch.as_tensor(bits), shots=chunk, width=widths[0])
+        truth = inputs._bits(torch.as_tensor(truth), shots=chunk, width=widths[1])
+        input_hashes = inputs._bit_hash(bits), inputs._bit_hash(truth)
         predictions = {
             name: torch.cat(
                 [
                     decode(bits[start : start + 32], correct, global_decode)
-                    for start in range(0, CHUNK, 32)
+                    for start in range(0, chunk, 32)
                 ]
             )
             for name, correct in corrections.items()
         }
+        if (inputs._bit_hash(bits), inputs._bit_hash(truth)) != input_hashes:
+            raise ValueError("primary decoder mutated shared physical inputs")
         for value in predictions.values():
-            inputs._bits(value, shots=CHUNK, width=widths[1])
+            inputs._bits(value, shots=chunk, width=widths[1])
         path = output / f"chunk-{index:04d}.pt"
         with path.open("xb") as stream:
             torch.save(
@@ -139,15 +188,22 @@ def _capture(
             )
         )
         print(
-            json.dumps({"phase": "primary", "completed_shots": (index + 1) * CHUNK}),
+            json.dumps({"phase": "primary", "completed_shots": (index + 1) * chunk}),
             flush=True,
         )
-    if binding.source_sha256 != _sources() or binding.protocol_sha256 != archive.digest(
-        inputs.PROTOCOL
+    verify()
+    if (
+        hashlib.sha256(str(circuit).encode()).hexdigest() != binding.circuit_sha256
+        or archive.digest(output / "plan.json") != plan_hash
+        or sorted(p.name for p in output.iterdir())
+        != sorted(["plan.json", *(r.filename for r in records)])
+        or any(archive.digest(output / r.filename) != r.file_sha256 for r in records)
     ):
-        raise ValueError("primary source or protocol changed during capture")
+        raise ValueError(
+            "primary plan, shard or output inventory changed during capture"
+        )
     result = PrimaryManifest(
-        plan.purpose, SEED, SHOTS, CHUNK, *widths, binding, records
+        plan.purpose, seed, shots, chunk, *widths, binding, records
     )
     with (output / "manifest.json").open("x") as stream:
         stream.write(json.dumps(asdict(result), indent=2, allow_nan=False) + "\n")
@@ -269,10 +325,23 @@ def replay_primary(
         or raw["binding"]["source_sha256"] != _sources()
     ):
         raise ValueError("primary manifest differs from the frozen stage")
+    yield from _replay_predictions(
+        directory, raw, paths=parity.PATHS, shots=SHOTS, chunk=CHUNK
+    )
+
+
+def _replay_predictions(
+    directory: Path,
+    raw: dict[str, Any],
+    *,
+    paths: tuple[str, ...],
+    shots: int,
+    chunk: int,
+) -> Iterator[tuple[torch.Tensor, dict[str, torch.Tensor]]]:
     widths = raw["detectors"], raw["observables"]
     if any(type(n) is not int or n < 1 for n in widths):
         raise ValueError("invalid primary dimensions")
-    names = [f"chunk-{i:04d}.pt" for i in range(SHOTS // CHUNK)]
+    names = [f"chunk-{i:04d}.pt" for i in range(shots // chunk)]
     rows = raw["shards"]
     if (
         len(rows) != len(names)
@@ -281,7 +350,8 @@ def replay_primary(
         raise ValueError("primary inventory mismatch")
     for index, (name, row) in enumerate(zip(names, rows, strict=True)):
         if (
-            row["index"] != index
+            type(row["index"]) is not int
+            or row["index"] != index
             or row["filename"] != name
             or archive.digest(directory / name) != row["file_sha256"]
         ):
@@ -297,23 +367,23 @@ def replay_primary(
             or not isinstance(payload["detectors"], torch.Tensor)
             or not isinstance(payload["truth"], torch.Tensor)
             or not isinstance(payload["predictions"], dict)
-            or tuple(payload["predictions"]) != parity.PATHS
+            or tuple(payload["predictions"]) != paths
         ):
             raise ValueError("primary shard payload mismatch")
-        bits = inputs._bits(payload["detectors"], shots=CHUNK, width=widths[0])
-        truth = inputs._bits(payload["truth"], shots=CHUNK, width=widths[1])
+        bits = inputs._bits(payload["detectors"], shots=chunk, width=widths[0])
+        truth = inputs._bits(payload["truth"], shots=chunk, width=widths[1])
         if (
             inputs._bit_hash(bits) != row["detectors_sha256"]
             or inputs._bit_hash(truth) != row["truth_sha256"]
         ):
             raise ValueError("primary input bit hash mismatch")
         predictions = {}
-        if set(row["prediction_sha256"]) != set(parity.PATHS):
+        if set(row["prediction_sha256"]) != set(paths):
             raise ValueError("primary prediction fingerprint inventory mismatch")
         for key, value in payload["predictions"].items():
             if not isinstance(value, torch.Tensor):
                 raise ValueError("prediction requires tensor bits")
-            value = inputs._bits(value, shots=CHUNK, width=widths[1])
+            value = inputs._bits(value, shots=chunk, width=widths[1])
             if inputs._bit_hash(value) != row["prediction_sha256"][key]:
                 raise ValueError("primary prediction bit hash mismatch")
             predictions[key] = value
