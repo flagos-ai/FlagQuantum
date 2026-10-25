@@ -12,6 +12,7 @@ import functools
 import hashlib
 import itertools
 import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -217,6 +218,62 @@ def _temperatures(
 
 
 @torch.inference_mode()
+def _select_paths(
+    models: list[predecoder_module.Predecoder],
+    temperatures: list[float],
+    batches: Iterable[tuple[torch.Tensor, torch.Tensor]],
+    *,
+    global_decode: GlobalDecode,
+    device: torch.device,
+    shots: int,
+) -> list[ThresholdSelection]:
+    if (
+        not models
+        or len(temperatures) != 2 * len(models)
+        or device.type not in ("cpu", "cuda")
+    ):
+        raise ValueError(
+            "selection requires two modes per model and explicit CPU or CUDA"
+        )
+    thresholds = (0.5, 0.7, 0.9, 0.99, 1.0)
+    totals = [[[0] * 5 for _ in thresholds] for _ in range(len(temperatures))]
+    working = [copy.deepcopy(m).to(device).eval() for m in models]
+    for detectors, truth in batches:
+        for start in range(0, detectors.shape[0], 32):
+            bits, target = detectors[start : start + 32], truth[start : start + 32]
+            baseline = global_decode(bits)
+            binary_array(baseline, shots=bits.shape[0], width=target.shape[1])
+            for index, temperature in enumerate(temperatures):
+                model = working[index // 2]
+                for column, threshold in enumerate(thresholds):
+                    prediction = decode(
+                        bits,
+                        on_device(
+                            functools.partial(
+                                model.correct,
+                                threshold=threshold,
+                                temperature=temperature,
+                            ),
+                            device,
+                        ),
+                        global_decode,
+                    )
+                    count = paired_counts(target, baseline, prediction)
+                    for field, value in enumerate(asdict(count).values()):
+                        totals[index][column][field] += value
+    selections = []
+    for counts in totals:
+        trials = tuple(
+            ThresholdTrial(t, PairedCounts(*c))
+            for t, c in zip(thresholds, counts, strict=True)
+        )
+        if any(t.counts.shots != shots for t in trials):
+            raise ValueError("incomplete physical validation")
+        selections.append(_select_threshold_trials(trials))
+    return selections
+
+
+@torch.inference_mode()
 def freeze_choices(
     models: list[VerifiedCheckpoint],
     calibration: Path,
@@ -253,54 +310,25 @@ def freeze_choices(
             },
             stream,
         )
-    thresholds = (0.5, 0.7, 0.9, 0.99, 1.0)
-    totals = [[[0] * 5 for _ in thresholds] for _ in range(12)]
     variants = [
         (m, mode, 1.0 if mode == "raw" else temperatures[(m.seed, m.step)])
         for m in models
         for mode in ("raw", "calibrated")
     ]
-    working = [copy.deepcopy(m.model).to(device).eval() for m in models]
-    for detectors, truth in itertools.chain((first,), replay):
-        for start in range(0, detectors.shape[0], 32):
-            bits, target = detectors[start : start + 32], truth[start : start + 32]
-            baseline = global_decode(bits)
-            binary_array(baseline, shots=bits.shape[0], width=target.shape[1])
-            for index, (_, _, temperature) in enumerate(variants):
-                model = working[index // 2]
-                for column, threshold in enumerate(thresholds):
-                    prediction = decode(
-                        bits,
-                        on_device(
-                            functools.partial(
-                                model.correct,
-                                threshold=threshold,
-                                temperature=temperature,
-                            ),
-                            device,
-                        ),
-                        global_decode,
-                    )
-                    count = paired_counts(target, baseline, prediction)
-                    for field, value in enumerate(asdict(count).values()):
-                        totals[index][column][field] += value
-    paths = []
-    for (item, mode, temperature), counts in zip(variants, totals, strict=True):
-        trials = tuple(
-            ThresholdTrial(t, PairedCounts(*c))
-            for t, c in zip(thresholds, counts, strict=True)
+    selections = _select_paths(
+        [m.model for m in models],
+        [t for _, _, t in variants],
+        itertools.chain((first,), replay),
+        global_decode=global_decode,
+        device=device,
+        shots=inputs.VALIDATION_SHOTS,
+    )
+    paths = [
+        NativeChoice(item.seed, item.step, mode, temperature, selected)
+        for (item, mode, temperature), selected in zip(
+            variants, selections, strict=True
         )
-        if any(t.counts.shots != inputs.VALIDATION_SHOTS for t in trials):
-            raise ValueError("incomplete physical validation")
-        paths.append(
-            NativeChoice(
-                item.seed,
-                item.step,
-                mode,
-                temperature,
-                _select_threshold_trials(trials),
-            )
-        )
+    ]
     if (
         _identities(models) != identities
         or archive.digest(calibration / "manifest.json") != calibration_hash

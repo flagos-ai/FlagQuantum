@@ -140,6 +140,32 @@ def capture_validation(circuit: Any, output: Path) -> ValidationManifest:
     The sole sampler is constructed once. Failed partial captures cannot be
     resumed or overwritten. No primary capture is available in this slice.
     """
+    return _capture_validation(
+        circuit,
+        output,
+        protocol_sha256=archive.digest(PROTOCOL),
+        sampler_seed=VALIDATION_SEED,
+        shots=VALIDATION_SHOTS,
+        chunk_size=CHUNK,
+    )
+
+
+def _capture_validation(
+    circuit: Any,
+    output: Path,
+    *,
+    protocol_sha256: str,
+    sampler_seed: int,
+    shots: int,
+    chunk_size: int,
+) -> ValidationManifest:
+    if (
+        any(type(n) is not int or n < 1 for n in (shots, chunk_size))
+        or shots % chunk_size
+    ):
+        raise ValueError(
+            "validation shots must be positive and divisible by chunk size"
+        )
     if output.exists():
         raise FileExistsError(output)
     widths = (circuit.num_detectors, circuit.num_observables)
@@ -147,11 +173,11 @@ def capture_validation(circuit: Any, output: Path) -> ValidationManifest:
         raise ValueError("requires positive detector/observable dimensions")
     plan = ValidationManifest(
         "validation_input_capture",
-        archive.digest(PROTOCOL),
+        protocol_sha256,
         hashlib.sha256(str(circuit).encode()).hexdigest(),
-        VALIDATION_SEED,
-        VALIDATION_SHOTS,
-        CHUNK,
+        sampler_seed,
+        shots,
+        chunk_size,
         widths[0],
         widths[1],
         [],
@@ -159,19 +185,21 @@ def capture_validation(circuit: Any, output: Path) -> ValidationManifest:
     output.mkdir(parents=True, exist_ok=False)
     with (output / "plan.json").open("x") as stream:
         stream.write(json.dumps(asdict(plan), indent=2) + "\n")
-    sampler = circuit.compile_detector_sampler(seed=VALIDATION_SEED)
+    sampler = circuit.compile_detector_sampler(seed=sampler_seed)
     records: list[Shard] = []
-    for index in range(VALIDATION_SHOTS // CHUNK):
-        detectors, observables = sampler.sample(CHUNK, separate_observables=True)
-        detectors = _bits(torch.as_tensor(detectors), shots=CHUNK, width=widths[0])
-        observables = _bits(torch.as_tensor(observables), shots=CHUNK, width=widths[1])
+    for index in range(shots // chunk_size):
+        detectors, observables = sampler.sample(chunk_size, separate_observables=True)
+        detectors = _bits(torch.as_tensor(detectors), shots=chunk_size, width=widths[0])
+        observables = _bits(
+            torch.as_tensor(observables), shots=chunk_size, width=widths[1]
+        )
         path = output / f"chunk-{index:04d}.pt"
         with path.open("xb") as stream:
             torch.save({"detectors": detectors, "observables": observables}, stream)
         records.append(
             Shard(
                 index,
-                CHUNK,
+                chunk_size,
                 path.name,
                 archive.digest(path),
                 _bit_hash(detectors),
@@ -188,21 +216,40 @@ def replay_validation(
     directory: Path, *, circuit_sha256: str
 ) -> Iterator[tuple[torch.Tensor, torch.Tensor]]:
     """Verify a completed capture and replay its immutable, ordered input shards."""
+    yield from _replay_validation(
+        directory,
+        circuit_sha256=circuit_sha256,
+        protocol_sha256=archive.digest(PROTOCOL),
+        sampler_seed=VALIDATION_SEED,
+        shots=VALIDATION_SHOTS,
+        chunk_size=CHUNK,
+    )
+
+
+def _replay_validation(
+    directory: Path,
+    *,
+    circuit_sha256: str,
+    protocol_sha256: str,
+    sampler_seed: int,
+    shots: int,
+    chunk_size: int,
+) -> Iterator[tuple[torch.Tensor, torch.Tensor]]:
     manifest = json.loads((directory / "manifest.json").read_text())
     if (
         manifest["purpose"] != "validation_input_capture"
         or manifest["circuit_sha256"] != circuit_sha256
-        or manifest["sampler_seed"] != VALIDATION_SEED
-        or manifest["shots"] != VALIDATION_SHOTS
-        or manifest["chunk_size"] != CHUNK
-        or manifest["protocol_sha256"] != archive.digest(PROTOCOL)
+        or manifest["sampler_seed"] != sampler_seed
+        or manifest["shots"] != shots
+        or manifest["chunk_size"] != chunk_size
+        or manifest["protocol_sha256"] != protocol_sha256
     ):
         raise ValueError("validation manifest does not match the frozen stage")
     widths = (manifest["detectors"], manifest["observables"])
     if any(type(n) is not int or n < 1 for n in widths):
         raise ValueError("invalid validation dimensions")
     records = manifest["shards"]
-    names = [f"chunk-{i:04d}.pt" for i in range(VALIDATION_SHOTS // CHUNK)]
+    names = [f"chunk-{i:04d}.pt" for i in range(shots // chunk_size)]
     if (
         len(records) != len(names)
         or sorted(p.name for p in directory.glob("chunk-*.pt")) != names
@@ -212,7 +259,7 @@ def replay_validation(
     for index, (name, record) in enumerate(zip(names, records, strict=True)):
         if (
             record["index"] != index
-            or record["shots"] != CHUNK
+            or record["shots"] != chunk_size
             or record["filename"] != name
             or archive.digest(directory / name) != record["file_sha256"]
         ):
@@ -228,8 +275,8 @@ def replay_validation(
             or not all(isinstance(v, torch.Tensor) for v in raw.values())
         ):
             raise ValueError("validation shard payload is malformed")
-        detectors = _bits(raw["detectors"], shots=CHUNK, width=widths[0])
-        observables = _bits(raw["observables"], shots=CHUNK, width=widths[1])
+        detectors = _bits(raw["detectors"], shots=chunk_size, width=widths[0])
+        observables = _bits(raw["observables"], shots=chunk_size, width=widths[1])
         if (
             _bit_hash(detectors) != record["detectors_sha256"]
             or _bit_hash(observables) != record["observables_sha256"]
