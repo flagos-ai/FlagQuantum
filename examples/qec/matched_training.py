@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, TextIO
@@ -420,3 +421,214 @@ def run_training(
     }
     with (output / "manifest.json").open("x") as stream:
         stream.write(json.dumps(result, indent=2, allow_nan=False) + "\n")
+
+
+def _verify_training_log(path: Path, initial_generator: str) -> str:
+    previous = initial_generator
+    with path.open() as stream:
+        for step in range(1, HORIZONS[-1] + 1):
+            expected: dict[str, str] | None = None
+            for architecture in ("cnn", "mlp"):
+                line = stream.readline()
+                if not line:
+                    raise ValueError("training loss ledger is incomplete")
+                row = json.loads(line)
+                loss, hashes = row["loss"], row["batch_sha256"]
+                if (
+                    row["architecture"] != architecture
+                    or type(row["step"]) is not int
+                    or row["step"] != step
+                    or type(loss) not in (int, float)
+                    or not math.isfinite(loss)
+                    or loss < 0
+                ):
+                    raise ValueError("training loss/counter/order ledger mismatch")
+                if set(hashes) != {
+                    "latent",
+                    "detectors",
+                    "truth",
+                    "generator_before",
+                    "generator_after",
+                }:
+                    raise ValueError("training batch hash fields mismatch")
+                for value in hashes.values():
+                    checkpoints._sha256(value)
+                if hashes["generator_before"] != previous or (
+                    expected is not None and hashes != expected
+                ):
+                    raise ValueError("training pair or generator continuity mismatch")
+                expected = hashes
+            assert expected is not None
+            previous = expected["generator_after"]
+        if stream.read().strip():
+            raise ValueError("training loss ledger has extra updates")
+    return previous
+
+
+def restore_final(
+    source: Path,
+    initial: Path,
+    trained: Path,
+    *,
+    training_sha256: str,
+) -> tuple[list[tuple[int, str, Trainer]], dict[str, str], dict[str, Any]]:
+    """Verify the complete training inventory before returning all six final models.
+
+    Reuse bound checkpoint restoration and retain architecture/seed/step identity.
+    This gate draws no data and performs no optimizer update or model forward.
+    """
+    checkpoints._sha256(training_sha256)
+    manifest = trained / "manifest.json"
+    if archive.digest(manifest) != training_sha256:
+        raise ValueError("external training manifest hash mismatch")
+    raw = json.loads(manifest.read_text())
+    models, frozen_initial, inputs = _load_initial(
+        source, initial, raw["initialization_sha256"]
+    )
+    plan = json.loads((trained / "plan.json").read_text())
+    declarations = {
+        "purpose": "matched_training_stage",
+        "initialization_sha256": raw["initialization_sha256"],
+        "input_files": frozen_initial,
+        "inputs": inputs,
+        "protocol_sha256": {p.name: archive.digest(p) for p in checkpoints.PROTOCOLS},
+        "source_sha256": _sources(),
+        "seeds": [11, 22, 33],
+        "architectures": ["cnn", "mlp"],
+        "horizons": list(HORIZONS),
+        "train_batch": TRAIN_BATCH,
+        "training_seed_offset": 18100000,
+        "heldout_seed_offset": 19100000,
+        "score_chunk": SCORE_CHUNK,
+        "heldout_shots_per_seed": SCORE_SHOTS,
+        "scientific_benefit_claim_allowed": False,
+    }
+    if plan != declarations or any(
+        raw.get(key) != value for key, value in declarations.items()
+    ):
+        raise ValueError("training plan/context differs from frozen recipe")
+    counts = {
+        "independent_training_draws": 3 * HORIZONS[-1] * TRAIN_BATCH,
+        "training_exposures": 6 * HORIZONS[-1] * TRAIN_BATCH,
+        "optimizer_updates": 6 * HORIZONS[-1],
+        "independent_heldout_draws": 3 * SCORE_SHOTS,
+        "new_calibration_shots": 0,
+        "new_validation_shots": 0,
+        "new_primary_shots": 0,
+    }
+    if any(
+        type(raw.get(key)) is not int or raw[key] != value
+        for key, value in counts.items()
+    ):
+        raise ValueError("training draw/update counts differ from fixed budget")
+    expected = [
+        (seed, architecture, horizon)
+        for seed in (11, 22, 33)
+        for horizon in HORIZONS
+        for architecture in ("cnn", "mlp")
+    ]
+    records = raw["records"]
+    if [
+        (row["seed"], row["architecture"], row["step"]) for row in records
+    ] != expected or any(type(row["step"]) is not int for row in records):
+        raise ValueError(
+            "requires all eighteen ordered architecture/seed/horizon records"
+        )
+    chunks = [f"chunk-{i:04d}.pt" for i in range(SCORE_SHOTS // SCORE_CHUNK)]
+    logs = {f"seed-{seed}-training.jsonl" for seed in (11, 22, 33)}
+    heldout_names = {
+        f"heldout-{seed}/{chunk}" for seed in (11, 22, 33) for chunk in chunks
+    }
+    if set(raw["training_logs"]) != logs or set(raw["heldout_files"]) != heldout_names:
+        raise ValueError("training log or shared held-out inventory mismatch")
+    files = {
+        "manifest.json": training_sha256,
+        "plan.json": archive.digest(trained / "plan.json"),
+        **raw["training_logs"],
+        **raw["heldout_files"],
+    }
+    prototypes = {
+        (seed, architecture): trainer.model for seed, architecture, trainer in models
+    }
+    for row in records:
+        seed, architecture, horizon = row["seed"], row["architecture"], row["step"]
+        name = f"{architecture}-{seed}-step-{horizon}"
+        shared = {
+            chunk: raw["heldout_files"][f"heldout-{seed}/{chunk}"] for chunk in chunks
+        }
+        if (
+            row["heldout_input_files"] != shared
+            or set(row["score"]["score_files"]) != set(chunks)
+            or row["score"]["step"] != horizon
+        ):
+            raise ValueError("score identity/shared held-out binding mismatch")
+        binding_path = trained / name / "binding.json"
+        if archive.digest(binding_path) != row["binding_sha256"]:
+            raise ValueError("horizon checkpoint binding hash mismatch")
+        binding = json.loads(binding_path.read_text())
+        if (
+            type(binding["step"]) is not int
+            or binding["step"] != horizon
+            or binding["identity"]
+            != checkpoints._identity(
+                prototypes[seed, architecture], seed, inputs["layout_sha256"]
+            )
+        ):
+            raise ValueError("horizon checkpoint architecture/layout identity mismatch")
+        files[name + "/binding.json"] = row["binding_sha256"]
+        files[name + "/checkpoint.pt"] = binding["checkpoint_sha256"]
+        files.update(
+            {
+                name + "-scores/" + chunk: value
+                for chunk, value in row["score"]["score_files"].items()
+            }
+        )
+    if {str(p.relative_to(trained)) for p in trained.rglob("*") if p.is_file()} != set(
+        files
+    ):
+        raise ValueError("complete training artifact inventory mismatch")
+    for name, fingerprint in files.items():
+        checkpoints._sha256(fingerprint)
+        if archive.digest(trained / name) != fingerprint:
+            raise ValueError("training artifact file hash mismatch")
+    stream_after = {
+        seed: _verify_training_log(
+            trained / f"seed-{seed}-training.jsonl",
+            archive.state_digest({"generator": trainer.generator.get_state()}),
+        )
+        for seed, architecture, trainer in models
+        if architecture == "cnn"
+    }
+    final: list[tuple[int, str, Trainer]] = []
+    for row in records:
+        if row["step"] != HORIZONS[-1]:
+            continue
+        seed, architecture = row["seed"], row["architecture"]
+        trainer = checkpoints.restore_bound(
+            prototypes[seed, architecture],
+            trained / f"{architecture}-{seed}-step-{HORIZONS[-1]}",
+            seed=seed,
+            layout_sha256=inputs["layout_sha256"],
+            binding_sha256=row["binding_sha256"],
+        )
+        if (
+            trainer.step != HORIZONS[-1]
+            or archive.state_digest({"generator": trainer.generator.get_state()})
+            != stream_after[seed]
+            or _state(trainer) != row["score"]["training_state_sha256"]
+        ):
+            raise ValueError("final restored training/scoring state mismatch")
+        trainer.model.eval()
+        final.append((seed, architecture, trainer))
+    if [(seed, arch) for seed, arch, _ in final] != [
+        (seed, arch) for seed in (11, 22, 33) for arch in ("cnn", "mlp")
+    ]:
+        raise ValueError("requires all six final models, without horizon selection")
+    if any(
+        archive.digest(trained / name) != value for name, value in files.items()
+    ) or any(
+        archive.digest(initial / name) != value
+        for name, value in frozen_initial.items()
+    ):
+        raise ValueError("frozen training/initial files changed during restoration")
+    return final, files, inputs

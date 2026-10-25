@@ -128,6 +128,18 @@ def test_complete_fixture_counts_exact_draws_pair_hashes_and_scalar_score_oracle
             assert record["score"]["mean_bce"] == pytest.approx(
                 loss_sum / labels, abs=1e-14
             )
+    final, inventory, _ = training.restore_final(
+        tmp_path,
+        initial,
+        output,
+        training_sha256=archive.digest(output / "manifest.json"),
+    )
+    assert [(seed, arch, trainer.step) for seed, arch, trainer in final] == [
+        (seed, arch, 4) for seed in (11, 22, 33) for arch in ("cnn", "mlp")
+    ]
+    assert all(not trainer.model.training for _, _, trainer in final)
+    assert len(inventory) == len([p for p in output.rglob("*") if p.is_file()])
+    assert len(calls) == 30
     before = len(calls)
     with pytest.raises(FileExistsError):
         training.run_training(tmp_path, initial, output, initialization_sha256=digest)
@@ -311,3 +323,82 @@ def test_wrong_actual_batch_shape_refused_before_optimizer_update(
     with pytest.raises(ValueError, match="registered shapes"):
         training.train_pair(cnn, mlp, 2, io.StringIO())
     assert cnn.step == mlp.step == 0 and "sample" not in cnn.model.__dict__
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "external",
+        "missing",
+        "reordered",
+        "context",
+        "counts",
+        "score_binding",
+        "extra",
+        "nonfinal_checkpoint",
+        "heldout",
+        "scores",
+        "final_state",
+        "short_log",
+        "bad_pair",
+        "bad_loss",
+        "extra_log",
+    ],
+)
+def test_final_restore_refuses_incomplete_or_changed_training_without_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, damage: str
+) -> None:
+    initial, digest, _ = prepare(tmp_path, monkeypatch)
+    output = tmp_path / "trained"
+    training.run_training(tmp_path, initial, output, initialization_sha256=digest)
+    path = output / "manifest.json"
+    raw = json.loads(path.read_text())
+    if damage == "missing":
+        raw["records"].pop()
+    elif damage == "reordered":
+        raw["records"][0], raw["records"][1] = raw["records"][1], raw["records"][0]
+    elif damage == "context":
+        raw["horizons"] = [0, 2, 3]
+    elif damage == "counts":
+        raw["independent_training_draws"] = 96
+    elif damage == "score_binding":
+        raw["records"][0]["heldout_input_files"]["chunk-0000.pt"] = "b" * 64
+    elif damage == "extra":
+        (output / "unlisted.pt").write_bytes(b"extra")
+    elif damage in ("nonfinal_checkpoint", "heldout", "scores"):
+        names = {
+            "nonfinal_checkpoint": "cnn-11-step-2/checkpoint.pt",
+            "heldout": "heldout-33/chunk-0001.pt",
+            "scores": "cnn-11-step-0-scores/chunk-0000.pt",
+        }
+        with (output / names[damage]).open("ab") as stream:
+            stream.write(b"bad")
+    elif damage == "final_state":
+        raw["records"][-1]["score"]["training_state_sha256"] = "b" * 64
+    if damage in ("short_log", "bad_pair", "bad_loss", "extra_log"):
+        log = output / "seed-11-training.jsonl"
+        rows = [json.loads(line) for line in log.read_text().splitlines()]
+        if damage == "short_log":
+            rows.pop()
+        elif damage == "bad_pair":
+            rows[1]["batch_sha256"]["latent"] = "b" * 64
+        elif damage == "bad_loss":
+            rows[0]["loss"] = float("nan")
+        else:
+            rows.append(rows[-1])
+        log.write_text("".join(json.dumps(row) + "\n" for row in rows))
+        raw["training_logs"][log.name] = archive.digest(log)
+    path.write_text(json.dumps(raw))
+    expected = archive.digest(path)
+    if damage == "external":
+        expected = "b" * 64
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("final restoration must not draw, forward or update")
+
+    monkeypatch.setattr(Predecoder, "sample", forbidden)
+    monkeypatch.setattr(Predecoder, "forward", forbidden)
+    monkeypatch.setattr(SpacetimePredecoder, "forward", forbidden)
+    monkeypatch.setattr(Trainer, "train", forbidden)
+    with pytest.raises(ValueError):
+        training.restore_final(tmp_path, initial, output, training_sha256=expected)
