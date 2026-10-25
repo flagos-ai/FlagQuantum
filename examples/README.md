@@ -12,6 +12,8 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/ising_layout.py`: verifies pinned Ising measurement-record geometry and the private CNN input mapping without sampling, training or loading weights.
+
 - `qec/run_continued_assessment.py`: controller-bound, fixed-budget A800 study coordination with preflight and immutable handoffs; see the frozen physical protocol.
 
 - `qec/continued_primary.py`: guarded fixed primary prediction shards and registered offline summaries; no formal execution CLI.
