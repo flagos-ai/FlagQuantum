@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -40,7 +41,7 @@ def test_ps_counts_only_owned_group_and_converts_kib(
     def snapshot(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess([], 0, "0 0\n12 100\n99 999999\n12 200\n")
 
-    monkeypatch.setattr(watchdog.subprocess, "run", snapshot)
+    monkeypatch.setattr(subprocess, "run", snapshot)
     assert watchdog._process_group_rss(12) == 300 * 1024
 
 
@@ -49,7 +50,7 @@ def test_ps_missing_or_malformed_accounting_is_not_zero(
     monkeypatch: pytest.MonkeyPatch, text: str
 ) -> None:
     monkeypatch.setattr(
-        watchdog.subprocess,
+        subprocess,
         "run",
         lambda *a, **k: subprocess.CompletedProcess([], 0, text),
     )
@@ -126,8 +127,6 @@ def test_delayed_sampling_is_not_certified_as_within_budget(
 def test_success_records_observations_and_preserves_exit_code(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import os
-
     def snapshot(group: int | None) -> int:
         if group is None:
             return 0
@@ -219,3 +218,63 @@ def test_python_interruption_is_preserved_after_owned_group_cleanup(
     assert record["exception_type"] == "KeyboardInterrupt"
     assert record["command_returncode"] is not None
     assert not marker.exists()
+
+
+@pytest.mark.parametrize("listing", ["0\n42\n", "  0\n  42\n"])
+def test_denied_signal_accepts_only_a_confirmed_absent_group(
+    monkeypatch: pytest.MonkeyPatch, listing: str
+) -> None:
+    import signal
+
+    def denied(group: int, signum: int) -> None:
+        raise PermissionError("signal denied")
+
+    def snapshot(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        assert kwargs["check"] is True
+        timeout = kwargs["timeout"]
+        assert isinstance(timeout, (int, float)) and 0 < timeout <= 0.05
+        return subprocess.CompletedProcess([], 0, listing)
+
+    monkeypatch.setattr(os, "killpg", denied)
+    monkeypatch.setattr(subprocess, "run", snapshot)
+    watchdog._signal_group(123, signal.SIGKILL)
+
+
+@pytest.mark.parametrize(
+    "listing", ["123\n", "42\n123\n", "", "bad\n", "-1\n", "123 1\n"]
+)
+def test_denied_signal_keeps_live_or_unknown_groups_failed(
+    monkeypatch: pytest.MonkeyPatch, listing: str
+) -> None:
+    import signal
+
+    def denied(group: int, signum: int) -> None:
+        raise PermissionError("signal denied")
+
+    monkeypatch.setattr(os, "killpg", denied)
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess([], 0, listing),
+    )
+    with pytest.raises(PermissionError, match="signal denied"):
+        watchdog._signal_group(123, signal.SIGTERM)
+
+
+def test_denied_signal_does_not_hide_unavailable_accounting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import signal
+
+    def denied(group: int, signum: int) -> None:
+        raise PermissionError("signal denied")
+
+    def unavailable(
+        *args: object, **kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired("ps", 0.05)
+
+    monkeypatch.setattr(os, "killpg", denied)
+    monkeypatch.setattr(subprocess, "run", unavailable)
+    with pytest.raises(PermissionError, match="signal denied"):
+        watchdog._signal_group(123, signal.SIGKILL)
