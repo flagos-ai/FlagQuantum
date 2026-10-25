@@ -1,7 +1,9 @@
 # Bounded Clifford / Non-Clifford Strategy Study
 
-Status: Proposed experiment design, FTS-10A. No algorithm selection, new engine,
-approximation policy, public contract or measurement campaign is activated.
+Status: The user explicitly approved the finite CPU matrix, comparison values
+and resource procedure on 2026-10-25, with observer review before collection.
+This observer implementation remains subject to exact-head review and CI. No
+algorithm selection, new engine, approximation policy or campaign is activated.
 
 Baseline: main `773b55387c735f86afe3caa8d7bcaf64285e1f0f`. The
 [master plan](../roadmap/FTQC_SIMULATION_MASTER_PLAN.md#14-immediate-next-steps-and-decisions-required)
@@ -206,8 +208,8 @@ campaign.
 - [x] R04: identify existing routes, a decomposition feasibility gap, independent
   reference needs and phase-sensitive current user code. No new algorithm is
   implemented or selected.
-- [ ] Approve the finite CPU matrix, accuracy comparisons and resource procedure
-  before implementing/collecting the proposed study.
+- [x] Explicit human approval on 2026-10-25 covers only this finite matrix,
+  accuracy comparisons and resource procedure, with observer review first.
 - [ ] R03/R04: independently validate and measure the admitted comparison, then
   review method selection on representative code-derived workloads.
 - [ ] R07/R09/R10: validate actual complex protocols and capacity/performance
@@ -216,3 +218,71 @@ campaign.
   contract; #837's pure-X profile does not authorize them.
 - [ ] R11/R12/R15: domestic device and experimental-data ownership/access remain
   external decisions. This document contains no device or experimental result.
+
+## Observer implementation and collection admission
+
+The `ftqc_mixed_reference` runner observes **one** approved n/t/topology/route
+point per invocation. It fixes one Torch CPU thread, constructs once, calls
+`fq.plan` once and executes that plan once. There is no inner warm-up, repeat,
+controller, automatic retry or matrix traversal. Development tests are not the
+retained 192-process study and supply no comparative performance evidence.
+
+```bash
+python -m flagquantum.benchmarking run ftqc_mixed_reference --n 4 --t 2 --topology chain --mode mps --json-output /tmp/mixed-point.json
+```
+
+Expected: the JSON has `status="completed"`, four error values at most `1e-12`,
+`requested_mode="mps"`, `performance_targets_enabled=false`, one plan and one
+execution. Timings, native metadata and memory are environment-dependent.
+A numerical/exact-route failure is written before the CLI returns status 1.
+An explicit `CapabilityError` is retained as `status="refused"` with its original
+diagnostic; other execution errors propagate with traceback and must be retained
+by the controller/watchdog, never retried as successful observations.
+
+Construction, planning and execution intervals exclude IR/plan serialization,
+independent reference evaluation, error reduction and optional dense native-state
+conversion. Initial imports and JSON IO are outside these intervals; lazy imports
+inside called APIs remain included. Their sum is labeled a phase sum, not an
+end-to-end wall time. The later controller must separately retain whole-process
+wall time, host warm-ups and three fresh measured processes per point.
+
+The private reference is a bounded scalar complex-amplitude calculation for only
+the declared H/S/CX/T circuits. It does not call production gates, compilation or
+state engines. Full probability, normalization and phase-insensitive normalized
+density comparisons use the specifically approved `atol=1e-12`, `rtol=0`.
+Tests include an analytic Bell-T interference anchor, the scalar T/I/S identity
+and a relative-phase corruption invisible to basis probabilities.
+
+The report retains authored IR SHA-256, serialized optimized plan and its
+fingerprints/instructions, optimized instruction/T counts, actual result summary
+before dense validation, MPS bond/truncation evidence and actual zero-cutoff,
+unbounded-bond configuration. Missing or nonzero truncation evidence fails this
+exact profile. Tensor-network configuration and path-cost metadata are retained;
+no fallback or configuration is adjusted to win a comparison. The plan's authored
+IR dtype is distinct from the actual CPU complex128 state/float64 probabilities,
+which are checked after execution.
+
+Dense state conversion and the two n<=8 density arrays are validation overhead,
+not native MPS/TN capacity evidence. Producer RSS is a whole-process high-water
+mark after validation; explicit probability/density bytes are storage counts,
+not exclusive memory or peak workspace. The campaign still requires the reviewed
+RSS watchdog, 120-second case limit, 45-minute controller budget, storage/free-space
+checks and failure/unattempted ledger. This runner alone does not enforce those
+external budgets. The independent #843 watchdog cleanup fix is reused from main,
+not implemented by this work.
+
+### Post-846 mainline acceptance
+
+Documentation PR #846 merged to main `8ae177a6b60d6218151ed5c200636080d71d2699`.
+[Complete CI, all 54 jobs](https://github.com/flagos-ai/FlagQuantum/actions/runs/40157096674),
+[source/single-GPU/required two-GPU validation](https://github.com/flagos-ai/FlagQuantum/actions/runs/40157103166)
+and [main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/40157074307)
+passed. Three original optional pools were unselected. Package job 121060737101
+passed real QEC optional installation and evidence retention. A fresh isolated
+sdist/wheel-from-sdist preserves all 831 package Python members exactly; a new
+Python 3.12.14/Torch 2.14.1 core installation passes dependency/native Bell/master,
+HTH and observer CLI checks. The three-route public example above runs from the
+new installed package outside the checkout without PYTHONPATH or SDK overlays,
+with all three exact expected stdout lines. This is one fresh core profile;
+historical local matrix profiles are not relabeled as reruns. The prior main
+change was only three Markdown files, so no local numerical suite was repeated.
