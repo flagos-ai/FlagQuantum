@@ -12,6 +12,7 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/matched_initialization.py`: freezes and verifies all six seed/architecture initial states and Torch RNG without samples or optimizer updates.
 - `qec/matched_checkpoints.py`: binds unchanged private Trainer checkpoints to the verified layout, both prospective documents and an externally frozen inventory; no standalone study launch.
 - `qec/ising_layout.py`: verifies pinned Ising measurement-record geometry and the private CNN input mapping without sampling, training or loading weights.
 
