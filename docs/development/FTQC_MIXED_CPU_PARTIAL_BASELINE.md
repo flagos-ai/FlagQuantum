@@ -40,7 +40,10 @@ circuits. Developer smoke runs from #848 are not pooled with this campaign.
 The immutable [public raw records and summaries](evidence/ftqc_mixed_cpu_partial_20261025.json)
 retain all 192 planned process slots across 48 points, original-file digests,
 controller/test source with local paths redacted, full plans and native metadata.
-There are **164 completed processes**: 41 host warm-ups and 123 measured fresh
+The index links three digest-bound record parts (64 slots each), each below the
+unchanged repository single-file limit. Reassembling their `records` lists
+reproduces the original JSON object exactly; no observation or numerical value
+is removed. There are **164 completed processes**: 41 host warm-ups and 123 measured fresh
 processes, covering 41 complete points. The next host warm-up failed; **27 process
 slots remain not attempted**, covering that point's three measurements and the
 six n=8/t=8 route/topology points. No capability refusal or automatic retry ran.
