@@ -16,6 +16,7 @@ import torch
 import flagquantum as fq
 import flagquantum.lindblad as fql
 from flagquantum.core.ir import IRValidationError
+from flagquantum.core.ir.program.physical import operation_key
 from flagquantum.core.rydberg import RydbergProgram
 from flagquantum.errors import CapabilityError, ExecutionError, SerializationError
 from flagquantum.lindblad import _execution_settings, _observables
@@ -41,7 +42,7 @@ from flagquantum.simulation.lindblad_request import (
 class ReferenceSource(RydbergProgram):
     """Test frontend holding an observation outside its unchanged source 1.0."""
 
-    observation: tuple[str, float, float, int] | None = None
+    observation: tuple[str, float, float] | None = None
 
     def measure_presence(
         self, atom: str, *, at: float, efficiency: float
@@ -59,8 +60,7 @@ class ReferenceSource(RydbergProgram):
             or not 0 <= efficiency <= 1
         ):
             raise IRValidationError("invalid or repeated presence observation")
-        index = len(self.to_ir().functions[0].blocks[0].operations)
-        self.observation = (atom, float(at), float(efficiency), index)
+        self.observation = (atom, float(at), float(efficiency))
         return self
 
 
@@ -134,7 +134,12 @@ def plan(
         _observables(settings.get("outputs"))
     ):
         raise CapabilityError("presence controls and outputs cannot require gradients")
-    atom, at, efficiency, operation_index = observation
+    atom, at, efficiency = observation
+    instrument_key = (at, "rydberg.measure_presence", (atom,), "")
+    operation_index = sum(
+        operation_key(op) < instrument_key
+        for op in source.to_ir().functions[0].blocks[0].operations
+    )
     matches = (times - at).abs() <= 1e-12
     if int(matches.sum()) != 1 or not bool(matches[1:-1].any()):
         raise EvolutionValidationError(

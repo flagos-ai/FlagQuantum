@@ -18,6 +18,8 @@ authentic native plan 1.7 validation/capture, decoded interval Hamiltonians,
 Liouvillian, integrator, instrument probabilities, private single-index draw and
 canonical ExecutionResult/MeasurementResult. It assembles the full native grid
 once and does not restart native time at the observation.
+The source-operation index is its canonical timed position, not an append count;
+the reference reuses existing control-operation keys to locate that position.
 
 The source double holds an observation outside its unchanged source 1.0.
 Its serialization is explicitly `test.rydberg_presence_recipe`, containing

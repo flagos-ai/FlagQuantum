@@ -218,7 +218,11 @@ def test_complete_conditional_density_and_time_outputs(
     eta: float,
 ) -> None:
     source = _program(presence_source, pair)
-    operation_index = len(source.to_ir().functions[0].blocks[0].operations)
+    # The timed IR is canonical: this boundary precedes the suffix pulses.
+    operation_index = sum(
+        op.physical_data.start < 0.5
+        for op in source.to_ir().functions[0].blocks[0].operations
+    )
     source.measure_presence("a", at=0.5, efficiency=eta)
     state = _initial(pair, initial)
     times = torch.linspace(0, 1, 129, dtype=torch.float64)
