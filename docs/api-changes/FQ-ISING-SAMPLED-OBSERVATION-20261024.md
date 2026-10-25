@@ -2,170 +2,107 @@
 
 The user explicitly approved the five decisions in
 [proposal 091](../development/API_CHANGE_PROPOSAL_091_ISING_SAMPLED_OBSERVATION.md)
-on 2026-10-24 and authorized its document PR #818 to merge after complete
-applicable CI/GPU. Each later PR requires separate merge authorization.
+on 2026-10-24. The proposal document #818, replaceable baseline #821, Core #824
+and Simulation #827 merged under their respective authorizations. Runtime is
+delivered separately by #838. Every PR still requires its own merge grant;
+contract approval is not blanket merge permission.
 
-## Replaceable baseline
+## Shared baseline and replacement
 
-The [existing execution-plan candidate](../../contracts/execution-plan-v1-candidate.json)
-now records the approved extension as `implemented`, with
-`production_implemented=true` after the Runtime delivery below. The baseline
-itself did not activate production execution. No production source 1.3, environment 1.1,
-new IR, result class or execution path was activated by the baseline.
-The exact candidate guard continues to reject unapproved changes.
+The baseline established four source/planning/execution/JSON factories and
+independent consumers before production implementation. Its disposable reference
+composed existing validation, tensor encoding, exchange/Kraus actions, terminal
+sampling and ExecutionResult/MeasurementResult. It used only a
+`test.ising_sampled_recipe`, never an ExecutionPlan or a production source
+schema, and attached no fake plan.
 
-Four factories in the
-[consumer tests](../../tests/unit/test_ising_sampled_contract.py) own source,
-planning, execution and JSON reading. Their disposable reference, removed by the Runtime delivery, composed existing
-Core exchange validation, native option/output admission, tensor encoding,
-canonical hashing, Simulation exchange/Kraus actions, terminal sampling and
-ExecutionResult/MeasurementResult. It uses a `test.ising_sampled_recipe`, never
-an ExecutionPlan or a production source schema, and attaches no fake plan.
+The four factories now use real Core construction, `fq.plan`, `fq.run` and
+`ExecutionPlan.from_json`. The obsolete reference is deleted. Independent
+consumer/oracle function ASTs are unchanged: fixed F/R matrices, both initial
+channels, noncommuting suffixes, zero-weight contributions, full conditional
+densities, trace, purity and weighted unread equality retain atol=1e-12, rtol=0.
+Current pair IDs, frozen source/output snapshots, name-before-kind resolution,
+private RNG and exact seeded direct/planned/JSON replay retain their assertions.
+The shared 4,096 single-index draws retain the predeclared 1,856..2,240 psi range;
+no build-specific outcome sequence is encoded.
 
-The consumers use independent fixed F/R matrices, both initial channels,
-noncommuting continuation and explicit seeds including both integer limits.
-They compare full complex conditional densities, exact conditional outputs,
-trace, purity and weighted unread continuation at atol=1e-12, rtol=0. They check
-current anyon IDs, original probabilities, result ordering/name selection,
-frozen source/output snapshots, private RNG, exact direct/planned/recipe replay,
-mutually exclusive observations, the 215/216-byte boundary and existing profile
-refusals. The 4,096 private single-index draws retain the predeclared
-1,856..2,240 psi-count range; no build-specific random sequence is encoded.
+The existing execution-plan candidate now marks the approved extension
+`implemented`, with `production_implemented=true`. Its exact guard still
+rejects unapproved mutations. This flag does not promote a capability level.
 
-[Compatibility tests](../../tests/unit/test_ising_sampled_compatibility.py)
-consume eight exact unread source/plan 1.2 captures made before implementation
-at `e873723bd359832de3e718235373affd19544bab`. The capture is copied from the
-immutable pre-implementation evidence, never regenerated. Existing 1.1,
-circuit, Rydberg and Lindblad fixture authorities remain unchanged.
+## Domain responsibilities
 
-After this baseline is accepted, deliver Core, Simulation and Runtime separately.
-Replace only the four factories and delete the obsolete reference; retain the
-independent assertions. Real native source/plan/environment version and rehashed
-tamper tests join the existing codec/admission suites when those domains are
-implemented. The recipe does not pretend to validate a production 1.3 payload.
+Core reuses ProgramRecord/Operation and the existing physical verifier/codec.
+The fluent zero-argument `measure_pair()` records literal null physical data;
+a shared atomic append guard permits one sampled or unread observation total.
+Braid-only source 1.1 and unread source 1.2 bytes remain unchanged. Core owns no
+RNG, execution state or numerical observation algorithm.
 
-## Core source delivery
+Simulation reuses its ordered exchange kernel, `SuperOperator.from_kraus` and
+existing density validator. It computes the prefix and Runtime-selected
+conditional continuation, normalizing by the original positive branch trace.
+Invalid indices and zero-weight branches raise ExecutionError without division.
+The full-density entry rejects sampled sources before exchange arithmetic; it
+cannot silently turn a selected trajectory into an unread mixture.
 
-Baseline #821 merged after independent authorization and complete CI/GPU.
-Core now provides the fluent zero-argument `measure_pair()` builder and strict
-native source codec 1.3. It reuses ProgramRecord/Operation with literal null
-physical data, the existing physical verifier and canonical codec. A shared
-private append guard rejects any second sampled or unread observation before
-mutation. No new IR class, mutable identity cache, RNG or numerical algorithm
-is introduced. Existing braid-only 1.1 and unread 1.2 bytes remain unchanged.
+Runtime extends the existing native executor and plan identity/preflight. Only
+the sampled operation selects plan 1.3 and environment protocol 1.1 with the
+exact `rng_torch_version`. Existing terminal probability checks preserve
+original weights beside corrected draw probabilities; the existing private CPU
+generator/draw selects one outcome. Simulation continues that branch. Reading
+or executing an incompatible sealed RNG environment fails before a kernel/draw.
+No public signature, result field, IR, registry, controller or solver is added.
 
-The candidate stage means source construction only: `production_implemented`
-remains false until native numerical execution is delivered. The existing
-Runtime version boundary still refuses 1.3 before numerical execution, including
-rehashed attempts to place the real new source in old plans. Root signatures,
-plan/environment protocols, independent baseline factories and physics
-assertions are unchanged. The obsolete baseline assertion that the method was
-absent is removed; real closed-admission tests replace that stage assertion.
+Requested expectation records come first, followed by one existing
+`mid_circuit_measurement` record with empty qubits, int64 index `(1,1)`, original
+probabilities, correction, source operation index and current pair IDs. The
+conditional state retains shape `(1,2,2)`. No terminal samples, classical bit
+register, event time or feedback is inferred.
 
-```python
-import json
-import flagquantum as fq
-from flagquantum.experimental.simulation import IsingBraidProgram
-from flagquantum.core.ir.program.physical_codec import (
-    native_program_from_dict, native_program_to_dict,
-)
-from flagquantum.errors import CapabilityError
-
-source = IsingBraidProgram().exchange(1).measure_pair().exchange(0)
-payload = native_program_to_dict(source.to_ir())
-print(payload["version"])
-print(payload["functions"][0]["blocks"][0]["operations"][1]["opcode"])
-print(native_program_from_dict(json.loads(json.dumps(payload))) == source.to_ir())
-try:
-    fq.plan(source, options=fq.ExecutionOptions(shots=1, seed=17))
-except CapabilityError:
-    print("native execution not yet admitted")
-```
-
-Output: `1.3`, `ising.measure_pair`, `True`, `native execution not yet admitted`.
-The codec functions above are the existing internal source boundary, not new
-root exports. This demonstrates source inspection and the honest execution
-boundary; the proposed conditional-state workflow is not available yet.
-
-## Runnable current user workflow
-
-The existing terminal sampler provides an explicit draw today; it returns no
-conditional state and is not the proposed intermediate operation:
+## Runnable public workflow
 
 ```python
 import torch
 import flagquantum as fq
 from flagquantum.experimental.simulation import IsingBraidProgram
-from flagquantum.runtime import sample_terminal
-
-source = IsingBraidProgram().exchange(1)
-state = fq.run(source).state
-instrument = {c: [source.projector(c)] for c in ("1", "psi")}
-first = sample_terminal(state, instrument, shots=1, seed=17)
-repeat = sample_terminal(state, instrument, shots=1, seed=17)
-print(round(float(state[0, 1, 1].real), 12))
-print(torch.equal(first.value, repeat.value))
+program = IsingBraidProgram().exchange(1).measure_pair().exchange(0)
+plan = fq.plan(program, options=fq.ExecutionOptions(shots=1, seed=17),
+               outputs=fq.expectation(program.projector("psi"), name="psi"))
+result = fq.run(fq.ExecutionPlan.from_json(plan.to_json()))
+observed = result.measurement("mid_circuit_measurement")
+index = int(observed.value[0, 0])
+print(plan.schema_version)
+print(observed.metadata["outcome_labels"][index] in ("1", "psi"))
+print(abs(float(result.expectation("psi")[0]) - index) < 1e-12)
+print(torch.equal(result.state, fq.run(plan).state))
 ```
 
-Expected output: `0.5`, `True`. The full current-API conditional mathematics
-reference is in the approved proposal; the shorter example above makes no claim
-that `fq.run` now accepts intermediate sampling.
+Executed output: `1.3`, `True`, `True`, `True`. No particular label is promised
+across Torch builds; the sealed plan repeats exactly in the reviewed environment.
 
-Run the baseline with:
+Run the real consumers and public integration workflow with:
 
 ```bash
-python -m pytest tests/unit/test_ising_sampled_contract.py tests/unit/test_ising_sampled_compatibility.py -q
+python -m pytest tests/unit/test_ising_sampled_contract.py tests/unit/test_ising_sampled_runtime.py tests/integration/test_ising_sampled_execution.py -q
 ```
 
-The accepted scope remains one CPU trajectory, four sigma anyons and total
-vacuum. No multiple observations, feedback, classical register, atom-loss
-inference, gradient, alternate backend, Remote or hardware support is claimed.
+## Compatibility, resources and limits
 
-## Simulation conditional actions
+Compatibility tests retain eight original unread source/plan 1.2 captures from
+before implementation. Existing 1.1, circuit, Rydberg and Lindblad fixture
+authorities remain unchanged. A further pre-Runtime capture preserves seventeen
+complete old plan JSON strings and ten native sources for exact comparison.
+Strict rehashed tests cover source/plan mismatches, old environment refusals,
+explicit sampling options and RNG build requirements; the old environment 1.0
+mapping and old bytes are not rewritten.
 
-Core #824 merged after its separate authorization and complete CI/GPU.
-Simulation now computes the prefix density and a selected branch's continuation
-inside the existing Ising action module. It reuses the ordered exchange kernel,
-`SuperOperator.from_kraus`, and the existing density validator. No random draw,
-planner, result wrapper, new IR or solver is added. Branch normalization uses the
-original positive trace; zero-weight or invalid selections raise ExecutionError
-without division. The unread and braid-only full-density entry retains its old
-arithmetic and rejects sampled sources before any exchange arithmetic.
+Only one CPU complex128 trajectory in the fixed four-sigma total-vacuum sector
+is admitted. `shots=1` and a Python integer seed in `[0,2**64-1]` must be explicit.
+The inherited-control, 215/216-byte and dense-ceiling tests refuse unsupported
+requests before prefix evolution. The sampling input/probability/sample subtotal
+is 216 bytes, not a process-RSS bound; old state storage remains 64 bytes.
 
-The independent Simulation tests enumerate both branches for both initial
-channels and noncommuting prefixes/suffixes. Full complex density, trace,
-purity and weighted unread equivalence retain atol=1e-12, rtol=0. Additional
-cases distinguish original-trace normalization from corrected sampling weights,
-preserve tiny positive branches, and reject invalid density/index inputs.
-Source, prefix density and Torch/Python RNG snapshots remain unchanged.
-The shared baseline's four factories and independent consumers remain untouched.
-
-This is an internal numerical delivery. The runnable current user workflow above
-still prints `0.5` and `True`; `fq.plan`/`fq.run` still reject source 1.3.
-Runtime admission, private sampling, plan/environment versions, measurement
-records and real JSON replay remain the next separately delivered domain.
-
-## Runtime delivery
-
-Simulation #827 is merged. The existing native executor now admits one sampled
-trajectory using source/plan 1.3, explicit shots=1 and seed, and the reviewed
-1.1 environment mapping with the exact RNG Torch version. Existing probability
-checks retain original weights alongside corrected draw probabilities; the
-existing private CPU draw selects an index, and Simulation performs the
-conditional normalization and suffix. Runtime appends the existing intermediate
-measurement after requested output records and computes current pair IDs from
-the captured exchange order. No public signatures or result fields change.
-
-The four shared baseline factories now use actual Core construction,
-`fq.plan`, `fq.run` and `ExecutionPlan.from_json`; the obsolete reference is
-deleted. Independent consumer/oracle assertions are unchanged. Staged tests
-that asserted root execution was still closed are replaced by real strict
-version, explicit option, rehashed environment and failure-before-draw tests.
-The candidate's implementation flag and exact checker are activated only for
-the already approved 091 extension; their negative mutation tests remain.
-
-The user example in the Runtime README now executes through the real plan and
-JSON reader. Its output is `1.3`, `True`, `True`. Old braid, unread, circuit,
-Rydberg and Lindblad source/plan bytes retain their original authorities.
-No sampled feedback, multi-shot native batching, new IR, result class,
-registry, controller, solver or physical hardware support is added.
+Gradients, multi-shot native batching, multiple observations, feedback, atom-loss
+inference, noise, alternate backends/devices, approximate fallback, cost
+calibration, Remote, physical hardware and other anyon sectors remain outside
+this delivery. This bounded path does not certify full M3/M4.

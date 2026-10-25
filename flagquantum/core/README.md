@@ -37,8 +37,8 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   source 1.0 is unchanged.
   Charge projectors are CPU mathematical inputs. Native braid execution,
   executable plans and numerical F/R/Kraus actions remain outside this source gate.
-  Runtime admits matching native plan 1.2 separately and currently rejects
-  sampled source 1.3. Core owns no numerical observation algorithm, RNG,
+  Runtime separately admits matching native plans, including one explicitly
+  seeded CPU trajectory for sampled source 1.3. Core owns no numerical observation algorithm, RNG,
   execution state or plan/environment version activation.
 - `target_capabilities.py`: vendor-neutral target capability vocabulary.
 - `numerics.py`: precision and accuracy requirements, not numerical kernels.
