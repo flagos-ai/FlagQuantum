@@ -1,12 +1,19 @@
 # Proposal 092: one seeded native Rydberg presence trajectory
 
-Status: **proposed; explicit approval required before baseline or implementation**.
+Status: **approved for staged implementation on 2026-10-25**.
+The user explicitly approved all five decisions and conditionally authorized
+normal merging of document PR #845 after its latest complete applicable CI/GPU
+and repository rules pass. Proceed first with the replaceable baseline; each
+later PR still requires its own merge authorization. This approval record does
+not activate a production API.
+
 This document changes no API, source/plan reader, candidate contract, snapshot,
 capability level or production code. Approval of 081/083/089/091 and merges of
-existing examples do not approve the changes below. Each later PR requires its
-own merge authorization and latest complete applicable CI/GPU verification.
+existing examples did not approve the changes below; this proposal received its
+own explicit approval. Each later PR requires its own merge authorization and
+latest complete applicable CI/GPU verification.
 
-## Five decisions requiring approval
+## Five approved decisions
 
 1. Add `RydbergProgram.measure_presence(self, atom: str, *, at: float,
    efficiency: float) -> RydbergProgram`: one declared observation of one named
