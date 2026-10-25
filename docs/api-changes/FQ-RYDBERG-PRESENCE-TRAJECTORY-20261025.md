@@ -5,8 +5,9 @@ The user explicitly approved all five decisions in
 on 2026-10-25. Document PR #845 merged as
 `7bd873856c13275c140e4be622560ab008bea60f` after complete applicable CI/GPU.
 Each later PR requires its own conditional merge authorization. This baseline
-does not activate the proposed Core method, native source 1.4, Lindblad plan
-1.8, root input union or result-plan annotation.
+was accepted in PR #854. The Core stage now activates the approved method and
+strict source 1.4 only; Lindblad plan 1.8, root admission and result-plan
+annotation remain closed.
 
 ## Replacement boundary
 
@@ -28,12 +29,12 @@ The source double holds an observation outside its unchanged source 1.0.
 Its serialization is explicitly `test.rydberg_presence_recipe`, containing
 an authentic old native plan, not a fake ProgramRecord 1.4 or LindbladPlan 1.8.
 No fake plan is attached to ExecutionResult. Production compatibility tests
-keep the current method absent, new native reader admission closed and old
+check the real Core method, keep new native plan reader admission closed and old
 Lindblad plans refused at the root. These stage assertions are removed only
 when their real owning domain changes; frozen physical consumers are retained.
 
 The existing execution-plan candidate records the approved future root join
-as `contract_baseline`, `production_implemented=false`. Its exact guard and five
+as `core_source`, `production_implemented=false`. Its exact guard and five
 negative mutations prohibit silently changing versions, adding result fields,
 claiming implementation or expanding feedback. This metadata does not make
 LindbladPlan an ExecutionPlan subtype or introduce a registry or new result type.

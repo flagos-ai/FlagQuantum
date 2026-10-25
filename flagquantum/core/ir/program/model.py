@@ -28,6 +28,7 @@ from .physical import (
     IsingContext,
     IsingExchange,
     RydbergContext,
+    RydbergPresence,
     RydbergPulse,
     RydbergTransport,
 )
@@ -115,7 +116,9 @@ class Operation:
     parameters: tuple[tuple[str, ValueRef], ...] = ()
     literal: float | None = None
     condition_clauses: tuple[tuple[ConditionRef, ...], ...] = ()
-    physical_data: RydbergTransport | RydbergPulse | IsingExchange | None = None
+    physical_data: (
+        RydbergTransport | RydbergPulse | RydbergPresence | IsingExchange | None
+    ) = None
 
     def __hash__(self) -> int:
         previous = (

@@ -83,6 +83,13 @@ class RydbergPulse:
     channel: str
 
 
+@dataclass(frozen=True)
+class RydbergPresence:
+    atom: str
+    at: float
+    efficiency: float
+
+
 def identifier(value: object, field: str) -> str:
     if not isinstance(value, str):
         raise TypeError(f"{field} must be a string")
@@ -165,8 +172,19 @@ def check_context(context: RydbergContext) -> None:
 
 
 def check_control(
-    context: RydbergContext, data: RydbergTransport | RydbergPulse
+    context: RydbergContext, data: RydbergTransport | RydbergPulse | RydbergPresence
 ) -> None:
+    if isinstance(data, RydbergPresence):
+        atom = identifier(data.atom, "observation atom")
+        if atom not in dict(context.atoms):
+            raise ValueError(f"unknown observation atom {atom!r}")
+        at = finite_real(data.at, "at")
+        efficiency = finite_real(data.efficiency, "efficiency")
+        if at <= 0 or not 0 <= efficiency <= 1:
+            raise ValueError(
+                "observation requires positive time and efficiency in [0, 1]"
+            )
+        return
     if not isinstance(data.atoms, tuple) or not data.atoms:
         raise ValueError("control atoms must be a nonempty immutable group")
     order = {actor: i for i, (actor, _) in enumerate(context.atoms)}
@@ -209,6 +227,8 @@ def check_control(
 
 def operation_key(operation: Operation) -> tuple[float, str, tuple[str, ...], str]:
     data = operation.physical_data
+    if isinstance(data, RydbergPresence):
+        return data.at, operation.opcode, (data.atom,), ""
     assert isinstance(data, (RydbergTransport, RydbergPulse))
     return data.start, operation.opcode, data.atoms, data.channel
 
@@ -604,6 +624,7 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
                 "native controls cannot carry SSA arguments, edges, branches or a circuit payload",
             ),
         )
+    observations: list[RydbergPresence] = []
     controls: list[RydbergTransport | RydbergPulse] = []
     diagnostics: list[LevelDiagnostic] = []
     if not isinstance(block.operations, tuple):
@@ -638,7 +659,15 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
         expected = (
             RydbergTransport
             if operation.opcode == "rydberg.move"
-            else RydbergPulse if operation.opcode == "rydberg.pulse" else None
+            else (
+                RydbergPulse
+                if operation.opcode == "rydberg.pulse"
+                else (
+                    RydbergPresence
+                    if operation.opcode == "rydberg.measure_presence"
+                    else None
+                )
+            )
         )
         if expected is None or type(data) is not expected:
             diagnostics.append(
@@ -648,7 +677,7 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
                 )
             )
             continue
-        assert isinstance(data, (RydbergTransport, RydbergPulse))
+        assert isinstance(data, (RydbergTransport, RydbergPulse, RydbergPresence))
         try:
             check_control(context, data)
         except (TypeError, ValueError) as exc:
@@ -656,7 +685,10 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
                 _diagnostic("physical.invalid_operation", f"operation {i}: {exc}")
             )
             continue
-        controls.append(data)
+        if isinstance(data, RydbergPresence):
+            observations.append(data)
+        else:
+            controls.append(data)
     if diagnostics:
         return tuple(diagnostics)
     if tuple(sorted(block.operations, key=operation_key)) != block.operations:
@@ -670,6 +702,15 @@ def verify_physical_program(record: ProgramRecord) -> tuple[LevelDiagnostic, ...
         boundary_map = _boundary_times(tuple(controls))
     except ValueError as exc:
         return (_diagnostic("physical.invalid_operation", str(exc)),)
+    if observations:
+        horizon = max((c.start + c.duration for c in controls), default=0.0)
+        if len(observations) != 1 or not 0 < observations[0].at < horizon:
+            return (
+                _diagnostic(
+                    "physical.invalid_operation",
+                    "one observation must be strictly inside the control horizon",
+                ),
+            )
     moves = tuple(c for c in controls if isinstance(c, RydbergTransport))
     issue = _histories(context, moves)
     if issue is not None:

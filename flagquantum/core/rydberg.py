@@ -18,6 +18,7 @@ from .ir import IRValidationError
 from .ir.program.model import BlockRecord, FunctionRecord, Operation, ProgramRecord
 from .ir.program.physical import (
     RydbergContext,
+    RydbergPresence,
     RydbergPulse,
     RydbergTransport,
     check_context,
@@ -130,7 +131,7 @@ class RydbergProgram:
         return self._record.physical_context
 
     def _append(
-        self, opcode: str, data: RydbergTransport | RydbergPulse
+        self, opcode: str, data: RydbergTransport | RydbergPulse | RydbergPresence
     ) -> RydbergProgram:
         try:
             check_control(self._context, data)
@@ -151,6 +152,25 @@ class RydbergProgram:
             ),
         )
         return self
+
+    def measure_presence(
+        self, atom: str, *, at: float, efficiency: float
+    ) -> RydbergProgram:
+        """Record one ideal intermediate presence observation of a named atom."""
+        if any(
+            op.opcode == "rydberg.measure_presence"
+            for op in self._record.functions[0].blocks[0].operations
+        ):
+            raise IRValidationError("only one presence observation is supported")
+        try:
+            data = RydbergPresence(
+                identifier(atom, "observation atom"),
+                finite_real(at, "at"),
+                finite_real(efficiency, "efficiency"),
+            )
+        except ValueError as exc:
+            raise IRValidationError(str(exc)) from exc
+        return self._append("rydberg.measure_presence", data)
 
     def move(
         self,

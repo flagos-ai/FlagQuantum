@@ -154,7 +154,7 @@ def test_old_plan_exact_replay_and_host_scoped_reconstruction(key: str) -> None:
 
 
 def test_production_sampled_source_and_reader_are_not_pretended() -> None:
-    assert not hasattr(RydbergProgram, "measure_presence")
+    assert callable(RydbergProgram.measure_presence)
     payload = json.loads(json.loads(CAPTURE.read_text())["plans"]["single_atom_native"])
     payload["version"] = "1.8"
     from flagquantum.errors import SerializationError

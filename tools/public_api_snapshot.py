@@ -455,7 +455,7 @@ def _validate_authorized_execution_plan(
         "proposal": "docs/development/API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md",
         "record": "docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md",
         "implementation_authorized": True,
-        "delivery_stage": "contract_baseline",
+        "delivery_stage": "core_source",
         "production_implemented": False,
         "operation": "rydberg.measure_presence",
         "source_version": "1.4",
@@ -475,8 +475,11 @@ def _validate_authorized_execution_plan(
         )
     from flagquantum.core.rydberg import RydbergProgram
 
-    if hasattr(RydbergProgram, "measure_presence"):
-        errors.append("native Rydberg presence source precedes its recorded Core stage")
+    presence = getattr(RydbergProgram, "measure_presence", None)
+    if not callable(presence) or str(inspect.signature(presence)) != (
+        "(self, atom: 'str', *, at: 'float', efficiency: 'float') -> 'RydbergProgram'"
+    ):
+        errors.append("proposal 092 Core presence signature differs from approval")
     root_name = str(contract["root_addition"])
     if root_name not in names or root_name not in fq.__all__:
         errors.append(f"authorized root API {root_name} is missing")
