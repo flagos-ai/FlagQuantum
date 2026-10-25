@@ -285,3 +285,569 @@ def test_reference_or_concurrent_mutation_cannot_return_preflight(
     with pytest.raises(ValueError):
         run.preflight(options)
     assert not options.study.exists()
+
+
+@pytest.fixture
+def preparation(
+    context: tuple[run.Options, dict[str, Any], list[str]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[run.Options, list[str], dict[str, Any]]:
+    options, parts, _ = context
+    report = run.preflight(options)
+
+    class Circuit:
+        def __str__(self) -> str:
+            return "synthetic preparation circuit"
+
+    circuit = Circuit()
+    report["inputs"]["circuit_sha256"] = hashlib.sha256(
+        str(circuit).encode()
+    ).hexdigest()
+    monkeypatch.setattr(run, "preflight", lambda opts: json.loads(json.dumps(report)))
+    calls: list[str] = []
+
+    def output(name: str, path: Path, filename: str) -> None:
+        assert (options.study / "launch.lock").exists()
+        calls.append(name)
+        path.mkdir(parents=True, exist_ok=False)
+        (path / filename).write_text(json.dumps({"software_stage": name}))
+
+    def initialize(source: Path, path: Path) -> dict[str, Any]:
+        output("initialize", path, "initialization.json")
+        return {}
+
+    def train(
+        source: Path, initial: Path, path: Path, *, initialization_sha256: str
+    ) -> None:
+        assert initialization_sha256 == run.archive.digest(
+            initial / "initialization.json"
+        )
+        output("train", path, "manifest.json")
+
+    def calibrate(
+        source: Path, initial: Path, trained: Path, path: Path, *, training_sha256: str
+    ) -> dict[str, Any]:
+        assert training_sha256 == run.archive.digest(trained / "manifest.json")
+        output("calibrate", path, "manifest.json")
+        return {}
+
+    def reference(*a: Any, **k: Any) -> Any:
+        assert k == {"load_model": False}
+        calls.append("reference")
+        return SimpleNamespace(circuit=circuit)
+
+    def validate(
+        source: Path, initial: Path, trained: Path, cal: Path, path: Path, **k: Any
+    ) -> dict[str, Any]:
+        assert k["training_sha256"] == run.archive.digest(trained / "manifest.json")
+        assert k["calibration_sha256"] == run.archive.digest(cal / "manifest.json")
+        assert k["device"] == torch.device("cuda:0") and k["circuit"] is circuit
+        output("validation", path, "choices.json")
+        return {}
+
+    def probe(
+        source: Path,
+        initial: Path,
+        trained: Path,
+        cal: Path,
+        choices: Path,
+        path: Path,
+        **k: Any,
+    ) -> Any:
+        assert k["expected_choices_sha256"] == run.archive.digest(
+            choices / "choices.json"
+        )
+        assert k["circuit"] is circuit
+        output("probes", path, "manifest.json")
+
+    def receipt(
+        source: Path,
+        initial: Path,
+        trained: Path,
+        cal: Path,
+        choices: Path,
+        probes: Path,
+        path: Path,
+        **k: Any,
+    ) -> dict[str, Any]:
+        assert k["host"] in ("a800-172", "a800-171")
+        assert k["choices_sha256"] == run.archive.digest(choices / "choices.json")
+        assert k["probes_sha256"] == run.archive.digest(probes / "manifest.json")
+        assert k["ising_weights"] == options.ising_weights
+        output("receipt" if k["host"] == "a800-172" else "peer", path, "receipt.json")
+        return {}
+
+    monkeypatch.setattr(run.initialization, "initialize", initialize)
+    monkeypatch.setattr(run.training, "run_training", train)
+    monkeypatch.setattr(run.selection, "calibrate", calibrate)
+    monkeypatch.setattr(run.comparison, "reference", reference)
+    monkeypatch.setattr(run.comparison, "global_decoder", lambda c: None)
+    monkeypatch.setattr(run.validation, "validate_and_freeze", validate)
+    monkeypatch.setattr(run.parity, "capture_probes", probe)
+    monkeypatch.setattr(run.parity, "record_device_receipt", receipt)
+    return options, calls, parts
+
+
+def test_preparation_order_frozen_handoff_and_nonrepeatable_lock(
+    preparation: tuple[run.Options, list[str], dict[str, Any]],
+) -> None:
+    options, calls, _ = preparation
+    digest = run.prepare(options)
+    assert calls == [
+        "initialize",
+        "train",
+        "calibrate",
+        "reference",
+        "validation",
+        "probes",
+        "receipt",
+    ]
+    plan = json.loads((options.study / "plan.json").read_text())
+    ready = json.loads((options.study / "ready.json").read_text())
+    assert plan["deadline"] - plan["started"] == 86400
+    assert digest == run.archive.digest(options.study / "ready.json")
+    assert ready["plan_sha256"] == run.archive.digest(options.study / "plan.json")
+    assert set(ready["files"]) == {
+        "initial",
+        "trained",
+        "calibration",
+        "choices",
+        "probes",
+        "receipt-172",
+    }
+    for name, files in ready["files"].items():
+        assert files == run.validation._files(options.study / name)
+    with pytest.raises(FileExistsError):
+        run.prepare(options)
+    assert len(calls) == 7
+
+
+@pytest.mark.parametrize(
+    "stage",
+    [
+        "initialization",
+        "training",
+        "calibration",
+        "reference",
+        "validation",
+        "probes",
+        "receipt",
+    ],
+)
+def test_stage_failure_keeps_partial_and_cannot_retry(
+    preparation: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    stage: str,
+) -> None:
+    options, calls, _ = preparation
+    owners = {
+        "initialization": (run.initialization, "initialize"),
+        "training": (run.training, "run_training"),
+        "calibration": (run.selection, "calibrate"),
+        "reference": (run.comparison, "reference"),
+        "validation": (run.validation, "validate_and_freeze"),
+        "probes": (run.parity, "capture_probes"),
+        "receipt": (run.parity, "record_device_receipt"),
+    }
+    owner, attr = owners[stage]
+
+    def fail(*a: Any, **k: Any) -> None:
+        raise RuntimeError("synthetic failed " + stage)
+
+    monkeypatch.setattr(owner, attr, fail)
+    with pytest.raises(RuntimeError, match="synthetic failed"):
+        run.prepare(options)
+    before = list(calls)
+    assert (options.study / "launch.lock").exists() and not (
+        options.study / "ready.json"
+    ).exists()
+    with pytest.raises(FileExistsError):
+        run.prepare(options)
+    assert calls == before
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "source",
+        "protocol",
+        "metadata",
+        "weights",
+        "lock",
+        "inspect",
+        "plan",
+        "control",
+        "completed_stage",
+        "extra",
+        "deadline",
+    ],
+)
+def test_preparation_seals_prior_outputs_inputs_and_common_deadline(
+    preparation: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    damage: str,
+) -> None:
+    options, calls, parts = preparation
+    original = run.training.run_training
+
+    def mutate(*a: Any, **k: Any) -> None:
+        original(*a, **k)
+        if damage == "source":
+            monkeypatch.setattr(run, "_fingerprints", lambda: {"changed": "b" * 64})
+        elif damage == "protocol":
+            parts["protocol"].write_text("changed")
+        elif damage == "metadata":
+            (run.archive.ARCHIVE / "results.json").write_text("changed")
+        elif damage == "weights":
+            options.ising_weights.write_bytes(b"changed")
+        elif damage == "lock":
+            options.dependency_lock.write_text("changed")
+        elif damage == "inspect":
+            options.inspect.write_text("changed")
+        elif damage == "plan":
+            (options.study / "plan.json").write_text("changed")
+        elif damage == "control":
+            (options.study / "launch.lock").write_text("changed")
+        elif damage == "completed_stage":
+            (options.study / "initial/initialization.json").write_text("changed")
+        elif damage == "extra":
+            (options.study / "extra").write_text("extra")
+        else:
+            raise TimeoutError("synthetic common deadline expired")
+
+    monkeypatch.setattr(run.training, "run_training", mutate)
+    with pytest.raises((ValueError, TimeoutError)):
+        run.prepare(options)
+    assert calls == ["initialize", "train"]
+    assert not (options.study / "ready.json").exists()
+
+
+def test_peer_host_refuses_before_preflight(
+    preparation: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    options, calls, _ = preparation
+
+    def forbidden(opts: run.Options) -> None:
+        raise AssertionError("wrong host entered preflight")
+
+    monkeypatch.setattr(run, "preflight", forbidden)
+    with pytest.raises(ValueError, match="primary host"):
+        run.prepare(replace(options, host="a800-171"))
+    assert not calls and not options.study.exists()
+
+
+@pytest.fixture
+def phases(
+    preparation: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[run.Options, list[str], dict[str, Any]]:
+    """Mock only stage/hardware boundaries; exercise real locks, hashes and deadline."""
+    options, calls, parts = preparation
+
+    def scope(*a: Any, **k: Any) -> dict[str, Any]:
+        for path in k["readonly_paths"]:
+            run.coordinator._read_only(parts["raw"], path)
+        return parts["raw"]
+
+    monkeypatch.setattr(run.coordinator, "_container_scope", scope)
+
+    def primary(*a: Any, **k: Any) -> None:
+        assert k["host"] == "a800-172"
+        for path, sha in a[6].values():
+            assert run.archive.digest(path) == sha
+        assert k["choices_sha256"] == run.archive.digest(a[4] / "choices.json")
+        assert k["probes_sha256"] == run.archive.digest(a[5] / "manifest.json")
+        calls.append("primary")
+        a[7].mkdir()
+        (a[7] / "manifest.json").write_text('{"software_primary":true}')
+
+    def summary(path: Path, output: Path, *, manifest_sha256: str) -> None:
+        assert run.archive.digest(path / "manifest.json") == manifest_sha256
+        calls.append("summary")
+        output.write_text('{"software_summary":true}')
+
+    monkeypatch.setattr(run.primary, "run_primary", primary)
+    monkeypatch.setattr(run.primary, "summarize_primary", summary)
+    return options, calls, parts
+
+
+def test_internal_phases_share_frozen_deadline_without_repeating_stages(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+) -> None:
+    options, calls, _ = phases
+    sha = run.prepare(options)
+    before = list(calls)
+    peer = options.study.parent / "peer-output"
+    peer_sha = run.peer(replace(options, host="a800-171"), sha, peer)
+    assert calls == before + ["peer"]
+    run.finish(options, sha, peer / "device/receipt.json", peer_sha)
+    assert calls == before + ["peer", "primary", "summary"]
+    complete = json.loads((options.study / "complete.json").read_text())
+    assert (
+        complete["handoff_sha256"] == sha
+        and complete["peer_receipt_sha256"] == peer_sha
+    )
+    assert complete["summary_sha256"] == run.archive.digest(
+        options.study / "summary.json"
+    )
+    with pytest.raises(FileExistsError):
+        run.finish(options, sha, peer / "device/receipt.json", peer_sha)
+    with pytest.raises(FileExistsError):
+        run.peer(replace(options, host="a800-171"), sha, peer)
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "hash",
+        "plan",
+        "stage",
+        "extra",
+        "expired",
+        "interval",
+        "source",
+        "control",
+        "inventory",
+        "purpose",
+    ],
+)
+def test_peer_refuses_damaged_handoff_before_receipt(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    damage: str,
+) -> None:
+    options, calls, _ = phases
+    sha = run.prepare(options)
+    before = list(calls)
+    ready_path = options.study / "ready.json"
+    ready = json.loads(ready_path.read_text())
+    if damage == "hash":
+        sha = "0" * 64
+    elif damage == "plan":
+        (options.study / "plan.json").write_text("changed")
+    elif damage == "stage":
+        (options.study / "trained/manifest.json").write_text("changed")
+    elif damage == "extra":
+        (options.study / "extra").touch()
+    elif damage == "source":
+        monkeypatch.setattr(run, "_fingerprints", lambda: {"changed": "a" * 64})
+    elif damage in ("expired", "interval"):
+        plan_path = options.study / "plan.json"
+        plan = json.loads(plan_path.read_text())
+        if damage == "expired":
+            plan["started"] -= 90000
+            plan["deadline"] -= 90000
+        else:
+            plan["deadline"] += 1
+        plan_path.write_text(json.dumps(plan))
+        ready["control"]["plan.json"] = ready["plan_sha256"] = run.archive.digest(
+            plan_path
+        )
+    elif damage == "control":
+        ready["control"].pop("launch.lock")
+    elif damage == "inventory":
+        ready["files"].pop("initial")
+    else:
+        ready["purpose"] = "wrong"
+    if damage in ("expired", "interval", "control", "inventory", "purpose"):
+        ready_path.write_text(json.dumps(ready))
+        sha = run.archive.digest(ready_path)
+    with pytest.raises((ValueError, TimeoutError)):
+        run.peer(replace(options, host="a800-171"), sha, options.study.parent / "peer")
+    assert calls == before
+
+
+@pytest.mark.parametrize("phase", ["peer", "primary", "summary"])
+def test_phase_failure_retains_lock_and_rejects_retry(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    phase: str,
+) -> None:
+    options, calls, _ = phases
+    sha = run.prepare(options)
+    peer = options.study.parent / "peer"
+
+    def fail(*a: Any, **k: Any) -> None:
+        raise RuntimeError("synthetic phase failure")
+
+    if phase == "peer":
+        monkeypatch.setattr(run.parity, "record_device_receipt", fail)
+        with pytest.raises(RuntimeError):
+            run.peer(replace(options, host="a800-171"), sha, peer)
+        with pytest.raises(FileExistsError):
+            run.peer(replace(options, host="a800-171"), sha, peer)
+        assert (peer / "peer.lock").exists()
+    else:
+        peer_sha = run.peer(replace(options, host="a800-171"), sha, peer)
+        monkeypatch.setattr(
+            run.primary,
+            "run_primary" if phase == "primary" else "summarize_primary",
+            fail,
+        )
+        with pytest.raises(RuntimeError):
+            run.finish(options, sha, peer / "device/receipt.json", peer_sha)
+        with pytest.raises(FileExistsError):
+            run.finish(options, sha, peer / "device/receipt.json", peer_sha)
+        assert (options.study / "finish.lock").exists()
+    assert not (options.study / "complete.json").exists()
+
+
+@pytest.mark.parametrize(
+    "damage", ["receipt", "source", "stage", "primary", "control", "extra"]
+)
+def test_finish_rechecks_evidence_after_summary(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    damage: str,
+) -> None:
+    options, calls, _ = phases
+    sha = run.prepare(options)
+    peer = options.study.parent / "peer"
+    peer_sha = run.peer(replace(options, host="a800-171"), sha, peer)
+    original = run.primary.summarize_primary
+
+    def mutate(*a: Any, **k: Any) -> None:
+        original(*a, **k)
+        if damage == "receipt":
+            (peer / "device/receipt.json").write_text("changed")
+        elif damage == "source":
+            monkeypatch.setattr(run, "_fingerprints", lambda: {"changed": "b" * 64})
+        elif damage == "stage":
+            (options.study / "initial/initialization.json").write_text("changed")
+        elif damage == "primary":
+            (options.study / "primary/manifest.json").write_text("changed")
+        elif damage == "control":
+            (options.study / "finish.lock").write_text("changed")
+        else:
+            (options.study / "extra").touch()
+
+    monkeypatch.setattr(run.primary, "summarize_primary", mutate)
+    with pytest.raises(ValueError):
+        run.finish(options, sha, peer / "device/receipt.json", peer_sha)
+    assert not (options.study / "complete.json").exists()
+
+
+def test_run_waits_for_externally_delivered_receipt_without_new_prepare(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    options, calls, _ = phases
+    receipt = options.study.parent / "delivered.json"
+    incoming = options.study.parent / "delivered.sha256"
+    original = run.prepare
+
+    def prepare(opts: run.Options) -> str:
+        sha = original(opts)
+        receipt.write_text('{"software_delivery":true}')
+        incoming.write_text(run.archive.digest(receipt))
+        return sha
+
+    monkeypatch.setattr(run, "prepare", prepare)
+    run.run(options, incoming, receipt)
+    assert calls.count("initialize") == 1 and calls[-2:] == ["primary", "summary"]
+    assert (options.study / "complete.json").exists()
+
+
+@pytest.mark.parametrize(
+    "damage", ["stale_hash", "stale_receipt", "bad_hash", "wrong_hash"]
+)
+def test_run_rejects_stale_or_invalid_external_delivery(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    damage: str,
+) -> None:
+    options, calls, _ = phases
+    receipt = options.study.parent / "delivered.json"
+    incoming = options.study.parent / "delivered.sha256"
+    if damage.startswith("stale"):
+        (incoming if damage == "stale_hash" else receipt).touch()
+    else:
+        original = run.prepare
+
+        def prepare(opts: run.Options) -> str:
+            sha = original(opts)
+            receipt.write_text("software only")
+            incoming.write_text("invalid" if damage == "bad_hash" else "0" * 64)
+            return sha
+
+        monkeypatch.setattr(run, "prepare", prepare)
+    with pytest.raises((ValueError, FileExistsError)):
+        run.run(options, incoming, receipt)
+    assert "primary" not in calls
+    assert not (options.study / "complete.json").exists()
+
+
+@pytest.mark.parametrize("phase", ["peer", "finish"])
+def test_phase_host_guard_precedes_any_preflight(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    phase: str,
+) -> None:
+    options, calls, _ = phases
+
+    def forbidden(*a: Any, **k: Any) -> None:
+        raise AssertionError("wrong host reached preflight")
+
+    monkeypatch.setattr(run, "preflight", forbidden)
+    with pytest.raises(ValueError):
+        if phase == "peer":
+            run.peer(options, "0" * 64, options.study.parent / "peer")
+        else:
+            run.finish(
+                replace(options, host="a800-171"), "0" * 64, Path("unused"), "0" * 64
+            )
+    assert not calls
+
+
+@pytest.mark.parametrize("damage", ["input", "control", "extra"])
+def test_peer_rechecks_handoff_and_own_output_after_device_stage(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    damage: str,
+) -> None:
+    options, calls, _ = phases
+    sha = run.prepare(options)
+    output = options.study.parent / "peer"
+    original = run.parity.record_device_receipt
+
+    def mutate(*a: Any, **k: Any) -> dict[str, Any]:
+        result = original(*a, **k)
+        if damage == "input":
+            (options.study / "probes/manifest.json").write_text("changed")
+        elif damage == "control":
+            (output / "peer.lock").write_text("changed")
+        else:
+            (output / "extra").touch()
+        return result
+
+    monkeypatch.setattr(run.parity, "record_device_receipt", mutate)
+    with pytest.raises(ValueError):
+        run.peer(replace(options, host="a800-171"), sha, output)
+    with pytest.raises(FileExistsError):
+        run.peer(replace(options, host="a800-171"), sha, output)
+
+
+def test_waiting_deadline_failure_never_starts_primary(
+    phases: tuple[run.Options, list[str], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    options, calls, _ = phases
+
+    def expired(seconds: float) -> None:
+        raise TimeoutError("synthetic waiting deadline")
+
+    monkeypatch.setattr(run.time, "sleep", expired)
+    with pytest.raises(TimeoutError):
+        run.run(
+            options,
+            options.study.parent / "incoming.sha256",
+            options.study.parent / "incoming.json",
+        )
+    assert "primary" not in calls and (options.study / "ready.json").exists()
+    with pytest.raises(FileExistsError):
+        run.run(
+            options,
+            options.study.parent / "incoming.sha256",
+            options.study.parent / "incoming.json",
+        )
