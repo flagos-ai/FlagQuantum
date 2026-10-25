@@ -638,3 +638,15 @@ This applies to **every** PR: documentation, contract, implementation, internal 
 - [ ] Final review blocks handoff if example code, prerequisites, expected results, or execution evidence are missing. Do not weaken tests or snapshots to make an example pass.
 
 Appendix A supplies two already executed public examples for immediate documentation/contract work. Future feature PRs must add their own actual affected workflow after its contract is approved; this plan deliberately does not fabricate runnable code for APIs that do not yet exist.
+
+### FTS-10A continuation controller review
+
+The human explicitly approved the seven-point continuation in
+[the bounded proposal](../development/FTQC_MIXED_CPU_CONTINUATION_PROPOSAL.md):
+28 new workload processes, cumulative 193 attempts, unchanged RSS/query/gap
+policy, controller review first. The separate private controller retains primary
+supervision failures before producer validation and has fake boundary tests.
+Implementation review and mainline admission are pending; no actual probe or
+continuation has run. Proposal main8e40 passed full CI/GPU/fresh-install/public
+examples. FTS-10, FTS-02/09 and R01-R15 remain partial; no method selection,
+performance target, new API or hardware admission follows from this work.
