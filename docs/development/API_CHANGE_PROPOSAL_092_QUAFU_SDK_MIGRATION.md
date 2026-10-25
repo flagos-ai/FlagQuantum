@@ -218,6 +218,33 @@ print(compiled.metadata["execution_target"]["backend"])
 Expected result: `Baihua`. The read is credential-free, and compilation does
 not submit a task.
 
+The second Batch F slice moves `TwinExperiment.submit(provider)` onto the same
+SDK physical-program lifecycle. FlagQuantum lowers a logical CX to the native
+H-CZ-H sequence when required, embeds the ordered physical mapping in the
+submitted QASM, disables service compilation, and binds both the frozen source
+QASM identity and the materialized physical QASM identity. Saved Twin receipts
+retain the SDK protocol, calibration, backend snapshot, and measurement map
+required for fail-closed result restoration.
+
+```python
+import os
+
+from flagquantum.remote import QuafuProvider
+
+provider = QuafuProvider(api_key=os.environ["QUAFU_API_KEY"])
+receipt = experiment.submit(provider)
+print(receipt.payload["quafu_protocol"])
+```
+
+Expected result: `quafu_sdk_v1`; one task is submitted with
+`compiler="none"`. The existing public Twin API is unchanged.
+
+Full SDK replacement of `fetch_chip_info()` remains blocked until the
+maintained calibration schema authoritatively supplies every quantity required
+by the existing Twin noise model, including T2, one-qubit gate fidelity, and
+one- and two-qubit gate duration with units. Batch F must not infer or fabricate
+those values from topology-only fields.
+
 - remove `QUAFU_API_TOKEN`, the SQC hostname, token-header authentication, and
   `/task/*` request paths;
 - remove legacy discovery, submission, status, result, calibration, and

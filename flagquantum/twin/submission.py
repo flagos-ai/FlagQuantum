@@ -23,9 +23,15 @@ _RECEIPT_FIELDS = (
     "deployment_program_format",
     "routing_evidence_sha256",
     "deployment_artifact_sha256",
+    "source_qasm_sha256",
     "submitted_qasm_sha256",
     "compiler",
+    "service_compiler",
     "target_qubits",
+    "quafu_protocol",
+    "backend_snapshot_sha256",
+    "calibration_id",
+    "measurement_mapping",
 )
 
 
@@ -195,10 +201,10 @@ class TwinSubmission:
         if not receipt.task_id.strip():
             raise ValueError("submission receipt requires a task ID")
         build_result_metadata(receipt)
-        if (
-            receipt.payload.get("submitted_qasm_sha256")
-            != experiment.submitted_qasm_identity
-        ):
+        source_identity = receipt.payload.get(
+            "source_qasm_sha256", receipt.payload.get("submitted_qasm_sha256")
+        )
+        if source_identity != experiment.submitted_qasm_identity:
             raise ValueError("submission receipt does not match the frozen QASM")
         if tuple(receipt.payload.get("target_qubits", ())) != experiment.target_qubits:
             raise ValueError("submission receipt does not match the physical mapping")
