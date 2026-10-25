@@ -12,6 +12,7 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- `qec/matched_checkpoints.py`: binds unchanged private Trainer checkpoints to the verified layout, both prospective documents and an externally frozen inventory; no standalone study launch.
 - `qec/ising_layout.py`: verifies pinned Ising measurement-record geometry and the private CNN input mapping without sampling, training or loading weights.
 
 - `qec/run_continued_assessment.py`: controller-bound, fixed-budget A800 study coordination with preflight and immutable handoffs; see the frozen physical protocol.
