@@ -1,15 +1,15 @@
-from dataclasses import replace
 import hashlib
 import json
+from dataclasses import replace
 
 import pytest
 
 from flagquantum.compiler._hybrid import (
     HybridProgram,
+    analysis,
     capture_source,
     run_pass_pipeline,
 )
-from flagquantum.compiler._hybrid import analysis
 
 pytestmark = pytest.mark.unit
 
