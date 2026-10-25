@@ -33,6 +33,7 @@ _QREG_DECLARATION = re.compile(r"\bqreg\s+q\s*\[\s*(\d+)\s*\]\s*;")
 _QUBIT_REFERENCE = re.compile(r"\bq\s*\[\s*(\d+)\s*\]")
 _TASK_API_PROTOCOL = "task_api_v1"
 _SQC_PROTOCOL = "sqc_legacy"
+_SDK_PROTOCOL = "quafu_sdk_v1"
 _TASK_API_ROUTING_TARGETS = {"all-race", "all-redispatch"}
 _MAX_SHOTS = 8192
 
@@ -141,9 +142,10 @@ class QuafuProvider(HttpQuantumProvider):
     """FlagQuantum adapter for Quafu discovery and remote execution.
 
     Read-only discovery and calibration use the official Quafu SDK. During
-    the staged migration, an explicitly injected HTTP transport retains the
-    compatibility path used by offline contract tests, while task submission
-    continues to use the existing protocol.
+    the staged migration, static logical task lifecycles also use the SDK.
+    Physical QSteed and collection paths retain their existing transports
+    until their dedicated migration batches, and an explicitly injected HTTP
+    transport retains the compatibility path used by offline contract tests.
     """
 
     def __init__(
@@ -162,8 +164,10 @@ class QuafuProvider(HttpQuantumProvider):
         sdk_adapter = kwargs.pop("_sdk_adapter", None)
         if sdk_adapter is not None and not isinstance(sdk_adapter, _QuafuSdkAdapter):
             raise TypeError("_sdk_adapter must be a private Quafu SDK adapter")
-        self._sdk_adapter = sdk_adapter
+        self._sdk_read_adapter = sdk_adapter
+        self._sdk_submission_adapter = sdk_adapter
         self._prefer_sdk_reads = sdk_adapter is not None or not transport_supplied
+        self._prefer_sdk_lifecycle = sdk_adapter is not None or not transport_supplied
         resolved_token = token or os.getenv("QUAFU_API_TOKEN")
         self.task_server_url = (
             task_server_url
@@ -203,15 +207,26 @@ class QuafuProvider(HttpQuantumProvider):
         return {"Authorization": f"Bearer {self.api_key}"}
 
     def _read_sdk_adapter(self) -> _QuafuSdkAdapter:
-        if self._sdk_adapter is None:
+        if self._sdk_read_adapter is None:
             base_url = self.task_server_url.removesuffix("/api/v1")
-            self._sdk_adapter = _QuafuSdkAdapter.for_discovery(base_url=base_url)
-        return self._sdk_adapter
+            self._sdk_read_adapter = _QuafuSdkAdapter.for_discovery(base_url=base_url)
+        return self._sdk_read_adapter
+
+    def _submission_sdk_adapter(self) -> _QuafuSdkAdapter:
+        if self._sdk_submission_adapter is None:
+            base_url = self.task_server_url.removesuffix("/api/v1")
+            self._sdk_submission_adapter = _QuafuSdkAdapter.for_submission(
+                api_key=self.api_key,
+                base_url=base_url,
+            )
+        return self._sdk_submission_adapter
 
     @staticmethod
     def _protocol(handle: ProviderTaskHandle) -> str:
         protocol = handle.payload.get("quafu_protocol", _SQC_PROTOCOL)
-        return protocol if protocol == _TASK_API_PROTOCOL else _SQC_PROTOCOL
+        if protocol in {_SDK_PROTOCOL, _TASK_API_PROTOCOL}:
+            return str(protocol)
+        return _SQC_PROTOCOL
 
     def _task_api_is_healthy(self) -> bool:
         if not self.api_key:
@@ -552,6 +567,12 @@ class QuafuProvider(HttpQuantumProvider):
             n_wires=package.n_qubits,
             options=dict(package.metadata.get("provider_options", {})),
         )
+        if (
+            self._prefer_sdk_lifecycle
+            and options.get("compiler") == "quarkcircuit"
+            and not options.get("target_qubits")
+        ):
+            return self._submit_sdk_logical(package)
         task_api_required = _requires_task_api(package.backend.name)
         if task_api_required and (
             options.get("compiler") != "quarkcircuit" or options.get("target_qubits")
@@ -589,6 +610,20 @@ class QuafuProvider(HttpQuantumProvider):
                 "equivalent route to this target, so there is no fallback to take."
             )
         return self._submit_legacy(package, options)
+
+    def _submit_sdk_logical(self, package: DeploymentPackage) -> ProviderTaskHandle:
+        response = self._submission_sdk_adapter().submit_logical(
+            package.qasm,
+            target=package.backend.name,
+            shots=package.shots,
+            name=package.name,
+        )
+        receipt = build_submission_receipt(package, response)
+        receipt["quafu_protocol"] = _SDK_PROTOCOL
+        receipt["service_compiler"] = "qiskit"
+        return ProviderTaskHandle(
+            "quafu", str(response["job_id"]), package.backend.name, receipt
+        )
 
     def _submit_task_api(self, package: DeploymentPackage) -> ProviderTaskHandle:
         client_ref = str(uuid.uuid4())
@@ -708,7 +743,11 @@ class QuafuProvider(HttpQuantumProvider):
         return ProviderTaskHandle("quafu", str(task_id), backend, receipt)
 
     def query_status(self, handle: ProviderTaskHandle) -> str:
-        if self._protocol(handle) == _TASK_API_PROTOCOL:
+        protocol = self._protocol(handle)
+        if protocol == _SDK_PROTOCOL:
+            status = self._submission_sdk_adapter().job_status(handle.task_id)
+            return "Failed" if status == "PartiallyFinished" else status
+        if protocol == _TASK_API_PROTOCOL:
             response = self.transport.get_json(
                 self._task_api_url("/jobs/{task_id}/status", task_id=handle.task_id),
                 self._task_api_headers(),
@@ -741,7 +780,10 @@ class QuafuProvider(HttpQuantumProvider):
     def cancel(self, handle: ProviderTaskHandle) -> Any:
         """Request cancellation through the API that accepted the task."""
 
-        if self._protocol(handle) == _TASK_API_PROTOCOL:
+        protocol = self._protocol(handle)
+        if protocol == _SDK_PROTOCOL:
+            return self._submission_sdk_adapter().cancel_job(handle.task_id)
+        if protocol == _TASK_API_PROTOCOL:
             return self.transport.post_json(
                 self._task_api_url("/jobs/{task_id}/cancel", task_id=handle.task_id),
                 {},
@@ -757,7 +799,10 @@ class QuafuProvider(HttpQuantumProvider):
 
     def fetch_result(self, handle: ProviderTaskHandle) -> DeploymentResult:
         protocol = self._protocol(handle)
-        if protocol == _TASK_API_PROTOCOL:
+        response: Mapping[str, Any]
+        if protocol == _SDK_PROTOCOL:
+            response = self._submission_sdk_adapter().job_result(handle.task_id)
+        elif protocol == _TASK_API_PROTOCOL:
             response = self.transport.get_json(
                 self._task_api_url("/jobs/{task_id}/results", task_id=handle.task_id),
                 self._task_api_headers(),
@@ -797,12 +842,34 @@ class QuafuProvider(HttpQuantumProvider):
         counts = _extract_counts(
             result_payload, provider="quafu", flip=self.reverse_result_bits
         )
+        if protocol == _SDK_PROTOCOL:
+            if response.get("bit_order") != "c0_rightmost":
+                raise RuntimeError(
+                    "Quafu SDK result does not declare c0_rightmost bit order"
+                )
+            returned = response.get("shots_returned")
+            if type(returned) is not int or returned != sum(counts.values()):
+                raise RuntimeError(
+                    "Quafu SDK returned-shot count does not match result counts"
+                )
+            executed = response.get("executed_qasm")
+            if isinstance(executed, str) and executed:
+                response = dict(response) | {
+                    "executed_qasm_sha256": hashlib.sha256(
+                        executed.encode()
+                    ).hexdigest()
+                }
         return DeploymentResult(
             handle=handle,
             counts=counts,
             shots=sum(counts.values()),
             metadata=build_result_metadata(
-                handle, dict(response) | {"quafu_protocol": protocol}
+                handle,
+                dict(response)
+                | {
+                    "quafu_protocol": protocol,
+                    "service_compiler": handle.payload.get("service_compiler"),
+                },
             ),
         )
 

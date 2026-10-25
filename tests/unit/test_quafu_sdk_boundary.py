@@ -8,7 +8,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from flagquantum.errors import ValidationError
+import flagquantum as fq
+from flagquantum.deployment import CloudBackendProfile, create_deployment_package
+from flagquantum.errors import ExecutionError, ValidationError
 from flagquantum.remote.qpu import QuafuProvider, _quafu_sdk
 
 pytestmark = pytest.mark.unit
@@ -276,3 +278,205 @@ def test_sdk_boundary_rejects_non_plain_payloads() -> None:
 
     with pytest.raises(RuntimeError, match="unsupported NativeValue data"):
         adapter.devices()
+
+
+class _SdkJob:
+    def __init__(self, job_id: str = "sdk-job-1") -> None:
+        self.id = job_id
+        self.n_tasks = 1
+        self._status = "Queued"
+        self.calls: list[tuple[str, object]] = []
+
+    def status(self) -> str:
+        self.calls.append(("status", None))
+        return self._status
+
+    def cancel(self) -> dict[str, object]:
+        self.calls.append(("cancel", None))
+        self._status = "Cancelled"
+        return {"status": self._status, "cancelled_now": 1}
+
+    def result(self, timeout: float | None = None) -> SimpleNamespace:
+        self.calls.append(("result", timeout))
+        return SimpleNamespace(
+            status="Finished",
+            task_id=f"{self.id}-0",
+            target="Baihua",
+            backend="Baihua",
+            bit_order="c0_rightmost",
+            n_clbits=2,
+            shots_requested=1024,
+            shots_returned=1024,
+            counts={"00": 512, "11": 512},
+            measurements=[{"cbit": 0, "physical_qubit": 0}],
+            executed_qasm="OPENQASM 2.0;",
+            compiler={"name": "qiskit", "version": "2.5"},
+            calibration_id="cal-1",
+        )
+
+
+class _LifecycleClient:
+    def __init__(self) -> None:
+        self.job_handle = _SdkJob()
+        self.submissions: list[tuple[object, dict[str, object]]] = []
+        self.restores: list[str] = []
+
+    def submit(self, circuit: object, **kwargs: object) -> _SdkJob:
+        self.submissions.append((circuit, kwargs))
+        return self.job_handle
+
+    def job(self, job_id: str) -> _SdkJob:
+        self.restores.append(job_id)
+        self.job_handle.id = job_id
+        return self.job_handle
+
+
+def _logical_package():
+    return create_deployment_package(
+        fq.Circuit(2).h(0).cx(0, 1),
+        backend=CloudBackendProfile(provider="quafu", name="Baihua", n_qubits=156),
+        name="sdk logical bell",
+        shots=1024,
+        optimize=False,
+        metadata={
+            "provider_options": {
+                "compiler": "quarkcircuit",
+                "target_qubits": [],
+            },
+            "compilation_location": "service",
+        },
+    )
+
+
+def test_sdk_static_logical_lifecycle_preserves_flagquantum_contracts() -> None:
+    client = _LifecycleClient()
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
+    provider = QuafuProvider(_sdk_adapter=adapter)
+
+    handle = provider.submit(_logical_package())
+
+    assert handle.task_id == "sdk-job-1"
+    assert handle.payload["quafu_protocol"] == "quafu_sdk_v1"
+    assert handle.payload["service_compiler"] == "qiskit"
+    assert client.submissions == [
+        (
+            _logical_package().qasm,
+            {
+                "target": "Baihua",
+                "shots": 1024,
+                "compiler": "qiskit",
+                "name": "sdk logical bell",
+            },
+        )
+    ]
+    assert provider.query_status(handle) == "Queued"
+    client.job_handle._status = "Finished"
+    result = provider.fetch_result(handle)
+    assert result.counts == {"00": 512, "11": 512}
+    assert result.shots == 1024
+    assert result.metadata["service_compiler"] == "qiskit"
+    assert result.metadata["compiler"] == {"name": "qiskit", "version": "2.5"}
+    assert len(result.metadata["executed_qasm_sha256"]) == 64
+    assert provider.cancel(handle) == {"status": "Cancelled", "cancelled_now": 1}
+    assert client.job_handle.calls == [
+        ("status", None),
+        ("result", 0),
+        ("cancel", None),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("bit_order", "c0_leftmost", "bit order"),
+        ("shots_returned", 1000, "returned-shot count"),
+    ],
+)
+def test_sdk_result_semantics_fail_closed(
+    field: str, value: object, message: str
+) -> None:
+    client = _LifecycleClient()
+    sdk_result = client.job_handle.result(timeout=0)
+    setattr(sdk_result, field, value)
+    client.job_handle.result = lambda timeout=None: sdk_result  # type: ignore[method-assign]
+    provider = QuafuProvider(
+        _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
+    )
+    handle = provider.submit(_logical_package())
+
+    with pytest.raises(RuntimeError, match=message):
+        provider.fetch_result(handle)
+
+
+def test_sdk_restores_existing_job_without_resubmission() -> None:
+    client = _LifecycleClient()
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
+    provider = QuafuProvider(_sdk_adapter=adapter)
+    submitted = QuafuProvider(
+        _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(
+            client=_LifecycleClient()
+        )
+    ).submit(_logical_package())
+
+    assert provider.query_status(submitted) == "Queued"
+    assert client.restores == ["sdk-job-1"]
+    assert client.submissions == []
+
+
+def test_sdk_submission_uses_separate_authenticated_adapter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    read_adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(client=_ReadOnlyClient())
+    submit_adapter = _quafu_sdk._QuafuSdkAdapter.for_submission(
+        client=_LifecycleClient()
+    )
+    submission_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        _quafu_sdk._QuafuSdkAdapter,
+        "for_discovery",
+        lambda **_kwargs: read_adapter,
+    )
+
+    def submission_factory(**kwargs: object) -> _quafu_sdk._QuafuSdkAdapter:
+        submission_calls.append(kwargs)
+        return submit_adapter
+
+    monkeypatch.setattr(
+        _quafu_sdk._QuafuSdkAdapter,
+        "for_submission",
+        submission_factory,
+    )
+    provider = QuafuProvider(
+        api_key="qf_explicit",
+        task_server_url="https://quafu.test/api/v1",
+    )
+
+    provider.list_devices()
+    provider.submit(_logical_package())
+
+    assert submission_calls == [
+        {"api_key": "qf_explicit", "base_url": "https://quafu.test"}
+    ]
+
+
+@pytest.mark.parametrize(
+    ("sdk_error", "expected"),
+    [
+        (type("PrecheckError", (Exception,), {}), ValidationError),
+        (type("ServerUnavailable", (Exception,), {}), ExecutionError),
+        (type("Timeout", (Exception,), {}), TimeoutError),
+    ],
+)
+def test_sdk_failures_map_to_flagquantum_categories(
+    sdk_error: type[Exception], expected: type[Exception]
+) -> None:
+    class FailingClient(_LifecycleClient):
+        def submit(self, circuit: object, **kwargs: object) -> _SdkJob:
+            raise sdk_error("provider detail")
+
+    provider = QuafuProvider(
+        _sdk_adapter=_quafu_sdk._QuafuSdkAdapter.for_submission(client=FailingClient())
+    )
+
+    with pytest.raises(expected, match="Quafu SDK submission failed"):
+        provider.submit(_logical_package())

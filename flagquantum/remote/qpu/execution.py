@@ -326,7 +326,10 @@ def _execute_expectation(
             **(
                 {
                     "compilation_location": "service",
-                    "service_compiler": "quarkcircuit",
+                    "service_compiler": (
+                        native_results[0].metadata.get("service_compiler")
+                        or "quarkcircuit"
+                    ),
                     "counts_bit_order": "measurement_wires_left_to_right",
                 }
                 if compiler is None
@@ -422,7 +425,9 @@ def counts_result(
             **(
                 {
                     "compilation_location": "service",
-                    "service_compiler": "quarkcircuit",
+                    "service_compiler": (
+                        native.metadata.get("service_compiler") or "quarkcircuit"
+                    ),
                     "counts_bit_order": "measurement_wires_left_to_right",
                 }
                 if compiler is None

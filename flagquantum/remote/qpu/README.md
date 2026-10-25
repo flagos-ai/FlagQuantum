@@ -18,9 +18,7 @@ for device in devices:
 
 Expected result: discovery returns FlagQuantum-owned backend profiles populated
 from the official `quafu-sdk`; SDK-native objects do not cross the provider
-boundary. Discovery and calibration are read-only and credential-free. Task
-submission remains on the staged compatibility path until later migration
-batches complete.
+boundary. Discovery and calibration are read-only and credential-free.
 
 For the shortest supported user path, let the public runtime own the complete
 compile, pre-submission validation, submission, wait, and result sequence:
@@ -31,15 +29,25 @@ import flagquantum as fq
 circuit = fq.Circuit(2).h(0).cx(0, 1)
 result = fq.run(
     circuit,
-    compiler="qsteed",
     target="quafu:Baihua",
     shots=1024,
 )
-print(result.provenance["task_id"], result.counts[0])
+print(
+    result.provenance["task_id"],
+    result.provenance["service_compiler"],
+    result.counts[0],
+)
 ```
 
+Expected result: the task lifecycle runs through `quafu-sdk`, provenance names
+the `qiskit` service compiler, and counts remain in FlagQuantum logical-qubit
+order. Set `QUAFU_API_KEY` before submission; FlagQuantum never starts an
+interactive SDK login.
+
 Run [`examples/remote/quafu_bell.py`](../../../examples/remote/quafu_bell.py)
-after setting `QUAFU_API_TOKEN`. Use `QuafuProvider` directly only for backend
+after setting `QUAFU_API_KEY`. Physical `compiler="qsteed"` submission remains
+on the compatibility transport until its dedicated SDK migration batch and
+still needs `QUAFU_API_TOKEN`. Use `QuafuProvider` directly only for backend
 discovery or an advanced package-oriented workflow.
 
 `QuafuProvider` accepts an already compiled deployment package or precompiled

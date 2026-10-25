@@ -1,9 +1,10 @@
 # Quafu backend
 
 FlagQuantum uses the official `quafu-sdk` package for read-only device
-discovery, backend metadata, limits, and calibration snapshots. Task
-submission is being migrated in stages and still uses the existing transport
-in this release. Installing `quafusqc` is not required.
+discovery, backend metadata, limits, calibration snapshots, and the complete
+single-circuit logical task lifecycle. Physical QSteed submission and circuit
+collections remain on their existing transports until their dedicated
+migration batches. Installing `quafusqc` is not required.
 
 For detached multi-circuit jobs, pass a same-width circuit list to `fq.submit`;
 see [one collection, one receipt](REMOTE_JOBS.md#multiple-circuits-in-one-quafu-job).
@@ -15,25 +16,21 @@ fall back to SQC or silently create separate parent jobs.
 
 Read-only discovery and calibration do not require credentials. Keep task
 submission credentials outside source control. `QUAFU_API_KEY` authenticates
-the current task API. During the staged migration, `QUAFU_API_TOKEN` remains
-available only for the legacy submission compatibility path and is scheduled
-for removal after SDK submission reaches parity.
+SDK logical submission, status, result, cancellation, and job restoration.
+During the staged migration, `QUAFU_API_TOKEN` remains available only for the
+physical QSteed compatibility path and is scheduled for removal after SDK
+physical submission reaches parity.
 
-A submission with **no** Quafu credential is rejected before any request is sent.
-`QUAFU_API_TOKEN` is the credential the legacy SQC endpoint authenticates with, so
-when it is unset the provider raises `flagquantum.errors.ValidationError` naming
-the missing source rather than posting a request that carries no authentication
-header:
+A logical submission with no API key is rejected before the SDK or network is
+used:
 
 ```text
-ValidationError: A Quafu credential is required to submit to the legacy SQC
-platform: pass token=... or set QUAFU_API_TOKEN. Neither QUAFU_API_KEY nor
-QUAFU_API_TOKEN is configured, so a request for target 'Baihua' would carry no
-authentication header. No request was sent.
+ValidationError: Quafu submission requires api_key=... or QUAFU_API_KEY;
+FlagQuantum does not start interactive SDK login.
 ```
 
-`QUAFU_API_KEY` does not authorize that endpoint, so setting only the key is still
-refused, with a message that says which of the two credentials this route needs.
+The temporary physical compatibility endpoint authenticates with
+`QUAFU_API_TOKEN`; `QUAFU_API_KEY` is not silently reused for that endpoint.
 
 ```bash
 export QUAFU_API_KEY=qf_replace_with_your_api_key
@@ -78,7 +75,7 @@ physical device reports `metadata["simulator_available"] == True`, append
 
 ## Run on the ideal simulator
 
-Use `quafu:sim` to exercise the current HTTP path without consuming real-device
+Use `quafu:sim` to exercise the SDK logical path without consuming real-device
 capacity:
 
 ```python
@@ -93,9 +90,9 @@ print(result.counts[0])
 print(result.provenance["deployment"]["quafu_protocol"])
 ```
 
-`quafu_protocol == "task_api_v1"` confirms that the preferred platform handled
-the task. Simulator targets accept 1 through 8192 shots. They require the task
-API because the legacy SQC contract has no verified equivalent target.
+`quafu_protocol == "quafu_sdk_v1"` and `service_compiler == "qiskit"` confirm
+that the maintained SDK handled the logical task. Simulator targets accept 1
+through 8192 shots.
 
 ## Run on a device-noise simulator
 
@@ -114,7 +111,7 @@ print(result.counts[0])
 print(result.provenance["deployment"]["quafu_protocol"])
 ```
 
-This PR treats `Baihua-sim` as a task-API target and does not claim that the
+This path treats `Baihua-sim` as an SDK target and does not claim that the
 client downloads, caches, or trains its device-noise model locally.
 
 The three verified managed mappings are:
@@ -272,13 +269,16 @@ deployment = result.provenance["deployment"]
 print(result.counts[0])
 print(deployment["job_id"])
 print(deployment["quafu_protocol"])
+print(result.provenance["service_compiler"])
 ```
 
 This direct path sends logical OpenQASM 2.0 and does not require local QSteed or
-QuarkCircuit installation. The platform performs compilation and physical
-routing. Counts are returned in logical-qubit order (qubit 0 on the left), while
-raw provider metadata retains the original response. Hardware shots must be a
-multiple of 1024 from 1024 through 8192.
+QuarkCircuit installation. The SDK requests maintained `qiskit` service
+compilation and the platform performs physical routing. The expected protocol
+is `quafu_sdk_v1`. Counts are returned in logical-qubit order (qubit 0 on the
+left), while FlagQuantum provenance preserves returned-shot, measurement,
+executed-program, compiler, backend, and calibration fields. Hardware shots
+must be a multiple of 1024 from 1024 through 8192.
 
 `outputs=fq.expectation(...)` is also supported through grouped basis
 measurements:
@@ -365,18 +365,15 @@ that target submits a real task.
 
 ## Protocol selection and fallback
 
-The preferred task API uses `QUAFU_TASK_SERVER_URL` (default
-`https://quafu.com.cn/api/v1`) and these endpoints:
+The maintained logical path delegates authenticated transport, idempotency,
+status, result retrieval, cancellation, and restoration to `quafu-sdk`.
+FlagQuantum passes the logical OpenQASM 2.0 program, target, shots and name to
+`Client.submit(..., compiler="qiskit")`; it does not retry a failed SDK
+submission against another protocol or create a second hardware task.
 
-- `GET /healthz` before submission;
-- `POST /jobs` for idempotent OpenQASM 2.0 submission;
-- `GET /jobs/{job_id}/status` and `GET /jobs/{job_id}/results`;
-- `POST /jobs/{job_id}/cancel`.
-
-Each authenticated request uses `Authorization: Bearer $QUAFU_API_KEY`. A UUID4
-`client_ref` is generated for every submission. If the health check fails, or
-the submission receives a definite 4xx rejection, FlagQuantum falls back
-to these legacy Quafu SQC endpoints:
+During the remaining migration batches, physical QSteed submissions with an
+explicit `target_qubits` mapping continue to use these legacy Quafu SQC
+endpoints:
 
 - `GET /task/verify` for token verification;
 - `GET /task/status/0` for chip availability and queue depth;
@@ -384,20 +381,16 @@ to these legacy Quafu SQC endpoints:
 - `GET /task/status/{tid}` and `GET /task/result/{tid}` for asynchronous jobs;
 - `GET /task/cancel/{tid}` for cancellation.
 
-Submissions with an explicit `target_qubits` mapping continue to use the legacy
-contract because the new logical-circuit task API has no equivalent mapping
-field. A timeout after `POST /jobs` is not retried against the legacy endpoint:
-the server may already have accepted the idempotent task, so a cross-platform
-retry could create a second hardware job.
+That temporary path is removed only after SDK `compiler="none"` physical
+submission reaches parity in Batch D. A submission failure is never retried
+against a different protocol because the first service may already have
+accepted the task.
 
 | Submission | Selected protocol |
 |---|---|
-| Logical circuit, no explicit physical mapping, healthy task API | `task_api_v1` |
-| Task API health check fails for a legacy-compatible hardware target | `sqc_legacy` |
-| Task API returns a definite 4xx rejection for a legacy-compatible hardware target | `sqc_legacy` |
-| `POST /jobs` has a 5xx response or ambiguous transport failure | Raise without resubmitting |
+| Logical circuit, no explicit physical mapping | `quafu_sdk_v1` |
 | Explicit `target_qubits` or locally precompiled mapped circuit | `sqc_legacy` |
-| `sim`, `<device>-sim`, `all-race`, or `all-redispatch` cannot use the task API | Raise; no equivalent legacy fallback |
+| SDK submission has any definite or ambiguous failure | Raise without cross-protocol resubmission |
 
 These endpoints do not expose a compile-only request that returns the
 authoritative final circuit before submission. QuarkCircuit and QSteed can
