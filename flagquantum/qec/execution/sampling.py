@@ -668,12 +668,16 @@ def _parity_bits(
     for index, parity in enumerate(columns):
         if parity:
             groups.setdefault(len(parity), []).append((index, parity))
-    # Equal-width gathers avoid padding long observables across all detectors.
-    # Repeated columns still cancel in GF(2); empty parities remain zero.
+    if not groups:
+        return result
+    # Equal-width byte gathers avoid padding long observables or materializing
+    # int64 records per reference. Byte sums wrap modulo 256, preserving parity
+    # even for products wider than 255; empty parities remain zero.
+    binary_record = record.to(torch.uint8)
     for group in groups.values():
         outputs = torch.tensor([index for index, _ in group], dtype=torch.long)
         sources = torch.tensor([parity for _, parity in group], dtype=torch.long)
-        bits = record[:, sources].sum(dim=2).bitwise_and_(1)
+        bits = binary_record[:, sources].sum(dim=2, dtype=torch.uint8).bitwise_and_(1)
         result[:, outputs] = bits.to(torch.int8)
     return result
 

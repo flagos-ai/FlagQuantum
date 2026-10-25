@@ -35,6 +35,14 @@ def test_ragged_parities_match_independent_binary_reference(
     assert _parity_bits((), record).shape == (shots, 0)
 
 
+@pytest.mark.parametrize("width", [255, 256, 257, 513])
+def test_long_products_preserve_parity_across_byte_wrap(width: int) -> None:
+    record = torch.ones((2, width), dtype=torch.int64)
+    record[1, 0] = 0
+    result = _parity_bits((tuple(range(width)),), record)
+    assert result.tolist() == [[width % 2], [(width - 1) % 2]]
+
+
 class _TensorCalls(TorchDispatchMode):
     def __init__(self) -> None:
         super().__init__()
