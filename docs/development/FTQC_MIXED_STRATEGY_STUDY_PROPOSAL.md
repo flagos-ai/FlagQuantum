@@ -4,8 +4,10 @@ Status: The user explicitly approved the finite CPU matrix, comparison values
 and resource procedure on 2026-10-25, with observer review before collection.
 Observer #848 is merged and its actual main is accepted. The admitted campaign
 stopped on its first RSS monitoring failure; [partial evidence and missing points](FTQC_MIXED_CPU_PARTIAL_BASELINE.md)
-are retained without retry. No algorithm selection, new engine or approximation
-policy is activated.
+are retained without automatic retry. The separately approved
+[seven-point continuation](FTQC_MIXED_CPU_COMPLETED_PILOT.md) has since completed
+the admitted finite matrix while preserving the original failure. No algorithm
+selection, new engine or approximation policy is activated.
 
 Baseline: main `773b55387c735f86afe3caa8d7bcaf64285e1f0f`. The
 [master plan](../roadmap/FTQC_SIMULATION_MASTER_PLAN.md#14-immediate-next-steps-and-decisions-required)
@@ -295,3 +297,11 @@ change was only three Markdown files, so no local numerical suite was repeated.
 record 164 completed processes, one monitor failure and 27 unattempted slots.
 This is 41 complete points out of 48, not study closure. No automatic retry or
 resource-policy relaxation is authorized by publishing this report.
+
+## Next finite reference review
+
+The [coherent-branch conformance proposal](FTQC_COHERENT_BRANCH_CONFORMANCE_PROPOSAL.md)
+addresses coefficient phase/interference/cancellation using private n=2/3
+references and current unexpanded public execution. It is unapproved and
+unimplemented, not permission to add a branch engine or extend a collection.
+FTS-02/09 and final FTS-10 selection remain open.
