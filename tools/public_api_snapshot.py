@@ -451,6 +451,32 @@ def _validate_authorized_execution_plan(
     from flagquantum.runtime.execution_plan import ExecutionPlan
 
     errors: list[str] = []
+    expected_presence = {
+        "proposal": "docs/development/API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md",
+        "record": "docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md",
+        "implementation_authorized": True,
+        "delivery_stage": "contract_baseline",
+        "production_implemented": False,
+        "operation": "rydberg.measure_presence",
+        "source_version": "1.4",
+        "lindblad_plan_version": "1.8",
+        "root_admission": "fq.run(LindbladPlan), sampled 1.8 only",
+        "result_plan_annotation_addition": "LindbladPlan",
+        "additional_result_fields": [],
+        "additional_result_classes": [],
+        "environment_protocol_version": "1.1",
+        "rng_requirement": "rng_torch_version",
+        "consumer_tests": "tests/unit/test_rydberg_presence_contract.py",
+        "compatibility_tests": "tests/unit/test_rydberg_presence_compatibility.py",
+    }
+    if contract.get("native_rydberg_presence_admission") != expected_presence:
+        errors.append(
+            "native Rydberg presence admission differs from approved proposal 092"
+        )
+    from flagquantum.core.rydberg import RydbergProgram
+
+    if hasattr(RydbergProgram, "measure_presence"):
+        errors.append("native Rydberg presence source precedes its recorded Core stage")
     root_name = str(contract["root_addition"])
     if root_name not in names or root_name not in fq.__all__:
         errors.append(f"authorized root API {root_name} is missing")

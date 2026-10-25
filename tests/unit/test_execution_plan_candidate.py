@@ -21,6 +21,31 @@ def _load(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+@pytest.mark.parametrize(
+    "change", ["version", "implemented", "stage", "result", "unknown"]
+)
+def test_presence_candidate_rejects_unapproved_expansion(change: str) -> None:
+    from tools.public_api_snapshot import _validate_authorized_execution_plan
+
+    contract = json.loads(CANDIDATE.read_text())
+    assert _validate_authorized_execution_plan(contract, list(fq.__all__)) == []
+    extension = contract["native_rydberg_presence_admission"]
+    if change == "version":
+        extension["lindblad_plan_version"] = "1.9"
+    elif change == "implemented":
+        extension["production_implemented"] = True
+    elif change == "stage":
+        extension["delivery_stage"] = "implemented"
+    elif change == "result":
+        extension["additional_result_fields"] = ["events"]
+    else:
+        extension["feedback"] = True
+    assert any(
+        "proposal 092" in error
+        for error in _validate_authorized_execution_plan(contract, list(fq.__all__))
+    )
+
+
 def test_execution_plan_contract_records_root_authority_and_freeze() -> None:
     candidate = _load(CANDIDATE)
 

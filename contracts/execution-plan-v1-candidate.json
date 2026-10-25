@@ -162,5 +162,23 @@
       "consumer_tests": "tests/unit/test_ising_unread_contract.py",
       "compatibility_tests": "tests/unit/test_ising_unread_compatibility.py"
     }
+  },
+  "native_rydberg_presence_admission": {
+    "proposal": "docs/development/API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md",
+    "record": "docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md",
+    "implementation_authorized": true,
+    "delivery_stage": "contract_baseline",
+    "production_implemented": false,
+    "operation": "rydberg.measure_presence",
+    "source_version": "1.4",
+    "lindblad_plan_version": "1.8",
+    "root_admission": "fq.run(LindbladPlan), sampled 1.8 only",
+    "result_plan_annotation_addition": "LindbladPlan",
+    "additional_result_fields": [],
+    "additional_result_classes": [],
+    "environment_protocol_version": "1.1",
+    "rng_requirement": "rng_torch_version",
+    "consumer_tests": "tests/unit/test_rydberg_presence_contract.py",
+    "compatibility_tests": "tests/unit/test_rydberg_presence_compatibility.py"
   }
 }
