@@ -84,7 +84,8 @@ def _program(
             channel="aod",
         )
     # Deliberately append the suffix first: source order is not physical time.
-    for name in (("a", "b") if pair else ("a",)):
+    actor_names = ("a", "b") if pair else ("a",)
+    for name in actor_names:
         source.pulse(
             name,
             start=0.5,
