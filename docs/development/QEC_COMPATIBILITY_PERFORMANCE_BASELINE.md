@@ -5,8 +5,8 @@
 The first compatibility route is complete through #822. The next step measures
 where time is spent before selecting an implementation to optimize or replace.
 This is a local CPU observation study, not a performance gate, GPU result,
-threshold study or approval of a new QEC API. The user's 16 A800 devices have
-not been accessed. Device allocation and single-card measurement precede any
+threshold study or approval of a new QEC API. The user's 16 A800 devices had
+not been accessed when this original matrix was collected. Device allocation and single-card measurement precede any
 multi-card experiment; independent shots do not establish state-capacity scaling.
 
 The maintained `qec_memory_sampling` runner and its d=3 Z historical records
@@ -198,3 +198,8 @@ existing coverage lane that installs Stim/PyMatching actually selects them. No
 workflow/dependency policy or scientific assertion is weakened. Initial fixture
 context handling and the missing integration selection were caught and fixed
 before formal collection; original failure logs remain in work evidence.
+
+A subsequent [sampling parity study](QEC_SAMPLING_PARITY.md) measures a separately
+predeclared shot/batch workload on the A800 hosts' CPUs. Its grouped byte
+implementation, retained int64 counterexample and limits do not revise this
+original matrix or establish GPU performance.
