@@ -1,0 +1,1198 @@
+{
+  "purpose": "continued_primary_registered_summary",
+  "manifest_sha256": "9125686283c8d4ac3ee3be80f8ce87abfa3269cee2785df5fa9c83a1bfd3fa8f",
+  "shots": 4194304,
+  "comparison_alpha": 0.0019230769230769232,
+  "comparisons": [
+    {
+      "candidate": "native-11-step-200-raw",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-11-step-200-raw",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-11-step-200-calibrated",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-11-step-200-calibrated",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-11-step-2000-raw",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-11-step-2000-raw",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-11-step-2000-calibrated",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-11-step-2000-calibrated",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-22-step-200-raw",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-22-step-200-raw",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-22-step-200-calibrated",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-22-step-200-calibrated",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-22-step-2000-raw",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-22-step-2000-raw",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-22-step-2000-calibrated",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-22-step-2000-calibrated",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-33-step-200-raw",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-33-step-200-raw",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-33-step-200-calibrated",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-33-step-200-calibrated",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-33-step-2000-raw",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-33-step-2000-raw",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-33-step-2000-calibrated",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "native-33-step-2000-calibrated",
+      "reference": "fast",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5147,
+        "hybrid_failures": 5319,
+        "wins": 3676,
+        "losses": 3848
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.132364377637568,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.0012271404266357422,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 8.147093894713029,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "fast",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5147,
+        "wins": 3848,
+        "losses": 3676
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.0012271404266357422,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0011714863359201242,
+          0.0012846075097172618
+        ],
+        "ratio_upper": 1.0602919318253468,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.0012271404266357422,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.0002727958057060305,
+          0.0021814850475654537
+        ],
+        "ratio_upper": 6.9517483167770475,
+        "paired_p_value": 0.04867251211571577,
+        "quality_gate": "inconclusive"
+      }
+    },
+    {
+      "candidate": "mask-only",
+      "reference": "global",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      },
+      "exact": {
+        "interval_method": "clopper_pearson_outward_binomial_tail",
+        "comparison_alpha": 0.0019230769230769232,
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "hybrid_interval": [
+          0.0012115602044672211,
+          0.0013265493956851062
+        ],
+        "ratio_upper": 1.0949100100794837,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      },
+      "legacy_hoeffding": {
+        "baseline_ler": 0.001268148422241211,
+        "hybrid_ler": 0.001268148422241211,
+        "baseline_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "hybrid_interval": [
+          0.00031380380131149923,
+          0.0022224930431709224
+        ],
+        "ratio_upper": 7.082428682770326,
+        "paired_p_value": 1.0,
+        "quality_gate": "inconclusive"
+      }
+    }
+  ],
+  "native_quality_gate": "inconclusive",
+  "competitive_with_fast": false,
+  "horizon_counts_descriptive_only": [
+    {
+      "candidate": "native-11-step-2000-raw",
+      "reference": "native-11-step-200-raw",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      }
+    },
+    {
+      "candidate": "native-11-step-2000-calibrated",
+      "reference": "native-11-step-200-calibrated",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      }
+    },
+    {
+      "candidate": "native-22-step-2000-raw",
+      "reference": "native-22-step-200-raw",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      }
+    },
+    {
+      "candidate": "native-22-step-2000-calibrated",
+      "reference": "native-22-step-200-calibrated",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      }
+    },
+    {
+      "candidate": "native-33-step-2000-raw",
+      "reference": "native-33-step-200-raw",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      }
+    },
+    {
+      "candidate": "native-33-step-2000-calibrated",
+      "reference": "native-33-step-200-calibrated",
+      "counts": {
+        "shots": 4194304,
+        "baseline_failures": 5319,
+        "hybrid_failures": 5319,
+        "wins": 0,
+        "losses": 0
+      }
+    }
+  ],
+  "independent_physical_shots": 4194304,
+  "speed_claim_allowed": false
+}

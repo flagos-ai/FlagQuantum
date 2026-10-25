@@ -1,0 +1,11 @@
+{
+  "purpose": "validation_input_capture",
+  "protocol_sha256": "9f48cc9ad7b28a787e98211a9b436c795d7251c02d87e600eb2d26a4dffacd31",
+  "circuit_sha256": "0fa86bd7b534da215f58cb4611236db52d60ddc588da819b0d547a91026195e2",
+  "sampler_seed": 15000011,
+  "shots": 131072,
+  "chunk_size": 4096,
+  "detectors": 720,
+  "observables": 1,
+  "shards": []
+}
