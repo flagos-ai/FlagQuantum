@@ -9,8 +9,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 AUDIT = ROOT / "docs/development/API_CHANGE_093_QUAFU_DYNAMIC_FORMAT_AUDIT.md"
 PROPOSAL = (
-    ROOT
-    / "docs/development/API_CHANGE_PROPOSAL_093_QUAFU_DYNAMIC_FORMAT_ACTIVATION.md"
+    ROOT / "docs/development/API_CHANGE_PROPOSAL_093_QUAFU_DYNAMIC_FORMAT_ACTIVATION.md"
 )
 
 
