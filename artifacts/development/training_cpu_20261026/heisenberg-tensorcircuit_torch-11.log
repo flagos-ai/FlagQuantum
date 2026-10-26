@@ -1,0 +1,7 @@
+{"task": "heisenberg", "engine": "tensorcircuit_torch", "seed": 11, "step": 1, "score": 0.0763245246582489}
+{"task": "heisenberg", "engine": "tensorcircuit_torch", "seed": 11, "step": 10, "score": 0.030329181198968286}
+{"task": "heisenberg", "engine": "tensorcircuit_torch", "seed": 11, "step": 20, "score": 0.012226307672159828}
+{"task": "heisenberg", "engine": "tensorcircuit_torch", "seed": 11, "step": 30, "score": 0.004631109084840994}
+{"task": "heisenberg", "engine": "tensorcircuit_torch", "seed": 11, "step": 40, "score": 0.0005544349675967499}
+{"task": "heisenberg", "engine": "tensorcircuit_torch", "seed": 11, "step": 50, "score": 0.000237250287005202}
+{"task": "heisenberg", "engine": "tensorcircuit_torch", "seed": 11, "step": 60, "score": 0.00019206106907040688}
