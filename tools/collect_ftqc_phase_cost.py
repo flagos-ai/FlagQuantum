@@ -119,13 +119,21 @@ def admission(install_report: Path, source: str) -> dict[str, Any]:
     )
     if head != source or dirty:
         raise ValueError("controller checkout must be clean admitted observer main")
-    cpu_model = (
-        subprocess.check_output(
+    cpu_model = platform.machine()
+    if platform.system() == "Darwin":
+        cpu_model = subprocess.check_output(
             ["sysctl", "-n", "machdep.cpu.brand_string"], text=True, timeout=5
         ).strip()
-        if platform.system() == "Darwin"
-        else platform.processor()
-    )
+    elif Path("/proc/cpuinfo").is_file():
+        with Path("/proc/cpuinfo").open() as stream:
+            cpu_model = next(
+                (
+                    line.partition(":")[2].strip()
+                    for line in stream.read(1024**2).splitlines()
+                    if line.startswith("model name")
+                ),
+                cpu_model,
+            )
     return {
         "source_commit": source,
         "python": str(python),
