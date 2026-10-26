@@ -24,7 +24,13 @@ def _freeze(value: Any) -> Any:
 
 def _encode(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return {key: _encode(item) for key, item in sorted(value.items())}
+        # _freeze already ordered the model's immutable attribute mappings.
+        items = (
+            value.items()
+            if isinstance(value, MappingProxyType)
+            else sorted(value.items())
+        )
+        return {key: _encode(item) for key, item in items}
     if isinstance(value, tuple):
         return [_encode(item) for item in value]
     if isinstance(value, IRType):
