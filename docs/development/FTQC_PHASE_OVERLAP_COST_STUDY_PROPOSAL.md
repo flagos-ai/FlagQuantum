@@ -1,11 +1,14 @@
 # Bounded Phase and Overlap Cost Study
 
-Status: proposed, not approved or implemented. This document requests a separate
-finite observation budget and observer boundary. No observer, monitoring probe
-or measurement is authorized by document merge or CI. The previously approved
-M-P conformance and the consumed 193-attempt pilot budget do not authorize this
-collection. Observer/controller implementation must pass review and actual-main
-admission before the one admitted collection can start.
+Status: the finite study and observer implementation were specifically approved
+on 2026-10-26 after proposal #931 passed full CI and required GPUs. Actual main
+`354676710840672737ed620bee0501c1a93ebaf6` then passed all 54 CI jobs, required
+source/single/two-GPU checks, smoke, real QEC optional installation/evidence,
+fresh isolated 847-member package/core and installed public examples.
+Observer/controller implementation is now under separate review; no new probe
+or collection has run. Implementation review and actual-main admission must
+complete before the one admitted collection can start. The old 193 attempts
+remain immutable and do not supply this new allowance.
 
 Baseline: main `4ec20e1adf4c1b92ef878c49d42977f25ace3318`. Reuse the
 [accepted M-P representation](FTQC_PHASE_OVERLAP_FEASIBILITY_PROPOSAL.md#approved-implementation-rules-and-ownership),
@@ -54,7 +57,7 @@ All routes request the same noise-free full ordered computational probabilities,
 CPU complex128 evolution and float64 probabilities, with approximation and
 backend fallback disabled. Proposed probability/normalization and private
 complex-overlap comparisons use atol=1e-12 and rtol=0. This new observation
-boundary needs explicit approval even where its numbers equal M-P. No external
+boundary was separately approved even though its numbers equal M-P. No external
 SDK or optional overlay is used by the measured worker.
 
 Reuse the existing independent direct-T scalar reference for the eight matrix
@@ -216,3 +219,60 @@ tensor_network 0.42677670 0.07322330 0.07322330 0.42677670
 ```
 
 The existing example passed on accepted main `82143b09` with Python 3.12.14/Torch 2.14.1 outside the checkout with no PYTHONPATH or SDK overlay (`pr922-main-public-example.json`). Every proposal PR must execute and record this example on its own final reviewed head. This engineering smoke check is not a point in the proposed study.
+
+## Observer implementation under review
+
+The finite worker is `tools/observe_ftqc_phase_cost.py`; the serial controller
+is `tools/collect_ftqc_phase_cost.py`. Neither adds a registry entry or public
+mode. The worker imports only the admitted installed package, verifies its
+retained-wheel member hashes, and reuses the private Simulation CH prototype.
+The independent direct-T reference and handwritten Clifford scalar oracle are
+validation work outside numerical phase timers. The four complex/probability
+comparisons use the approved values without renormalizing results. Literal
+words, coefficients, complex captures, plan/exactness, full probabilities and
+phase times are retained. Report serialization/write time has its own sidecar;
+controller outer wall includes process startup, all I/O and owned-group cleanup.
+
+The controller reuses the existing 50 ms POSIX process-group RSS reader and
+owned-group cleanup helpers, without invoking old collectors or old probes.
+A single new one-second idle command precedes the 160 slots. Each slot reserves
+16 seconds of its 30-second outer budget for TERM/KILL/wait cleanup, so workload
+execution stops early enough to leave that reserve. This is an upper resource
+bound, not a promise of 30 seconds of numerical work. Retained output files have
+a derived 512 KiB ceiling and the controller reserves 4 MiB of storage headroom;
+no numerical or CI threshold is relaxed. Raw RSS traces stay in immutable
+attempt reports instead of being duplicated into the evolving ledger. The
+installed interpreter disables bytecode writes during observation.
+
+Before starting, require the admitted observer-main delivery receipt, a clean
+matching checkout, its accepted installation report and byte-identical retained
+wheel/package members. Freeze dependency metadata, interpreter/configuration,
+controller/worker/monitor hashes and CPU identity. Run the controller from that
+checkout with its accepted interpreter and absolute report paths:
+
+```bash
+python -m tools.collect_ftqc_phase_cost --source-commit "$OBSERVER_MAIN_SHA" \
+  --install-report "$INSTALL_REPORT" --delivery-report "$DELIVERY_REPORT" \
+  --output "$NEW_COLLECTION_DIRECTORY"
+```
+
+These variables must identify the reviewed, main-admitted observer revision and
+a new directory. This command is a research procedure, not the public user
+example above; do not execute it during PR validation. A completed collection
+would retain one probe and up to 160 workload attempts. Any earlier failure
+retains its diagnostic, supervision, elapsed/cleanup times and unattempted
+slots. There is no resume, automatic retry or existing-directory overwrite.
+Only a named public planning CapabilityError can be a nonfatal refusal.
+
+Implementation tests use synthetic worker payloads, fake processes/clocks and
+structural comparison with the preserved A-D descriptions. They do not call
+from_word, overlap, public circuit execution or a live RSS probe. Full PR/main CI
+and the current public example remain engineering admission, not formal cost
+observations. Collection evidence will name the actual observer-main commit,
+not this proposal's earlier prerequisite revision.
+
+After collection, the controller derives all three fresh observations and their
+median/minimum/maximum for each complete point, retaining warm-up status and
+refusal/unattempted gaps. The derived summary does not select fastest repeats,
+pool different cases, estimate tail percentiles or choose a production method.
+No additional workload or query is needed for this derivation.
