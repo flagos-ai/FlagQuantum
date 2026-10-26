@@ -749,8 +749,17 @@ reviews the missing compact complex-phase representation and pre-selection
 evidence. Its M-P request is limited to a private Simulation research prototype,
 64 candidate states, 850 complex-overlap queries and ten existing public exact
 executions per module verification, with proposed complex128/float64
-atol=1e-12/rtol=0. It is not approved or implemented; prior A-D/E-H/I-L approval,
-document merge and green CI cannot admit it. No collection, production engine,
+atol=1e-12/rtol=0. The human separately approved this finite M-P scope; implementation is under
+review after #911 actual-main admission. Prior A-D/E-H/I-L approval, document
+merge and green CI did not admit it. No collection, production engine,
 public phase guarantee or method selection follows. FTS-02/09/10/11 and R01-R15
 remain partial. Independent QEC #904 and remote normalization work are reused
 under their own contracts, not claimed as this proposal's implementation.
+
+The separately approved M-P implementation now supplies one private CH-mask
+prototype and finite conformance: 64 retained states, 850 captured overlaps,
+ten existing public calls, 41 new checks. Combined local contracts passed 159
+checks with zero skips (developer Torch 2.13/existing SDK overlay). The compact
+state and inverse-word overlap replay have no production route, export,
+dependency, dense fallback, sample or collection. Exact-head PR/main admission
+is still required; FTS-10 method selection and production integration remain open.
