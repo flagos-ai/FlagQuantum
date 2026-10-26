@@ -2,7 +2,7 @@
 
 Status: the human specifically approved the finite E-H reference contract and
 complex128 atol=1e-12/rtol=0 on 2026-10-26. Its private conformance implementation
-is submitted for review. Approval came from the specific answer, not static A-D
+has merged and completed actual-main admission. Approval came from the specific answer, not static A-D
 admission, document merge or green CI. No API, production branch engine,
 sampling certificate or collection budget is activated.
 
@@ -138,7 +138,7 @@ FTS-02/09 and R01-R15 remain partial. Both completed study campaigns and all raw
 evidence remain immutable; no collector, probe or recovery attempt is authorized
 here.
 
-### Approved private conformance submitted for review
+### Approved private conformance delivered
 
 [The new integration test](../../tests/integration/test_ftqc_dynamic_coherent_reference.py)
 computes the admitted 20 projected Clifford vectors once per module, reusing the
@@ -155,7 +155,7 @@ The remaining negatives reuse the vectors without more public calls, including
 the case where E2's aggregate cannot distinguish a wrong record distribution.
 A module fixture restores the previous numerical thread count.
 
-This is finite reference qualification under review, not trajectory-sampler or
+This is delivered finite reference qualification, not trajectory-sampler or
 RNG certification, a dynamic public result extension or an engine implementation.
 
 ### Post-merge proposal admission
@@ -168,6 +168,31 @@ members. Fresh Python 3.12.14/Torch 2.14.1 core, dependencies, native Bell, mast
 examples, HTH and CLI passed. The installed current density example below and
 observer CLI passed outside the checkout without PYTHONPATH or an SDK overlay.
 Those checks did not execute E-H conformance or collect study observations.
+
+Conformance main `c95e2d5acfe27f7259648ea0cb3c1c1aa8da4873` passed CI
+40257405137 (all 54 jobs), GPU 40257408738 (source, single and required two
+GPUs), and smoke 40257347919. Package job 121362166023 passed real QEC optional
+installation and retained evidence. Isolated sdist/wheel checks matched all 836
+package Python members. Fresh Python 3.12.14/Torch 2.14.1 core, dependencies,
+native Bell, master examples, HTH, CLI, and the installed current density example
+passed outside the checkout without PYTHONPATH or an SDK overlay.
+
+Actual-main focused verification passed 95 tests without skips: 17 new E-H,
+23 original static references, 18 existing dynamic-density checks and 37 original
+retirement contracts. That source verification used developer Torch 2.13 and the
+explicitly existing SDK overlay, not a fresh optional installation profile.
+Independent Quafu/Rydberg work in the actual merge base is not this slice's
+contribution. All four own paths matched the reviewed head.
+
+The PR's first coverage aggregation and required GPU jobs failed during Actions
+archive download setup, before those checks executed. Original logs and one
+controlled same-SHA failed-job recovery per workflow were retained. Both attempt2
+workflows passed without source/workflow/threshold/skip changes. These facts do
+not establish an environment repair. Main admission above was a separate run.
+
+The [local trajectory proposal](FTQC_TRAJECTORY_BORN_CONFORMANCE_PROPOSAL.md)
+is an unapproved follow-on for actual sampling inputs and conditional states;
+E-H approval does not admit that Runtime boundary or its execution matrix.
 
 ## Runnable existing user workflow
 
