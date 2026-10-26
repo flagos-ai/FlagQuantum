@@ -352,19 +352,21 @@ post-observation and forward time rows explicit. Multi-event trajectories,
 feedback, heating, calibration and device execution remain separate decisions;
 this inventory approves no additional protected interface or M4 claim.
 
-The user approved the next bounded
+The user approved the bounded
 [driven three-level relaxation contract](../development/M3_NEXT_SCENARIO_CONTRACT_REVIEW.md)
-on 2026-10-26. Its example and independent integration acceptance are implemented
-in draft [#886](https://github.com/flagos-ai/FlagQuantum/pull/886), reusing existing
-numeric Lindblad planning, fixed collapse rates, interval bindings, autograd and
-results without changing public APIs or library production code. Local default
-verification passed 16,017 cases (224 skipped) and integration passed 2,515
-(177 skipped), both with zero XML failures/errors. The implementation head
-`5f27e41b7b8b912d82f7880446b2d41f14db21bb` has a successful complete GPU gate;
-its complete standard CI is still pending at this progress update. This is
-implementation progress awaiting remote acceptance and an independent PR merge
-grant, not an accepted scenario or M3 completion. The existing closed-model
-reference remains unchanged.
+on 2026-10-26. Implementation [#886](https://github.com/flagos-ai/FlagQuantum/pull/886)
+merged as `05bca74d08ac905f4ccdbb03235f2a478b2f89b7` under its independent human
+grant, after complete CI `40269085812`, GPU `40269085833` and the remote Python
+3.10/3.11/3.12 matrix succeeded at head
+`2bb50f2fd54a5315bf80772569b0527bcef91488`. The example and independent
+integration acceptance reuse existing numeric Lindblad planning, fixed collapse
+rates, interval bindings, autograd and results; public APIs and library
+production code are unchanged. Local default verification passed 16,017 cases
+(224 skipped) and integration passed 2,515 (177 skipped), both with zero XML
+failures/errors. Main smoke `40271009760` succeeded; this is only a smoke check.
+The accepted slice covers a finite phenomenological cascade, not calibrated
+hardware, gate fidelity, higher-level truncation or all M3/M4 gates. The existing
+closed-model reference remains unchanged.
 
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |

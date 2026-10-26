@@ -6,16 +6,17 @@ It changes no API, schema, capability declaration, maturity level or approval.
 An accepted reference scenario is not certification of a hardware technology or
 of all M3/M4 exit gates. The original inventory inspected main
 `4be2375eff47c112ce8d8e24f8206ed5592130d8`. This update inspects main
-`21b8e7f6e34a638e5120a0f4d7fff64fe196adb2` on 2026-10-26, including
+`05bca74d08ac905f4ccdbb03235f2a478b2f89b7` on 2026-10-26, including
 approved 089/091 implementations and the accepted 092 Core, Simulation and
-Runtime stages. Historical design reviews and approval records remain historical.
+Runtime stages and the independently accepted three-level relaxation scenario.
+Historical design reviews and approval records remain historical.
 
 ## Executable evidence by user scenario
 
 | Scenario | Runnable example (`python -m examples.` prefix) | Independent acceptance and merge evidence | Remaining boundary |
 | --- | --- | --- | --- |
 | Circuit training and deployment packaging | `train_parameterized_circuit_then_deploy` | [Golden path](../../tests/integration/test_train_then_deploy_golden_path.py), [metrics/RNG regressions](../../tests/unit/test_train_deploy_error_metrics.py); [#771](https://github.com/flagos-ai/FlagQuantum/pull/771) separates variational error from finite-shot error and retains small exported angles. | The in-memory provider is local contract execution, not evidence of a submitted cloud job or a QPU measurement. |
-| Driven three-level superconducting model | `driven_three_level` | [Full density, all eight control derivatives, pulse order and refinement](../../tests/integration/test_driven_three_level.py); [#787](https://github.com/flagos-ai/FlagQuantum/pull/787). | Closed rotating-frame three-level model; no calibrated device, pulse emission, dissipation, gate-fidelity or higher-level truncation certification. |
+| Driven three-level superconducting model | `driven_three_level`; `driven_three_level_relaxation` | [Full density, all eight control derivatives, pulse order and refinement](../../tests/integration/test_driven_three_level.py); [#787](https://github.com/flagos-ai/FlagQuantum/pull/787); [fixed cascade, analytic coherence, independent full density and training/replay](../../tests/integration/test_driven_three_level_relaxation.py); [#886](https://github.com/flagos-ai/FlagQuantum/pull/886). | Closed or fixed zero-temperature two-channel relaxation in a finite rotating-frame qutrit; no calibrated device, pulse emission, heating, gate-fidelity or higher-level truncation certification. |
 | Moving neutral-atom pair | `train_rydberg_controls --steps 40 --intervals 128 --shots 4096`; `visualize_rydberg_transport` | [Native source/dynamics](../../tests/unit/test_native_rydberg_dynamics.py), [training, loss, explicit observed flags and conditioning](../../tests/integration/test_rydberg_control_training.py), [commanded-path view](../../tests/integration/test_rydberg_transport_visualization.py), [intermediate presence consumers](../../tests/unit/test_rydberg_presence_contract.py), [sealed trajectory workflow](../../tests/integration/test_rydberg_presence_execution.py); [#879](https://github.com/flagos-ai/FlagQuantum/pull/879); [#707](https://github.com/flagos-ai/FlagQuantum/pull/707)/[#714](https://github.com/flagos-ai/FlagQuantum/pull/714)/[#715](https://github.com/flagos-ai/FlagQuantum/pull/715)/[#738](https://github.com/flagos-ai/FlagQuantum/pull/738). | One/two-actor imposed paths and declared Markov loss; one seeded CPU presence observation; no feedback, inferred trap activity, motional heating, species calibration or hardware execution. |
 | Spin coupled to a motional mode | `spin_mode_convergence` | [Complex Rabi blocks, total excitation, finite-mode dark top, analytic gradient and replay](../../tests/integration/test_spin_mode_convergence.py); [#782](https://github.com/flagos-ai/FlagQuantum/pull/782). | Resonant lossless rotating-wave model and explicit finite thermal conditioning; no ion-trap pulse frontend, heating or hardware calibration. |
 | Two-mode photonic interference | `boson_interference` | [Closed attenuation/HOM density, cutoff embedding, unconditional QND counts and back-action](../../tests/integration/test_boson_interference.py); [#741](https://github.com/flagos-ai/FlagQuantum/pull/741). | Finite Fock reference; no Gaussian backend, optical-program frontend, destructive detector or photonic hardware submission. |
@@ -59,14 +60,14 @@ route support. None is a distributed capacity or performance acceptance result.
 No new framework, solver, binder, result envelope, registry, evidence schema or
 capability catalog is needed to express this inventory.
 
-## Approved relaxation scenario awaiting acceptance
+## Accepted driven three-level relaxation scenario
 
 On 2026-10-26 the user approved all five decisions in the
-[next-scenario contract](M3_NEXT_SCENARIO_CONTRACT_REVIEW.md). Draft
+[next-scenario contract](M3_NEXT_SCENARIO_CONTRACT_REVIEW.md). Implementation
 [#886](https://github.com/flagos-ai/FlagQuantum/pull/886) implements the driven
 three-level fixed `2->1->0` relaxation example and independent integration tests
-through existing APIs. This pending work does not change the accepted scenario
-table above: that row still describes the merged closed model.
+through existing APIs. The accepted scenario table now includes this bounded dissipative reference
+alongside the unchanged closed model.
 
 At implementation head `5f27e41b7b8b912d82f7880446b2d41f14db21bb`, local default
 verification passed 16,017 cases/224 skipped and integration passed
@@ -78,12 +79,17 @@ objective decreased from 0.87460332 to 0.09593434 and detached numeric JSON repl
 was exact on the local admitted environment. Four independent reference-function
 ASTs and both old closed-model file blobs remain unchanged.
 
-Complete GPU workflow `40262404897` succeeded. Complete standard CI
-`40262404865` remains pending at this progress update; remote three-Python matrix
-acceptance and a separate human merge grant are still required. Do not mark this
-slice accepted, promote capability maturity or declare M3/M4 complete on the
-basis of local results. No device calibration, gate-fidelity or higher-level
-truncation claim follows from this finite phenomenological model.
+Latest complete CI `40269085812` and GPU `40269085833` succeeded at head
+`2bb50f2fd54a5315bf80772569b0527bcef91488`, independently of earlier-head
+results. All 54 standard CI jobs, including the remote Python 3.10/3.11/3.12
+matrix, succeeded. All 60 applicable checks completed: 57 success and only the
+original three manual-pool skips under their existing rules. Under the PR's
+independent human authorization it merged as
+`05bca74d08ac905f4ccdbb03235f2a478b2f89b7` on 2026-10-26. Main smoke
+`40271009760` then succeeded; this is not full main CI, a release or device
+validation. Capability maturity and the remaining M3/M4 boundaries are unchanged.
+No device-calibration, gate-fidelity or higher-level truncation claim follows
+from this finite phenomenological model.
 
 ## Accepted native unread observation
 
