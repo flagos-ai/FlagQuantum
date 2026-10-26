@@ -167,6 +167,8 @@ def validate_native_plan(payload: Mapping[str, Any]) -> None:
                 "Lindblad plan identity does not match its content"
             )
         record = native_program_from_dict(payload["program"])
+        if not isinstance(record.physical_context, RydbergContext):
+            raise CapabilityError("native Lindblad plans require timed Rydberg sources")
         if payload["program"].get("version") != ("1.4" if sampled else "1.0"):
             raise SerializationError("native source and plan versions disagree")
         request, decision = payload["request"], payload["decision"]
