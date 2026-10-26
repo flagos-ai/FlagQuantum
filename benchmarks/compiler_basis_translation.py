@@ -495,6 +495,7 @@ def _qiskit_gates() -> dict[str, Any]:
         SwapGate,
         XGate,
         ZGate,
+        iSwapGate,
     )
 
     theta = _ANGLES["theta"]
@@ -503,6 +504,8 @@ def _qiskit_gates() -> dict[str, Any]:
         "cz": CZGate,
         "cy": CYGate,
         "swap": SwapGate,
+        "iswap": iSwapGate,
+        "iswapdg": lambda: iSwapGate().inverse(),
         "rzz": lambda: RZZGate(theta),
         "crz": lambda: CRZGate(theta),
         "cphase": lambda: CPhaseGate(theta),
