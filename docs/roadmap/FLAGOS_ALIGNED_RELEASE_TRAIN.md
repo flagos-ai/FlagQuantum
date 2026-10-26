@@ -352,6 +352,20 @@ post-observation and forward time rows explicit. Multi-event trajectories,
 feedback, heating, calibration and device execution remain separate decisions;
 this inventory approves no additional protected interface or M4 claim.
 
+The user approved the next bounded
+[driven three-level relaxation contract](../development/M3_NEXT_SCENARIO_CONTRACT_REVIEW.md)
+on 2026-10-26. Its example and independent integration acceptance are implemented
+in draft [#886](https://github.com/flagos-ai/FlagQuantum/pull/886), reusing existing
+numeric Lindblad planning, fixed collapse rates, interval bindings, autograd and
+results without changing public APIs or library production code. Local default
+verification passed 16,017 cases (224 skipped) and integration passed 2,515
+(177 skipped), both with zero XML failures/errors. The implementation head
+`5f27e41b7b8b912d82f7880446b2d41f14db21bb` has a successful complete GPU gate;
+its complete standard CI is still pending at this progress update. This is
+implementation progress awaiting remote acceptance and an independent PR merge
+grant, not an accepted scenario or M3 completion. The existing closed-model
+reference remains unchanged.
+
 | Scenario | Shared capability under test | Additional acceptance |
 | --- | --- | --- |
 | Existing variational circuit training | CircuitIR, Module, planning, gradients | Preserve current APIs and the local CPU fast path. |

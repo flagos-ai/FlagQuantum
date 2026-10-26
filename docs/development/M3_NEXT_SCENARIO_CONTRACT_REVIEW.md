@@ -173,7 +173,21 @@ Exact detached numeric replay: True
 ```
 
 The new 20 scenario cases and four unchanged closed-model cases passed on local
-Python 3.10 and 3.12. Full local and remote acceptance remains pending at this
-draft stage. Do not infer merge approval or accepted M3 completion from this
-record. The matrix-exponential reference shares the low-level Torch primitive,
-not production generator assembly. Physical budgets above remain authoritative.
+Python 3.10 and 3.12. Complete local default verification passed 16,017 cases with
+224 skipped (441.82s); integration passed 2,515 with 177 skipped (197.65s).
+Both XML reports contain zero failures/errors. Strict package checking passed
+837 files, and the new example/test strict check passed both files. Ownership,
+architecture, public-API, Ruff, Black 24/26 and repository/documentation gates
+passed. No library production code or existing closed-model files changed.
+
+Draft [#886](https://github.com/flagos-ai/FlagQuantum/pull/886) records this work.
+At implementation head `5f27e41b7b8b912d82f7880446b2d41f14db21bb`, complete GPU
+workflow `40262404897` succeeded while complete standard CI `40262404865` remains
+pending. Local Python 3.11 is unavailable; its actual remote matrix must pass
+before readiness. Documentation-only progress updates do not turn an earlier
+head's workflow into evidence for a later head. Latest applicable complete
+CI/GPU and independent merge authorization are still required.
+
+Do not infer merge approval or accepted M3 completion from this record. The
+matrix-exponential reference shares the low-level Torch primitive, not
+production generator assembly. Physical budgets above remain authoritative.
