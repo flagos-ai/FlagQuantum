@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import dataclasses
 import inspect
+from enum import IntEnum
 from statistics import NormalDist
 from types import SimpleNamespace
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
 
@@ -25,6 +25,13 @@ from flagquantum.qec import (
 from flagquantum.qec.decoders import registry
 from flagquantum.qec.execution import experiments as ex
 from flagquantum.simulation.stabilizer import StabilizerDependencyError, engine
+
+
+class Integer(IntEnum):
+    SHOTS = 35
+    BATCH = 16
+    SEED = 53
+
 
 pytestmark = pytest.mark.unit
 NAMES = (
@@ -110,9 +117,9 @@ def controlled(monkeypatch: pytest.MonkeyPatch) -> Any:
 def test_exact_tail_multiple_observables_and_immutable_result(controlled: Any) -> None:
     result = run(
         memory=controlled.memory,
-        shots=np.int64(35),
-        batch_size=np.int64(16),
-        seed=np.int64(53),
+        shots=Integer.SHOTS,
+        batch_size=Integer.BATCH,
+        seed=Integer.SEED,
     )
     assert result.logical_failures == 27
     assert result.observable_failures == (18, 18)
