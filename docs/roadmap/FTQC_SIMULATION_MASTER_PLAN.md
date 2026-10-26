@@ -749,8 +749,8 @@ reviews the missing compact complex-phase representation and pre-selection
 evidence. Its M-P request is limited to a private Simulation research prototype,
 64 candidate states, 850 complex-overlap queries and ten existing public exact
 executions per module verification, with proposed complex128/float64
-atol=1e-12/rtol=0. The human separately approved this finite M-P scope; implementation is under
-review after #911 actual-main admission. Prior A-D/E-H/I-L approval, document
+atol=1e-12/rtol=0. The human separately approved this finite M-P scope; #922 delivered it after
+#911 actual-main admission. Prior A-D/E-H/I-L approval, document
 merge and green CI did not admit it. No collection, production engine,
 public phase guarantee or method selection follows. FTS-02/09/10/11 and R01-R15
 remain partial. Independent QEC #904 and remote normalization work are reused
@@ -761,5 +761,26 @@ prototype and finite conformance: 64 retained states, 850 captured overlaps,
 ten existing public calls, 41 new checks. Combined local contracts passed 159
 checks with zero skips (developer Torch 2.13/existing SDK overlay). The compact
 state and inverse-word overlap replay have no production route, export,
-dependency, dense fallback, sample or collection. Exact-head PR/main admission
-is still required; FTS-10 method selection and production integration remain open.
+dependency, dense fallback, sample or collection. Actual-main admission at
+`82143b09dea21bf565c51a2e7f3f3c1496ec9dbf` passed all 54 CI jobs, required
+source/single/two GPU, smoke, real QEC optional installation/evidence, fresh
+845-member isolated package/core and installed public examples. Actual-main
+focused contracts passed 159 checks with zero skips on the developer profile;
+fresh core used Python 3.12.14/Torch 2.14.1 without an SDK overlay. This is finite
+R04 correctness evidence; FTS-10 selection and production integration remain open.
+
+### FTS-10D bounded phase/overlap cost decision
+
+The [cost-study proposal](../development/FTQC_PHASE_OVERLAP_COST_STUDY_PROPOSAL.md)
+requests a new, unapproved observation boundary after M-P correctness admission.
+It preserves the ten existing one-to-three-qubit descriptions and compares the
+private candidate with statevector/MPS/tensor-network full-probability outputs.
+Proposed maxima are 40 points, 160 workload starts plus one new monitor probe,
+416 state constructions, 3400 overlaps and 120 public executions, with serial
+one-thread CPU work and explicit phase/outer-wall/RSS/failure-stop provenance.
+No observer, probe, collection, production selection or larger domain is
+implemented or authorized here. The old 193 attempts and their failure remain
+immutable. A specific approval of matrix, numerical values, observer boundary
+and resource protocol is required before implementation; observer/controller
+review and actual-main admission precede collection. R01-R15, FTS-02/09/10/11
+and M2 remain partial.
