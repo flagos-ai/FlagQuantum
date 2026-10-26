@@ -61,7 +61,7 @@ gaps are grouped by ownership rather than added indiscriminately to Core:
 
 | Priority | Gap | Intended treatment |
 | --- | --- | --- |
-| A | `iswap`, `ecr`, `ch`, `csx`, `dcx` | Candidate built-ins only after exact lowering and end-to-end conformance are approved |
+| A | `iswap`/`iswapdg`, `ecr`, `ch`, `csx`/`csxdg`, `dcx` | Candidate built-ins only after exact lowering and end-to-end conformance are approved |
 | B | General controlled unitary (`cu`) and convenient multi-control spellings | Separate design because global phase, parameter convention, decomposition cost, and ancilla policy are observable |
 | C | `fsim`, phased-X, Mølmer-Sørensen, `gpi`, `gpi2`, and other hardware-native operations | Target/profile or extension ownership first; promote to Core only with two concrete consumers |
 | D | Additional channels already available as noise factories | Promote only when IR materialization and every advertised channel executor agree |
@@ -71,6 +71,6 @@ gaps are grouped by ownership rather than added indiscriminately to Core:
 
 [API Change 098](../development/API_CHANGE_PROPOSAL_098_GATE_COVERAGE_BATCH_A.md)
 proposes the first additive vertical slice. Until that proposal is approved and
-implemented, the five Priority A names above are **not** public FlagQuantum
+implemented, the seven Priority A names above are **not** public FlagQuantum
 opcodes and must not be advertised as supported.
 
