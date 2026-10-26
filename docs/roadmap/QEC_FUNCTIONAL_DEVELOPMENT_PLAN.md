@@ -49,8 +49,8 @@ not GitHub issue or PR numbers. Split a row if its reviewed scope requires it.
 2026-10-24; 003 merged in #779 and 004 merged in #789 after its approval.
 The exact channel extension for 004 is
 specified in [Proposal 088](../development/API_CHANGE_PROPOSAL_088_QEC_CORRELATED_PAULI_FAULTS.md)
-and was explicitly approved for implementation on 2026-10-24. Cross-decoder Decision B and experiment Decision C
-remain unapproved. The separately approved Tensor-only PyMatching batch method
+and was explicitly approved for implementation on 2026-10-24. The complete cross-decoder Decision B contract was approved on 2026-10-26.
+Decision C remains design-only, with implementation explicitly deferred. The separately approved Tensor-only PyMatching batch method
 on main is recorded in [its own proposal](../development/API_CHANGE_PROPOSAL_087_QEC_BATCH_DECODING.md);
 it does not authorize the broader cross-decoder contract. 004–009 depend on
 their respective approved contract scope.
@@ -115,13 +115,13 @@ the [Stim/PyMatching progress ledger](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#conti
 As of 2026-10-26, #872, #877 and #885 are merged; #885's merge-specific Main smoke
 and container publishing succeeded. The central progress correction #889 is
 merged with complete head CI/GPU and exact-merge Main smoke success. Main smoke
-is not full main CI. These private optimizations do not activate 005, Decision C
-or the later functional tranches below.
+is not full main CI. These private optimizations did not themselves approve 005 or Decision C. The owner separately approved
+the complete 005 contract on 2026-10-26; C implementation remains deferred.
 
 The [remaining-gap inventory and owner decisions](QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#remaining-compatibility-and-functional-gaps)
-separate delivered compatibility from unapproved functionality. The current
-approved small slice adds nested-repeat bridge-bound conformance tests; it
-changes no production behavior or API and is not yet recorded as delivered.
+separate delivered compatibility from unapproved functionality. Nested-repeat bridge-bound conformance is delivered in #896 with exact-main
+Main smoke success. The current change implements the separately approved 005
+contract; its complete head CI/GPU and merge acceptance remain delivery gates.
 The finite schedule/feedback Groups A-E matrix is already accepted through
 [#837](https://github.com/flagos-ai/FlagQuantum/pull/837), as recorded in its
 [approved conformance proposal](../development/QEC_SCHEDULE_FEEDBACK_CONFORMANCE_PROPOSAL.md).
@@ -131,10 +131,10 @@ and this entry point, preserving pending checks and scope boundaries.
 | ID | State | Evidence |
 | --- | --- | --- |
 | 001 | Merged in [#774](https://github.com/flagos-ai/FlagQuantum/pull/774) | [Post-retirement mainline acceptance](../development/QEC_RETIREMENT_MAINLINE_ACCEPTANCE.md): main and PR full CI/GPU checks passed; old clean merged QEC worktrees and branches were cleaned. |
-| 002 | Proposal merged in [#776](https://github.com/flagos-ai/FlagQuantum/pull/776) | Decision A explicitly approved by the API owner on 2026-10-24; B/C remain unapproved. |
+| 002 | Proposal merged in [#776](https://github.com/flagos-ai/FlagQuantum/pull/776) | Decision A explicitly approved by the API owner on 2026-10-24; Decision B complete contract approved 2026-10-26; C design-only. |
 | 003 | Merged in [#779](https://github.com/flagos-ai/FlagQuantum/pull/779) | [Implementation and resource evidence](../development/QEC_FUNCTIONAL_003.md); final PR head passed complete CI and single-/two-GPU checks. [Post-merge acceptance](../development/QEC_FUNCTIONAL_003_MAINLINE_ACCEPTANCE.md) records exact revisions, installations and checks. |
 | 004 | Merged in [#789](https://github.com/flagos-ai/FlagQuantum/pull/789) after explicit merge authorization | [Proposal 088](../development/API_CHANGE_PROPOSAL_088_QEC_CORRELATED_PAULI_FAULTS.md) specifies the channel grammar, exclusive distributions, compatibility and independent numerical acceptance. [Implementation](../development/QEC_FUNCTIONAL_004.md) covers exclusive circuit-noise construction and sampling; [post-merge acceptance](../development/QEC_FUNCTIONAL_004_MAINLINE_ACCEPTANCE.md) records exact main, fresh artifacts and checks. |
-| 005 | Concrete contract awaiting explicit owner approval | [Batch delivery contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) preserves complete single-shot results, specifies the supported concrete types and differing duplicate semantics, and refuses unknown/stateful plugins. No implementation is authorized yet. |
+| 005 | Complete contract approved 2026-10-26; implementation and conformance in this change | [Batch delivery contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md) preserves complete single-shot results, specifies the supported concrete types and differing duplicate semantics, and refuses unknown/stateful plugins. Exact-head full CI/GPU, source/install artifacts and normal delivery acceptance are required; no speed claim. |
 | 006 | Existing logical-only native batch path; broader optimization pending | The approved PyMatching Tensor operation already exists. Do not reimplement it or use it to invent full correction records; any further optimization must preserve the approved 005 result contract. |
 | 007 | Example statistics delivered; public experiment contract pending | #784 provides compiled sampling; #788 provides fixed-shot counts and Wilson intervals in the example. These do not activate Decision C or adaptive stopping. |
 | 008–009 | Pending respective contracts | No threshold, broad experiment API or performance claim follows from the partial deliveries above. |
