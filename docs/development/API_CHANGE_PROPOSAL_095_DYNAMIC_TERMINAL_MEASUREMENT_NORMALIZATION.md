@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposal approved on 2026-10-26; implementation is not yet approved.**
+**Proposal and implementation approved on 2026-10-26.**
 
 The API owner authorized preparation of this proposal with:
 
@@ -190,16 +190,16 @@ explicit amendment to this one.
 
 ## Acceptance criteria
 
-- [ ] Classification depends on validated IR semantics, not Python type alone.
-- [ ] The V1 admissible subset is enforced exactly and fails closed otherwise.
-- [ ] Identity and permuted measurement mappings preserve classical bit order.
-- [ ] The source IR is not mutated and normalization identity is inspectable.
-- [ ] Quafu offline fixtures prove one static submission and correct counts.
-- [ ] Refusal occurs before every external or irreversible boundary.
-- [ ] Existing true-dynamic preflight and blocker behavior remain unchanged.
-- [ ] The implementation PR includes the runnable user example and expected
+- [x] Classification depends on validated IR semantics, not Python type alone.
+- [x] The V1 admissible subset is enforced exactly and fails closed otherwise.
+- [x] Identity and permuted measurement mappings preserve classical bit order.
+- [x] The source IR is not mutated and normalization identity is inspectable.
+- [x] Quafu offline fixtures prove one static submission and correct counts.
+- [x] Refusal occurs before every external or irreversible boundary.
+- [x] Existing true-dynamic preflight and blocker behavior remain unchanged.
+- [x] The implementation PR includes the runnable user example and expected
       result.
-- [ ] Public API snapshots and signatures remain unchanged.
+- [x] Public API snapshots and signatures remain unchanged.
 
 ## Implementation approval requested
 
@@ -210,3 +210,9 @@ approve API-CHANGE-095-DYNAMIC-TERMINAL-MEASUREMENT-NORMALIZATION-IMPLEMENTATION
 That approval authorizes Batches A-C with offline provider fixtures. It does not
 authorize credentials, network access, live discovery, task submission,
 charging, another provider integration, or a live-QPU support claim.
+
+**Implementation approval recorded:**
+
+```text
+approve API-CHANGE-095-DYNAMIC-TERMINAL-MEASUREMENT-NORMALIZATION-IMPLEMENTATION
+```
