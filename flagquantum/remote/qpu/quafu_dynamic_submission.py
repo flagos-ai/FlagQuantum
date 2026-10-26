@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any
 
 from ...deployment.cloud import DeploymentPackage
 from ...deployment.dynamic_sealing import _validate_dynamic_remote_package_seal
+from ._quafu_sdk import _QuafuSdkAdapter
 from .contracts import (
     DeploymentResult,
     ProviderTaskHandle,
@@ -16,7 +17,7 @@ from .contracts import (
 )
 from .result_parsing import _extract_counts
 
-_TASK_API_PROTOCOL = "task_api_v1"
+_SDK_PROTOCOL = "quafu_sdk_v1"
 _RESULT_BIT_ORDER = "msb_left"
 
 
@@ -36,28 +37,25 @@ def _dynamic_receipt_identity(package: DeploymentPackage) -> dict[str, Any]:
 def _submit_quafu_dynamic_once(
     package: DeploymentPackage,
     *,
-    transport: Any,
-    timeout: float = 0.0,
+    adapter: _QuafuSdkAdapter,
 ) -> ProviderTaskHandle:
-    """Create at most one mocked task-API POST for one sealed package."""
+    """Create at most one mocked SDK submission for one sealed package."""
 
     _validate_dynamic_remote_package_seal(package)
     if package.backend.provider != "quafu":
         raise ValueError("dynamic Quafu submission requires a Quafu package")
     seal_id = package.metadata["dynamic_remote_package_seal_sha256"]
     client_ref = f"fq-dynamic-{seal_id}"
-    payload = {
-        "mode": "single",
-        "target": package.backend.name,
-        "shots": package.shots,
-        "circuits": [{"qasm": package.qasm}],
-        "client_ref": client_ref,
-    }
     try:
-        response = transport.post_json("/jobs", payload, {}, timeout)
+        response = adapter.submit_physical(
+            package.qasm,
+            target=package.backend.name,
+            shots=package.shots,
+            name=client_ref,
+        )
     except Exception:
         raise RuntimeError("quafu_dynamic_submission_ambiguous") from None
-    job_id = response.get("job_id") if isinstance(response, Mapping) else None
+    job_id = response.get("job_id")
     if not isinstance(job_id, str) or not job_id.strip():
         raise RuntimeError("quafu_dynamic_submission_ambiguous:missing_job_id")
 
@@ -65,7 +63,7 @@ def _submit_quafu_dynamic_once(
     receipt.update(_dynamic_receipt_identity(package))
     receipt.update(
         {
-            "quafu_protocol": _TASK_API_PROTOCOL,
+            "quafu_protocol": _SDK_PROTOCOL,
             "client_ref": client_ref,
             "submitted_shots": package.shots,
             "submitted_qubits": package.n_qubits,
@@ -80,28 +78,31 @@ def _normalize_quafu_dynamic_mock_result(
 ) -> DeploymentResult:
     """Normalize the closed mocked result shape without claiming live support."""
 
-    if handle.provider != "quafu" or handle.payload.get("quafu_protocol") != (
-        _TASK_API_PROTOCOL
+    if (
+        handle.provider != "quafu"
+        or handle.payload.get("quafu_protocol") != _SDK_PROTOCOL
     ):
         raise RuntimeError("quafu_dynamic_result_contract_unconfirmed:task_identity")
     if response.get("bit_order") != _RESULT_BIT_ORDER:
         raise RuntimeError("quafu_dynamic_result_contract_unconfirmed:bit_order")
-    if "mid_circuit_measurements" in response:
+    if (
+        "mid_circuit_measurements" in response
+        or response.get("measurements") is not None
+    ):
         raise RuntimeError("quafu_dynamic_result_contract_unconfirmed:mid_circuit_data")
     rows = response.get("counts")
-    if (
-        not isinstance(rows, Sequence)
-        or isinstance(rows, (str, bytes))
-        or len(rows) != 1
-        or not isinstance(rows[0], Mapping)
-    ):
+    if not isinstance(rows, Mapping):
         raise RuntimeError("quafu_dynamic_result_contract_unconfirmed:counts")
-    counts = _extract_counts({"counts": rows[0]}, provider="quafu")
+    counts = _extract_counts({"counts": rows}, provider="quafu")
     submitted_shots = handle.payload.get("submitted_shots")
     if type(submitted_shots) is not int or submitted_shots <= 0:
         raise RuntimeError("quafu_dynamic_result_contract_unconfirmed:shots")
+    if response.get("shots_returned") != submitted_shots:
+        raise RuntimeError("quafu_dynamic_result_contract_unconfirmed:shots")
     submitted_qubits = handle.payload.get("submitted_qubits")
     if type(submitted_qubits) is not int or submitted_qubits <= 0:
+        raise RuntimeError("quafu_dynamic_result_contract_unconfirmed:bit_width")
+    if response.get("n_clbits") != submitted_qubits:
         raise RuntimeError("quafu_dynamic_result_contract_unconfirmed:bit_width")
     if any(
         len(outcome) != submitted_qubits or set(outcome) - {"0", "1"}
@@ -128,7 +129,7 @@ def _normalize_quafu_dynamic_mock_result(
                 **identity,
                 "counts_bit_order": _RESULT_BIT_ORDER,
                 "counts_width": submitted_qubits,
-                "quafu_protocol": _TASK_API_PROTOCOL,
+                "quafu_protocol": _SDK_PROTOCOL,
             },
         ),
     )
