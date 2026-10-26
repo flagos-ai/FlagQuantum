@@ -24,7 +24,7 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
     timeout-minutes: 5
     permissions:
       contents: read
@@ -242,7 +242,7 @@ jobs:
 
   validate-cpu-pool:
     if: ${{ inputs.validate_pool }}
-    runs-on: [self-hosted, linux, x64, flagquantum-a100-cpu, "${{ matrix.slot }}"]
+    runs-on: [self-hosted, linux, x64, a100-cpu, "${{ matrix.slot }}"]
     timeout-minutes: 15
     strategy:
       fail-fast: false
