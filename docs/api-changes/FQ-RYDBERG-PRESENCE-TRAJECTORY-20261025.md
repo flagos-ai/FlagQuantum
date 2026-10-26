@@ -4,40 +4,27 @@ The user explicitly approved all five decisions in
 [proposal 092](../development/API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md)
 on 2026-10-25. Document PR #845 merged as
 `7bd873856c13275c140e4be622560ab008bea60f` after complete applicable CI/GPU.
-Each later PR requires its own conditional merge authorization. This baseline
-was accepted in PR #854. The Core stage now activates the approved method and
-strict source 1.4 only; Lindblad plan 1.8, root admission and result-plan
-annotation remain closed.
+Each later PR requires its own conditional merge authorization. Baseline #854,
+Core #869 and Simulation #875 have landed separately. This Runtime change joins
+strict native source 1.4 to sampled LindbladPlan 1.8 and `fq.run(plan)`.
+It preserves the existing result classes and adds only the approved root input
+and result-plan type annotation.
 
 ## Replacement boundary
 
-`tests/unit/test_rydberg_presence_contract.py` defines four implementation
-factories: source, planner, runner and reader. Its independent physical consumers
-must survive replacement unchanged. The disposable
-`tests/unit/rydberg_presence_reference.py` composes the existing Rydberg frontend,
-authentic native plan 1.7 validation/capture, decoded interval Hamiltonians,
-Liouvillian, integrator, instrument probabilities, private single-index draw and
-canonical ExecutionResult/MeasurementResult. It assembles the full native grid
-once and does not restart native time at the observation.
-The source-operation index is its canonical timed position, not an append count;
-the reference reuses existing control-operation keys to locate that position.
-Scalar and time checks reuse the existing finite-real, physical-boundary and
-ULP-time authorities. Extending the output grid cannot extend the source control
-horizon; ambiguous or out-of-budget time matches and a third actor are refused.
+The four factories in `tests/unit/test_rydberg_presence_contract.py` now select
+real RydbergProgram, Lindblad planning, root execution and Lindblad JSON reading.
+All independent physical consumers and oracle functions remain unchanged; their
+AST hashes were compared before and after replacement. The disposable test
+reference was deleted. Real source/version/options/environment tampering is
+checked against the production reader, alongside original byte captures.
 
-The source double holds an observation outside its unchanged source 1.0.
-Its serialization is explicitly `test.rydberg_presence_recipe`, containing
-an authentic old native plan, not a fake ProgramRecord 1.4 or LindbladPlan 1.8.
-No fake plan is attached to ExecutionResult. Production compatibility tests
-check the real Core method, keep new native plan reader admission closed and old
-Lindblad plans refused at the root. These stage assertions are removed only
-when their real owning domain changes; frozen physical consumers are retained.
-
-The existing execution-plan candidate records the approved future root join
-as `core_source`, `production_implemented=false`. Its exact guard and five
-negative mutations prohibit silently changing versions, adding result fields,
-claiming implementation or expanding feedback. This metadata does not make
-LindbladPlan an ExecutionPlan subtype or introduce a registry or new result type.
+Simulation owns full-schedule assembly, fixed Kraus actions, prefix evolution
+and selected continuation. Runtime owns sealed options, environment compatibility,
+private drawing and canonical result assembly. One original absolute grid and
+all interval bindings are retained. No new IR, solver, registry or result class
+is introduced. The candidate records the approved `runtime` stage and exact
+signature guard; this does not promote capability maturity.
 
 ## Independent evidence
 
@@ -75,23 +62,34 @@ against the real owning-domain implementations when those stages land. A test
 recipe cannot certify production readers. The independent consumers and old
 artifacts remain in place throughout Core, Simulation and Runtime delivery.
 
-## Runnable existing public workflow
+## Runnable public trajectory workflow
 
 ```python
 import torch
+import flagquantum as fq
 import flagquantum.lindblad as fql
-from examples.train_rydberg_controls import control_plan
+from examples.train_rydberg_controls import moving_pair_program
 
-plan = control_plan(torch.tensor([0.8, 1.2], dtype=torch.float64), intervals=8)
-result = fql.run(plan)
-replay = fql.run(fql.LindbladPlan.from_json(plan.to_json()))
-print(plan.to_dict()["version"])
-print(result.populations.shape == (9, 9))
-print(torch.equal(result.populations, replay.populations))
+program = moving_pair_program().measure_presence("a", at=0.5, efficiency=0.8)
+plan = fql.plan(
+    program, program.basis_state(("g", "g")),
+    torch.linspace(0, 1, 129, dtype=torch.float64),
+    parameter_values=[{"omega": 1.2}] * 128,
+    outputs=fq.expectation(program.survival_operator(), name="survival"),
+    options=fq.ExecutionOptions(shots=1, seed=17),
+    return_density_matrices=True,
+)
+result = fq.run(fql.LindbladPlan.from_json(plan.to_json()))
+print(plan.to_dict()["version"], result.state.shape)
+print(result.expectation("survival").shape)
+print(result.measurement("mid_circuit_measurement").value.shape)
 ```
 
-The expected output is `1.7`, `True`, `True`. This existing unconditional
-workflow supports the baseline without claiming native intermediate execution.
+Expected: `1.8 torch.Size([1, 9, 9])`, `torch.Size([129])`, and
+`torch.Size([1, 1])`. Earlier trajectory rows are forward states; the observation
+boundary row is post-observation. `no_flag` includes undetected loss. `fql.run`
+continues to return EvolutionResult for old profiles and refuses sampled 1.8.
+
 Run the replaceable consumers with:
 
 ```bash

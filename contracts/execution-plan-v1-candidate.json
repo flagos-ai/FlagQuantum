@@ -8,7 +8,7 @@
   "root_manifest_authorized": true,
   "proposed_signatures": {
     "plan": "(program: 'Circuit | CircuitIR | IsingBraidProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None) -> 'ExecutionPlan'",
-    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
+    "run": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
   },
   "contract": {
     "kind": "immutable_factory_value",
@@ -167,8 +167,8 @@
     "proposal": "docs/development/API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md",
     "record": "docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md",
     "implementation_authorized": true,
-    "delivery_stage": "core_source",
-    "production_implemented": false,
+    "delivery_stage": "runtime",
+    "production_implemented": true,
     "operation": "rydberg.measure_presence",
     "source_version": "1.4",
     "lindblad_plan_version": "1.8",

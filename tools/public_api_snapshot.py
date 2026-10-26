@@ -455,8 +455,8 @@ def _validate_authorized_execution_plan(
         "proposal": "docs/development/API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md",
         "record": "docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md",
         "implementation_authorized": True,
-        "delivery_stage": "core_source",
-        "production_implemented": False,
+        "delivery_stage": "runtime",
+        "production_implemented": True,
         "operation": "rydberg.measure_presence",
         "source_version": "1.4",
         "lindblad_plan_version": "1.8",
@@ -473,6 +473,12 @@ def _validate_authorized_execution_plan(
         errors.append(
             "native Rydberg presence admission differs from approved proposal 092"
         )
+    approved_run_signature = "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'"
+    if (
+        str(inspect.signature(fq.run)) != approved_run_signature
+        or contract["proposed_signatures"]["run"] != approved_run_signature
+    ):
+        errors.append("proposal 092 root input union differs from approval")
     from flagquantum.core.rydberg import RydbergProgram
 
     presence = getattr(RydbergProgram, "measure_presence", None)
@@ -576,6 +582,11 @@ def _validate_authorized_execution_result(contract: dict[str, Any]) -> list[str]
         field.name: str(field.type)
         for field in dataclasses.fields(fq.MeasurementResult)
     }
+    approved_plan_annotation = (
+        "ExecutionPlan | RuntimePlanContract | MPSProductionPlan | LindbladPlan | None"
+    )
+    if annotations["ExecutionResult.plan"] != approved_plan_annotation:
+        errors.append("proposal 092 result-plan annotation differs from approval")
     if result_fields["plan"] != annotations["ExecutionResult.plan"]:
         errors.append("ExecutionResult.plan annotation changed")
     if measurement_fields["value"] != annotations["MeasurementResult.value"]:

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from importlib import import_module
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from torch import Tensor
 
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
     from .core.ir import CircuitIR
     from .core.ising import IsingBraidProgram
     from .gradients import GradientResult
+    from .lindblad import LindbladPlan
     from .noise import NoiseModel
     from .observables import OutputRequest
     from .runtime.execution_plan import ExecutionPlan
@@ -86,7 +88,9 @@ def compile(
 
 
 def run(
-    program_or_plan: Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram,
+    program_or_plan: (
+        Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan
+    ),
     *,
     options: ExecutionOptions | None = None,
     outputs: OutputRequest | Sequence[OutputRequest] | None = None,
@@ -114,6 +118,28 @@ def run(
         torch.Size([8, 2])
     """
 
+    # A created LindbladPlan has already loaded its module. Keep ordinary
+    # circuit execution free of an eager dynamics import.
+    dynamics = sys.modules.get("flagquantum.lindblad._plan")
+    if dynamics is not None and isinstance(program_or_plan, dynamics.LindbladPlan):
+        if any(
+            value is not None
+            for value in (
+                options,
+                outputs,
+                noise_model,
+                compiler,
+                target,
+                target_qubits,
+                shots,
+                name,
+            )
+        ):
+            raise TypeError("a sealed LindbladPlan does not accept execution overrides")
+        from .runtime._rydberg_presence import execute_presence_plan
+
+        return execute_presence_plan(program_or_plan)
+
     from .core.ising import IsingBraidProgram
     from .runtime.execution_plan import ExecutionPlan
 
@@ -139,6 +165,9 @@ def run(
         from .runtime._ising_plan import plan_ising
 
         return run_local(plan_ising(program_or_plan, options=options, outputs=outputs))
+    # The module-presence test above excludes every LindbladPlan without importing
+    # dynamics on the ordinary circuit path; express that lazy narrowing for typing.
+    program_or_plan = cast("Circuit | CircuitIR | ExecutionPlan", program_or_plan)
     import_module(".core.ir", __package__)._reject_native_circuit_input(program_or_plan)
 
     remote_requested = (

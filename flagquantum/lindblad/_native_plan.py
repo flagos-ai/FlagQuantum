@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 import torch
 
 from ..core.ir.program.model import ProgramRecord
-from ..core.ir.program.physical import RydbergContext
+from ..core.ir.program.physical import RydbergContext, RydbergPresence
 from ..core.ir.program.physical_codec import (
     native_program_from_dict,
     native_program_to_dict,
@@ -38,6 +38,7 @@ def native_request(
     dtype: torch.dtype,
     device: torch.device | str,
     parameter_values: Any,
+    allow_presence: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, float]] | None]:
     for field, value in (
         ("n_qubits", n_qubits),
@@ -63,6 +64,20 @@ def native_request(
                 "dimensions must match the native product space",
                 "dimensions",
             )
+    if any(
+        isinstance(op.physical_data, RydbergPresence)
+        for op in record.functions[0].blocks[0].operations
+    ):
+        if not allow_presence:
+            raise CapabilityError("presence requires a sampled conditional trajectory")
+        if dtype != torch.complex128 or torch.device(device).type != "cpu":
+            raise CapabilityError("presence dynamics requires CPU complex128")
+        from ..simulation.rydberg_presence import _presence_model
+
+        numeric, bindings, _ = _presence_model(
+            record, times, parameter_values=parameter_values
+        )
+        return numeric, bindings
     return native_model(
         record, times, dtype=dtype, device=device, parameter_values=parameter_values
     )
@@ -128,7 +143,8 @@ def _numeric_values(value: object) -> None:
 def validate_native_plan(payload: Mapping[str, Any]) -> None:
     from ._plan import _decode_request, _identity
 
-    if set(payload) != {
+    sampled = payload.get("version") == "1.8"
+    expected_fields = {
         "schema",
         "version",
         "request",
@@ -136,17 +152,34 @@ def validate_native_plan(payload: Mapping[str, Any]) -> None:
         "program",
         "bindings",
         "identity",
-    }:
+    }
+    if sampled:
+        expected_fields.update(("options", "environment_requirements"))
+    if set(payload) != expected_fields:
         raise SerializationError("unknown native plan fields")
+    if sampled:
+        from ..runtime._rydberg_presence import validate_presence_options
+
+        validate_presence_options(payload)
     try:
         if payload.get("identity") != _identity(payload):
             raise SerializationError(
                 "Lindblad plan identity does not match its content"
             )
         record = native_program_from_dict(payload["program"])
+        if payload["program"].get("version") != ("1.4" if sampled else "1.0"):
+            raise SerializationError("native source and plan versions disagree")
         request, decision = payload["request"], payload["decision"]
         if not isinstance(request, Mapping) or not isinstance(decision, Mapping):
             raise SerializationError("native plans require request and decision maps")
+        if sampled:
+            from ..runtime._rydberg_presence import check_presence_budget
+
+            check_presence_budget(
+                record,
+                len(request.get("times", [])),
+                bool(request.get("return_density_matrices")),
+            )
         precision = decision.get("numerics", {}).get("precision")
         dtype = {"complex64": torch.complex64, "complex128": torch.complex128}.get(
             precision
@@ -179,6 +212,7 @@ def validate_native_plan(payload: Mapping[str, Any]) -> None:
                 dtype=dtype,
                 device=decision.get("numerics", {}).get("device", "cpu"),
                 parameter_values=bindings,
+                allow_presence=sampled,
             )
             if bindings != canonical_bindings:
                 raise SerializationError(
@@ -200,6 +234,10 @@ def validate_native_plan(payload: Mapping[str, Any]) -> None:
                     if collection == "collapse_operators":
                         _numeric_values(item["rate"])
             decoded = _decode_request(request, decision, version="1.5")
+            if sampled:
+                from ..runtime._rydberg_presence import check_presence_request
+
+                check_presence_request(record, decoded)
             summary = _plan_density_matrix_evolution(**decoded)
             if summary.to_dict() != dict(decision):
                 raise SerializationError(
