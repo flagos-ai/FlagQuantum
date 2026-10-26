@@ -265,3 +265,8 @@ approve API-CHANGE-090-QUAFU-DYNAMIC-VERTICAL-SLICE
 Approval authorizes only stages 1 through 5 as separately reviewable,
 credential-free or mocked pull requests. It does not authorize live discovery,
 credential use, task submission, charging, or a Quafu dynamic-support claim.
+
+The successor activation and evidence sequence is defined by
+[API Change 093](API_CHANGE_PROPOSAL_093_QUAFU_DYNAMIC_FORMAT_ACTIVATION.md).
+It keeps this vertical slice closed until a maintained Quafu source confirms
+the exact dynamic program format and device-scoped semantics.
