@@ -1,0 +1,16 @@
+import importlib.util
+import json
+from pathlib import Path
+import sys
+sys.path.insert(0, sys.argv[1])
+from flagquantum.simulation.statevector import batching
+name = "flagquantum.simulation.statevector._bound_rotation_baseline"
+spec = importlib.util.spec_from_file_location(name, "/private/tmp/fq-rotation-baseline.py")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+batching._rotation_region_angles = module._rotation_region_angles
+from benchmarks.module_execution_matrix import Case, measure
+from dataclasses import asdict
+width,depth,ring = map(int,sys.argv[3:6])
+result = measure(Case(width,depth,bool(ring)), 5, 20)
+Path(sys.argv[2]).write_text(json.dumps([asdict(row) for row in result],indent=2)+"\n")

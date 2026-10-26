@@ -1,0 +1,2233 @@
+{
+  "schema": "flagquantum.module_execution_matrix.development.v1",
+  "revision": "7cb725d727f9cfa0465152c1c94a8ececc79fd0a",
+  "source_dirty": false,
+  "producer_sha256": "9b7961623743a18aefae65546c9f4a9ab7ec7d66917ab4141d5d988ca7055c35",
+  "versions": {
+    "torch": "2.14.1",
+    "jax": "0.10.2",
+    "jaxlib": "0.10.2",
+    "flagquantum": "0.4.0"
+  },
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "device": "cpu",
+  "precision": "complex128",
+  "batching": "one_example",
+  "repeats": 5,
+  "iterations": 20,
+  "case_timeout_seconds": 120,
+  "budget_status": "proposed_development_targets_not_release_thresholds",
+  "limitations": [
+    "one fresh process per shape, within-process timing blocks",
+    "context-first calls reuse earlier context caches; not cold-process startup",
+    "kernel route is diagnostic; no external-framework ranking",
+    "Torch/BLAS configured to one thread; XLA thread count is not constrained"
+  ],
+  "cases": [
+    {
+      "case": {
+        "width": 2,
+        "depth": 1,
+        "ring": false
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.47947737500362564,
+          "seconds_per_call": [
+            0.000512527050159406,
+            0.0003476104000583291,
+            0.00040382914994552266,
+            0.0003929041999072069,
+            0.00035326875004102474
+          ],
+          "median_seconds": 0.0003929041999072069,
+          "mad_seconds": 3.963544986618217e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.10183070800121641,
+          "seconds_per_call": [
+            6.21520997810876e-05,
+            4.887080031039659e-05,
+            0.0001105708499380853,
+            5.713540012948215e-05,
+            4.8589549987809735e-05
+          ],
+          "median_seconds": 5.713540012948215e-05,
+          "mad_seconds": 8.264599819085555e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.06741250000050059,
+          "seconds_per_call": [
+            3.7893750049988736e-05,
+            4.648329995688982e-05,
+            4.2460399708943444e-05,
+            3.755625002668239e-05,
+            3.637500012700912e-05
+          ],
+          "median_seconds": 3.7893750049988736e-05,
+          "mad_seconds": 1.518749922979619e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.00032116699730977416,
+          "seconds_per_call": [
+            0.0003597667000576621,
+            0.0003240853999159299,
+            0.0003256396001233952,
+            0.0003213687501556706,
+            0.0003192228999978397
+          ],
+          "median_seconds": 0.0003240853999159299,
+          "mad_seconds": 2.7166497602593154e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.06061591699835844,
+          "seconds_per_call": [
+            6.0166650291648695e-05,
+            4.89187499624677e-05,
+            5.52500001504086e-05,
+            5.198124999878928e-05,
+            4.827295015275013e-05
+          ],
+          "median_seconds": 5.198124999878928e-05,
+          "mad_seconds": 3.2687501516193192e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.055026875001203734,
+          "seconds_per_call": [
+            3.750414980459027e-05,
+            3.594165027607232e-05,
+            4.027085014968179e-05,
+            3.677290005725809e-05,
+            3.670209989650175e-05
+          ],
+          "median_seconds": 3.677290005725809e-05,
+          "mad_seconds": 7.312497473321801e-07
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.00035041599767282605,
+          "seconds_per_call": [
+            0.000402358350038412,
+            0.00036746249970747157,
+            0.00035090415003651286,
+            0.00034247914991283326,
+            0.0003779770999244647
+          ],
+          "median_seconds": 0.00036746249970747157,
+          "mad_seconds": 1.6558349670958705e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.0639893330007908,
+          "seconds_per_call": [
+            6.841040012659506e-05,
+            9.947915023076349e-05,
+            6.36104497971246e-05,
+            6.666250010312069e-05,
+            5.739375010307413e-05
+          ],
+          "median_seconds": 6.666250010312069e-05,
+          "mad_seconds": 3.0520503059960875e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.05941991600411711,
+          "seconds_per_call": [
+            4.542499991657678e-05,
+            4.786874997080304e-05,
+            5.373335006879643e-05,
+            4.554584993456956e-05,
+            4.451665008673444e-05
+          ],
+          "median_seconds": 4.554584993456956e-05,
+          "mad_seconds": 1.0291998478351188e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.0001959590008482337,
+          "seconds_per_call": [
+            0.00018990419994224794,
+            0.0001851458499004366,
+            0.00016151874988281633,
+            0.00018442500004312024,
+            0.00015961874996719416
+          ],
+          "median_seconds": 0.00018442500004312024,
+          "mad_seconds": 5.479199899127707e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.037689167002099566,
+          "seconds_per_call": [
+            2.959374978672713e-05,
+            2.4310399749083444e-05,
+            2.6745799914351664e-05,
+            2.8227100119693205e-05,
+            2.29124998440966e-05
+          ],
+          "median_seconds": 2.6745799914351664e-05,
+          "mad_seconds": 2.4354001652682207e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.033701874999678694,
+          "seconds_per_call": [
+            1.5935400006128476e-05,
+            1.547499996377155e-05,
+            2.0052099716849626e-05,
+            1.5356250150944108e-05,
+            1.4799999917158857e-05
+          ],
+          "median_seconds": 1.547499996377155e-05,
+          "mad_seconds": 4.6040004235692593e-07
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00016791599773569033,
+          "seconds_per_call": [
+            0.00016403960034949705,
+            0.00015653125010430812,
+            0.00017035210003086833,
+            0.00018559585005277767,
+            0.00016869580031197984
+          ],
+          "median_seconds": 0.00016869580031197984,
+          "mad_seconds": 4.656199962482788e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 4.391700349515304e-05,
+          "seconds_per_call": [
+            2.51062501774868e-05,
+            2.285625014337711e-05,
+            2.7814550048788077e-05,
+            3.701040004671086e-05,
+            2.376670017838478e-05
+          ],
+          "median_seconds": 2.51062501774868e-05,
+          "mad_seconds": 2.2500000341096886e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 1.720800355542451e-05,
+          "seconds_per_call": [
+            1.5083350081113168e-05,
+            1.4777100295759737e-05,
+            1.769164991856087e-05,
+            1.9587499991757795e-05,
+            1.5187499957391993e-05
+          ],
+          "median_seconds": 1.5187499957391993e-05,
+          "mad_seconds": 4.1039966163225574e-07
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 3,
+        "ring": false
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.4685808750000433,
+          "seconds_per_call": [
+            0.0007073062501149252,
+            0.000675312500243308,
+            0.0006684458003292093,
+            0.0006355208501190645,
+            0.0006381437498930609
+          ],
+          "median_seconds": 0.0006684458003292093,
+          "mad_seconds": 3.0302050436148377e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.19836783399659907,
+          "seconds_per_call": [
+            0.00011268540001765359,
+            6.870625002193264e-05,
+            9.839170015766286e-05,
+            8.386875015276019e-05,
+            7.430205005221069e-05
+          ],
+          "median_seconds": 8.386875015276019e-05,
+          "mad_seconds": 1.4522950004902674e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.17858120799792232,
+          "seconds_per_call": [
+            6.426459985959809e-05,
+            5.2420800057007e-05,
+            6.242915005714167e-05,
+            5.689585013897158e-05,
+            5.4895849825697954e-05
+          ],
+          "median_seconds": 5.689585013897158e-05,
+          "mad_seconds": 4.475050081964577e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.0008450829991488717,
+          "seconds_per_call": [
+            0.0006205292000231565,
+            0.0006359957998938626,
+            0.0006214437500602799,
+            0.0005829562498547603,
+            0.0005911083502724068
+          ],
+          "median_seconds": 0.0006205292000231565,
+          "mad_seconds": 1.5466599870706064e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.10246066599938786,
+          "seconds_per_call": [
+            7.683545009058434e-05,
+            6.608125004277099e-05,
+            7.918749979580752e-05,
+            9.181664972857106e-05,
+            6.768329985789024e-05
+          ],
+          "median_seconds": 7.683545009058434e-05,
+          "mad_seconds": 9.152150232694106e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.10136749999946915,
+          "seconds_per_call": [
+            5.4672899932484145e-05,
+            5.1810400327667595e-05,
+            5.6218749887193556e-05,
+            7.18021001375746e-05,
+            5.282710008032154e-05
+          ],
+          "median_seconds": 5.4672899932484145e-05,
+          "mad_seconds": 1.845799852162605e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.0006403750012395903,
+          "seconds_per_call": [
+            0.0006444124999688938,
+            0.0006378250000125263,
+            0.0006856562500615837,
+            0.0006512749998364598,
+            0.0006417103999410756
+          ],
+          "median_seconds": 0.0006444124999688938,
+          "mad_seconds": 6.587499956367494e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.14308670799800893,
+          "seconds_per_call": [
+            8.18437500129221e-05,
+            7.292499976756517e-05,
+            8.764164995227475e-05,
+            7.884580008976627e-05,
+            8.210419982788154e-05
+          ],
+          "median_seconds": 8.18437500129221e-05,
+          "mad_seconds": 2.9979499231558266e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.14051179099624278,
+          "seconds_per_call": [
+            6.133544993645046e-05,
+            6.082289983169176e-05,
+            8.829999969748315e-05,
+            8.381045008718502e-05,
+            5.992920014250558e-05
+          ],
+          "median_seconds": 6.133544993645046e-05,
+          "mad_seconds": 1.4062497939448871e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.0003211250004824251,
+          "seconds_per_call": [
+            0.0003334625002025859,
+            0.00030572915020457005,
+            0.00029252290005388204,
+            0.0003386291500646621,
+            0.0003225103999284329
+          ],
+          "median_seconds": 0.0003225103999284329,
+          "mad_seconds": 1.61187501362292e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.05800970799464267,
+          "seconds_per_call": [
+            3.313954985060263e-05,
+            2.6200000138487668e-05,
+            2.9064550108159893e-05,
+            3.486875029921066e-05,
+            2.587290000519715e-05
+          ],
+          "median_seconds": 2.9064550108159893e-05,
+          "mad_seconds": 3.191650102962742e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.06059049999748822,
+          "seconds_per_call": [
+            1.784579981176648e-05,
+            1.7204200048581697e-05,
+            2.0399999993969686e-05,
+            1.7452099928050303e-05,
+            2.3772900021867827e-05
+          ],
+          "median_seconds": 1.784579981176648e-05,
+          "mad_seconds": 6.415997631847845e-07
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0003287500003352761,
+          "seconds_per_call": [
+            0.0003042062497115694,
+            0.00029429999995045364,
+            0.0002894249999371823,
+            0.00029593750005005857,
+            0.0002782333001960069
+          ],
+          "median_seconds": 0.00029429999995045364,
+          "mad_seconds": 4.875000013271336e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00012016700202366337,
+          "seconds_per_call": [
+            2.9966650254209525e-05,
+            2.5279150213464165e-05,
+            3.115625004284084e-05,
+            3.380625021236483e-05,
+            2.5920850021066144e-05
+          ],
+          "median_seconds": 2.9966650254209525e-05,
+          "mad_seconds": 3.839599958155308e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 2.433299960102886e-05,
+          "seconds_per_call": [
+            1.739584986353293e-05,
+            1.7122950157499873e-05,
+            1.9895849982276558e-05,
+            1.8127099974662996e-05,
+            1.6929149933275766e-05
+          ],
+          "median_seconds": 1.739584986353293e-05,
+          "mad_seconds": 4.6669993025716394e-07
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": false
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.4730762079998385,
+          "seconds_per_call": [
+            0.00051661250035977,
+            0.0004878520998317981,
+            0.00046840420000080483,
+            0.00047011044989631046,
+            0.0005326667000190355
+          ],
+          "median_seconds": 0.0004878520998317981,
+          "mad_seconds": 1.9447899830993265e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.1399225409986684,
+          "seconds_per_call": [
+            7.534790020145011e-05,
+            7.490624993806705e-05,
+            6.824164993304293e-05,
+            8.572080005251337e-05,
+            6.533545019919984e-05
+          ],
+          "median_seconds": 7.490624993806705e-05,
+          "mad_seconds": 6.6646000050241155e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.10688179200224113,
+          "seconds_per_call": [
+            5.355834982765373e-05,
+            5.029580024711322e-05,
+            5.4554150119656696e-05,
+            5.347080004867166e-05,
+            5.302295030560344e-05
+          ],
+          "median_seconds": 5.347080004867166e-05,
+          "mad_seconds": 4.4784974306821823e-07
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.0004931250005029142,
+          "seconds_per_call": [
+            0.0005671124999935273,
+            0.0004967583499819739,
+            0.0005161687502550194,
+            0.0005033250003180001,
+            0.000501777099998435
+          ],
+          "median_seconds": 0.0005033250003180001,
+          "mad_seconds": 6.566650336026192e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.137405082998157,
+          "seconds_per_call": [
+            0.00012167919994681143,
+            7.96666499809362e-05,
+            7.56437500967877e-05,
+            7.671874991501681e-05,
+            6.111250004323666e-05
+          ],
+          "median_seconds": 7.671874991501681e-05,
+          "mad_seconds": 2.9479000659193898e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.09959174999676179,
+          "seconds_per_call": [
+            5.1722900025197305e-05,
+            6.917500031704549e-05,
+            8.787709994066973e-05,
+            8.419584992225282e-05,
+            4.607289993145969e-05
+          ],
+          "median_seconds": 6.917500031704549e-05,
+          "mad_seconds": 1.7452100291848185e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.0005089580008643679,
+          "seconds_per_call": [
+            0.0005639583501761081,
+            0.0005380145499657374,
+            0.0005116437499964377,
+            0.000527681250241585,
+            0.0005289395499858074
+          ],
+          "median_seconds": 0.0005289395499858074,
+          "mad_seconds": 9.074999979929999e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.11899699999776203,
+          "seconds_per_call": [
+            9.182499998132699e-05,
+            7.277500008058268e-05,
+            7.687914985581301e-05,
+            8.366460024262778e-05,
+            7.012085006863344e-05
+          ],
+          "median_seconds": 7.687914985581301e-05,
+          "mad_seconds": 6.75829978717957e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.11425074999715434,
+          "seconds_per_call": [
+            5.9922949731117114e-05,
+            5.9231249906588346e-05,
+            7.123959985619877e-05,
+            5.7808349811239165e-05,
+            5.603749996225815e-05
+          ],
+          "median_seconds": 5.9231249906588346e-05,
+          "mad_seconds": 1.4229000953491804e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.00029025000549154356,
+          "seconds_per_call": [
+            0.0002706957999180304,
+            0.00026175624989264177,
+            0.0002692124999157386,
+            0.0003686937503516674,
+            0.000453985399872181
+          ],
+          "median_seconds": 0.0002706957999180304,
+          "mad_seconds": 8.939550025388642e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.06313745900115464,
+          "seconds_per_call": [
+            3.9229149842867626e-05,
+            6.22583000222221e-05,
+            5.661459981638472e-05,
+            8.973955009423662e-05,
+            0.00010221874981652945
+          ],
+          "median_seconds": 6.22583000222221e-05,
+          "mad_seconds": 2.3029150179354473e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.06167941699823132,
+          "seconds_per_call": [
+            4.3002099846489725e-05,
+            2.4362499971175566e-05,
+            2.7485400278237648e-05,
+            5.393124993133824e-05,
+            6.598334985028487e-05
+          ],
+          "median_seconds": 4.3002099846489725e-05,
+          "mad_seconds": 1.5516699568252077e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0002499999973224476,
+          "seconds_per_call": [
+            0.0003679541499877814,
+            0.0004317270500905579,
+            0.0002695354000024963,
+            0.0002295541500643594,
+            0.0003022375000000466
+          ],
+          "median_seconds": 0.0003022375000000466,
+          "mad_seconds": 6.571664998773481e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00014566699974238873,
+          "seconds_per_call": [
+            0.00010626455004967284,
+            0.00010007915007008706,
+            3.6120849836152046e-05,
+            5.985000025248155e-05,
+            5.682914998033084e-05
+          ],
+          "median_seconds": 5.985000025248155e-05,
+          "mad_seconds": 2.3729150416329507e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 5.445799615699798e-05,
+          "seconds_per_call": [
+            4.992499998479616e-05,
+            0.0001853166500950465,
+            3.329374994791579e-05,
+            4.651669987651985e-05,
+            6.268124998314306e-05
+          ],
+          "median_seconds": 4.992499998479616e-05,
+          "mad_seconds": 1.2756249998346905e-05
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": true
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.4918189579984755,
+          "seconds_per_call": [
+            0.0005782791999081382,
+            0.0005635416502627777,
+            0.0005308228999638231,
+            0.0005204666500503663,
+            0.0005100729500554735
+          ],
+          "median_seconds": 0.0005308228999638231,
+          "mad_seconds": 2.0749949908349598e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.15316987500409596,
+          "seconds_per_call": [
+            0.0001309020499320468,
+            6.496874993899837e-05,
+            7.109170001058373e-05,
+            0.00010738749988377094,
+            6.575420011358801e-05
+          ],
+          "median_seconds": 7.109170001058373e-05,
+          "mad_seconds": 6.122950071585362e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.1109036669950001,
+          "seconds_per_call": [
+            6.69791999825975e-05,
+            5.0327100325375795e-05,
+            6.568334974872414e-05,
+            5.412915015767794e-05,
+            5.18312503118068e-05
+          ],
+          "median_seconds": 5.412915015767794e-05,
+          "mad_seconds": 3.8020498323021457e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.00048433300253236666,
+          "seconds_per_call": [
+            0.0005781916497653583,
+            0.0005135645998961991,
+            0.0005151437500899192,
+            0.0004922500000247964,
+            0.0004915333000099053
+          ],
+          "median_seconds": 0.0005135645998961991,
+          "mad_seconds": 2.1314599871402693e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.1470032090001041,
+          "seconds_per_call": [
+            0.00010979165017488413,
+            9.773540004971437e-05,
+            7.415624968416523e-05,
+            7.009584987827111e-05,
+            7.234580007207115e-05
+          ],
+          "median_seconds": 7.415624968416523e-05,
+          "mad_seconds": 4.060399805894119e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.0962832500008517,
+          "seconds_per_call": [
+            7.839999998395796e-05,
+            7.154374980018474e-05,
+            6.611044991586824e-05,
+            5.303335019561928e-05,
+            5.209795017435681e-05
+          ],
+          "median_seconds": 6.611044991586824e-05,
+          "mad_seconds": 1.2289550068089728e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.000538125001185108,
+          "seconds_per_call": [
+            0.0005683604002115316,
+            0.0005449479001981671,
+            0.0005623271001240937,
+            0.000536470850056503,
+            0.0005736208502639783
+          ],
+          "median_seconds": 0.0005623271001240937,
+          "mad_seconds": 1.1293750139884564e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.11429150000185473,
+          "seconds_per_call": [
+            9.595209994586184e-05,
+            7.808539994584862e-05,
+            7.909585001470986e-05,
+            0.00012839584996982012,
+            7.318960015254561e-05
+          ],
+          "median_seconds": 7.909585001470986e-05,
+          "mad_seconds": 5.906249862164251e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.11606724999728613,
+          "seconds_per_call": [
+            9.379795010318048e-05,
+            6.318750020000153e-05,
+            9.66854000580497e-05,
+            6.168125000840518e-05,
+            6.21916500676889e-05
+          ],
+          "median_seconds": 6.318750020000153e-05,
+          "mad_seconds": 1.5062501915963448e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.00032749999809311703,
+          "seconds_per_call": [
+            0.00025653750017227137,
+            0.0002605417001177557,
+            0.0002441729000565829,
+            0.0002513041501515545,
+            0.0002554875001806067
+          ],
+          "median_seconds": 0.0002554875001806067,
+          "mad_seconds": 4.183350029052235e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.05875433300388977,
+          "seconds_per_call": [
+            4.035420024592895e-05,
+            4.4574999992619266e-05,
+            6.402295002772007e-05,
+            4.1343750126543455e-05,
+            3.879374999087304e-05
+          ],
+          "median_seconds": 4.1343750126543455e-05,
+          "mad_seconds": 2.5500001356704133e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.05774816600023769,
+          "seconds_per_call": [
+            5.370830003812443e-05,
+            2.905414985434618e-05,
+            4.0397949851467275e-05,
+            3.183959997841157e-05,
+            2.8200000087963417e-05
+          ],
+          "median_seconds": 3.183959997841157e-05,
+          "mad_seconds": 3.6395998904481517e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0002500830014469102,
+          "seconds_per_call": [
+            0.0002511562503059395,
+            0.00022687704986310565,
+            0.00023058955011947546,
+            0.00023263539987965486,
+            0.0002592437500425149
+          ],
+          "median_seconds": 0.00023263539987965486,
+          "mad_seconds": 5.758350016549213e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 6.045800546417013e-05,
+          "seconds_per_call": [
+            3.881664997607004e-05,
+            3.621039977588225e-05,
+            4.0727099985815585e-05,
+            3.896670023095794e-05,
+            3.6656250085798095e-05
+          ],
+          "median_seconds": 3.881664997607004e-05,
+          "mad_seconds": 1.9104500097455457e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 3.100000321865082e-05,
+          "seconds_per_call": [
+            2.922290004789829e-05,
+            2.7943749955738895e-05,
+            3.6675000228569846e-05,
+            2.8400000155670567e-05,
+            2.7785400016000493e-05
+          ],
+          "median_seconds": 2.8400000155670567e-05,
+          "mad_seconds": 6.14600139670074e-07
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": false
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.5240183330024593,
+          "seconds_per_call": [
+            0.0011966937498073093,
+            0.0011638395499176113,
+            0.0011179832999914652,
+            0.0011393895998480729,
+            0.00114787085003627
+          ],
+          "median_seconds": 0.00114787085003627,
+          "mad_seconds": 1.5968699881341352e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.4339935840034741,
+          "seconds_per_call": [
+            0.0001198646001284942,
+            0.00013204374990891666,
+            0.00011599999997997656,
+            0.00011395209985494148,
+            0.00010445000007166527
+          ],
+          "median_seconds": 0.00011599999997997656,
+          "mad_seconds": 3.864600148517636e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.3443974999972852,
+          "seconds_per_call": [
+            9.14853997528553e-05,
+            9.126045006269123e-05,
+            9.821044986892957e-05,
+            9.098124974116217e-05,
+            9.551459988870193e-05
+          ],
+          "median_seconds": 9.14853997528553e-05,
+          "mad_seconds": 5.041500116931247e-07
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.001160415995400399,
+          "seconds_per_call": [
+            0.0010660833500878652,
+            0.001032060449870187,
+            0.0010264000000461237,
+            0.0010416583001642721,
+            0.0010611124998831656
+          ],
+          "median_seconds": 0.0010416583001642721,
+          "mad_seconds": 1.5258300118148414e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.22753766700043343,
+          "seconds_per_call": [
+            0.0001190104001580039,
+            9.930209998856298e-05,
+            0.00013008749992877712,
+            0.00011523749999469146,
+            0.00010013959981733934
+          ],
+          "median_seconds": 0.00011523749999469146,
+          "mad_seconds": 1.4849999934085653e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.22165600000153063,
+          "seconds_per_call": [
+            9.605624982214067e-05,
+            8.590625002398155e-05,
+            9.510209965810646e-05,
+            8.411045018874574e-05,
+            8.609169999544975e-05
+          ],
+          "median_seconds": 8.609169999544975e-05,
+          "mad_seconds": 1.9812498067040023e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.0011537500031408854,
+          "seconds_per_call": [
+            0.001619304199994076,
+            0.0011884208499395755,
+            0.0011946521000936628,
+            0.00119552920004935,
+            0.001197114599926863
+          ],
+          "median_seconds": 0.00119552920004935,
+          "mad_seconds": 1.5853998775129576e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.3383914160003769,
+          "seconds_per_call": [
+            0.0001464375000068685,
+            0.00010973124990414363,
+            0.0001282437500776723,
+            0.00012456664990168065,
+            0.0001116667001042515
+          ],
+          "median_seconds": 0.00012456664990168065,
+          "mad_seconds": 1.2899949797429142e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.43460262499866076,
+          "seconds_per_call": [
+            0.0001006333503028145,
+            9.549374990456272e-05,
+            0.00011899794990313239,
+            0.0001002562501525972,
+            0.00010517709997657221
+          ],
+          "median_seconds": 0.0001006333503028145,
+          "mad_seconds": 4.54374967375771e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.0005688340024789795,
+          "seconds_per_call": [
+            0.0005585687496932224,
+            0.0005354958499083296,
+            0.0005457854498672532,
+            0.0005202729000302498,
+            0.0005603375000646337
+          ],
+          "median_seconds": 0.0005457854498672532,
+          "mad_seconds": 1.2783299825969217e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.1187565000000177,
+          "seconds_per_call": [
+            7.640205003554002e-05,
+            9.227295013261027e-05,
+            7.570210000267253e-05,
+            7.060414973238948e-05,
+            7.083125019562431e-05
+          ],
+          "median_seconds": 7.570210000267253e-05,
+          "mad_seconds": 4.8708498070482165e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.12252079100289848,
+          "seconds_per_call": [
+            6.0664550255751236e-05,
+            5.401045018516015e-05,
+            6.126454973127693e-05,
+            5.68291998206405e-05,
+            7.10833501216257e-05
+          ],
+          "median_seconds": 6.0664550255751236e-05,
+          "mad_seconds": 3.835350435110739e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0005303750003804453,
+          "seconds_per_call": [
+            0.000498385450191563,
+            0.0004702437498053769,
+            0.000503843749902444,
+            0.0005285041501338128,
+            0.00047565835011482706
+          ],
+          "median_seconds": 0.000498385450191563,
+          "mad_seconds": 2.2727100076735962e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00018408299365546554,
+          "seconds_per_call": [
+            7.212915006675758e-05,
+            6.299794986261987e-05,
+            7.508749986300245e-05,
+            7.192499979282729e-05,
+            7.286460022442043e-05
+          ],
+          "median_seconds": 7.212915006675758e-05,
+          "mad_seconds": 7.354501576628536e-07
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 8.533299842383713e-05,
+          "seconds_per_call": [
+            5.677709996234626e-05,
+            5.279375000100117e-05,
+            6.362500025716144e-05,
+            5.596459996013436e-05,
+            5.588750027527567e-05
+          ],
+          "median_seconds": 5.596459996013436e-05,
+          "mad_seconds": 8.125000022118938e-07
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": true
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.583733209001366,
+          "seconds_per_call": [
+            0.001228514600006747,
+            0.001234404199931305,
+            0.001173543750337558,
+            0.001207425000029616,
+            0.0011735874999430963
+          ],
+          "median_seconds": 0.001207425000029616,
+          "mad_seconds": 2.6979199901688844e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.4703060000028927,
+          "seconds_per_call": [
+            0.00011362919976818376,
+            0.00010310420002497267,
+            0.00011669374980556313,
+            0.00011502289999043569,
+            0.00010984375003317837
+          ],
+          "median_seconds": 0.00011362919976818376,
+          "mad_seconds": 3.0645500373793685e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.36713608300487977,
+          "seconds_per_call": [
+            8.6716650184826e-05,
+            9.45395997405285e-05,
+            0.00010831874969881028,
+            8.961665007518604e-05,
+            9.606250023352914e-05
+          ],
+          "median_seconds": 9.45395997405285e-05,
+          "mad_seconds": 4.922949665342463e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.0011623750033322722,
+          "seconds_per_call": [
+            0.0012675312496867263,
+            0.001201272899925243,
+            0.0014022854000359075,
+            0.0013075124999886612,
+            0.0012818520997825544
+          ],
+          "median_seconds": 0.0012818520997825544,
+          "mad_seconds": 2.56604002061068e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.24019250000128523,
+          "seconds_per_call": [
+            0.00010944999994535464,
+            0.00015100835007615389,
+            0.00018091249985445755,
+            0.00017237499996554108,
+            0.00011867294997500722
+          ],
+          "median_seconds": 0.00015100835007615389,
+          "mad_seconds": 2.990414977830367e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.2732144170004176,
+          "seconds_per_call": [
+            0.00010328335010854062,
+            0.00013226249975559768,
+            0.00013071459979983047,
+            9.774999998626299e-05,
+            0.00011813335004262626
+          ],
+          "median_seconds": 0.00011813335004262626,
+          "mad_seconds": 1.4129149712971417e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.001745084002322983,
+          "seconds_per_call": [
+            0.0015402333501697285,
+            0.0013176854001358152,
+            0.0015994729001249652,
+            0.0016334916497726226,
+            0.0014357708001625723
+          ],
+          "median_seconds": 0.0015402333501697285,
+          "mad_seconds": 9.325829960289407e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.34009091600455577,
+          "seconds_per_call": [
+            0.0001929375001054723,
+            0.0001787666500604246,
+            0.00018609794969961512,
+            0.00015187710014288313,
+            0.00010827289988810663
+          ],
+          "median_seconds": 0.0001787666500604246,
+          "mad_seconds": 1.4170850045047706e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.4282722920033848,
+          "seconds_per_call": [
+            0.00010968329988827463,
+            0.00011773330006690231,
+            0.00010989999973389785,
+            0.00010194999995292165,
+            9.727500000735744e-05
+          ],
+          "median_seconds": 0.00010968329988827463,
+          "mad_seconds": 7.733299935352978e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.0006206670004758053,
+          "seconds_per_call": [
+            0.0005692187500244472,
+            0.0005571395500737708,
+            0.0005598083498625783,
+            0.0005410291501902975,
+            0.0005462625002110144
+          ],
+          "median_seconds": 0.0005571395500737708,
+          "mad_seconds": 1.0877049862756459e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.12566816699836636,
+          "seconds_per_call": [
+            8.385209985135589e-05,
+            9.116875007748604e-05,
+            7.176250001066365e-05,
+            7.902500001364388e-05,
+            6.270000012591481e-05
+          ],
+          "median_seconds": 7.902500001364388e-05,
+          "mad_seconds": 7.262500002980235e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.12232200000289595,
+          "seconds_per_call": [
+            6.052915014151949e-05,
+            5.837499993504025e-05,
+            6.810830018366687e-05,
+            5.422709982667584e-05,
+            5.308540021360386e-05
+          ],
+          "median_seconds": 5.837499993504025e-05,
+          "mad_seconds": 4.147900108364416e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0005321249991538934,
+          "seconds_per_call": [
+            0.00049495624989504,
+            0.0005055062501924112,
+            0.0004965187501511537,
+            0.0005118791999848326,
+            0.0005008916497899918
+          ],
+          "median_seconds": 0.0005008916497899918,
+          "mad_seconds": 4.614600402419412e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00017691699758870527,
+          "seconds_per_call": [
+            6.667704983556177e-05,
+            6.143959981272929e-05,
+            0.00025103749976551626,
+            7.155000021157321e-05,
+            6.201875003171153e-05
+          ],
+          "median_seconds": 6.667704983556177e-05,
+          "mad_seconds": 4.872950376011439e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 6.829100311733782e-05,
+          "seconds_per_call": [
+            5.398335015343037e-05,
+            5.800210019515362e-05,
+            5.7077100063906985e-05,
+            5.378125024435576e-05,
+            5.1212499965913596e-05
+          ],
+          "median_seconds": 5.398335015343037e-05,
+          "mad_seconds": 2.7708501875167713e-06
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": false
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.5268363340001088,
+          "seconds_per_call": [
+            0.0010941062500933185,
+            0.0008347582999704173,
+            0.0008403645999351284,
+            0.0007699166999373119,
+            0.0009722145998239285
+          ],
+          "median_seconds": 0.0008403645999351284,
+          "mad_seconds": 7.044789999781646e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.23746345799736446,
+          "seconds_per_call": [
+            0.00019572709970816504,
+            0.00019428955019975546,
+            0.00012185829982627183,
+            0.0002023978999204701,
+            0.00011775415005104151
+          ],
+          "median_seconds": 0.00019428955019975546,
+          "mad_seconds": 8.108349720714625e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.2480427080008667,
+          "seconds_per_call": [
+            0.0001161833501100773,
+            0.0001558521002152702,
+            0.0001375020499835955,
+            0.00010051875033241231,
+            9.504164991085418e-05
+          ],
+          "median_seconds": 0.0001161833501100773,
+          "mad_seconds": 2.1141700199223126e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.0006679579964838922,
+          "seconds_per_call": [
+            0.0007973957999638515,
+            0.0007067104499583366,
+            0.0008129750000080094,
+            0.0007193416502559557,
+            0.0006936833000509068
+          ],
+          "median_seconds": 0.0007193416502559557,
+          "mad_seconds": 2.5658350205048897e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.1645215829994413,
+          "seconds_per_call": [
+            0.00010845834985957481,
+            0.00018216459975519683,
+            0.00011186874980921857,
+            0.00010421670012874528,
+            9.916454982885625e-05
+          ],
+          "median_seconds": 0.00010845834985957481,
+          "mad_seconds": 4.241649730829525e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.17479958400508622,
+          "seconds_per_call": [
+            9.092500004044268e-05,
+            0.00015005624991317745,
+            0.00015313959993363825,
+            0.0001011853997624712,
+            9.552294977765996e-05
+          ],
+          "median_seconds": 0.0001011853997624712,
+          "mad_seconds": 1.0260399722028521e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.0006901669985381886,
+          "seconds_per_call": [
+            0.0007697999997617444,
+            0.0007728771000984125,
+            0.0007898812498751794,
+            0.0008061479500611312,
+            0.0007815208500687731
+          ],
+          "median_seconds": 0.0007815208500687731,
+          "mad_seconds": 8.64374997036068e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.18082937500003027,
+          "seconds_per_call": [
+            0.00016048545003286563,
+            0.00013285625027492642,
+            0.0001333520998741733,
+            0.00012368544994387776,
+            9.638125011406374e-05
+          ],
+          "median_seconds": 0.00013285625027492642,
+          "mad_seconds": 9.170800331048662e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.1823290829997859,
+          "seconds_per_call": [
+            0.00010961874977510888,
+            0.00014214584989531432,
+            0.00011264169988862704,
+            9.509164992778096e-05,
+            7.832294977561105e-05
+          ],
+          "median_seconds": 0.00010961874977510888,
+          "mad_seconds": 1.452709984732792e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.0003480420054984279,
+          "seconds_per_call": [
+            0.0003632916501373984,
+            0.0003506812499836087,
+            0.000346054149849806,
+            0.00041144999995594843,
+            0.0003381395999895176
+          ],
+          "median_seconds": 0.0003506812499836087,
+          "mad_seconds": 1.254164999409113e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.09886620899487752,
+          "seconds_per_call": [
+            8.171875015250407e-05,
+            7.414169995172415e-05,
+            8.03124999947613e-05,
+            9.556665027048439e-05,
+            6.782915006624535e-05
+          ],
+          "median_seconds": 8.03124999947613e-05,
+          "mad_seconds": 6.170800043037153e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.08883070800220594,
+          "seconds_per_call": [
+            5.8058349895873104e-05,
+            4.6777099851169626e-05,
+            6.413545015675482e-05,
+            4.2552100057946515e-05,
+            5.3268749979906715e-05
+          ],
+          "median_seconds": 5.3268749979906715e-05,
+          "mad_seconds": 6.491650128737089e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00031658300576964393,
+          "seconds_per_call": [
+            0.00031879585003480315,
+            0.0003401312500500353,
+            0.0003109646000666544,
+            0.00030037085016374474,
+            0.0003097937500569969
+          ],
+          "median_seconds": 0.0003109646000666544,
+          "mad_seconds": 7.831249968148746e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00016408300143666565,
+          "seconds_per_call": [
+            7.312710004043765e-05,
+            7.382915027847048e-05,
+            8.377500016649719e-05,
+            7.265834974532482e-05,
+            7.299164972209837e-05
+          ],
+          "median_seconds": 7.312710004043765e-05,
+          "mad_seconds": 4.687502951128327e-07
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 8.162499580066651e-05,
+          "seconds_per_call": [
+            4.338335020293016e-05,
+            4.460210002434906e-05,
+            5.1045800137217154e-05,
+            4.101039994566236e-05,
+            5.2870850049657746e-05
+          ],
+          "median_seconds": 4.460210002434906e-05,
+          "mad_seconds": 3.5917000786866993e-06
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": true
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.5082188750020578,
+          "seconds_per_call": [
+            0.0008089333001407795,
+            0.0007369562499661697,
+            0.0007330770997214131,
+            0.0007358458500675624,
+            0.0007661749998078449
+          ],
+          "median_seconds": 0.0007369562499661697,
+          "mad_seconds": 3.879150244756558e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.22206445800111396,
+          "seconds_per_call": [
+            0.00011404580000089482,
+            0.0001609958002518397,
+            0.00011537289974512532,
+            0.0001111812496674247,
+            0.00011433334984758403
+          ],
+          "median_seconds": 0.00011433334984758403,
+          "mad_seconds": 1.0395498975412947e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.22303183400072157,
+          "seconds_per_call": [
+            0.00011971874992013908,
+            9.21479000680847e-05,
+            0.00011091460000898224,
+            9.778954990906641e-05,
+            8.410834998358041e-05
+          ],
+          "median_seconds": 9.778954990906641e-05,
+          "mad_seconds": 1.3125050099915828e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.0007197919985628687,
+          "seconds_per_call": [
+            0.0007339271000091685,
+            0.0007091916500939988,
+            0.0006823312498454471,
+            0.0006737396000971785,
+            0.0007196562499302672
+          ],
+          "median_seconds": 0.0007091916500939988,
+          "mad_seconds": 2.4735449915169695e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.1734675830011838,
+          "seconds_per_call": [
+            0.00013686460006283595,
+            0.00011371874970791395,
+            0.00013725624994549436,
+            9.241455009032507e-05,
+            0.00010944165005639661
+          ],
+          "median_seconds": 0.00011371874970791395,
+          "mad_seconds": 2.1304199617588882e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.154093750003085,
+          "seconds_per_call": [
+            0.0001017062499158783,
+            0.00010552085004746913,
+            0.00011896459982381202,
+            0.00011497500017867423,
+            9.488959985901602e-05
+          ],
+          "median_seconds": 0.00010552085004746913,
+          "mad_seconds": 9.454150131205097e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.0007450829943991266,
+          "seconds_per_call": [
+            0.000758539600064978,
+            0.000762991699957638,
+            0.0007651979500224116,
+            0.0007333604498853674,
+            0.0007652479001990286
+          ],
+          "median_seconds": 0.000762991699957638,
+          "mad_seconds": 2.256200241390594e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.19561266699747648,
+          "seconds_per_call": [
+            0.00011903329977940303,
+            0.00015255834987328853,
+            0.00013470204976329114,
+            0.0001174895998701686,
+            0.0001322937499935506
+          ],
+          "median_seconds": 0.0001322937499935506,
+          "mad_seconds": 1.326045021414757e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.19358508299774257,
+          "seconds_per_call": [
+            0.00011965835001319647,
+            0.00010074999991047662,
+            0.00011555835008039139,
+            0.00011157290027767886,
+            0.0001022979002300417
+          ],
+          "median_seconds": 0.00011157290027767886,
+          "mad_seconds": 8.085449735517614e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.0003802499995799735,
+          "seconds_per_call": [
+            0.00037298334973456804,
+            0.0003786937500990462,
+            0.0003738979001354892,
+            0.00037628960017173086,
+            0.000398102100007236
+          ],
+          "median_seconds": 0.00037628960017173086,
+          "mad_seconds": 2.404149927315313e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.1013289580005221,
+          "seconds_per_call": [
+            8.643750006740448e-05,
+            6.729375018039718e-05,
+            8.043335001275408e-05,
+            8.653125005366746e-05,
+            8.991044996946585e-05
+          ],
+          "median_seconds": 8.643750006740448e-05,
+          "mad_seconds": 3.4729499020613703e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.10112970799673349,
+          "seconds_per_call": [
+            5.3000000116298905e-05,
+            4.9520850006956606e-05,
+            5.362080009945203e-05,
+            6.376249984896276e-05,
+            4.9812499855761414e-05
+          ],
+          "median_seconds": 5.3000000116298905e-05,
+          "mad_seconds": 3.1875002605374916e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00033070799690904096,
+          "seconds_per_call": [
+            0.0003195312499883585,
+            0.00031736460005049594,
+            0.0003231999999115942,
+            0.0003221916500478983,
+            0.0003215875000023516
+          ],
+          "median_seconds": 0.0003215875000023516,
+          "mad_seconds": 1.6124999092425934e-06
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0001744170003803447,
+          "seconds_per_call": [
+            5.534999982046429e-05,
+            4.9318750097882005e-05,
+            7.892914982221555e-05,
+            6.959789971006103e-05,
+            7.665625016670675e-05
+          ],
+          "median_seconds": 6.959789971006103e-05,
+          "mad_seconds": 9.331250112154521e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 8.35839964565821e-05,
+          "seconds_per_call": [
+            4.2522899821051394e-05,
+            4.798959998879582e-05,
+            4.885415000899229e-05,
+            5.997500011289958e-05,
+            4.70521001261659e-05
+          ],
+          "median_seconds": 4.798959998879582e-05,
+          "mad_seconds": 9.374998626299202e-07
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": false
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.5142060409998521,
+          "seconds_per_call": [
+            0.0018600791499920888,
+            0.0018911479000962572,
+            0.0017931208498339402,
+            0.001817562500218628,
+            0.0017693875000986737
+          ],
+          "median_seconds": 0.001817562500218628,
+          "mad_seconds": 4.251664977346077e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.6930079169978853,
+          "seconds_per_call": [
+            0.0002270729499286972,
+            0.0001674145500146551,
+            0.0002608354501717258,
+            0.00021412079986475873,
+            0.00015672914996684996
+          ],
+          "median_seconds": 0.00021412079986475873,
+          "mad_seconds": 4.6706249850103615e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.5708485409995774,
+          "seconds_per_call": [
+            0.00015575624966004397,
+            0.0001255333500012057,
+            0.000175635450068512,
+            0.00016099584972835147,
+            0.00014236874994821846
+          ],
+          "median_seconds": 0.00015575624966004397,
+          "mad_seconds": 1.3387499711825507e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.0015464999960386194,
+          "seconds_per_call": [
+            0.001743227100087097,
+            0.0017745500001183246,
+            0.0017239458000403828,
+            0.0016136250000272413,
+            0.0016499916499014943
+          ],
+          "median_seconds": 0.0017239458000403828,
+          "mad_seconds": 5.060420007794173e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.36562541700550355,
+          "seconds_per_call": [
+            0.00016249584987235722,
+            0.00013955415015516338,
+            0.00015274789984687231,
+            0.0001465792000090005,
+            0.00014753539981029462
+          ],
+          "median_seconds": 0.00014753539981029462,
+          "mad_seconds": 5.2125000365776995e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.41541433300153585,
+          "seconds_per_call": [
+            0.000151777049904922,
+            0.00014671039971290157,
+            0.00011115209999843501,
+            0.00013056874995527324,
+            0.00013517709994630421
+          ],
+          "median_seconds": 0.00013517709994630421,
+          "mad_seconds": 1.1533299766597354e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.001716082995699253,
+          "seconds_per_call": [
+            0.002393968750038766,
+            0.002047560399660142,
+            0.0020175020497845255,
+            0.002080041649969644,
+            0.002314820850006072
+          ],
+          "median_seconds": 0.002080041649969644,
+          "mad_seconds": 6.253960018511853e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.5982904999982566,
+          "seconds_per_call": [
+            0.0002518312499887543,
+            0.0002288520998263266,
+            0.00017834165009844583,
+            0.00025462500016146803,
+            0.00022365209988493007
+          ],
+          "median_seconds": 0.0002288520998263266,
+          "mad_seconds": 2.2979150162427697e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.7446460829960415,
+          "seconds_per_call": [
+            0.00023044584995659533,
+            0.0001775978998921346,
+            0.0001620312497834675,
+            0.00023332919990934898,
+            0.000193541650151019
+          ],
+          "median_seconds": 0.000193541650151019,
+          "mad_seconds": 3.1510400367551505e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.0009414589949301444,
+          "seconds_per_call": [
+            0.0009969020997232293,
+            0.0009597729498636909,
+            0.0009491687502304558,
+            0.0008344708501681452,
+            0.0011104832999990321
+          ],
+          "median_seconds": 0.0009597729498636909,
+          "mad_seconds": 3.712914985953841e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.2345312500037835,
+          "seconds_per_call": [
+            0.0001440979500330286,
+            0.00011391045009077062,
+            0.0001182749998406507,
+            0.00013367084975470788,
+            0.0005068021000624867
+          ],
+          "median_seconds": 0.00013367084975470788,
+          "mad_seconds": 1.539584991405718e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.3053705420024926,
+          "seconds_per_call": [
+            9.25354499486275e-05,
+            7.846670014259871e-05,
+            0.00010119170001416933,
+            0.00017711664986563846,
+            0.00011303330029477365
+          ],
+          "median_seconds": 0.00010119170001416933,
+          "mad_seconds": 1.1841600280604328e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0007671249986742623,
+          "seconds_per_call": [
+            0.0007680583501496585,
+            0.0009395791497809114,
+            0.0008689479000167921,
+            0.00098613545014814,
+            0.0009443228998861741
+          ],
+          "median_seconds": 0.0009395791497809114,
+          "mad_seconds": 4.655630036722871e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0002418750009383075,
+          "seconds_per_call": [
+            0.00014110829979472329,
+            9.967704972950742e-05,
+            9.948335027729627e-05,
+            0.000136614599978202,
+            0.00010306249969289638
+          ],
+          "median_seconds": 0.00010306249969289638,
+          "mad_seconds": 3.5791494156001054e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.00010520900104893371,
+          "seconds_per_call": [
+            7.90416499512503e-05,
+            8.956250021583401e-05,
+            9.72082998487167e-05,
+            8.460419994662515e-05,
+            0.00010705625027185306
+          ],
+          "median_seconds": 8.956250021583401e-05,
+          "mad_seconds": 7.645799632882694e-06
+        }
+      ]
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": true
+      },
+      "status": "completed",
+      "measurements": [
+        {
+          "route": "default_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.5470080410013907,
+          "seconds_per_call": [
+            0.0020052292002219474,
+            0.0017824770999141037,
+            0.0018309957999008476,
+            0.001804395850194851,
+            0.0018159145998652092
+          ],
+          "median_seconds": 0.0018159145998652092,
+          "mad_seconds": 1.508120003563835e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.7111575419985456,
+          "seconds_per_call": [
+            0.00018960205015901012,
+            0.0001819478999095736,
+            0.00020424169997568242,
+            0.00021808335004607214,
+            0.00015016039978945627
+          ],
+          "median_seconds": 0.00018960205015901012,
+          "mad_seconds": 1.4639649816672307e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "parameters",
+          "first_call_in_context_seconds": 0.5796922500012442,
+          "seconds_per_call": [
+            0.0001342625000688713,
+            0.00014428959984797985,
+            0.00018243125014123508,
+            0.00014681249995192048,
+            0.0001527812499261927
+          ],
+          "median_seconds": 0.00014681249995192048,
+          "mad_seconds": 5.968749974272214e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.001839124997786712,
+          "seconds_per_call": [
+            0.001840995800012024,
+            0.0017796354499296286,
+            0.0017670229000941618,
+            0.001722239599985187,
+            0.0017143978999229147
+          ],
+          "median_seconds": 0.0017670229000941618,
+          "mad_seconds": 4.478330010897484e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.36091941699851304,
+          "seconds_per_call": [
+            0.00017658540018601344,
+            0.00013875210024707484,
+            0.00016058334986155388,
+            0.00016067709984781686,
+            0.00013701874995604159
+          ],
+          "median_seconds": 0.00016058334986155388,
+          "mad_seconds": 1.6002050324459566e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inputs",
+          "first_call_in_context_seconds": 0.4137325839983532,
+          "seconds_per_call": [
+            0.00012127705012972001,
+            0.00012723955005640165,
+            0.0001310187501076143,
+            0.00012377919993014074,
+            0.0001496249999036081
+          ],
+          "median_seconds": 0.00012723955005640165,
+          "mad_seconds": 3.7792000512126616e-06
+        },
+        {
+          "route": "default_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.0017827080009737983,
+          "seconds_per_call": [
+            0.0019516271000611595,
+            0.0019478062498819782,
+            0.0018555958500655833,
+            0.001825804149848409,
+            0.0018624312499014195
+          ],
+          "median_seconds": 0.0018624312499014195,
+          "mad_seconds": 3.6627100053010595e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.6285706659982679,
+          "seconds_per_call": [
+            0.00021275830004015007,
+            0.00019251249977969564,
+            0.00015665624996472616,
+            0.00018124375019397122,
+            0.00024250414971902501
+          ],
+          "median_seconds": 0.00019251249977969564,
+          "mad_seconds": 2.0245800260454427e-05
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "both",
+          "first_call_in_context_seconds": 0.6292753749949043,
+          "seconds_per_call": [
+            0.0001320187500823522,
+            0.00015079585027706345,
+            0.00016501665013493038,
+            0.00013898540018999483,
+            0.00015522499998041895
+          ],
+          "median_seconds": 0.00015079585027706345,
+          "mad_seconds": 1.1810450087068619e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.0008680829996592365,
+          "seconds_per_call": [
+            0.000904664550034795,
+            0.0008729604000109248,
+            0.0009115646000282141,
+            0.0008766458002355648,
+            0.0008956082998338388
+          ],
+          "median_seconds": 0.0008956082998338388,
+          "mad_seconds": 1.595630019437524e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.19352774999424582,
+          "seconds_per_call": [
+            9.617914984119124e-05,
+            0.0001194874999782769,
+            8.50583499413915e-05,
+            9.486459966865369e-05,
+            8.614999969722704e-05
+          ],
+          "median_seconds": 9.486459966865369e-05,
+          "mad_seconds": 8.714599971426651e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "no_grad",
+          "first_call_in_context_seconds": 0.25618387500435347,
+          "seconds_per_call": [
+            9.030000001075678e-05,
+            9.919170006469357e-05,
+            0.00010647290000633802,
+            7.289794993994291e-05,
+            6.978544988669455e-05
+          ],
+          "median_seconds": 9.030000001075678e-05,
+          "mad_seconds": 1.617289999558124e-05
+        },
+        {
+          "route": "default_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0007132909959182143,
+          "seconds_per_call": [
+            0.0008300020501337713,
+            0.0007489499999792315,
+            0.0007652249998500338,
+            0.0008520854000380496,
+            0.000806095850202837
+          ],
+          "median_seconds": 0.000806095850202837,
+          "mad_seconds": 4.087085035280318e-05
+        },
+        {
+          "route": "jax_module",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0002288329997099936,
+          "seconds_per_call": [
+            0.00010454375005792826,
+            0.00013392084983934182,
+            0.00010740000034275,
+            0.00012504375008575152,
+            0.00011383750024833717
+          ],
+          "median_seconds": 0.00011383750024833717,
+          "mad_seconds": 9.293750190408906e-06
+        },
+        {
+          "route": "jax_kernel_diagnostic",
+          "demand": "inference",
+          "first_call_in_context_seconds": 0.0001029170016408898,
+          "seconds_per_call": [
+            7.08583502273541e-05,
+            8.777289986028336e-05,
+            7.998749970283825e-05,
+            8.440415003860836e-05,
+            7.430205005221069e-05
+          ],
+          "median_seconds": 7.998749970283825e-05,
+          "mad_seconds": 5.685449650627561e-06
+        }
+      ]
+    }
+  ],
+  "baseline_rotation_revision": "7dfe445e12984624e74e69315493540c662dff6e",
+  "baseline_rotation_sha256": "19c8d1ba6564c51591c81c18bb24a5ce7e972d14804777e119bc73ebf39fcc9d",
+  "baseline_worker_sha256": "dd8f06c3fb06cf1d050516da1a27475add079654686ea8bd8efda7e9a6f30f72",
+  "method": "Controlled replacement: candidate harness and all other source unchanged; _rotation_region_angles replaced with frozen baseline function in each fresh process. Not a full old-revision installation."
+}

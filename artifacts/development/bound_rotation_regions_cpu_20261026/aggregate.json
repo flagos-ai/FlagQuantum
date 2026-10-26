@@ -1,0 +1,2655 @@
+{
+  "aggregation": "median of three fresh-process medians per phase/shape/context/route; then median ratio across ten shapes",
+  "results": [
+    {
+      "case": {
+        "width": 2,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0003201166502549313,
+          0.00031810209984541873,
+          0.0003929041999072069
+        ],
+        "candidate_process_medians": [
+          0.00028176250016258563,
+          0.0002937062497949228,
+          0.00026141875023313335
+        ],
+        "baseline_median": 0.0003201166502549313,
+        "candidate_median": 0.00028176250016258563,
+        "ratio": 1.1361222663420936
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          4.863750000367872e-05,
+          5.0127100257668646e-05,
+          5.713540012948215e-05
+        ],
+        "candidate_process_medians": [
+          5.1095849994453604e-05,
+          5.925415025558323e-05,
+          4.599169988068752e-05
+        ],
+        "baseline_median": 5.0127100257668646e-05,
+        "candidate_median": 5.1095849994453604e-05,
+        "ratio": 0.9810405397524434
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          3.420419998292346e-05,
+          3.421250003157184e-05,
+          3.7893750049988736e-05
+        ],
+        "candidate_process_medians": [
+          3.436875012994278e-05,
+          3.593334986362606e-05,
+          3.39083002472762e-05
+        ],
+        "baseline_median": 3.421250003157184e-05,
+        "candidate_median": 3.436875012994278e-05,
+        "ratio": 0.9954537160129423
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00031232709989126306,
+          0.00030891454989614433,
+          0.0003240853999159299
+        ],
+        "candidate_process_medians": [
+          0.00028398539980116765,
+          0.00032166669989237563,
+          0.000277362499764422
+        ],
+        "baseline_median": 0.00031232709989126306,
+        "candidate_median": 0.00028398539980116765,
+        "ratio": 1.0997998492525984
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          5.3499999921768904e-05,
+          5.157704981684219e-05,
+          5.198124999878928e-05
+        ],
+        "candidate_process_medians": [
+          5.02333503391128e-05,
+          5.544170016946737e-05,
+          4.838749991904478e-05
+        ],
+        "baseline_median": 5.198124999878928e-05,
+        "candidate_median": 5.02333503391128e-05,
+        "ratio": 1.0347956018835462
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          3.413955018913839e-05,
+          3.3168750087497755e-05,
+          3.677290005725809e-05
+        ],
+        "candidate_process_medians": [
+          3.453954996075481e-05,
+          3.547289998095948e-05,
+          3.3610450191190464e-05
+        ],
+        "baseline_median": 3.413955018913839e-05,
+        "candidate_median": 3.453954996075481e-05,
+        "ratio": 0.9884190798064562
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0003321000000141794,
+          0.00032692710010451265,
+          0.00036746249970747157
+        ],
+        "candidate_process_medians": [
+          0.000289716650149785,
+          0.0002953062499727821,
+          0.0003220104001229629
+        ],
+        "baseline_median": 0.0003321000000141794,
+        "candidate_median": 0.0002953062499727821,
+        "ratio": 1.1245952296803352
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          6.08145503065316e-05,
+          5.76812497456558e-05,
+          6.666250010312069e-05
+        ],
+        "candidate_process_medians": [
+          6.960000027902424e-05,
+          5.828540015500039e-05,
+          6.223125019459985e-05
+        ],
+        "baseline_median": 6.08145503065316e-05,
+        "candidate_median": 6.223125019459985e-05,
+        "ratio": 0.9772349119833176
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          4.0545850060880186e-05,
+          4.336249985499307e-05,
+          4.554584993456956e-05
+        ],
+        "candidate_process_medians": [
+          4.2533349915174765e-05,
+          4.234374973748345e-05,
+          4.451455024536699e-05
+        ],
+        "baseline_median": 4.336249985499307e-05,
+        "candidate_median": 4.2533349915174765e-05,
+        "ratio": 1.0194941132422417
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00016748329981055576,
+          0.00015089165026438423,
+          0.00018442500004312024
+        ],
+        "candidate_process_medians": [
+          0.00013133329994161614,
+          0.00014214375005394686,
+          0.000156572899868479
+        ],
+        "baseline_median": 0.00016748329981055576,
+        "candidate_median": 0.00014214375005394686,
+        "ratio": 1.1782670694067938
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          2.6300000172341242e-05,
+          2.314374978595879e-05,
+          2.6745799914351664e-05
+        ],
+        "candidate_process_medians": [
+          2.3454149777535348e-05,
+          2.5452100089751184e-05,
+          2.6447900017956273e-05
+        ],
+        "baseline_median": 2.6300000172341242e-05,
+        "candidate_median": 2.5452100089751184e-05,
+        "ratio": 1.0333135607513773
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          1.4802049918216653e-05,
+          1.4537500101141632e-05,
+          1.547499996377155e-05
+        ],
+        "candidate_process_medians": [
+          1.4427049973164684e-05,
+          1.4979200204834343e-05,
+          1.5343749691965058e-05
+        ],
+        "baseline_median": 1.4802049918216653e-05,
+        "candidate_median": 1.4979200204834343e-05,
+        "ratio": 0.9881735817536829
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0001545729497593129,
+          0.00014402705019165297,
+          0.00016869580031197984
+        ],
+        "candidate_process_medians": [
+          0.00013587914982053916,
+          0.00013524585010600277,
+          0.00013395415007835254
+        ],
+        "baseline_median": 0.0001545729497593129,
+        "candidate_median": 0.00013524585010600277,
+        "ratio": 1.1429034579483361
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          2.4779150044196287e-05,
+          2.2506250024889597e-05,
+          2.51062501774868e-05
+        ],
+        "candidate_process_medians": [
+          2.4016650058911182e-05,
+          2.424375015834812e-05,
+          2.4579150340287016e-05
+        ],
+        "baseline_median": 2.4779150044196287e-05,
+        "candidate_median": 2.424375015834812e-05,
+        "ratio": 1.0220840374261904
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          1.4535450100083836e-05,
+          1.4062499758438207e-05,
+          1.5187499957391993e-05
+        ],
+        "candidate_process_medians": [
+          1.4135449964669533e-05,
+          1.4837500202702358e-05,
+          1.4658300278824754e-05
+        ],
+        "baseline_median": 1.4535450100083836e-05,
+        "candidate_median": 1.4658300278824754e-05,
+        "ratio": 0.9916190706695792
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0006126124997535953,
+          0.0005845812502229819,
+          0.0006684458003292093
+        ],
+        "candidate_process_medians": [
+          0.0004715521001344314,
+          0.0004723437501525041,
+          0.00045451875012076927
+        ],
+        "baseline_median": 0.0006126124997535953,
+        "candidate_median": 0.0004715521001344314,
+        "ratio": 1.299140645495906
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.048125007713679e-05,
+          7.023124999250285e-05,
+          8.386875015276019e-05
+        ],
+        "candidate_process_medians": [
+          7.217705024231691e-05,
+          7.228750000649597e-05,
+          6.509170016215649e-05
+        ],
+        "baseline_median": 7.048125007713679e-05,
+        "candidate_median": 7.217705024231691e-05,
+        "ratio": 0.9765049948773623
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.2891700033796954e-05,
+          5.698749992006924e-05,
+          5.689585013897158e-05
+        ],
+        "candidate_process_medians": [
+          5.384374999266584e-05,
+          5.287710009724833e-05,
+          5.257080010778736e-05
+        ],
+        "baseline_median": 5.689585013897158e-05,
+        "candidate_median": 5.287710009724833e-05,
+        "ratio": 1.0760017102740547
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0005670166501658969,
+          0.0005474270499689737,
+          0.0006205292000231565
+        ],
+        "candidate_process_medians": [
+          0.00046117499987303746,
+          0.0004707207997853402,
+          0.0004667166500439635
+        ],
+        "baseline_median": 0.0005670166501658969,
+        "candidate_median": 0.0004667166500439635,
+        "ratio": 1.2149055537497653
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.037920004222542e-05,
+          6.831459977547638e-05,
+          7.683545009058434e-05
+        ],
+        "candidate_process_medians": [
+          6.908750001457519e-05,
+          6.558335007866845e-05,
+          6.475624977611005e-05
+        ],
+        "baseline_median": 7.037920004222542e-05,
+        "candidate_median": 6.558335007866845e-05,
+        "ratio": 1.0731260290577451
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.122705006215256e-05,
+          5.2431250151130374e-05,
+          5.4672899932484145e-05
+        ],
+        "candidate_process_medians": [
+          5.236875003902242e-05,
+          5.0458350233384405e-05,
+          5.0568749793455935e-05
+        ],
+        "baseline_median": 5.2431250151130374e-05,
+        "candidate_median": 5.0568749793455935e-05,
+        "ratio": 1.036831054065637
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.000605047899807687,
+          0.000615727100012009,
+          0.0006444124999688938
+        ],
+        "candidate_process_medians": [
+          0.0004725729500933085,
+          0.00048237499977403785,
+          0.0005173854500753805
+        ],
+        "baseline_median": 0.000615727100012009,
+        "candidate_median": 0.00048237499977403785,
+        "ratio": 1.2764490288684907
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          8.103124964691233e-05,
+          8.133749979606364e-05,
+          8.18437500129221e-05
+        ],
+        "candidate_process_medians": [
+          7.347709979512728e-05,
+          7.35375000658678e-05,
+          7.979164984135423e-05
+        ],
+        "baseline_median": 8.133749979606364e-05,
+        "candidate_median": 7.35375000658678e-05,
+        "ratio": 1.1060683287194881
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          6.262500028242357e-05,
+          5.8781250118045136e-05,
+          6.133544993645046e-05
+        ],
+        "candidate_process_medians": [
+          5.956460008746944e-05,
+          5.795204997411929e-05,
+          5.9110399888595566e-05
+        ],
+        "baseline_median": 6.133544993645046e-05,
+        "candidate_median": 5.9110399888595566e-05,
+        "ratio": 1.0376422770282119
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00029053329999442214,
+          0.0002781792001769645,
+          0.0003225103999284329
+        ],
+        "candidate_process_medians": [
+          0.00024509584982297384,
+          0.0002358187502977671,
+          0.00025760210010048465
+        ],
+        "baseline_median": 0.00029053329999442214,
+        "candidate_median": 0.00024509584982297384,
+        "ratio": 1.1853864527052032
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          2.7610449978965335e-05,
+          2.6710450038081034e-05,
+          2.9064550108159893e-05
+        ],
+        "candidate_process_medians": [
+          2.660830032255035e-05,
+          2.6083300326718017e-05,
+          3.092500010097865e-05
+        ],
+        "baseline_median": 2.7610449978965335e-05,
+        "candidate_median": 2.660830032255035e-05,
+        "ratio": 1.0376630466533658
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          1.7243749971385115e-05,
+          1.65083500178298e-05,
+          1.784579981176648e-05
+        ],
+        "candidate_process_medians": [
+          1.601665026100818e-05,
+          1.6416699872934258e-05,
+          1.754375007294584e-05
+        ],
+        "baseline_median": 1.7243749971385115e-05,
+        "candidate_median": 1.6416699872934258e-05,
+        "ratio": 1.050378584298443
+      }
+    },
+    {
+      "case": {
+        "width": 2,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00025736669995239935,
+          0.0002558812499046326,
+          0.00029429999995045364
+        ],
+        "candidate_process_medians": [
+          0.00022073334985179828,
+          0.0002062916501017753,
+          0.0002247103999252431
+        ],
+        "baseline_median": 0.00025736669995239935,
+        "candidate_median": 0.00022073334985179828,
+        "ratio": 1.1659620085736793
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          2.514795014576521e-05,
+          2.5995800024247727e-05,
+          2.9966650254209525e-05
+        ],
+        "candidate_process_medians": [
+          2.926874985860195e-05,
+          2.442084987706039e-05,
+          2.8018750163028018e-05
+        ],
+        "baseline_median": 2.5995800024247727e-05,
+        "candidate_median": 2.8018750163028018e-05,
+        "ratio": 0.9278001293059223
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          1.5735399938421323e-05,
+          1.5777099906699733e-05,
+          1.739584986353293e-05
+        ],
+        "candidate_process_medians": [
+          1.6162500105565415e-05,
+          1.5504149996559135e-05,
+          1.7062500046449713e-05
+        ],
+        "baseline_median": 1.5777099906699733e-05,
+        "candidate_median": 1.6162500105565415e-05,
+        "ratio": 0.9761546668925947
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0004510833001404535,
+          0.00047078124989639034,
+          0.0004878520998317981
+        ],
+        "candidate_process_medians": [
+          0.00039075835011317397,
+          0.0003875416499795392,
+          0.0004202041498501785
+        ],
+        "baseline_median": 0.00047078124989639034,
+        "candidate_median": 0.00039075835011317397,
+        "ratio": 1.2047887134338642
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          6.652084994129837e-05,
+          6.955830031074584e-05,
+          7.490624993806705e-05
+        ],
+        "candidate_process_medians": [
+          7.086875011736992e-05,
+          6.691665003017988e-05,
+          7.39603998226812e-05
+        ],
+        "baseline_median": 6.955830031074584e-05,
+        "candidate_median": 7.086875011736992e-05,
+        "ratio": 0.9815087777835255
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.484374996740371e-05,
+          5.173124991415534e-05,
+          5.347080004867166e-05
+        ],
+        "candidate_process_medians": [
+          4.933335003443062e-05,
+          5.160000000614673e-05,
+          5.384794967540074e-05
+        ],
+        "baseline_median": 5.347080004867166e-05,
+        "candidate_median": 5.160000000614673e-05,
+        "ratio": 1.036255814773296
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00045558960009657313,
+          0.00043053959998360367,
+          0.0005033250003180001
+        ],
+        "candidate_process_medians": [
+          0.0003607291499065468,
+          0.0003802520499448292,
+          0.00045034999966446775
+        ],
+        "baseline_median": 0.00045558960009657313,
+        "candidate_median": 0.0003802520499448292,
+        "ratio": 1.1981252965307476
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.338124996749684e-05,
+          6.328749987005722e-05,
+          7.671874991501681e-05
+        ],
+        "candidate_process_medians": [
+          6.483750003098976e-05,
+          6.526665019919164e-05,
+          0.00012517289978859482
+        ],
+        "baseline_median": 7.338124996749684e-05,
+        "candidate_median": 6.526665019919164e-05,
+        "ratio": 1.1243299563182683
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.294585025694687e-05,
+          4.9447900164523165e-05,
+          6.917500031704549e-05
+        ],
+        "candidate_process_medians": [
+          4.942500017932616e-05,
+          5.057079979451373e-05,
+          6.138960015960038e-05
+        ],
+        "baseline_median": 5.294585025694687e-05,
+        "candidate_median": 5.057079979451373e-05,
+        "ratio": 1.0469648586157183
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0004687603999627754,
+          0.0004788812497281469,
+          0.0005289395499858074
+        ],
+        "candidate_process_medians": [
+          0.00039250419977179265,
+          0.000430868750117952,
+          0.00043073124979855495
+        ],
+        "baseline_median": 0.0004788812497281469,
+        "candidate_median": 0.00043073124979855495,
+        "ratio": 1.1117866417913973
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.49541497498285e-05,
+          7.736040024610701e-05,
+          7.687914985581301e-05
+        ],
+        "candidate_process_medians": [
+          7.579169978271239e-05,
+          7.64582997362595e-05,
+          8.693335003044922e-05
+        ],
+        "baseline_median": 7.687914985581301e-05,
+        "candidate_median": 7.64582997362595e-05,
+        "ratio": 1.0055043091594402
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.820834994665347e-05,
+          5.77896000322653e-05,
+          5.9231249906588346e-05
+        ],
+        "candidate_process_medians": [
+          6.21916500676889e-05,
+          6.386874993040692e-05,
+          5.73125002119923e-05
+        ],
+        "baseline_median": 5.820834994665347e-05,
+        "candidate_median": 6.21916500676889e-05,
+        "ratio": 0.9359512070076925
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00022997294981905725,
+          0.00022733330006303732,
+          0.0002706957999180304
+        ],
+        "candidate_process_medians": [
+          0.00020014375004393515,
+          0.00019351249975443351,
+          0.00020769789989572018
+        ],
+        "baseline_median": 0.00022997294981905725,
+        "candidate_median": 0.00020014375004393515,
+        "ratio": 1.1490388771499187
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          3.919794980902225e-05,
+          3.847500011033844e-05,
+          6.22583000222221e-05
+        ],
+        "candidate_process_medians": [
+          3.97000003431458e-05,
+          3.535625000949949e-05,
+          6.389999980456196e-05
+        ],
+        "baseline_median": 3.919794980902225e-05,
+        "candidate_median": 3.97000003431458e-05,
+        "ratio": 0.9873538909374283
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          2.90916497760918e-05,
+          2.6691699895309283e-05,
+          4.3002099846489725e-05
+        ],
+        "candidate_process_medians": [
+          2.9691700183320792e-05,
+          2.695830007723998e-05,
+          4.2379150181659496e-05
+        ],
+        "baseline_median": 2.90916497760918e-05,
+        "candidate_median": 2.9691700183320792e-05,
+        "ratio": 0.9797906349746159
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00020528539971564896,
+          0.00019992289999208878,
+          0.0003022375000000466
+        ],
+        "candidate_process_medians": [
+          0.00017861039996205363,
+          0.0001721083499433007,
+          0.0002005833499424625
+        ],
+        "baseline_median": 0.00020528539971564896,
+        "candidate_median": 0.00017861039996205363,
+        "ratio": 1.1493474050741868
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          3.715829989232588e-05,
+          3.676250016724225e-05,
+          5.985000025248155e-05
+        ],
+        "candidate_process_medians": [
+          4.2012500125565565e-05,
+          3.414999991946388e-05,
+          6.372499992721715e-05
+        ],
+        "baseline_median": 3.715829989232588e-05,
+        "candidate_median": 4.2012500125565565e-05,
+        "ratio": 0.884458191758843
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          2.6718750086729413e-05,
+          2.5906250084517523e-05,
+          4.992499998479616e-05
+        ],
+        "candidate_process_medians": [
+          2.7443750150268896e-05,
+          2.676664989849087e-05,
+          4.8866699944483114e-05
+        ],
+        "baseline_median": 2.6718750086729413e-05,
+        "candidate_median": 2.7443750150268896e-05,
+        "ratio": 0.9735823253174319
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00047170415018626954,
+          0.00047364790007122794,
+          0.0005308228999638231
+        ],
+        "candidate_process_medians": [
+          0.0003939646001526853,
+          0.00039961460024642295,
+          0.0004168562500126427
+        ],
+        "baseline_median": 0.00047364790007122794,
+        "candidate_median": 0.00039961460024642295,
+        "ratio": 1.18526174914318
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          6.758954987162724e-05,
+          7.029999978840351e-05,
+          7.109170001058373e-05
+        ],
+        "candidate_process_medians": [
+          6.891664997965563e-05,
+          7.571460009785369e-05,
+          7.0954149850877e-05
+        ],
+        "baseline_median": 7.029999978840351e-05,
+        "candidate_median": 7.0954149850877e-05,
+        "ratio": 0.9907806652063579
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.236664983385708e-05,
+          5.364374992495868e-05,
+          5.412915015767794e-05
+        ],
+        "candidate_process_medians": [
+          5.486875015776604e-05,
+          5.358539965527598e-05,
+          5.3727100021205845e-05
+        ],
+        "baseline_median": 5.364374992495868e-05,
+        "candidate_median": 5.3727100021205845e-05,
+        "ratio": 0.998448639583855
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0005274041501252214,
+          0.00046658539977215694,
+          0.0005135645998961991
+        ],
+        "candidate_process_medians": [
+          0.00039836459982325325,
+          0.0003797708497586427,
+          0.00042173545007244683
+        ],
+        "baseline_median": 0.0005135645998961991,
+        "candidate_median": 0.00039836459982325325,
+        "ratio": 1.2891823222346008
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00010238545000902377,
+          6.833749976067338e-05,
+          7.415624968416523e-05
+        ],
+        "candidate_process_medians": [
+          7.186670009105001e-05,
+          6.722920006723143e-05,
+          7.296459989447612e-05
+        ],
+        "baseline_median": 7.415624968416523e-05,
+        "candidate_median": 7.186670009105001e-05,
+        "ratio": 1.0318582819332809
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          0.00010265210003126412,
+          5.485420006152708e-05,
+          6.611044991586824e-05
+        ],
+        "candidate_process_medians": [
+          5.3139599913265556e-05,
+          5.1972950313938784e-05,
+          5.428125004982576e-05
+        ],
+        "baseline_median": 6.611044991586824e-05,
+        "candidate_median": 5.3139599913265556e-05,
+        "ratio": 1.2440900952166312
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.001068806250259513,
+          0.000505324999903678,
+          0.0005623271001240937
+        ],
+        "candidate_process_medians": [
+          0.00040607710034237245,
+          0.0004229770500387531,
+          0.0004709062497568084
+        ],
+        "baseline_median": 0.0005623271001240937,
+        "candidate_median": 0.0004229770500387531,
+        "ratio": 1.329450616936719
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00011068335006712005,
+          7.955834989843424e-05,
+          7.909585001470986e-05
+        ],
+        "candidate_process_medians": [
+          7.614375026605557e-05,
+          7.177710031101015e-05,
+          7.90187499660533e-05
+        ],
+        "baseline_median": 7.955834989843424e-05,
+        "candidate_median": 7.614375026605557e-05,
+        "ratio": 1.0448441220776181
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          9.93207999272272e-05,
+          5.7866649876814334e-05,
+          6.318750020000153e-05
+        ],
+        "candidate_process_medians": [
+          5.895624999538995e-05,
+          5.850415000168141e-05,
+          7.276249998540152e-05
+        ],
+        "baseline_median": 6.318750020000153e-05,
+        "candidate_median": 5.895624999538995e-05,
+        "ratio": 1.0717693239468662
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00026693125000747385,
+          0.00024411455015069806,
+          0.0002554875001806067
+        ],
+        "candidate_process_medians": [
+          0.00020116665000387003,
+          0.00021167705017433036,
+          0.0002161958000215236
+        ],
+        "baseline_median": 0.0002554875001806067,
+        "candidate_median": 0.00021167705017433036,
+        "ratio": 1.2069683509392988
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          4.0006250128499235e-05,
+          4.0458350122207774e-05,
+          4.1343750126543455e-05
+        ],
+        "candidate_process_medians": [
+          3.9279150223592295e-05,
+          3.8704200051142834e-05,
+          3.977289998147171e-05
+        ],
+        "baseline_median": 4.0458350122207774e-05,
+        "candidate_median": 3.9279150223592295e-05,
+        "ratio": 1.0300210134868757
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          3.360830014571547e-05,
+          2.9354149955906905e-05,
+          3.183959997841157e-05
+        ],
+        "candidate_process_medians": [
+          2.6812500072992408e-05,
+          3.219584978069179e-05,
+          2.8300000121816992e-05
+        ],
+        "baseline_median": 3.183959997841157e-05,
+        "candidate_median": 2.8300000121816992e-05,
+        "ratio": 1.1250741993412867
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00021896670004935005,
+          0.00021753749970230274,
+          0.00023263539987965486
+        ],
+        "candidate_process_medians": [
+          0.0001853937497799052,
+          0.00018163750028179492,
+          0.00019074580013693775
+        ],
+        "baseline_median": 0.00021896670004935005,
+        "candidate_median": 0.0001853937497799052,
+        "ratio": 1.1810899790812897
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          4.149790001974907e-05,
+          3.759169994737022e-05,
+          3.881664997607004e-05
+        ],
+        "candidate_process_medians": [
+          4.6058350199018606e-05,
+          3.529375026118941e-05,
+          3.662080016511027e-05
+        ],
+        "baseline_median": 3.881664997607004e-05,
+        "candidate_median": 3.662080016511027e-05,
+        "ratio": 1.0599618195413387
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          2.8287500026635825e-05,
+          2.6908300060313196e-05,
+          2.8400000155670567e-05
+        ],
+        "candidate_process_medians": [
+          2.7981249877484517e-05,
+          2.597290003905073e-05,
+          2.7993749972665684e-05
+        ],
+        "baseline_median": 2.8287500026635825e-05,
+        "candidate_median": 2.7981249877484517e-05,
+        "ratio": 1.010944834504971
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0011350729000696447,
+          0.0009746708499733358,
+          0.00114787085003627
+        ],
+        "candidate_process_medians": [
+          0.0007732937498076353,
+          0.000854854150020401,
+          0.0008466375002171844
+        ],
+        "baseline_median": 0.0011350729000696447,
+        "candidate_median": 0.0008466375002171844,
+        "ratio": 1.3406834681649102
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00010379794985055923,
+          8.920625004975591e-05,
+          0.00011599999997997656
+        ],
+        "candidate_process_medians": [
+          9.737290019984357e-05,
+          9.292920003645122e-05,
+          9.150209989456925e-05
+        ],
+        "baseline_median": 0.00010379794985055923,
+        "candidate_median": 9.292920003645122e-05,
+        "ratio": 1.116957315998037
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          7.167500007199124e-05,
+          6.961040016904008e-05,
+          9.14853997528553e-05
+        ],
+        "candidate_process_medians": [
+          7.110210026439745e-05,
+          6.814170010329689e-05,
+          7.442499991157092e-05
+        ],
+        "baseline_median": 7.167500007199124e-05,
+        "candidate_median": 7.110210026439745e-05,
+        "ratio": 1.0080574245410954
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.001086274999761372,
+          0.000925441649815184,
+          0.0010416583001642721
+        ],
+        "candidate_process_medians": [
+          0.0007742083500488662,
+          0.0008385312499740394,
+          0.0008773520999966422
+        ],
+        "baseline_median": 0.0010416583001642721,
+        "candidate_median": 0.0008385312499740394,
+        "ratio": 1.2422414790104979
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00010426040025777184,
+          8.484374993713572e-05,
+          0.00011523749999469146
+        ],
+        "candidate_process_medians": [
+          8.91249997948762e-05,
+          7.690209968131967e-05,
+          8.2202050180058e-05
+        ],
+        "baseline_median": 0.00010426040025777184,
+        "candidate_median": 8.2202050180058e-05,
+        "ratio": 1.2683430647945706
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          7.001040030445438e-05,
+          6.667499983450397e-05,
+          8.609169999544975e-05
+        ],
+        "candidate_process_medians": [
+          7.001459998718928e-05,
+          6.307295006990898e-05,
+          6.726250030624215e-05
+        ],
+        "baseline_median": 7.001040030445438e-05,
+        "candidate_median": 6.726250030624215e-05,
+        "ratio": 1.0408533727664182
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0011595771000429522,
+          0.0011510979500599205,
+          0.00119552920004935
+        ],
+        "candidate_process_medians": [
+          0.0008168645999830915,
+          0.0008763624999119201,
+          0.0008850020501995459
+        ],
+        "baseline_median": 0.0011595771000429522,
+        "candidate_median": 0.0008763624999119201,
+        "ratio": 1.3231706059530124
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          9.4693749997532e-05,
+          0.00010477079995325766,
+          0.00012456664990168065
+        ],
+        "candidate_process_medians": [
+          9.763749985722825e-05,
+          9.725210002216045e-05,
+          9.184584996546619e-05
+        ],
+        "baseline_median": 0.00010477079995325766,
+        "candidate_median": 9.725210002216045e-05,
+        "ratio": 1.0773114403635906
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          7.469789998140186e-05,
+          9.949585000867955e-05,
+          0.0001006333503028145
+        ],
+        "candidate_process_medians": [
+          7.65229000535328e-05,
+          7.585415005451068e-05,
+          7.941250005387701e-05
+        ],
+        "baseline_median": 9.949585000867955e-05,
+        "candidate_median": 7.65229000535328e-05,
+        "ratio": 1.3002101323796624
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0005893229001230794,
+          0.00046535625006072223,
+          0.0005457854498672532
+        ],
+        "candidate_process_medians": [
+          0.0003776604000449879,
+          0.0003935103999538114,
+          0.0004079770496900892
+        ],
+        "baseline_median": 0.0005457854498672532,
+        "candidate_median": 0.0003935103999538114,
+        "ratio": 1.3869657572743062
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.24416498997016e-05,
+          4.506045006564818e-05,
+          7.570210000267253e-05
+        ],
+        "candidate_process_medians": [
+          4.5710400081588885e-05,
+          5.354999993869569e-05,
+          4.7627099775127135e-05
+        ],
+        "baseline_median": 7.24416498997016e-05,
+        "candidate_median": 4.7627099775127135e-05,
+        "ratio": 1.5210174510255117
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          6.22583000222221e-05,
+          3.5204199957661333e-05,
+          6.0664550255751236e-05
+        ],
+        "candidate_process_medians": [
+          3.63437498890562e-05,
+          3.4593750024214386e-05,
+          3.4681250326684676e-05
+        ],
+        "baseline_median": 6.0664550255751236e-05,
+        "candidate_median": 3.4681250326684676e-05,
+        "ratio": 1.7492030905550806
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00046730204994673843,
+          0.00041195835001417436,
+          0.000498385450191563
+        ],
+        "candidate_process_medians": [
+          0.00033131665004475507,
+          0.0003457521001109853,
+          0.000375102100224467
+        ],
+        "baseline_median": 0.00046730204994673843,
+        "candidate_median": 0.0003457521001109853,
+        "ratio": 1.3515523110249683
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          4.498750022321474e-05,
+          4.32333501521498e-05,
+          7.212915006675758e-05
+        ],
+        "candidate_process_medians": [
+          4.4954199984204025e-05,
+          4.2402049803058614e-05,
+          4.441665005288087e-05
+        ],
+        "baseline_median": 4.498750022321474e-05,
+        "candidate_median": 4.441665005288087e-05,
+        "ratio": 1.012852166240683
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          3.18291498842882e-05,
+          3.529999994498212e-05,
+          5.596459996013436e-05
+        ],
+        "candidate_process_medians": [
+          3.685414994833991e-05,
+          3.2502099929843095e-05,
+          3.36208500812063e-05
+        ],
+        "baseline_median": 3.529999994498212e-05,
+        "candidate_median": 3.36208500812063e-05,
+        "ratio": 1.049943706352459
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0010865457999898354,
+          0.001099002100090729,
+          0.001207425000029616
+        ],
+        "candidate_process_medians": [
+          0.0008148437500494765,
+          0.0008468437503324821,
+          0.000866962500003865
+        ],
+        "baseline_median": 0.001099002100090729,
+        "candidate_median": 0.0008468437503324821,
+        "ratio": 1.2977625443409675
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          9.600835001037922e-05,
+          8.504375000484288e-05,
+          0.00011362919976818376
+        ],
+        "candidate_process_medians": [
+          0.0001058104000549065,
+          8.336454993695952e-05,
+          8.951665004133246e-05
+        ],
+        "baseline_median": 9.600835001037922e-05,
+        "candidate_median": 8.951665004133246e-05,
+        "ratio": 1.0725194694623776
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          7.000000005064066e-05,
+          7.233334981719964e-05,
+          9.45395997405285e-05
+        ],
+        "candidate_process_medians": [
+          7.502289990952704e-05,
+          6.710624984407332e-05,
+          6.804375007050112e-05
+        ],
+        "baseline_median": 7.233334981719964e-05,
+        "candidate_median": 6.804375007050112e-05,
+        "ratio": 1.0630417891761403
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.001054595849927864,
+          0.0010180500001297332,
+          0.0012818520997825544
+        ],
+        "candidate_process_medians": [
+          0.0007973750001838198,
+          0.0015150354000070365,
+          0.0008694000000105007
+        ],
+        "baseline_median": 0.001054595849927864,
+        "candidate_median": 0.0008694000000105007,
+        "ratio": 1.2130157003854687
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          9.078335024241824e-05,
+          8.399790021940134e-05,
+          0.00015100835007615389
+        ],
+        "candidate_process_medians": [
+          8.43542002257891e-05,
+          8.733750000828877e-05,
+          8.677085024828557e-05
+        ],
+        "baseline_median": 9.078335024241824e-05,
+        "candidate_median": 8.677085024828557e-05,
+        "ratio": 1.0462424879167525
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          7.209584982774686e-05,
+          6.953539996175095e-05,
+          0.00011813335004262626
+        ],
+        "candidate_process_medians": [
+          6.479999974544626e-05,
+          8.425209998677018e-05,
+          6.940835010027513e-05
+        ],
+        "baseline_median": 7.209584982774686e-05,
+        "candidate_median": 6.940835010027513e-05,
+        "ratio": 1.0387201211898722
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0013268333499581787,
+          0.0010966521000227657,
+          0.0015402333501697285
+        ],
+        "candidate_process_medians": [
+          0.0009023937502206536,
+          0.0008902104000299005,
+          0.0009218333500029985
+        ],
+        "baseline_median": 0.0013268333499581787,
+        "candidate_median": 0.0009023937502206536,
+        "ratio": 1.4703485586350094
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00013322499980858993,
+          9.65750001341803e-05,
+          0.0001787666500604246
+        ],
+        "candidate_process_medians": [
+          9.686039993539453e-05,
+          8.787289989413694e-05,
+          0.00010153125003853347
+        ],
+        "baseline_median": 0.00013322499980858993,
+        "candidate_median": 9.686039993539453e-05,
+        "ratio": 1.375433096471318
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          9.589375003997702e-05,
+          8.073540011537262e-05,
+          0.00010968329988827463
+        ],
+        "candidate_process_medians": [
+          7.8547899829573e-05,
+          7.510414980060887e-05,
+          7.261665014084429e-05
+        ],
+        "baseline_median": 9.589375003997702e-05,
+        "candidate_median": 7.510414980060887e-05,
+        "ratio": 1.2768102733945017
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0007522875002905494,
+          0.0004930250001052627,
+          0.0005571395500737708
+        ],
+        "candidate_process_medians": [
+          0.000409568750183098,
+          0.00041943750002246814,
+          0.00043360835006751587
+        ],
+        "baseline_median": 0.0005571395500737708,
+        "candidate_median": 0.00041943750002246814,
+        "ratio": 1.3283017137092568
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          8.48062500153901e-05,
+          4.5441700058290736e-05,
+          7.902500001364388e-05
+        ],
+        "candidate_process_medians": [
+          4.7295850163209255e-05,
+          5.106874996272381e-05,
+          5.168749994481914e-05
+        ],
+        "baseline_median": 7.902500001364388e-05,
+        "candidate_median": 5.106874996272381e-05,
+        "ratio": 1.5474238173310673
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.912289998377673e-05,
+          3.685829979076516e-05,
+          5.837499993504025e-05
+        ],
+        "candidate_process_medians": [
+          3.574584989110008e-05,
+          3.518750017974526e-05,
+          3.6310399809735824e-05
+        ],
+        "baseline_median": 5.837499993504025e-05,
+        "candidate_median": 3.574584989110008e-05,
+        "ratio": 1.6330567076424256
+      }
+    },
+    {
+      "case": {
+        "width": 4,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0004833125000004657,
+          0.000436597900261404,
+          0.0005008916497899918
+        ],
+        "candidate_process_medians": [
+          0.0003869896001560846,
+          0.000375647900000331,
+          0.0003928541496861726
+        ],
+        "baseline_median": 0.0004833125000004657,
+        "candidate_median": 0.0003869896001560846,
+        "ratio": 1.2489030707944893
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          3.919374976248946e-05,
+          4.316459999245126e-05,
+          6.667704983556177e-05
+        ],
+        "candidate_process_medians": [
+          4.8633349797455595e-05,
+          4.7135400018305516e-05,
+          4.499999995459803e-05
+        ],
+        "baseline_median": 4.316459999245126e-05,
+        "candidate_median": 4.7135400018305516e-05,
+        "ratio": 0.9157575829565007
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          2.8458350061555394e-05,
+          3.516670003591571e-05,
+          5.398335015343037e-05
+        ],
+        "candidate_process_medians": [
+          3.5025000033783724e-05,
+          3.250834997743368e-05,
+          3.419790009502321e-05
+        ],
+        "baseline_median": 3.516670003591571e-05,
+        "candidate_median": 3.419790009502321e-05,
+        "ratio": 1.0283292230868142
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0006519041500723688,
+          0.0006193333501869347,
+          0.0008403645999351284
+        ],
+        "candidate_process_medians": [
+          0.0006543937503010966,
+          0.0005549937497562496,
+          0.0005598812498647021
+        ],
+        "baseline_median": 0.0006519041500723688,
+        "candidate_median": 0.0005598812498647021,
+        "ratio": 1.1643614609882087
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          9.039789983944502e-05,
+          9.288545006711502e-05,
+          0.00019428955019975546
+        ],
+        "candidate_process_medians": [
+          0.00015038540004752576,
+          9.975834982469677e-05,
+          0.00010314794999430888
+        ],
+        "baseline_median": 9.288545006711502e-05,
+        "candidate_median": 0.00010314794999430888,
+        "ratio": 0.9005069909022905
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          7.330210028158035e-05,
+          7.550834998255595e-05,
+          0.0001161833501100773
+        ],
+        "candidate_process_medians": [
+          0.00012390205010888168,
+          7.467499999620486e-05,
+          8.271249971585349e-05
+        ],
+        "baseline_median": 7.550834998255595e-05,
+        "candidate_median": 8.271249971585349e-05,
+        "ratio": 0.9129013177204616
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0006488479000836378,
+          0.000588868750128313,
+          0.0007193416502559557
+        ],
+        "candidate_process_medians": [
+          0.0005381770999520086,
+          0.0005951895996986423,
+          0.0005534624997380888
+        ],
+        "baseline_median": 0.0006488479000836378,
+        "candidate_median": 0.0005534624997380888,
+        "ratio": 1.1723430230425502
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          8.800210016488564e-05,
+          9.723749972181394e-05,
+          0.00010845834985957481
+        ],
+        "candidate_process_medians": [
+          9.55228999373503e-05,
+          0.00012367500021355228,
+          8.698954989085905e-05
+        ],
+        "baseline_median": 9.723749972181394e-05,
+        "candidate_median": 9.55228999373503e-05,
+        "ratio": 1.0179496203066298
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          7.188125018728898e-05,
+          7.479790001525543e-05,
+          0.0001011853997624712
+        ],
+        "candidate_process_medians": [
+          7.049375017231796e-05,
+          9.237920021405443e-05,
+          7.20895503036445e-05
+        ],
+        "baseline_median": 7.479790001525543e-05,
+        "candidate_median": 7.20895503036445e-05,
+        "ratio": 1.0375692413144935
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0006556958498549648,
+          0.0006602937501156703,
+          0.0007815208500687731
+        ],
+        "candidate_process_medians": [
+          0.0005571479003265267,
+          0.0005832437498611398,
+          0.0005622416501864791
+        ],
+        "baseline_median": 0.0006602937501156703,
+        "candidate_median": 0.0005622416501864791,
+        "ratio": 1.1743949419198492
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          9.919375006575137e-05,
+          0.00010544584984018002,
+          0.00013285625027492642
+        ],
+        "candidate_process_medians": [
+          0.00010348960022383835,
+          0.00010388749979028944,
+          9.695624976302497e-05
+        ],
+        "baseline_median": 0.00010544584984018002,
+        "candidate_median": 0.00010348960022383835,
+        "ratio": 1.0189028618538527
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          8.16187501186505e-05,
+          8.625209993624594e-05,
+          0.00010961874977510888
+        ],
+        "candidate_process_medians": [
+          8.30291501188185e-05,
+          7.882290010456927e-05,
+          8.104165026452392e-05
+        ],
+        "baseline_median": 8.625209993624594e-05,
+        "candidate_median": 8.104165026452392e-05,
+        "ratio": 1.0642934793987395
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0003299374999187421,
+          0.00029654374993697273,
+          0.0003506812499836087
+        ],
+        "candidate_process_medians": [
+          0.00025844999981927685,
+          0.00025667709996923804,
+          0.0002782208499411354
+        ],
+        "baseline_median": 0.0003299374999187421,
+        "candidate_median": 0.00025844999981927685,
+        "ratio": 1.2766008904989494
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          5.8174999867333097e-05,
+          5.339579984138254e-05,
+          8.03124999947613e-05
+        ],
+        "candidate_process_medians": [
+          5.0220849880133754e-05,
+          5.303955003910232e-05,
+          6.22687497525476e-05
+        ],
+        "baseline_median": 5.8174999867333097e-05,
+        "candidate_median": 5.303955003910232e-05,
+        "ratio": 1.096823027805567
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          4.685415005951654e-05,
+          4.092085000593215e-05,
+          5.3268749979906715e-05
+        ],
+        "candidate_process_medians": [
+          4.009789990959689e-05,
+          4.0568749682279304e-05,
+          4.8462499762536027e-05
+        ],
+        "baseline_median": 4.685415005951654e-05,
+        "candidate_median": 4.0568749682279304e-05,
+        "ratio": 1.1549320702871635
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": false
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0002873666500818217,
+          0.00026536455006862523,
+          0.0003109646000666544
+        ],
+        "candidate_process_medians": [
+          0.00024724789982428775,
+          0.00023701045029156376,
+          0.00025124585008597935
+        ],
+        "baseline_median": 0.0002873666500818217,
+        "candidate_median": 0.00024724789982428775,
+        "ratio": 1.1622612377538706
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          5.6100000074366106e-05,
+          5.1218749649706294e-05,
+          7.312710004043765e-05
+        ],
+        "candidate_process_medians": [
+          5.772500007878989e-05,
+          4.811874969163909e-05,
+          5.963750008959323e-05
+        ],
+        "baseline_median": 5.6100000074366106e-05,
+        "candidate_median": 5.772500007878989e-05,
+        "ratio": 0.9718492853667252
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          4.1922899981727824e-05,
+          3.9208300222526304e-05,
+          4.460210002434906e-05
+        ],
+        "candidate_process_medians": [
+          4.972500028088689e-05,
+          3.908329999831039e-05,
+          5.321454991644714e-05
+        ],
+        "baseline_median": 4.1922899981727824e-05,
+        "candidate_median": 4.972500028088689e-05,
+        "ratio": 0.8430950174944895
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0007206708502053516,
+          0.0008922667002480011,
+          0.0007369562499661697
+        ],
+        "candidate_process_medians": [
+          0.0005351041498215636,
+          0.0005712166501325555,
+          0.0005629062499792781
+        ],
+        "baseline_median": 0.0007369562499661697,
+        "candidate_median": 0.0005629062499792781,
+        "ratio": 1.3091989118850587
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00011307914974167943,
+          0.0001471583000238752,
+          0.00011433334984758403
+        ],
+        "candidate_process_medians": [
+          9.437080007046461e-05,
+          9.336875009466895e-05,
+          9.639374984544702e-05
+        ],
+        "baseline_median": 0.00011433334984758403,
+        "candidate_median": 9.437080007046461e-05,
+        "ratio": 1.2115331200139643
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          9.443540002394002e-05,
+          0.00013039164987276307,
+          9.778954990906641e-05
+        ],
+        "candidate_process_medians": [
+          7.593334994453471e-05,
+          7.092915002431255e-05,
+          7.541039994976017e-05
+        ],
+        "baseline_median": 9.778954990906641e-05,
+        "candidate_median": 7.541039994976017e-05,
+        "ratio": 1.2967647695041487
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0006685416501568398,
+          0.0030046416501136263,
+          0.0007091916500939988
+        ],
+        "candidate_process_medians": [
+          0.0005452895500638987,
+          0.0005358770999009721,
+          0.0005510645998583641
+        ],
+        "baseline_median": 0.0007091916500939988,
+        "candidate_median": 0.0005452895500638987,
+        "ratio": 1.300578105725469
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00011080414988100529,
+          0.0002322979002201464,
+          0.00011371874970791395
+        ],
+        "candidate_process_medians": [
+          9.429375022591557e-05,
+          8.787709994066973e-05,
+          9.25603999348823e-05
+        ],
+        "baseline_median": 0.00011371874970791395,
+        "candidate_median": 9.25603999348823e-05,
+        "ratio": 1.2285896537603218
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          8.77521000802517e-05,
+          0.00017934790012077428,
+          0.00010552085004746913
+        ],
+        "candidate_process_medians": [
+          7.951039988256526e-05,
+          6.6370849890518e-05,
+          7.266460015671327e-05
+        ],
+        "baseline_median": 0.00010552085004746913,
+        "candidate_median": 7.266460015671327e-05,
+        "ratio": 1.4521630865634148
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0007112125000276137,
+          0.0007497145503293723,
+          0.000762991699957638
+        ],
+        "candidate_process_medians": [
+          0.0005505312499735737,
+          0.0006035812501067994,
+          0.0005677583500073524
+        ],
+        "baseline_median": 0.0007497145503293723,
+        "candidate_median": 0.0005677583500073524,
+        "ratio": 1.3204817689069013
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00011320420017000288,
+          0.00011048125015804544,
+          0.0001322937499935506
+        ],
+        "candidate_process_medians": [
+          0.00010602500005916227,
+          0.00010913330006587785,
+          0.00010044375012512319
+        ],
+        "baseline_median": 0.00011320420017000288,
+        "candidate_median": 0.00010602500005916227,
+        "ratio": 1.0677123330048064
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          8.896459985408e-05,
+          9.353540008305572e-05,
+          0.00011157290027767886
+        ],
+        "candidate_process_medians": [
+          8.60167001519585e-05,
+          9.049375003087335e-05,
+          8.059790015977342e-05
+        ],
+        "baseline_median": 9.353540008305572e-05,
+        "candidate_median": 8.60167001519585e-05,
+        "ratio": 1.0874097694728415
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0003327603997604456,
+          0.0003478666498267557,
+          0.00037628960017173086
+        ],
+        "candidate_process_medians": [
+          0.00026037499992526136,
+          0.00028573335002874957,
+          0.00026655830006347967
+        ],
+        "baseline_median": 0.0003478666498267557,
+        "candidate_median": 0.00026655830006347967,
+        "ratio": 1.305030268214919
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          6.470000007539057e-05,
+          6.157295028970111e-05,
+          8.643750006740448e-05
+        ],
+        "candidate_process_medians": [
+          5.8389550031279216e-05,
+          6.230210019566584e-05,
+          5.842084974574391e-05
+        ],
+        "baseline_median": 6.470000007539057e-05,
+        "candidate_median": 5.842084974574391e-05,
+        "ratio": 1.1074813248519055
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          4.210834995319601e-05,
+          4.246459975547623e-05,
+          5.3000000116298905e-05
+        ],
+        "candidate_process_medians": [
+          3.980209985456895e-05,
+          4.4458350021159274e-05,
+          4.498330017668195e-05
+        ],
+        "baseline_median": 4.246459975547623e-05,
+        "candidate_median": 4.4458350021159274e-05,
+        "ratio": 0.9551546500323528
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 1,
+        "ring": true
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.00029795000009471553,
+          0.00030561250023311006,
+          0.0003215875000023516
+        ],
+        "candidate_process_medians": [
+          0.000561535450106021,
+          0.00025321459979750217,
+          0.00025087085014092737
+        ],
+        "baseline_median": 0.00030561250023311006,
+        "candidate_median": 0.00025321459979750217,
+        "ratio": 1.206930802874364
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          5.350624996935949e-05,
+          5.9900000269408335e-05,
+          6.959789971006103e-05
+        ],
+        "candidate_process_medians": [
+          7.477920007659122e-05,
+          6.068330003472511e-05,
+          5.3589600065606645e-05
+        ],
+        "baseline_median": 5.9900000269408335e-05,
+        "candidate_median": 6.068330003472511e-05,
+        "ratio": 0.9870920044745665
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          4.377084987936541e-05,
+          4.3887500214623285e-05,
+          4.798959998879582e-05
+        ],
+        "candidate_process_medians": [
+          4.517710003710817e-05,
+          5.1693749992409724e-05,
+          4.212499989080243e-05
+        ],
+        "baseline_median": 4.3887500214623285e-05,
+        "candidate_median": 4.517710003710817e-05,
+        "ratio": 0.9714545683227649
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0016039312500652158,
+          0.0017803999999159714,
+          0.001817562500218628
+        ],
+        "candidate_process_medians": [
+          0.0014043604001926723,
+          0.0011483792000944958,
+          0.001190045850307797
+        ],
+        "baseline_median": 0.0017803999999159714,
+        "candidate_median": 0.001190045850307797,
+        "ratio": 1.4960768103644775
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.0001555562499561347,
+          0.0001502562499808846,
+          0.00021412079986475873
+        ],
+        "candidate_process_medians": [
+          0.00016988335009955336,
+          0.00012521040007413832,
+          0.00012742915023409296
+        ],
+        "baseline_median": 0.0001555562499561347,
+        "candidate_median": 0.00012742915023409296,
+        "ratio": 1.220727358460533
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          0.00012100204985472373,
+          0.00012475834992073943,
+          0.00015575624966004397
+        ],
+        "candidate_process_medians": [
+          0.0001334771000983892,
+          0.00010490624990779906,
+          0.00010721875005401671
+        ],
+        "baseline_median": 0.00012475834992073943,
+        "candidate_median": 0.00010721875005401671,
+        "ratio": 1.163587057840968
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0015125812500627945,
+          0.0014339916499011452,
+          0.0017239458000403828
+        ],
+        "candidate_process_medians": [
+          0.0012906145999295403,
+          0.0012302541501412634,
+          0.001187062499957392
+        ],
+        "baseline_median": 0.0015125812500627945,
+        "candidate_median": 0.0012302541501412634,
+        "ratio": 1.229486809606871
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00011848959984490648,
+          0.00012030414982291404,
+          0.00014753539981029462
+        ],
+        "candidate_process_medians": [
+          0.00014703335000376683,
+          0.00012012290026177652,
+          0.0001185208500828594
+        ],
+        "baseline_median": 0.00012030414982291404,
+        "candidate_median": 0.00012012290026177652,
+        "ratio": 1.0015088676742114
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          9.510210002190433e-05,
+          9.602295031072572e-05,
+          0.00013517709994630421
+        ],
+        "candidate_process_medians": [
+          0.00010728750021371525,
+          0.00010631250006554183,
+          9.39729499805253e-05
+        ],
+        "baseline_median": 9.602295031072572e-05,
+        "candidate_median": 0.00010631250006554183,
+        "ratio": 0.9032141117133679
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0017115333499532425,
+          0.0015756667002278847,
+          0.002080041649969644
+        ],
+        "candidate_process_medians": [
+          0.0012017958499200177,
+          0.0013530895997973858,
+          0.0012621958001545863
+        ],
+        "baseline_median": 0.0017115333499532425,
+        "candidate_median": 0.0012621958001545863,
+        "ratio": 1.3559967080730455
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.00014749375004612374,
+          0.0001358583496767096,
+          0.0002288520998263266
+        ],
+        "candidate_process_medians": [
+          0.0001298625000345055,
+          0.00014240829987102188,
+          0.00013865000000805593
+        ],
+        "baseline_median": 0.00014749375004612374,
+        "candidate_median": 0.00013865000000805593,
+        "ratio": 1.0637847099715396
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          0.00012565830002131406,
+          0.00011699169990606607,
+          0.000193541650151019
+        ],
+        "candidate_process_medians": [
+          0.00011114375010947696,
+          0.00011984999982814771,
+          0.00011950834996241611
+        ],
+        "baseline_median": 0.00012565830002131406,
+        "candidate_median": 0.00011950834996241611,
+        "ratio": 1.0514604214754202
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0007199771000159672,
+          0.0007466291499440558,
+          0.0009597729498636909
+        ],
+        "candidate_process_medians": [
+          0.0005385833501350135,
+          0.0005803374999231892,
+          0.0005734812497394159
+        ],
+        "baseline_median": 0.0007466291499440558,
+        "candidate_median": 0.0005734812497394159,
+        "ratio": 1.301924256954027
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.555624979431741e-05,
+          6.973335002840031e-05,
+          0.00013367084975470788
+        ],
+        "candidate_process_medians": [
+          7.025210034043994e-05,
+          6.684164982289076e-05,
+          7.453545003954787e-05
+        ],
+        "baseline_median": 7.555624979431741e-05,
+        "candidate_median": 7.025210034043994e-05,
+        "ratio": 1.0755016494620615
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          6.256874985410832e-05,
+          5.371459992602468e-05,
+          0.00010119170001416933
+        ],
+        "candidate_process_medians": [
+          5.973750012344681e-05,
+          5.77916500333231e-05,
+          6.0966649834881535e-05
+        ],
+        "baseline_median": 6.256874985410832e-05,
+        "candidate_median": 5.973750012344681e-05,
+        "ratio": 1.047394847872957
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": false
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0006606124999962049,
+          0.0006502541502413806,
+          0.0009395791497809114
+        ],
+        "candidate_process_medians": [
+          0.0004913708500680514,
+          0.0005288479002047098,
+          0.0005141124998772284
+        ],
+        "baseline_median": 0.0006606124999962049,
+        "candidate_median": 0.0005141124998772284,
+        "ratio": 1.2849570865403217
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.232085008581634e-05,
+          6.772289998480119e-05,
+          0.00010306249969289638
+        ],
+        "candidate_process_medians": [
+          6.702710015815683e-05,
+          6.53145500109531e-05,
+          6.50708498142194e-05
+        ],
+        "baseline_median": 7.232085008581634e-05,
+        "candidate_median": 6.53145500109531e-05,
+        "ratio": 1.1072701270036813
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.896459988434799e-05,
+          5.345414974726737e-05,
+          8.956250021583401e-05
+        ],
+        "candidate_process_medians": [
+          5.339375020412263e-05,
+          5.476249971252401e-05,
+          5.32374997419538e-05
+        ],
+        "baseline_median": 5.896459988434799e-05,
+        "candidate_median": 5.339375020412263e-05,
+        "ratio": 1.1043352388421526
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "parameters",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0016414833000453655,
+          0.0016852312499395338,
+          0.0018159145998652092
+        ],
+        "candidate_process_medians": [
+          0.0012134583499573636,
+          0.0012233333000040147,
+          0.0012965833499038125
+        ],
+        "baseline_median": 0.0016852312499395338,
+        "candidate_median": 0.0012233333000040147,
+        "ratio": 1.3775732663649418
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.0001433479497791268,
+          0.0001474083499488188,
+          0.00018960205015901012
+        ],
+        "candidate_process_medians": [
+          0.00012764164966938552,
+          0.00013000414983252995,
+          0.00014177289995132014
+        ],
+        "baseline_median": 0.0001474083499488188,
+        "candidate_median": 0.00013000414983252995,
+        "ratio": 1.1338741889294208
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          0.0001172520496766083,
+          0.00011506664995977189,
+          0.00014681249995192048
+        ],
+        "candidate_process_medians": [
+          0.0001107083498936845,
+          0.00010785625017888379,
+          0.00011251459982304368
+        ],
+        "baseline_median": 0.0001172520496766083,
+        "candidate_median": 0.0001107083498936845,
+        "ratio": 1.059107554120424
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "inputs",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0016877062498679152,
+          0.0014934520499082283,
+          0.0017670229000941618
+        ],
+        "candidate_process_medians": [
+          0.0015646228999685262,
+          0.0012640395998460008,
+          0.0013693708500795766
+        ],
+        "baseline_median": 0.0016877062498679152,
+        "candidate_median": 0.0013693708500795766,
+        "ratio": 1.232468362949189
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.0001490166498115286,
+          0.00012335834981058724,
+          0.00016058334986155388
+        ],
+        "candidate_process_medians": [
+          0.00013808539988531266,
+          0.00012506040002335794,
+          0.00014486664986179676
+        ],
+        "baseline_median": 0.0001490166498115286,
+        "candidate_median": 0.00013808539988531266,
+        "ratio": 1.0791629667965978
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          0.00011444999981904402,
+          9.565625005052425e-05,
+          0.00012723955005640165
+        ],
+        "candidate_process_medians": [
+          9.822499996516853e-05,
+          9.676664994913153e-05,
+          0.00011442920003901236
+        ],
+        "baseline_median": 0.00011444999981904402,
+        "candidate_median": 9.822499996516853e-05,
+        "ratio": 1.1651819787185445
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "both",
+      "default_module": {
+        "baseline_process_medians": [
+          0.001775649999763118,
+          0.001635237500158837,
+          0.0018624312499014195
+        ],
+        "candidate_process_medians": [
+          0.0013011646002269116,
+          0.0012993207998079014,
+          0.001665658300044015
+        ],
+        "baseline_median": 0.001775649999763118,
+        "candidate_median": 0.0013011646002269116,
+        "ratio": 1.3646620876816509
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          0.0001603666998562403,
+          0.00013750834987149573,
+          0.00019251249977969564
+        ],
+        "candidate_process_medians": [
+          0.00014423124994209502,
+          0.00014232294997782447,
+          0.00022888749990670476
+        ],
+        "baseline_median": 0.0001603666998562403,
+        "candidate_median": 0.00014423124994209502,
+        "ratio": 1.1118720798760546
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          0.00013759165012743323,
+          0.00011578750018088612,
+          0.00015079585027706345
+        ],
+        "candidate_process_medians": [
+          0.00011388954990252387,
+          0.00011432915016484912,
+          0.00018676664985832757
+        ],
+        "baseline_median": 0.00013759165012743323,
+        "candidate_median": 0.00011432915016484912,
+        "ratio": 1.2034695432358442
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "no_grad",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0007527687499532476,
+          0.0007489937499485678,
+          0.0008956082998338388
+        ],
+        "candidate_process_medians": [
+          0.0005858624997927108,
+          0.0006122604001575383,
+          0.0006849582998256665
+        ],
+        "baseline_median": 0.0007527687499532476,
+        "candidate_median": 0.0006122604001575383,
+        "ratio": 1.2294911605577556
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.618750023539179e-05,
+          7.45249999454245e-05,
+          9.486459966865369e-05
+        ],
+        "candidate_process_medians": [
+          7.302499980141875e-05,
+          8.370834984816611e-05,
+          8.56853999721352e-05
+        ],
+        "baseline_median": 7.618750023539179e-05,
+        "candidate_median": 8.370834984816611e-05,
+        "ratio": 0.9101541288722574
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          5.98354497924447e-05,
+          5.4154149984242396e-05,
+          9.030000001075678e-05
+        ],
+        "candidate_process_medians": [
+          5.940624978393316e-05,
+          5.640204981318675e-05,
+          6.278959990595468e-05
+        ],
+        "baseline_median": 5.98354497924447e-05,
+        "candidate_median": 5.940624978393316e-05,
+        "ratio": 1.007224829206903
+      }
+    },
+    {
+      "case": {
+        "width": 6,
+        "depth": 3,
+        "ring": true
+      },
+      "demand": "inference",
+      "default_module": {
+        "baseline_process_medians": [
+          0.0007571041998744477,
+          0.0006631437499891035,
+          0.000806095850202837
+        ],
+        "candidate_process_medians": [
+          0.0005362395499105332,
+          0.0005634021003061207,
+          0.0006174437501613283
+        ],
+        "baseline_median": 0.0007571041998744477,
+        "candidate_median": 0.0005634021003061207,
+        "ratio": 1.3438079117260662
+      },
+      "jax_module": {
+        "baseline_process_medians": [
+          7.689789999858476e-05,
+          6.280000015976839e-05,
+          0.00011383750024833717
+        ],
+        "candidate_process_medians": [
+          7.566249987576157e-05,
+          7.352294996962883e-05,
+          7.882294994487893e-05
+        ],
+        "baseline_median": 7.689789999858476e-05,
+        "candidate_median": 7.566249987576157e-05,
+        "ratio": 1.0163277730031617
+      },
+      "jax_kernel_diagnostic": {
+        "baseline_process_medians": [
+          6.764165009371936e-05,
+          5.340624993550591e-05,
+          7.998749970283825e-05
+        ],
+        "candidate_process_medians": [
+          5.919170034758281e-05,
+          6.0600000142585483e-05,
+          6.43208000838058e-05
+        ],
+        "baseline_median": 6.764165009371936e-05,
+        "candidate_median": 6.0600000142585483e-05,
+        "ratio": 1.116198843804713
+      }
+    }
+  ]
+}
