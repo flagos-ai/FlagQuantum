@@ -1,0 +1,2403 @@
+{
+  "engine": "flagquantum",
+  "source": {
+    "code_version": "3b18d75fc9e11464575249a65ee5708392b9866c",
+    "dirty": false,
+    "protocol_sha256": "5750e9cc054737447b2c16ea3b9dfa79934248294f5e058686c27b5c082e8d5e",
+    "producer_sha256": {
+      "benchmarks/training_comparison.py": "654b0b5f0907bb8cb8f06b1f87c595260ef219cb3d363b04a45af34092ee8ff1",
+      "benchmarks/training_workloads.py": "7c797a3214221d3d858e12d3852cfb7a191689b0dad9dc227a395dd983777235",
+      "benchmarks/training_engines.py": "c3578d8d2b33da2b96a6e194421d61863de29dabbe6af1e31b37fe2b220bbf61"
+    },
+    "versions": {
+      "torch": "2.14.1",
+      "numpy": "2.5.4",
+      "pennylane": "0.45.1",
+      "pennylane-lightning": "0.45.0",
+      "tensorcircuit-ng": "1.10.0",
+      "jax": "0.10.2",
+      "jaxlib": "0.10.2"
+    }
+  },
+  "calls": 200,
+  "profile_total_seconds": 0.20269433000000006,
+  "functions": [
+    {
+      "file": "<stdin>",
+      "line": 10,
+      "function": "step",
+      "calls": 200,
+      "self_seconds": 0.000453375,
+      "cumulative_seconds": 0.20436766
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 116,
+      "function": "native",
+      "calls": 200,
+      "self_seconds": 0.0006249980000000001,
+      "cumulative_seconds": 0.15279403800000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 116,
+      "function": "fq_state",
+      "calls": 200,
+      "self_seconds": 0.001591657,
+      "cumulative_seconds": 0.14251992000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 955,
+      "function": "state",
+      "calls": 200,
+      "self_seconds": 0.000227332,
+      "cumulative_seconds": 0.099273158
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 870,
+      "function": "state",
+      "calls": 200,
+      "self_seconds": 0.003112984,
+      "cumulative_seconds": 0.098963623
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 434,
+      "function": "grad",
+      "calls": 200,
+      "self_seconds": 0.000979471,
+      "cumulative_seconds": 0.051120247
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 583,
+      "function": "_execute_statevector_program",
+      "calls": 200,
+      "self_seconds": 0.0022216180000000003,
+      "cumulative_seconds": 0.049294007
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 1059,
+      "function": "_engine_run_backward",
+      "calls": 200,
+      "self_seconds": 0.000364531,
+      "cumulative_seconds": 0.04879671
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'run_backward' of 'torch._C._EngineBase' objects>",
+      "calls": 200,
+      "self_seconds": 0.048183169000000005,
+      "cumulative_seconds": 0.048183169000000005
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 384,
+      "function": "gate",
+      "calls": 1600,
+      "self_seconds": 0.003028317,
+      "cumulative_seconds": 0.035516729000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 277,
+      "function": "_compile_statevector_program",
+      "calls": 200,
+      "self_seconds": 0.0007564420000000001,
+      "cumulative_seconds": 0.025526467
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 374,
+      "function": "__post_init__",
+      "calls": 1600,
+      "self_seconds": 0.003340323,
+      "cumulative_seconds": 0.022019583000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 369,
+      "function": "_prepare_batched_rotation_matrices",
+      "calls": 200,
+      "self_seconds": 0.00151314,
+      "cumulative_seconds": 0.021798925
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 449,
+      "function": "_apply_disjoint_dense_step",
+      "calls": 400,
+      "self_seconds": 0.000711541,
+      "cumulative_seconds": 0.019261599
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 294,
+      "function": "_normalize_angle",
+      "calls": 1200,
+      "self_seconds": 0.001469208,
+      "cumulative_seconds": 0.01324439
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 346,
+      "function": "_rotation_region_angles",
+      "calls": 200,
+      "self_seconds": 0.001315575,
+      "cumulative_seconds": 0.011632747
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 715,
+      "function": "_apply_matrix",
+      "calls": 600,
+      "self_seconds": 0.000489087,
+      "cumulative_seconds": 0.011025546
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 557,
+      "function": "canonical_opcode",
+      "calls": 17200,
+      "self_seconds": 0.005961595,
+      "cumulative_seconds": 0.009951238000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 78,
+      "function": "parameter_tensor",
+      "calls": 1200,
+      "self_seconds": 0.002286502,
+      "cumulative_seconds": 0.009838859
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 457,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 0.00021620300000000002,
+      "cumulative_seconds": 0.009468362000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 356,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 0.00021069100000000002,
+      "cumulative_seconds": 0.009452756000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 481,
+      "function": "_dense_region_matrix",
+      "calls": 800,
+      "self_seconds": 0.00041347400000000005,
+      "cumulative_seconds": 0.009252159000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 322,
+      "function": "_gate_parameters",
+      "calls": 800,
+      "self_seconds": 0.000990617,
+      "cumulative_seconds": 0.009242065
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 281,
+      "function": "_require_finite_angle",
+      "calls": 1200,
+      "self_seconds": 0.000272328,
+      "cumulative_seconds": 0.008990522
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 238,
+      "function": "_holds_only_finite_values",
+      "calls": 1200,
+      "self_seconds": 0.001418133,
+      "cumulative_seconds": 0.008718194
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 237,
+      "function": "gate_matrix",
+      "calls": 400,
+      "self_seconds": 0.0008521850000000001,
+      "cumulative_seconds": 0.008604538
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 258,
+      "function": "expectation",
+      "calls": 200,
+      "self_seconds": 0.00025585500000000004,
+      "cumulative_seconds": 0.008591073000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 31,
+      "function": "initial_runtime_metrics",
+      "calls": 200,
+      "self_seconds": 0.0018470270000000002,
+      "cumulative_seconds": 0.008356001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 113,
+      "function": "expectation",
+      "calls": 200,
+      "self_seconds": 0.000477091,
+      "cumulative_seconds": 0.008223641
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 989,
+      "function": "_gate_parameter_tensor",
+      "calls": 800,
+      "self_seconds": 0.000650507,
+      "cumulative_seconds": 0.0074653770000000005
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 1186,
+      "function": "_batched_rotation_sequence_matrices",
+      "calls": 200,
+      "self_seconds": 0.0011588850000000001,
+      "cumulative_seconds": 0.007180373
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 150,
+      "function": "pauli_product_statevector_expectation",
+      "calls": 200,
+      "self_seconds": 0.000743922,
+      "cumulative_seconds": 0.007021203
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.isinstance>",
+      "calls": 87600,
+      "self_seconds": 0.005420018,
+      "cumulative_seconds": 0.006969512000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 101,
+      "function": "ry_mat",
+      "calls": 600,
+      "self_seconds": 0.0024038600000000003,
+      "cumulative_seconds": 0.005985037
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 49,
+      "function": "_fuse_controlled_phase_decompositions",
+      "calls": 200,
+      "self_seconds": 0.001757716,
+      "cumulative_seconds": 0.005825085000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 184,
+      "function": "_try_apply_preferred_two_qubit_matrix",
+      "calls": 400,
+      "self_seconds": 0.000375668,
+      "cumulative_seconds": 0.005606014
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'reshape' of 'torch._C.TensorBase' objects>",
+      "calls": 6800,
+      "self_seconds": 0.005562846000000001,
+      "cumulative_seconds": 0.005562846000000001
+    },
+    {
+      "file": "<frozen os>",
+      "line": 808,
+      "function": "getenv",
+      "calls": 4800,
+      "self_seconds": 0.000709091,
+      "cumulative_seconds": 0.005339365
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 562,
+      "function": "get_operator_schema",
+      "calls": 6000,
+      "self_seconds": 0.001352991,
+      "cumulative_seconds": 0.005222018
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.sum>",
+      "calls": 4600,
+      "self_seconds": 0.001678524,
+      "cumulative_seconds": 0.005172077000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 47,
+      "function": "normalize_qubits",
+      "calls": 1600,
+      "self_seconds": 0.001909777,
+      "cumulative_seconds": 0.0048647410000000006
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 15,
+      "function": "apply_single_qubit_matrix_cpu",
+      "calls": 200,
+      "self_seconds": 0.0029130370000000003,
+      "cumulative_seconds": 0.0048497850000000006
+    },
+    {
+      "file": "<frozen _collections_abc>",
+      "line": 804,
+      "function": "get",
+      "calls": 4800,
+      "self_seconds": 0.001132123,
+      "cumulative_seconds": 0.004630274
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 417,
+      "function": "_fuse_gate_sequences",
+      "calls": 200,
+      "self_seconds": 0.0025559560000000003,
+      "cumulative_seconds": 0.004547947
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 183,
+      "function": "_environment_flag",
+      "calls": 2800,
+      "self_seconds": 0.0010395550000000002,
+      "cumulative_seconds": 0.0044079620000000005
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 914,
+      "function": "_apply_fixed_permutation",
+      "calls": 400,
+      "self_seconds": 0.000349883,
+      "cumulative_seconds": 0.004241849000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 296,
+      "function": "_apply_preferred_two_qubit_matrix_cpu",
+      "calls": 400,
+      "self_seconds": 0.00052702,
+      "cumulative_seconds": 0.004105267
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.all>",
+      "calls": 4000,
+      "self_seconds": 0.0009009010000000001,
+      "cumulative_seconds": 0.003827244
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 817,
+      "function": "_apply_cx_permutation",
+      "calls": 400,
+      "self_seconds": 0.000701743,
+      "cumulative_seconds": 0.003560423
+    },
+    {
+      "file": "<frozen os>",
+      "line": 709,
+      "function": "__getitem__",
+      "calls": 4800,
+      "self_seconds": 0.001601046,
+      "cumulative_seconds": 0.003498151
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 347,
+      "function": "_fuse_rx_rz_loops",
+      "calls": 200,
+      "self_seconds": 0.0014617010000000001,
+      "cumulative_seconds": 0.003422702
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.stack>",
+      "calls": 2400,
+      "self_seconds": 0.003411705,
+      "cumulative_seconds": 0.003411705
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 135,
+      "function": "_apply_adjacent_two_qubit_matrix_cpu",
+      "calls": 400,
+      "self_seconds": 0.00021241400000000002,
+      "cumulative_seconds": 0.003385579
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 584,
+      "function": "_fuse_disjoint_dense_regions",
+      "calls": 200,
+      "self_seconds": 0.001157414,
+      "cumulative_seconds": 0.0033171190000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 107,
+      "function": "_apply_blocked_two_qubit_matrix_cpu",
+      "calls": 400,
+      "self_seconds": 0.00044144800000000005,
+      "cumulative_seconds": 0.0031731650000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 417,
+      "function": "_batched_kronecker_product",
+      "calls": 400,
+      "self_seconds": 0.0026140300000000003,
+      "cumulative_seconds": 0.0029683680000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 201,
+      "function": "_is_being_traced",
+      "calls": 1200,
+      "self_seconds": 0.000850701,
+      "cumulative_seconds": 0.0029317930000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 32,
+      "function": "_constant_rz_angle",
+      "calls": 2400,
+      "self_seconds": 0.0008097330000000001,
+      "cumulative_seconds": 0.0028000520000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 112,
+      "function": "rz_mat",
+      "calls": 200,
+      "self_seconds": 0.000687503,
+      "cumulative_seconds": 0.002772951
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'isfinite' of 'torch._C.TensorBase' objects>",
+      "calls": 1200,
+      "self_seconds": 0.0027554190000000003,
+      "cumulative_seconds": 0.0027554190000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 197,
+      "function": "__init__",
+      "calls": 200,
+      "self_seconds": 0.000896567,
+      "cumulative_seconds": 0.0025695790000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.any>",
+      "calls": 3200,
+      "self_seconds": 0.00095257,
+      "cumulative_seconds": 0.0025660500000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 59,
+      "function": "_normalize_wires",
+      "calls": 1600,
+      "self_seconds": 0.001338596,
+      "cumulative_seconds": 0.0025498860000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 30,
+      "function": "angle",
+      "calls": 1200,
+      "self_seconds": 0.0024567900000000004,
+      "cumulative_seconds": 0.0024567900000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 165,
+      "function": "fuse_native_rotation_clifford_layers",
+      "calls": 200,
+      "self_seconds": 0.000602861,
+      "cumulative_seconds": 0.002443715
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 132,
+      "function": "_diagonal_region",
+      "calls": 1600,
+      "self_seconds": 0.000681415,
+      "cumulative_seconds": 0.0023015360000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 46,
+      "function": "_create_2x2_matrix",
+      "calls": 800,
+      "self_seconds": 0.000594841,
+      "cumulative_seconds": 0.002299485
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.len>",
+      "calls": 44000,
+      "self_seconds": 0.0022957240000000003,
+      "cumulative_seconds": 0.0022957240000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 554,
+      "function": "_fuse_cross_wire_diagonal_regions",
+      "calls": 200,
+      "self_seconds": 0.00040006700000000004,
+      "cumulative_seconds": 0.002210489
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 153,
+      "function": "value_to_tensor",
+      "calls": 1200,
+      "self_seconds": 0.0004927530000000001,
+      "cumulative_seconds": 0.0021185550000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 28,
+      "function": "qubit_label",
+      "calls": 3600,
+      "self_seconds": 0.0013748970000000001,
+      "cumulative_seconds": 0.002083401
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'to' of 'torch._C.TensorBase' objects>",
+      "calls": 4600,
+      "self_seconds": 0.002016375,
+      "cumulative_seconds": 0.002016375
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'get' of 'mappingproxy' objects>",
+      "calls": 23200,
+      "self_seconds": 0.0020161370000000003,
+      "cumulative_seconds": 0.0020161370000000003
+    },
+    {
+      "file": "<frozen os>",
+      "line": 791,
+      "function": "encode",
+      "calls": 4800,
+      "self_seconds": 0.001082753,
+      "cumulative_seconds": 0.001897105
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 3437,
+      "function": "get_proxy_mode",
+      "calls": 1200,
+      "self_seconds": 0.000751301,
+      "cumulative_seconds": 0.001818453
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 238,
+      "function": "_statevector_batch_input",
+      "calls": 200,
+      "self_seconds": 0.000549323,
+      "cumulative_seconds": 0.001762965
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 508,
+      "function": "_small_diagonal_region",
+      "calls": 1200,
+      "self_seconds": 0.00040672500000000003,
+      "cumulative_seconds": 0.001667333
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'lower' of 'str' objects>",
+      "calls": 22200,
+      "self_seconds": 0.0016360180000000002,
+      "cumulative_seconds": 0.0016360180000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 173,
+      "function": "rotation_layer",
+      "calls": 1000,
+      "self_seconds": 0.000282426,
+      "cumulative_seconds": 0.0016059630000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'strip' of 'str' objects>",
+      "calls": 22000,
+      "self_seconds": 0.0015903540000000002,
+      "cumulative_seconds": 0.0015903540000000002
+    },
+    {
+      "file": "<frozen abc>",
+      "line": 117,
+      "function": "__instancecheck__",
+      "calls": 5800,
+      "self_seconds": 0.000795309,
+      "cumulative_seconds": 0.001549494
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'append' of 'list' objects>",
+      "calls": 18400,
+      "self_seconds": 0.001464798,
+      "cumulative_seconds": 0.001464798
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 96,
+      "function": "_cpu_statevector_batch_budget_for_program",
+      "calls": 200,
+      "self_seconds": 0.00010021300000000001,
+      "cumulative_seconds": 0.00142333
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 147,
+      "function": "<genexpr>",
+      "calls": 3200,
+      "self_seconds": 0.00046553800000000004,
+      "cumulative_seconds": 0.001348136
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 55,
+      "function": "_native_layer_compile_safe",
+      "calls": 400,
+      "self_seconds": 0.000455253,
+      "cumulative_seconds": 0.001214288
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.matmul>",
+      "calls": 400,
+      "self_seconds": 0.001196449,
+      "cumulative_seconds": 0.001196449
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.cat>",
+      "calls": 800,
+      "self_seconds": 0.0011806590000000001,
+      "cumulative_seconds": 0.0011806590000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 178,
+      "function": "<genexpr>",
+      "calls": 1000,
+      "self_seconds": 0.00021928500000000003,
+      "cumulative_seconds": 0.001163
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 40,
+      "function": "with_overrides",
+      "calls": 200,
+      "self_seconds": 0.000165522,
+      "cumulative_seconds": 0.0011447
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 274,
+      "function": "_invalidate_execution_cache",
+      "calls": 1600,
+      "self_seconds": 0.000661812,
+      "cumulative_seconds": 0.001131019
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 70,
+      "function": "<genexpr>",
+      "calls": 3600,
+      "self_seconds": 0.00044986300000000005,
+      "cumulative_seconds": 0.001110014
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 78,
+      "function": "_unit_phase",
+      "calls": 400,
+      "self_seconds": 0.000161835,
+      "cumulative_seconds": 0.001074061
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 160,
+      "function": "_try_apply_cataloged_two_qubit_matrix",
+      "calls": 400,
+      "self_seconds": 9.335900000000001e-05,
+      "cumulative_seconds": 0.0010643080000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 132,
+      "function": "_preallocated_batch_assembly_beneficial",
+      "calls": 200,
+      "self_seconds": 0.000298805,
+      "cumulative_seconds": 0.0010598250000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 103,
+      "function": "is_parameterized_value",
+      "calls": 1200,
+      "self_seconds": 0.000357644,
+      "cumulative_seconds": 0.0010594930000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 29,
+      "function": "_scalar",
+      "calls": 200,
+      "self_seconds": 0.000309826,
+      "cumulative_seconds": 0.0010580470000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.getattr>",
+      "calls": 11800,
+      "self_seconds": 0.001009757,
+      "cumulative_seconds": 0.001009757
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 18,
+      "function": "_fuse_cz_graphs",
+      "calls": 200,
+      "self_seconds": 0.00033831100000000005,
+      "cumulative_seconds": 0.0010082910000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 1540,
+      "function": "replace",
+      "calls": 200,
+      "self_seconds": 0.000452171,
+      "cumulative_seconds": 0.000979178
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 57,
+      "function": "__getattr__",
+      "calls": 200,
+      "self_seconds": 9.228900000000001e-05,
+      "cumulative_seconds": 0.000973001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 64,
+      "function": "<genexpr>",
+      "calls": 7600,
+      "self_seconds": 0.000705178,
+      "cumulative_seconds": 0.000971099
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 65,
+      "function": "_two_qubit_matrix_kernel_enabled",
+      "calls": 400,
+      "self_seconds": 0.000158922,
+      "cumulative_seconds": 0.000970949
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 91,
+      "function": "_make_grads",
+      "calls": 200,
+      "self_seconds": 0.0006334610000000001,
+      "cumulative_seconds": 0.0009708210000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'all' of 'torch._C.TensorBase' objects>",
+      "calls": 1200,
+      "self_seconds": 0.0009617590000000001,
+      "cumulative_seconds": 0.0009617590000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'extend' of 'list' objects>",
+      "calls": 2000,
+      "self_seconds": 0.000492435,
+      "cumulative_seconds": 0.0009556880000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'expand' of 'torch._C.TensorBase' objects>",
+      "calls": 1400,
+      "self_seconds": 0.000899692,
+      "cumulative_seconds": 0.000899692
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 73,
+      "function": "import_module",
+      "calls": 200,
+      "self_seconds": 0.00019166500000000002,
+      "cumulative_seconds": 0.000863598
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 654,
+      "function": "_fuse_cx_sequences",
+      "calls": 200,
+      "self_seconds": 0.000416041,
+      "cumulative_seconds": 0.000842127
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 26,
+      "function": "_two_qubit_matrix_dispatch_enabled",
+      "calls": 400,
+      "self_seconds": 0.000171416,
+      "cumulative_seconds": 0.0008120270000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'get' of 'dict' objects>",
+      "calls": 8600,
+      "self_seconds": 0.000811408,
+      "cumulative_seconds": 0.000811408
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 627,
+      "function": "_bounded_dense_region",
+      "calls": 1200,
+      "self_seconds": 0.00040618,
+      "cumulative_seconds": 0.000786226
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 597,
+      "function": "flush",
+      "calls": 600,
+      "self_seconds": 0.000423939,
+      "cumulative_seconds": 0.000785359
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.cos>",
+      "calls": 1000,
+      "self_seconds": 0.0007740510000000001,
+      "cumulative_seconds": 0.0007740510000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 99,
+      "function": "native_fixed_layer_compile_enabled",
+      "calls": 200,
+      "self_seconds": 7.3918e-05,
+      "cumulative_seconds": 0.0007735890000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 759,
+      "function": "_get_dispatch_mode_pre_dispatch",
+      "calls": 1200,
+      "self_seconds": 0.000403708,
+      "cumulative_seconds": 0.0007638040000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 181,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 0.000278925,
+      "cumulative_seconds": 0.0007637010000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _abc._abc_instancecheck>",
+      "calls": 5800,
+      "self_seconds": 0.0007541850000000001,
+      "cumulative_seconds": 0.0007541850000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 38,
+      "function": "native_cpu_hadamard_controlled_phase_available",
+      "calls": 200,
+      "self_seconds": 0.00011627600000000001,
+      "cumulative_seconds": 0.000752423
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 61,
+      "function": "<genexpr>",
+      "calls": 1000,
+      "self_seconds": 0.000172003,
+      "cumulative_seconds": 0.0007461060000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 123,
+      "function": "clifford_matching_output_reuse_enabled",
+      "calls": 200,
+      "self_seconds": 0.000208731,
+      "cumulative_seconds": 0.0007409570000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.sin>",
+      "calls": 1000,
+      "self_seconds": 0.0006238260000000001,
+      "cumulative_seconds": 0.0006238260000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 44,
+      "function": "_fuse_swap_sequences",
+      "calls": 200,
+      "self_seconds": 0.00028859700000000003,
+      "cumulative_seconds": 0.000620964
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 1375,
+      "function": "_gcd_import",
+      "calls": 200,
+      "self_seconds": 0.00015206100000000002,
+      "cumulative_seconds": 0.000619218
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 71,
+      "function": "<genexpr>",
+      "calls": 1600,
+      "self_seconds": 0.000466779,
+      "cumulative_seconds": 0.00061916
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 191,
+      "function": "_dtype_holds_real_numbers",
+      "calls": 1200,
+      "self_seconds": 0.000433241,
+      "cumulative_seconds": 0.000614408
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.flip>",
+      "calls": 400,
+      "self_seconds": 0.00059237,
+      "cumulative_seconds": 0.00059237
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 328,
+      "function": "<genexpr>",
+      "calls": 1600,
+      "self_seconds": 0.00018321600000000002,
+      "cumulative_seconds": 0.000584079
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 152,
+      "function": "native_rotation_clifford_fusion_enabled",
+      "calls": 400,
+      "self_seconds": 0.00014021200000000002,
+      "cumulative_seconds": 0.0005743230000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 117,
+      "function": "native_parameterized_layer_compile_enabled",
+      "calls": 200,
+      "self_seconds": 5.6911000000000004e-05,
+      "cumulative_seconds": 0.0005715280000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 692,
+      "function": "_statevector_layout",
+      "calls": 1600,
+      "self_seconds": 0.000389608,
+      "cumulative_seconds": 0.0005677810000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'encode' of 'str' objects>",
+      "calls": 4800,
+      "self_seconds": 0.0005633470000000001,
+      "cumulative_seconds": 0.0005633470000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 38,
+      "function": "_parameter_rows",
+      "calls": 1200,
+      "self_seconds": 0.000557662,
+      "cumulative_seconds": 0.000557662
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 57,
+      "function": "_is_exact_cz",
+      "calls": 1200,
+      "self_seconds": 0.000245748,
+      "cumulative_seconds": 0.000544636
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 103,
+      "function": "_fuse_controlled_phase_graphs",
+      "calls": 200,
+      "self_seconds": 0.000312414,
+      "cumulative_seconds": 0.000531586
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.isfinite>",
+      "calls": 200,
+      "self_seconds": 0.000530779,
+      "cumulative_seconds": 0.000530779
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 16,
+      "function": "_cpu_controlled_phase_decomposition_fusion_enabled",
+      "calls": 200,
+      "self_seconds": 6.070700000000001e-05,
+      "cumulative_seconds": 0.0005191600000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _operator.index>",
+      "calls": 4000,
+      "self_seconds": 0.0005139830000000001,
+      "cumulative_seconds": 0.0005139830000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'unbind' of 'torch._C.TensorBase' objects>",
+      "calls": 400,
+      "self_seconds": 0.000492088,
+      "cumulative_seconds": 0.000492088
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 184,
+      "function": "native_clifford_matching_compile_enabled",
+      "calls": 200,
+      "self_seconds": 0.00016526,
+      "cumulative_seconds": 0.0004906740000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 100,
+      "function": "<genexpr>",
+      "calls": 1400,
+      "self_seconds": 0.00035328100000000005,
+      "cumulative_seconds": 0.000483788
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'clear' of 'dict' objects>",
+      "calls": 6400,
+      "self_seconds": 0.000469207,
+      "cumulative_seconds": 0.000469207
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 398,
+      "function": "<genexpr>",
+      "calls": 1800,
+      "self_seconds": 0.000254858,
+      "cumulative_seconds": 0.000463253
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 74,
+      "function": "_coefficient_tensor",
+      "calls": 200,
+      "self_seconds": 9.4554e-05,
+      "cumulative_seconds": 0.000454339
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 396,
+      "function": "<genexpr>",
+      "calls": 1600,
+      "self_seconds": 0.000316889,
+      "cumulative_seconds": 0.00043286100000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 38,
+      "function": "_cpu_disjoint_dense_max_wires",
+      "calls": 200,
+      "self_seconds": 0.000104418,
+      "cumulative_seconds": 0.00042937400000000005
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 22,
+      "function": "_cpu_controlled_phase_graph_fusion_enabled",
+      "calls": 200,
+      "self_seconds": 4.9672e-05,
+      "cumulative_seconds": 0.00042350600000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 10,
+      "function": "_preallocated_output_enabled",
+      "calls": 200,
+      "self_seconds": 9.473500000000001e-05,
+      "cumulative_seconds": 0.000421997
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 176,
+      "function": "_swap_sequence_policy",
+      "calls": 200,
+      "self_seconds": 0.000119865,
+      "cumulative_seconds": 0.00041720500000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 120,
+      "function": "<genexpr>",
+      "calls": 1000,
+      "self_seconds": 0.000166078,
+      "cumulative_seconds": 0.00041525300000000003
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.empty>",
+      "calls": 400,
+      "self_seconds": 0.00041483700000000004,
+      "cumulative_seconds": 0.00041483700000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 22,
+      "function": "native_cpu_rotation_available",
+      "calls": 200,
+      "self_seconds": 7.7916e-05,
+      "cumulative_seconds": 0.000412927
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.complex>",
+      "calls": 400,
+      "self_seconds": 0.00041036100000000004,
+      "cumulative_seconds": 0.00041036100000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 37,
+      "function": "_prepare_two_qubit_matrix",
+      "calls": 400,
+      "self_seconds": 0.000269204,
+      "cumulative_seconds": 0.000407447
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 389,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 0.000270103,
+      "cumulative_seconds": 0.000404999
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 70,
+      "function": "_real_parameters",
+      "calls": 800,
+      "self_seconds": 0.00025220200000000004,
+      "cumulative_seconds": 0.00040034900000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 148,
+      "function": "<genexpr>",
+      "calls": 1000,
+      "self_seconds": 0.00015392700000000002,
+      "cumulative_seconds": 0.00039173
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'unsqueeze' of 'torch._C.TensorBase' objects>",
+      "calls": 600,
+      "self_seconds": 0.00038127,
+      "cumulative_seconds": 0.00038127
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 416,
+      "function": "<genexpr>",
+      "calls": 600,
+      "self_seconds": 0.000262973,
+      "cumulative_seconds": 0.00037694100000000005
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 190,
+      "function": "_triton_single_qubit_loop_enabled",
+      "calls": 200,
+      "self_seconds": 3.9461e-05,
+      "cumulative_seconds": 0.000371089
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 26,
+      "function": "_cpu_hadamard_controlled_phase_fusion_enabled",
+      "calls": 200,
+      "self_seconds": 3.9739e-05,
+      "cumulative_seconds": 0.00035908
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.real>",
+      "calls": 400,
+      "self_seconds": 0.000358809,
+      "cumulative_seconds": 0.000358809
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 54,
+      "function": "_cpu_statevector_batch_bounded_initial_state_enabled",
+      "calls": 200,
+      "self_seconds": 5.1790000000000004e-05,
+      "cumulative_seconds": 0.000355495
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 64,
+      "function": "_cpu_statevector_owned_zero_state_enabled",
+      "calls": 200,
+      "self_seconds": 4.5640000000000003e-05,
+      "cumulative_seconds": 0.000347801
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 260,
+      "function": "_cpu_disjoint_single_wire_fusion_enabled",
+      "calls": 200,
+      "self_seconds": 3.4665e-05,
+      "cumulative_seconds": 0.000344495
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.next>",
+      "calls": 600,
+      "self_seconds": 0.000131852,
+      "cumulative_seconds": 0.000336738
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 60,
+      "function": "<genexpr>",
+      "calls": 3600,
+      "self_seconds": 0.000333537,
+      "cumulative_seconds": 0.000333537
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 68,
+      "function": "_cpu_product_state_execution_enabled",
+      "calls": 200,
+      "self_seconds": 3.9974e-05,
+      "cumulative_seconds": 0.000331085
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 254,
+      "function": "_cpu_cross_wire_diagonal_fusion_enabled",
+      "calls": 200,
+      "self_seconds": 3.5771e-05,
+      "cumulative_seconds": 0.00033058800000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 173,
+      "function": "channel",
+      "calls": 4800,
+      "self_seconds": 0.000329356,
+      "cumulative_seconds": 0.000329356
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'sum' of 'torch._C.TensorBase' objects>",
+      "calls": 200,
+      "self_seconds": 0.000329051,
+      "cumulative_seconds": 0.000329051
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 86,
+      "function": "_cpu_product_state_clifford_matching_enabled",
+      "calls": 200,
+      "self_seconds": 4.7389e-05,
+      "cumulative_seconds": 0.00032741700000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 74,
+      "function": "_cpu_product_state_swap_remapping_enabled",
+      "calls": 200,
+      "self_seconds": 4.2175e-05,
+      "cumulative_seconds": 0.000326954
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 235,
+      "function": "_cpu_single_wire_elementwise_enabled",
+      "calls": 200,
+      "self_seconds": 3.4009e-05,
+      "cumulative_seconds": 0.00032670700000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 30,
+      "function": "_cpu_adaptive_dense_fusion_width_enabled",
+      "calls": 200,
+      "self_seconds": 3.6088000000000004e-05,
+      "cumulative_seconds": 0.000324956
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.as_tensor>",
+      "calls": 200,
+      "self_seconds": 0.00031871700000000005,
+      "cumulative_seconds": 0.00031871700000000005
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 141,
+      "function": "native_fused_rotation_layer_compile_enabled",
+      "calls": 200,
+      "self_seconds": 7.681800000000001e-05,
+      "cumulative_seconds": 0.000314249
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 34,
+      "function": "_cpu_cz_graph_fusion_enabled",
+      "calls": 200,
+      "self_seconds": 3.6797e-05,
+      "cumulative_seconds": 0.000313506
+    },
+    {
+      "file": "<string>",
+      "line": 2,
+      "function": "__init__",
+      "calls": 200,
+      "self_seconds": 0.00022820400000000003,
+      "cumulative_seconds": 0.000313255
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 13,
+      "function": "_enabled",
+      "calls": 200,
+      "self_seconds": 7.523500000000001e-05,
+      "cumulative_seconds": 0.00030833900000000003
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 342,
+      "function": "n_qubits",
+      "calls": 4800,
+      "self_seconds": 0.000297474,
+      "cumulative_seconds": 0.000297474
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 26,
+      "function": "_cpu_swap_sequence_fusion_enabled",
+      "calls": 200,
+      "self_seconds": 7.637e-05,
+      "cumulative_seconds": 0.00029734
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 633,
+      "function": "get",
+      "calls": 1200,
+      "self_seconds": 0.000201689,
+      "cumulative_seconds": 0.000283607
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'values' of 'dict' objects>",
+      "calls": 3200,
+      "self_seconds": 0.00028335400000000004,
+      "cumulative_seconds": 0.00028335400000000004
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 36,
+      "function": "<genexpr>",
+      "calls": 1400,
+      "self_seconds": 0.000214114,
+      "cumulative_seconds": 0.000275357
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 149,
+      "function": "<genexpr>",
+      "calls": 400,
+      "self_seconds": 0.00011050500000000001,
+      "cumulative_seconds": 0.000261669
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 141,
+      "function": "__exit__",
+      "calls": 200,
+      "self_seconds": 7.7032e-05,
+      "cumulative_seconds": 0.000256084
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 199,
+      "function": "<genexpr>",
+      "calls": 800,
+      "self_seconds": 0.00018613900000000001,
+      "cumulative_seconds": 0.000255324
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 468,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 0.000217184,
+      "cumulative_seconds": 0.000253893
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'update' of 'dict' objects>",
+      "calls": 1800,
+      "self_seconds": 0.00024338400000000003,
+      "cumulative_seconds": 0.00024338400000000003
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 645,
+      "function": "parent",
+      "calls": 600,
+      "self_seconds": 0.000146054,
+      "cumulative_seconds": 0.000237327
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 63,
+      "function": "<genexpr>",
+      "calls": 3600,
+      "self_seconds": 0.00023293100000000002,
+      "cumulative_seconds": 0.00023293100000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.bmm>",
+      "calls": 200,
+      "self_seconds": 0.000232412,
+      "cumulative_seconds": 0.000232412
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._get_dispatch_mode>",
+      "calls": 1200,
+      "self_seconds": 0.000227652,
+      "cumulative_seconds": 0.000227652
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 137,
+      "function": "<genexpr>",
+      "calls": 1400,
+      "self_seconds": 0.000183035,
+      "cumulative_seconds": 0.000227141
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 211,
+      "function": "_cpu_statevector_batch_chunk_size",
+      "calls": 200,
+      "self_seconds": 0.00018619100000000002,
+      "cumulative_seconds": 0.000224961
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 377,
+      "function": "<genexpr>",
+      "calls": 1400,
+      "self_seconds": 0.000175183,
+      "cumulative_seconds": 0.00022269300000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.conj>",
+      "calls": 200,
+      "self_seconds": 0.000217456,
+      "cumulative_seconds": 0.000217456
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 2187,
+      "function": "cast",
+      "calls": 3400,
+      "self_seconds": 0.00021484000000000002,
+      "cumulative_seconds": 0.00021484000000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.zeros_like>",
+      "calls": 400,
+      "self_seconds": 0.000209378,
+      "cumulative_seconds": 0.000209378
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 50,
+      "function": "_count_argument",
+      "calls": 400,
+      "self_seconds": 0.000152365,
+      "cumulative_seconds": 0.00020878500000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 141,
+      "function": "<genexpr>",
+      "calls": 1400,
+      "self_seconds": 0.00014385300000000002,
+      "cumulative_seconds": 0.00020519100000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 83,
+      "function": "runtime_config",
+      "calls": 400,
+      "self_seconds": 0.000107027,
+      "cumulative_seconds": 0.00020488600000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.hasattr>",
+      "calls": 1800,
+      "self_seconds": 0.00020082200000000002,
+      "cumulative_seconds": 0.00020082200000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 132,
+      "function": "__enter__",
+      "calls": 200,
+      "self_seconds": 6.036700000000001e-05,
+      "cumulative_seconds": 0.00019883000000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 299,
+      "function": "helper",
+      "calls": 200,
+      "self_seconds": 7.753500000000001e-05,
+      "cumulative_seconds": 0.000195238
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 393,
+      "function": "_fused_step_matrix",
+      "calls": 400,
+      "self_seconds": 0.00011411300000000001,
+      "cumulative_seconds": 0.00019376900000000002
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 1349,
+      "function": "_find_and_load",
+      "calls": 200,
+      "self_seconds": 0.000105588,
+      "cumulative_seconds": 0.000193589
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 165,
+      "function": "<genexpr>",
+      "calls": 600,
+      "self_seconds": 0.000126537,
+      "cumulative_seconds": 0.00019338700000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 182,
+      "function": "<genexpr>",
+      "calls": 1400,
+      "self_seconds": 0.000146357,
+      "cumulative_seconds": 0.00018990400000000002
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 1231,
+      "function": "_resolve_name",
+      "calls": 200,
+      "self_seconds": 0.00012134000000000001,
+      "cumulative_seconds": 0.000185694
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 157,
+      "function": "<genexpr>",
+      "calls": 1400,
+      "self_seconds": 0.000128259,
+      "cumulative_seconds": 0.00018004700000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 48,
+      "function": "<genexpr>",
+      "calls": 1000,
+      "self_seconds": 0.00013816000000000002,
+      "cumulative_seconds": 0.000176083
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'get' of '_contextvars.ContextVar' objects>",
+      "calls": 1400,
+      "self_seconds": 0.000172911,
+      "cumulative_seconds": 0.000172911
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 75,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 9.0356e-05,
+      "cumulative_seconds": 0.00017175300000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 62,
+      "function": "_parameter_complex_dtype",
+      "calls": 600,
+      "self_seconds": 0.000171093,
+      "cumulative_seconds": 0.000171093
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 101,
+      "function": "<genexpr>",
+      "calls": 1000,
+      "self_seconds": 0.000114956,
+      "cumulative_seconds": 0.00017095600000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 169,
+      "function": "_native_zero_state_prefix_length",
+      "calls": 200,
+      "self_seconds": 0.000154959,
+      "cumulative_seconds": 0.00016471400000000002
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch.ones_like>",
+      "calls": 200,
+      "self_seconds": 0.000162418,
+      "cumulative_seconds": 0.000162418
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 526,
+      "function": "_region_wires",
+      "calls": 800,
+      "self_seconds": 0.000114066,
+      "cumulative_seconds": 0.00015356000000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 407,
+      "function": "<genexpr>",
+      "calls": 1600,
+      "self_seconds": 0.000146114,
+      "cumulative_seconds": 0.000146114
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 27,
+      "function": "infer_n_qubits_from_dense_state",
+      "calls": 200,
+      "self_seconds": 0.000122712,
+      "cumulative_seconds": 0.000145165
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'setdefault' of 'dict' objects>",
+      "calls": 1200,
+      "self_seconds": 0.000138744,
+      "cumulative_seconds": 0.000138744
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.callable>",
+      "calls": 2000,
+      "self_seconds": 0.000138371,
+      "cumulative_seconds": 0.000138371
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 57,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 8.465600000000001e-05,
+      "cumulative_seconds": 0.000132674
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 304,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 0.000128481,
+      "cumulative_seconds": 0.000128481
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 155,
+      "function": "<genexpr>",
+      "calls": 1000,
+      "self_seconds": 9.524400000000001e-05,
+      "cumulative_seconds": 0.00012785500000000002
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 824,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 0.000124468,
+      "cumulative_seconds": 0.000124468
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 2013,
+      "function": "is_tensor_like",
+      "calls": 800,
+      "self_seconds": 0.000123382,
+      "cumulative_seconds": 0.000123382
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 125,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 7.658400000000001e-05,
+      "cumulative_seconds": 0.000121843
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 70,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 7.1443e-05,
+      "cumulative_seconds": 0.00012179000000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 104,
+      "function": "__init__",
+      "calls": 200,
+      "self_seconds": 9.0995e-05,
+      "cumulative_seconds": 0.00011770300000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 164,
+      "function": "<genexpr>",
+      "calls": 1000,
+      "self_seconds": 8.681900000000001e-05,
+      "cumulative_seconds": 0.00011751400000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 86,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 7.156e-05,
+      "cumulative_seconds": 0.00011601700000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'element_size' of 'torch._C.TensorBase' objects>",
+      "calls": 600,
+      "self_seconds": 0.000109714,
+      "cumulative_seconds": 0.000109714
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'is_complex' of 'torch._C.TensorBase' objects>",
+      "calls": 800,
+      "self_seconds": 0.000109282,
+      "cumulative_seconds": 0.000109282
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 89,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 6.6024e-05,
+      "cumulative_seconds": 0.000108252
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 131,
+      "function": "<genexpr>",
+      "calls": 400,
+      "self_seconds": 8.743600000000001e-05,
+      "cumulative_seconds": 0.00010788900000000001
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'update' of 'set' objects>",
+      "calls": 800,
+      "self_seconds": 0.00010779600000000001,
+      "cumulative_seconds": 0.00010779600000000001
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 65,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 6.1475e-05,
+      "cumulative_seconds": 9.705300000000001e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._remove_obj_from_tls>",
+      "calls": 200,
+      "self_seconds": 9.6212e-05,
+      "cumulative_seconds": 9.6212e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 461,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 9.5029e-05,
+      "cumulative_seconds": 9.5029e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 470,
+      "function": "<genexpr>",
+      "calls": 800,
+      "self_seconds": 9.4468e-05,
+      "cumulative_seconds": 9.4468e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'isdisjoint' of 'set' objects>",
+      "calls": 800,
+      "self_seconds": 9.2552e-05,
+      "cumulative_seconds": 9.2552e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'rpartition' of 'str' objects>",
+      "calls": 600,
+      "self_seconds": 9.1273e-05,
+      "cumulative_seconds": 9.1273e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 113,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 5.8206000000000005e-05,
+      "cumulative_seconds": 8.9845e-05
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 1285,
+      "function": "_sanity_check",
+      "calls": 200,
+      "self_seconds": 6.7329e-05,
+      "cumulative_seconds": 8.7874e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'is_contiguous' of 'torch._C.TensorBase' objects>",
+      "calls": 600,
+      "self_seconds": 8.780800000000001e-05,
+      "cumulative_seconds": 8.780800000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 536,
+      "function": "<genexpr>",
+      "calls": 400,
+      "self_seconds": 5.9631000000000006e-05,
+      "cumulative_seconds": 8.6425e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 27,
+      "function": "__post_init__",
+      "calls": 200,
+      "self_seconds": 8.505100000000001e-05,
+      "cumulative_seconds": 8.505100000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 462,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 8.488300000000001e-05,
+      "cumulative_seconds": 8.488300000000001e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'zero_' of 'torch._C.TensorBase' objects>",
+      "calls": 200,
+      "self_seconds": 8.479700000000001e-05,
+      "cumulative_seconds": 8.479700000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 393,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 8.3478e-05,
+      "cumulative_seconds": 8.3478e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 413,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 8.304200000000001e-05,
+      "cumulative_seconds": 8.304200000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 102,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 8.192900000000001e-05,
+      "cumulative_seconds": 8.192900000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 131,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 5.2736000000000005e-05,
+      "cumulative_seconds": 8.0833e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 1296,
+      "function": "_is_dataclass_instance",
+      "calls": 200,
+      "self_seconds": 5.2506e-05,
+      "cumulative_seconds": 8.067600000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 177,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 5.0145e-05,
+      "cumulative_seconds": 7.925e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 787,
+      "function": "mode_stack_state_for_pre_dispatch",
+      "calls": 1200,
+      "self_seconds": 7.6489e-05,
+      "cumulative_seconds": 7.6489e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 136,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 4.6475000000000005e-05,
+      "cumulative_seconds": 7.499500000000001e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._stash_obj_in_tls>",
+      "calls": 200,
+      "self_seconds": 7.4621e-05,
+      "cumulative_seconds": 7.4621e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 537,
+      "function": "<genexpr>",
+      "calls": 400,
+      "self_seconds": 4.9257000000000006e-05,
+      "cumulative_seconds": 7.110000000000001e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.id>",
+      "calls": 800,
+      "self_seconds": 6.9671e-05,
+      "cumulative_seconds": 6.9671e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 409,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 6.917200000000001e-05,
+      "cumulative_seconds": 6.917200000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 183,
+      "function": "_cpu_statevector_batch_chunk_size_for",
+      "calls": 600,
+      "self_seconds": 6.684800000000001e-05,
+      "cumulative_seconds": 6.684800000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 72,
+      "function": "get_runtime_config",
+      "calls": 200,
+      "self_seconds": 3.8851000000000005e-05,
+      "cumulative_seconds": 6.4763e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 420,
+      "function": "<genexpr>",
+      "calls": 1200,
+      "self_seconds": 6.4762e-05,
+      "cumulative_seconds": 6.4762e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'numel' of 'torch._C.TensorBase' objects>",
+      "calls": 400,
+      "self_seconds": 6.307800000000001e-05,
+      "cumulative_seconds": 6.307800000000001e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'clear' of 'set' objects>",
+      "calls": 600,
+      "self_seconds": 5.5931000000000004e-05,
+      "cumulative_seconds": 5.5931000000000004e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 152,
+      "function": "<genexpr>",
+      "calls": 600,
+      "self_seconds": 5.5631e-05,
+      "cumulative_seconds": 5.5631e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'reset' of '_contextvars.ContextVar' objects>",
+      "calls": 200,
+      "self_seconds": 5.3646e-05,
+      "cumulative_seconds": 5.3646e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'startswith' of 'str' objects>",
+      "calls": 200,
+      "self_seconds": 5.2715000000000006e-05,
+      "cumulative_seconds": 5.2715000000000006e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.min>",
+      "calls": 200,
+      "self_seconds": 5.0377e-05,
+      "cumulative_seconds": 5.0377e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 419,
+      "function": "apply_native_fixed_one_qubit_layer",
+      "calls": 400,
+      "self_seconds": 4.7884000000000004e-05,
+      "cumulative_seconds": 4.7884000000000004e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 1776,
+      "function": "getEffectiveLevel",
+      "calls": 200,
+      "self_seconds": 4.7720000000000004e-05,
+      "cumulative_seconds": 4.7720000000000004e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'rsplit' of 'str' objects>",
+      "calls": 200,
+      "self_seconds": 4.5390000000000004e-05,
+      "cumulative_seconds": 4.5390000000000004e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'clear' of 'list' objects>",
+      "calls": 600,
+      "self_seconds": 4.4996e-05,
+      "cumulative_seconds": 4.4996e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'set' of '_contextvars.ContextVar' objects>",
+      "calls": 200,
+      "self_seconds": 4.4213000000000005e-05,
+      "cumulative_seconds": 4.4213000000000005e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method torch._C._has_torch_function>",
+      "calls": 200,
+      "self_seconds": 4.3662e-05,
+      "cumulative_seconds": 4.3662e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'items' of 'dict' objects>",
+      "calls": 400,
+      "self_seconds": 4.3218000000000005e-05,
+      "cumulative_seconds": 4.3218000000000005e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.abs>",
+      "calls": 400,
+      "self_seconds": 4.0509e-05,
+      "cumulative_seconds": 4.0509e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 368,
+      "function": "bsz",
+      "calls": 600,
+      "self_seconds": 4.0415000000000005e-05,
+      "cumulative_seconds": 4.0415000000000005e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'removeprefix' of 'str' objects>",
+      "calls": 200,
+      "self_seconds": 3.8117e-05,
+      "cumulative_seconds": 3.8117e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 245,
+      "function": "_tensor_or_tensors_to_tuple",
+      "calls": 200,
+      "self_seconds": 3.4798e-05,
+      "cumulative_seconds": 3.4798e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _contextvars.copy_context>",
+      "calls": 200,
+      "self_seconds": 3.0457000000000003e-05,
+      "cumulative_seconds": 3.0457000000000003e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 156,
+      "function": "_load_extension",
+      "calls": 200,
+      "self_seconds": 2.6672e-05,
+      "cumulative_seconds": 2.6672e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'bit_length' of 'int' objects>",
+      "calls": 200,
+      "self_seconds": 2.2453e-05,
+      "cumulative_seconds": 2.2453e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.iter>",
+      "calls": 200,
+      "self_seconds": 2.2383000000000002e-05,
+      "cumulative_seconds": 2.2383000000000002e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 97,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.5844e-05,
+      "cumulative_seconds": 1.5844e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 111,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.4668000000000001e-05,
+      "cumulative_seconds": 1.4668000000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 108,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.4209e-05,
+      "cumulative_seconds": 1.4209e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 110,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.3767e-05,
+      "cumulative_seconds": 1.3767e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 130,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.3252000000000001e-05,
+      "cumulative_seconds": 1.3252000000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 171,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.3214000000000001e-05,
+      "cumulative_seconds": 1.3214000000000001e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 172,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.3212000000000002e-05,
+      "cumulative_seconds": 1.3212000000000002e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 112,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.3124e-05,
+      "cumulative_seconds": 1.3124e-05
+    },
+    {
+      "file": "<redacted-path>",
+      "line": 173,
+      "function": "<genexpr>",
+      "calls": 200,
+      "self_seconds": 1.2577e-05,
+      "cumulative_seconds": 1.2577e-05
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+      "calls": 1,
+      "self_seconds": 9.292e-06,
+      "cumulative_seconds": 9.292e-06
+    }
+  ],
+  "note": "cProfile overhead included; localization only, not a timing ranking"
+}

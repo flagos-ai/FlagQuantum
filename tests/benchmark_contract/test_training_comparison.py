@@ -6,13 +6,19 @@ import importlib.util
 from collections.abc import Iterator
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 
-from benchmarks.training_comparison import check_parity, ground_energy, train_case
-from benchmarks.training_engines import Engine, build_expectation
-from benchmarks.training_workloads import (
+np = pytest.importorskip("numpy")
+
+# Producers import the optional numerical oracle, so guard it before these imports.
+from benchmarks.training_comparison import (  # noqa: E402
+    check_parity,
+    ground_energy,
+    train_case,
+)
+from benchmarks.training_engines import Engine, build_expectation  # noqa: E402
+from benchmarks.training_workloads import (  # noqa: E402
     Task,
     dataset,
     dense_value,

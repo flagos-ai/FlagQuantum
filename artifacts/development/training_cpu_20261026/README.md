@@ -11,7 +11,9 @@ The immutable producing commit is
 `a6c634e9317d7f08cfa4053c6fbd712dabfdd99f`, with a clean working tree for
 every case. `freeze.json` binds the initial parameter vectors, data hash,
 source hashes, protocol and package versions. Each case retains its raw JSON
-and process log. Measurements used macOS arm64 CPU, one configured thread,
+and process log. Published JSON copies redact infrastructure identity using
+the repository sanitizer; `publication.json` records original and published
+file hashes. Local originals remain unchanged. Measurements used macOS arm64 CPU, one configured thread,
 complex128 amplitudes and float64 parameters.
 
 All 33 cases completed: three paired seeds, five quantum backend/derivative

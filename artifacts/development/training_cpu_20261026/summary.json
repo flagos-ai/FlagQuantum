@@ -167,7 +167,7 @@
       "status": "completed"
     }
   ],
-  "hostname": "baaideMacBook-Pro-8.local",
+  "hostname": "redacted",
   "platform": "macOS-27.0-arm64-arm-64bit",
   "python": "3.12.14",
   "runner": "training_comparison",
