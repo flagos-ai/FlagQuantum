@@ -6,8 +6,8 @@ It changes no API, schema, capability declaration, maturity level or approval.
 An accepted reference scenario is not certification of a hardware technology or
 of all M3/M4 exit gates. The original inventory inspected main
 `4be2375eff47c112ce8d8e24f8206ed5592130d8`. This update inspects main
-`2cde712535badbe1ef8e2a0e56dcde74911d4e7d` on 2026-10-25, including the
-approved proposals 089 and 091 implementations. Historical design reviews and contract
+`f8e69c6c9153e4c5570a486c5673b27c72ae5dcd` on 2026-10-26, including
+approved 089/091 implementations and the accepted 092 Core/Simulation stages. Historical design reviews and contract
 approval records remain historical.
 
 ## Executable evidence by user scenario
@@ -16,7 +16,7 @@ approval records remain historical.
 | --- | --- | --- | --- |
 | Circuit training and deployment packaging | `train_parameterized_circuit_then_deploy` | [Golden path](../../tests/integration/test_train_then_deploy_golden_path.py), [metrics/RNG regressions](../../tests/unit/test_train_deploy_error_metrics.py); [#771](https://github.com/flagos-ai/FlagQuantum/pull/771) separates variational error from finite-shot error and retains small exported angles. | The in-memory provider is local contract execution, not evidence of a submitted cloud job or a QPU measurement. |
 | Driven three-level superconducting model | `driven_three_level` | [Full density, all eight control derivatives, pulse order and refinement](../../tests/integration/test_driven_three_level.py); [#787](https://github.com/flagos-ai/FlagQuantum/pull/787). | Closed rotating-frame three-level model; no calibrated device, pulse emission, dissipation, gate-fidelity or higher-level truncation certification. |
-| Moving neutral-atom pair | `train_rydberg_controls --steps 40 --intervals 128 --shots 4096`; `visualize_rydberg_transport` | [Native source/dynamics](../../tests/unit/test_native_rydberg_dynamics.py), [training, loss, explicit observed flags and conditioning](../../tests/integration/test_rydberg_control_training.py), [commanded-path view](../../tests/integration/test_rydberg_transport_visualization.py); [#707](https://github.com/flagos-ai/FlagQuantum/pull/707)/[#714](https://github.com/flagos-ai/FlagQuantum/pull/714)/[#715](https://github.com/flagos-ai/FlagQuantum/pull/715)/[#738](https://github.com/flagos-ai/FlagQuantum/pull/738). | One/two-actor imposed paths and declared Markov loss; no native intermediate instrument, inferred trap activity, motional heating, species calibration or hardware execution. |
+| Moving neutral-atom pair | `train_rydberg_controls --steps 40 --intervals 128 --shots 4096`; `visualize_rydberg_transport` | [Native source/dynamics](../../tests/unit/test_native_rydberg_dynamics.py), [training, loss, explicit observed flags and conditioning](../../tests/integration/test_rydberg_control_training.py), [commanded-path view](../../tests/integration/test_rydberg_transport_visualization.py); [#707](https://github.com/flagos-ai/FlagQuantum/pull/707)/[#714](https://github.com/flagos-ai/FlagQuantum/pull/714)/[#715](https://github.com/flagos-ai/FlagQuantum/pull/715)/[#738](https://github.com/flagos-ai/FlagQuantum/pull/738). | One/two-actor imposed paths and declared Markov loss; Runtime intermediate-instrument acceptance pending, no inferred trap activity, motional heating, species calibration or hardware execution. |
 | Spin coupled to a motional mode | `spin_mode_convergence` | [Complex Rabi blocks, total excitation, finite-mode dark top, analytic gradient and replay](../../tests/integration/test_spin_mode_convergence.py); [#782](https://github.com/flagos-ai/FlagQuantum/pull/782). | Resonant lossless rotating-wave model and explicit finite thermal conditioning; no ion-trap pulse frontend, heating or hardware calibration. |
 | Two-mode photonic interference | `boson_interference` | [Closed attenuation/HOM density, cutoff embedding, unconditional QND counts and back-action](../../tests/integration/test_boson_interference.py); [#741](https://github.com/flagos-ai/FlagQuantum/pull/741). | Finite Fock reference; no Gaussian backend, optical-program frontend, destructive detector or photonic hardware submission. |
 | Small anyon braiding and fusion | `ising_braid_execution`; `ising_fusion_measurement` | [Unchanged physical contract consumers](../../tests/unit/test_ising_braid_contract.py), [native execution/replay](../../tests/integration/test_ising_braid_execution.py), [fusion coherence and QND workflow](../../tests/integration/test_ising_fusion_measurement.py); [#769](https://github.com/flagos-ai/FlagQuantum/pull/769)/[#778](https://github.com/flagos-ai/FlagQuantum/pull/778); [unread continuation/replay](../../tests/unit/test_ising_unread_contract.py), [native 1.2 admission](../../tests/unit/test_ising_unread_runtime.py), [old-byte compatibility](../../tests/unit/test_ising_unread_compatibility.py); [#809](https://github.com/flagos-ai/FlagQuantum/pull/809); [sampled conditional consumers](../../tests/unit/test_ising_sampled_contract.py), [native 1.3 admission/refusals](../../tests/unit/test_ising_sampled_runtime.py), [saved trajectory workflow](../../tests/integration/test_ising_sampled_execution.py); [#838](https://github.com/flagos-ai/FlagQuantum/pull/838). | Exactly four sigma anyons, total vacuum and fixed gauge; CPU ideal braids with zero/one unread channel or one explicitly seeded sampled first-pair QND observation. No multi-shot native batch, feedback, other sectors, continuous gradients, universal braid set or Majorana-device claim. |
@@ -234,61 +234,42 @@ python -m pytest -q \
   tests/integration/test_ising_sampled_execution.py
 ```
 
-## Next bounded review: intermediate atom-presence observation
+## Approved intermediate atom-presence delivery
 
-The fixed-sector Ising sampled continuation is now delivered; it does not close
-the moving neutral-atom scenario's intermediate detector requirement. The next
-contract review should connect one declared observation boundary on an existing
-native Rydberg schedule to the existing presence instrument and subsequent
-evolution. This is a review target, not an approved API or implementation. The concrete
-[proposal 092](API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md) now
-proposes one seeded trajectory through the existing dynamics plan and root
-result authority; it remains unapproved and unimplemented.
+The user approved all five decisions in
+[proposal 092](API_CHANGE_PROPOSAL_092_RYDBERG_PRESENCE_TRAJECTORY.md).
+The replaceable baseline [#854](https://github.com/flagos-ai/FlagQuantum/pull/854)
+preserved independent complex-density consumers and original source/plan captures.
+Core [#869](https://github.com/flagos-ai/FlagQuantum/pull/869) added one named
+`measure_presence(atom, at=..., efficiency=...)` operation and strict source 1.4.
+Simulation [#875](https://github.com/flagos-ai/FlagQuantum/pull/875) added private
+prefix and selected-branch continuation through existing numerical authorities.
+It merged as `f8e69c6c9153e4c5570a486c5673b27c72ae5dcd` after its latest
+complete CI `40209946126` and GPU `40209946116` succeeded; Main smoke
+`40251813632` then succeeded. That last workflow is only a smoke check.
 
-First inspect the current native ProgramRecord, interval binding, Liouvillian,
-integrators, terminal presence instrument and canonical result authorities.
-Qubit dynamic execution already has intermediate measurement, classical state,
-feedback traces and result projection under
-[Runtime dynamic execution](../../flagquantum/runtime/dynamic/execution.py) and
-[its result](../../flagquantum/runtime/dynamic/result.py). Reuse their established
-ownership without treating fusion coordinates or atom labels as qubits. The
-next proposal must explain why existing representations suffice or which exact
-protected extension is needed; this inventory introduces none.
+The [Runtime implementation draft #879](https://github.com/flagos-ai/FlagQuantum/pull/879)
+joins source 1.4 to sealed LindbladPlan 1.8, explicit shots=1/seed, environment
+1.1 and existing canonical results through `fq.run(plan)`. Its full local and
+remote acceptance is pending. It is not yet an accepted main capability and
+requires its own independent human merge grant. See
+[the staged delivery record and executed example](../api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md).
 
-The existing [native model](../../flagquantum/simulation/rydberg_model.py)
-assembles interval matrices from the full physical schedule: its output grid
-starts at zero and includes every declared control boundary. A continuation
-cannot simply restart that native schedule at a shifted time or interpret
-source append order as physical time. The review must preserve the full
-schedule/bindings and define the observation boundary before reusing the
-existing numerical prefix and suffix. The current terminal sampler supplies
-outcome indices; it does not supply conditional continuation by itself.
+The numerical seams retain the complete native schedule, original absolute
+time grid and all interval bindings. The selected branch is normalized by its
+original positive trace, with zero-probability refusal. Earlier rows are forward
+states and the observation boundary is post-observation. Detector no-flag includes
+undetected loss; it does not establish physical survival or trap activity.
+Independent Kraus algebra, full complex densities, weighted unread equivalence,
+roster identity, changing bindings, convergence, old bytes and private RNG
+invariance remain separate acceptance witnesses. Runtime replacement changes
+only the four factories and deletes the disposable reference; independent
+physical consumers are preserved.
 
-A minimal reviewable slice must settle:
-
-1. One boundary between declared evolution intervals, with preserved atom/trap
-   identity and ordered detector labels. Distinguish physical survival from an
-   observed no-flag outcome, including inefficient detection.
-2. Whether the first delivery is an exact unread instrument or one conditional
-   trajectory. Define Kraus maps, original branch traces, normalization and
-   zero-weight refusal before choosing a public surface. The weighted branches
-   must recover the same unread continuation.
-3. Source/plan compatibility, captured instrument values, explicit seed policy
-   if sampling is admitted, canonical result projection and strict unsupported
-   profile refusals. Old source/plan bytes must remain unchanged.
-4. An independent two-stage density reference using existing integration and
-   loss models, followed by replaceable consumers before domain implementation.
-   Keep integration, detector statistics and selection-denominator error budgets
-   separate; do not infer detected erasure from undetected loss.
-
-Do not add a parallel IR, controller, event registry, solver or result type.
+No parallel IR, controller, event registry, solver or result class is introduced.
 Multi-event trajectories, conditional feedback, detector latency, erasure
 routing/decoding, motional heating, Remote/hardware execution and gradients
-through stochastic choices remain separate decisions. Each new protected
-contract needs explicit approval; each PR retains its own merge authorization
-and complete applicable CI/GPU gates.
-
-This inventory records approved 089 and 091 implementations. It does not approve
-the next atom-presence contract, retroactively change proposals 081/083/085, or
-declare M3 complete. Device validation and performance claims still require the
-roadmap's separate M4 evidence.
+through stochastic choices remain separate decisions. This inventory records
+approved staged delivery, does not retroactively change proposals 081/083/085,
+and does not declare M3 complete. Device validation and performance claims still
+require the roadmap's separate M4 evidence.

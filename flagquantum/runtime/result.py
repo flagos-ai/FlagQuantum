@@ -14,6 +14,7 @@ from ..errors import ExecutionError
 from .result_adapters import LiveRuntimeSummary
 
 if TYPE_CHECKING:
+    from ..lindblad import LindbladPlan
     from .execution_plan import ExecutionPlan
     from .executors.mps.production import MPSProductionPlan
 
@@ -54,7 +55,9 @@ class ExecutionResult:
     state: torch.Tensor | None = None
     samples: torch.Tensor | None = None
     measurements: tuple[MeasurementResult, ...] = ()
-    plan: ExecutionPlan | RuntimePlanContract | MPSProductionPlan | None = None
+    plan: (
+        ExecutionPlan | RuntimePlanContract | MPSProductionPlan | LindbladPlan | None
+    ) = None
     # `AccuracyContract` is a frozen dataclass, so one instance shared by every
     # result is equivalent to a module-level constant.
     accuracy: AccuracyContract = AccuracyContract()  # noqa: RUF009

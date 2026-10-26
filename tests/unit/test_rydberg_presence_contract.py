@@ -27,30 +27,28 @@ DTYPE = torch.complex128
 
 @pytest.fixture
 def presence_source() -> Callable[..., Any]:
-    from tests.unit.rydberg_presence_reference import ReferenceSource
+    from flagquantum.core.rydberg import RydbergProgram
 
-    return ReferenceSource
+    return RydbergProgram
 
 
 @pytest.fixture
 def presence_plan() -> Callable[..., Any]:
-    from tests.unit.rydberg_presence_reference import plan
+    from flagquantum.lindblad import plan
 
     return plan
 
 
 @pytest.fixture
 def presence_run() -> Callable[..., ExecutionResult]:
-    from tests.unit.rydberg_presence_reference import run
-
-    return run
+    return fq.run
 
 
 @pytest.fixture
 def presence_read() -> Callable[[str], Any]:
-    from tests.unit.rydberg_presence_reference import read
+    from flagquantum.lindblad import LindbladPlan
 
-    return read
+    return LindbladPlan.from_json
 
 
 def _program(

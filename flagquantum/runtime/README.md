@@ -99,3 +99,14 @@ Run `python -m pytest tests/unit/test_ising_sampled_contract.py tests/unit/test_
 The 216-byte numeric input/probability/sample subtotal is not a process-RSS bound;
 state storage remains 64 bytes. This single fixed-sector CPU path adds no
 multi-trajectory batching, gradient, feedback, other sector or hardware claim.
+
+
+One native Rydberg presence trajectory is planned by `flagquantum.lindblad.plan`
+with explicit `ExecutionOptions(shots=1, seed=...)` and run by `fq.run(plan)`.
+Runtime owns 1.8 options/environment admission, private drawing and canonical
+ExecutionResult/MeasurementResult assembly. Simulation retains numerical work.
+CPU complex128, world-size one, one/two actors and no gradients are supported;
+old Lindblad profiles remain outside root execution. See
+[the approved delivery record](../../docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md)
+for a complete example and axes. Run the presence contract, compatibility and
+runtime unit tests when modifying this path.

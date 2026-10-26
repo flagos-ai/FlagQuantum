@@ -224,7 +224,7 @@ class LindbladPlan:
         if checked.get("schema") != _SCHEMA:
             raise SerializationError("invalid Lindblad plan schema")
         version = checked.get("version")
-        if version == "1.7":
+        if version in ("1.7", "1.8"):
             from ._native_plan import validate_native_plan
 
             validate_native_plan(checked)
@@ -395,7 +395,11 @@ class LindbladPlan:
         return _decode_request(
             request,
             decision,
-            version="1.5" if payload["version"] == "1.7" else str(payload["version"]),
+            version=(
+                "1.5"
+                if payload["version"] in ("1.7", "1.8")
+                else str(payload["version"])
+            ),
         )
 
 

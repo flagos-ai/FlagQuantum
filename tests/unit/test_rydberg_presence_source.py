@@ -37,7 +37,7 @@ def test_presence_source_roundtrip_and_closed_numeric_admission() -> None:
     payload = native_program_to_dict(p.to_ir())
     assert payload["version"] == "1.4"
     assert native_program_to_dict(native_program_from_dict(payload)) == payload
-    with pytest.raises(CapabilityError, match="conditional trajectory"):
+    with pytest.raises(CapabilityError, match="explicit shots=1"):
         fql.plan(p, p.basis_state(("g",)), [0.0, 0.5, 1.0])
 
 

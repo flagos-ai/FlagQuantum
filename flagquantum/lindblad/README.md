@@ -95,7 +95,7 @@ Live bindings preserve autograd; geometry, C6, loss rates and times are fixed.
 Use run for control gradients and adjoint_gradient for the initial-density
 cotangent, including the existing batch axes. Existing option/device refusals apply.
 
-Every native sealed plan uses version 1.7, even a static program. Its seven outer
+Unconditional native sealed plans use version 1.7, even a static program. Its seven outer
 fields are schema, version, request, decision, program, bindings and identity.
 The actual Core source and precision-normalized bindings are sealed alongside the
 existing numerical request/decision. Decode validates source, boundaries, product
@@ -113,3 +113,12 @@ consumers. Core owns geometry and scalar codecs; do not reproduce them here.
 Physical survival, unconditional RR and the detector no-flag effect are distinct
 ordinary matrix outputs. This profile provides no sampled detector records,
 feedback, heating, quantum motion, cloud submission or full M3 acceptance.
+
+
+A source 1.4 `measure_presence` operation instead seals LindbladPlan 1.8 with
+existing ExecutionOptions and execution-environment 1.1, including the exact
+Torch RNG build. Explicit shots=1/seed, CPU complex128 and no gradients are
+required. Execute this sampled profile with `fq.run(plan)`; `fql.run` refuses it.
+The existing native reader validates full source, matrices, grid and bindings;
+Runtime adds sampling and canonical results using Simulation's selected actions.
+See [the delivery example](../../docs/api-changes/FQ-RYDBERG-PRESENCE-TRAJECTORY-20261025.md).
