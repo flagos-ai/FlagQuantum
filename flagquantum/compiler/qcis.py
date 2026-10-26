@@ -166,6 +166,14 @@ def _decompose(
             + _cx(qubits[1], qubits[0])
             + _cx(qubits[0], qubits[1])
         )
+    if name in {"iswap", "iswapdg"}:
+        phase = "s" if name == "iswap" else "sdg"
+        return (
+            _decompose("cz", qubits, {})
+            + _decompose("swap", qubits, {})
+            + _decompose(phase, (qubits[0],), {})
+            + _decompose(phase, (qubits[1],), {})
+        )
     if name == "rzz":
         (theta,) = _param(params, "theta")
         return (

@@ -13,6 +13,8 @@
         "cz",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -54,6 +56,8 @@
         "cz",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -95,6 +99,8 @@
         "cz",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -139,6 +145,8 @@
         "depolarizing",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "phase_flip",
         "rx",
@@ -176,6 +184,8 @@
         "cz",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -212,6 +222,8 @@
         "cz",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -258,6 +270,8 @@
         "cz",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -299,6 +313,8 @@
         "cz",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "phase",
         "rx",
         "rxx",
@@ -832,6 +848,56 @@
         "complex128"
       ],
       "opcode": "swap",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "iswapdg",
+      "aliases": [],
+      "arity": 2,
+      "control": "iswap_ladder",
+      "decomposition": [
+        "s",
+        "swap",
+        "cz"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "iswap",
+      "parameter_frequencies": [],
+      "parameters": [],
+      "power": "repeat_instruction",
+      "qubit_convention": [
+        "control_or_left",
+        "target_or_right"
+      ],
+      "semantic_kind": "unitary"
+    },
+    {
+      "adjoint": "iswap",
+      "aliases": [],
+      "arity": 2,
+      "control": "iswap_ladder",
+      "decomposition": [
+        "sdg",
+        "swap",
+        "cz"
+      ],
+      "differentiable": false,
+      "dtype_policy": [
+        "complex64",
+        "complex128"
+      ],
+      "opcode": "iswapdg",
       "parameter_frequencies": [],
       "parameters": [],
       "power": "repeat_instruction",

@@ -195,6 +195,15 @@ def _calls(instruction: Instruction) -> tuple[_QisCall, ...]:
             _cnot(control, target),
             _one("s__body", target),
         )
+    if opcode in {"iswap", "iswapdg"}:
+        left, right = wires
+        phase_call = "s__body" if opcode == "iswap" else "s__adj"
+        return (
+            _QisCall("cz__body", (left, right)),
+            _QisCall("swap__body", (left, right)),
+            _one(phase_call, left),
+            _one(phase_call, right),
+        )
     if opcode == "cswap":
         first, second, third = wires
         return (

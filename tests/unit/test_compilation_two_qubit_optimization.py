@@ -93,7 +93,7 @@ def test_the_family_list_is_the_whole_declared_two_qubit_group() -> None:
     # A fold measured on a subset of the group cannot claim the group, and the
     # module asserts this at import time; pinning it here says which way it fails.
     assert set(_FAMILIES) == set(TWO_QUBIT_OPCODES)
-    assert len(_FAMILIES) == 11
+    assert len(_FAMILIES) == 13
 
 
 def test_every_closed_form_matches_the_runtime_gate_table() -> None:
@@ -121,7 +121,7 @@ def test_every_closed_form_matches_the_runtime_gate_table() -> None:
 
 
 def test_the_identity_is_the_identity_and_the_fixed_gates_are_not() -> None:
-    for opcode in ("cx", "cy", "cz", "swap"):
+    for opcode in ("cx", "cy", "cz", "swap", "iswap", "iswapdg"):
         mine = _instruction_matrix(_instruction(opcode))
         assert mine is not None
         assert not _same(mine, _IDENTITY), opcode

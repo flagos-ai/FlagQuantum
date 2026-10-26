@@ -106,6 +106,15 @@ def _instruction_lines(instruction: Instruction, *, version: float) -> list[str]
         return [_gate("p" if version == 3.0 else "u1", instruction.wires, parameters)]
     if opcode == "cphase":
         return [_gate("cp" if version == 3.0 else "cu1", instruction.wires, parameters)]
+    if opcode in {"iswap", "iswapdg"}:
+        left, right = instruction.wires
+        phase = "s" if opcode == "iswap" else "sdg"
+        return [
+            _gate("cz", (left, right)),
+            _gate("swap", (left, right)),
+            _gate(phase, (left,)),
+            _gate(phase, (right,)),
+        ]
     if opcode == "sx":
         if version == 3.0:
             return [_gate("sx", instruction.wires)]

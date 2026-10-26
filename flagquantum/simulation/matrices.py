@@ -452,6 +452,8 @@ CX_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
 CY_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
 CZ_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 SWAP_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+ISWAP_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
+ISWAPDG_MATRIX = ISWAP_MATRIX.mH.contiguous()
 CPHASE_MATRIX = _fixed_gate([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 TOFFOLI_MATRIX = torch.eye(8, dtype=torch.complex128)
 TOFFOLI_MATRIX[6:8, 6:8] = _fixed_gate([[0, 1], [1, 0]])
@@ -500,6 +502,8 @@ GATE_MAT_DICT: dict[str, torch.Tensor | Callable[[torch.Tensor], torch.Tensor]] 
     "cy": CY_MATRIX,
     "cz": CZ_MATRIX,
     "swap": SWAP_MATRIX,
+    "iswap": ISWAP_MATRIX,
+    "iswapdg": ISWAPDG_MATRIX,
     # Fixed three-qubit
     "ccx": TOFFOLI_MATRIX,
     "cswap": FREDKIN_MATRIX,

@@ -4,19 +4,20 @@ FlagQuantum separates **logical expressibility** from **end-to-end support**.
 The presence of a builder method alone does not mean that every simulator,
 compiler target, ecosystem adapter, or remote provider can execute that gate.
 
-This page records the built-in operator surface at the API Change 098 proposal
-baseline. Provider inventories and hardware-native gate sets remain device facts;
-they are not inferred from this table.
+This page records the built-in operator surface after API Change 098 Batch A1.
+Provider inventories and hardware-native gate sets remain device facts; they are
+not inferred from this table.
 
 ## Current built-in surface
 
-The operator registry declares 31 canonical unitary gates:
+The operator registry declares 33 canonical unitary gates. Batch A1 added
+`iswap` and `iswapdg`; the table includes them:
 
 | Family | Canonical opcodes |
 | --- | --- |
 | Fixed one-qubit | `i`, `x`, `y`, `z`, `h`, `s`, `sdg`, `t`, `tdg`, `sx`, `sxdg` |
 | Parameterized one-qubit | `rx`, `ry`, `rz`, `phase`, `u1`, `u2`, `u3` |
-| Fixed two-qubit | `cx`, `cy`, `cz`, `swap` |
+| Fixed two-qubit | `cx`, `cy`, `cz`, `swap`, `iswap`, `iswapdg` |
 | Parameterized two-qubit | `crx`, `cry`, `crz`, `cphase`, `rxx`, `ryy`, `rzz` |
 | Fixed three-qubit | `ccx`, `cswap` |
 
@@ -61,16 +62,16 @@ gaps are grouped by ownership rather than added indiscriminately to Core:
 
 | Priority | Gap | Intended treatment |
 | --- | --- | --- |
-| A | `iswap`/`iswapdg`, `ecr`, `ch`, `csx`/`csxdg`, `dcx` | Candidate built-ins only after exact lowering and end-to-end conformance are approved |
+| A | `ecr`, `ch`, `csx`/`csxdg`, `dcx` | Approved Batch A candidates, implemented only through independently reviewable vertical slices |
 | B | General controlled unitary (`cu`) and convenient multi-control spellings | Separate design because global phase, parameter convention, decomposition cost, and ancilla policy are observable |
 | C | `fsim`, phased-X, Mølmer-Sørensen, `gpi`, `gpi2`, and other hardware-native operations | Target/profile or extension ownership first; promote to Core only with two concrete consumers |
 | D | Additional channels already available as noise factories | Promote only when IR materialization and every advertised channel executor agree |
 | E | `barrier`, `delay`, pulse operations, and global phase | Model as directives or program properties, not as ordinary gates |
 
-## Next approved boundary
+## Approved boundary
 
 [API Change 098](../development/API_CHANGE_PROPOSAL_098_GATE_COVERAGE_BATCH_A.md)
-proposes the first additive vertical slice. Until that proposal is approved and
-implemented, the seven Priority A names above are **not** public FlagQuantum
-opcodes and must not be advertised as supported.
+defines four independently reviewable implementation slices. Batch A1 implements
+`iswap` and `iswapdg`; the remaining five Priority A names are not yet public
+FlagQuantum opcodes and must not be advertised as supported.
 

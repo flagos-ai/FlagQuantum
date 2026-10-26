@@ -2,8 +2,8 @@
 
 ## Status
 
-**Initial implementation approval recorded; adjoint-completeness amendment awaits
-approval.**
+**Implementation and adjoint-completeness amendment approved; Batch A1 is
+implemented and under review.**
 
 The API owner approved the original five-name implementation scope with:
 
@@ -15,6 +15,12 @@ Pre-implementation validation then found that three proposed fixed gates cannot
 satisfy FlagQuantum's existing composition contract under that surface alone:
 `iswap` and `csx` are not self-inverse, while the inverse of `dcx(q0, q1)` is
 `dcx(q1, q0)`. The amendment below is therefore required before implementation.
+
+The API owner approved that amendment with:
+
+```text
+approve API-CHANGE-098-GATE-COVERAGE-BATCH-A-ADJOINT-AMENDMENT
+```
 
 This document requests an additive Stable Core API change. It creates no gate,
 changes no runtime behavior, and makes no provider or QPU support claim.

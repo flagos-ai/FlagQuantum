@@ -27,6 +27,8 @@ qiskit_features = [
     "custom_unitary_above_three_qubits",
 ]
 flagquantum_opcodes = [
+    "iswap",
+    "iswapdg",
     "u1",
     "u2",
     "bit_flip",

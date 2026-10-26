@@ -1143,7 +1143,7 @@ def test_the_opcode_census_supports_the_unreachable_adjoint_rows() -> None:
 
     census = _contract()["verification"]["opcode_census"]
     assert len(inverted) + len(channels) == len(OPERATOR_SCHEMAS)
-    assert len(inverted) == 31 and len(channels) == 4, (inverted, channels)
+    assert len(inverted) == 33 and len(channels) == 4, (inverted, channels)
     assert channels == sorted(
         name
         for name, schema in OPERATOR_SCHEMAS.items()
@@ -1174,7 +1174,7 @@ def test_the_power_census_is_the_declared_rule_split() -> None:
     assert closed
     assert repeated
     assert len(closed) + len(repeated) == len(OPERATOR_SCHEMAS)
-    assert len(closed) == 12 and len(repeated) == 23, (closed, repeated)
+    assert len(closed) == 12 and len(repeated) == 25, (closed, repeated)
     # Every rule is one of the two declared names, so a third rule cannot appear without
     # this failing rather than quietly taking a default.
     assert set(rules.values()) <= set(POWER_RULES)
