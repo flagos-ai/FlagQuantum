@@ -206,21 +206,46 @@ not write producer failure markers; a future owned caller must still invalidate
 its own failed transaction. Parent OS I/O remains synchronous and repeated stat
 checks are non-atomic. This API is not wired to final-purpose collection.
 
+The read-only final-collection contract review is now recorded. The existing
+collection request reconstructs Snapshot/Plan/staging bindings, but carries no
+final ancestry authority. Its optional window restoration accepts only the
+prepared-purpose approval and compares that approval's Snapshot/union to the
+transported bytes. The final issuer already keeps the prepared approval SHA as
+separate time evidence. Replacing it with a final Snapshot or relabeling its
+purpose would break that separation.
+
+The existing collection runner also restores/arms its parent and computes a new
+process end. Calling it from a wrapper would not preserve the existing caller
+Budget and original pre-freeze end. The smallest next slice is therefore a
+read-only final-to-collection binding verifier: reuse independent stage-parent and
+consumer acceptance, then compare the original transport Snapshot/Plan/staging
+against that accepted chain. It must not call collection or issue permission.
+The later owned worker must restore the original controls locally once, and its
+parent must use the existing Budget/end with independent failure closure.
+
+The stage aggregate already contains the collector-window footprint once. A
+future invocation adds actual new source/fresh-copy, double bounded-log/request
+and complete/control costs without adding that same footprint twice or crediting
+retained evidence. No numerical future invocation budget is certified before its
+actual source inventory and envelope exist. No production/test code changed in
+this review; final-purpose collection remains disabled.
+
 ### Next bounded work
 
-1. Review the original collection request, prepared-purpose window restoration,
-   stage/Plan binding and retained transport/receive acceptance against the final
-   issuer, consumer and stage-parent completion chain. Use the new independent
-   parent acceptance API; do not create a second byte, loader or scientific gate.
-2. Identify the smallest explicit final-purpose adapter, preserving old defaults,
-   prepared-purpose schemas and original request bytes. Require external approval,
-   issuance/consumer/stage-parent completion hashes and the original window/owned
-   controls. Keep the same existing caller Budget and original end, full aggregate
-   costs/reserves and exact copied-byte/source/ancestor checks. Do not relabel
-   prepared approval or treat self-reported hashes as authority.
-3. Keep final-purpose collection disabled until complete failure, clock-poison,
-   late tampering, full-space and caller/worker acceptance coverage is implemented.
-   Reuse retained tiny candidates and preserve frozen, partial and failed evidence.
+1. Implement only the read-only final-to-collection binding verifier identified
+   by the completed contract review. Reuse independent stage-parent/consumer
+   acceptance and the original collection request/receive binding; compare exact
+   Snapshot, Plan, accepted staging bytes and external final ancestry hashes.
+   Preserve the prepared approval solely as original time evidence.
+2. Use the same existing caller Budget and exact original end, without arm,
+   deadline remapping, capture, copy, write, collection or SSH. Keep one fixed
+   source/copy/ancestor/control/inventory baseline through all checks and full-space
+   reads, then close the last verifier-return interval without rebasing.
+3. Cover all three deadline orderings, external-hash/schema/union/Plan substitution,
+   permanent clock poison and second refusal, late tampering, original inventory
+   preservation and complete-aggregate one-byte shortage. Keep final-purpose
+   collection disabled until its later owned worker, independent parent acceptance
+   and failure closure are implemented. Preserve frozen, partial and failed evidence.
 4. Actual canonical-source/strict-SSH/owned/current-live-UUID authority, complete
    formal phase/failure/collection acceptance and fixed-recipe science storage
    remain independent unmet gates. No actual transfer, formal optimizer/sampling
@@ -492,6 +517,25 @@ published evidence bundle.
   is attributed to space changes. Four actual proofs and the source cache remain
   unchanged; no actual SSH/resource/GPU/container/preflight/transfer/study approval,
   formal sample/update/receipt or manual evidence cleanup occurred.
+- Read-only final-collection contract review, local record
+  `qec-ai-ci-evidence/matched-final-collection-contract-audit.json`, SHA-256
+  `74d3050f629603a64f55fc321b38996819aa4337e6f59cc8532395dd81898885`:
+  bounded no-follow source reads and AST references cover 14 existing modules;
+  all 94 source/test files have identical bytes and stat stamps before/after.
+  No runtime module was imported or invoked, no new tests were added or run, and
+  no stage, worker, copy, capture, transport or scientific operation occurred.
+  This static contract result does not extend the preceding 82-pass runtime claim.
+- PR #927 head `82c3dc5ce87049190846b5c82414f26eb2e434a4` has no complete CI
+  certification. CPU run `40305215938` and GPU run `40305215893` both concluded
+  cancelled: source preparation could not download `actions/upload-artifact@v4`
+  from `codeload.github.com` after three 100-second HTTP timeouts. CPU dependent
+  suites were skipped and five aggregation jobs failed; pre-commit passed. These
+  logs show no test-body failure. Local records
+  `qec-ai-ci-evidence/pr927-initial-head-ci-download-timeout.json` and
+  `qec-ai-ci-evidence/pr927-initial-head-ci-download-timeout-clarification.json`
+  retain logs and the distinction between cancelled workflow conclusions and
+  failed aggregation jobs. No manual rerun, empty commit, CI/gate change or
+  auto-merge was requested. A substantive later documentation head needs its own CI.
 - PR #917 was merged by FlagQuantum at 2026-10-26 09:45:18 UTC, merge
   `062f8e84c86a987f0d17396894c7732d160e9bb2`. Final head
   `ee543505f6bc39ac59456dc9549f3f8f6aaa60d1` completed CPU run `40297851149`
