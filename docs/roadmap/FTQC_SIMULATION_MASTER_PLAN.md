@@ -729,6 +729,28 @@ calls, totaling nineteen calls/eighty-two trajectories with seed 53 and one CPU
 thread restored. Raw float64 Born vectors and complex128 conditional density/norm
 use the specifically approved atol=1e-12, rtol=0. Controlled branches are not
 random observations; no frequency/RNG or general sampling certificate is claimed.
-The implementation PR and its actual-main admission remain pending. R04/R05,
-FTS-10/11 selection/product sampling, FTS-02/09 and R01-R15 remain partial; no
-public API, engine, approximate policy or additional research budget is activated.
+Implementation PR #898 and its actual-main admission are complete, as recorded
+in the FTS-10C entry below. R04/R05, FTS-10/11 selection/product sampling,
+FTS-02/09 and R01-R15 remain partial; no public API, engine, approximate policy
+or additional research budget is activated.
+
+### FTS-10C phase/overlap feasibility decision
+
+I-L PR #898 completed actual-main admission at
+`44fb9c6a6779a746780b5b96fcaaa2cb99ce7f2d`: full CI all 54 jobs, required
+source/single/two GPU, main smoke, real QEC optional installation/evidence,
+fresh isolated 838-member package/core and installed public examples passed.
+Source-focused acceptance passed 118 tests with zero skips, using developer
+Torch 2.13 and an existing SDK overlay; fresh core used Torch 2.14.1 without
+that overlay. This closes only finite I-L correctness under the prior approval.
+
+The next [phase/overlap feasibility proposal](../development/FTQC_PHASE_OVERLAP_FEASIBILITY_PROPOSAL.md)
+reviews the missing compact complex-phase representation and pre-selection
+evidence. Its M-P request is limited to a private Simulation research prototype,
+64 candidate states, 850 complex-overlap queries and ten existing public exact
+executions per module verification, with proposed complex128/float64
+atol=1e-12/rtol=0. It is not approved or implemented; prior A-D/E-H/I-L approval,
+document merge and green CI cannot admit it. No collection, production engine,
+public phase guarantee or method selection follows. FTS-02/09/10/11 and R01-R15
+remain partial. Independent QEC #904 and remote normalization work are reused
+under their own contracts, not claimed as this proposal's implementation.
