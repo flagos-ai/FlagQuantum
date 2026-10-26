@@ -50,7 +50,7 @@ and original incomplete studies below remain historical evidence.
 | First performance tranche: #825, #830, #840, #842, #853, #861, #867 | Bounded compatibility/preparation studies and private sampling, semantic-preparation and lowering improvements; see the [baseline](../development/QEC_COMPATIBILITY_PERFORMANCE_BASELINE.md), [GPU feasibility](../development/QEC_GPU_PARITY_FEASIBILITY.md) and [matched prepared-CPU control](../development/QEC_PREPARED_PARITY_CONTROL.md). | Completed. The original incomplete grids remain incomplete; they do not establish a general GPU benefit, capacity claim or complete distance matrix. |
 | [#872](https://github.com/flagos-ai/FlagQuantum/pull/872) | Prepare CPU parity indices once per live sampler and share one byte conversion per draw; [implementation and bounded evidence](../development/QEC_PREPARED_CPU_PARITY.md). | Merged as `58c98a0cb282cb1857b4614d4fc6299dd8bec440`. Complete head CI `40207427072` and GPU `40207427031` succeeded. Merge Main smoke `40209372637` and development-container publishing `40209372875` succeeded. |
 | [#877](https://github.com/flagos-ai/FlagQuantum/pull/877) | Reuse channel-factory calculations within one program construction, with fresh operator clones at every location; [implementation and bounded evidence](../development/QEC_NOISE_CHANNEL_TEMPLATES.md). | Merged as `329dd0203532a182a740892e4f884efbda41f5d2`. Complete head CI `40251868248` and GPU `40251868262` attempt 2 succeeded. Merge Main smoke `40257459145` succeeded. Container publishing `40257459136` was cancelled: CPU full succeeded, three other matrix jobs were cancelled; publishing is not called successful. |
-| [#885](https://github.com/flagos-ai/FlagQuantum/pull/885) | Remove the repeated sorted-item list while encoding frozen hybrid attributes, preserving canonical JSON bytes and semantic hashes; [Compiler-owned implementation and limits](../development/HYBRID_CANONICAL_ENCODING.md). | Merged as `2f59b4ff6d6ac937e9c9202411cbe188aabe30a7`. Complete head CI `40261269948` (54 successful jobs) and GPU `40261269944` succeeded; all 60 checks succeeded or had their original skips. Merge-specific [Main smoke `40263032238`](https://github.com/flagos-ai/FlagQuantum/actions/runs/40263032238) completed successfully and [container publishing `40263032317`](https://github.com/flagos-ai/FlagQuantum/actions/runs/40263032317) is queued at this update. Post-merge acceptance remains open. |
+| [#885](https://github.com/flagos-ai/FlagQuantum/pull/885) | Remove the repeated sorted-item list while encoding frozen hybrid attributes, preserving canonical JSON bytes and semantic hashes; [Compiler-owned implementation and limits](../development/HYBRID_CANONICAL_ENCODING.md). | Merged as `2f59b4ff6d6ac937e9c9202411cbe188aabe30a7`. Complete head CI `40261269948` (54 successful jobs) and GPU `40261269944` succeeded; all 60 checks succeeded or had their original skips. Merge-specific [Main smoke `40263032238`](https://github.com/flagos-ai/FlagQuantum/actions/runs/40263032238) completed successfully and [container publishing `40263032317`](https://github.com/flagos-ai/FlagQuantum/actions/runs/40263032317) completed successfully. Post-merge acceptance is closed. |
 
 Main smoke is not complete main CI. Local default failures and incomplete runs
 are retained in the linked slice records and are not relabelled as green because
@@ -58,18 +58,77 @@ remote CI succeeded. No old profile, paired study or incomplete grid was rerun
 to update this ledger, and no new timing or memory-capacity result is claimed
 for #885.
 
-The immediate next action is to record the actual #885 container-publishing outcome.
-The next implementation is not selected: audit the remaining dictionary/list,
-JSON-string and UTF-8-byte materialization first, and admit a small Compiler-owned
-change only if canonical bytes, SHA256 and per-stage verification remain exact.
-There is no authorization here for global caches, skipped verification, new
-hardware experiments or additional private raw-data publication.
+The central progress correction merged through [#889](https://github.com/flagos-ai/FlagQuantum/pull/889)
+as `30ce56953ab63340975c1a40d7f2260fa1a76011`. Its complete head CI
+`40269344562` and GPU `40269344489` attempt 2 succeeded; merge-specific Main
+smoke `40271285539` succeeded. This closes the progress correction, not the
+broader functional roadmap. Every later implementation/performance delivery
+must synchronize this ledger and the functional-plan entry point; a progress-only
+correction does not recursively require another progress PR.
+
+The subsequent candidate review selected no further performance implementation.
+Streaming JSON hashing would switch the current C encoder traversal to Python;
+a separate finite typed-value encoding comparison did not meet its frozen
+selection rule. Engine assembly exposed no safely removable duplicate across
+its independent public calls. Preserve canonical bytes, SHA256, positioned
+operator law, RNG scope and every stage's verification. These are closed
+candidate decisions on the retained evidence, not claims that further gains are
+impossible. Do not resample completed studies to search for a favorable result.
+
+The next selected small slice is **conformance of existing nested-repeat
+instruction bounds**, under the already approved bridge contract. It adds no
+accepted grammar, API, numerical policy or dependency. Its delivery is still
+subject to the current-head CI/GPU and normal merge gates.
 
 Broader QEC-FUNCTIONAL-005 full-result batch decoding and Decision C remain
 unapproved. Their state is tracked in the [functional development plan](QEC_FUNCTIONAL_DEVELOPMENT_PLAN.md);
 the three recent private optimizations do not implement those pending contracts
 or complete the long-term roadmap. No overall completion percentage is assigned
 to this evolving scope.
+
+## Remaining compatibility and functional gaps
+
+This inventory separates missing functionality from completed acceptance and
+from owner decisions. A roadmap title alone does not approve an implementation.
+The [functional plan](QEC_FUNCTIONAL_DEVELOPMENT_PLAN.md#progress) retains the
+numbered sequence.
+
+| Area | Actual state | Next permitted action and acceptance |
+| --- | --- | --- |
+| Phase-one native/external compatibility, A-I | Accepted through #822; three approved bridge functions and four actual optional-install profiles are delivered. | Maintain these contracts. Recheck affected paths when their implementation/dependencies change; do not repeat the original install or sampling studies merely to fill a progress row. |
+| Nested bridge expansion limits | Approved behavior exists; explicit nested-product, exact-limit and aggregate-repeat regression coverage is being added. | Test symbolic 2-by-3 and 1000-by-1000 counts; refuse 1001-by-1001 and separate over-budget blocks before SDK analysis/compilation. Inspect each repeat body once; no sampled shots or expanded million-instruction allocation. This is conformance coverage, not a claimed production defect or capacity result. |
+| FUNCTIONAL-001/002/003/004 | Acceptance/proposals, Clifford propagation and correlated Pauli faults delivered in #774/#776/#779/#789. | Preserve their independent mechanism, exclusivity and numerical evidence. No second code registry, Surface class, DEM owner or propagation engine. |
+| Schedule/feedback Groups A-E | The finite approved matrix and mainline acceptance are already delivered in #837. | Do not reimplement it or promote it to generic Surface feedback, general frames or FTQC execution. |
+| FUNCTIONAL-005 | Full-result independent-shot cross-decoder operation is absent and its concrete contract is unapproved. | Owner Decision B below is required before implementation. Complete-record equality, validation/iterator consumption and existing decoder-specific duplicate/refusal behavior are the acceptance targets. |
+| FUNCTIONAL-006 | Logical-only CPU Tensor PyMatching batch decoding is approved and implemented. | Do not mistake it for full correction records. Further full-result optimization depends on 005 and must preserve edges/weights/convergence fields; no current implementation is selected. |
+| FUNCTIONAL-007 | Compiled circuit sampling and fixed-shot example counts/Wilson intervals exist; a general public experiment result/entry does not. | Refine and approve Decision C before a new public experiment API. Preserve source sampling, fixed denominator, tail batches, all logicals and all-or-error failure handling. |
+| FUNCTIONAL-008/009 | Threshold workflow and broader resource/accuracy tranche remain pending their dependencies/contracts. | No threshold fit, adaptive stopping or distance-scaled quality claim follows from the existing small fixed-round examples. |
+| FUNCTIONAL-010/011/012 | Subsystem/Floquet contracts and end-to-end memories remain later candidates. | Review schedule/gauge/logical tracking contracts after dependencies; no new execution implementation is authorized now. |
+| Executed-law precision boundary | Actual Kraus-law semantics and the strict 1e-12 comparison remain authoritative; the recorded nominal-decimal difference is not silently repaired. | A change to shared factory numerics, tolerances or public noise semantics needs a concrete separately approved proposal. No name/metadata substitution. |
+| GPU, hardware and new private evidence publication | Existing bounded results remain scoped; no general advantage or capacity result is certified. | New experiments need the specific device/workload/access/budget authorization. New private payload disclosure needs its own anonymized scope review. Neither is needed for the selected conformance tests. |
+
+### Decisions for the API owner
+
+1. **Decision B / FUNCTIONAL-005:** approve, amend or defer the complete
+   [independent-shot batch contract](../development/QEC_FUNCTIONAL_005_BATCH_CONTRACT.md).
+   Its one new import returns existing complete single-shot records for the five
+   listed concrete decoder types, refuses stateful/unknown plugins, retains
+   per-decoder duplicate semantics and makes no speed claim. Approval of the
+   already shipped Tensor-only PyMatching method does not answer this decision.
+2. **Decision C / FUNCTIONAL-007:** decide whether a general public fixed-shot
+   experiment is the next contract priority after 005. The
+   [current proposal](../development/API_CHANGE_PROPOSAL_087_QEC_SCALABLE_EXPERIMENTS.md#decision-c-fixed-shot-memory-experiment)
+   still requires concrete decoder-option, configuration/result and persistence
+   boundaries before requesting implementation approval. Do not treat a priority
+   choice as approval of unfinished signatures or schemas.
+3. Adaptive stopping/threshold analysis, subsystem/Floquet protocols, hardware
+   studies and changes to noise numerics are **later separate decisions**. They
+   are not prerequisites for the current approved conformance slice; do not
+   bundle them into Decision B or ask for blanket approval.
+
+No owner decision is needed for preserving and testing the already approved
+nested-repeat bound. Finish that independent work while Decisions B/C remain
+separate. No overall completion percentage is assigned to this evolving scope.
 
 ## Expected code structure after compatibility delivery
 
