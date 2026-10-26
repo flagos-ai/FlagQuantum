@@ -127,6 +127,13 @@ only today's protocol must still register and decode unchanged.
 
 ## Decision C: Fixed-shot memory experiment
 
+A [concrete design refinement](QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) is now
+available for review. It proposes a required explicit batch size, default-only
+initial decoder configuration and caller-owned evidence without a persistence
+schema. These refinements and the complete exception/support contract require
+owner approval before implementation. The earlier signature below remains
+historical proposal context, not an implemented or approved API.
+
 Proposed canonical entry point, pending approval:
 
 ```python
@@ -193,7 +200,8 @@ implicitly approved by a roadmap row.
 
 ## Executable current-user baseline
 
-The new signatures above are proposed and are not runnable on current main.
+Decision B is implemented through #904; its contract links its runnable
+five-decoder example. Decision C remains a proposal and is not runnable.
 The following existing example is runnable and remains the compatibility gate:
 
 ```bash
