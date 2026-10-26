@@ -70,26 +70,34 @@ completed with three successful and three skipped jobs. These certify that teste
 revision's software, not a later `main`, private controller code or formal readiness.
 
 Private evidence below is retained **outside this checkout**, in the sibling
-`qec-ai-ci-evidence` directory. These local links are not published repository
-artifacts and will not resolve in a standalone clone or GitHub view. Their hashes
-identify the reviewed records; they do not turn private tests into repository CI.
+`qec-ai-ci-evidence` directory. The paths below are local record identifiers, not
+repository hyperlinks or published artifacts available in a standalone clone.
+Their hashes identify the reviewed records; they do not turn private tests into
+repository CI. The handoff index is a living local record rather than an immutable
+published evidence bundle.
 
-- [Actual two-host preflight](../../../qec-ai-ci-evidence/matched-private-actual-preflight.json):
+- Actual two-host preflight, local record
+  `qec-ai-ci-evidence/matched-private-actual-preflight.json`, SHA-256
+  `d4f7c3149d61c1e3601c44603c1ef814f8a38805b2c96977e61b38e33a943fd8`:
   zero new samples/optimizer updates; environment/layout/model loading only,
   without study CPU/CUDA prediction-parity or scientific-quality certification.
-- [Native consumer integration](../../../qec-ai-ci-evidence/matched-private-native-consumer.json):
+- Native consumer integration, local record
+  `qec-ai-ci-evidence/matched-private-native-consumer.json`, SHA-256
+  `32a107f93acbede9a04dab933e7515fce727d34967d9753adcb8b1b21e038b9e`:
   final new matrix **45 passed in 108.99 s**; separate final regression selection
   **60 passed, 83 deselected in 21.41 s**. Strict mypy checked 81 files; Ruff
   0.16.0 and Black 26.10.1 checks passed. Tiny study data and host/ownership/capacity
   boundaries are synthetic; this is not a full-private-suite or actual-host pass.
-- [Read-only stage contract audit](../../../qec-ai-ci-evidence/matched-final-stage-contract-audit.json),
+- Read-only stage contract audit, local record
+  `qec-ai-ci-evidence/matched-final-stage-contract-audit.json`,
   SHA-256 `5bac2bd7cd95ed9abfbaaceec9493e7269a7645b21644ec790d32c86ee1424b8`:
   records source/function hashes, exact existing bindings, missing Budget routes,
   storage obligations and acceptance requirements. Existing pure planner tests
   were **34 passed, 1 deselected in 0.03 s**; zero new cases, no adapter or production
   changes, and no stage/transfer execution. This is a static audit, not integration
   acceptance.
-- [Retained handoff index](../../../qec-ai-ci-evidence/pr871-matched-primary-handoff.json):
+- Retained handoff index, local record
+  `qec-ai-ci-evidence/pr871-matched-primary-handoff.json`:
   links per-slice evidence, logs, historical failures and immutable source/proof
   records. Test-file collection counts and earlier partial runs are not full-suite
   pass counts. The local source cache has read-only regular files and 115 writable
