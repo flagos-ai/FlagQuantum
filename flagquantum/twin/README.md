@@ -455,6 +455,43 @@ invalid content. The artifact is an offline summary rather than a signed
 provider receipt. FlagQuantum does not publish it or assign application access
 policy.
 
+## Freeze an identifiable probe bank
+
+Use a probe bank to distinguish structural circuit coverage from parameter
+identifiability:
+
+```python
+import flagquantum as fq
+
+probe_circuits = (
+    fq.Circuit(2).cx(0, 1),
+    fq.Circuit(2).h(0).cx(0, 1),
+    fq.Circuit(2).h(1).cx(0, 1),
+)
+bank = fq.twin.prepare_probe_bank(
+    target="quafu:Shenglian",
+    physical_qubits=(20, 27),
+    probes=probe_circuits,
+    parameter_family="local_pauli_readout",
+)
+
+print(bank.identifiability_status)
+print(bank.parameter_names)
+print(bank.unidentified_parameters)
+assert bank.matrix_rank == len(bank.parameter_names)
+```
+
+The bank binds the canonical target, ordered mapping, exercised directed
+couplers, probe identities, declared local parameter names, and complete design
+matrix. Exact rank determines the status; neither probe count nor a fixed
+number of calibration states is treated as proof. An `underdetermined` bank
+retains the missing parameter names but authorizes no estimates.
+
+`local_pauli_readout` is a restricted structural operation-incidence model for
+per-qubit readout and single-qubit burdens plus per-coupler two-qubit burdens.
+It is not a fitted physical model, hardware evidence, state fidelity, or QPU
+execution authority.
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not

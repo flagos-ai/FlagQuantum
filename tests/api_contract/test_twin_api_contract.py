@@ -104,6 +104,13 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
     assert contract["public_schema_defaults"]["TwinProbeRefreshPlan"] == (
         "flagquantum.twin_probe_refresh_plan.v1"
     )
+    assert contract["public_schema_defaults"]["TwinProbeBank"] == (
+        "flagquantum.twin_probe_bank.v1"
+    )
+    assert contract["public_literal_values"]["TwinProbeBankStatus"] == [
+        "identifiable",
+        "underdetermined",
+    ]
 
 
 def test_release_assessment_vocabulary_stays_minimal_and_frozen() -> None:
@@ -219,6 +226,38 @@ def test_probe_refresh_plan_is_bounded_and_has_no_execution_authority() -> None:
         "submission",
         "routing_authorized",
         "retry_policy",
+    }
+
+
+def test_probe_bank_is_rank_qualified_and_has_no_estimation_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinProbeBank)}
+
+    assert set(get_args(fq.twin.TwinProbeBankStatus)) == {
+        "identifiable",
+        "underdetermined",
+    }
+    assert fq.twin.TwinProbeBank.__dataclass_params__.frozen is True
+    assert fields == {
+        "target",
+        "physical_qubits",
+        "directed_couplers",
+        "probe_circuit_identities",
+        "parameter_family",
+        "parameter_names",
+        "probe_parameter_names",
+        "design_row_labels",
+        "design_matrix",
+        "matrix_rank",
+        "identifiable_parameters",
+        "unidentified_parameters",
+        "identifiability_status",
+        "schema",
+    }
+    assert not fields & {
+        "parameter_values",
+        "confidence_intervals",
+        "submission",
+        "routing_authorized",
     }
 
 
