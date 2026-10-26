@@ -492,6 +492,42 @@ per-qubit readout and single-qubit burdens plus per-coupler two-qubit burdens.
 It is not a fitted physical model, hardware evidence, state fidelity, or QPU
 execution authority.
 
+## Estimate bounded local parameters
+
+Fit the frozen structural model only after distinct hardware tasks for the
+same bank have passed `TwinExperiment.validate_result(...)`:
+
+```python
+estimate = fq.twin.estimate_probe_parameters(
+    bank,
+    hardware_reports,
+    confidence_level=0.95,
+)
+
+print(estimate.parameter_values)
+print(estimate.confidence_intervals)
+print(estimate.identifiability_status)
+print(estimate.goodness_of_fit)
+```
+
+Run the complete synthetic example with:
+
+```bash
+python examples/twin_parameter_estimation.py
+```
+
+The estimator pools repeated reports by frozen probe identity, computes
+observed Z/ZZ marginal TV distances from the bank's ideal distributions, and
+solves the full-rank linear design. Its simultaneous intervals use a
+Bonferroni finite-shot TV bound propagated through the exact left inverse.
+
+Reports must bind the same target, ordered physical mapping, bank probes, and
+snapshot. Duplicate tasks, invalid counts, changed bindings, missing probes,
+or an underdetermined bank are rejected. Values are local model burdens rather
+than quantum-state amplitudes or fidelities; `goodness_of_fit` is descriptive,
+not a confidence or model probability. The result never mutates or promotes a
+Twin and provides no submission, routing, or hardware-control authority.
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not

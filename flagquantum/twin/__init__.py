@@ -51,6 +51,7 @@ from .history import (
     load_calibration_history,
 )
 from .model import QPUDigitalTwin, TwinSnapshot
+from .parameter_estimation import TwinParameterEstimate, estimate_probe_parameters
 from .persistence import dump_twin, load_twin
 from .prediction import TwinPrediction
 from .probe_bank import TwinProbeBank, TwinProbeBankStatus, prepare_probe_bank
@@ -161,6 +162,7 @@ __all__ = (
     "dump_twin",
     "dump_validation_history",
     "dump_validation_series",
+    "estimate_probe_parameters",
     "load_calibration_history",
     "load_candidate_submission",
     "load_candidate_suite",
@@ -207,6 +209,7 @@ __all__ = (
     "TwinFreshnessStatus",
     "TwinGateDurationDrift",
     "TwinHardwareReport",
+    "TwinParameterEstimate",
     "TwinPrediction",
     "TwinProbeBank",
     "TwinProbeBankStatus",

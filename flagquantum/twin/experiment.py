@@ -248,6 +248,13 @@ class TwinExperiment:
             )
 
         metadata = _json_mapping(result.metadata)
+        reported_mapping = metadata.get("target_qubits")
+        if reported_mapping is not None and (
+            not isinstance(reported_mapping, (list, tuple))
+            or tuple(reported_mapping) != self.target_qubits
+        ):
+            raise RuntimeError("provider result changes the frozen physical mapping")
+        metadata["target_qubits"] = list(self.target_qubits)
         reported_backend = metadata.get("chip")
         if (
             isinstance(reported_backend, str)
