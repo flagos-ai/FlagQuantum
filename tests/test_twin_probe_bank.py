@@ -93,6 +93,12 @@ def test_probe_support_and_explicit_design_matrix_are_identity_bound() -> None:
         bank.probe_circuit_identities
     )
     assert payload["directed_couplers"] == [[20, 27]]
+    assert payload["schema"] == "flagquantum.twin_probe_bank.v2"
+    assert len(payload["ideal_row_probabilities"]) == len(bank.design_matrix)
+    assert all(
+        sum(probabilities) == pytest.approx(1.0)
+        for probabilities in bank.ideal_row_probabilities
+    )
     assert payload["matrix_rank"] == 5
     assert payload["identifiability_status"] == "identifiable"
 
@@ -164,6 +170,11 @@ def test_constructor_recomputes_rank_and_identifiable_parameters() -> None:
                 f"{'0' * 64}:z[Q20]",
                 *bank.design_row_labels[1:],
             ),
+        )
+    with pytest.raises(ValueError, match="ideal row probabilities"):
+        replace(
+            bank,
+            ideal_row_probabilities=((0.4, 0.4), *bank.ideal_row_probabilities[1:]),
         )
 
 

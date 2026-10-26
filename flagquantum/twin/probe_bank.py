@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import operator
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -12,7 +13,7 @@ from typing import Any, Literal
 
 from ..core.ir import CircuitIR, ensure_circuit_ir
 
-_PROBE_BANK_SCHEMA = "flagquantum.twin_probe_bank.v1"
+_PROBE_BANK_SCHEMA = "flagquantum.twin_probe_bank.v2"
 _LOCAL_FAMILY = "local_pauli_readout"
 
 TwinProbeBankStatus = Literal["identifiable", "underdetermined"]
@@ -133,6 +134,7 @@ class TwinProbeBank:
     parameter_names: tuple[str, ...]
     probe_parameter_names: tuple[tuple[str, tuple[str, ...]], ...]
     design_row_labels: tuple[str, ...]
+    ideal_row_probabilities: tuple[tuple[float, ...], ...]
     design_matrix: tuple[tuple[int, ...], ...]
     matrix_rank: int
     identifiable_parameters: tuple[str, ...]
@@ -192,9 +194,26 @@ class TwinProbeBank:
         ):
             raise ValueError("probe parameter names must be unique bank parameters")
         labels = tuple(self.design_row_labels)
+        ideal_rows = tuple(
+            tuple(float(value) for value in row) for row in self.ideal_row_probabilities
+        )
         matrix = tuple(tuple(row) for row in self.design_matrix)
         if not labels or len(labels) != len(matrix) or len(labels) != len(set(labels)):
             raise ValueError("design row labels must uniquely align with matrix rows")
+        if len(ideal_rows) != len(labels):
+            raise ValueError("ideal_row_probabilities must align with every design row")
+        for label, probabilities in zip(labels, ideal_rows, strict=True):
+            expected_width = 4 if ":zz[" in label else 2
+            if (
+                len(probabilities) != expected_width
+                or any(
+                    not math.isfinite(value) or value < 0.0 for value in probabilities
+                )
+                or not math.isclose(sum(probabilities), 1.0, abs_tol=1e-9)
+            ):
+                raise ValueError(
+                    "ideal row probabilities must be normalized Z or ZZ distributions"
+                )
         if any(type(value) is not int or value < 0 for row in matrix for value in row):
             raise ValueError("design_matrix must contain non-negative integers")
         rows_per_probe = len(mapping) + len(couplers)
@@ -242,6 +261,7 @@ class TwinProbeBank:
         object.__setattr__(self, "parameter_names", parameters)
         object.__setattr__(self, "probe_parameter_names", supports)
         object.__setattr__(self, "design_row_labels", labels)
+        object.__setattr__(self, "ideal_row_probabilities", ideal_rows)
         object.__setattr__(self, "design_matrix", matrix)
 
     @property
@@ -266,6 +286,9 @@ class TwinProbeBank:
                 for identity, names in self.probe_parameter_names
             ],
             "design_row_labels": list(self.design_row_labels),
+            "ideal_row_probabilities": [
+                list(row) for row in self.ideal_row_probabilities
+            ],
             "design_matrix": [list(row) for row in self.design_matrix],
             "matrix_rank": self.matrix_rank,
             "identifiable_parameters": list(self.identifiable_parameters),
@@ -277,6 +300,7 @@ class TwinProbeBank:
 @dataclass(frozen=True)
 class _ProbeDesign:
     ir: CircuitIR
+    ideal_probabilities: tuple[float, ...]
     one_qubit_counts: Mapping[int, int]
     two_qubit_counts: Mapping[tuple[int, int], int]
 
@@ -308,8 +332,21 @@ def _probe_design(ir: CircuitIR, mapping: tuple[int, ...]) -> _ProbeDesign:
             raise ValueError(
                 "local_pauli_readout probes support only one- and two-qubit operations"
             )
+    from ..circuit import Circuit
+
+    ideal_tensor = Circuit.from_ir(ir).probabilities().detach().cpu().reshape(-1)
+    ideal = tuple(float(value) for value in ideal_tensor)
+    total = sum(ideal)
+    if (
+        len(ideal) != 2**ir.n_wires
+        or any(not math.isfinite(value) or value < 0.0 for value in ideal)
+        or not math.isclose(total, 1.0, abs_tol=1e-6)
+    ):
+        raise ValueError("probe ideal probabilities must form one normalized batch")
+    ideal = tuple(value / total for value in ideal)
     return _ProbeDesign(
         ir=ir,
+        ideal_probabilities=ideal,
         one_qubit_counts=one_qubit_counts,
         two_qubit_counts=two_qubit_counts,
     )
@@ -330,10 +367,20 @@ def _design_rows(
     mapping: tuple[int, ...],
     couplers: tuple[tuple[int, int], ...],
     parameter_names: tuple[str, ...],
-) -> tuple[tuple[str, tuple[int, ...]], ...]:
+) -> tuple[tuple[str, tuple[int, ...], tuple[float, ...]], ...]:
     indices = {name: index for index, name in enumerate(parameter_names)}
-    rows: list[tuple[str, tuple[int, ...]]] = []
+    rows: list[tuple[str, tuple[int, ...], tuple[float, ...]]] = []
     identity = probe.ir.content_hash
+    logical_indices = {physical: logical for logical, physical in enumerate(mapping)}
+
+    def marginal(logical_qubits: tuple[int, ...]) -> tuple[float, ...]:
+        values = [0.0] * (2 ** len(logical_qubits))
+        for basis_index, probability in enumerate(probe.ideal_probabilities):
+            bitstring = format(basis_index, f"0{probe.ir.n_wires}b")
+            outcome = "".join(bitstring[index] for index in logical_qubits)
+            values[int(outcome, 2)] += probability
+        return tuple(values)
+
     for qubit in mapping:
         row = [0] * len(parameter_names)
         row[indices[f"readout_bit_flip[Q{qubit}]"]] = 1
@@ -341,7 +388,13 @@ def _design_rows(
         for edge, count in probe.two_qubit_counts.items():
             if qubit in edge:
                 row[indices[f"two_qubit_pauli[Q{edge[0]}->Q{edge[1]}]"]] = count
-        rows.append((f"{identity}:z[Q{qubit}]", tuple(row)))
+        rows.append(
+            (
+                f"{identity}:z[Q{qubit}]",
+                tuple(row),
+                marginal((logical_indices[qubit],)),
+            )
+        )
     for source, target in couplers:
         row = [0] * len(parameter_names)
         row[indices[f"readout_bit_flip[Q{source}]"]] = 1
@@ -351,7 +404,13 @@ def _design_rows(
         row[indices[f"two_qubit_pauli[Q{source}->Q{target}]"]] = (
             probe.two_qubit_counts.get((source, target), 0)
         )
-        rows.append((f"{identity}:zz[Q{source}->Q{target}]", tuple(row)))
+        rows.append(
+            (
+                f"{identity}:zz[Q{source}->Q{target}]",
+                tuple(row),
+                marginal((logical_indices[source], logical_indices[target])),
+            )
+        )
     return tuple(rows)
 
 
@@ -413,7 +472,7 @@ def prepare_probe_bank(
         for design in designs
         for row in _design_rows(design, mapping, couplers, parameters)
     )
-    matrix = tuple(row for _, row in labelled_rows)
+    matrix = tuple(row for _, row, _ in labelled_rows)
     rank = _matrix_rank(matrix)
     identifiable, unidentified = _identifiable_parameters(matrix, parameters)
     supports: list[tuple[str, tuple[str, ...]]] = []
@@ -435,7 +494,8 @@ def prepare_probe_bank(
         parameter_family=parameter_family,
         parameter_names=parameters,
         probe_parameter_names=tuple(supports),
-        design_row_labels=tuple(label for label, _ in labelled_rows),
+        design_row_labels=tuple(label for label, _, _ in labelled_rows),
+        ideal_row_probabilities=tuple(ideal for _, _, ideal in labelled_rows),
         design_matrix=matrix,
         matrix_rank=rank,
         identifiable_parameters=identifiable,

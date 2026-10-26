@@ -105,7 +105,10 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
         "flagquantum.twin_probe_refresh_plan.v1"
     )
     assert contract["public_schema_defaults"]["TwinProbeBank"] == (
-        "flagquantum.twin_probe_bank.v1"
+        "flagquantum.twin_probe_bank.v2"
+    )
+    assert contract["public_schema_defaults"]["TwinParameterEstimate"] == (
+        "flagquantum.twin_parameter_estimate.v1"
     )
     assert contract["public_literal_values"]["TwinProbeBankStatus"] == [
         "identifiable",
@@ -246,6 +249,7 @@ def test_probe_bank_is_rank_qualified_and_has_no_estimation_authority() -> None:
         "parameter_names",
         "probe_parameter_names",
         "design_row_labels",
+        "ideal_row_probabilities",
         "design_matrix",
         "matrix_rank",
         "identifiable_parameters",
@@ -257,6 +261,43 @@ def test_probe_bank_is_rank_qualified_and_has_no_estimation_authority() -> None:
         "parameter_values",
         "confidence_intervals",
         "submission",
+        "routing_authorized",
+    }
+
+
+def test_parameter_estimate_is_bounded_and_has_no_mutation_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinParameterEstimate)}
+
+    assert fq.twin.TwinParameterEstimate.__dataclass_params__.frozen is True
+    assert fields == {
+        "probe_bank_identity",
+        "target",
+        "physical_qubits",
+        "parameter_family",
+        "parameter_values",
+        "confidence_intervals",
+        "identifiability_status",
+        "unidentified_parameters",
+        "boundary_parameters",
+        "hardware_report_identities",
+        "task_ids",
+        "snapshot_identity",
+        "shots_by_probe",
+        "observed_row_total_variations",
+        "fitted_row_total_variations",
+        "row_finite_shot_radii",
+        "residual_root_mean_square",
+        "maximum_absolute_residual",
+        "goodness_of_fit",
+        "confidence_level",
+        "assumptions",
+        "schema",
+    }
+    assert not fields & {
+        "twin",
+        "candidate",
+        "submission",
+        "promotion",
         "routing_authorized",
     }
 

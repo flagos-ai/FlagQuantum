@@ -417,6 +417,44 @@ coupler. Its integer coefficients are structural operation-incidence terms;
 they are not fitted noise rates or a physical response Jacobian. Bank creation
 is offline and provides no submission, fitting, promotion, or routing authority.
 
+## Estimate bounded local parameters
+
+After distinct hardware tasks from the same frozen probes have passed
+`TwinExperiment.validate_result(...)`, estimate the declared local burdens
+without modifying the Twin:
+
+```python
+estimate = fq.twin.estimate_probe_parameters(
+    bank,
+    hardware_reports,
+    confidence_level=0.95,
+)
+
+print(estimate.parameter_values)
+print(estimate.confidence_intervals)
+print(estimate.identifiability_status)
+print(estimate.goodness_of_fit)
+```
+
+The executable synthetic example shows the complete offline workflow:
+
+```bash
+python examples/twin_parameter_estimation.py
+```
+
+Real `hardware_reports` must come from separate provider tasks validated
+against experiments prepared from this bank's exact target, ordered physical
+mapping, probes, and one calibration snapshot. Reused task identities,
+incomplete counts, a changed mapping, or an underdetermined bank fail closed.
+
+The estimates are bounded coefficients in the declared
+`local_pauli_readout` linear model. Confidence intervals propagate a
+simultaneous Bonferroni finite-shot TV bound through the frozen design matrix;
+they do not describe quantum-state amplitudes, state fidelity, arbitrary
+circuit accuracy, or model probability. `goodness_of_fit` is the descriptive
+score `max(0, 1 - row TV RMSE)`. Estimation grants no submission, Twin mutation,
+promotion, routing, or hardware-control authority.
+
 To incorporate one newly validated calibration, extend the saved history
 immutably and write a new versioned artifact:
 
