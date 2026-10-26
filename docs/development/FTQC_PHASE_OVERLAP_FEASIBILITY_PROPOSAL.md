@@ -1,10 +1,10 @@
 # FTS-10C: Phase and Overlap Feasibility Before Method Selection
 
-Status: proposed, not approved or implemented. This document does not select a
-mixed-circuit algorithm, admit a production engine or extend earlier numerical
-approvals. A separate human decision is required after the exact proposal head
-is reviewable. The proposed finite M-P slice below is the whole implementation
-request; larger qubits, new measurements and production integration are deferred.
+Status: the human explicitly approved the finite M-P prototype and acceptance
+on 2026-10-26. The implementation below is under separate review after proposal
+#911 actual-main admission. This does not select a mixed-circuit algorithm,
+admit a production engine or extend approval beyond M-P. Larger qubits, new
+measurements and production integration remain deferred.
 
 ## What the next decision must resolve
 
@@ -107,12 +107,12 @@ probabilities/density with A-D's independent direct-T/analytic vectors. No
 normalization, dropped cross term or squared-coefficient mixture may hide error.
 A vanishing coherent sum is an invalid normalized-state request, not a new ray.
 
-## Decision requested: finite groups M-P only
+## Approved decision: finite groups M-P only
 
-Proposed CPU complex128 complex amplitudes/overlaps/densities and float64 real
-probabilities/norm residuals use atol=1e-12, rtol=0. These are new representation
-and overlap boundaries requiring explicit approval; earlier equal values do not
-admit them. Integer representation invariants remain exact.
+The specifically approved CPU complex128 amplitudes/overlaps/densities and
+float64 real probabilities/norm residuals use atol=1e-12, rtol=0. The human
+explicitly admitted these representation/overlap boundaries; earlier equal
+values and proposal merge did not admit them. Integer invariants remain exact.
 
 | Group | Finite work per module verification | Independent check |
 | --- | --- | --- |
@@ -192,3 +192,66 @@ The PR must retain exact reviewed-head execution evidence for this code, its
 conditions and command. It is an engineering example, not a new study point,
 prototype implementation, phase contract, wheel certification or performance
 measurement. Proposal merge and CI do not approve M-P implementation.
+
+## Approved implementation rules and ownership
+
+The human explicitly approved the finite M-P prototype and acceptance on
+2026-10-26. Proposal #911 completed actual-main admission at
+`53fce96e2ac3052d3f0645b11165673884fa2010`: all 54 CI jobs, required source,
+single/two GPU, smoke, real optional QEC installations/evidence retention, fresh
+842-member package/core and installed public examples passed. This decision does
+not admit another matrix or a production integration.
+
+The private Simulation implementation follows the CH data in Bravyi et al.,
+Section 4.1, equations 42-56: binary row masks F/G/M, modulo-four gamma,
+Hadamard mask v, basis mask s and complex scalar omega. Wire zero is the most
+significant bit. Its C-layer fixes zero with phase +1; inverse conjugation rows
+encode X-before-Z Pauli products. Left S/CX and right S/CX/CZ updates use integer
+XOR and Pauli commutation signs. X is the exact H S S H identity. Hadamard uses
+the two computational strings obtained by commuting X and Z through the C/H
+layers, merges their difference to one pivot with C-type gates, and resolves
+only that single-qubit scalar pair. That constant-size algebra never expands
+the n-qubit state. No Cirq source is copied and no dependency is introduced.
+
+A retained candidate additionally keeps its validated literal Clifford word and
+an optional unit scalar phase. Overlap copies only the ket's CH masks, applies
+the inverse bra word in reverse order (S inverse is three S updates), reads the
+zero amplitude, then applies the conjugate bra scalar phase. For the zero
+amplitude, a nonzero un-Hadamarded s bit means zero; otherwise the result is
+omega times 2**(-popcount(v)/2). This preserves complex bra/ket phase without a
+magnitude-only inner product or enumeration of computational states. It is a
+polynomial replay implementation, not a claim of an optimal overlap kernel.
+
+Retained storage is three n-row masks, gamma, scalar/masks and the word:
+O(n**2 + g) bits/word entries apart from Python overhead. Overlap scratch has
+O(n**2) integer-mask data; it replays at most three updates per bra instruction
+and does not retain intermediate states or cache query answers. H uses O(n**2)
+bit-level work; overall word-replay work is polynomial in n and g. These are
+structural review bounds, not measured time/RSS or capacity conclusions.
+The approved input words have at most 22 instructions, derived from the literal
+three-qubit A-D branch. Reject a longer word, invalid width/wire/gate or non-unit
+scalar before constructing state. Internal CZ is only the C-layer Hadamard
+factorization rule, not a newly accepted input instruction. The public input set
+and 64 retained states/850 queries/ten executions remain as proposed above.
+
+The finite implementation reuses the approved scalar fixtures once, captures
+64 retained states and 850 successful overlap results once, and makes ten
+existing public executions once per module verification. The unequal-width
+negative refuses before scratch allocation and produces no overlap result.
+Captured-data negatives exercise conjugation/magnitude-only/cross-term/phase
+and normalization errors without further candidate queries. No production
+module imports or registry entry points expose the private prototype.
+
+Local implementation acceptance: 41 new M-P checks passed. Combined with the
+existing A-D/E-H/I-L, stable dynamic and original retirement contracts, 159
+checks passed with zero skips in 2.92 seconds, using developer Python 3.12.14,
+Torch 2.13 and the explicit existing SDK overlay. This is not a fresh optional
+installation or a benchmark. The declared minimum Ruff 0.15.0, Black 24.1.0 and
+Mypy 2.0.0 passed on both changed modules (Mypy Python 3.12); this is targeted,
+not whole-version typing certification. Simulation/Integration ownership,
+architecture, English, links, source-of-truth and tracked hygiene passed.
+Initial validation called the existing two-argument Circuit.gate incorrectly;
+correcting only the test call completed all ten public executions. Initial
+complex-scalar test assignments were made explicit typed tensors for Mypy;
+no production gate, checker, threshold, fixture or skip was changed. Full
+exact-head CI, required GPUs and actual-main admission remain pending.
