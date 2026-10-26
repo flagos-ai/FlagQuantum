@@ -95,6 +95,12 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
         "within_envelope_unvalidated",
         "outside_envelope",
     ]
+    assert contract["public_literal_values"]["TwinFreshnessStatus"] == [
+        "current_under_policy",
+        "refresh_due",
+        "insufficient_evidence",
+        "incompatible_history",
+    ]
 
 
 def test_release_assessment_vocabulary_stays_minimal_and_frozen() -> None:
@@ -138,6 +144,49 @@ def test_region_support_assessment_vocabulary_is_evidence_qualified() -> None:
         "schema",
     }
     assert not fields & {"confidence_level", "tv_error_bound", "routing_authorized"}
+
+
+def test_freshness_vocabulary_is_policy_qualified_and_non_authoritative() -> None:
+    assert set(get_args(fq.twin.TwinFreshnessStatus)) == {
+        "current_under_policy",
+        "refresh_due",
+        "insufficient_evidence",
+        "incompatible_history",
+    }
+    policy_fields = {
+        field.name for field in dataclasses.fields(fq.twin.TwinFreshnessPolicy)
+    }
+    assessment_fields = {
+        field.name for field in dataclasses.fields(fq.twin.TwinFreshnessAssessment)
+    }
+
+    assert fq.twin.TwinFreshnessPolicy.__dataclass_params__.frozen is True
+    assert fq.twin.TwinFreshnessAssessment.__dataclass_params__.frozen is True
+    assert policy_fields == {
+        "maximum_calibration_age",
+        "maximum_validation_age",
+        "maximum_relative_t1_drift",
+        "maximum_relative_t2_drift",
+        "maximum_readout_tv_drift",
+        "maximum_relative_gate_duration_drift",
+        "maximum_verified_tv_error_bound",
+    }
+    assert assessment_fields == {
+        "status",
+        "snapshot_identity",
+        "evaluated_at",
+        "calibration_age_seconds",
+        "validation_snapshot_age_seconds",
+        "next_refresh_at",
+        "calibration_drift",
+        "validation_series",
+        "reasons",
+    }
+    assert not assessment_fields & {
+        "routing_authorized",
+        "promotion_authorized",
+        "refresh_started",
+    }
 
 
 def _device_noise_model() -> NoiseModel:
