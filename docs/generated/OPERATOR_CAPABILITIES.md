@@ -18,6 +18,8 @@ Do not edit. Source: `docs/operator_manifest.json`; `yes` means an executable re
 | `depolarizing` | no | no | no | yes | no | no | no | no |
 | `h` | yes | yes | yes | yes | yes | yes | yes | yes |
 | `i` | yes | yes | yes | yes | yes | yes | yes | yes |
+| `iswap` | yes | yes | yes | yes | yes | yes | yes | yes |
+| `iswapdg` | yes | yes | yes | yes | yes | yes | yes | yes |
 | `phase` | yes | yes | yes | yes | yes | yes | yes | yes |
 | `phase_flip` | no | no | no | yes | no | no | no | no |
 | `rx` | yes | yes | yes | yes | yes | yes | yes | yes |

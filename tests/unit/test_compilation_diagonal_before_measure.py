@@ -212,7 +212,7 @@ def test_the_declared_two_wire_set_equals_the_measured_one() -> None:
         if _measured_diagonal(name, (0, 1), _angles_for(name, _GENERIC))
     }
 
-    assert len(_TWO_WIRE_UNITARIES) == 11
+    assert len(_TWO_WIRE_UNITARIES) == 13
     assert measured == {"cz", "cphase", "crz", "rzz"}
     assert measured == set(_DIAGONAL_TWO_WIRE)
 

@@ -401,6 +401,22 @@ admitted = false
 refusal_reason = "the opcode declares no parameter"
 
 [[opcode]]
+name = "iswap"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
+name = "iswapdg"
+declared_parameters = []
+declared_frequencies = []
+shift_terms = []
+admitted = false
+refusal_reason = "the opcode declares no parameter"
+
+[[opcode]]
 name = "phase"
 declared_parameters = ["theta"]
 declared_frequencies = [[1.0]]

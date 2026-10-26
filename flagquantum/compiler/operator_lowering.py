@@ -170,6 +170,8 @@ def _builtin_registry() -> OperatorLoweringRegistry:
         "cy",
         "cz",
         "swap",
+        "iswap",
+        "iswapdg",
         "rxx",
         "ryy",
         "rzz",

@@ -162,6 +162,32 @@ def _swap_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
     )
 
 
+def _iswap_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """``iSWAP = (S x S) SWAP CZ`` in the registered qubit order."""
+
+    left, right = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("cz", (left, right), metadata),
+        _gate("swap", (left, right), metadata),
+        _gate("s", (left,), metadata),
+        _gate("s", (right,), metadata),
+    )
+
+
+def _iswapdg_to_fixed_basis(instruction: Instruction) -> tuple[Instruction, ...]:
+    """``iSWAPdg = (Sdg x Sdg) SWAP CZ`` in the registered qubit order."""
+
+    left, right = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("cz", (left, right), metadata),
+        _gate("swap", (left, right), metadata),
+        _gate("sdg", (left,), metadata),
+        _gate("sdg", (right,), metadata),
+    )
+
+
 def _rzz_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
     """`RZZ(theta) = CX RZ(theta) CX`, rotating the target qubit."""
 
@@ -391,6 +417,8 @@ EQUIVALENCE_RULES: Mapping[str, tuple[EquivalenceRule, ...]] = MappingProxyType(
         "cz": (EquivalenceRule("cz", _cz_to_cx),),
         "cy": (EquivalenceRule("cy", _cy_to_cx),),
         "swap": (EquivalenceRule("swap", _swap_to_cx),),
+        "iswap": (EquivalenceRule("iswap", _iswap_to_fixed_basis),),
+        "iswapdg": (EquivalenceRule("iswapdg", _iswapdg_to_fixed_basis),),
         "rzz": (EquivalenceRule("rzz", _rzz_to_cx),),
         "crz": (EquivalenceRule("crz", _crz_to_cx),),
         "cphase": (EquivalenceRule("cphase", _cphase_to_cx),),
