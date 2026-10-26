@@ -67,9 +67,13 @@ The next spin-mode thermal-bath slice has its own
 Its example and 24 new integration cases are implemented through existing APIs;
 29 focused new/unchanged lossless cases passed locally on Python 3.10/3.12.
 Independent finite densities, gradients, bath-only analytic bounds and cutoff
-stability retain separate acceptance criteria. Complete local tiers, latest
-complete remote CI/GPU and a separate PR merge grant remain outstanding at this
-progress update. The accepted table still describes the merged lossless
+stability retain separate acceptance criteria. At code-identical head
+`ed557965c5d1dae93a862b77495f999503240257`, complete local default verification
+passed 16,049 cases/224 skipped and integration passed 2,539/177 skipped, both
+with zero XML failures/errors. A first-run Markdown-equation link failure was
+corrected without changing physical code or thresholds; its negative evidence
+is retained. Latest complete remote CI/GPU, the actual three-Python matrix and
+a separate PR merge grant remain outstanding. The accepted table still describes the merged lossless
 spin-mode scenario until that delivery is independently accepted. No new library
 production, public API, calibrated-heating or full M3/M4 claim is made.
 

@@ -221,6 +221,14 @@ Cutoff stability checked separately; exact detached numeric replay: True
 The fitting target 0.8022880147390464 was calculated using the frozen scalar
 reference at N=5, g=0.6 before example implementation; its provenance is explicit
 in the example. The fitted value is a finite-model fit, not infinite-mode or
-physical parameter recovery. Complete local tiers and latest complete remote
-CI/GPU remain required before readiness. No merge permission follows from these
-focused results.
+physical parameter recovery. Complete default verification at code-identical head
+`ed557965c5d1dae93a862b77495f999503240257` passed 16,049 cases/224 skipped
+(412.16s), and integration passed 2,539/177 skipped (193.38s); both XML reports
+have zero failures/errors. The first default attempt retained 16,048 passed,
+224 skipped and one document-link failure: the hygiene scanner read the original
+D-bracket notation as a link to rho. Equivalent D_L notation corrected only the
+Markdown equation, and the unchanged hygiene test then passed. Original negative
+logs/XML remain preserved. Public APIs, scientific code and frozen budgets did
+not change. Latest complete remote CI/GPU and the actual remote three-Python
+matrix remain required before readiness. Local Python 3.11 is not claimed.
+No merge permission follows from these local results.
