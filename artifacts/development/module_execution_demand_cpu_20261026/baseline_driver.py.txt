@@ -1,0 +1,30 @@
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+root = Path(sys.argv[1])
+output = Path("/private/tmp/fq-module-demand-baseline-20261026")
+output.mkdir(exist_ok=False)
+candidate = json.loads(Path("/private/tmp/fq-module-demand-matrix-20261026/summary.json").read_text())
+results = []
+environment = dict(os.environ, JAX_PLATFORMS="cpu", OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1")
+for index, record in enumerate(candidate["cases"]):
+    case = record["case"]
+    print(f"baseline {index+1}/10: {case}", flush=True)
+    path = output / f"case-{index:02d}.json"
+    with (output / f"case-{index:02d}.log").open("w") as log:
+        try:
+            child = subprocess.run([sys.executable,"/private/tmp/fq-demand-baseline-worker.py",str(root),str(path),str(case["width"]),str(case["depth"]),str(int(case["ring"]))],env=environment,stdout=log,stderr=subprocess.STDOUT,timeout=120,check=False)
+            status = "completed" if child.returncode == 0 else "failed"
+        except subprocess.TimeoutExpired:
+            status = "timeout"
+    row = {"case":case,"status":status}
+    if status == "completed":
+        row["measurements"] = json.loads(path.read_text())
+    results.append(row)
+report = {key:value for key,value in candidate.items() if key != "cases"}
+report.update(cases=results, baseline_kernel_revision="fb072a42fc931d478dd12e443cd00c28efa81c0f", baseline_kernel_sha256=hashlib.sha256(Path("/private/tmp/fq-demand-baseline-kernel.py").read_bytes()).hexdigest(), baseline_worker_sha256=hashlib.sha256(Path("/private/tmp/fq-demand-baseline-worker.py").read_bytes()).hexdigest(), method="Controlled replacement: candidate harness and all other source unchanged; compile_quantum_kernel replaced with frozen baseline kernel module in each fresh process. Not a full old-revision installation.")
+(output / "summary.json").write_text(json.dumps(report,indent=2)+"\n")
+sys.exit(int(any(row["status"] != "completed" for row in results)))

@@ -1,0 +1,30 @@
+{
+  "method": "publish sanitized derivatives; keep original source and measurement files unchanged",
+  "files": [
+    {
+      "file": "baseline/summary.json",
+      "original_sha256": "e9bf552ab97523790f5b8035734f2f1e2e862d5ded88cfcd2f245413a2e91af0",
+      "published_sha256": "e9bf552ab97523790f5b8035734f2f1e2e862d5ded88cfcd2f245413a2e91af0"
+    },
+    {
+      "file": "candidate/summary.json",
+      "original_sha256": "f3b2905e5adfe5357f6f0124846d4b8337d0266a560db7e4697914ece811e4e7",
+      "published_sha256": "f3b2905e5adfe5357f6f0124846d4b8337d0266a560db7e4697914ece811e4e7"
+    },
+    {
+      "file": "baseline_kernel.py.txt",
+      "original_sha256": "5b3de76b755cf02ea63b2e4b9246aac49ecd24efafcc91937e84dc107be53b19",
+      "published_sha256": "5b3de76b755cf02ea63b2e4b9246aac49ecd24efafcc91937e84dc107be53b19"
+    },
+    {
+      "file": "baseline_worker.py.txt",
+      "original_sha256": "12f7cbd77820a1b35bb9acb7bb8de9b3dad08fc5059f218b31e92a259f511634",
+      "published_sha256": "12f7cbd77820a1b35bb9acb7bb8de9b3dad08fc5059f218b31e92a259f511634"
+    },
+    {
+      "file": "baseline_driver.py.txt",
+      "original_sha256": "d51bb80b7d509098b2c4b40b276ceb71279ab55d02ad162046fb208794535df0",
+      "published_sha256": "d51bb80b7d509098b2c4b40b276ceb71279ab55d02ad162046fb208794535df0"
+    }
+  ]
+}

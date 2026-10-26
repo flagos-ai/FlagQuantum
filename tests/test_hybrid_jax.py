@@ -24,8 +24,9 @@ pytestmark = [
 
 
 @pytest.mark.parametrize("jit", [False, True])
+@pytest.mark.parametrize("mode", ["statevector", "mps", "tensor_network"])
 def test_derivative_demand_tracks_grad_mode_and_trainable_arguments(
-    jit: bool, monkeypatch: pytest.MonkeyPatch
+    jit: bool, mode: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def build(parameters: Any, features: Any) -> fq.Circuit:
         return fq.Circuit(1).ry(0, parameters[0] * features[0] + parameters[1])
@@ -37,6 +38,7 @@ def test_derivative_demand_tracks_grad_mode_and_trainable_arguments(
         parameters,
         n_qubits=1,
         accepts_inputs=True,
+        mode=mode,
         jit=jit,
         compute_dtype="complex128",
     )

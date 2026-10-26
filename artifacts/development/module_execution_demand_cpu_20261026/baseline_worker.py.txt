@@ -1,0 +1,17 @@
+import importlib.util
+import json
+from pathlib import Path
+import sys
+sys.path.insert(0, sys.argv[1])
+import flagquantum.runtime.executors.jax.kernel as canonical
+name = "flagquantum.runtime.executors.jax._demand_baseline"
+spec = importlib.util.spec_from_file_location(name, "/private/tmp/fq-demand-baseline-kernel.py")
+module = importlib.util.module_from_spec(spec)
+sys.modules[name] = module
+spec.loader.exec_module(module)
+canonical.compile_quantum_kernel = module.compile_quantum_kernel
+from benchmarks.module_execution_matrix import Case, measure
+from dataclasses import asdict
+width,depth,ring = map(int,sys.argv[3:6])
+result = measure(Case(width,depth,bool(ring)), 5, 20)
+Path(sys.argv[2]).write_text(json.dumps([asdict(row) for row in result],indent=2)+"\n")
