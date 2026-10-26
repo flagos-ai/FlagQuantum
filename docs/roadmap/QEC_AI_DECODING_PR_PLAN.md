@@ -20,7 +20,7 @@ optimization, export, domestic-accelerator and streaming gates below remain clos
 | Scientific source | The retained producer is `fc07f4dc7cdb92068460afcee629930791800345`, with source freeze, dependency copy, input binding and source delivery completed. | Do not substitute a later `main` revision or claim tree equivalence. A changed scientific producer needs its own final CI and fresh freeze. |
 | Actual two-host preflight | Both A800 hosts passed zero-sampling environment, layout and model-loading checks with distinct GPU UUIDs. Both owned containers were stopped and removed. | A current live formal scope, authenticated caller/ownership/UUID binding and study prediction-parity receipts. Historical removed containers are not current readiness evidence. |
 | Private final-consumer chain | Optional native validation-parent → issuer → read-only final consumer is connected using the same caller Budget and original pre-freeze process end. Independent receipts, byte capture and failure checks are implemented. | This is private software integration, not authenticated host authority or permission to stage/transport final artifacts. |
-| Stage and transport | Existing capture, partition, independent shard copy, receive/assembly and collection primitives are retained. Stage contract review, optional stage Budget forwarding, independent consumer parent-complete acceptance and an explicit synchronous consumer-to-stage adapter and sealed stage worker entry are software-tested. The owned-session harness covers local restore/arm and blocked-body failures; independent read-only parent acceptance and a standalone production outer runner with parent completion are now tested. | Optional native stage handoff and full post-native-callback closure are now software-tested. Independent read-only stage parent-completion consumption is now software-tested. Final-purpose collection remains disabled; the existing prepared-purpose route is not relabeled. |
+| Stage and transport | Existing capture, partition, independent shard copy, receive/assembly and collection primitives are retained. Stage contract review, optional stage Budget forwarding, independent consumer parent-complete acceptance and an explicit synchronous consumer-to-stage adapter and sealed stage worker entry are software-tested. The owned-session harness covers local restore/arm and blocked-body failures; independent read-only parent acceptance and a standalone production outer runner with parent completion are now tested. | Optional native stage handoff and full post-native-callback closure are now software-tested. Independent read-only stage parent-completion consumption is now software-tested. Read-only final-to-collection Snapshot/Plan/staging binding is now software-tested. Final-purpose collection remains disabled; the existing prepared-purpose route is not relabeled. |
 | Formal launch | The recipe, evidence requirements and failure rules remain frozen. | Full prepare/ready/peer-receipt/finish/failure/collection acceptance, authenticated live controls and fixed-recipe scientific storage preflight. Observed free space is not a reservation or a certified storage budget. |
 
 The private stage audit identified missing Budget routes. The subsequent bounded
@@ -215,37 +215,58 @@ separate time evidence. Replacing it with a final Snapshot or relabeling its
 purpose would break that separation.
 
 The existing collection runner also restores/arms its parent and computes a new
-process end. Calling it from a wrapper would not preserve the existing caller
-Budget and original pre-freeze end. The smallest next slice is therefore a
-read-only final-to-collection binding verifier: reuse independent stage-parent and
-consumer acceptance, then compare the original transport Snapshot/Plan/staging
-against that accepted chain. It must not call collection or issue permission.
-The later owned worker must restore the original controls locally once, and its
-parent must use the existing Budget/end with independent failure closure.
+process end. It remains unchanged. The new independent read-only
+`final_collection_binding.verify_binding` instead reuses stage-parent and consumer
+acceptance with the same existing local Budget and exact original pre-freeze end.
+It returns the original Snapshot and Plan only after the transport request's exact
+Snapshot, Plan digest and staging bytes match the independently accepted stage.
+Original source/input/intent/owned/inspect references, host and nonce must match
+the accepted ancestor request. The caller-supplied SSH machine binding remains
+unauthenticated here; this is not transport permission or a new scientific gate.
 
-The stage aggregate already contains the collector-window footprint once. A
-future invocation adds actual new source/fresh-copy, double bounded-log/request
-and complete/control costs without adding that same footprint twice or crediting
-retained evidence. No numerical future invocation budget is certified before its
-actual source inventory and envelope exist. No production/test code changed in
-this review; final-purpose collection remains disabled.
+Before independent acceptance, one fixed baseline covers the entire stage output,
+consumer/issuer/validation ancestors, external time approval/peer/report/inspect,
+current study inventory/directories and all actual source files. The consumer's
+original payload stat seal must agree. The same baseline is checked after each
+verifier and after the last source/space reads; no accepted state is rebased.
+Original copied-code and payload byte authority remains with the retained stage
+acceptance and codec. External request hashes are checked before decoding their
+contents, and the external stage completion hash precedes completion acceptance.
+Parser/Plan errors also leave through the original Budget/end check.
+
+Full original runner costs, Plan sender and collector-window costs occur once.
+Read-only verification adds only the actual stage-completion verifier source and
+its existing control allowance, plus the new binding source and 1 MiB of controls.
+All four old output parents must pass the entire aggregate, without retained-byte
+credit or a second collector/log/request charge. No new worker, source copy,
+retained envelope, capture, staging or transport is performed by this API. A later
+invocation must separately charge its actual sources, fresh copies, bounded logs,
+requests and completion controls while retaining every original reserve.
+
+Read-only refusal leaves producer evidence untouched and writes no failure marker.
+A later owned collection transaction still needs its own nonretryable failure
+handling and independently reconstructed parent acceptance. Final-purpose
+collection stays disabled. Source/metadata/codec/stat OS I/O remains synchronous;
+checks are non-atomic, not storage reservations or instantaneous whole-memory
+bounds. Actual authenticated caller and formal study gates remain unmet.
 
 ### Next bounded work
 
-1. Implement only the read-only final-to-collection binding verifier identified
-   by the completed contract review. Reuse independent stage-parent/consumer
-   acceptance and the original collection request/receive binding; compare exact
-   Snapshot, Plan, accepted staging bytes and external final ancestry hashes.
-   Preserve the prepared approval solely as original time evidence.
-2. Use the same existing caller Budget and exact original end, without arm,
-   deadline remapping, capture, copy, write, collection or SSH. Keep one fixed
-   source/copy/ancestor/control/inventory baseline through all checks and full-space
-   reads, then close the last verifier-return interval without rebasing.
-3. Cover all three deadline orderings, external-hash/schema/union/Plan substitution,
-   permanent clock poison and second refusal, late tampering, original inventory
-   preservation and complete-aggregate one-byte shortage. Keep final-purpose
-   collection disabled until its later owned worker, independent parent acceptance
-   and failure closure are implemented. Preserve frozen, partial and failed evidence.
+1. Reuse the completed read-only final-to-collection binding API in a minimal
+   sealed owned-session final-collection worker. Bind the external stage-parent,
+   request/stdout and transport hashes; restore the original prepared time/window
+   and supplied owned controls once locally, without relabeling prepared approval
+   or substituting the final Snapshot into its time-evidence contract.
+2. Keep the existing collector/codec/receive authority and child-local shared
+   Budget. A future outer runner must preserve its caller's existing Budget and
+   original pre-freeze end without re-arm or renewal. Charge actual new source,
+   fresh-copy, double bounded-log/request and completion costs above the retained
+   full aggregate, without duplicate collector charges or retained-byte credit.
+3. Independently reconstruct worker/parent acceptance and complete failure closure,
+   covering blocked descendants, original deadlines and permanent clock poison,
+   late ancestor/control/copied-byte/source/inventory/space changes and foreign
+   output ownership. Keep final-purpose collection disabled until all of these
+   paths pass. Preserve every frozen, partial and failed evidence record.
 4. Actual canonical-source/strict-SSH/owned/current-live-UUID authority, complete
    formal phase/failure/collection acceptance and fixed-recipe science storage
    remain independent unmet gates. No actual transfer, formal optimizer/sampling
@@ -254,6 +275,43 @@ this review; final-purpose collection remains disabled.
 
 ### Evidence and verification boundaries
 
+- The read-only final-to-collection binding slice adds only private
+  `final_collection_binding.py` and `test_final_collection_binding.py`, SHA-256
+  `b065404e96c1356c1d138b8fae1091059b73d2cf254e287f4d8778d9dea50e20` and
+  `b1b18107d7ba36a4a06b4ed84e88373543ab4dba61e2b7429edceb231c5ff8b4`.
+  Local record `qec-ai-ci-evidence/matched-private-collection-binding.json`, SHA-256
+  `01c052453ea89ef222dbaa5f447d90fcf51a229ba1887cf36ea0fc4d1712d219`,
+  retains final related **94 passed in 233.31 seconds**: 24 new cases, 53 existing
+  execution-window cases and 17 existing stage-Budget cases. Strict mypy checks
+  all 96 source/test files; Ruff 0.16.0 and Black 26.10.1 pass for the two new files.
+  Three retained native orderings are reused with zero new workers or whole-chain
+  source freezes. External-hash/schema/union/Plan/staging substitution, last
+  verifier-return drift, final source/space-read drift, permanent clock poison
+  with second refusal, full-aggregate one-byte shortage and success inventory
+  preservation are covered. All 94 prior source/test bytes and stat stamps and
+  all four actual immutable proof hashes are unchanged.
+  The first new matrix retained 3 failures/15 passes because its external-hash
+  test incorrectly forbade decoding the independently hash-checked nested consumer
+  envelope. Only that new test allowlist changed; no production guard was weakened.
+  Actual codec/copy/parser acceptance is reused, while host/UUID/approval/lease,
+  clock, capacity-success and reconstructed caller Budget remain synthetic.
+  This is private software evidence, not repository CI or scientific acceptance.
+- The latest local storage observation, record
+  `qec-ai-ci-evidence/matched-collection-binding-storage-observation.json`, SHA-256
+  `ff9d118a8191b031563e7ec9ceea8bca0d45f4d1705e197d62de115729d39593`,
+  reports 5,898,240,000 free bytes. The original read-only full-aggregate guard
+  refuses all three retained orderings, whose required totals range from
+  9,347,849,903 to 9,347,849,929 bytes. This is an instantaneous observation,
+  not a reservation or fixed-recipe scientific budget. No cleanup occurred and
+  no free-space change is attributed to cleanup. Do not reduce reserves or delete
+  frozen, failed, partial, scientific or other users' evidence to bypass it.
+- PR #927 head `e85ab6881fae64e1686150c25a2d93175a2656e8` has complete
+  exact-head CPU/GPU CI evidence: CPU `40309162563`, 54 successes, and LocalGPU
+  `40309162499`, three successes/three skips across all six jobs. Local record
+  `qec-ai-ci-evidence/pr927-head-e85ab688-final-ci.json` retains every job.
+  That certification belongs to the earlier documentation head; this subsequent
+  substantive documentation update requires its own CI. No manual rerun or
+  auto-merge is requested. The original download cancellations remain below.
 The frozen scientific recipe and layout correction are retained in
 [matched comparison](../development/QEC_AI_ISING_CNN_COMPARISON.md) and
 [layout verification](../development/QEC_AI_ISING_CNN_LAYOUT_VERIFICATION.md).
