@@ -20,25 +20,77 @@ optimization, export, domestic-accelerator and streaming gates below remain clos
 | Scientific source | The retained producer is `fc07f4dc7cdb92068460afcee629930791800345`, with source freeze, dependency copy, input binding and source delivery completed. | Do not substitute a later `main` revision or claim tree equivalence. A changed scientific producer needs its own final CI and fresh freeze. |
 | Actual two-host preflight | Both A800 hosts passed zero-sampling environment, layout and model-loading checks with distinct GPU UUIDs. Both owned containers were stopped and removed. | A current live formal scope, authenticated caller/ownership/UUID binding and study prediction-parity receipts. Historical removed containers are not current readiness evidence. |
 | Private final-consumer chain | Optional native validation-parent → issuer → read-only final consumer is connected using the same caller Budget and original pre-freeze process end. Independent receipts, byte capture and failure checks are implemented. | This is private software integration, not authenticated host authority or permission to stage/transport final artifacts. |
-| Stage and transport | Existing capture, partition, independent shard copy, receive/assembly and collection primitives are retained. Read-only stage contract review is complete. | The final-consumer-to-stage adapter and whole-stage deadline/acceptance path are not wired. Final-purpose collection remains disabled; the existing prepared-purpose route is not relabeled. |
+| Stage and transport | Existing capture, partition, independent shard copy, receive/assembly and collection primitives are retained. Stage contract review, optional stage Budget forwarding, independent consumer parent-complete acceptance and an explicit synchronous consumer-to-stage adapter are software-tested. | Stage-owned worker/local restore, native stage handoff and full blocked-body/post-native-callback acceptance remain unwired. Final-purpose collection remains disabled; the existing prepared-purpose route is not relabeled. |
 | Formal launch | The recipe, evidence requirements and failure rules remain frozen. | Full prepare/ready/peer-receipt/finish/failure/collection acceptance, authenticated live controls and fixed-recipe scientific storage preflight. Observed free space is not a reservation or a certified storage budget. |
 
-The private stage audit identifies concrete missing routes: `artifact_stage.stage`
-and `_copy` do not accept/forward the existing Budget, and stage's source recapture
-does not receive it. The lower-level copy, verify and capture helpers already
-support an optional Budget and should be reused. Stage currently writes
-`complete.json` and immediately returns; a final adapter must also cover
-post-complete and post-callback ancestry, payload, inventory, source, space and
-deadline checks. This audit did not implement those changes or execute stage.
+The private stage audit identified missing Budget routes. The subsequent bounded
+software slice adds keyword-only `budget=None` to `artifact_stage.stage` and
+`_copy`, forwarding the same object to the original copy, verify and both source
+capture operations. Entry and post-complete checks retain 136 seconds of Budget
+reserve. Old defaults, Snapshot/Plan timestamps, receipt schemas and all original
+storage reserves remain unchanged; no new stage arm or outer deadline is created.
+Only the existing issuer's stage-source pin changes alongside those two functions.
+
+The retained read-only entry provides independent consumer parent-complete
+acceptance in the existing consumer runner. It checks the external completion and
+request hashes, reconstructs the exact 39-file table and all five external seals,
+and reuses existing worker receipt/ancestor validation. The original candidate,
+Snapshot bytes/digest, current payload inventory/stat seal, original source and
+fresh read-only source copy must agree. A self-reported table is not accepted as
+the expected inventory. No copying, writing, arm, deadline remapping, payload
+capture or `.pt` read occurs in this entry.
+
+The caller must supply its existing local Budget and exact original pre-freeze
+end in the same clock domain; the recorded end is compared, not converted into a
+new deadline. Full prior costs/reserves, actual runner-source bytes and the old
+control allowance remain charged without retained-byte credit. Metadata/source/
+space checks finish with current payload-state and deadline checks. The state
+check reuses the original captured stat seal; it is not a new full payload-byte
+reread, atomic reservation or independently authenticated host authority.
+
+The explicit synchronous adapter now calls that independent entry before any
+output creation or copying, then reuses the original stage/capture/copy/codec
+path with the same Budget. It derives the source from the original consumer
+ancestry, validates the supplied Plan and keeps its original timestamps. A fresh
+owned wrapper retains the adapter source, lock, unchanged stage subtree and a
+completion linking the external consumer/request/Plan/Snapshot and stage hashes.
+Both returned hashes are software evidence, not transport or launch permission.
+
+Before output creation, the adapter conservatively co-locates the full original
+consumer/native/issuer charge, stage sender footprint, existing collection-window
+receiver/controller/wire/log/request/observer/assembly costs and the new adapter
+source/control allowance. Each prior/new output parent must pass the whole
+aggregate, without retained-byte credit or subtraction of any original reserve.
+This is a local preflight, not remote authentication, a reservation or a certified
+scientific storage budget. Future worker logs, requests and source snapshots
+must be charged separately when that worker is added.
+
+Independent copied-byte verification and repeated external consumer acceptance
+run after stage and wrapper completion. A fault regression exposed an initially
+rebased copy-state baseline: equal-length mutation at the last codec return could
+escape. The correction fixes the stage inventory/directory stat baseline before
+independent verification and compares that same baseline before/after each check.
+The original failure log and source are retained; original codec checks were not
+weakened. Owned late failures retain candidate/completion plus failure evidence
+and cannot resume; concurrently created foreign output is left untouched.
+
+This remains a synchronous software adapter. The original pre-freeze end is
+checked at adapter boundaries, while stage retains its existing per-chunk Budget
+checks and codec operation mapping. Blocking source/metadata/copy/verify I/O is
+not yet enclosed by a stage-owned process timeout. No worker-local restore/arm,
+native stage linkage, full post-native-callback closure or final-purpose
+collection is implemented by this slice. Formal readiness remains blocked.
 
 ### Next bounded work
 
-1. Implement the smallest explicit optional stage connection using the existing
-   consumer, Snapshot, planner, capture and copy/verify helpers. Preserve old
-   defaults, prepared-purpose behavior and raw schemas. Independently check the
-   external consumer parent-complete SHA and exact file table, original request,
-   all five external seals and current Snapshot bytes/stat state; a returned
-   Snapshot or self-reported table alone is not transport authority.
+1. Reuse the completed consumer-to-stage adapter and independent acceptance;
+   add the smallest sealed stage-owned worker with an externally hashed request,
+   actual fresh source snapshot and independent result acceptance. Restore the
+   original controls and arm once locally; do not pass a Budget across processes.
+   Preserve the external completion/request hashes, exact 39-file consumer table,
+   all five ancestor seals, current Snapshot/stat/source/fresh-copy checks and
+   acceptance-before-copy ordering. Keep old stage defaults/raw schemas and
+   prepared-purpose behavior; do not reimplement receipt or byte authorities.
 2. Keep the same local caller Budget and exact original pre-freeze outer end.
    Restore original controls and arm once locally in an owned worker; do not
    serialize a Budget, renew either original deadline or remap a later outer end.
@@ -96,6 +148,53 @@ published evidence bundle.
   were **34 passed, 1 deselected in 0.03 s**; zero new cases, no adapter or production
   changes, and no stage/transfer execution. This is a static audit, not integration
   acceptance.
+- Stage optional Budget-forwarding software, local record
+  `qec-ai-ci-evidence/matched-private-stage-window.json`, SHA-256
+  `de3c54d4b6c5b27a924a8cae340f27e22bca27073ed28fdf42e11518de1b6119`:
+  **17 new cases**; final related selection **148 passed in 19.18 s**, including
+  existing native/consumer three-ordering positives. Separately, **2 existing
+  full-charge one-byte-short checks passed in 9.04 s**. Strict mypy checked 82 files;
+  Ruff 0.16.0 and Black 26.10.1 checks passed. Original source/test history and the
+  two-function/one-pin AST review are recorded in
+  `qec-ai-ci-evidence/matched-stage-window-helper-change.json`.
+  Tiny local copies, original codec and capture are real; clocks, lease ordering,
+  capacity and host/approval boundaries are synthetic. The slice adds no retained
+  files or fields and does not certify a future stage-worker aggregate charge,
+  blocked-body termination, consumer-completion acceptance or final transport.
+  These private results are not repository CI or a full-private-suite pass.
+- Independent consumer parent-complete acceptance, local record
+  `qec-ai-ci-evidence/matched-private-consumer-complete.json`, SHA-256
+  `3bd9284a86d5f279f55a17697b79183312d1577b8885f68373910f15725ad321`:
+  **36 new cases**; related selection **97 passed**, including the original window,
+  native/consumer three-ordering positives and full-charge shortage checks.
+  After a test-only direct-import typing correction, a focused regression selection
+  passed again; exact counts and timings are retained in the record and logs.
+  Strict mypy checked 83 files; Ruff 0.16.0 and Black 26.10.1 checks passed.
+  Original runner function ASTs, defaults/return/raw/end and all other 81 existing
+  source/test files and pins are unchanged. The record covers rehashed completion
+  forgery, ancestor/current-state drift, late source/space/control changes,
+  permanent clock poisoning and full-charge one-byte shortage. Tiny sealed
+  source/codec/receipt checks are real; study, clocks, lease, capacity and
+  host/approval/UUID boundaries are synthetic. No copy or formal operation was
+  authorized or performed. This is not repository CI or a full-private-suite pass.
+- Synchronous consumer-to-stage adapter, local record
+  `qec-ai-ci-evidence/matched-private-stage-adapter.json`, SHA-256
+  `92b785280873d8e55ffc22af3e9626f958cf31cccccba13325e49d434eba5597`:
+  **28 new cases**; final related selection **101 passed in 111.77 s**, including
+  existing stage/window and three-ordering consumer acceptance regressions.
+  Strict mypy checked 85 files; Ruff 0.16.0 and Black 26.10.1 checks passed.
+  All 83 prior source/test files and pins remain unchanged. The initial final-codec
+  mutation regression was **1 failed, 1 passed in 9.49 s**; after the fixed-state
+  correction, **2 passed in 9.32 s**, and both are included in the final selection.
+  Evidence retains the failed source/history and logs, conservative full-charge
+  shortage, before-copy refusal, copy/verify failure, late tamper, clock poison,
+  retry refusal and foreign-output checks. Tiny sealed codec/replay/capture/copy
+  operations are real; study/host/UUID/lease/approval/capacity/clocks are synthetic.
+  The completion record observed 925696000 local free bytes, below the unchanged
+  1 GiB reserve; actual local staging/transfer remains storage-blocked. No evidence
+  was deleted or reserve reduced to bypass that gate.
+  This is not a blocked-stage-worker, native stage integration, repository CI,
+  full-private-suite, actual transfer or formal-readiness certification.
 - Retained handoff index, local record
   `qec-ai-ci-evidence/pr871-matched-primary-handoff.json`:
   links per-slice evidence, logs, historical failures and immutable source/proof
