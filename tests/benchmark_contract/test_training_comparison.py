@@ -25,7 +25,7 @@ from benchmarks.training_workloads import (  # noqa: E402
     initial_parameters,
 )
 
-pytestmark = pytest.mark.benchmark_contract
+pytestmark = [pytest.mark.benchmark_contract, pytest.mark.integration]
 
 
 @pytest.fixture(autouse=True)
