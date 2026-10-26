@@ -102,8 +102,8 @@ The source program is not mutated. The unitary prefix is submitted through the
 already selected static route. Provider counts are accepted only when their bit
 width, shot total, provider bit-order declaration, and measurement mapping are
 consistent with the normalization record. FlagQuantum then projects the counts
-into classical order `c[n-1]...c[0]`, matching the existing binary counts
-convention.
+into public left-to-right classical order `c[0]...c[n-1]`, matching the existing
+counts convention after each provider's raw bit order has been normalized.
 
 An absent, conflicting, or unverifiable mapping is a deterministic refusal. It
 is not permission to assume identity order, reverse bits heuristically, submit
