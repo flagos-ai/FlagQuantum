@@ -83,6 +83,15 @@ def _clifford_vector(n: int, instructions: tuple[_Instruction, ...]) -> torch.Te
                 amplitudes[index ^ target if index & mask else index]
                 for index in range(1 << n)
             ]
+        elif gate == "x":
+            amplitudes = [amplitudes[index ^ mask] for index in range(1 << n)]
+        elif gate in ("p0", "p1"):
+            # Private projected terms retain their unnormalized amplitudes.
+            outcome = gate == "p1"
+            amplitudes = [
+                value if bool(index & mask) == outcome else 0j
+                for index, value in enumerate(amplitudes)
+            ]
         else:
             raise ValueError("private branch contains a non-Clifford instruction")
     return torch.tensor(amplitudes, dtype=torch.complex128)
