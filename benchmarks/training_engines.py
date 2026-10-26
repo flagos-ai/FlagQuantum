@@ -15,6 +15,7 @@ from flagquantum import algorithms as fqa
 
 Engine = Literal[
     "flagquantum",
+    "flagquantum_torch_module",
     "flagquantum_jax_module",
     "flagquantum_jax_kernel",
     "pennylane_backprop",
@@ -43,7 +44,11 @@ def build_expectation(engine: Engine, task: Task) -> Expectation:
     qubits = 2 if task == "classifier" else 4
     gates = recipe(task)
     pauli_terms = terms(task)
-    if engine in {"flagquantum_jax_module", "flagquantum_jax_kernel"}:
+    if engine in {
+        "flagquantum_torch_module",
+        "flagquantum_jax_module",
+        "flagquantum_jax_kernel",
+    }:
         observable = fqa.Hamiltonian(
             [fqa.pauli_term(c, word, wires) for c, word, wires in pauli_terms]
         )
@@ -60,7 +65,7 @@ def build_expectation(engine: Engine, task: Task) -> Expectation:
             return circuit
 
         count = 6 if task == "classifier" else 26
-        if engine == "flagquantum_jax_module":
+        if engine != "flagquantum_jax_kernel":
             module = fq.Module(
                 builder,
                 n_parameters=count,
@@ -68,7 +73,7 @@ def build_expectation(engine: Engine, task: Task) -> Expectation:
                 dtype=torch.float64,
                 policy=fq.RuntimePolicy(
                     execution_options=fq.ExecutionOptions(
-                        backend="jax",
+                        backend="jax" if engine == "flagquantum_jax_module" else None,
                         mode="statevector",
                         precision="complex128",
                         allow_backend_fallback=False,
@@ -252,6 +257,7 @@ def engine_metadata(engine: Engine) -> dict[str, str]:
     """State the measured method, including the separate adjoint family."""
     devices = {
         "flagquantum": "local_statevector",
+        "flagquantum_torch_module": "fq.Module / default pytorch / Torch reverse",
         "flagquantum_jax_module": "fq.Module / jax / jit / Torch bridge",
         "flagquantum_jax_kernel": "FlagQuantum JAXQuantumKernel / jit / Torch bridge",
         "pennylane_backprop": "default.qubit",

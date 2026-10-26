@@ -63,6 +63,7 @@ def test_dataset_has_disjoint_fixed_splits_and_both_labels() -> None:
     "engine",
     [
         "flagquantum",
+        "flagquantum_torch_module",
         "flagquantum_jax_module",
         "flagquantum_jax_kernel",
         "pennylane_backprop",
@@ -77,9 +78,13 @@ def test_simulator_gradients_match_independent_dense_finite_difference(
     package = (
         "jax"
         if engine.startswith("flagquantum_jax")
-        else "tensorcircuit" if engine.startswith("tensorcircuit") else "pennylane"
+        else (
+            None
+            if engine.startswith("flagquantum")
+            else "tensorcircuit" if engine.startswith("tensorcircuit") else "pennylane"
+        )
     )
-    if engine != "flagquantum" and importlib.util.find_spec(package) is None:
+    if package is not None and importlib.util.find_spec(package) is None:
         pytest.skip(f"optional comparison dependency {package} is absent")
     if engine == "tensorcircuit_jax" and importlib.util.find_spec("jax") is None:
         pytest.skip("optional JAX comparison dependency is absent")

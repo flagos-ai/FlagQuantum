@@ -18,6 +18,7 @@ import time
 import traceback
 from dataclasses import asdict, dataclass
 from importlib import metadata
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,9 @@ from flagquantum.benchmarking.contract import runtime_metadata, write_json_atomi
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "benchmarks/manifests/training_comparison_cpu_v1.json"
 JAX_MANIFEST = ROOT / "benchmarks/manifests/training_comparison_jax_cpu_v1.json"
+INSTALLED_MANIFEST = (
+    ROOT / "benchmarks/manifests/training_comparison_installed_cpu_v1.json"
+)
 SCHEMA = "flagquantum.training_comparison.v1"
 RUNNER = "training_comparison"
 
@@ -96,11 +100,25 @@ def source_identity(protocol: Path = MANIFEST) -> dict[str, Any]:
         ROOT / "benchmarks/training_workloads.py",
         ROOT / "benchmarks/training_engines.py",
     ]
+    from flagquantum.simulation.native_cpu.adjoint import native_cpu_adjoint_available
+
+    extension = find_spec("flagquantum.simulation.native_cpu._C")
     return {
         "code_version": _git("rev-parse", "HEAD"),
         "dirty": bool(_git("status", "--porcelain", "--untracked-files=normal")),
         "protocol_sha256": digest(protocol),
         "producer_sha256": {str(p.relative_to(ROOT)): digest(p) for p in paths},
+        "installation": {
+            "distribution_version": (
+                metadata.version("flagquantum") if _installed("flagquantum") else None
+            ),
+            "native_cpu_adjoint_available": native_cpu_adjoint_available(),
+            "native_cpu_extension_sha256": (
+                digest(Path(extension.origin))
+                if extension is not None and extension.origin is not None
+                else None
+            ),
+        },
         "versions": {
             p: metadata.version(p)
             for p in (
@@ -392,6 +410,15 @@ def campaign(output: Path, *, smoke: bool, protocol: Path = MANIFEST) -> int:
     """Give each measured case a fresh process and an explicit wall deadline."""
     output.mkdir(parents=True, exist_ok=False)
     manifest = json.loads(protocol.read_text())
+    if (
+        protocol == INSTALLED_MANIFEST
+        and not source_identity(protocol)["installation"][
+            "native_cpu_adjoint_available"
+        ]
+    ):
+        raise RuntimeError(
+            "installed CPU diagnostic requires a loadable native extension"
+        )
     frozen_data = dataset()
     freeze = runtime_metadata(
         runner=RUNNER,
@@ -449,6 +476,8 @@ def campaign(output: Path, *, smoke: bool, protocol: Path = MANIFEST) -> int:
                     command.append("--smoke")
                 if protocol == JAX_MANIFEST:
                     command.append("--jax-diagnostic")
+                if protocol == INSTALLED_MANIFEST:
+                    command.append("--installed-cpu-diagnostic")
                 print(f"Starting {directory.name}", flush=True)
                 status = "failed"
                 environment = dict(
@@ -497,10 +526,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
-    parser.add_argument(
+    strategy = parser.add_mutually_exclusive_group()
+    strategy.add_argument(
         "--jax-diagnostic",
         action="store_true",
         help="run the separately frozen JAX execution-strategy comparison",
+    )
+    strategy.add_argument(
+        "--installed-cpu-diagnostic",
+        action="store_true",
+        help="compare installed public Module defaults and JAX routes",
     )
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
@@ -510,6 +545,7 @@ def main() -> int:
         "--engine",
         choices=(
             "flagquantum",
+            "flagquantum_torch_module",
             "flagquantum_jax_module",
             "flagquantum_jax_kernel",
             "pennylane_backprop",
@@ -522,7 +558,11 @@ def main() -> int:
     )
     parser.add_argument("--seed", type=int, default=11)
     args = parser.parse_args()
-    protocol = JAX_MANIFEST if args.jax_diagnostic else MANIFEST
+    protocol = (
+        INSTALLED_MANIFEST
+        if args.installed_cpu_diagnostic
+        else JAX_MANIFEST if args.jax_diagnostic else MANIFEST
+    )
     if not args.worker:
         return campaign(args.output, smoke=args.smoke, protocol=protocol)
     args.output.mkdir(parents=True, exist_ok=False)

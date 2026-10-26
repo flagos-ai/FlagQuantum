@@ -190,3 +190,27 @@ must accompany any interpretation of the resulting timing differences.
 This diagnostic investigates the original eager-versus-JIT gap. It does not
 retroactively replace the producing commit or measurements of the first
 protocol, and does not establish that any route is globally optimal.
+
+## Installed CPU diagnostic
+
+An additional frozen protocol requires a loadable native CPU extension and
+includes the public Module's default PyTorch policy alongside eager Circuit,
+public JAX Module, internal JAX kernel and TensorCircuit-NG JAX. The workloads,
+splits, precision and update rules remain fixed. It runs ten smoke cases or
+30 full cases and uses
+`benchmarks/manifests/training_comparison_installed_cpu_v1.json`.
+
+```bash
+python -m pip install -e . --no-deps --no-build-isolation
+python -m benchmarks.training_comparison --installed-cpu-diagnostic --output /tmp/training-installed-cpu
+python -m benchmarks.training_comparison_report /tmp/training-installed-cpu
+```
+
+The installation command assumes the declared build prerequisites are already
+present. Result source identity records the installed distribution version,
+native-adjoint availability and native-extension binary hash. The campaign
+fails preflight if its extension is unavailable. An installed extension does
+not imply every gate or derivative uses native code: the default Module route
+still declares Torch reverse mode. This diagnostic does not substitute a
+private adjoint kernel for the normal public call or change backend defaults.
+Source-only and installed campaigns remain separate artifacts.
