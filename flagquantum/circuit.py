@@ -38,6 +38,7 @@ from .core.runtime_config import RuntimeConfig, get_runtime_config
 from .errors import ValidationError
 
 if TYPE_CHECKING:
+    from .core._gate_typing import _BuiltinGateMethods
     from .noise import NoiseModel
     from .observables import OutputRequest
     from .runtime.builder_compilation import BuilderBindings
@@ -45,6 +46,8 @@ if TYPE_CHECKING:
     from .runtime.options import ExecutionOptions
     from .runtime.planner.models import RuntimeSelectionPlan
     from .runtime.result import ExecutionResult
+else:
+    _BuiltinGateMethods = object
 
 
 def _count_argument(
@@ -178,7 +181,7 @@ class _StatevectorExecutionStatistics(TypedDict, total=False):
     statevector_batch_assembly: str
 
 
-class Circuit:
+class Circuit(_BuiltinGateMethods):
     """FlagQuantum native differentiable circuit.
 
     Examples:
