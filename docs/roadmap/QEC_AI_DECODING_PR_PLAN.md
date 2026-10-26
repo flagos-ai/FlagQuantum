@@ -5,6 +5,101 @@ capabilities or performance promises. Existing public APIs remain unchanged.
 
 ## Current state
 
+### Progress snapshot: 2026-10-26 (Asia/Shanghai)
+
+**The matched CNN/MLP study is not ready for formal execution.** Its scientific
+implementation and several private controller components have passed software
+verification, but the final staging/collection path and actual trusted caller
+remain incomplete. No new matched-study formal training, physical-test sampling
+or decoder-quality result is established by these controller checks. The
+optimization, export, domestic-accelerator and streaming gates below remain closed.
+
+| Area | Completed and evidenced | Still pending |
+| --- | --- | --- |
+| Matched-study implementation | PRs #847, #849, #850, #864 and [#871](https://github.com/flagos-ai/FlagQuantum/pull/871) are merged. The fixed training, calibration, validation, probe, primary replay and summary workflow is implemented and tested. | Executing the new frozen formal study and evaluating its scientific gates; implementation is not a quality result. |
+| Scientific source | The retained producer is `fc07f4dc7cdb92068460afcee629930791800345`, with source freeze, dependency copy, input binding and source delivery completed. | Do not substitute a later `main` revision or claim tree equivalence. A changed scientific producer needs its own final CI and fresh freeze. |
+| Actual two-host preflight | Both A800 hosts passed zero-sampling environment, layout and model-loading checks with distinct GPU UUIDs. Both owned containers were stopped and removed. | A current live formal scope, authenticated caller/ownership/UUID binding and study prediction-parity receipts. Historical removed containers are not current readiness evidence. |
+| Private final-consumer chain | Optional native validation-parent → issuer → read-only final consumer is connected using the same caller Budget and original pre-freeze process end. Independent receipts, byte capture and failure checks are implemented. | This is private software integration, not authenticated host authority or permission to stage/transport final artifacts. |
+| Stage and transport | Existing capture, partition, independent shard copy, receive/assembly and collection primitives are retained. Read-only stage contract review is complete. | The final-consumer-to-stage adapter and whole-stage deadline/acceptance path are not wired. Final-purpose collection remains disabled; the existing prepared-purpose route is not relabeled. |
+| Formal launch | The recipe, evidence requirements and failure rules remain frozen. | Full prepare/ready/peer-receipt/finish/failure/collection acceptance, authenticated live controls and fixed-recipe scientific storage preflight. Observed free space is not a reservation or a certified storage budget. |
+
+The private stage audit identifies concrete missing routes: `artifact_stage.stage`
+and `_copy` do not accept/forward the existing Budget, and stage's source recapture
+does not receive it. The lower-level copy, verify and capture helpers already
+support an optional Budget and should be reused. Stage currently writes
+`complete.json` and immediately returns; a final adapter must also cover
+post-complete and post-callback ancestry, payload, inventory, source, space and
+deadline checks. This audit did not implement those changes or execute stage.
+
+### Next bounded work
+
+1. Implement the smallest explicit optional stage connection using the existing
+   consumer, Snapshot, planner, capture and copy/verify helpers. Preserve old
+   defaults, prepared-purpose behavior and raw schemas. Independently check the
+   external consumer parent-complete SHA and exact file table, original request,
+   all five external seals and current Snapshot bytes/stat state; a returned
+   Snapshot or self-reported table alone is not transport authority.
+2. Keep the same local caller Budget and exact original pre-freeze outer end.
+   Restore original controls and arm once locally in an owned worker; do not
+   serialize a Budget, renew either original deadline or remap a later outer end.
+   Before freezing, charge all retained prior costs/reserves plus actual new
+   source, requests, bounded logs, metadata, independent copied shards and later
+   retained wire/receive/assembly copies. Merge charges on shared filesystems;
+   do not credit old retained bytes or treat transport limits as a science budget.
+3. Verify all three deadline orderings, blocked copy/verify/source/metadata paths,
+   owned-group termination, permanent clock-failure poisoning and late tampering.
+   Check again after complete writes and native callbacks; failure must retain
+   invalidated owned partial evidence and must not return success or allow retry.
+   Keep final-purpose collection disabled until this path is fully accepted.
+4. Then complete the actual canonical-source/strict-SSH/owned/live-UUID caller,
+   full phase/failure/collection acceptance and fixed-recipe storage gates before
+   considering a formal launch. Software passes alone authorize neither actual
+   transfer nor formal optimizer/sampling/GPU jobs. Retain frozen and failed
+   evidence; do not restart a formal partial, replace seeds or expand its budget.
+
+### Evidence and verification boundaries
+
+The frozen scientific recipe and layout correction are retained in
+[matched comparison](../development/QEC_AI_ISING_CNN_COMPARISON.md) and
+[layout verification](../development/QEC_AI_ISING_CNN_LAYOUT_VERIFICATION.md).
+The [earlier continued physical outcome](../development/QEC_AI_CONTINUED_PHYSICAL_ASSESSMENT_RESULTS.md)
+remains inconclusive and is not replaced by the new workflow's software tests.
+The frozen producer's [CPU CI](https://github.com/flagos-ai/FlagQuantum/actions/runs/40194297369)
+completed all 54 jobs; its [GPU CI](https://github.com/flagos-ai/FlagQuantum/actions/runs/40194297211)
+completed with three successful and three skipped jobs. These certify that tested
+revision's software, not a later `main`, private controller code or formal readiness.
+
+Private evidence below is retained **outside this checkout**, in the sibling
+`qec-ai-ci-evidence` directory. These local links are not published repository
+artifacts and will not resolve in a standalone clone or GitHub view. Their hashes
+identify the reviewed records; they do not turn private tests into repository CI.
+
+- [Actual two-host preflight](../../../qec-ai-ci-evidence/matched-private-actual-preflight.json):
+  zero new samples/optimizer updates; environment/layout/model loading only,
+  without study CPU/CUDA prediction-parity or scientific-quality certification.
+- [Native consumer integration](../../../qec-ai-ci-evidence/matched-private-native-consumer.json):
+  final new matrix **45 passed in 108.99 s**; separate final regression selection
+  **60 passed, 83 deselected in 21.41 s**. Strict mypy checked 81 files; Ruff
+  0.16.0 and Black 26.10.1 checks passed. Tiny study data and host/ownership/capacity
+  boundaries are synthetic; this is not a full-private-suite or actual-host pass.
+- [Read-only stage contract audit](../../../qec-ai-ci-evidence/matched-final-stage-contract-audit.json),
+  SHA-256 `5bac2bd7cd95ed9abfbaaceec9493e7269a7645b21644ec790d32c86ee1424b8`:
+  records source/function hashes, exact existing bindings, missing Budget routes,
+  storage obligations and acceptance requirements. Existing pure planner tests
+  were **34 passed, 1 deselected in 0.03 s**; zero new cases, no adapter or production
+  changes, and no stage/transfer execution. This is a static audit, not integration
+  acceptance.
+- [Retained handoff index](../../../qec-ai-ci-evidence/pr871-matched-primary-handoff.json):
+  links per-slice evidence, logs, historical failures and immutable source/proof
+  records. Test-file collection counts and earlier partial runs are not full-suite
+  pass counts. The local source cache has read-only regular files and 115 writable
+  directories; it must not be described as having read-only directories throughout.
+
+### Earlier results (retained history)
+
+The entries below describe earlier studies and delivery decisions. The dated
+snapshot and next-work list above supersede their historical sequencing.
+
 PRs #770, #775, #780 and #786 are merged: the private CPU chain now includes
 independent training-data checks, a geometric 3D CNN and prospective paired
 assessment. PR #786 merged at `046384975775879efc4db9f38403614b0f3a35a1`
@@ -98,10 +193,11 @@ quality limitations and measurement boundaries.
 | 8 | Streaming window execution | No lost/duplicate commits; boundary/reset recovery; bounded memory; sustained replay without queue growth; tail latency includes window wait | PR 7 |
 | Later | Real-QPU closed loop | Device-specific measurement/control contract, deadlines, experiment data and sustained feedback evidence | PR 8 plus hardware team |
 
-PR 2 may be prepared as a draft stacked on #770. Retarget it to main after #770
-merges and rerun checks before merge. Do not bundle later-stage implementations
-into a prerequisite PR. Keep protected API/schema changes in separately reviewed
-contract proposals before their consumers change.
+The prerequisite PRs above have merged; the former instruction to stack PR 2 on
+#770 is complete. Future dependent changes must still rerun checks against their
+actual base before merge. Do not bundle later-stage implementations into a
+prerequisite PR. Keep protected API/schema changes in separately reviewed contract
+proposals before their consumers change.
 
 ## AI implementation organization
 
@@ -113,12 +209,13 @@ forwarding compatibility layers. Public QEC exports, decoder registration and
 training checkpoint contents remain unchanged. See the
 [local contributor guide](../../flagquantum/qec/decoders/_ai/README.md).
 
-This is a behavior-preserving prerequisite to the next scientific improvement,
-not a new model or an accuracy/performance result. Next diagnose label/loss
-imbalance, confidence calibration and validation-only threshold selection inside
-the same package, with a new frozen experimental budget before collecting test
-results. Preserve the original study's inconclusive results and hashes. Proceed
-to performance and hardware work only after the scientific gate above is met.
+The consolidation was a behavior-preserving prerequisite, not a new model or an
+accuracy/performance result. Label/training-response diagnostics, calibration and
+validation-only threshold-selection software have since been delivered; their
+retained outcomes do not establish the new matched study's scientific gate.
+Current pending work is the stage/controller acceptance listed in the dated
+snapshot above. Preserve the original studies' inconclusive results and hashes.
+Proceed to performance and hardware work only after the scientific gate is met.
 
 ## PR 2 verification design
 
