@@ -61,6 +61,50 @@ route support. None is a distributed capacity or performance acceptance result.
 No new framework, solver, binder, result envelope, registry, evidence schema or
 capability catalog is needed to express this inventory.
 
+## Approved absorptive terminal counting delivery pending acceptance
+
+The user approved all five decisions in the
+[absorptive photon-counting contract](M3_ABSORPTIVE_PHOTON_COUNTING_CONTRACT_REVIEW.md).
+The new `python -m examples.absorptive_photon_counting` composition uses existing
+numeric evolution, terminal sampling and finite SuperOperator actions. It resets
+the measured mode to vacuum in the same joint coordinates, retains all outcomes
+including zero and missed counts, and sums unresolved incoming-number alternatives
+incoherently. Independent scalar blocks distinguish this from the accepted QND
+reference. No library production code, public API or result type changes.
+
+Six scalar references and consumer assertions were captured before the example.
+Five reference ASTs remain unchanged; the sixth received an explicit tensor
+wrapper for the same complex witness assignment, verified bit-for-bit against
+the frozen inputs. Consumers received only import sorting and a typed reduction
+for the deliberate incorrect-map witness. No physical assertion or threshold
+changed; the accepted scenario table above remains unchanged.
+
+Complete local default verification passed 16,148 cases/224 skipped
+(465.96s); integration passed 2,620/177 skipped (204.75s).
+Both XML reports contain zero failures/errors: default at implementation commit
+`3d2785ca8cd94ed9c91882b7ab13872b78604087`, integration at README-repair commit
+`635afbe4dd0ba7b9aafe0e83abfafd9830e4705a` with identical example/test/library blobs.
+The first integration run retained 2,619 passes/177 skips and one failure because
+the new example was missing from the README inventory. Adding its entry fixed
+the unchanged inventory test; the complete integration rerun passed. Its original
+negative log/XML remains retained. Subsequent progress prose retains identical
+example/test/library blobs. Python 3.10 passed 41 focused cases; Python 3.12
+passed the same 41 plus the existing Markdown hygiene check. Package strict
+checking passed 842 files; focused strict checking passed the two new files.
+The initial expanded new-file invocation also exposed two existing diagnostics
+in imported `terminal_instrument_reference.py`; those original diagnostics are
+retained, and no unrelated example was changed. Ruff, Black 24/26, ownership,
+repository gates and local links/language passed.
+
+Maximum full evolved/branch density error was 7.50e-16, conditional density
+error 2.22e-15, unread error 7.50e-16 and completeness error 2.22e-16.
+The smallest independent positive branch weight was 0.1348608243; analytic zero
+branches were checked unnormalized. All original budgets remain unchanged.
+Latest-head remote CI/GPU/matrix evidence and the independent merge decision
+are tracked in the delivery PR. This scenario remains pending acceptance until
+its own authorized merge and successful main smoke. No local Python 3.11,
+physical detector or full M3/M4 certification is claimed.
+
 ## Accepted fixed thermal-bath spin-mode scenario
 
 The user approved all five decisions in the

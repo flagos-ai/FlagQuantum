@@ -65,6 +65,11 @@ These examples do not use that alias:
   explicit presence and finite-Fock instruments through the CPU Runtime API.
 - [`terminal_instrument_reference.py`](terminal_instrument_reference.py) uses
   existing SuperOperator maps and illustrative Torch draws for proposal 083.
+- [`absorptive_photon_counting.py`](absorptive_photon_counting.py) uses existing
+  Lindblad evolution, square vacuum-reset Kraus branches and terminal sampling
+  for a finite absorptive counting reference. Run
+  `python -m examples.absorptive_photon_counting`; it retains measured-mode vacuum
+  coordinates and makes no detector-event or hardware claim.
 - [`boson_interference.py`](boson_interference.py) — it uses the existing
   `flagquantum.lindblad` namespace and boson algebra for two-photon interference
   and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
