@@ -1,6 +1,6 @@
 # M3 next scenario: terminal absorptive photon counting
 
-Status: **approved for existing-interface implementation on 2026-10-26**.
+Status: **approved for existing-interface implementation; delivery accepted through #921 on 2026-10-26**.
 The user instructed "do" in direct response to this five-decision review. This
 authorizes the bounded example/test delivery below, not production/API changes
 or any PR merge; each PR still needs its own conditional human grant.
@@ -13,7 +13,7 @@ The implementation may add only the reviewed example, independent tests and
 honest progress prose. Public APIs, schemas, dependencies and capability
 claims remain unchanged. Earlier approvals are not its merge authorization.
 
-## Remaining gaps and selection
+## Remaining gaps and selection at the original review
 
 The [accepted M3 inventory](M3_SCENARIO_ACCEPTANCE.md) now covers fixed
 dissipation in the qutrit and spin-mode references, one intermediate atom-presence
@@ -210,7 +210,7 @@ It grants no library production change, API snapshot change or PR merge. M3 acce
 only after separately authorized delivery; device validation and full M3/M4
 remain open decisions.
 
-## Implementation progress (pending acceptance)
+## Accepted implementation and delivery
 
 Independent analytic reference closure passed six cases before the example
 existed; the pre-example consumers failed on the missing module as expected.
@@ -244,7 +244,19 @@ Maximum full evolved/branch density error was 7.50e-16, conditional density
 error 2.22e-15, unread error 7.50e-16 and completeness error 2.22e-16.
 The smallest independent positive branch weight was 0.1348608243; analytic zero
 branches were checked unnormalized. All original budgets remain unchanged.
-Latest-head remote CI/GPU/matrix evidence and the independent merge decision
-are tracked in the delivery PR. This scenario remains pending acceptance until
-its own authorized merge and successful main smoke. No local Python 3.11,
-physical detector or full M3/M4 certification is claimed.
+[#921](https://github.com/flagos-ai/FlagQuantum/pull/921) passed complete CI
+`40295642672` on attempt 3 (all 54 jobs), GPU `40295642686` on attempt 2,
+and the remote Python 3.10/3.11/3.12 matrix at head
+`84f15a6a99e7a36ab993989d1d6ae94e8c10ec74`. All 60 applicable checks completed:
+57 success and only the original three manual-pool skips. Its own explicit human
+grant preceded a normal fixed-head merge as
+`d15d681b88d6062e02b97317e53fbea5bafc7105`. Main smoke `40316383759` succeeded on
+that exact merge; it is smoke only, not full main CI, a release or device evidence.
+
+Original remote failures were Action archive/PyPI timeouts. One quality checkout
+stalled in `git fetch --unshallow` for about 27 minutes; the user separately
+authorized its termination and recovery of unsuccessful jobs. The targeted retry
+retained successful tests and GPU, and changed no code, physical assertion,
+security audit, workflow limit or repository protection. Original logs and
+annotations remain retained. No local Python 3.11, physical detector or full
+M3/M4 certification is claimed.
