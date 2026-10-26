@@ -165,7 +165,7 @@ def test_the_rule_source_is_worth_shipping_over_the_true_commuting_set() -> None
     A rule source that answered "no" to everything would pass the test above, so
     this one measures what it actually recovers. Of the 4042 pairs of declared
     arity-one and arity-two unitaries that really do commute in the placements
-    swept above, 3750 are answered and 292 are declined. Every decline is listed
+    swept above, 3758 are answered and 284 are declined. Every decline is listed
     below with the number of (placement, role) combinations it accounts for, so a
     regression that widens or narrows the gap fails here instead of passing
     silently.
@@ -193,8 +193,8 @@ def test_the_rule_source_is_worth_shipping_over_the_true_commuting_set() -> None
     answered = [(left, right) for left, right in truth if commute(left, right)]
     declined = [(left, right) for left, right in truth if not commute(left, right)]
     assert len(truth) == 4042
-    assert len(answered) == 3750
-    assert len(declined) == 292
+    assert len(answered) == 3758
+    assert len(declined) == 284
     assert len(answered) + len(declined) == len(truth)
 
     counts = collections.Counter(
@@ -252,17 +252,16 @@ _DECLINED_GAP: dict[tuple[str, str], int] = {
     ("sx", "sxdg"): 6,
     ("sx", "x"): 6,
     ("sxdg", "x"): 6,
-    # Exchange-family gates commute with one another and with symmetric Pauli
-    # interactions on the same pair; the generic rule source declines them.
+    # The iSWAP pair commutes with itself and with symmetric Pauli interactions
+    # on the same pair; the generic rule source still declines those cases. Its
+    # shared exchange-symmetry rule now answers the SWAP pair directly.
     ("iswap", "iswapdg"): 4,
     ("iswap", "rxx"): 4,
     ("iswap", "ryy"): 4,
     ("iswap", "rzz"): 4,
-    ("iswap", "swap"): 4,
     ("iswapdg", "rxx"): 4,
     ("iswapdg", "ryy"): 4,
     ("iswapdg", "rzz"): 4,
-    ("iswapdg", "swap"): 4,
     # The identity gate against anything at all.
     ("crx", "i"): 4,
     ("cry", "i"): 4,
@@ -488,7 +487,7 @@ def test_the_rule_source_carries_no_import_of_the_simulation_layer() -> None:
         "..core.operator_schema",
     ]
     # The reach of the rule source, as a fact rather than as a guess.
-    assert len(_RULE_OPCODES) == 28
+    assert len(_RULE_OPCODES) == 30
 
 
 def _circuit(*instructions: Instruction) -> CircuitIR:
