@@ -249,7 +249,7 @@ _FORMS = {
 _ANCHOR = {
     "available": True,
     "pass_name": "RemoveDiagonalGatesBeforeMeasure",
-    "row_count": 212,
+    "row_count": 252,
     "removed_count": 20,
     "disagreement_count": 6,
 }
