@@ -1,9 +1,10 @@
 # FTS-11B: Bounded Dynamic Coherent-Reference Proposal
 
-Status: proposed, not approved or implemented. This new finite private reference
-domain and its comparison values are not covered by the static A-D approval.
-No API, production branch engine, sampling certificate or collection budget is
-activated by this document.
+Status: the human specifically approved the finite E-H reference contract and
+complex128 atol=1e-12/rtol=0 on 2026-10-26. Its private conformance implementation
+is submitted for review. Approval came from the specific answer, not static A-D
+admission, document merge or green CI. No API, production branch engine,
+sampling certificate or collection budget is activated.
 
 ## Existing owners and missing boundary
 
@@ -27,10 +28,10 @@ quality, per-shot conditional states or a production decomposition.
 
 ## Decision requested: finite groups E-H
 
-Approve only these three noise-free two-qubit cases, their private coherent
+The approval covers only these three noise-free two-qubit cases, their private coherent
 measurement/continuation algebra and CPU complex128 comparisons with
-atol=1e-12, rtol=0. The values require specific approval for this domain and are
-not a new runtime accuracy guarantee. Each future module verification uses
+atol=1e-12, rtol=0. The specifically approved values apply only to this domain,
+not a new runtime accuracy guarantee. Each module verification uses
 three existing public `DynamicCircuit.density_matrix()` calls, one per case,
 and exactly 20 private projected Clifford vectors of four amplitudes each.
 A single-thread fixture restores the previous setting. No shots, statistical
@@ -133,10 +134,40 @@ approval and main admission may a separate test-only PR implement this slice.
 
 Production phase representation, conditional sampling, trajectory/Born
 validation and target W4 selection/cost remain open. FTS-10/11 system acceptance,
-FTS-02/09 and R01-R15 remain partial. No new private projector, branch enumeration
-or proposed conformance has run for this document. Both completed study
-campaigns and all raw evidence remain immutable; no collector, probe or recovery
-attempt is authorized here.
+FTS-02/09 and R01-R15 remain partial. Both completed study campaigns and all raw
+evidence remain immutable; no collector, probe or recovery attempt is authorized
+here.
+
+### Approved private conformance submitted for review
+
+[The new integration test](../../tests/integration/test_ftqc_dynamic_coherent_reference.py)
+computes the admitted 20 projected Clifford vectors once per module, reusing the
+existing private scalar Clifford evaluator with X and unnormalized P0/P1 terms.
+The static 23-case qualification remains in place. An independent hand-written
+four-dimensional matrix calculation uses direct T phases rather than the
+Clifford evaluator or production gate/projector helpers. Both references are
+compared with the explicit analytic vectors, not solely with each other.
+
+Three parameterized cases make exactly one current public density call each.
+Born weights and nonzero conditional normalization are checked before reducing
+full density errors; the analytically zero outcome is refused before division.
+The remaining negatives reuse the vectors without more public calls, including
+the case where E2's aggregate cannot distinguish a wrong record distribution.
+A module fixture restores the previous numerical thread count.
+
+This is finite reference qualification under review, not trajectory-sampler or
+RNG certification, a dynamic public result extension or an engine implementation.
+
+### Post-merge proposal admission
+
+Proposal main `ebc2f4985eaaa5e40b81f426dad4e872fa3f559b` passed CI 40215058662
+(all 54 jobs), GPU 40215062035 (source, single and required two GPUs), and smoke
+40215017279. Package job 121234345489 passed real QEC optional installation and
+retained evidence. Isolated sdist/wheel checks matched all 834 package Python
+members. Fresh Python 3.12.14/Torch 2.14.1 core, dependencies, native Bell, master
+examples, HTH and CLI passed. The installed current density example below and
+observer CLI passed outside the checkout without PYTHONPATH or an SDK overlay.
+Those checks did not execute E-H conformance or collect study observations.
 
 ## Runnable existing user workflow
 

@@ -683,13 +683,17 @@ checks, fresh 834-member core installation and installed runnable user examples.
 Its focused source check passed 68 tests without skips, including 23 new finite
 reference checks and original retirement contracts. No pilot campaign was rerun.
 
-### FTS-11B dynamic coherent-reference proposal
+### FTS-11B finite dynamic coherent-reference conformance under review
 
 The [three-case finite proposal](../development/FTQC_DYNAMIC_COHERENT_REFERENCE_PROPOSAL.md)
-requests separate review of private Born weights, conditional normalization,
-record-preserving reset and coherent measurement continuation. It proposes 20
-private four-amplitude projected vectors and three existing public density calls
-per module verification, with complex128 atol=1e-12/rtol=0 requiring specific
-approval. It does not qualify trajectory sampling, create a branch API/engine,
-or activate a collection budget. No proposed reference is implemented yet.
+received specific human approval on 2026-10-26 for private Born weights,
+conditional normalization, record-preserving reset and coherent measurement
+continuation. Proposal mainebc2 completed all admission gates: 54 CI jobs,
+required GPUs, real installation checks, fresh core and installed user examples.
+The private test implementation is under review: 20 four-amplitude projected
+Clifford terms and three existing public density calls per module verification,
+with the separately approved complex128 atol=1e-12/rtol=0. It retains the static
+qualification and independently checks direct-T matrices and analytic answers.
+It does not qualify trajectory sampling, create a branch API/engine, or activate
+a collection budget.
 R04/R05, FTS-10/11 and the system-level milestones remain partial.
