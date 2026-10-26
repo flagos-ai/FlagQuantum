@@ -11,10 +11,13 @@ from typing import Any
 
 from ..noise import NoiseModel
 from ._atomic import write_once
+from .candidate_fit import TwinCandidateFit, TwinFittedCandidate
 from .model import QPUDigitalTwin, TwinSnapshot
 
 _TWIN_SCHEMA = "flagquantum.qpu_digital_twin.v1"
+_FITTED_TWIN_SCHEMA = "flagquantum.qpu_digital_twin.v2"
 _TWIN_FIELDS = {"schema", "snapshot", "noise_model"}
+_FITTED_TWIN_FIELDS = {"schema", "snapshot", "noise_model", "candidate_fit"}
 _SNAPSHOT_FIELDS = {
     "schema",
     "provider",
@@ -76,11 +79,18 @@ def _to_dict(twin: QPUDigitalTwin) -> dict[str, Any]:
     profile = twin.noise_model.device_profile
     if profile is None or profile.identity != twin.snapshot.calibration_identity:
         raise ValueError("Twin calibration changed after the snapshot was frozen")
-    return {
-        "schema": _TWIN_SCHEMA,
+    payload = {
+        "schema": (
+            _FITTED_TWIN_SCHEMA
+            if isinstance(twin, TwinFittedCandidate)
+            else _TWIN_SCHEMA
+        ),
         "snapshot": twin.snapshot.to_dict(),
         "noise_model": twin.noise_model.to_dict(),
     }
+    if isinstance(twin, TwinFittedCandidate):
+        payload["candidate_fit"] = twin.fit.to_dict()
+    return payload
 
 
 def load_twin(path: str | PathLike[str]) -> QPUDigitalTwin:
@@ -93,8 +103,12 @@ def load_twin(path: str | PathLike[str]) -> QPUDigitalTwin:
         raise ValueError(f"Cannot load QPU digital Twin from {source}") from error
     if not isinstance(payload, Mapping):
         raise ValueError("QPU digital Twin file must contain a JSON object")
-    _require_fields(payload, _TWIN_FIELDS, name="QPU digital Twin")
-    if payload["schema"] != _TWIN_SCHEMA:
+    schema = payload.get("schema")
+    if schema == _TWIN_SCHEMA:
+        _require_fields(payload, _TWIN_FIELDS, name="QPU digital Twin")
+    elif schema == _FITTED_TWIN_SCHEMA:
+        _require_fields(payload, _FITTED_TWIN_FIELDS, name="QPU digital Twin")
+    else:
         raise ValueError("unsupported QPU digital Twin schema")
     snapshot_payload = payload["snapshot"]
     noise_payload = payload["noise_model"]
@@ -120,10 +134,17 @@ def load_twin(path: str | PathLike[str]) -> QPUDigitalTwin:
     if canonical_model != canonical_payload:
         raise ValueError("noise model is not in canonical v1 form")
     try:
-        return QPUDigitalTwin(
-            snapshot=_snapshot_from_dict(snapshot_payload),
-            noise_model=model,
-        )
+        snapshot = _snapshot_from_dict(snapshot_payload)
+        if schema == _FITTED_TWIN_SCHEMA:
+            fit_payload = payload["candidate_fit"]
+            if not isinstance(fit_payload, Mapping):
+                raise ValueError("Twin candidate fit must be a JSON object")
+            return TwinFittedCandidate(
+                snapshot=snapshot,
+                noise_model=model,
+                fit=TwinCandidateFit.from_dict(fit_payload),
+            )
+        return QPUDigitalTwin(snapshot=snapshot, noise_model=model)
     except (TypeError, ValueError) as error:
         raise ValueError("Invalid QPU digital Twin") from error
 

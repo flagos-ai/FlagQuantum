@@ -6,6 +6,7 @@ from .candidate import (
     TwinCandidateTrial,
     prepare_candidate_trial,
 )
+from .candidate_fit import TwinCandidateFit, TwinFittedCandidate, fit_candidate
 from .candidate_submission import (
     TwinCandidateSubmission,
     dump_candidate_submission,
@@ -144,6 +145,7 @@ __all__ = (
     "compose_region_twin",
     "from_noise_model",
     "from_quafu_chip_info",
+    "fit_candidate",
     "dump_calibration_history",
     "dump_candidate_submission",
     "dump_candidate_suite",
@@ -193,6 +195,7 @@ __all__ = (
     "TwinCalibrationHistory",
     "TwinCandidateDecision",
     "TwinCandidateEvaluation",
+    "TwinCandidateFit",
     "TwinCandidateSubmission",
     "TwinCandidateSuite",
     "TwinCandidateSuiteEvaluation",
@@ -207,6 +210,7 @@ __all__ = (
     "TwinFreshnessAssessment",
     "TwinFreshnessPolicy",
     "TwinFreshnessStatus",
+    "TwinFittedCandidate",
     "TwinGateDurationDrift",
     "TwinHardwareReport",
     "TwinParameterEstimate",

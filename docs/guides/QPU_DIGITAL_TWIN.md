@@ -455,6 +455,40 @@ circuit accuracy, or model probability. `goodness_of_fit` is the descriptive
 score `max(0, 1 - row TV RMSE)`. Estimation grants no submission, Twin mutation,
 promotion, routing, or hardware-control authority.
 
+## Build a candidate from the bounded fit
+
+Candidate construction is a separate offline step:
+
+```python
+candidate = fq.twin.fit_candidate(
+    incumbent,
+    estimate,
+    captured_at="2026-08-15T10:30:00+08:00",
+)
+
+print(candidate.fit.parameter_estimate_identity)
+print(candidate.fit.fitted_parameters)
+print(candidate.fit.retained_parameters)
+fq.twin.dump_twin(candidate, "twin-candidate.json")
+```
+
+The candidate has a new snapshot identity and leaves the incumbent unchanged.
+Its provenance binds the incumbent snapshot, probe bank, complete estimate,
+fitted values and intervals, retained calibration fields, and unidentified
+names. The restricted TV burdens become symmetric readout flips and local
+depolarizing channels; unrepresentable values fail closed instead of being
+clipped.
+
+Run the complete synthetic estimate-to-candidate example with:
+
+```bash
+python examples/twin_candidate_fit.py
+```
+
+The resulting `TwinFittedCandidate` is accepted by existing candidate-suite
+and holdout APIs, but it has no execution or promotion authority. Prospective
+hardware validation remains a later explicit workflow.
+
 To incorporate one newly validated calibration, extend the saved history
 immutably and write a new versioned artifact:
 
