@@ -2,6 +2,13 @@
 
 ## Scope and ownership
 
+This document preserves the original study and its incomplete measurements.
+Current delivery status, including merged #872/#877/#885 and outstanding #885
+post-merge workflow acceptance, is maintained in the
+[continuing progress ledger](../roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md#continuing-delivery-progress--2026-10-26).
+The original delivery sequence below is historical; it is not an instruction to
+rerun or add samples to the frozen studies when reporting current progress.
+
 The first compatibility route is complete through #822. The next step measures
 where time is spent before selecting an implementation to optimize or replace.
 This is a local CPU observation study, not a performance gate, GPU result,
