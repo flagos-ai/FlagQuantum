@@ -85,3 +85,11 @@ architecture, dependency policy, public API baseline, public evidence privacy an
 repository hygiene checks passed. This is not a complete-suite or remote-CI
 success claim. The PR remains draft; full-suite limitations recorded in the
 previous evidence still apply.
+
+Prior remote quality/dependency jobs exposed two Module Any-return errors; the
+private kernel cache now has its concrete type and the strict three-file check
+passes. The prior supply-chain job failed on a PyPI read timeout. New remote
+checks must complete before merge. This annotation-only follow-up does not
+change the measured numerical implementation.
+
+Full local strict package mypy passed for all 840 selected source files.

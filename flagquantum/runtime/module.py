@@ -36,6 +36,7 @@ from .result_adapters import LiveRuntimeSummary
 
 if TYPE_CHECKING:
     from ..algorithms import Hamiltonian
+    from .executors.jax.kernel import JAXQuantumKernel
     from .executors.mps.production import (
         MPSAcceptanceGates,
         MPSCrossoverMeasurement,
@@ -177,7 +178,7 @@ class Module(torch.nn.Module):
         self._builder_slots: tuple[tuple[int, str], ...] = ()
         self._builder_compile_count = 0
         self._builder_cache_hits = 0
-        self._jax_kernel: Any | None = None
+        self._jax_kernel: JAXQuantumKernel | None = None
         self._jax_kernel_signature: tuple[Any, ...] | None = None
         self._jax_ir_template: CircuitIR | None = None
         self._jax_snapshot_replay_safe = False
