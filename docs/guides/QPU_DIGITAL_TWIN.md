@@ -380,6 +380,43 @@ existing frozen `TwinExperiment` objects but does not submit them. Provider
 construction, credentials, task submission, polling, retry, cancellation, and
 operator approval remain application responsibilities.
 
+## Check whether a probe design is identifiable
+
+Probe count is not an identifiability test. Freeze the circuit identities,
+physical mapping, represented local parameters, and explicit design matrix:
+
+```python
+import flagquantum as fq
+
+probe_circuits = (
+    fq.Circuit(2).cx(0, 1),
+    fq.Circuit(2).h(0).cx(0, 1),
+    fq.Circuit(2).h(1).cx(0, 1),
+)
+bank = fq.twin.prepare_probe_bank(
+    target="quafu:Shenglian",
+    physical_qubits=(20, 27),
+    probes=probe_circuits,
+    parameter_family="local_pauli_readout",
+)
+
+print(bank.identifiability_status)
+print(bank.parameter_names)
+print(bank.unidentified_parameters)
+print(bank.matrix_rank)
+```
+
+`identifiable` means this declared local design has full column rank.
+`underdetermined` names the parameters that cannot be separated and must not be
+estimated from this bank. Adding repeated or structurally equivalent probes
+does not manufacture rank.
+
+The first parameter family covers per-qubit readout bit-flip and single-qubit
+Pauli burdens plus a two-qubit Pauli burden for every exercised directed
+coupler. Its integer coefficients are structural operation-incidence terms;
+they are not fitted noise rates or a physical response Jacobian. Bank creation
+is offline and provides no submission, fitting, promotion, or routing authority.
+
 To incorporate one newly validated calibration, extend the saved history
 immutably and write a new versioned artifact:
 

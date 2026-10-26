@@ -68,6 +68,7 @@
     "load_validation_series",
     "prepare_candidate_trial",
     "prepare_candidate_suite",
+    "prepare_probe_bank",
     "prepare_region_candidate_holdout",
     "prepare_region_holdout_study",
     "prepare_region_validation_suite",
@@ -94,6 +95,8 @@
     "TwinGateDurationDrift",
     "TwinHardwareReport",
     "TwinPrediction",
+    "TwinProbeBank",
+    "TwinProbeBankStatus",
     "TwinProbeRefreshPlan",
     "TwinQubitCalibrationDrift",
     "TwinRegionCoverage",
@@ -155,6 +158,7 @@
     "load_validation_series": "(path: 'str | PathLike[str]') -> 'TwinValidationSeries'",
     "prepare_candidate_trial": "(incumbent: 'QPUDigitalTwin', candidate: 'QPUDigitalTwin', circuit: 'Any', *, name: 'str', shots: 'int') -> 'TwinCandidateTrial'",
     "prepare_candidate_suite": "(incumbent: 'QPUDigitalTwin', candidate: 'QPUDigitalTwin', circuits: 'Sequence[Any]', *, name: 'str', shots: 'int') -> 'TwinCandidateSuite'",
+    "prepare_probe_bank": "(*, target: 'str', physical_qubits: 'Sequence[int]', probes: 'Sequence[Any]', parameter_family: 'str') -> 'TwinProbeBank'",
     "prepare_region_candidate_holdout": "(incumbent: 'TwinRegionModel', candidate: 'TwinRegionModel', reference_circuits: 'Sequence[Any]', holdout_circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int') -> 'TwinRegionCandidateHoldoutStudy'",
     "prepare_region_validation_suite": "(region_twin: 'TwinRegionModel', circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int', repetitions: 'int' = 2) -> 'TwinRegionValidationSuite'",
     "prepare_probe_refresh": "(release: 'TwinRegionRelease', candidate_circuits: 'Sequence[Any]', *, calibration_history: 'TwinCalibrationHistory | None' = None, validation_history: 'TwinValidationHistory | TwinRegionValidationHistory | None' = None, maximum_tasks: 'int', shots: 'int') -> 'TwinProbeRefreshPlan'",
@@ -195,6 +199,7 @@
     "TwinHardwareReport": "(experiment_identity: 'str', provider: 'str', backend_name: 'str', task_id: 'str', submitted_qasm_identity: 'str', executed_qasm_identity: 'str | None', counts: 'Mapping[str, int]', validation: 'TwinValidationReport', result_metadata: 'Mapping[str, Any]', schema: 'str' = 'flagquantum.twin_hardware_report.v1') -> None",
     "TwinGateDurationDrift": "(gate_name: 'str', physical_qubits: 'tuple[int, ...] | None', reference_duration_seconds: 'float', current_duration_seconds: 'float', absolute_duration_delta_seconds: 'float', relative_duration_delta: 'float | None', schema: 'str' = 'flagquantum.twin_gate_duration_drift.v1') -> None",
     "TwinPrediction": "(snapshot_identity: 'str', circuit_identity: 'str', n_wires: 'int', ideal_probabilities: 'tuple[float, ...]', twin_probabilities: 'tuple[float, ...]', total_variation_from_ideal: 'float', schema: 'str' = 'flagquantum.twin_prediction.v1') -> None",
+    "TwinProbeBank": "(target: 'str', physical_qubits: 'tuple[int, ...]', directed_couplers: 'tuple[tuple[int, int], ...]', probe_circuit_identities: 'tuple[str, ...]', parameter_family: 'str', parameter_names: 'tuple[str, ...]', probe_parameter_names: 'tuple[tuple[str, tuple[str, ...]], ...]', design_row_labels: 'tuple[str, ...]', design_matrix: 'tuple[tuple[int, ...], ...]', matrix_rank: 'int', identifiable_parameters: 'tuple[str, ...]', unidentified_parameters: 'tuple[str, ...]', identifiability_status: 'TwinProbeBankStatus', schema: 'str' = 'flagquantum.twin_probe_bank.v1') -> None",
     "TwinProbeRefreshPlan": "(release_identity: 'str', candidate_region_identity: 'str', candidate_snapshot_identity: 'str', target: 'str', physical_qubits: 'tuple[int, ...]', candidate_circuit_identities: 'tuple[str, ...]', selected_circuit_identities: 'tuple[str, ...]', unsupported_candidates: 'tuple[tuple[str, tuple[str, ...]], ...]', covered_directed_couplers: 'tuple[tuple[int, int], ...]', coverage_gaps: 'tuple[str, ...]', calibration_history_identity: 'str | None', validation_history_identity: 'str | None', shots: 'int', maximum_tasks: 'int', repetitions: 'int' = 2, schema: 'str' = 'flagquantum.twin_probe_refresh_plan.v1') -> None",
     "TwinQubitCalibrationDrift": "(physical_qubit: 'int', reference_t1_seconds: 'float', current_t1_seconds: 'float', relative_t1_delta: 'float', reference_t2_seconds: 'float', current_t2_seconds: 'float', relative_t2_delta: 'float', maximum_readout_row_tv_distance: 'float | None', schema: 'str' = 'flagquantum.twin_qubit_calibration_drift.v1') -> None",
     "TwinRegionCoverage": "(status: 'TwinRegionCoverageStatus', physical_qubits: 'tuple[int, ...]', required_directed_couplers: 'tuple[tuple[int, int], ...]', covered_qubits: 'tuple[int, ...]', covered_directed_couplers: 'tuple[tuple[int, int], ...]', missing_qubits: 'tuple[int, ...]', missing_directed_couplers: 'tuple[tuple[int, int], ...]', unsupported_operations: 'tuple[str, ...]', circuit_depth: 'int', maximum_circuit_depth: 'int', source_support_identities: 'tuple[str, ...]', reasons: 'tuple[str, ...]', tv_error_bound: 'None' = None, confidence_level: 'None' = None, schema: 'str' = 'flagquantum.twin_region_coverage.v1') -> None",
@@ -257,6 +262,7 @@
     "TwinGateDurationDrift.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinPrediction.compare_counts": "(self, counts: 'Mapping[str, int]', *, reverse_bits: 'bool' = False) -> 'TwinValidationReport'",
     "TwinPrediction.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinProbeBank.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinProbeRefreshPlan.prepare_suite": "(self, region_twin: 'TwinRegionModel', candidate_circuits: 'Sequence[Any]', *, name: 'str') -> 'TwinRegionValidationSuite'",
     "TwinProbeRefreshPlan.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinQubitCalibrationDrift.to_dict": "(self) -> 'dict[str, Any]'",
@@ -465,6 +471,22 @@
       "ideal_probabilities",
       "twin_probabilities",
       "total_variation_from_ideal",
+      "schema"
+    ],
+    "TwinProbeBank": [
+      "target",
+      "physical_qubits",
+      "directed_couplers",
+      "probe_circuit_identities",
+      "parameter_family",
+      "parameter_names",
+      "probe_parameter_names",
+      "design_row_labels",
+      "design_matrix",
+      "matrix_rank",
+      "identifiable_parameters",
+      "unidentified_parameters",
+      "identifiability_status",
       "schema"
     ],
     "TwinProbeRefreshPlan": [
@@ -908,6 +930,9 @@
       "target",
       "verified_circuit_identities"
     ],
+    "TwinProbeBank": [
+      "identity"
+    ],
     "TwinProbeRefreshPlan": [
       "identity",
       "planned_shots",
@@ -931,6 +956,7 @@
     "TwinHardwareReport": "flagquantum.twin_hardware_report.v1",
     "TwinGateDurationDrift": "flagquantum.twin_gate_duration_drift.v1",
     "TwinPrediction": "flagquantum.twin_prediction.v1",
+    "TwinProbeBank": "flagquantum.twin_probe_bank.v1",
     "TwinProbeRefreshPlan": "flagquantum.twin_probe_refresh_plan.v1",
     "TwinQubitCalibrationDrift": "flagquantum.twin_qubit_calibration_drift.v1",
     "TwinRegionCoverage": "flagquantum.twin_region_coverage.v1",
@@ -970,6 +996,10 @@
       "refresh_due",
       "insufficient_evidence",
       "incompatible_history"
+    ],
+    "TwinProbeBankStatus": [
+      "identifiable",
+      "underdetermined"
     ],
     "TwinRegionCoverageStatus": [
       "covered",
