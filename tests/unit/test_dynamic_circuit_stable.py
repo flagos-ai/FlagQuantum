@@ -93,7 +93,12 @@ def test_dynamic_ir_round_trip_preserves_feedback_semantics() -> None:
 
 
 def test_dynamic_builder_uses_stable_error_categories() -> None:
-    assert fqd.DynamicCircuit(1).x(0).state(refresh=True).shape == (1, 2)
+    circuit = fqd.DynamicCircuit(1)
+    returned = circuit.x(0)
+    assert returned is circuit
+    assert isinstance(returned, fqd.DynamicCircuit)
+    assert returned.to_ir().instructions[0].name == "x"
+    assert returned.state(refresh=True).shape == (1, 2)
     with pytest.raises(fqe.ValidationError):
         fqd.DynamicCircuit(1).measure(-1)
     with pytest.raises(fqe.ValidationError):

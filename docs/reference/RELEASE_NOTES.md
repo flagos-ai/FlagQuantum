@@ -17,6 +17,14 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Admit a full-register terminal-measurement subset of `DynamicCircuit` through
+  the existing static Quafu `fq.run(...)` route. Preserve declared
+  qubit-to-classical-bit permutations in returned counts, retain inspectable
+  normalization identity, and keep partial, repeated, mid-circuit, reset,
+  conditional, samples, expectation, and Qsteed physical paths fail closed.
+  Add a local CPU benchmark for normalization and counts projection; it performs
+  no provider, credential, network, task, quota, or QPU work.
+
 - Add caller-configured, offline QPU Twin evidence-freshness assessment. Age,
   calibration drift, and verified TV-error thresholds return explicit current,
   refresh-due, insufficient-evidence, or incompatible-history outcomes without
