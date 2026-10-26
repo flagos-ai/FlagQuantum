@@ -26,6 +26,8 @@ from .builder_compilation import (
     BuilderBindings,
     CompiledInstruction,
     SlotParameterMapping,
+    can_defer_ir_snapshot,
+    deferred_ir_snapshot,
     detached_ir_snapshot,
 )
 from .policy import RuntimePolicy
@@ -162,7 +164,8 @@ class Module(torch.nn.Module):
         self.hamiltonian = hamiltonian
         self._state_process_group: Any | None = None
         self._parallel_plan: HybridParallelPlan | None = None
-        self._last_ir: CircuitIR | None = None
+        self._last_ir_snapshot: CircuitIR | None = None
+        self._last_ir_factory: Callable[[], CircuitIR] | None = None
         self._compiled_topology_signature: str | None = None
         self._compile_count = 0
         self._program_cache_hits = 0
@@ -176,6 +179,8 @@ class Module(torch.nn.Module):
         self._builder_cache_hits = 0
         self._jax_kernel: Any | None = None
         self._jax_kernel_signature: tuple[Any, ...] | None = None
+        self._jax_ir_template: CircuitIR | None = None
+        self._jax_snapshot_replay_safe = False
         self._correctness_debug_hook_handle: tuple[RemovableHandle, ...] | None = None
         if precision is None:
             from .training_state import PrecisionPolicy
@@ -192,6 +197,18 @@ class Module(torch.nn.Module):
         precision.apply(self)
         self.precision = precision
         self._sync_correctness_debug_hook()
+
+    @property
+    def _last_ir(self) -> CircuitIR | None:
+        if self._last_ir_factory is not None:
+            snapshot = self._last_ir_factory()
+            self._last_ir = snapshot
+        return self._last_ir_snapshot
+
+    @_last_ir.setter
+    def _last_ir(self, value: CircuitIR | None) -> None:
+        self._last_ir_snapshot = value
+        self._last_ir_factory = None
 
     @staticmethod
     def _require_policy_precision(policy: RuntimePolicy, complex_dtype: str) -> None:
@@ -249,6 +266,7 @@ class Module(torch.nn.Module):
         self.policy = policy
         self._jax_kernel = None
         self._jax_kernel_signature = None
+        self._jax_ir_template = None
         self._sync_correctness_debug_hook()
 
     def _apply(
@@ -284,6 +302,7 @@ class Module(torch.nn.Module):
             )
         self._jax_kernel = None
         self._jax_kernel_signature = None
+        self._jax_ir_template = None
         object.__setattr__(self, "_builder_program", None)
         self._builder_program_signature = None
         self._builder_template = None
@@ -495,23 +514,27 @@ class Module(torch.nn.Module):
         self._builder_slots = slots
         self._builder_compile_count += 1
 
+    @staticmethod
+    def _builder_accepts_inputs(builder: CircuitBuilder) -> bool:
+        return (
+            sum(
+                parameter.kind
+                in (
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                )
+                for parameter in inspect.signature(builder).parameters.values()
+            )
+            >= 2
+        )
+
     def _invoke_circuit_builder(
         self, parameters: Any, inputs: torch.Tensor | None
     ) -> Circuit | CircuitIR:
         builder = self.circuit_builder
         if not callable(builder):
             raise TypeError("module circuit builder must be callable")
-        signature = inspect.signature(builder)
-        positional = tuple(
-            item
-            for item in signature.parameters.values()
-            if item.kind
-            in (
-                inspect.Parameter.POSITIONAL_ONLY,
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            )
-        )
-        if len(positional) >= 2:
+        if self._builder_accepts_inputs(builder):
             return builder(parameters, inputs)
         return builder(parameters)
 
@@ -746,6 +769,22 @@ class Module(torch.nn.Module):
             # Do not retain the current autograd graph between training steps.
             self._builder_bindings.clear()
 
+    def _jax_signature(
+        self,
+        selected_parameters: torch.Tensor,
+        inputs: torch.Tensor | None,
+    ) -> tuple[Any, ...]:
+        return (
+            tuple(selected_parameters.shape),
+            selected_parameters.dtype,
+            selected_parameters.device,
+            None if inputs is None else tuple(inputs.shape),
+            None if inputs is None else inputs.dtype,
+            None if inputs is None else inputs.device,
+            self.precision.complex_dtype,
+            self.policy,
+        )
+
     def _jax_value(
         self,
         circuit: Circuit | CircuitIR,
@@ -767,30 +806,8 @@ class Module(torch.nn.Module):
         builder = self.circuit_builder
         if not callable(builder):
             raise TypeError("JAX module circuit builder must be callable")
-        accepts_inputs = (
-            len(
-                tuple(
-                    item
-                    for item in inspect.signature(builder).parameters.values()
-                    if item.kind
-                    in (
-                        inspect.Parameter.POSITIONAL_ONLY,
-                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                    )
-                )
-            )
-            >= 2
-        )
-        kernel_signature = (
-            tuple(selected_parameters.shape),
-            selected_parameters.dtype,
-            selected_parameters.device,
-            None if inputs is None else tuple(inputs.shape),
-            None if inputs is None else inputs.dtype,
-            None if inputs is None else inputs.device,
-            self.precision.complex_dtype,
-            self.policy,
-        )
+        accepts_inputs = self._builder_accepts_inputs(builder)
+        kernel_signature = self._jax_signature(selected_parameters, inputs)
         if self._jax_kernel is None or self._jax_kernel_signature != kernel_signature:
             from .executors.jax import compile_quantum_kernel
 
@@ -1054,11 +1071,45 @@ class Module(torch.nn.Module):
         """Preserve training state without assembling an unused ExecutionResult."""
         selected = self._owned_parameters() if parameters is None else parameters
         try:
+            if (
+                isinstance(selected, torch.Tensor)
+                and self._jax_kernel is not None
+                and self._jax_kernel_signature == self._jax_signature(selected, inputs)
+                and self._jax_ir_template is not None
+                and self._jax_snapshot_replay_safe
+                and self._builder_program is not None
+                # Large upstream inputs should retain only consumed scalar slots,
+                # rather than copying a whole feature buffer for diagnostics.
+                and selected.numel() * selected.element_size()
+                + (0 if inputs is None else inputs.numel() * inputs.element_size())
+                <= max(512, 4 * len(self._builder_slots) * selected.element_size())
+            ):
+                tensors, _, _ = self._builder_tensor_inputs(selected, inputs)
+                self._last_ir_snapshot = None
+                self._last_ir_factory = deferred_ir_snapshot(
+                    self._builder_program,
+                    self._jax_ir_template,
+                    tensors,
+                    len(self._builder_slots),
+                )
+                self._builder_cache_hits += 1
+                self._program_cache_hits += 1
+                try:
+                    value = self._jax_kernel(selected, inputs)
+                    return value.reshape(1) if value.ndim == 0 else value
+                except FlagQuantumError:
+                    raise
+                except Exception as error:
+                    raise ExecutionError("JAX module execution failed") from error
             try:
                 circuit = self._build(inputs, selected)
                 ir = ensure_circuit_ir(circuit)
                 self._last_ir = detached_ir_snapshot(ir)
                 self._observe_topology(ir)
+                self._jax_ir_template = ir
+                self._jax_snapshot_replay_safe = can_defer_ir_snapshot(
+                    self._builder_program, ir
+                )
             except (FlagQuantumError, TypeError):
                 raise
             except Exception as error:

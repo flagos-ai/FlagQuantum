@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from typing import Any
@@ -63,6 +63,14 @@ class SlotParameterMapping(Mapping[str, Any]):
     def __len__(self) -> int:
         return len(self._keys)
 
+    def _snapshot_parameters(self, values: tuple[torch.Tensor, ...]) -> dict[str, Any]:
+        return {
+            key: (
+                values[self._slots[key]] if key in self._slots else self._constants[key]
+            )
+            for key in self._keys
+        }
+
 
 def _snapshot_value(value: Any) -> Any:
     """Copy IR value containers and detach their PyTorch tensor leaves."""
@@ -110,6 +118,81 @@ def detached_ir_snapshot(ir: CircuitIR) -> CircuitIR:
         ),
         metadata=_snapshot_value(ir.metadata),
     )
+
+
+def can_defer_ir_snapshot(program: Any, template: CircuitIR) -> bool:
+    """Replay only pure parameter graphs without lifted mutable state."""
+    if not isinstance(program, torch.fx.GraphModule):
+        return False
+    if template.observables or template.measurements:
+        return False
+    if any(
+        instruction.matrix is not None
+        or instruction.metadata
+        or (
+            isinstance(instruction.params, SlotParameterMapping)
+            and any(
+                type(value) not in (float, int, str, bool, complex, type(None))
+                for value in instruction.params._constants.values()
+            )
+        )
+        for instruction in template.instructions
+    ):
+        return False
+    for node in program.graph.nodes:
+        if node.op in {"placeholder", "output"}:
+            continue
+        if node.op != "call_function" or not isinstance(
+            node.target, torch._ops.OpOverload
+        ):
+            return False
+        if node.target._schema.is_mutable or any(
+            tag in node.target.tags
+            for tag in (
+                torch.Tag.nondeterministic_seeded,
+                torch.Tag.nondeterministic_bitwise,
+            )
+        ):
+            return False
+    return True
+
+
+def deferred_ir_snapshot(
+    program: Callable[..., Any],
+    template: CircuitIR,
+    inputs: tuple[torch.Tensor, ...],
+    slot_count: int,
+) -> Callable[[], CircuitIR]:
+    """Freeze consumed inputs now and materialize diagnostic IR only when read."""
+    frozen = tuple(
+        value.detach().clone().requires_grad_(value.requires_grad) for value in inputs
+    )
+    grad_enabled = torch.is_grad_enabled()
+    inference_enabled = torch.is_inference_mode_enabled()
+
+    def materialize() -> CircuitIR:
+        with (
+            torch.inference_mode(inference_enabled),
+            torch.set_grad_enabled(grad_enabled),
+        ):
+            result = program(*frozen)
+            values = (result,) if isinstance(result, torch.Tensor) else tuple(result)
+            if len(values) != slot_count:
+                raise RuntimeError("compiled builder parameter slot count changed")
+            instructions = tuple(
+                (
+                    replace(
+                        instruction,
+                        params=instruction.params._snapshot_parameters(values),
+                    )
+                    if isinstance(instruction.params, SlotParameterMapping)
+                    else instruction
+                )
+                for instruction in template.instructions
+            )
+            return detached_ir_snapshot(replace(template, instructions=instructions))
+
+    return materialize
 
 
 @dataclass(frozen=True)
