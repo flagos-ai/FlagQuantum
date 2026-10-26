@@ -20,7 +20,7 @@ optimization, export, domestic-accelerator and streaming gates below remain clos
 | Scientific source | The retained producer is `fc07f4dc7cdb92068460afcee629930791800345`, with source freeze, dependency copy, input binding and source delivery completed. | Do not substitute a later `main` revision or claim tree equivalence. A changed scientific producer needs its own final CI and fresh freeze. |
 | Actual two-host preflight | Both A800 hosts passed zero-sampling environment, layout and model-loading checks with distinct GPU UUIDs. Both owned containers were stopped and removed. | A current live formal scope, authenticated caller/ownership/UUID binding and study prediction-parity receipts. Historical removed containers are not current readiness evidence. |
 | Private final-consumer chain | Optional native validation-parent → issuer → read-only final consumer is connected using the same caller Budget and original pre-freeze process end. Independent receipts, byte capture and failure checks are implemented. | This is private software integration, not authenticated host authority or permission to stage/transport final artifacts. |
-| Stage and transport | Existing capture, partition, independent shard copy, receive/assembly and collection primitives are retained. Stage contract review, optional stage Budget forwarding, independent consumer parent-complete acceptance and an explicit synchronous consumer-to-stage adapter and sealed stage worker entry are software-tested. The owned-session harness covers local restore/arm and blocked-body failures. | Production stage outer runner, independent parent acceptance, native stage handoff and full post-native-callback closure remain unwired. Final-purpose collection remains disabled; the existing prepared-purpose route is not relabeled. |
+| Stage and transport | Existing capture, partition, independent shard copy, receive/assembly and collection primitives are retained. Stage contract review, optional stage Budget forwarding, independent consumer parent-complete acceptance and an explicit synchronous consumer-to-stage adapter and sealed stage worker entry are software-tested. The owned-session harness covers local restore/arm and blocked-body failures; an independent read-only parent acceptance API is now tested. | Production stage outer runner/parent completion, native stage handoff and full post-native-callback closure remain unwired. Final-purpose collection remains disabled; the existing prepared-purpose route is not relabeled. |
 | Formal launch | The recipe, evidence requirements and failure rules remain frozen. | Full prepare/ready/peer-receipt/finish/failure/collection acceptance, authenticated live controls and fixed-recipe scientific storage preflight. Observed free space is not a reservation or a certified storage budget. |
 
 The private stage audit identified missing Budget routes. The subsequent bounded
@@ -96,23 +96,43 @@ Three original deadline orderings, one local arm, clock poisoning, copied bytes,
 peer, fresh source, retained adapter source, result, extra inventory and late
 space failures are covered. Completed failed roots and logs are retained.
 
-This is a sealed entry and test harness, not a production stage outer runner or
-independent parent receipt acceptance. The stdout is a worker candidate; test
-assertions do not provide a production parent authority. Native stage linkage,
-full post-native-callback closure and final-purpose collection remain unwired.
-The existing per-chunk Budget/codec mapping and parent synchronous metadata/source
-I/O limitations remain. Software passing does not establish formal readiness.
+The subsequent read-only parent API independently accepts the externally hashed
+worker completion/request and bounded stdout using the caller's existing Budget
+and original end. It reconstructs the worker's 32-source lock, result, exact
+completion table and false authorization flags; rehashed empty tables are not
+accepted as expected inventories. Existing independent consumer acceptance
+rechecks the 39-file table, five ancestor seals, current Snapshot/stat state and
+original/fresh sources. The original partitioner, stage binding and codec remain
+the Plan, receipt and copied-byte authorities.
+
+The API reconstructs the adapter's 31-source lock and completion/manifest table,
+binds the original stage lock's source and capacity metadata, verifies actual
+copied bytes without aliasing, and checks the exact read-only fresh 32-file source
+snapshot. One fixed inventory/directory stat baseline encloses verification and
+all final source/space/ancestor reads; it is not rebased after codec return.
+The whole existing aggregate plus actual acceptance-source bytes and a 1 MiB
+control allowance is checked at every prior/new output parent without retained
+or reserve credit. This read-only entry creates no new retained files or logs;
+future runner costs still need explicit charging.
+
+The API does not arm, remap time, capture, copy, stage, write approval or rewrite
+producer completion/failure evidence. A future owned outer runner must turn any
+refusal into its own failed, non-retryable transaction. Parent codec/source/hash/
+metadata/stat I/O is synchronous and filesystem checks remain non-atomic.
+Production stage outer runner/parent completion, native handoff/full callback
+closure and final-purpose collection remain unwired. The existing per-chunk
+Budget/codec mapping stays unchanged; software passing is not formal readiness.
 
 ### Next bounded work
 
-1. Reuse the sealed stage entry, completed adapter and original process helpers.
-   Add independent bounded parent acceptance and the smallest production outer
-   runner: externally bind the request, fresh source table, worker lock/result/
-   completion, original adapter/stage hashes, exact inventories and original
-   consumer ancestry/current Snapshot/source/fresh-copy state. Do not accept a
-   worker's self-reported table or returned hashes as permission. Preserve the
-   original 39-file consumer table, five ancestor seals and acceptance-before-copy
-   ordering. Keep old defaults/raw schemas/prepared-purpose behavior.
+1. Reuse the completed independent stage acceptance API, sealed entry, adapter
+   and original process helpers. Add the smallest production outer runner with
+   externally bound request/result/completion, fresh actual source snapshots and
+   a parent completion seal. Use the existing independent reconstruction and
+   copied-byte/current-ancestor checks; do not introduce another receipt, Plan,
+   decoder or statistics authority. Keep defaults/raw schemas/prepared purpose.
+   Retain failed owned roots and refuse retries, including after parent completion
+   and any later native callback. A returned hash alone is not permission.
 2. Keep the same local caller Budget and exact original pre-freeze outer end.
    Reuse the worker's original-control restore and single local arm; do not
    serialize a Budget, renew either original deadline or remap a later outer end.
@@ -246,6 +266,49 @@ published evidence bundle.
   `qec-ai-ci-evidence/pr895-user-merge-final-ci.json` retains the job-level check.
   This does not certify private worker code or subsequent main revisions; the
   agent performed no merge and the retired documentation branch is not reused.
+- Independent read-only stage-worker parent acceptance, local record
+  `qec-ai-ci-evidence/matched-private-stage-parent.json`, SHA-256
+  `de22033785a7137fcc498551085f24f964baa7bff667068ba8e0791ab3ba7dc9`:
+  **9 new pytest cases**; final related selection **79 passed in 20.19 s**,
+  including 53 existing window and 17 stage Budget cases. Final testing reused
+  three retained tiny candidates with zero new worker invocations. Earlier fresh
+  runs were 3 passed in 28.60 s, then 9 passed in 79.58 s before added frontend and
+  shortage checks. Strict mypy checked 89 files; Ruff 0.16.0 and Black 26.10.1
+  passed. All 87 prior source/test files and pins remain unchanged; integrity
+  local record `qec-ai-ci-evidence/matched-stage-parent-integrity.json`, SHA-256
+  `04f5de8117d657d45e9d000a2e3586be58b892db138eae3c38557c736a1a7086`.
+  Three-ordering checks cover 51 rehashed/late tamper refusals, 30 entry/after-codec
+  permanent clock failures, nine frontend refusals and three complete-aggregate
+  one-byte shortage refusals. Success forbids arm/capture/copy/stage/write and
+  preserves producer inventory. Rejected synthetic extras are retained in sibling
+  records; actual, frozen, failed and scientific evidence is not deleted.
+  An intermediate selection was **6 failed, 76 passed in 97.21 s**: three new
+  shortage tests still called a fixture substitute, and three old adapter
+  positives correctly refused actual low capacity. Only new test wiring changed
+  to the original guard. A retained-fixture run was **3 failed, 76 passed in
+  11.31 s** because pytest's `current` symlink was selected; the original nofollow
+  guard correctly refused it, and the test now selects actual candidate paths.
+  Failed logs/results/source history and old tests are retained; final selection
+  omits those three old capacity-blocked adapter positives without claiming pass.
+  Read-only observations changed from 307200000 bytes at 07:32 UTC (original
+  reserve-only guard refused) to 2293760000 bytes at 07:33 UTC; the original guard
+  still refused the complete 9327844173-byte aggregate. No cleanup is attributed
+  to this change; neither observation reserves space or certifies science storage.
+  Latest local record `qec-ai-ci-evidence/matched-stage-parent-fullspace-observation.json`,
+  SHA-256 `35ff383fbc8ffd5af95241e38fdf515ff14df178b017bc9b62dbc45980c6f858`.
+  Tiny original codec/copy/receipt checks are real; study/host/UUID/lease/approval/
+  clocks/capacity success and restored test caller Budgets remain synthetic.
+  This is not a production outer runner, repository CI, full-private-suite pass,
+  authenticated live caller or formal-readiness certification. No actual
+  SSH/resource/GPU/container/preflight/transfer/study approval/sample/update/
+  receipt operation was performed.
+- Documentation PR #906 was merged by the user at 2026-10-26 07:13:15 UTC,
+  merge `4bb6657d3004cb111439e1e711b9d7a90c24d3a3`. Exact head
+  `5fbfa5394829f5467206e6e322e0437c51e4dd41` completed CPU run `40282109007`
+  with 54 successful jobs and LocalGPU run `40282109149` with three successful
+  and three skipped jobs. Local record `qec-ai-ci-evidence/pr906-user-merge-final-ci.json`
+  retains job-level evidence. The agent did not merge or enable auto-merge; that
+  retired branch is not reused. This CI does not certify the private acceptance API.
 - Retained handoff index, local record
   `qec-ai-ci-evidence/pr871-matched-primary-handoff.json`:
   links per-slice evidence, logs, historical failures and immutable source/proof
