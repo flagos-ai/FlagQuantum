@@ -101,6 +101,9 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
         "insufficient_evidence",
         "incompatible_history",
     ]
+    assert contract["public_schema_defaults"]["TwinProbeRefreshPlan"] == (
+        "flagquantum.twin_probe_refresh_plan.v1"
+    )
 
 
 def test_release_assessment_vocabulary_stays_minimal_and_frozen() -> None:
@@ -186,6 +189,36 @@ def test_freshness_vocabulary_is_policy_qualified_and_non_authoritative() -> Non
         "routing_authorized",
         "promotion_authorized",
         "refresh_started",
+    }
+
+
+def test_probe_refresh_plan_is_bounded_and_has_no_execution_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinProbeRefreshPlan)}
+
+    assert fq.twin.TwinProbeRefreshPlan.__dataclass_params__.frozen is True
+    assert fields == {
+        "release_identity",
+        "candidate_region_identity",
+        "candidate_snapshot_identity",
+        "target",
+        "physical_qubits",
+        "candidate_circuit_identities",
+        "selected_circuit_identities",
+        "unsupported_candidates",
+        "covered_directed_couplers",
+        "coverage_gaps",
+        "calibration_history_identity",
+        "validation_history_identity",
+        "shots",
+        "maximum_tasks",
+        "repetitions",
+        "schema",
+    }
+    assert not fields & {
+        "provider",
+        "submission",
+        "routing_authorized",
+        "retry_policy",
     }
 
 

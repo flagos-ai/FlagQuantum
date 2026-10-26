@@ -153,6 +153,41 @@ refresh or promote a model, or authorize routing. Validation age is the age of
 the calibration snapshot associated with the latest validation series; current
 v1 evidence does not contain an authoritative provider result-completion time.
 
+Freeze the next bounded regional observation from circuits supplied by the
+application:
+
+```python
+plan = fq.twin.prepare_probe_refresh(
+    release,
+    candidate_circuits,
+    calibration_history=calibration_history,
+    validation_history=validation_history,
+    maximum_tasks=12,
+    shots=1024,
+)
+print(plan.selected_circuit_identities)
+print(plan.unsupported_candidates)
+print(plan.coverage_gaps)
+print(plan.planned_task_count)
+
+suite = plan.prepare_suite(
+    released_region_twin,
+    candidate_circuits,
+    name="regional-refresh",
+)
+```
+
+The planner never invents a probe. It prioritizes structurally covered
+candidate circuits using exact-release coverage, supplied validation history,
+and overlap with observed interval drift, then freezes two repetitions per
+selection. Ranking is an evidence-gap heuristic, not a claim that a circuit is
+informative enough to identify model parameters or improve accuracy.
+
+Both calls are offline. `prepare_suite()` reuses the existing
+`TwinRegionValidationSuite` path and still does not submit its experiments.
+Unsupported candidates remain visible with the region's refusal reasons, and
+the planned task count never exceeds `maximum_tasks`.
+
 The shortest identity-bound validation path lets FlagQuantum emit the submitted
 OpenQASM directly from the circuit. OpenQASM emission adds measurement of every
 circuit qubit, so no measurement operation is added to the `Circuit` itself:

@@ -53,6 +53,7 @@ from .history import (
 from .model import QPUDigitalTwin, TwinSnapshot
 from .persistence import dump_twin, load_twin
 from .prediction import TwinPrediction
+from .probe_refresh import TwinProbeRefreshPlan, prepare_probe_refresh
 from .region import (
     TwinConnectedRegion,
     TwinRegionCoverage,
@@ -182,6 +183,7 @@ __all__ = (
     "prepare_region_candidate_holdout",
     "prepare_region_holdout_study",
     "prepare_region_validation_suite",
+    "prepare_probe_refresh",
     "release_region_candidate",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
@@ -204,6 +206,7 @@ __all__ = (
     "TwinGateDurationDrift",
     "TwinHardwareReport",
     "TwinPrediction",
+    "TwinProbeRefreshPlan",
     "TwinQubitCalibrationDrift",
     "TwinRegionCoverage",
     "TwinRegionCoverageStatus",
