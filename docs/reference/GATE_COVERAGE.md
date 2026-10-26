@@ -74,4 +74,3 @@ gaps are grouped by ownership rather than added indiscriminately to Core:
 defines four independently reviewable implementation slices. Batch A1 implements
 `iswap` and `iswapdg`; the remaining five Priority A names are not yet public
 FlagQuantum opcodes and must not be advertised as supported.
-

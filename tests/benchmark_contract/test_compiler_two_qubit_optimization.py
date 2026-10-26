@@ -45,11 +45,11 @@ pytestmark = pytest.mark.benchmark_contract
 #: composing -- or one that started re-spelling a run as an equal-length one --
 #: would move these, and the direction is what the pass claims.
 _MEAN_OPTIMIZED_LENGTH = {
-    2: 1.7625,
-    3: 2.8363,
-    4: 3.9238,
-    5: 4.9675,
-    6: 5.9612,
+    2: 1.7512,
+    3: 2.8912,
+    4: 3.9087,
+    5: 4.9313,
+    6: 5.9625,
 }
 
 #: The four policies the reach table is measured under, in the order the module
@@ -93,13 +93,15 @@ def test_measurement_is_classified_as_a_local_microbenchmark(payload: dict) -> N
 
 def test_the_population_is_the_whole_declared_two_qubit_group(payload: dict) -> None:
     # A fold measured on a subset of the group cannot claim the group. The declared
-    # arity-2 unitary set is 11 opcodes and the population is all of it.
+    # arity-2 unitary set is 13 opcodes and the population is all of it.
     declared = payload["declared_two_qubit_unitary_opcodes"]
-    assert len(declared) == 11
+    assert len(declared) == 13
     assert set(declared) == {
         "cx",
         "cy",
         "cz",
+        "iswap",
+        "iswapdg",
         "swap",
         "crx",
         "cry",
@@ -161,14 +163,14 @@ def test_the_whole_program_statevector_is_preserved(payload: dict) -> None:
 def test_the_boundary_sweep_finds_a_reach_and_never_a_false_yes(payload: dict) -> None:
     """The soundness instrument, and the number that licenses the pass.
 
-    The first two lengths are enumerated over the whole 18-atom alphabet of declared
+    The first two lengths are enumerated over the whole 20-atom alphabet of declared
     two-qubit gates at the angles the fold reaches, the third is a seeded sample
-    because the enumeration is ``18 ** 4``. Every run the pass replaced is compared
+    because the enumeration is ``20 ** 4``. Every run the pass replaced is compared
     against the run's own product from the runtime gate table.
     """
 
     boundary = payload["boundary"]
-    assert boundary["atom_count"] == 18
+    assert boundary["atom_count"] == 20
     assert boundary["false_yes"] == 0
     assert boundary["worst_replacement_gap"] < 1e-12
     # Non-vacuity: the sweep has to have actually exercised the pass.
@@ -177,17 +179,17 @@ def test_the_boundary_sweep_finds_a_reach_and_never_a_false_yes(payload: dict) -
     assert boundary["runs_the_pass_deleted"] > 50
     rows = {row["run_length"]: row for row in boundary["runs_per_length"]}
     assert rows[2]["sweep"] == "enumerated"
-    assert rows[2]["run_count"] == 18**2
+    assert rows[2]["run_count"] == 20**2
     assert rows[3]["sweep"] == "enumerated"
-    assert rows[3]["run_count"] == 18**3
+    assert rows[3]["run_count"] == 20**3
     assert rows[4]["sweep"] == "seeded_sample"
     assert rows[4]["run_count"] == BOUNDARY_SAMPLE_COUNT
-    assert rows[4]["enumerated_run_count"] == 18**4
+    assert rows[4]["enumerated_run_count"] == 20**4
     # The reach is why the sweep is not vacuous: runs whose product *is* the
     # identity exist at every enumerated length.
-    assert rows[2]["identity_products"] == 7
-    assert rows[3]["identity_products"] == 24
-    assert rows[4]["identity_products"] > 0
+    assert rows[2]["identity_products"] == 9
+    assert rows[3]["identity_products"] == 30
+    assert rows[4]["identity_products"] == 66
 
 
 def test_the_fold_is_a_win_on_a_basis_that_publishes_cx(payload: dict) -> None:
@@ -297,17 +299,17 @@ _MEMBERSHIP_CIRCUIT_COUNT = 120
 _MEMBERSHIP_MONOTONICITY = {
     "clifford": (0, 0, 0, 0),
     "swaps": (0, 0, 0, 0),
-    "interleaved": (-2, 1, 0, 40),
+    "interleaved": (-2, 1, 0, 36),
     "routed": (0, 0, 0, 0),
 }
 
 #: The one population where drawing single-qubit gates into a block costs the rule a
-#: fold it would otherwise have taken -- 40 of 120 circuits -- and by how much the
+#: fold it would otherwise have taken -- 36 of 120 circuits -- and by how much the
 #: widened membership without its fallback would overshoot the narrower rule
-#: (1516 against 1463). Both numbers are the reason the fallback exists rather than a
-#: precaution: without it this population is 53 instructions *longer* than the rule the
+#: (1530 against 1481). Both numbers are the reason the fallback exists rather than a
+#: precaution: without it this population is 49 instructions *longer* than the rule the
 #: pass replaced, and with it the pass is 2 shorter.
-_MEMBERSHIP_UNPROTECTED = ("interleaved", 40, 1516, 1463)
+_MEMBERSHIP_UNPROTECTED = ("interleaved", 36, 1530, 1481)
 
 
 def test_widening_the_membership_is_monotone_and_says_what_makes_it_so(

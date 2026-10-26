@@ -87,6 +87,18 @@
     {
       "backend": "pytorch",
       "comparison": "numerical",
+      "operator": "iswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
+      "operator": "iswapdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "pytorch",
+      "comparison": "numerical",
       "operator": "phase",
       "tolerance_version": "tolerance_v1"
     },
@@ -279,6 +291,18 @@
     {
       "backend": "jax",
       "comparison": "numerical",
+      "operator": "iswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
+      "operator": "iswapdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "jax",
+      "comparison": "numerical",
       "operator": "phase",
       "tolerance_version": "tolerance_v1"
     },
@@ -465,6 +489,18 @@
     {
       "backend": "mps",
       "comparison": "numerical",
+      "operator": "iswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
+      "operator": "iswapdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "mps",
+      "comparison": "numerical",
       "operator": "phase",
       "tolerance_version": "tolerance_v1"
     },
@@ -651,6 +687,18 @@
     {
       "backend": "tensor_network",
       "comparison": "numerical",
+      "operator": "iswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
+      "operator": "iswapdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "tensor_network",
+      "comparison": "numerical",
       "operator": "phase",
       "tolerance_version": "tolerance_v1"
     },
@@ -837,6 +885,18 @@
     {
       "backend": "qasm",
       "comparison": "round_trip",
+      "operator": "iswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
+      "operator": "iswapdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qasm",
+      "comparison": "round_trip",
       "operator": "phase",
       "tolerance_version": "tolerance_v1"
     },
@@ -988,6 +1048,18 @@
       "backend": "qcis",
       "comparison": "round_trip",
       "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "iswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qcis",
+      "comparison": "round_trip",
+      "operator": "iswapdg",
       "tolerance_version": "tolerance_v1"
     },
     {
@@ -1179,6 +1251,18 @@
     {
       "backend": "qir",
       "comparison": "round_trip",
+      "operator": "iswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
+      "operator": "iswapdg",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "qir",
+      "comparison": "round_trip",
       "operator": "phase",
       "tolerance_version": "tolerance_v1"
     },
@@ -1360,6 +1444,18 @@
       "backend": "provider",
       "comparison": "round_trip",
       "operator": "i",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "iswap",
+      "tolerance_version": "tolerance_v1"
+    },
+    {
+      "backend": "provider",
+      "comparison": "round_trip",
+      "operator": "iswapdg",
       "tolerance_version": "tolerance_v1"
     },
     {

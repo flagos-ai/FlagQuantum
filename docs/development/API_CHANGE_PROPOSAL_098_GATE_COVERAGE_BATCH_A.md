@@ -195,4 +195,3 @@ approve API-CHANGE-098-GATE-COVERAGE-BATCH-A-ADJOINT-AMENDMENT
 This amendment adds only the two inverse spellings required to keep named-gate
 adjoints closed and an internal operand-permutation rule for `dcx`. It does not
 add another gate family or broaden the provider and hardware boundaries above.
-
