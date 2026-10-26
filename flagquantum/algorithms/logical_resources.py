@@ -108,6 +108,8 @@ CLIFFORD_OPCODES = frozenset(
         "cz",
         "h",
         "i",
+        "iswap",
+        "iswapdg",
         "s",
         "sdg",
         "swap",

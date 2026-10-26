@@ -17,6 +17,19 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add typed `iswap` and `iswapdg` methods to both `Circuit` and
+  `DynamicCircuit`. The pair has exact dense semantics, closes under
+  `adjoint()`, lowers through the existing fixed basis for OpenQASM, QIR, and
+  QCIS, participates in compilation and optimization, and fails closed in
+  ecosystem adapters that do not yet declare a mapping. This does not claim
+  native provider or QPU support.
+
+- Make every schema-installed fluent gate visible to static type checkers on both
+  `Circuit` and `DynamicCircuit`. Gate chains now retain the concrete builder
+  type, including aliases and uppercase compatibility spellings, without
+  changing runtime installation, signatures, validation, or execution support.
+  Distributions include the declaration stub and PEP 561 marker.
+
 - Admit a full-register terminal-measurement subset of `DynamicCircuit` through
   the existing static Quafu `fq.run(...)` route. Preserve declared
   qubit-to-classical-bit permutations in returned counts, retain inspectable

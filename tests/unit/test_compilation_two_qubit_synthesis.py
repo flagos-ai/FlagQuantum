@@ -123,7 +123,7 @@ def _random_su4(seed: int) -> list[list[complex]]:
 def test_the_declared_two_qubit_group_is_the_whole_arity_two_unitary_group() -> None:
     # Non-vacuity: the reach below only describes the two-qubit group if the group
     # really is every declared arity-2 unitary, not a convenient subset.
-    assert len(_TWO_QUBIT_UNITARIES) == 11
+    assert len(_TWO_QUBIT_UNITARIES) == 13
     assert _TWO_QUBIT_UNITARIES == (
         "cphase",
         "crx",
@@ -132,6 +132,8 @@ def test_the_declared_two_qubit_group_is_the_whole_arity_two_unitary_group() -> 
         "cx",
         "cy",
         "cz",
+        "iswap",
+        "iswapdg",
         "rxx",
         "ryy",
         "rzz",
@@ -226,6 +228,8 @@ def test_the_entangler_count_distribution_is_pinned() -> None:
         "cx": 1,
         "cy": 1,
         "cz": 1,
+        "iswap": 2,
+        "iswapdg": 2,
         "rxx": 2,
         "ryy": 2,
         "rzz": 2,

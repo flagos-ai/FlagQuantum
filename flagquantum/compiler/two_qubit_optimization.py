@@ -113,6 +113,8 @@ _FAMILIES: tuple[str, ...] = (
     "cy",
     "cz",
     "swap",
+    "iswap",
+    "iswapdg",
     "crx",
     "cry",
     "crz",
@@ -188,6 +190,14 @@ def _fixed_matrix(opcode: str) -> Matrix:
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    if opcode in {"iswap", "iswapdg"}:
+        phase = 1.0j if opcode == "iswap" else -1.0j
+        return [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, phase, 0.0],
+            [0.0, phase, 0.0, 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ]
     raise AssertionError(f"{opcode!r} is not a parameter-free family")

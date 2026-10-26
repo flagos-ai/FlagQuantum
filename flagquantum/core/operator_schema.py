@@ -88,6 +88,8 @@ POWER_RULES: tuple[str, ...] = (
 #: ``rzz_ladder``            ``RZZ`` as ``CX RZ CX``.
 #: ``rxx_ladder``            ``RXX`` as ``(H x H) RZZ (H x H)``.
 #: ``ryy_ladder``            ``RYY`` as ``(S H x S H) RZZ (S H x S H)^dagger``.
+#: ``iswap_ladder``          ``iSWAP`` as local ``S`` phases around ``SWAP CZ``;
+#:                           ``iSWAPdg`` uses the inverse local phases.
 #: ``not_available``         the opcode has no controlled form this IR can express.
 CONTROL_RULES: tuple[str, ...] = (
     "identity",
@@ -104,6 +106,7 @@ CONTROL_RULES: tuple[str, ...] = (
     "rzz_ladder",
     "rxx_ladder",
     "ryy_ladder",
+    "iswap_ladder",
     "not_available",
 )
 
@@ -447,6 +450,20 @@ _SCHEMAS = (
     _unitary("cy", 2, adjoint="self_inverse", control="y_conjugated_ladder"),
     _unitary("cz", 2, adjoint="self_inverse", control="diagonal_ladder"),
     _unitary("swap", 2, adjoint="self_inverse", control="swap_ladder"),
+    _unitary(
+        "iswap",
+        2,
+        adjoint="iswapdg",
+        decomposition=("s", "swap", "cz"),
+        control="iswap_ladder",
+    ),
+    _unitary(
+        "iswapdg",
+        2,
+        adjoint="iswap",
+        decomposition=("sdg", "swap", "cz"),
+        control="iswap_ladder",
+    ),
     _unitary(
         "crx",
         2,

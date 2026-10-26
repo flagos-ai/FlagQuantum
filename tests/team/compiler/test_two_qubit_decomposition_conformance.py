@@ -477,7 +477,7 @@ def _bumped(matrix: torch.Tensor, eps: float, row: int = 0, column: int = 0):
     return bumped
 
 
-def test_the_declared_arity_two_group_is_the_eleven_names_the_schema_table_holds() -> (
+def test_the_declared_arity_two_group_is_the_thirteen_names_the_schema_table_holds() -> (
     None
 ):
     """The named vocabulary the split criterion is stated against.
@@ -496,12 +496,14 @@ def test_the_declared_arity_two_group_is_the_eleven_names_the_schema_table_holds
         "cx",
         "cy",
         "cz",
+        "iswap",
+        "iswapdg",
         "rxx",
         "ryy",
         "rzz",
         "swap",
     )
-    assert len(_DECLARED_TWO_WIRE) == 11
+    assert len(_DECLARED_TWO_WIRE) == 13
 
 
 def test_a_declared_opcode_is_never_a_split_candidate_even_with_its_own_matrix() -> (
@@ -511,7 +513,7 @@ def test_a_declared_opcode_is_never_a_split_candidate_even_with_its_own_matrix()
 
     The rule is exact-equality over the schema table, so the control is the same
     matrix handed to two opcodes: an undeclared one, which the criterion accepts, and
-    each of the eleven declared ones, which it must refuse. Without the first arm a
+    each of the thirteen declared ones, which it must refuse. Without the first arm a
     criterion that refused everything would pass.
     """
 
@@ -533,7 +535,7 @@ def test_a_declared_opcode_is_never_a_split_candidate_even_with_its_own_matrix()
             )
             assert _split_instruction(carried) is None
             refused += 1
-    assert refused == 11 * 3
+    assert refused == 13 * 3
 
 
 def test_the_entangler_roster_is_exactly_the_supercontrolled_set() -> None:
@@ -557,7 +559,15 @@ def test_the_entangler_roster_is_exactly_the_supercontrolled_set() -> None:
     absent = [
         name for name in _DECLARED_TWO_WIRE if name not in SUPERCONTROLLED_ENTANGLERS
     ]
-    assert absent == ["cphase", "crx", "cry", "crz", "swap"]
+    assert absent == [
+        "cphase",
+        "crx",
+        "cry",
+        "crz",
+        "iswap",
+        "iswapdg",
+        "swap",
+    ]
     for name in absent:
         with pytest.raises(ValueError):
             _BasisDecomposer(name)

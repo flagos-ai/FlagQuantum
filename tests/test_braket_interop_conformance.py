@@ -31,6 +31,8 @@ _CATALOG = tuple(
         "crx",
         "cry",
         "crz",
+        "iswap",
+        "iswapdg",
         "bit_flip",
         "phase_flip",
         "depolarizing",

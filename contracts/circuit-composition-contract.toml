@@ -226,6 +226,7 @@ declared_opcode_rules = [
     "rzz_ladder",
     "rxx_ladder",
     "ryy_ladder",
+    "iswap_ladder",
     "not_available",
 ]
 absence_rule = "not_available"
@@ -315,10 +316,10 @@ contract = "tests/unit/test_circuit_composition_contract.py"
 expansion_tests = { "Circuit.compose" = "test_compose_expands_to_the_hand_built_program", "Circuit.adjoint" = "test_adjoint_expands_to_the_hand_built_inverse", "Circuit.power" = "test_power_expands_to_the_hand_built_repetition", "Circuit.control" = "test_control_expands_to_the_hand_built_ladder" }
 # Registering an opcode changes this census. It is the measurement behind the
 # `reachable = false` row below, so it is recorded as evidence rather than assumed.
-opcode_census = "31 of 35 registered opcodes invert; the 4 refusals are the noise channels"
+opcode_census = "33 of 37 registered opcodes invert; the 4 refusals are the noise channels"
 # The same shape of measurement for `power`: the census is the rule split, and it is
 # the declaration the rewrite reads. Counted from `OPERATOR_SCHEMAS`, not assumed.
-power_census = "12 of 35 registered opcodes take the closed form; the other 23 repeat"
+power_census = "12 of 37 registered opcodes take the closed form; the other 25 repeat"
 # A closed-form rewrite is only valid where the exponent is in fact an integer, so the
 # contract names both. The refusal is a `TypeError` rather than a `ValueError` because the
 # argument is the wrong kind of value, which is the same class the circuit's own count
@@ -328,7 +329,7 @@ exponent_type_refusal = "TypeError"
 # and the four opcodes that declare none are exactly the noise channels, which the
 # channel refusal reaches first. That is what makes the "no controlled form" row below
 # unreachable from a well-formed program.
-control_census = "31 of 35 registered opcodes declare a controlled form; the 4 refusals are the noise channels"
+control_census = "33 of 37 registered opcodes declare a controlled form; the 4 refusals are the noise channels"
 
 [[refusals]]
 entry_point = "compose"

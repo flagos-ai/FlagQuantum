@@ -478,13 +478,13 @@ def test_the_declaration_covers_every_registered_opcode() -> None:
     rules = {opcode: schema.control for opcode, schema in OPERATOR_SCHEMAS.items()}
     assert set(rules.values()) <= set(CONTROL_RULES)
     assert all(rules.values())
-    assert len(OPERATOR_SCHEMAS) == 35
+    assert len(OPERATOR_SCHEMAS) == 37
     # The opcodes with no controlled form are exactly the noise channels, which is a
     # statement about the registry rather than a list maintained here.
     assert {opcode for opcode, rule in rules.items() if rule == "not_available"} == {
         opcode for opcode, schema in OPERATOR_SCHEMAS.items() if schema.channel
     }
-    assert len(_UNITARY_OPCODES) == 31
+    assert len(_UNITARY_OPCODES) == 33
 
 
 def test_the_ladder_level_is_arity_aware() -> None:

@@ -4,7 +4,7 @@ The benchmark module answers one question: how much of the declared two-qubit
 unitary group does native-gate legalization reach once it can decompose a unitary
 over a supercontrolled entangler? The answer W8-02 recorded is that every basis
 which publishes a z-rotation, a pi/2 x-rotation, and ``cx`` or ``cz`` reaches all
-11 declared opcodes through an explicit matrix, up from none at all, at an
+13 declared opcodes through an explicit matrix, up from none at all, at an
 entangler cost of 1, 2, or 3. W8-03 extended the entangler table to every
 supercontrolled spelling -- adding ``cy``, and the interaction rotations ``rzz``,
 ``rxx`` and ``ryy`` at an angle of pi/2 -- which is what opens a basis whose only
@@ -62,6 +62,8 @@ _ENTANGLER_COST = {
     "cx": 1,
     "cy": 1,
     "cz": 1,
+    "iswap": 2,
+    "iswapdg": 2,
     "rxx": 2,
     "ryy": 2,
     "rzz": 2,
@@ -85,10 +87,10 @@ _NATIVE_TWO_QUBIT = {
 #: of synthesizing. `ion-trap-rz-rx-rzz` is one lower because its own `rzz` is
 #: kept as a single instruction where the decomposition would have paid two.
 _TOTAL_ENTANGLERS = {
-    "ibm-rz-sx-cx": 20,
-    "ibm-heron-cz": 20,
-    "rotational": 20,
-    "ion-trap-rz-rx-rzz": 19,
+    "ibm-rz-sx-cx": 24,
+    "ibm-heron-cz": 24,
+    "rotational": 24,
+    "ion-trap-rz-rx-rzz": 23,
 }
 
 #: The named-gate reach each basis had before W8-04: the native gate itself, plus
@@ -114,7 +116,7 @@ _IDENTITY_TABLE_REACH = {
     "ibm-heron-cz": 1,
     "rotational": 1,
     "ion-trap-rz-rx-rzz": 1,
-    "clifford-t": 4,
+    "clifford-t": 6,
 }
 
 
@@ -147,7 +149,7 @@ def test_measurement_is_classified_as_a_local_microbenchmark(payload: dict) -> N
 def test_the_declared_two_qubit_group_is_the_whole_arity_two_group() -> None:
     # Non-vacuity: the reach below is only a statement about the group if the
     # group really is every declared two-qubit unitary, not a chosen subset.
-    assert len(TWO_QUBIT_OPCODES) == 11
+    assert len(TWO_QUBIT_OPCODES) == 13
     assert TWO_QUBIT_OPCODES == (
         "cphase",
         "crx",
@@ -156,6 +158,8 @@ def test_the_declared_two_qubit_group_is_the_whole_arity_two_group() -> None:
         "cx",
         "cy",
         "cz",
+        "iswap",
+        "iswapdg",
         "rxx",
         "ryy",
         "rzz",
@@ -182,7 +186,7 @@ def test_every_closed_basis_reaches_the_group_through_a_matrix() -> None:
         native = _NATIVE_TWO_QUBIT[label]
         assert native == row["entangler_opcode"], label
         expected = _expected_entangler_counts(label)
-        assert row["legalized_by_matrix_count"] == 11, row["unresolved_errors"]
+        assert row["legalized_by_matrix_count"] == 13, row["unresolved_errors"]
         assert row["unresolved_opcode_count"] == 0
         assert row["entangler_count_by_opcode"] == expected
         assert sum(expected.values()) == _TOTAL_ENTANGLERS[label]
@@ -199,7 +203,7 @@ def test_a_named_two_qubit_gate_reaches_the_group_through_exact_identities() -> 
     need that gate's matrix, and the matrix of a named gate belongs to
     `flagquantum.simulation`, which the Compiler layer must not import. The
     equivalence table is what closes the named path instead: a basis publishing
-    `cx` or `cz` plus a z-rotation now reaches all eleven declared opcodes by
+    `cx` or `cz` plus a z-rotation now reaches all thirteen declared opcodes by
     name, where before this change it reached one or two.
     """
 
@@ -209,15 +213,15 @@ def test_a_named_two_qubit_gate_reaches_the_group_through_exact_identities() -> 
         before = _HAND_WRITTEN_REACH[basis.label]
         # Non-vacuity: the improvement is only a claim about the table if the
         # before count it is compared against is really smaller.
-        assert before < 11, basis.label
+        assert before < 13, basis.label
         assert row["legalized_by_name_count"] > before, basis.label
     # A `cx` or `cz` basis with a z-rotation and a pi/2 pulse closes the group.
     for label in ("ibm-rz-sx-cx", "ibm-heron-cz", "rotational"):
-        assert measured[label]["legalized_by_name_count"] == 11, label
+        assert measured[label]["legalized_by_name_count"] == 13, label
     # `clifford-t` publishes no z-rotation, so only the exact identities that
     # need nothing else apply: `cz` and `cy` join `cx` and `swap`, and the other
     # seven names need an interaction rotation to build from.
-    assert measured["clifford-t"]["legalized_by_name_count"] == 4
+    assert measured["clifford-t"]["legalized_by_name_count"] == 6
     # `ion-trap-rz-rx-rzz` publishes no `cx`, `cz` or `cy`, so the three
     # interaction rotations are the only names its `rzz` can carry.
     assert measured["ion-trap-rz-rx-rzz"]["legalized_by_name_count"] == 3
@@ -233,9 +237,9 @@ def test_a_basis_without_a_z_rotation_keeps_the_matrix_path_open_and_the_rest_sh
         for item in (reach(basis) for basis in DEFAULT_BASES)
         if item["label"] == "clifford-t"
     )
-    # `cx` is native, so its own matrix is kept; the other ten have no path.
+    # `cx` is native, so its own matrix is kept; the other twelve have no path.
     assert row["legalized_by_matrix_count"] == 1
-    assert row["unresolved_opcode_count"] == 10
+    assert row["unresolved_opcode_count"] == 12
     assert row["entangler_count_by_opcode"] == {"cx": 1}
     assert all(
         "no native contract" in error for error in row["unresolved_errors"].values()

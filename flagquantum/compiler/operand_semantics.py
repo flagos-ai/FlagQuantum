@@ -47,6 +47,8 @@ _TWO_WIRE_OPERAND_SYMMETRY: dict[str, bool] = {
     "ryy": True,
     "rzz": True,
     "swap": True,
+    "iswap": True,
+    "iswapdg": True,
 }
 
 # The physical couplings a multi-qubit instruction needs, as operand index pairs.

@@ -201,6 +201,12 @@ _DRAW_COUNT = 20
 
 #: The opcodes the pass can act on, read from the pass rather than restated.
 _PAIRS = dict(inverse_pairs())
+# The seeded pipeline and shape populations below measure one-qubit rewrite
+# interactions. Wider inverse pairs are certified by ``declaration_table`` and
+# ``identity_proof`` without silently changing the historical population.
+_SHAPE_PAIRS = tuple(
+    sorted(name for name in _PAIRS if OPERATOR_SCHEMAS[name].arity == 1)
+)
 
 #: The half-pi pulse a transcompiled run is written in, and the frame the two
 #: populations below use to separate this pass's reach from the one-qubit fold's.
@@ -710,7 +716,7 @@ def _pair_sequence(seed: random.Random, length: int) -> list[Instruction]:
 
     instructions: list[Instruction] = []
     for _ in range(length):
-        opcode = seed.choice(sorted(_PAIRS))
+        opcode = seed.choice(_SHAPE_PAIRS)
         qubit = seed.randrange(_REGISTER_WIDTH)
         instructions.append(Instruction(opcode, (qubit,)))
         instructions.append(Instruction(_PAIRS[opcode], (qubit,)))
@@ -720,7 +726,7 @@ def _pair_sequence(seed: random.Random, length: int) -> list[Instruction]:
 def _straddled_pair(seed: random.Random) -> CircuitIR:
     """A pair with a single-qubit gate on a *different* qubit between the two."""
 
-    opcode = seed.choice(sorted(_PAIRS))
+    opcode = seed.choice(_SHAPE_PAIRS)
     qubit = seed.randrange(_REGISTER_WIDTH)
     other = (qubit + 1 + seed.randrange(_REGISTER_WIDTH - 1)) % _REGISTER_WIDTH
     return CircuitIR(
@@ -737,8 +743,8 @@ def _interleaved_pairs(seed: random.Random) -> CircuitIR:
     """Two pair threads on two qubits, straddling each other in program order."""
 
     first, second = seed.sample(range(_REGISTER_WIDTH), 2)
-    left = seed.choice(sorted(_PAIRS))
-    right = seed.choice(sorted(_PAIRS))
+    left = seed.choice(_SHAPE_PAIRS)
+    right = seed.choice(_SHAPE_PAIRS)
     return CircuitIR(
         _REGISTER_WIDTH,
         (
@@ -753,7 +759,7 @@ def _interleaved_pairs(seed: random.Random) -> CircuitIR:
 def _barrier_pair(seed: random.Random) -> CircuitIR:
     """A pair separated by an instruction the operator schema does not declare."""
 
-    opcode = seed.choice(sorted(_PAIRS))
+    opcode = seed.choice(_SHAPE_PAIRS)
     qubit = seed.randrange(_REGISTER_WIDTH)
     return CircuitIR(
         _REGISTER_WIDTH,
@@ -774,7 +780,7 @@ def _pulse_framed_pair(seed: random.Random) -> CircuitIR:
     different programs, and which is shorter is measured rather than assumed.
     """
 
-    opcode = seed.choice(sorted(_PAIRS))
+    opcode = seed.choice(_SHAPE_PAIRS)
     qubit = seed.randrange(_REGISTER_WIDTH)
     return CircuitIR(
         _REGISTER_WIDTH,
@@ -789,7 +795,7 @@ def _pulse_framed_pair(seed: random.Random) -> CircuitIR:
 def _pulse_framed_pair_both_sides(seed: random.Random) -> CircuitIR:
     """The same pair with a pulse on *each* side, so the run's frame is closed."""
 
-    opcode = seed.choice(sorted(_PAIRS))
+    opcode = seed.choice(_SHAPE_PAIRS)
     qubit = seed.randrange(_REGISTER_WIDTH)
     return CircuitIR(
         _REGISTER_WIDTH,
@@ -1024,7 +1030,7 @@ def _gap_instructions(label: str, opcode: str, qubit: int) -> tuple[Instruction,
         return (_dynamic("measure", qubit),)
     if label == "a_member_of_the_other_pair":
         partner = _PAIRS[opcode]
-        others = [op for op in sorted(_PAIRS) if op != opcode and op != partner]
+        others = [op for op in _SHAPE_PAIRS if op != opcode and op != partner]
         return (Instruction(others[0], (qubit,)),)
     raise AssertionError(f"unknown gap kind {label!r}")
 
@@ -1158,7 +1164,7 @@ def shape_table() -> dict[str, Any]:
 
     rows = []
     circuits: dict[str, CircuitIR] = {}
-    for opcode in sorted(_PAIRS):
+    for opcode in _SHAPE_PAIRS:
         qubit = 0
         for label in _GAPS:
             ir = _shape_circuit(label, opcode, qubit)

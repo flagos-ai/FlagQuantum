@@ -129,6 +129,8 @@ _GATE_NAMES: dict[str, str] = {
     "cy": "CY",
     "cz": "CZ",
     "swap": "SWAP",
+    "iswap": "ISWAP",
+    "iswapdg": "ISWAP_DAG",
 }
 
 # The opcodes this engine executes, as canonical FlagQuantum gate names.
