@@ -696,3 +696,24 @@ approval of the complete contract or implementation. Older design-choice
 wording above records the #912 publication snapshot. Decision B/005 remains
 complete; C implementation, adaptive stopping, threshold fitting and persistence
 remain deferred. No new experiment, performance study or hardware run was done.
+
+## Approved C/007 implementation candidate
+
+After the #924 contract artifact was delivered and its exact merge Main smoke
+`40314835571` succeeded, the owner explicitly approved the complete
+[C/007 contract](../development/QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md) for
+implementation, verification and delivery on 2026-10-26 (Asia/Shanghai).
+This supersedes earlier C design-only/deferred wording in historical progress
+snapshots above. B/005 remains delivered. Adaptive stopping, threshold analysis,
+nondefault decoder configuration and persistence remain separate decisions.
+
+The candidate adds only `MemoryExperimentResult` and `run_memory_experiment` in
+the canonical `qec.execution.experiments` module. It reuses original-source
+export/strict actual-law DEM/one compiled sampler, five default registered exact
+decoders through complete-record 005, exact final partial batches, all-logical
+counts and one shared private Wilson formula. No root or parent re-export,
+registry entry, dependency, channel law, RNG schedule or numerical tolerance is
+changed. Zero-noise PyMatching isolated-detector refusal remains explicit.
+Focused correctness and actual-SDK acceptance are in progress; exact-head full
+CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
+are still required. No performance, threshold, GPU or capacity claim is made.

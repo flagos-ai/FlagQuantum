@@ -23,6 +23,11 @@ execution, core IR, noise channels and the optional stabilizer sampler.
   observable layouts, without executing an amplitude store. The original forced
   execution remains the independent small-system test reference. DEM construction consumes these
   functions/constants without a reverse import, avoiding a module cycle.
+- `experiments.py`: the approved fixed-shot composition of original-source
+  export, strict actual-law DEM, complete-record batch decoding and a single
+  owned sampler. Canonical imports only; no root/parent re-export or persistence
+  schema. Run `examples/qec/memory_experiment.py` with the Stim/PyMatching extras
+  for all five default decoders; unsupported model/decoder intersections refuse.
 - `noise_sweep.py`: the existing finite-shot loop over repetition execution.
 
 The approved 0.4.0 retirement removes flat execution imports and their pickle

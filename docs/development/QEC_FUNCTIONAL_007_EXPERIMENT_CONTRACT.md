@@ -2,30 +2,28 @@
 
 ## Review status and authority
 
-Contract draft for API-owner review, 2026-10-26 (Asia/Shanghai). Following
-[#912](https://github.com/flagos-ai/FlagQuantum/pull/912), the owner asked to
-proceed with the recommended three design choices: required explicit batch size,
-registered decoder names with defaults only, and caller-owned evidence without
-an initial persistence schema. This instruction authorizes preparing this
-concrete contract; it does not approve its complete new public API or activate
-implementation. The earlier [design review](QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md)
-and [Proposal 087](API_CHANGE_PROPOSAL_087_QEC_SCALABLE_EXPERIMENTS.md) remain
-context. Decision B's [delivered contract](QEC_FUNCTIONAL_005_BATCH_CONTRACT.md)
-is separate and does not need renewed approval.
+The API owner explicitly approved the complete contract's implementation,
+verification and delivery on 2026-10-26 (Asia/Shanghai), after reviewing the
+signature, seven result fields, source path, support/refusal matrix, numerical
+interval and exception table. This approval is independent of the earlier
+Decision B approval. [#924](https://github.com/flagos-ai/FlagQuantum/pull/924)
+delivered the review artifact; its exact merge
+`4ec20e1adf4c1b92ef878c49d42977f25ace3318` passed Main smoke `40314835571`.
+That is not full main CI. The earlier design-only status is historical.
 
-No production module, callable, result type, export, registry entry, dependency,
-fixture, numerical helper or experiment is added by this document. All Python
-below describes a proposed interface, not an importable or runnable API.
+This implementation candidate adds the two canonical module names below without
+root or parent re-exports. Final reviewed-head CI/GPU and merge acceptance remain
+pending. Adaptive stopping, threshold fitting and persistence remain deferred.
 
-## Proposed complete public surface
+## Approved complete public surface
 
-Only `flagquantum.qec.execution.experiments` would define and export these two
+Only `flagquantum.qec.execution.experiments` defines and exports these two
 names. Add no root `flagquantum`, root `qec` or parent `execution` re-export.
 Existing exports, signatures, defaults, plugin contracts and result records stay
 unchanged.
 
 ```python
-# Proposed declarations only; implementation approval is still required.
+# Canonical declarations in flagquantum.qec.execution.experiments.
 @dataclass(frozen=True)
 class MemoryExperimentResult:
     shots: int
@@ -123,7 +121,7 @@ no precedence is promised when multiple independent invalid inputs are supplied.
 | External Stim text, DEM, graph, matrices or decoder instance as top-level inputs | Refused. The function accepts memory/noise and an explicitly selected registered string only. Existing lower-level workflows remain available. |
 | Nondefault decoder configuration, AI preprocessing, hardware, GPU, distributed execution | Outside this first contract; no inferred support or automatic substitution. |
 
-The five names are candidates, not a promise every model works with every name.
+The five names are explicit selections, not a promise every model works with every name.
 Each retains its owning model and syndrome support. Tests must include both
 successful supported combinations and refusal combinations; missing PyMatching
 cannot be skipped while claiming five-decoder acceptance.
@@ -161,8 +159,8 @@ For n shots and p = failures/n, compute denominator `1 + z*z/n`, center
 lower endpoint exactly zero at zero failures and the upper endpoint exactly one
 at all failures. Zero failures retain a positive upper endpoint. Zero shots are
 invalid; no adaptive interval, Hoeffding interval, threshold or significance
-claim follows. Relocate/reuse one private formula with the example after
-implementation approval, preserving independent score-inversion oracle tests.
+claim follows. The implementation and existing baseline example reuse one private formula,
+preserving independent score-inversion oracle tests.
 
 ## Exception and failure contract
 
@@ -212,8 +210,26 @@ An implementation PR must provide the following evidence:
   output, exact-head complete CI/GPU, current rules/reviews, normal pinned merge
   and actual merge/main verification. Main smoke is not full main CI.
 
-Implementation approval must explicitly cover this complete signature, ordered
-result fields, source path, support/refusal matrix, numerical interval and
-exception table. Merging this contract draft records a review artifact only.
+The explicit owner approval covers this complete signature, ordered result
+fields, source path, support/refusal matrix, numerical interval and exception
+table. Document merge alone was not that approval.
 Adaptive stopping, threshold fitting, nondefault decoder options and persistence
 remain separate later decisions.
+
+## Candidate user workflow and support limits
+
+Install `python -m pip install -e '.[stim,pymatching]'` and run
+`PYTHONPATH=. python examples/qec/memory_experiment.py` on CPU. The example uses
+35 shots, explicit batch size 16, seed 53 and constructor-default decoder names.
+Each of the five lines reports its name followed by `35 0 (0,)` in the tested
+Python 3.12.14 / Torch 2.13 / Stim 1.16 / PyMatching 2.4 environment. This is
+small deterministic acceptance evidence, not a logical suppression or throughput
+claim. Same-seed reproducibility remains scoped to versions, architecture and
+sample-call schedule.
+
+The strict DEM can refuse a source before sampling; decoder constructors can
+refuse its model. In particular, zero noise leaves isolated declared detectors
+that the existing PyMatching adapter refuses. No padding edge, decomposition or
+fallback is added to make that selection pass. The example's nonzero supported
+noise avoids this refusal. Both supported phenomenological and gate-bound noise
+paths are checked against the original text and independent single-shot records.
