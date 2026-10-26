@@ -2,13 +2,23 @@ name: R300 scale set validation
 
 on:
   workflow_dispatch:
+    inputs:
+      diagnose_network:
+        description: Retest source, mirror and native CPU paths on 03/04/05/16 with read-only Pod diagnostics
+        type: boolean
+        default: false
+      qualify_pool:
+        description: Qualify the next four candidates for workflow-level R300 routing
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   prepare-source:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      qualification-targets: ${{ steps.pool.outputs.qualification-targets }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
@@ -25,6 +35,16 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git rev-parse HEAD > "$RUNNER_TEMP/r300-source/source.sha"
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/r300-source/source.pack"
+      - name: Select the bounded manual validation targets
+        id: pool
+        env:
+          DIAGNOSE_NETWORK: ${{ inputs.diagnose_network }}
+        run: |
+          if [ "$DIAGNOSE_NETWORK" = true ]; then
+            echo 'qualification-targets=["flagcicd-r300-cpu03","flagcicd-r300-cpu04","flagcicd-r300-cpu05","flagcicd-r300-cpu16"]' >> "$GITHUB_OUTPUT"
+          else
+            python3 tools/ci/r300_pool.py --seed "$GITHUB_RUN_ID" --github-output "$GITHUB_OUTPUT"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: r300-source
@@ -33,7 +53,7 @@ jobs:
           compression-level: 0
 
   resources:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.qualify_pool && !inputs.diagnose_network }}
     runs-on: ${{ matrix.scale_set }}
     timeout-minutes: 5
     strategy:
@@ -95,7 +115,7 @@ jobs:
 
   cpu-workload:
     needs: prepare-source
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.qualify_pool && !inputs.diagnose_network }}
     runs-on: ${{ matrix.scale_set }}
     timeout-minutes: 35
     strategy:
@@ -177,5 +197,221 @@ jobs:
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         with:
           name: r300-workload-${{ matrix.scale_set }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
+
+  pool-qualification:
+    needs: prepare-source
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.qualify_pool || inputs.diagnose_network) && needs.prepare-source.outputs.qualification-targets != '[]' }}
+    runs-on: ${{ matrix.scale_set }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        scale_set: ${{ fromJSON(needs.prepare-source.outputs.qualification-targets) }}
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      PIP_DEFAULT_TIMEOUT: '30'
+      PIP_RETRIES: '1'
+    steps:
+      - name: Inspect network and existing Pod configuration before source transfer
+        if: inputs.diagnose_network
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          set +e
+          set -u
+          # The two public Tsinghua hosts passed paired direct-path TLS/download probes.
+          # Preserve every existing exception and all proxy URLs for other destinations.
+          for proxy_list in NO_PROXY no_proxy; do
+            direct_hosts="${!proxy_list:-}"
+            case "$direct_hosts" in
+              *$'\n'*|*$'\r'*) echo '::error::Invalid multiline no-proxy configuration'; exit 1 ;;
+            esac
+            for public_host in mirrors.tuna.tsinghua.edu.cn pypi.tuna.tsinghua.edu.cn; do
+              case ",$direct_hosts," in
+                *",$public_host,"*) ;;
+                *) direct_hosts="${direct_hosts:+$direct_hosts,}$public_host" ;;
+              esac
+            done
+            printf '::add-mask::%s\n' "${direct_hosts//%/%25}"
+            export "$proxy_list=$direct_hosts"
+            printf '%s=%s\n' "$proxy_list" "$direct_hosts" >> "$GITHUB_ENV"
+          done
+          printf 'UTC: '; date -u +%FT%TZ
+          printf 'Runner: %s\n' "$RUNNER_NAME"
+          uname -a
+          cat /proc/loadavg
+          cat /proc/pressure/cpu /proc/pressure/memory /proc/pressure/io 2>/dev/null || true
+          for path in /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.current /sys/fs/cgroup/cpu.stat /sys/fs/cgroup/memory.events; do
+            if [ -r "$path" ]; then printf '%s: ' "$path"; cat "$path"; fi
+          done
+          # Only report presence: proxy values may contain credentials.
+          for name in HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy; do
+            if [ -n "${!name:-}" ]; then printf '%s=configured\n' "$name"; else printf '%s=unset\n' "$name"; fi
+          done
+          for host in github.com api.github.com codeload.github.com mirrors.tuna.tsinghua.edu.cn; do
+            printf '\nDNS %s\n' "$host"
+            timeout 5s getent ahostsv4 "$host" || true
+          done
+          # Keep TLS verification enabled. Fixed public URLs never contain credentials.
+          for round in 1 2 3; do
+            for url in https://github.com/flagos-ai/FlagQuantum https://api.github.com/repos/flagos-ai/FlagQuantum https://mirrors.tuna.tsinghua.edu.cn/ubuntu/dists/noble/InRelease; do
+              printf '\nround=%s url=%s\n' "$round" "$url"
+              curl --silent --show-error --location --output /dev/null --connect-timeout 10 --max-time 30 --max-filesize 2097152 --write-out 'http=%{http_code} ip=%{remote_ip} dns=%{time_namelookup} tcp=%{time_connect} tls=%{time_appconnect} first_byte=%{time_starttransfer} total=%{time_total} bytes=%{size_download} bytes_per_second=%{speed_download} tls_verify=%{ssl_verify_result}\n' "$url"
+              printf 'curl_exit=%s\n' "$?"
+            done
+          done
+          printf '\nExact source archive transfer\n'
+          curl --silent --show-error --location --output /dev/null --connect-timeout 10 --max-time 60 --max-filesize 33554432 --write-out 'http=%{http_code} ip=%{remote_ip} dns=%{time_namelookup} tcp=%{time_connect} tls=%{time_appconnect} first_byte=%{time_starttransfer} total=%{time_total} bytes=%{size_download} bytes_per_second=%{speed_download} tls_verify=%{ssl_verify_result}\n' "https://codeload.github.com/flagos-ai/FlagQuantum/tar.gz/$GITHUB_SHA"
+          printf 'curl_exit=%s\n' "$?"
+          # Use the runner's bundled Node without downloading another diagnostic tool.
+          node_bin="$(command -v node || true)"
+          if [ -z "$node_bin" ]; then
+            for candidate in "$RUNNER_TEMP/../../externals/node24/bin/node" "$RUNNER_TEMP/../../externals/node20/bin/node"; do
+              if [ -x "$candidate" ]; then node_bin="$candidate"; break; fi
+            done
+          fi
+          if [ -z "$node_bin" ]; then
+            echo '::warning::Pod metadata unconfirmed: bundled Node was not located.'
+            exit 0
+          fi
+          "$node_bin" <<'NODE'
+          const fs = require('node:fs');
+          const https = require('node:https');
+          const sa = '/var/run/secrets/kubernetes.io/serviceaccount';
+          if (!fs.existsSync(sa + '/token')) {
+            console.log('Pod metadata unconfirmed: no existing service account mount.');
+            process.exit(0);
+          }
+          const namespace = fs.readFileSync(sa + '/namespace', 'utf8').trim();
+          const ca = fs.readFileSync(sa + '/ca.crt');
+          // Existing Pod identity is used only for GETs; never print credentials or raw responses.
+          const token = fs.readFileSync(sa + '/token', 'utf8').trim();
+          function get(path, select) {
+            return new Promise(resolve => {
+              const req = https.get({hostname: process.env.KUBERNETES_SERVICE_HOST,
+                port: process.env.KUBERNETES_SERVICE_PORT_HTTPS || 443, path, ca,
+                headers: {Authorization: 'Bearer ' + token}}, response => {
+                let text = '';
+                response.on('data', chunk => {
+                  text += chunk;
+                  if (text.length > 2097152) req.destroy(new Error('metadata response size limit'));
+                });
+                response.on('end', () => {
+                  console.log('Kubernetes GET', path, 'status', response.statusCode);
+                  if (response.statusCode === 200) {
+                    try { console.log(JSON.stringify(select(JSON.parse(text)))); }
+                    catch { console.log('Selected metadata could not be parsed.'); }
+                  }
+                  resolve();
+                });
+              });
+              req.setTimeout(8000, () => req.destroy(new Error('metadata request timeout')));
+              req.on('error', () => { console.log('Kubernetes GET failed', path); resolve(); });
+            });
+          }
+          function versions(meta = {}) {
+            const labels = meta.labels || {};
+            return Object.fromEntries(['helm.sh/chart', 'app.kubernetes.io/version',
+              'app.kubernetes.io/name'].filter(k => k in labels).map(k => [k, labels[k]]));
+          }
+          (async () => {
+            await get('/version', x => ({kubernetesVersion: x.gitVersion}));
+            await get('/api/v1/namespaces/' + encodeURIComponent(namespace) + '/pods/' + encodeURIComponent(process.env.HOSTNAME), x => ({
+              namespace, name: x.metadata.name, node: x.spec.nodeName,
+              versions: versions(x.metadata), owners: x.metadata.ownerReferences?.map(o => ({kind:o.kind,name:o.name})),
+              containers: [...(x.spec.initContainers || []), ...(x.spec.containers || [])].map(c => ({name:c.name,image:c.image,resources:c.resources})),
+              imageIDs: x.status.containerStatuses?.map(c => ({name:c.name,imageID:c.imageID,restarts:c.restartCount}))
+            }));
+            for (const resource of ['apis/apps/v1/namespaces/' + encodeURIComponent(namespace) + '/deployments',
+              'apis/actions.github.com/v1alpha1/namespaces/' + encodeURIComponent(namespace) + '/autoscalingrunnersets']) {
+              await get('/' + resource, x => ({items:x.items.map(o => ({name:o.metadata.name,versions:versions(o.metadata),
+                images:o.spec?.template?.spec?.containers?.map(c => c.image)}))}));
+            }
+            console.log('ARC controller/chart versions remain unconfirmed unless explicitly shown above.');
+          })();
+          NODE
+      - uses: actions/download-artifact@v8.0.2
+        id: source
+        timeout-minutes: 3
+        continue-on-error: ${{ startsWith(runner.name, 'flagcicd-r300-') }}
+        with:
+          digest-mismatch: error
+          name: r300-source
+          path: ${{ runner.temp }}/ci-source
+      - name: Restore and verify this run's exact source commit
+        if: steps.source.outcome == 'success'
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          if [ ! -d .git ]; then
+            git init .
+          fi
+          git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          printf '%s\n' "$sha" >> .git/shallow
+          sort -u .git/shallow -o .git/shallow
+          git config --worktree core.sparseCheckout false
+          git config --worktree core.sparseCheckoutCone false
+          rm -f .git/info/sparse-checkout
+          git read-tree --empty
+          git checkout --force --detach "$sha"
+          git clean -ffdx
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Prepare exact-commit checkout after an R300 artifact failure
+        if: startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'
+        run: |
+          echo "::warning::Source artifact transfer failed; fetching the same commit through GitHub checkout"
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        if: startsWith(runner.name, 'flagcicd-r300-') && steps.source.outcome == 'failure'
+        timeout-minutes: 5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify the checked-out fallback commit
+        if: steps.source.outcome == 'failure'
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: ./.github/actions/prepare-r300-cpu
+        if: startsWith(runner.name, 'flagcicd-r300-')
+      - uses: actions/setup-python@v5
+        if: ${{ !startsWith(runner.name, 'flagcicd-r300-') }}
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - name: Require a cold official CPU wheel download
+        if: inputs.diagnose_network
+        run: |
+          test -n "$VIRTUAL_ENV"
+          python -m pip uninstall -y torch
+      - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
+        env:
+          FQ_CPU_WHEEL_CACHE: ${{ runner.temp }}/r300-no-shared-wheel-cache
+          PIP_NO_CACHE_DIR: "1"
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Validate the CPU runtime before SDK certification
+        run: |
+          python -c "import torch; from flagquantum.simulation.native_cpu import adjoint; assert torch.version.cuda is None; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)"
+          python -m pytest tests/test_native_circuit.py tests/test_backends.py tests/smoke/test_smoke_baseline.py -q
+      - name: Validate workflow pool planning and source isolation
+        run: >-
+          python -m pytest tests/unit/test_r300_pool.py
+          tests/unit/test_ci_cpu_budget.py
+          tests/unit/test_cpu_runner_routing.py
+          tests/unit/test_shared_runner_checkout_policy.py -q
+      - name: Retain measured resources and timing
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: r300-pool-${{ matrix.scale_set }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7

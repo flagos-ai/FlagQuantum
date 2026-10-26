@@ -108,19 +108,12 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
 
 @pytest.mark.parametrize("cache_state", ["absent", "hit", "miss"])
 @pytest.mark.parametrize("torch_spec", ["torch>=2.13,<2.14", "torch>=2.10,<2.11"])
-@pytest.mark.parametrize(
-    ("runner_environment", "mirror_failure"),
-    [
-        ("self-hosted", "none"),
-        ("self-hosted", "error"),
-        ("self-hosted", "timeout"),
-        ("github-hosted", "none"),
-    ],
-)
-def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
+@pytest.mark.parametrize("runner_environment", ["self-hosted", "github-hosted"])
+@pytest.mark.parametrize("official_failure", ["none", "error", "timeout"])
+def test_cpu_wheel_uses_only_the_official_index_and_fails_closed(
     tmp_path: Path,
     runner_environment: str,
-    mirror_failure: str,
+    official_failure: str,
     torch_spec: str,
     cache_state: str,
 ) -> None:
@@ -134,52 +127,48 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     fake_python = tmp_path / "python"
     fake_python.write_text(
         f"#!{sys.executable}\n"
-        "import json, os, pathlib, sys\n"
+        "import json, os, sys\n"
         "with open(os.environ['PIP_CALL_LOG'], 'a') as stream:\n"
         "    stream.write(json.dumps(sys.argv[1:]) + '\\n')\n"
         "if sys.argv[1] == '-c' and 'Requirement' in sys.argv[2]:\n"
         "    raise SystemExit(1)\n"
         "if '--find-links' in sys.argv and os.environ['FQ_CPU_WHEEL_CACHE'] in sys.argv:\n"
         "    raise SystemExit(0 if os.environ['CACHE_STATE'] == 'hit' else 1)\n"
-        "if 'download' in sys.argv:\n"
-        "    if os.environ['MIRROR_FAILURE'] == 'error':\n"
-        "        raise SystemExit(1)\n"
-        "    destination = pathlib.Path(sys.argv[sys.argv.index('--dest') + 1])\n"
-        "    (destination / 'torch-2.13.0+cpu.whl').touch()\n"
+        "if '--index-url' in sys.argv and os.environ['OFFICIAL_FAILURE'] == 'error':\n"
+        "    raise SystemExit(1)\n"
     )
     fake_python.chmod(0o755)
     fake_timeout = tmp_path / "timeout"
     fake_timeout.write_text(
         "#!/bin/bash\n"
-        'test "$1" = --kill-after=10s || exit 2\n'
-        'case "$2" in\n'
-        '180s) if [ "$MIRROR_FAILURE" = timeout ]; then exit 124; fi ;;\n'
-        "300s) ;;\n"
-        "*) exit 2 ;;\n"
-        "esac\n"
+        'test "$1" = --kill-after=10s && test "$2" = 300s || exit 2\n'
+        'if [ "$OFFICIAL_FAILURE" = timeout ]; then exit 124; fi\n'
         "shift 2\n"
         'exec "$@"\n'
     )
     fake_timeout.chmod(0o755)
-    subprocess.run(
+    result = subprocess.run(
         ["bash", "-eu", "-c", action["runs"]["steps"][0]["run"]],
         env={
             **os.environ,
             "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
             "PIP_CALL_LOG": str(log),
-            "MIRROR_FAILURE": mirror_failure,
+            "OFFICIAL_FAILURE": official_failure,
             "CACHE_STATE": cache_state,
             "FQ_CPU_WHEEL_CACHE": str(cache),
             "FQ_TORCH_SPEC": torch_spec,
             "RUNNER_ENVIRONMENT": runner_environment,
             "RUNNER_TEMP": str(tmp_path),
+            "PIP_INDEX_URL": "https://pypi.tuna.tsinghua.edu.cn/simple",
         },
-        check=True,
+        capture_output=True,
+        check=False,
         timeout=15,
     )
     commands = [json.loads(line) for line in log.read_text().splitlines()]
     pip_calls = [command for command in commands if command[:2] == ["-m", "pip"]]
     cached = [call for call in pip_calls if str(cache) in call]
+    cache_hit = runner_environment == "self-hosted" and cache_state == "hit"
     if runner_environment == "self-hosted" and cache_state != "absent":
         assert cached == [
             [
@@ -193,37 +182,36 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
                 torch_spec,
             ]
         ]
-        if cache_state == "hit":
-            assert len(pip_calls) == 2
-            assert pip_calls[-1] == ["-m", "pip", "install", torch_spec]
-            assert not list(tmp_path.glob("fq-cpu-wheel.*"))
-            return
-        pip_calls = [call for call in pip_calls if str(cache) not in call]
     else:
         assert not cached
-    official = "https://download.pytorch.org/whl/cpu"
-    mirror = "https://mirrors.aliyun.com/pytorch-wheels/cpu/"
-    if runner_environment == "self-hosted" and mirror_failure != "timeout":
-        assert mirror in pip_calls[0]
-        assert "--no-index" in pip_calls[0] and "--no-deps" in pip_calls[0]
-        assert pip_calls[0][2] == "download"
-    if runner_environment == "self-hosted" and mirror_failure == "none":
-        assert len(pip_calls) == 3
-        assert official not in str(pip_calls)
-        assert "--no-deps" in pip_calls[1]
-        assert pip_calls[2] == ["-m", "pip", "install", torch_spec]
+    network_calls = [call for call in pip_calls if str(cache) not in call]
+    if cache_hit:
+        assert network_calls == [["-m", "pip", "install", torch_spec]]
     else:
-        assert official in pip_calls[-2]
-        assert "--no-deps" in pip_calls[-2]
-        assert torch_spec in pip_calls[-2]
-    if runner_environment == "github-hosted":
-        assert len(pip_calls) == 2
-        assert mirror not in str(pip_calls)
-    assert pip_calls[-1] == ["-m", "pip", "install", torch_spec]
+        official = [
+            "-m",
+            "pip",
+            "install",
+            "--no-deps",
+            torch_spec,
+            "--index-url",
+            "https://download.pytorch.org/whl/cpu",
+        ]
+        if official_failure != "timeout":
+            assert network_calls[0] == official
+        if official_failure != "none":
+            assert result.returncode == (124 if official_failure == "timeout" else 1)
+            assert network_calls == (
+                [] if official_failure == "timeout" else [official]
+            )
+            return
+        assert network_calls == [official, ["-m", "pip", "install", torch_spec]]
+    assert result.returncode == 0, result.stderr.decode()
+    assert "aliyun" not in str(pip_calls)
     assert "--index-url" not in pip_calls[-1]
     assert commands[-1][0] == "-c"
     assert "torch.version.cuda is None" in commands[-1][1]
-    assert not list(tmp_path.glob("fq-cpu-wheel.*"))
+    assert "+cpu" in commands[-1][1]
 
 
 def test_shared_tier_clears_platform_ranks_without_changing_test_selection(
