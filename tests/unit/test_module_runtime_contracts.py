@@ -708,3 +708,67 @@ def test_jax_module_supports_input_values_and_gradients() -> None:
         parameter_grad, expected_parameter_grad, atol=1e-5, rtol=1e-5
     )
     torch.testing.assert_close(input_grad, expected_input_grad, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("debug", [False, True])
+def test_jax_forward_matches_execute_through_optimizer_updates(debug: bool) -> None:
+    pytest.importorskip("jax")
+    policy = fq.RuntimePolicy(
+        execution_options=fq.ExecutionOptions(
+            backend="jax",
+            mode="statevector",
+            allow_backend_fallback=False,
+            precision="complex128",
+        ),
+        correctness_debug=debug,
+    )
+    fast = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    detailed = fq.Module(
+        build_circuit,
+        2,
+        init=torch.tensor([0.2, -0.3]),
+        dtype=torch.float64,
+        policy=policy,
+    )
+    optimizers = [
+        torch.optim.Adam(module.parameters(), lr=0.03) for module in (fast, detailed)
+    ]
+    hashes = []
+    for step in range(3):
+        inputs = torch.tensor(
+            0.17 + 0.01 * step, dtype=torch.float64, requires_grad=True
+        )
+        reference_inputs = inputs.detach().clone().requires_grad_()
+        for optimizer in optimizers:
+            optimizer.zero_grad(set_to_none=True)
+        value = fast(inputs)
+        execution = detailed.execute(reference_inputs)
+        torch.testing.assert_close(
+            value, execution.require_value(), atol=1e-12, rtol=1e-12
+        )
+        value.square().sum().backward()
+        execution.require_value().square().sum().backward()
+        torch.testing.assert_close(
+            fast.parameters_tensor.grad,
+            detailed.parameters_tensor.grad,
+            atol=1e-12,
+            rtol=1e-12,
+        )
+        torch.testing.assert_close(
+            inputs.grad, reference_inputs.grad, atol=1e-12, rtol=1e-12
+        )
+        assert fast._last_ir is not None
+        assert fast._last_ir.content_hash == execution.provenance["ir_hash"]
+        hashes.append(fast._last_ir.content_hash)
+        for optimizer in optimizers:
+            optimizer.step()
+        torch.testing.assert_close(
+            fast.parameters_tensor, detailed.parameters_tensor, atol=1e-12, rtol=1e-12
+        )
+    assert len(set(hashes)) == 3
