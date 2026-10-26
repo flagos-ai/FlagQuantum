@@ -1,7 +1,7 @@
 # API Change 097: Circuit Gate Typing Contract
 
-Status: approved and implemented on the proposal branch  
-Approval directive: `Systematically solve this for both Circuit and DynamicCircuit.`  
+Status: approved and implemented on the proposal branch
+Approval directive: `Systematically solve this for both Circuit and DynamicCircuit.`
 Approved scope: static typing for the existing schema-installed gate surface; no
 runtime gate, signature, execution, provider, or capability change
 
