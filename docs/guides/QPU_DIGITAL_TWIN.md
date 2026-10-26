@@ -518,8 +518,33 @@ the explicit release API remains the sole release boundary. The cycle itself
 has no provider, task, retry, routing, notification, promotion, or hardware
 control operation.
 
+After review, record the operator's decision as a separate immutable fact:
+
+```python
+decision = fq.twin.record_evolution_decision(
+    cycle,
+    decision="retain_incumbent",
+    decided_at="2026-08-15T11:00:00+08:00",
+    decision_authority="calibration-operator",
+)
+fq.twin.dump_evolution_decision(decision, "twin-evolution-decision.json")
+
+print(decision.recommended_action)
+print(decision.decision)
+print(decision.followed_recommendation)
+```
+
+An operator may conservatively retain the incumbent or request more evidence
+even when the cycle recommends release. A `release_candidate` decision cannot
+override a closed evidence gate and must include a previously created
+`TwinRegionRelease` matching the cycle's candidate snapshot, target, and
+ordered mapping. Recording the decision still does not activate that release
+or authorize workload routing. `decision_authority` is an opaque application
+audit identifier; authentication and access control remain outside Twin.
+
 Run `python examples/twin_evolution_cycle.py` for a complete synthetic,
-offline example that persists and resumes after parameter estimation.
+offline example that persists, resumes, and records an explicit retain
+decision after parameter estimation.
 
 To incorporate one newly validated calibration, extend the saved history
 immutably and write a new versioned artifact:
@@ -1527,8 +1552,9 @@ The public `fq.twin` v1 API, `flagquantum.qpu_digital_twin.v1`,
 `flagquantum.twin_region_holdout_history.v1`, and
 `flagquantum.twin_region_holdout_evolution.v1`,
 `flagquantum.twin_region_candidate_holdout_study.v1`, and
-`flagquantum.twin_region_candidate_holdout_evaluation.v1` are frozen compatibility
-contracts.
+`flagquantum.twin_region_candidate_holdout_evaluation.v1`,
+`flagquantum.twin_evolution_cycle.v1`, and
+`flagquantum.twin_evolution_decision.v1` are frozen compatibility contracts.
 Compatible capabilities may be added, but existing v1 names, signatures,
 fields, status meanings, and serialized meanings will not change without a
 versioned replacement or the documented deprecation process.

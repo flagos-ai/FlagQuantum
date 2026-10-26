@@ -37,6 +37,7 @@
     "dump_circuit_support",
     "dump_evidence",
     "dump_evolution_cycle",
+    "dump_evolution_decision",
     "dump_region_holdout_evaluation",
     "dump_region_candidate_holdout_evaluation",
     "dump_region_candidate_holdout_study",
@@ -57,6 +58,7 @@
     "load_circuit_support",
     "load_evidence",
     "load_evolution_cycle",
+    "load_evolution_decision",
     "load_region_holdout_evaluation",
     "load_region_candidate_holdout_evaluation",
     "load_region_candidate_holdout_study",
@@ -78,6 +80,7 @@
     "prepare_region_holdout_study",
     "prepare_region_validation_suite",
     "prepare_probe_refresh",
+    "record_evolution_decision",
     "release_region_candidate",
     "TwinCalibrationDrift",
     "TwinCalibrationHistory",
@@ -96,6 +99,7 @@
     "TwinEvolutionHistory",
     "TwinEvolutionCycle",
     "TwinEvolutionCycleStage",
+    "TwinEvolutionDecision",
     "TwinEvolutionRecommendation",
     "TwinExperiment",
     "TwinFreshnessAssessment",
@@ -150,6 +154,7 @@
     "fit_candidate": "(incumbent: 'QPUDigitalTwin', estimate: 'TwinParameterEstimate', *, captured_at: 'str') -> 'TwinFittedCandidate'",
     "dump_evidence": "(evidence: 'TwinEvidenceEnvelope', path: 'str | PathLike[str]') -> 'None'",
     "dump_evolution_cycle": "(cycle: 'TwinEvolutionCycle', path: 'str | PathLike[str]') -> 'None'",
+    "dump_evolution_decision": "(decision: 'TwinEvolutionDecision', path: 'str | PathLike[str]') -> 'None'",
     "dump_region_candidate_holdout_evaluation": "(evaluation: 'TwinRegionCandidateHoldoutEvaluation', path: 'str | PathLike[str]') -> 'None'",
     "dump_region_candidate_holdout_study": "(study: 'TwinRegionCandidateHoldoutStudy', path: 'str | PathLike[str]') -> 'None'",
     "dump_region_validation_suite": "(suite: 'TwinRegionValidationSuite', path: 'str | PathLike[str]') -> 'None'",
@@ -160,6 +165,7 @@
     "estimate_probe_parameters": "(bank: 'TwinProbeBank', hardware_reports: 'Sequence[TwinHardwareReport]', *, confidence_level: 'float' = 0.95) -> 'TwinParameterEstimate'",
     "load_evidence": "(path: 'str | PathLike[str]') -> 'TwinEvidenceEnvelope'",
     "load_evolution_cycle": "(path: 'str | PathLike[str]') -> 'TwinEvolutionCycle'",
+    "load_evolution_decision": "(path: 'str | PathLike[str]') -> 'TwinEvolutionDecision'",
     "load_region_candidate_holdout_evaluation": "(path: 'str | PathLike[str]') -> 'TwinRegionCandidateHoldoutEvaluation'",
     "load_region_candidate_holdout_study": "(path: 'str | PathLike[str]') -> 'TwinRegionCandidateHoldoutStudy'",
     "load_region_validation_suite": "(path: 'str | PathLike[str]') -> 'TwinRegionValidationSuite'",
@@ -178,6 +184,7 @@
     "prepare_region_candidate_holdout": "(incumbent: 'TwinRegionModel', candidate: 'TwinRegionModel', reference_circuits: 'Sequence[Any]', holdout_circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int') -> 'TwinRegionCandidateHoldoutStudy'",
     "prepare_region_validation_suite": "(region_twin: 'TwinRegionModel', circuits: 'Sequence[Any]', *, physical_qubits: 'Sequence[int]', name: 'str', shots: 'int', repetitions: 'int' = 2) -> 'TwinRegionValidationSuite'",
     "prepare_probe_refresh": "(release: 'TwinRegionRelease', candidate_circuits: 'Sequence[Any]', *, calibration_history: 'TwinCalibrationHistory | None' = None, validation_history: 'TwinValidationHistory | TwinRegionValidationHistory | None' = None, maximum_tasks: 'int', shots: 'int') -> 'TwinProbeRefreshPlan'",
+    "record_evolution_decision": "(cycle: 'TwinEvolutionCycle', *, decision: 'TwinEvolutionRecommendation', decided_at: 'str', decision_authority: 'str', release: 'TwinRegionRelease | None' = None) -> 'TwinEvolutionDecision'",
     "build_region_validation_history": "(observations: 'Sequence[tuple[TwinRegionModel, TwinRegionSuiteEvaluation]]') -> 'TwinRegionValidationHistory'",
     "build_region_holdout_history": "(observations: 'Sequence[tuple[TwinRegionModel, TwinRegionHoldoutEvaluation]]') -> 'TwinRegionHoldoutHistory'",
     "dump_region_holdout_history": "(history: 'TwinRegionHoldoutHistory', path: 'str | PathLike[str]') -> 'None'",
@@ -211,6 +218,7 @@
     "TwinEvidenceReport": "(status: 'TwinEvidenceStatus', prediction: 'TwinPrediction | None', evidence_envelope_identity: 'str | None', evidence_identity: 'str | None', exact_circuit_verified: 'bool', structurally_supported: 'bool', tv_error_bound: 'float | None', confidence_level: 'float | None', reasons: 'tuple[str, ...]', schema: 'str' = 'flagquantum.twin_evidence_report.v1') -> None",
     "TwinEvolutionHistory": "(calibration_history: 'TwinCalibrationHistory', validation_history: 'TwinValidationHistory', schema: 'str' = 'flagquantum.twin_evolution_history.v1') -> None",
     "TwinEvolutionCycle": "(incumbent_snapshot_identity: 'str', freshness_identity: 'str', freshness_status: 'TwinFreshnessStatus', probe_plan_identity: 'str', target: 'str', physical_qubits: 'tuple[int, ...]', stage: 'TwinEvolutionCycleStage' = 'prepared', parameter_estimate_identity: 'str | None' = None, probe_bank_identity: 'str | None' = None, candidate_snapshot_identity: 'str | None' = None, candidate_fit_identity: 'str | None' = None, holdout_evaluation_identity: 'str | None' = None, holdout_suite_identity: 'str | None' = None, holdout_decision: 'TwinCandidateDecision | None' = None, recommended_action: 'TwinEvolutionRecommendation' = 'collect_more_evidence', schema: 'str' = 'flagquantum.twin_evolution_cycle.v1') -> None",
+    "TwinEvolutionDecision": "(cycle_identity: 'str', recommended_action: 'TwinEvolutionRecommendation', decision: 'TwinEvolutionRecommendation', decided_at: 'str', decision_authority: 'str', target: 'str', physical_qubits: 'tuple[int, ...]', incumbent_snapshot_identity: 'str', candidate_snapshot_identity: 'str | None', holdout_evaluation_identity: 'str | None', release_identity: 'str | None' = None, released_region_identity: 'str | None' = None, schema: 'str' = 'flagquantum.twin_evolution_decision.v1') -> None",
     "TwinExperiment": "(snapshot_identity: 'str', prediction: 'TwinPrediction', name: 'str', backend_name: 'str', target_qubits: 'tuple[int, ...]', submitted_qasm: 'str', submitted_qasm_identity: 'str', shots: 'int', schema: 'str' = 'flagquantum.twin_experiment.v1') -> None",
     "TwinFreshnessAssessment": "(status: 'TwinFreshnessStatus', snapshot_identity: 'str', evaluated_at: 'str', calibration_age_seconds: 'float', validation_snapshot_age_seconds: 'float | None', next_refresh_at: 'str | None', calibration_drift: 'TwinCalibrationDrift | None', validation_series: 'TwinValidationSeries | None', reasons: 'tuple[str, ...]') -> None",
     "TwinFreshnessPolicy": "(maximum_calibration_age: 'timedelta | None' = None, maximum_validation_age: 'timedelta | None' = None, maximum_relative_t1_drift: 'float | None' = None, maximum_relative_t2_drift: 'float | None' = None, maximum_readout_tv_drift: 'float | None' = None, maximum_relative_gate_duration_drift: 'float | None' = None, maximum_verified_tv_error_bound: 'float | None' = None) -> None",
@@ -278,6 +286,8 @@
     "TwinEvolutionCycle.with_candidate": "(self, candidate: 'TwinFittedCandidate') -> 'TwinEvolutionCycle'",
     "TwinEvolutionCycle.with_holdout_evaluation": "(self, evaluation: 'TwinCandidateSuiteEvaluation') -> 'TwinEvolutionCycle'",
     "TwinEvolutionCycle.with_parameter_estimate": "(self, estimate: 'TwinParameterEstimate') -> 'TwinEvolutionCycle'",
+    "TwinEvolutionDecision.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinEvolutionDecision'",
+    "TwinEvolutionDecision.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinExperiment.prepare": "(twin: 'QPUDigitalTwin', circuit: 'Any', *, submitted_qasm: 'str | None' = None, name: 'str', shots: 'int') -> 'TwinExperiment'",
     "TwinExperiment.submit": "(self, provider: 'Any') -> 'ProviderTaskHandle'",
     "TwinExperiment.to_dict": "(self) -> 'dict[str, Any]'",
@@ -491,6 +501,21 @@
       "holdout_suite_identity",
       "holdout_decision",
       "recommended_action",
+      "schema"
+    ],
+    "TwinEvolutionDecision": [
+      "cycle_identity",
+      "recommended_action",
+      "decision",
+      "decided_at",
+      "decision_authority",
+      "target",
+      "physical_qubits",
+      "incumbent_snapshot_identity",
+      "candidate_snapshot_identity",
+      "holdout_evaluation_identity",
+      "release_identity",
+      "released_region_identity",
       "schema"
     ],
     "TwinExperiment": [
@@ -908,6 +933,10 @@
     "TwinEvolutionCycle": [
       "identity"
     ],
+    "TwinEvolutionDecision": [
+      "followed_recommendation",
+      "identity"
+    ],
     "TwinExperiment": [
       "identity"
     ],
@@ -1049,6 +1078,7 @@
     "TwinEvidenceReport": "flagquantum.twin_evidence_report.v1",
     "TwinEvolutionHistory": "flagquantum.twin_evolution_history.v1",
     "TwinEvolutionCycle": "flagquantum.twin_evolution_cycle.v1",
+    "TwinEvolutionDecision": "flagquantum.twin_evolution_decision.v1",
     "TwinExperiment": "flagquantum.twin_experiment.v1",
     "TwinHardwareReport": "flagquantum.twin_hardware_report.v1",
     "TwinGateDurationDrift": "flagquantum.twin_gate_duration_drift.v1",

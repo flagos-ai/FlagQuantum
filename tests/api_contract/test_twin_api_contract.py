@@ -116,6 +116,9 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
     assert contract["public_schema_defaults"]["TwinEvolutionCycle"] == (
         "flagquantum.twin_evolution_cycle.v1"
     )
+    assert contract["public_schema_defaults"]["TwinEvolutionDecision"] == (
+        "flagquantum.twin_evolution_decision.v1"
+    )
     assert contract["public_literal_values"]["TwinEvolutionCycleStage"] == [
         "prepared",
         "parameter_estimated",
@@ -131,6 +134,33 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
         "identifiable",
         "underdetermined",
     ]
+
+
+def test_evolution_decision_is_an_audit_record_without_execution_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinEvolutionDecision)}
+
+    assert fq.twin.TwinEvolutionDecision.__dataclass_params__.frozen is True
+    assert fields == {
+        "cycle_identity",
+        "recommended_action",
+        "decision",
+        "decided_at",
+        "decision_authority",
+        "target",
+        "physical_qubits",
+        "incumbent_snapshot_identity",
+        "candidate_snapshot_identity",
+        "holdout_evaluation_identity",
+        "release_identity",
+        "released_region_identity",
+        "schema",
+    }
+    assert not fields & {
+        "active_model",
+        "routing_authorized",
+        "provider",
+        "credentials",
+    }
 
 
 def test_release_assessment_vocabulary_stays_minimal_and_frozen() -> None:
