@@ -38,6 +38,14 @@ from .evidence import (
     load_evidence,
 )
 from .evolution import TwinEvolutionHistory, align_histories
+from .evolution_cycle import (
+    TwinEvolutionCycle,
+    TwinEvolutionCycleStage,
+    TwinEvolutionRecommendation,
+    dump_evolution_cycle,
+    load_evolution_cycle,
+    prepare_evolution_cycle,
+)
 from .experiment import TwinExperiment, TwinHardwareReport
 from .factory import from_noise_model, from_quafu_chip_info
 from .freshness import (
@@ -151,6 +159,7 @@ __all__ = (
     "dump_candidate_suite",
     "dump_circuit_support",
     "dump_evidence",
+    "dump_evolution_cycle",
     "dump_region_holdout_evaluation",
     "dump_region_candidate_holdout_evaluation",
     "dump_region_candidate_holdout_study",
@@ -170,6 +179,7 @@ __all__ = (
     "load_candidate_suite",
     "load_circuit_support",
     "load_evidence",
+    "load_evolution_cycle",
     "load_region_holdout_evaluation",
     "load_region_candidate_holdout_evaluation",
     "load_region_candidate_holdout_study",
@@ -185,6 +195,7 @@ __all__ = (
     "load_validation_series",
     "prepare_candidate_trial",
     "prepare_candidate_suite",
+    "prepare_evolution_cycle",
     "prepare_probe_bank",
     "prepare_region_candidate_holdout",
     "prepare_region_holdout_study",
@@ -206,6 +217,9 @@ __all__ = (
     "TwinEvidenceReport",
     "TwinEvidenceStatus",
     "TwinEvolutionHistory",
+    "TwinEvolutionCycle",
+    "TwinEvolutionCycleStage",
+    "TwinEvolutionRecommendation",
     "TwinExperiment",
     "TwinFreshnessAssessment",
     "TwinFreshnessPolicy",

@@ -566,6 +566,40 @@ is contacted and no task, retry, routing decision, promotion, or release is
 created. A later prospective holdout must still establish whether the candidate
 improves on the incumbent.
 
+## Record a human-gated evolution cycle
+
+Bind the existing freshness, probe, fit, and prospective holdout artifacts
+without copying their evidence payloads:
+
+```python
+cycle = fq.twin.prepare_evolution_cycle(
+    incumbent=incumbent,
+    freshness=freshness,
+    probe_plan=plan,
+)
+cycle = cycle.with_parameter_estimate(estimate)
+fq.twin.dump_evolution_cycle(cycle, "twin-evolution-estimated.json")
+
+cycle = fq.twin.load_evolution_cycle("twin-evolution-estimated.json")
+cycle = cycle.with_candidate(candidate)
+cycle = cycle.with_holdout_evaluation(evaluation)
+print(cycle.recommended_action)
+```
+
+Run the complete offline example with:
+
+```bash
+python examples/twin_evolution_cycle.py
+```
+
+The only legal order is freshness and plan → parameter estimate → fitted
+candidate → fixed holdout evaluation. Every state is immutable and references
+the authoritative source artifacts by identity, so an interrupted application
+can resume without resubmitting hardware work. The final value is only
+`retain_incumbent`, `collect_more_evidence`, or `release_candidate` advice.
+It never performs a provider operation, mutates a Twin, or crosses the existing
+explicit release boundary.
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not
