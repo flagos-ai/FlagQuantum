@@ -1,10 +1,13 @@
 """Tests for generic cloud providers and Quafu's retained read-only bridge."""
 
+from types import SimpleNamespace
+
 import pytest
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
 from flagquantum.remote import HttpQuantumProvider, ProviderCredentials, QuafuProvider
+from flagquantum.remote.qpu import _quafu_sdk
 from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.integration
@@ -36,6 +39,37 @@ class FakeTransport:
         if url.endswith("/result"):
             return {"counts": {"00": 3, "11": 5}}
         return {}
+
+
+class QuafuSdkReadClient:
+    def devices(self):
+        return [{"name": "Baihua", "kind": "real", "n_qubits": 156}]
+
+    def metadata(self, target):
+        return {
+            "n_qubits": 156,
+            "basis_gates": ["h", "rx", "ry", "rz", "cz"],
+            "limits": {"max_shots": 8192},
+            "calibration_id": "cal-1",
+        }
+
+    def device_calibration(self, device):
+        return SimpleNamespace(raw=self._calibration(device))
+
+    def calibration(self, calibration_id):
+        payload = self._calibration("Baihua")
+        payload["id"] = calibration_id
+        return SimpleNamespace(raw=payload)
+
+    @staticmethod
+    def _calibration(device):
+        return {
+            "id": "cal-1",
+            "chip": device,
+            "calibrated_at": "2026-10-25T10:00:00+08:00",
+            "qubits": [{"index": 0}, {"index": 1}],
+            "couplers": [{"qubits": [0, 1], "cz_fidelity": 0.99}],
+        }
 
 
 def test_http_provider_submit_status_and_result() -> None:
@@ -98,54 +132,21 @@ def test_list_devices_supports_legacy_provider_implementations() -> None:
     assert len(devices) == 1 and devices[0].n_qubits == 3
 
 
-def test_quafu_injected_transport_can_read_legacy_status(monkeypatch) -> None:
-    class StatusTransport(FakeTransport):
-        def get_json(self, url, headers, timeout):
-            self.gets.append((url, headers, timeout))
-            if url.endswith("/task/status/0"):
-                return {"Dongling": 0, "Miaofeng": "Offline"}
-            raise AssertionError(url)
-
-    monkeypatch.setenv("QUAFU_API_TOKEN", "env-secret")
-    transport = StatusTransport()
-    provider = QuafuProvider(base_url="https://quafu.test", transport=transport)
+def test_quafu_injected_transport_cannot_replace_sdk_read_paths() -> None:
+    transport = FakeTransport()
+    adapter = _quafu_sdk._QuafuSdkAdapter.for_discovery(client=QuafuSdkReadClient())
+    provider = QuafuProvider(transport=transport, _sdk_adapter=adapter)
 
     backends = provider.list_devices(n_qubits=5)
-
-    assert [backend.name for backend in backends] == ["Dongling", "Miaofeng"]
-    assert all(backend.n_qubits == 5 for backend in backends)
-    assert transport.gets[-1][1] == {"token": "env-secret"}
-
-
-def test_quafu_injected_transport_can_read_task_api_devices() -> None:
-    class DeviceTransport(FakeTransport):
-        def get_json(self, url, headers, timeout):
-            self.gets.append((url, headers, timeout))
-            if url.endswith("/devices"):
-                return {
-                    "devices": [
-                        {
-                            "name": "Shenglian",
-                            "status": "online",
-                            "n_qubits": 84,
-                            "basis_gates": ["h", "rx", "ry", "rz", "cz"],
-                            "queue": 4,
-                        }
-                    ],
-                    "simulator": {"name": "sim", "status": "online", "max_qubits": 24},
-                }
-            raise AssertionError(url)
-
-    provider = QuafuProvider(
-        task_server_url="https://quafu.test/api/v1", transport=DeviceTransport()
-    )
-    backends = provider.list_devices()
+    calibration = provider.fetch_calibration("Baihua")
+    topology = provider._qsteed_chip_info("Baihua")
 
     assert [(backend.name, backend.n_qubits) for backend in backends] == [
-        ("Shenglian", 84),
-        ("sim", 24),
+        ("Baihua", 156)
     ]
-    assert backends[0].metadata["source"] == "quafu-task-api-devices"
+    assert calibration["id"] == "cal-1"
+    assert topology["couplers_info"]["C0"]["fidelity"] == 0.99
+    assert transport.gets == []
 
 
 def test_quafu_provider_fetches_verbatim_legacy_chip_info() -> None:
@@ -169,50 +170,3 @@ def test_quafu_provider_fetches_verbatim_legacy_chip_info() -> None:
 
     assert info["calibration_time"] == "2026-08-07 08:32:27"
     assert transport.gets[0][1] == {"token": "secret"}
-
-
-def test_quafu_injected_transport_fetches_current_and_historical_calibration() -> None:
-    payload = {
-        "id": "cal-1",
-        "chip": "Baihua",
-        "calibrated_at": "2026-09-24T14:36:26+08:00",
-        "qubits": [{"index": 0}],
-        "couplers": [],
-    }
-
-    class CalibrationTransport(FakeTransport):
-        def get_json(self, url, headers, timeout):
-            self.gets.append((url, headers, timeout))
-            return payload
-
-    transport = CalibrationTransport()
-    provider = QuafuProvider(
-        task_server_url="https://quafu.test/api/v1", transport=transport
-    )
-
-    assert provider.fetch_calibration("Baihua") is payload
-    assert provider.fetch_calibration("Baihua", calibration_id="cal-1") is payload
-    assert [call[0] for call in transport.gets] == [
-        "https://quafu.test/api/v1/devices/Baihua/calibration",
-        "https://quafu.test/api/v1/calibrations/cal-1",
-    ]
-
-
-def test_quafu_injected_transport_rejects_mismatched_calibration() -> None:
-    class CalibrationTransport(FakeTransport):
-        def get_json(self, url, headers, timeout):
-            return {
-                "id": "other-calibration",
-                "chip": "Dongling",
-                "calibrated_at": "2026-09-24T14:36:29+08:00",
-                "qubits": [],
-                "couplers": [],
-            }
-
-    provider = QuafuProvider(
-        task_server_url="https://quafu.test/api/v1",
-        transport=CalibrationTransport(),
-    )
-
-    with pytest.raises(RuntimeError, match="belongs to 'Dongling'"):
-        provider.fetch_calibration("Baihua", calibration_id="cal-1")

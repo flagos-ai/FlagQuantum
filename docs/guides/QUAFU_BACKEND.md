@@ -372,19 +372,15 @@ FlagQuantum passes the logical OpenQASM 2.0 program, target, shots and name to
 `Client.submit(..., compiler="qiskit")`; it does not retry a failed SDK
 submission against another protocol or create a second hardware task.
 
-During the remaining migration batches, explicitly injected HTTP transports
-continue to exercise these legacy Quafu SQC endpoints for compatibility tests:
+An injected HTTP transport cannot replace SDK discovery, calibration, QSteed
+topology resolution, or task execution. This prevents test-only compatibility
+configuration from changing production protocol selection. The only retained
+legacy HTTP read is `fetch_chip_info()`, which supplies noise quantities that
+the maintained SDK schema does not yet expose authoritatively. It cannot submit,
+query, cancel, or restore a task.
 
-- `GET /task/verify` for token verification;
-- `GET /task/status/0` for chip availability and queue depth;
-- `POST /task/run/` for OpenQASM 2.0 submission;
-- `GET /task/status/{tid}` and `GET /task/result/{tid}` for asynchronous jobs;
-- `GET /task/cancel/{tid}` for cancellation.
-
-That temporary path remains only for staged compatibility and is removed in
-the SQC-retirement batch. A submission failure is never retried against a
-different protocol because the first service may already have accepted the
-task.
+A submission failure is never retried against a different protocol because the
+first service may already have accepted the task.
 
 | Submission | Selected protocol |
 |---|---|
@@ -393,7 +389,7 @@ task.
 | Same-width logical circuit collection | one `quafu_sdk_v1` parent job, `compiler="qiskit"` |
 | SDK submission has any definite or ambiguous failure | Raise without cross-protocol resubmission |
 
-These endpoints do not expose a compile-only request that returns the
+The maintained service does not expose a compile-only request that returns the
 authoritative final circuit before submission. QuarkCircuit and QSteed can
 transpile locally against a calibration snapshot, but that output is only a
 candidate circuit: it does not prove which circuit the Quafu control plane will

@@ -270,15 +270,34 @@ Expected behavior: submission and restoration use the SDK job identity. Restore
 never creates another task. A receipt created by a retired transport produces
 an actionable validation error instead of an implicit migration or resubmit.
 
-The remaining compatibility surface is read-only: explicitly injected HTTP
-transports used by offline adapters, plus `fetch_chip_info()` for legacy noise
-metadata. DynamicCircuit retains its separately governed API Change 090 path;
-this slice makes no OpenQASM 3 or live dynamic-QPU support claim.
+The fourth Batch F slice removes the injected-HTTP override from discovery,
+calibration, and QSteed topology resolution. Those reads now always use the SDK,
+even when a legacy transport is supplied for the remaining `fetch_chip_info()`
+noise bridge. The old SQC status discovery, Task API device/calibration reads,
+and token verification method are removed rather than retained as test-only
+alternate behavior.
+
+```python
+from flagquantum.remote import QuafuProvider
+
+provider = QuafuProvider()
+devices = provider.list_devices()
+calibration = provider.fetch_calibration(devices[0].name)
+print(devices[0].metadata["source"], calibration["id"])
+```
+
+Expected behavior: both reads use `quafu-sdk` and return FlagQuantum-owned
+values. No credential is required and an injected HTTP transport cannot change
+the selected protocol.
+
+The remaining compatibility surface is only `fetch_chip_info()` and its legacy
+transport for noise metadata. DynamicCircuit retains its separately governed
+API Change 090 path; this slice makes no OpenQASM 3 or live dynamic-QPU support
+claim.
 
 - after SDK noise-schema parity, remove `QUAFU_API_TOKEN`, the SQC hostname,
   token-header authentication, `fetch_chip_info()`, and remaining `/task/*`
   read paths;
-- remove the remaining injected-HTTP discovery/calibration compatibility code;
 - remove remaining calibration-only examples and environment guidance; and
 - remove `quarkcircuit` from FlagQuantum extras if the post-cutover dependency
   audit finds no maintained use.
