@@ -528,6 +528,44 @@ than quantum-state amplitudes or fidelities; `goodness_of_fit` is descriptive,
 not a confidence or model probability. The result never mutates or promotes a
 Twin and provides no submission, routing, or hardware-control authority.
 
+## Fit an immutable candidate
+
+Turn a bounded estimate into a later candidate without changing the incumbent:
+
+```python
+candidate = fq.twin.fit_candidate(
+    incumbent,
+    estimate,
+    captured_at="2026-08-15T10:30:00+08:00",
+)
+
+print(candidate.fit.fitted_parameters)
+print(candidate.fit.retained_parameters)
+assert candidate.snapshot.identity != incumbent.snapshot.identity
+
+fq.twin.dump_twin(candidate, "twin-candidate.json")
+candidate = fq.twin.load_twin("twin-candidate.json")
+```
+
+Run the complete synthetic workflow with:
+
+```bash
+python examples/twin_candidate_fit.py
+```
+
+The candidate keeps the incumbent target, mapping, lifetimes, excited
+population, and gate durations. It replaces the declared local readout and
+Pauli burdens, records the estimate and probe-bank identities, and requires a
+later timezone-aware capture time. Readout burden becomes symmetric bit-flip
+error; one- and two-qubit TV burdens are converted to representable
+depolarizing probabilities. Values outside those channel ranges fail closed.
+
+`TwinFittedCandidate` is still a `QPUDigitalTwin`, so existing candidate-suite
+and holdout preparation accepts it. Construction remains offline: no provider
+is contacted and no task, retry, routing decision, promotion, or release is
+created. A later prospective holdout must still establish whether the candidate
+improves on the incumbent.
+
 ## Inspect evidence for a prediction
 
 `predict()` always returns the numerical result of the frozen model. It does not

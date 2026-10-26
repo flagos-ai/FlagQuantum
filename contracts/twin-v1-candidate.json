@@ -30,6 +30,7 @@
     "compose_region_twin",
     "from_noise_model",
     "from_quafu_chip_info",
+    "fit_candidate",
     "dump_calibration_history",
     "dump_candidate_submission",
     "dump_candidate_suite",
@@ -79,6 +80,7 @@
     "TwinCalibrationHistory",
     "TwinCandidateDecision",
     "TwinCandidateEvaluation",
+    "TwinCandidateFit",
     "TwinCandidateSubmission",
     "TwinCandidateSuite",
     "TwinCandidateSuiteEvaluation",
@@ -93,6 +95,7 @@
     "TwinFreshnessAssessment",
     "TwinFreshnessPolicy",
     "TwinFreshnessStatus",
+    "TwinFittedCandidate",
     "TwinGateDurationDrift",
     "TwinHardwareReport",
     "TwinParameterEstimate",
@@ -138,6 +141,7 @@
     "dump_calibration_history": "(history: 'TwinCalibrationHistory', path: 'str | PathLike[str]') -> 'None'",
     "from_noise_model": "(noise_model: 'NoiseModel', *, target: 'str', qubits: 'Sequence[int]') -> 'QPUDigitalTwin'",
     "from_quafu_chip_info": "(chip_info: 'Mapping[str, Any]', *, target: 'str', qubits: 'Sequence[int]', readout_confusion_matrices: 'Sequence[Sequence[Sequence[float]]] | None' = None, correlated_readout_confusion_matrix: 'Sequence[Sequence[float]] | None' = None) -> 'QPUDigitalTwin'",
+    "fit_candidate": "(incumbent: 'QPUDigitalTwin', estimate: 'TwinParameterEstimate', *, captured_at: 'str') -> 'TwinFittedCandidate'",
     "dump_evidence": "(evidence: 'TwinEvidenceEnvelope', path: 'str | PathLike[str]') -> 'None'",
     "dump_region_candidate_holdout_evaluation": "(evaluation: 'TwinRegionCandidateHoldoutEvaluation', path: 'str | PathLike[str]') -> 'None'",
     "dump_region_candidate_holdout_study": "(study: 'TwinRegionCandidateHoldoutStudy', path: 'str | PathLike[str]') -> 'None'",
@@ -187,6 +191,7 @@
     "TwinCalibrationDrift": "(reference_snapshot_identity: 'str', current_snapshot_identity: 'str', provider: 'str', backend_name: 'str', physical_qubits: 'tuple[int, ...]', elapsed_seconds: 'float', qubit_drifts: 'tuple[TwinQubitCalibrationDrift, ...]', gate_duration_drifts: 'tuple[TwinGateDurationDrift, ...]', channel_model_changed: 'bool', schema: 'str' = 'flagquantum.twin_calibration_drift.v1') -> None",
     "TwinCalibrationHistory": "(provider: 'str', backend_name: 'str', physical_qubits: 'tuple[int, ...]', snapshot_identities: 'tuple[str, ...]', captured_at: 'tuple[str, ...]', baseline_drifts: 'tuple[TwinCalibrationDrift, ...]', interval_drifts: 'tuple[TwinCalibrationDrift, ...]', schema: 'str' = 'flagquantum.twin_calibration_history.v1') -> None",
     "TwinCandidateEvaluation": "(trial_identity: 'str', hardware_report: 'TwinHardwareReport', incumbent_validation: 'TwinValidationReport', finite_shot_tv_radius: 'float', candidate_improvement_error_radius: 'float', confidence_level: 'float', decision: 'TwinCandidateDecision', schema: 'str' = 'flagquantum.twin_candidate_evaluation.v1') -> None",
+    "TwinCandidateFit": "(incumbent_snapshot_identity: 'str', parameter_estimate_identity: 'str', probe_bank_identity: 'str', parameter_family: 'str', fitted_parameters: 'tuple[tuple[str, float, float, float], ...]', retained_parameters: 'tuple[str, ...]', unidentified_parameters: 'tuple[str, ...]', schema: 'str' = 'flagquantum.twin_candidate_fit.v1') -> None",
     "TwinCandidateSubmission": "(trial: 'TwinCandidateTrial', submission: 'TwinSubmission', schema: 'str' = 'flagquantum.twin_candidate_submission.v1') -> None",
     "TwinCandidateSuite": "(trials: 'tuple[TwinCandidateTrial, ...]', schema: 'str' = 'flagquantum.twin_candidate_suite.v1') -> None",
     "TwinCandidateSuiteEvaluation": "(suite_identity: 'str', evaluations: 'tuple[TwinCandidateEvaluation, ...]', confidence_level: 'float', decision: 'TwinCandidateDecision', schema: 'str' = 'flagquantum.twin_candidate_suite_evaluation.v1') -> None",
@@ -199,6 +204,7 @@
     "TwinExperiment": "(snapshot_identity: 'str', prediction: 'TwinPrediction', name: 'str', backend_name: 'str', target_qubits: 'tuple[int, ...]', submitted_qasm: 'str', submitted_qasm_identity: 'str', shots: 'int', schema: 'str' = 'flagquantum.twin_experiment.v1') -> None",
     "TwinFreshnessAssessment": "(status: 'TwinFreshnessStatus', snapshot_identity: 'str', evaluated_at: 'str', calibration_age_seconds: 'float', validation_snapshot_age_seconds: 'float | None', next_refresh_at: 'str | None', calibration_drift: 'TwinCalibrationDrift | None', validation_series: 'TwinValidationSeries | None', reasons: 'tuple[str, ...]') -> None",
     "TwinFreshnessPolicy": "(maximum_calibration_age: 'timedelta | None' = None, maximum_validation_age: 'timedelta | None' = None, maximum_relative_t1_drift: 'float | None' = None, maximum_relative_t2_drift: 'float | None' = None, maximum_readout_tv_drift: 'float | None' = None, maximum_relative_gate_duration_drift: 'float | None' = None, maximum_verified_tv_error_bound: 'float | None' = None) -> None",
+    "TwinFittedCandidate": "(snapshot: 'TwinSnapshot', noise_model: 'NoiseModel', fit: 'TwinCandidateFit') -> None",
     "TwinHardwareReport": "(experiment_identity: 'str', provider: 'str', backend_name: 'str', task_id: 'str', submitted_qasm_identity: 'str', executed_qasm_identity: 'str | None', counts: 'Mapping[str, int]', validation: 'TwinValidationReport', result_metadata: 'Mapping[str, Any]', schema: 'str' = 'flagquantum.twin_hardware_report.v1') -> None",
     "TwinGateDurationDrift": "(gate_name: 'str', physical_qubits: 'tuple[int, ...] | None', reference_duration_seconds: 'float', current_duration_seconds: 'float', absolute_duration_delta_seconds: 'float', relative_duration_delta: 'float | None', schema: 'str' = 'flagquantum.twin_gate_duration_drift.v1') -> None",
     "TwinPrediction": "(snapshot_identity: 'str', circuit_identity: 'str', n_wires: 'int', ideal_probabilities: 'tuple[float, ...]', twin_probabilities: 'tuple[float, ...]', total_variation_from_ideal: 'float', schema: 'str' = 'flagquantum.twin_prediction.v1') -> None",
@@ -232,6 +238,8 @@
     "TwinCalibrationDrift.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinCalibrationHistory.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinCandidateEvaluation.to_dict": "(self) -> 'dict[str, Any]'",
+    "TwinCandidateFit.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinCandidateFit'",
+    "TwinCandidateFit.to_dict": "(self) -> 'dict[str, Any]'",
     "TwinCandidateSubmission.from_dict": "(payload: 'Mapping[str, Any]') -> 'TwinCandidateSubmission'",
     "TwinCandidateSubmission.from_receipt": "(trial: 'TwinCandidateTrial', receipt: 'ProviderTaskHandle') -> 'TwinCandidateSubmission'",
     "TwinCandidateSubmission.to_dict": "(self) -> 'dict[str, Any]'",
@@ -346,6 +354,16 @@
       "decision",
       "schema"
     ],
+    "TwinCandidateFit": [
+      "incumbent_snapshot_identity",
+      "parameter_estimate_identity",
+      "probe_bank_identity",
+      "parameter_family",
+      "fitted_parameters",
+      "retained_parameters",
+      "unidentified_parameters",
+      "schema"
+    ],
     "TwinCandidateSubmission": [
       "trial",
       "submission",
@@ -431,6 +449,11 @@
       "maximum_readout_tv_drift",
       "maximum_relative_gate_duration_drift",
       "maximum_verified_tv_error_bound"
+    ],
+    "TwinFittedCandidate": [
+      "snapshot",
+      "noise_model",
+      "fit"
     ],
     "TwinEvolutionHistory": [
       "calibration_history",
@@ -776,6 +799,9 @@
       "incumbent_hardware_total_variation",
       "incumbent_snapshot_identity"
     ],
+    "TwinCandidateFit": [
+      "identity"
+    ],
     "TwinCandidateSubmission": [
       "identity",
       "receipt"
@@ -976,6 +1002,7 @@
     "TwinCalibrationDrift": "flagquantum.twin_calibration_drift.v1",
     "TwinCalibrationHistory": "flagquantum.twin_calibration_history.v1",
     "TwinCandidateEvaluation": "flagquantum.twin_candidate_evaluation.v1",
+    "TwinCandidateFit": "flagquantum.twin_candidate_fit.v1",
     "TwinCandidateSubmission": "flagquantum.twin_candidate_submission.v1",
     "TwinCandidateSuite": "flagquantum.twin_candidate_suite.v1",
     "TwinCandidateSuiteEvaluation": "flagquantum.twin_candidate_suite_evaluation.v1",

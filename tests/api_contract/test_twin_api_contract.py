@@ -110,6 +110,9 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
     assert contract["public_schema_defaults"]["TwinParameterEstimate"] == (
         "flagquantum.twin_parameter_estimate.v1"
     )
+    assert contract["public_schema_defaults"]["TwinCandidateFit"] == (
+        "flagquantum.twin_candidate_fit.v1"
+    )
     assert contract["public_literal_values"]["TwinProbeBankStatus"] == [
         "identifiable",
         "underdetermined",
@@ -299,6 +302,34 @@ def test_parameter_estimate_is_bounded_and_has_no_mutation_authority() -> None:
         "submission",
         "promotion",
         "routing_authorized",
+    }
+
+
+def test_fitted_candidate_records_provenance_without_execution_authority() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinCandidateFit)}
+    candidate_fields = {
+        field.name for field in dataclasses.fields(fq.twin.TwinFittedCandidate)
+    }
+
+    assert fq.twin.TwinCandidateFit.__dataclass_params__.frozen is True
+    assert fq.twin.TwinFittedCandidate.__dataclass_params__.frozen is True
+    assert fields == {
+        "incumbent_snapshot_identity",
+        "parameter_estimate_identity",
+        "probe_bank_identity",
+        "parameter_family",
+        "fitted_parameters",
+        "retained_parameters",
+        "unidentified_parameters",
+        "schema",
+    }
+    assert candidate_fields == {"snapshot", "noise_model", "fit"}
+    assert not fields & {
+        "provider",
+        "submission",
+        "promotion",
+        "routing_authorized",
+        "retry_policy",
     }
 
 
