@@ -485,6 +485,7 @@ def campaign(output: Path, *, smoke: bool, protocol: Path = MANIFEST) -> int:
                     OMP_NUM_THREADS="1",
                     OPENBLAS_NUM_THREADS="1",
                     MKL_NUM_THREADS="1",
+                    JAX_PLATFORMS="cpu",
                 )
                 with (output / f"{directory.name}.log").open("w") as log:
                     try:

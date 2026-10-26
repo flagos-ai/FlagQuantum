@@ -44,7 +44,7 @@ TorchCircuitBuilder = Callable[..., Any]
 
 
 class _JAXAutogradContext(Protocol):
-    accepts_inputs: bool
+    needs_input_gradient: bool
 
     @property
     def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
@@ -63,13 +63,70 @@ def _torch_to_jax(parameters: torch.Tensor) -> Any:
         torch.float32,
         torch.float64,
     }:
-        return parameters.detach().contiguous().numpy()
+        default_device = jax.config.jax_default_device
+        cpu_default = (default_device is None and jax.default_backend() == "cpu") or (
+            default_device is not None and default_device.platform == "cpu"
+        )
+        if cpu_default:
+            return parameters.detach().contiguous().numpy()
     return jax.dlpack.from_dlpack(parameters.detach().contiguous())
 
 
 def _jax_to_torch(value: Any, *, like: torch.Tensor) -> torch.Tensor:
     tensor = torch.utils.dlpack.from_dlpack(value)
     return tensor.to(device=like.device, dtype=like.dtype)
+
+
+class _TorchJAXQuantumFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(
+        ctx: _JAXAutogradContext,
+        params: torch.Tensor,
+        input_values: torch.Tensor,
+        kernel: JAXQuantumKernel,
+    ) -> torch.Tensor:
+        jax_params = _torch_to_jax(params)
+        if kernel.accepts_inputs:
+            jax_inputs = _torch_to_jax(input_values)
+            if input_values.requires_grad:
+                value, (param_grad, input_grad) = kernel._value_and_grad(
+                    jax_params, jax_inputs
+                )
+                torch_input_grad = _jax_to_torch(input_grad, like=input_values)
+            else:
+                value, param_grad = kernel._parameter_value_and_grad(
+                    jax_params, jax_inputs
+                )
+                torch_input_grad = None
+        else:
+            value, param_grad = kernel._value_and_grad(jax_params)
+            torch_input_grad = None
+        torch_grad = _jax_to_torch(param_grad, like=params)
+        if torch_input_grad is None:
+            ctx.save_for_backward(torch_grad)
+        else:
+            ctx.save_for_backward(torch_grad, torch_input_grad)
+        ctx.needs_input_gradient = torch_input_grad is not None
+        return _jax_to_torch(value, like=params)
+
+    @staticmethod
+    @once_differentiable
+    def backward(
+        ctx: _JAXAutogradContext, grad_output: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor | None, None]:
+        grad = ctx.saved_tensors[0]
+        scale_shape = tuple(grad_output.shape) + (1,) * max(
+            0, grad.ndim - grad_output.ndim
+        )
+        parameter_vjp = grad_output.reshape(scale_shape) * grad
+        if not ctx.needs_input_gradient:
+            return parameter_vjp, None, None
+        input_grad = ctx.saved_tensors[1]
+        input_scale_shape = tuple(grad_output.shape) + (1,) * max(
+            0, input_grad.ndim - grad_output.ndim
+        )
+        input_vjp = grad_output.reshape(input_scale_shape) * input_grad
+        return parameter_vjp, input_vjp, None
 
 
 @dataclass
@@ -100,12 +157,19 @@ class JAXQuantumKernel:
             update_config: Callable[[str, bool], None] = jax.config.update
             update_config("jax_enable_x64", True)
         self._value_and_grad = self._build_value_and_grad()
+        if self.accepts_inputs:
+            import jax
+
+            parameter_gradient = jax.value_and_grad(self._jax_loss, argnums=0)
+            self._parameter_value_and_grad = (
+                jax.jit(parameter_gradient) if self.jit else parameter_gradient
+            )
+        else:
+            self._parameter_value_and_grad = self._value_and_grad
 
     def __call__(
         self, parameters: torch.Tensor, inputs: torch.Tensor | None = None
     ) -> torch.Tensor:
-        kernel = self
-
         if self.accepts_inputs and inputs is None:
             raise ValueError("JAX quantum kernel circuit builder requires inputs")
         if not self.accepts_inputs and inputs is not None:
@@ -113,51 +177,11 @@ class JAXQuantumKernel:
                 "JAX quantum kernel circuit builder does not accept inputs"
             )
 
-        class _TorchJAXQuantumFunction(torch.autograd.Function):
-            @staticmethod
-            def forward(
-                ctx: _JAXAutogradContext,
-                params: torch.Tensor,
-                input_values: torch.Tensor,
-            ) -> torch.Tensor:
-                jax_params = _torch_to_jax(params)
-                if kernel.accepts_inputs:
-                    jax_inputs = _torch_to_jax(input_values)
-                    value, (param_grad, input_grad) = kernel._value_and_grad(
-                        jax_params, jax_inputs
-                    )
-                    torch_input_grad = _jax_to_torch(input_grad, like=input_values)
-                else:
-                    value, param_grad = kernel._value_and_grad(jax_params)
-                    torch_input_grad = torch.zeros_like(input_values)
-                torch_grad = _jax_to_torch(param_grad, like=params)
-                ctx.save_for_backward(torch_grad, torch_input_grad)
-                ctx.accepts_inputs = kernel.accepts_inputs
-                return _jax_to_torch(value, like=params)
-
-            @staticmethod
-            @once_differentiable
-            def backward(
-                ctx: _JAXAutogradContext, grad_output: torch.Tensor
-            ) -> tuple[torch.Tensor, torch.Tensor | None]:
-                grad, input_grad = ctx.saved_tensors
-                scale_shape = tuple(grad_output.shape) + (1,) * max(
-                    0, grad.ndim - grad_output.ndim
-                )
-                parameter_vjp = grad_output.reshape(scale_shape) * grad
-                if not ctx.accepts_inputs:
-                    return parameter_vjp, None
-                input_scale_shape = tuple(grad_output.shape) + (1,) * max(
-                    0, input_grad.ndim - grad_output.ndim
-                )
-                input_vjp = grad_output.reshape(input_scale_shape) * input_grad
-                return parameter_vjp, input_vjp
-
         input_tensor = inputs if inputs is not None else parameters.new_empty(0)
-        apply: Callable[[torch.Tensor, torch.Tensor], object] = (
+        apply: Callable[[torch.Tensor, torch.Tensor, JAXQuantumKernel], object] = (
             _TorchJAXQuantumFunction.apply
         )
-        result = apply(parameters, input_tensor)
+        result = apply(parameters, input_tensor, self)
         if not isinstance(result, torch.Tensor):
             raise TypeError("JAX autograd bridge must return a tensor")
         return result

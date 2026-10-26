@@ -181,11 +181,13 @@ All routes retain independent gradient and optimizer-recovery checks.
 
 The lower-level kernel is a diagnostic of the quantum execution boundary;
 it omits the Module's builder, IR, policy and result-processing work, and is
-not a replacement public API. Both FlagQuantum JAX routes currently compute
-input derivatives as well as parameter derivatives for input-bearing
-builders; TensorCircuit's benchmark bridge computes parameter derivatives
-only because the features are fixed. Backend identity and phase boundaries
-must accompany any interpretation of the resulting timing differences.
+not a replacement public API. The baseline FlagQuantum JAX routes computed
+input derivatives as well as parameter derivatives for input-bearing builders;
+TensorCircuit's benchmark bridge computes parameter derivatives only because
+the features are fixed. The optimized bridge skips input derivatives when
+inputs do not require gradients and preserves them for trainable upstream
+features. Backend identity, producing commit and phase boundaries must
+accompany timing comparisons.
 
 This diagnostic investigates the original eager-versus-JIT gap. It does not
 retroactively replace the producing commit or measurements of the first
@@ -214,3 +216,22 @@ not imply every gate or derivative uses native code: the default Module route
 still declares Torch reverse mode. This diagnostic does not substitute a
 private adjoint kernel for the normal public call or change backend defaults.
 Source-only and installed campaigns remain separate artifacts.
+
+The current public JAX tensor path can defer IR materialization for pure static
+binding graphs with small retained inputs. Checkpoint/diagnostic reads rebuild
+the snapshot from detached copies of the consumed inputs, independently of
+later in-place parameter changes. Stateful/lifted graphs, matrices, mutable
+constants and large input buffers retain the existing extraction path. This
+optimization does not change execution policy or backend defaults.
+
+The configured thread limit refers to Torch intra/inter-op threads and the
+OMP/OpenBLAS/MKL environment, not the total number of JAX/XLA runtime threads.
+CPU campaign workers explicitly select the CPU JAX platform. The historical
+campaigns also ran on a CPU-only JAX host.
+
+The pre-existing refusal gap for non-finite compiled bindings is tracked in
+[#925](https://github.com/flagos-ai/FlagQuantum/issues/925). It was reproduced
+with frozen baseline Module and kernel sources as well as the candidate, and
+is outside this performance change. The comparison's independent parity and
+finite-output checks remain mandatory; this diagnostic does not certify all
+invalid-input behavior.

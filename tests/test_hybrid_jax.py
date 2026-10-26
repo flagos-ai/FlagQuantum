@@ -23,6 +23,23 @@ pytestmark = [
 ]
 
 
+def test_cpu_bridge_keeps_cpu_placement_when_jax_defaults_to_an_accelerator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import jax
+
+    from flagquantum.runtime.executors.jax.kernel import _torch_to_jax
+
+    # Exercise the placement decision without requiring a GPU in the CPU lane.
+    monkeypatch.setattr(jax, "default_backend", lambda: "gpu")
+    with jax.default_device(None):
+        converted = _torch_to_jax(torch.tensor([0.2], dtype=torch.float32))
+    assert converted.device.platform == "cpu"
+    torch.testing.assert_close(
+        torch.tensor(converted.__array__()), torch.tensor([0.2], dtype=torch.float32)
+    )
+
+
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 def test_cpu_bridge_preserves_strided_input_gradients_and_parameter_updates(
     dtype: torch.dtype,
@@ -46,9 +63,12 @@ def test_cpu_bridge_preserves_strided_input_gradients_and_parameter_updates(
         accepts_inputs=True,
     )
     tolerance = 1e-5 if dtype == torch.float32 else 1e-10
-    for _ in range(3):
+    for train_input in (False, True, False):
+        features.requires_grad_(train_input)
         value = kernel(parameters, features)
-        gradients = torch.autograd.grad(2.3 * value, (parameters, features))
+        gradients = torch.autograd.grad(
+            2.3 * value, (parameters, features) if train_input else (parameters,)
+        )
         angle = parameters[0] + features[0] * parameters[1]
         reference = angle.cos() + features[1].cos()
         expected_parameter = (
@@ -61,9 +81,10 @@ def test_cpu_bridge_preserves_strided_input_gradients_and_parameter_updates(
         torch.testing.assert_close(
             gradients[0], expected_parameter, atol=tolerance, rtol=tolerance
         )
-        torch.testing.assert_close(
-            gradients[1], expected_input, atol=tolerance, rtol=tolerance
-        )
+        if train_input:
+            torch.testing.assert_close(
+                gradients[1], expected_input, atol=tolerance, rtol=tolerance
+            )
         with torch.no_grad():
             parameters.add_(0.03)
             features.mul_(0.9)
