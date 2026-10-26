@@ -14,18 +14,16 @@ import torch
 import flagquantum as fq
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.integration import test_ftqc_dynamic_coherent_reference as coherent_reference
 from tests.integration.test_ftqc_dynamic_coherent_reference import (
     _conditional,
     _density,
     _RecordReference,
     _weight,
 )
-from tests.integration.test_ftqc_dynamic_coherent_reference import (
-    _one_cpu_thread as _one_cpu_thread,
-)
-from tests.integration.test_ftqc_dynamic_coherent_reference import (
-    records as records,
-)
+
+_one_cpu_thread = coherent_reference._one_cpu_thread
+records = coherent_reference.records
 
 pytestmark = pytest.mark.integration
 _ATOL = 1e-12
