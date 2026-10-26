@@ -159,3 +159,34 @@ ablation, independently varied parameter count, larger workloads, vectorized
 training, repeated timing campaigns and optional accelerator measurements.
 This bounded CPU stage does not close those requirements or promote results
 to release evidence.
+
+## JAX execution-strategy diagnostic
+
+The original CPU corpus remains immutable. A separate frozen protocol keeps
+the same tasks, initial vectors, splits, seeds, 60 updates and precision, and
+compares FlagQuantum eager, `fq.Module` with its JAX backend, the existing
+lower-level FlagQuantum JAX kernel, and TensorCircuit-NG JAX:
+
+```bash
+python -m benchmarks.training_comparison --jax-diagnostic --smoke --output /tmp/training-jax-smoke
+python -m benchmarks.training_comparison --jax-diagnostic --output /tmp/training-jax-cpu
+python -m benchmarks.training_comparison_report /tmp/training-jax-cpu
+```
+
+This produces eight smoke cases or 24 full cases and uses
+`benchmarks/manifests/training_comparison_jax_cpu_v1.json`. It does not repeat
+the classical control, whose original artifact remains available. JAX is JIT
+compiled for all three JAX routes. Fallback is disabled for `fq.Module`.
+All routes retain independent gradient and optimizer-recovery checks.
+
+The lower-level kernel is a diagnostic of the quantum execution boundary;
+it omits the Module's builder, IR, policy and result-processing work, and is
+not a replacement public API. Both FlagQuantum JAX routes currently compute
+input derivatives as well as parameter derivatives for input-bearing
+builders; TensorCircuit's benchmark bridge computes parameter derivatives
+only because the features are fixed. Backend identity and phase boundaries
+must accompany any interpretation of the resulting timing differences.
+
+This diagnostic investigates the original eager-versus-JIT gap. It does not
+retroactively replace the producing commit or measurements of the first
+protocol, and does not establish that any route is globally optimal.

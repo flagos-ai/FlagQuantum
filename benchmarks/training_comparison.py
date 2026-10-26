@@ -46,6 +46,7 @@ from flagquantum.benchmarking.contract import runtime_metadata, write_json_atomi
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "benchmarks/manifests/training_comparison_cpu_v1.json"
+JAX_MANIFEST = ROOT / "benchmarks/manifests/training_comparison_jax_cpu_v1.json"
 SCHEMA = "flagquantum.training_comparison.v1"
 RUNNER = "training_comparison"
 
@@ -88,7 +89,7 @@ def _git(*args: str) -> str:
     ).strip()
 
 
-def source_identity() -> dict[str, Any]:
+def source_identity(protocol: Path = MANIFEST) -> dict[str, Any]:
     """Bind the frozen protocol and all producing benchmark sources."""
     paths = [
         Path(__file__),
@@ -98,7 +99,7 @@ def source_identity() -> dict[str, Any]:
     return {
         "code_version": _git("rev-parse", "HEAD"),
         "dirty": bool(_git("status", "--porcelain", "--untracked-files=normal")),
-        "protocol_sha256": digest(MANIFEST),
+        "protocol_sha256": digest(protocol),
         "producer_sha256": {str(p.relative_to(ROOT)): digest(p) for p in paths},
         "versions": {
             p: metadata.version(p)
@@ -210,7 +211,13 @@ def _optimizer(parameters: torch.Tensor, task: Task) -> torch.optim.Adam:
 
 
 def train_case(
-    task: Task, engine: Engine, seed: int, *, smoke: bool, directory: Path
+    task: Task,
+    engine: Engine,
+    seed: int,
+    *,
+    smoke: bool,
+    directory: Path,
+    protocol: Path = MANIFEST,
 ) -> dict[str, Any]:
     """Run one isolated case; hold out test data until fixed-step training ends."""
     if task == "heisenberg" and engine == "classical":
@@ -348,8 +355,8 @@ def train_case(
         benchmark_evidence_class="comparison_non_release",
         execution_semantics="single_device_fast_path",
         scalability_claim_allowed=False,
-        protocol=json.loads(MANIFEST.read_text()),
-        source=source_identity(),
+        protocol=json.loads(protocol.read_text()),
+        source=source_identity(protocol),
         parity=asdict(parity),
         initial_validation_score=initial_score,
         assessment=asdict(assessment),
@@ -381,15 +388,15 @@ def train_case(
     )
 
 
-def campaign(output: Path, *, smoke: bool) -> int:
+def campaign(output: Path, *, smoke: bool, protocol: Path = MANIFEST) -> int:
     """Give each measured case a fresh process and an explicit wall deadline."""
     output.mkdir(parents=True, exist_ok=False)
-    manifest = json.loads(MANIFEST.read_text())
+    manifest = json.loads(protocol.read_text())
     frozen_data = dataset()
     freeze = runtime_metadata(
         runner=RUNNER,
         schema=SCHEMA,
-        source=source_identity(),
+        source=source_identity(protocol),
         protocol=manifest,
         smoke=smoke,
         data_sha256=hashlib.sha256(
@@ -416,7 +423,11 @@ def campaign(output: Path, *, smoke: bool) -> int:
     seeds = [11] if smoke else manifest["seeds"]
     cases: list[dict[str, Any]] = []
     for task in ("classifier", "heisenberg"):
-        engines = manifest["engines"] + (["classical"] if task == "classifier" else [])
+        engines = manifest["engines"] + (
+            ["classical"]
+            if task == "classifier" and manifest.get("include_classical_control", True)
+            else []
+        )
         for engine in engines:
             for seed in seeds:
                 directory = output / f"{task}-{engine}-{seed}"
@@ -436,6 +447,8 @@ def campaign(output: Path, *, smoke: bool) -> int:
                 ]
                 if smoke:
                     command.append("--smoke")
+                if protocol == JAX_MANIFEST:
+                    command.append("--jax-diagnostic")
                 print(f"Starting {directory.name}", flush=True)
                 status = "failed"
                 environment = dict(
@@ -471,7 +484,7 @@ def campaign(output: Path, *, smoke: bool) -> int:
                         runner=RUNNER,
                         schema=SCHEMA,
                         smoke=smoke,
-                        source=source_identity(),
+                        source=source_identity(protocol),
                         cases=cases,
                         scalability_claim_allowed=False,
                         benchmark_evidence_class="comparison_non_release",
@@ -484,6 +497,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument(
+        "--jax-diagnostic",
+        action="store_true",
+        help="run the separately frozen JAX execution-strategy comparison",
+    )
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
         "--task", choices=("classifier", "heisenberg"), default="classifier"
@@ -492,6 +510,8 @@ def main() -> int:
         "--engine",
         choices=(
             "flagquantum",
+            "flagquantum_jax_module",
+            "flagquantum_jax_kernel",
             "pennylane_backprop",
             "pennylane_adjoint",
             "tensorcircuit_torch",
@@ -502,8 +522,9 @@ def main() -> int:
     )
     parser.add_argument("--seed", type=int, default=11)
     args = parser.parse_args()
+    protocol = JAX_MANIFEST if args.jax_diagnostic else MANIFEST
     if not args.worker:
-        return campaign(args.output, smoke=args.smoke)
+        return campaign(args.output, smoke=args.smoke, protocol=protocol)
     args.output.mkdir(parents=True, exist_ok=False)
     torch.set_default_dtype(torch.float64)
     torch.set_num_interop_threads(1)
@@ -511,7 +532,12 @@ def main() -> int:
         parser.error("the frozen protocol permits seeds 11, 29 and 47 only")
     try:
         payload = train_case(
-            args.task, args.engine, args.seed, smoke=args.smoke, directory=args.output
+            args.task,
+            args.engine,
+            args.seed,
+            smoke=args.smoke,
+            directory=args.output,
+            protocol=protocol,
         )
     except (
         Exception
@@ -524,7 +550,7 @@ def main() -> int:
                 schema=SCHEMA,
                 status="failed",
                 error=f"{type(exc).__name__}: {exc}",
-                source=source_identity(),
+                source=source_identity(protocol),
                 scalability_claim_allowed=False,
             ),
         )

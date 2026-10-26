@@ -9,11 +9,14 @@ from typing import Any, Literal
 import numpy as np
 import torch
 
+import flagquantum as fq
 from benchmarks.training_workloads import Task, fq_state, recipe, terms
 from flagquantum import algorithms as fqa
 
 Engine = Literal[
     "flagquantum",
+    "flagquantum_jax_module",
+    "flagquantum_jax_kernel",
     "pennylane_backprop",
     "pennylane_adjoint",
     "tensorcircuit_torch",
@@ -40,6 +43,68 @@ def build_expectation(engine: Engine, task: Task) -> Expectation:
     qubits = 2 if task == "classifier" else 4
     gates = recipe(task)
     pauli_terms = terms(task)
+    if engine in {"flagquantum_jax_module", "flagquantum_jax_kernel"}:
+        observable = fqa.Hamiltonian(
+            [fqa.pauli_term(c, word, wires) for c, word, wires in pauli_terms]
+        )
+
+        def builder(parameters: Any, features: Any) -> fq.Circuit:
+            circuit = fq.Circuit(qubits, dtype=torch.complex128)
+            for gate in gates:
+                options = (
+                    {"theta": gate.angle(parameters, features)}
+                    if gate.parameter is not None or gate.feature is not None
+                    else {}
+                )
+                circuit.gate(gate.name, gate.wires, **options)
+            return circuit
+
+        count = 6 if task == "classifier" else 26
+        if engine == "flagquantum_jax_module":
+            module = fq.Module(
+                builder,
+                n_parameters=count,
+                init=torch.zeros(count, dtype=torch.float64),
+                dtype=torch.float64,
+                policy=fq.RuntimePolicy(
+                    execution_options=fq.ExecutionOptions(
+                        backend="jax",
+                        mode="statevector",
+                        precision="complex128",
+                        allow_backend_fallback=False,
+                    ),
+                    observable="hamiltonian",
+                    observable_qubits=tuple(range(qubits)),
+                ),
+                hamiltonian=observable,
+            )
+
+            def module_value(
+                parameters: torch.Tensor, features: torch.Tensor
+            ) -> torch.Tensor:
+                return _scalar(module(features, parameters=parameters))
+
+            return module_value
+
+        from flagquantum.runtime.executors.jax import compile_quantum_kernel
+
+        kernel = compile_quantum_kernel(
+            builder,
+            torch.zeros(count, dtype=torch.float64),
+            n_qubits=qubits,
+            observable="hamiltonian",
+            hamiltonian=observable,
+            compute_dtype="complex128",
+            accepts_inputs=True,
+            jit=True,
+        )
+
+        def kernel_value(
+            parameters: torch.Tensor, features: torch.Tensor
+        ) -> torch.Tensor:
+            return _scalar(kernel(parameters, features))
+
+        return kernel_value
     if engine == "flagquantum":
         observable = fqa.Hamiltonian(
             [
@@ -187,6 +252,8 @@ def engine_metadata(engine: Engine) -> dict[str, str]:
     """State the measured method, including the separate adjoint family."""
     devices = {
         "flagquantum": "local_statevector",
+        "flagquantum_jax_module": "fq.Module / jax / jit / Torch bridge",
+        "flagquantum_jax_kernel": "FlagQuantum JAXQuantumKernel / jit / Torch bridge",
         "pennylane_backprop": "default.qubit",
         "pennylane_adjoint": "lightning.qubit",
         "tensorcircuit_torch": "TensorCircuit-NG Circuit / pytorch",
@@ -200,14 +267,12 @@ def engine_metadata(engine: Engine) -> dict[str, str]:
             "adjoint"
             if engine == "pennylane_adjoint"
             else (
-                "jax_reverse_with_torch_bridge"
-                if engine == "tensorcircuit_jax"
-                else "torch_backprop"
+                "jax_reverse_with_torch_bridge" if "jax" in engine else "torch_backprop"
             )
         ),
         "device": "cpu",
         "amplitude_dtype": "not_applicable" if engine == "classical" else "complex128",
         "parameter_dtype": "float64",
-        "jit": "enabled" if engine == "tensorcircuit_jax" else "disabled",
+        "jit": "enabled" if "jax" in engine else "disabled",
         "batching": "serial_per_example" if engine != "classical" else "matrix_vector",
     }
