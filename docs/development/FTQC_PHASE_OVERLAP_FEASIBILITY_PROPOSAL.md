@@ -254,4 +254,17 @@ Initial validation called the existing two-argument Circuit.gate incorrectly;
 correcting only the test call completed all ten public executions. Initial
 complex-scalar test assignments were made explicit typed tensors for Mypy;
 no production gate, checker, threshold, fixture or skip was changed. Full
-exact-head CI, required GPUs and actual-main admission remain pending.
+exact-head CI and required GPUs subsequently passed. Actual main
+`82143b09dea21bf565c51a2e7f3f3c1496ec9dbf` completed all 54 CI jobs, required
+source/single/two-GPU checks, main smoke, real optional QEC installations and
+installed-evidence retention. Fresh isolated sdist/wheel membership matched all
+845 Python members; Python 3.12.14/Torch 2.14.1 core checks and the installed
+three-route public example passed outside the checkout without PYTHONPATH or
+an SDK overlay. Actual-main focused contracts passed the same 159 checks with
+zero skips on the developer profile. Records are `pr922-main-delivery.json`,
+`pr922-main-install-acceptance.json` and `pr922-main-public-example.json`.
+
+This closes finite M-P correctness only. The separate
+[cost-study proposal](FTQC_PHASE_OVERLAP_COST_STUDY_PROPOSAL.md) requires a new
+explicit observation budget; no measurement, wider domain or production
+integration is admitted by this acceptance.
