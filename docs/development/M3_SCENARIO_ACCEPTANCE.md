@@ -72,13 +72,38 @@ including zero and missed counts, and sums unresolved incoming-number alternativ
 incoherently. Independent scalar blocks distinguish this from the accepted QND
 reference. No library production code, public API or result type changes.
 
-Six scalar references and the consumer assertions were captured before the
-example. Focused new and unchanged photonic coverage passed 41 cases. Complete
-local default/integration verification, latest complete remote CI/GPU, remote
-three-Python coverage and this PR's independent merge authorization remain
-pending. The accepted scenario table above is unchanged. This finite reference
-adds no removed-mode result, physical detector calibration, event timing,
-feedback, Gaussian backend or full M3/M4 claim.
+Six scalar references and consumer assertions were captured before the example.
+Five reference ASTs remain unchanged; the sixth received an explicit tensor
+wrapper for the same complex witness assignment, verified bit-for-bit against
+the frozen inputs. Consumers received only import sorting and a typed reduction
+for the deliberate incorrect-map witness. No physical assertion or threshold
+changed; the accepted scenario table above remains unchanged.
+
+Complete local default verification passed 16,148 cases/224 skipped
+(465.96s); integration passed 2,620/177 skipped (204.75s).
+Both XML reports contain zero failures/errors: default at implementation commit
+`3d2785ca8cd94ed9c91882b7ab13872b78604087`, integration at README-repair commit
+`635afbe4dd0ba7b9aafe0e83abfafd9830e4705a` with identical example/test/library blobs.
+The first integration run retained 2,619 passes/177 skips and one failure because
+the new example was missing from the README inventory. Adding its entry fixed
+the unchanged inventory test; the complete integration rerun passed. Its original
+negative log/XML remains retained. Subsequent progress prose retains identical
+example/test/library blobs. Python 3.10 passed 41 focused cases; Python 3.12
+passed the same 41 plus the existing Markdown hygiene check. Package strict
+checking passed 842 files; focused strict checking passed the two new files.
+The initial expanded new-file invocation also exposed two existing diagnostics
+in imported `terminal_instrument_reference.py`; those original diagnostics are
+retained, and no unrelated example was changed. Ruff, Black 24/26, ownership,
+repository gates and local links/language passed.
+
+Maximum full evolved/branch density error was 7.50e-16, conditional density
+error 2.22e-15, unread error 7.50e-16 and completeness error 2.22e-16.
+The smallest independent positive branch weight was 0.1348608243; analytic zero
+branches were checked unnormalized. All original budgets remain unchanged.
+Latest-head remote CI/GPU/matrix evidence and the independent merge decision
+are tracked in the delivery PR. This scenario remains pending acceptance until
+its own authorized merge and successful main smoke. No local Python 3.11,
+physical detector or full M3/M4 certification is claimed.
 
 ## Accepted fixed thermal-bath spin-mode scenario
 

@@ -42,7 +42,7 @@ dimension. `sample_terminal` accepts complete ordered full-space Kraus branches
 and returns the existing `MeasurementResult` with indices and captured metadata;
 it does not return conditional states or infer physical loss.
 
-After approval only, the user workflow would:
+The approved user workflow is:
 
 1. Reuse [boson_interference.py](../../examples/boson_interference.py) to evolve
    the declared two-mode input, including declared propagation loss.
@@ -160,7 +160,7 @@ coherent sum across unresolved incoming photon numbers; the second checks that
 mode-1 complex coherence is retained. Also exchange the modes and explicitly
 measure the other named coordinate to expose ordering mistakes.
 
-## Proposed independent acceptance standards
+## Approved independent acceptance standards
 
 These are approved acceptance thresholds, not results. Validate and
 freeze independent references, physical assertions and budgets before composing
@@ -221,6 +221,30 @@ assignment after strict typing rejected Python complex assignment. Consumer
 imports were sorted; the deliberately incorrect coherent-sum witness uses
 `stack.sum` instead of Python's integer-initialized `sum`. Captured before/after
 sources retain these mechanical changes; no input, physics assertion or budget
-changed. Full local default/integration and latest remote CI/GPU/matrix and an
-independent PR merge grant remain pending. Library production and public API
-surfaces are unchanged.
+changed. Library production and public API surfaces are unchanged.
+
+Complete local default verification passed 16,148 cases/224 skipped
+(465.96s); integration passed 2,620/177 skipped (204.75s).
+Both XML reports contain zero failures/errors: default at implementation commit
+`3d2785ca8cd94ed9c91882b7ab13872b78604087`, integration at README-repair commit
+`635afbe4dd0ba7b9aafe0e83abfafd9830e4705a` with identical example/test/library blobs.
+The first integration run retained 2,619 passes/177 skips and one failure because
+the new example was missing from the README inventory. Adding its entry fixed
+the unchanged inventory test; the complete integration rerun passed. Its original
+negative log/XML remains retained. Subsequent progress prose retains identical
+example/test/library blobs. Python 3.10 passed 41 focused cases; Python 3.12
+passed the same 41 plus the existing Markdown hygiene check. Package strict
+checking passed 842 files; focused strict checking passed the two new files.
+The initial expanded new-file invocation also exposed two existing diagnostics
+in imported `terminal_instrument_reference.py`; those original diagnostics are
+retained, and no unrelated example was changed. Ruff, Black 24/26, ownership,
+repository gates and local links/language passed.
+
+Maximum full evolved/branch density error was 7.50e-16, conditional density
+error 2.22e-15, unread error 7.50e-16 and completeness error 2.22e-16.
+The smallest independent positive branch weight was 0.1348608243; analytic zero
+branches were checked unnormalized. All original budgets remain unchanged.
+Latest-head remote CI/GPU/matrix evidence and the independent merge decision
+are tracked in the delivery PR. This scenario remains pending acceptance until
+its own authorized merge and successful main smoke. No local Python 3.11,
+physical detector or full M3/M4 certification is claimed.

@@ -388,8 +388,12 @@ a global Gibbs state, infinite-dimensional accuracy or full M3/M4 completion.
 The user-approved
 [absorptive terminal photon-counting slice](../development/M3_ABSORPTIVE_PHOTON_COUNTING_CONTRACT_REVIEW.md)
 is implemented as an existing-interface CPU example and independent integration
-acceptance, pending complete local and remote verification and an independent
-PR merge grant. It preserves the accepted QND example and all library/public API
+acceptance. Complete local default verification passed 16,148 cases/224 skipped
+and integration passed 2,620/177 skipped,
+with zero XML failures/errors at the implementation commit recorded in M3
+acceptance. Latest-head remote verification and its own independent PR merge
+grant remain delivery gates. It preserves the accepted QND example and all
+library/public API
 surfaces. Vacuum reset uses the same finite joint coordinates; missed counts
 still absorb photons. It makes no removed-mode, calibrated detector, feedback,
 Gaussian-backend or M3/M4 completion claim. Progress is tracked separately in
