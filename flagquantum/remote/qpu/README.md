@@ -45,10 +45,11 @@ order. Set `QUAFU_API_KEY` before submission; FlagQuantum never starts an
 interactive SDK login.
 
 Run [`examples/remote/quafu_bell.py`](../../../examples/remote/quafu_bell.py)
-after setting `QUAFU_API_KEY`. Physical `compiler="qsteed"` submission remains
-on the compatibility transport until its dedicated SDK migration batch and
-still needs `QUAFU_API_TOKEN`. Use `QuafuProvider` directly only for backend
-discovery or an advanced package-oriented workflow.
+after setting `QUAFU_API_KEY`. Logical, QSteed-compiled, Twin, collection,
+status, result, cancellation, and restore paths all use the SDK. They never
+fall back to the retired SQC or FlagQuantum-owned Task API transports. Use
+`QuafuProvider` directly only for backend discovery or an advanced
+package-oriented workflow.
 
 `QuafuProvider` accepts an already compiled deployment package or precompiled
 OpenQASM with an explicit physical-qubit mapping. `AmazonBraketProvider`

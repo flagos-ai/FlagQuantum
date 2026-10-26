@@ -2,24 +2,23 @@
 
 FlagQuantum uses the official `quafu-sdk` package for read-only device
 discovery, backend metadata, limits, calibration snapshots, and the complete
-single-circuit logical and QSteed-compiled task lifecycle. Circuit collections
-remain on their existing transport until their dedicated migration batch.
-Installing `quafusqc` is not required.
+logical, QSteed-compiled, and collection task lifecycles. Installing
+`quafusqc` is not required.
 
 For detached multi-circuit jobs, pass a same-width circuit list to `fq.submit`;
 see [one collection, one receipt](REMOTE_JOBS.md#multiple-circuits-in-one-quafu-job).
-Collections require the current task API, verified target limits and logical
-service compilation. Unlike the single-circuit compatibility path, they never
-fall back to SQC or silently create separate parent jobs.
+Collections use one SDK parent job, verified target limits, and logical service
+compilation. They never fall back to SQC or silently create separate parent
+jobs.
 
 ## Configure credentials
 
 Read-only discovery and calibration do not require credentials. Keep task
 submission credentials outside source control. `QUAFU_API_KEY` authenticates
 SDK logical and QSteed-compiled submission, status, result, cancellation, and
-job restoration. During the staged migration, `QUAFU_API_TOKEN` remains
-available only to explicitly injected legacy-transport compatibility paths and
-is scheduled for removal after the remaining cutover gates pass.
+job restoration. Static execution never falls back to the retired SQC or
+FlagQuantum-owned Task API transports. Historical receipts from those
+transports are rejected without resubmission.
 
 A logical submission with no API key is rejected before the SDK or network is
 used:
@@ -29,13 +28,15 @@ ValidationError: Quafu submission requires api_key=... or QUAFU_API_KEY;
 FlagQuantum does not start interactive SDK login.
 ```
 
-The temporary legacy compatibility endpoint authenticates with
-`QUAFU_API_TOKEN`; `QUAFU_API_KEY` is not silently reused for that endpoint.
+`QUAFU_API_TOKEN` remains only for the legacy `fetch_chip_info()` calibration
+read used by noise-model workflows. It does not authorize task execution and
+is scheduled for removal once the maintained SDK exposes every required noise
+quantity with authoritative units.
 
 ```bash
 export QUAFU_API_KEY=qf_replace_with_your_api_key
 export QUAFU_TASK_SERVER_URL=https://quafu.com.cn/api/v1
-export QUAFU_API_TOKEN=replace_with_your_legacy_token
+export QUAFU_API_TOKEN=replace_with_your_legacy_calibration_token  # optional
 ```
 
 `QUAFU_TASK_SERVER_URL` is optional and defaults to the production URL above.
@@ -46,7 +47,7 @@ To use a local `.env` file:
 
 ```bash
 cp .env.example .env
-# Add QUAFU_API_KEY and QUAFU_TASK_SERVER_URL, and replace the legacy token.
+# Add QUAFU_API_KEY. Add the legacy token only for fetch_chip_info workflows.
 set -a
 . ./.env
 set +a
@@ -389,6 +390,7 @@ task.
 |---|---|
 | Logical circuit, no explicit physical mapping | `quafu_sdk_v1` |
 | Explicit `target_qubits` or locally precompiled mapped circuit | `quafu_sdk_v1`, `compiler="none"` |
+| Same-width logical circuit collection | one `quafu_sdk_v1` parent job, `compiler="qiskit"` |
 | SDK submission has any definite or ambiguous failure | Raise without cross-protocol resubmission |
 
 These endpoints do not expose a compile-only request that returns the

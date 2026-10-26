@@ -376,6 +376,7 @@ def test_complete_region_validation_example_executes_offline(
 
     provider = Provider()
     monkeypatch.setenv("QUAFU_API_TOKEN", "offline-test-token")
+    monkeypatch.setenv("QUAFU_API_KEY", "offline-test-key")
     monkeypatch.setattr(quafu_twin_region_validation, "QuafuProvider", lambda: provider)
     monkeypatch.setattr(quafu_twin_region_validation, "CELL_A_TWIN", cell_a_twin)
     monkeypatch.setattr(quafu_twin_region_validation, "CELL_A_SUPPORT", cell_a_support)

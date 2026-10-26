@@ -60,7 +60,7 @@ def compile(
         resolved_target = {
             "provider": "quafu",
             "backend": backend,
-            "chip_info": provider.fetch_chip_info(backend),
+            "chip_info": provider._qsteed_chip_info(backend),
         }
         if target_qubits is not None:
             resolved_target["target_qubits"] = target_qubits

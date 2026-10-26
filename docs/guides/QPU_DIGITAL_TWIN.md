@@ -167,6 +167,13 @@ It does not submit a task. The explicit submission boundary is:
 receipt = experiment.submit(provider)  # submits one real Quafu task
 ```
 
+For the default `QuafuProvider`, this uses `quafu-sdk` with
+`compiler="none"`. FlagQuantum validates the current backend snapshot, lowers
+CX to H-CZ-H when the backend requires it, rejects other non-native operations,
+writes the physical qubit mapping into the OpenQASM, and binds both the frozen
+logical program and the actual physical program in the receipt. An SDK failure
+does not fall back to SQC or create a second task.
+
 Save the exact experiment and receipt together when the QPU may remain queued
 after this process exits:
 

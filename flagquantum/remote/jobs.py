@@ -486,9 +486,7 @@ def _prepare_quafu_package(
             "metadata": {
                 "provider_options": options,
                 "compilation_location": "service",
-                "service_compiler": (
-                    "platform_default" if collection else "quarkcircuit"
-                ),
+                "service_compiler": "qiskit",
             },
         }
         mapping = tuple(options["target_qubits"])

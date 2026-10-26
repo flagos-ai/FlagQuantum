@@ -69,7 +69,7 @@ def execute_quafu(
             "metadata": {
                 "provider_options": options,
                 "compilation_location": "service",
-                "service_compiler": "quarkcircuit",
+                "service_compiler": "qiskit",
             },
         }
     # Quafu reports c[N-1]...c[0]; the direct path exposes logical qubits 0...N-1.
@@ -327,8 +327,7 @@ def _execute_expectation(
                 {
                     "compilation_location": "service",
                     "service_compiler": (
-                        native_results[0].metadata.get("service_compiler")
-                        or "quarkcircuit"
+                        native_results[0].metadata.get("service_compiler") or "qiskit"
                     ),
                     "counts_bit_order": "measurement_wires_left_to_right",
                 }
@@ -426,7 +425,7 @@ def counts_result(
                 {
                     "compilation_location": "service",
                     "service_compiler": (
-                        native.metadata.get("service_compiler") or "quarkcircuit"
+                        native.metadata.get("service_compiler") or "qiskit"
                     ),
                     "counts_bit_order": "measurement_wires_left_to_right",
                 }

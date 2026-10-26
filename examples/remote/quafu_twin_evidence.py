@@ -1,6 +1,7 @@
 """Generate identity-bound Twin evidence from repeated Quafu hardware results.
 
-Set ``QUAFU_API_TOKEN`` before running this example. The selected physical
+Set ``QUAFU_API_KEY`` and the temporary calibration-only ``QUAFU_API_TOKEN``
+before running this example. The selected physical
 qubits must exist in the current Shenglian calibration and remain connected.
 Running the example explicitly submits ``REPETITIONS`` hardware tasks.
 """
@@ -51,8 +52,11 @@ def _wait_for_result(
 
 
 def main() -> None:
-    if not os.getenv("QUAFU_API_TOKEN"):
-        raise RuntimeError("Set QUAFU_API_TOKEN before submitting to Quafu SQC")
+    if not os.getenv("QUAFU_API_KEY") or not os.getenv("QUAFU_API_TOKEN"):
+        raise RuntimeError(
+            "Set QUAFU_API_KEY for SDK execution and QUAFU_API_TOKEN for "
+            "legacy calibration reads"
+        )
 
     provider = QuafuProvider()
     chip_info = provider.fetch_chip_info(BACKEND)

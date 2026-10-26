@@ -17,6 +17,10 @@ _MEASUREMENT = re.compile(
 _GATE_STATEMENT = re.compile(
     r"^\s*([A-Za-z][A-Za-z0-9_]*)\s*(?:\([^;]*\))?\s+(.+)\s*;\s*$"
 )
+_CX_STATEMENT = re.compile(
+    r"^\s*cx\s+q\s*\[\s*(\d+)\s*\]\s*,\s*q\s*\[\s*(\d+)\s*\]\s*;\s*$",
+    re.IGNORECASE,
+)
 
 
 def backend_snapshot_sha256(value: Mapping[str, Any]) -> str:
@@ -76,12 +80,26 @@ def prepare_physical_qasm(
         if _QREG_DECLARATION.search(line) is not None:
             lines.append(_QREG_DECLARATION.sub(f"qreg q[{capacity}];", line, count=1))
         else:
-            lines.append(
-                _QUBIT_REFERENCE.sub(
-                    lambda match: f"q[{target_qubits[int(match.group(1))]}]",
-                    line,
-                )
+            mapped = _QUBIT_REFERENCE.sub(
+                lambda match: f"q[{target_qubits[int(match.group(1))]}]",
+                line,
             )
+            cx = _CX_STATEMENT.fullmatch(mapped)
+            if cx is not None and "cx" not in basis_gates:
+                if not {"h", "cz"}.issubset(basis_gates):
+                    raise ValueError(
+                        "QSteed operation 'cx' cannot be lowered to the Quafu basis"
+                    )
+                control, target = map(int, cx.groups())
+                lines.extend(
+                    (
+                        f"h q[{target}];",
+                        f"cz q[{control}], q[{target}];",
+                        f"h q[{target}];",
+                    )
+                )
+            else:
+                lines.append(mapped)
     program = "\n".join(lines)
 
     measurements: list[dict[str, int]] = []
