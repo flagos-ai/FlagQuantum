@@ -66,9 +66,10 @@ s_- = |ground><excited|; s_+ = s_-^dagger
 H = g (s_+ tensor a_N + s_- tensor a_N^dagger)
 L_down = I_spin tensor a_N,       gamma_down = 0.3
 L_up   = I_spin tensor a_N^dagger, gamma_up   = 0.1
-d rho/dt = -i[H,rho] + gamma_down D[L_down](rho)
-                        + gamma_up D[L_up](rho)
-D[L](rho) = L rho L^dagger - {L^dagger L,rho}/2
+d rho/dt = -i[H,rho] + gamma_down D_down(rho)
+                        + gamma_up D_up(rho)
+D_L(rho) = L rho L^dagger - {L^dagger L,rho}/2
+D_down = D_L for L=L_down; D_up = D_L for L=L_up
 ```
 
 Set g=0.6, final time T=0.7 and primary output times `(0,T/2,T)`.
