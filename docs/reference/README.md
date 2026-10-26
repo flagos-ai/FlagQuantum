@@ -9,6 +9,7 @@ support boundaries.
 - [`fq.Module` and `ExecutionResult`](FQ_MODULE.md)
 - [Extension SDK](EXTENSION_SDK.md)
 - [Operator schema and lowering capabilities](OPERATOR_SCHEMA.md)
+- [Gate coverage](GATE_COVERAGE.md)
 - [Runtime configuration](RUNTIME_CONFIGURATION.md)
 - [Typed runtime contracts](RUNTIME_CONTRACTS.md)
 - [Runtime result contract](RUNTIME_RESULT_CONTRACT.md)
