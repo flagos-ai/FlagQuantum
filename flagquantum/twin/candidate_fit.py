@@ -235,14 +235,14 @@ def _gate_names(
     profile: DeviceNoiseProfile,
     *,
     arity: int,
-    logical_wires: tuple[int, ...],
+    logical_qubits: tuple[int, ...],
 ) -> tuple[str, ...]:
     names: set[str] = set()
     for duration in profile.gate_durations:
         schema = get_operator_schema(duration.gate_name)
         if schema is None or schema.arity != arity:
             continue
-        if duration.wires is None or duration.wires == logical_wires:
+        if duration.wires is None or duration.wires == logical_qubits:
             names.add(duration.gate_name)
     return tuple(sorted(names))
 
@@ -382,7 +382,7 @@ def fit_candidate(
                 raise ValueError(
                     f"{name} is outside the representable depolarizing range"
                 )
-            gates = _gate_names(candidate_profile, arity=1, logical_wires=(logical,))
+            gates = _gate_names(candidate_profile, arity=1, logical_qubits=(logical,))
             if burden and not gates:
                 raise ValueError(f"candidate profile has no one-qubit gates for {name}")
             if burden:
@@ -404,7 +404,7 @@ def fit_candidate(
             gates = _gate_names(
                 candidate_profile,
                 arity=2,
-                logical_wires=(source, target_wire),
+                logical_qubits=(source, target_wire),
             )
             if burden and not gates:
                 raise ValueError(f"candidate profile has no two-qubit gates for {name}")
