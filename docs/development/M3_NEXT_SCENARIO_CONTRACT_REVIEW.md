@@ -1,6 +1,6 @@
 # M3 next scenario: driven three-level relaxation
 
-Status: **all five decisions approved by the user on 2026-10-26**.
+Status: **all five decisions approved on 2026-10-26; implementation #886 accepted**.
 Approval authorizes freezing independent acceptance and composing the example
 and integration tests through existing APIs. It authorizes no public API
 expansion or production modification; each PR needs its own merge grant.
@@ -123,10 +123,10 @@ No sampling interval, Fock cutoff, hardware error or scalability budget follows
 from these tolerances. The finite qutrit has no new cutoff-convergence claim.
 Keep existing three-level 1e-10 density and 1e-9 gradient budgets intact.
 
-## Proposed delivery and review gates
+## Delivery sequence and review gates
 
-1. Human review approves or revises the scenario, reuse-only boundary and budgets
-   above. This draft grants no implementation or merge permission.
+1. Human review approved the scenario, reuse-only boundary and budgets above
+   before implementation. Document approval alone granted no merge permission.
 2. Establish the independent analytic/density/gradient acceptance witnesses
    before composing the new example. Keep the old closed reference unchanged.
 3. After approval only, deliver the example and integration scenario through
@@ -180,14 +180,19 @@ Both XML reports contain zero failures/errors. Strict package checking passed
 architecture, public-API, Ruff, Black 24/26 and repository/documentation gates
 passed. No library production code or existing closed-model files changed.
 
-Draft [#886](https://github.com/flagos-ai/FlagQuantum/pull/886) records this work.
-At implementation head `5f27e41b7b8b912d82f7880446b2d41f14db21bb`, complete GPU
-workflow `40262404897` succeeded while complete standard CI `40262404865` remains
-pending. Local Python 3.11 is unavailable; its actual remote matrix must pass
-before readiness. Documentation-only progress updates do not turn an earlier
-head's workflow into evidence for a later head. Latest applicable complete
-CI/GPU and independent merge authorization are still required.
+Implementation [#886](https://github.com/flagos-ai/FlagQuantum/pull/886) merged
+as `05bca74d08ac905f4ccdbb03235f2a478b2f89b7` under its independent human grant.
+Its latest head `2bb50f2fd54a5315bf80772569b0527bcef91488` passed complete CI
+`40269085812` (all 54 jobs) and GPU `40269085833`, including the remote Python
+3.10/3.11/3.12 matrix. All applicable checks succeeded; only the original three
+manual-pool checks skipped under existing rules. Local Python 3.11 is not
+claimed. Main smoke `40271009760` succeeded on the actual merge commit; this
+is only a smoke result, not full main CI, a release or hardware validation.
+The local scientific results above were measured at implementation commit
+`5f27e41b7b8b912d82f7880446b2d41f14db21bb`; the subsequent commit changed only
+progress documentation, retaining identical example/test/library blobs. Latest
+remote workflows were verified separately, rather than inferred from an old head.
 
-Do not infer merge approval or accepted M3 completion from this record. The
+This acceptance does not grant future PR merges or declare all M3 gates complete. The
 matrix-exponential reference shares the low-level Torch primitive, not
 production generator assembly. Physical budgets above remain authoritative.
