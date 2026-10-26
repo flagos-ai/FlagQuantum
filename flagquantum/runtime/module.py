@@ -29,6 +29,7 @@ from .builder_compilation import (
     can_defer_ir_snapshot,
     deferred_ir_snapshot,
     detached_ir_snapshot,
+    ir_snapshot_input_budget,
 )
 from .policy import RuntimePolicy
 from .result import ExecutionResult, normalize_execution_result
@@ -182,6 +183,7 @@ class Module(torch.nn.Module):
         self._jax_kernel_signature: tuple[Any, ...] | None = None
         self._jax_ir_template: CircuitIR | None = None
         self._jax_snapshot_replay_safe = False
+        self._jax_snapshot_budget = 512
         self._correctness_debug_hook_handle: tuple[RemovableHandle, ...] | None = None
         if precision is None:
             from .training_state import PrecisionPolicy
@@ -827,6 +829,7 @@ class Module(torch.nn.Module):
                 compute_dtype=self.precision.complex_dtype,
                 accepts_inputs=accepts_inputs,
             )
+            self._jax_kernel._declared_batch_size = circuit.bsz
             self._jax_kernel_signature = kernel_signature
         value = self._jax_kernel(selected_parameters, inputs)
         if value.ndim == 0:
@@ -1079,11 +1082,10 @@ class Module(torch.nn.Module):
                 and self._jax_ir_template is not None
                 and self._jax_snapshot_replay_safe
                 and self._builder_program is not None
-                # Large upstream inputs should retain only consumed scalar slots,
-                # rather than copying a whole feature buffer for diagnostics.
+                # Bound diagnostic copies by the consumed parameter slots.
                 and selected.numel() * selected.element_size()
                 + (0 if inputs is None else inputs.numel() * inputs.element_size())
-                <= max(512, 4 * len(self._builder_slots) * selected.element_size())
+                <= self._jax_snapshot_budget
             ):
                 tensors, _, _ = self._builder_tensor_inputs(selected, inputs)
                 self._last_ir_snapshot = None
@@ -1111,6 +1113,7 @@ class Module(torch.nn.Module):
                 self._jax_snapshot_replay_safe = can_defer_ir_snapshot(
                     self._builder_program, ir
                 )
+                self._jax_snapshot_budget = ir_snapshot_input_budget(ir)
             except (FlagQuantumError, TypeError):
                 raise
             except Exception as error:

@@ -16,10 +16,11 @@ the three subpackages independently importable, and do not restore forwarding
 modules at retired paths.
 
 - Start in `primitives.py` for compute dtype, instruction matrices, local gate
-  application, and basic observable kernels.
+  application, basic observable kernels, shared gate-network construction/contraction, and
+  explicit declared-batch vectorization.
 - Start in `statevector/kernels.py` for rank-local initialization, gate updates,
   pair-exchange assembly, and sharded observable loss.
-- Start in `tensor_network/kernels.py` for JAX node construction, contraction,
+- Start in `tensor_network/kernels.py` for representation-specific
   observables, slicing, and contracted-output loss.
 - Start in `mps/` for JAX matrix-product-state kernels and differentiation.
 - Import the owning submodule directly; this package does not re-export a JAX

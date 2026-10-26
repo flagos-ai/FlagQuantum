@@ -25,10 +25,13 @@ from ....simulation.jax.mps.kernels import (
 from ....simulation.jax.primitives import (
     _jax_hamiltonian_expectation,
     _jax_real_dtype,
-    _jax_statevector_from_circuit,
     _jax_z_sum,
     _jax_z_values,
     _set_active_jax_compute_dtype,
+    jax_evaluate_declared_batch,
+)
+from ....simulation.jax.statevector.kernels import (
+    jax_statevector_from_circuit as _jax_statevector_from_circuit,
 )
 from ....simulation.jax.tensor_network.kernels import (
     jax_tensor_network_hamiltonian_expectation as _jax_tensor_network_hamiltonian_expectation,
@@ -140,6 +143,50 @@ class _TorchJAXQuantumFunction(torch.autograd.Function):
         return parameter_vjp, input_vjp, None
 
 
+class _JAXVJPAutogradContext(_JAXAutogradContext, Protocol):
+    kernel: JAXQuantumKernel
+
+
+class _TorchJAXVJPFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(
+        ctx: _JAXVJPAutogradContext,
+        params: torch.Tensor,
+        inputs: torch.Tensor,
+        kernel: JAXQuantumKernel,
+    ) -> torch.Tensor:
+        frozen_params, frozen_inputs = params.detach().clone(), inputs.detach().clone()
+        ctx.save_for_backward(frozen_params, frozen_inputs)
+        ctx.kernel = kernel
+        ctx.needs_parameter_gradient = params.requires_grad
+        ctx.needs_input_gradient = inputs.requires_grad
+        value = kernel._value(
+            _torch_to_jax(frozen_params), _torch_to_jax(frozen_inputs)
+        )
+        return _jax_to_torch(value, like=params)
+
+    @staticmethod
+    @once_differentiable
+    def backward(
+        ctx: _JAXVJPAutogradContext,
+        upstream: torch.Tensor,
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None, None]:
+        params, inputs = ctx.saved_tensors
+        demand = (ctx.needs_parameter_gradient, ctx.needs_input_gradient)
+        result = ctx.kernel._cotangent_vjps[demand](
+            _torch_to_jax(params), _torch_to_jax(inputs), _torch_to_jax(upstream)
+        )
+        if all(demand):
+            return (
+                _jax_to_torch(result[0], like=params),
+                _jax_to_torch(result[1], like=inputs),
+                None,
+            )
+        if demand[0]:
+            return _jax_to_torch(result, like=params), None, None
+        return None, _jax_to_torch(result, like=inputs), None
+
+
 @dataclass
 class JAXQuantumKernel:
     """JAX quantum kernel exposed as a PyTorch differentiable callable."""
@@ -169,6 +216,15 @@ class JAXQuantumKernel:
             update_config("jax_enable_x64", True)
         self._value_and_grad = self._build_value_and_grad()
         self._value = self._compile(self._jax_loss)
+        self._declared_batch_size: int | None = None
+        self._batch_input_shape: tuple[Any, ...] | None = None
+        self._vector_output = False
+        self._statevector_diagnostics: dict[str, Any] = {}
+        self._cotangent_vjps = {
+            (True, False): self._build_cotangent_vjp(0),
+            (False, True): self._build_cotangent_vjp(1),
+            (True, True): self._build_cotangent_vjp((0, 1)),
+        }
         if self.accepts_inputs:
             import jax
 
@@ -201,6 +257,25 @@ class JAXQuantumKernel:
             if self.accepts_inputs:
                 arguments += (_torch_to_jax(input_tensor),)
             return _jax_to_torch(self._value(*arguments), like=parameters)
+        if self.accepts_inputs and self._declared_batch_size != 1:
+            if self._declared_batch_size is None:
+                signature = (tuple(parameters.shape), tuple(input_tensor.shape))
+                if signature != self._batch_input_shape:
+                    import jax
+
+                    value = jax.eval_shape(
+                        self._jax_loss,
+                        _torch_to_jax(parameters),
+                        _torch_to_jax(input_tensor),
+                    )
+                    self._vector_output = value.ndim > 0
+                    self._batch_input_shape = signature
+            if self._vector_output or (self._declared_batch_size or 1) > 1:
+                batch_apply: Callable[..., object] = _TorchJAXVJPFunction.apply
+                result = batch_apply(parameters, input_tensor, self)
+                if not isinstance(result, torch.Tensor):
+                    raise TypeError("JAX autograd bridge must return a tensor")
+                return result
         apply: Callable[[torch.Tensor, torch.Tensor, JAXQuantumKernel], object] = (
             _TorchJAXQuantumFunction.apply
         )
@@ -251,6 +326,14 @@ class JAXQuantumKernel:
             "hamiltonian_terms": self.hamiltonian_terms,
             "hamiltonian_fastpath": hamiltonian_fastpath,
             "parameter_shape": self.parameter_shape,
+            "statevector_algorithm": dict(self._statevector_diagnostics),
+            "declared_batch_size": self._declared_batch_size,
+            "gradient_interface": (
+                "cotangent_vjp"
+                if self.accepts_inputs
+                and (self._vector_output or (self._declared_batch_size or 1) > 1)
+                else "precomputed_derivative"
+            ),
             "jit": self.jit,
             "matmul_precision": self.matmul_precision,
             "compute_dtype": self.compute_dtype,
@@ -267,6 +350,18 @@ class JAXQuantumKernel:
                 self._jax_loss, argnums=(0, 1) if self.accepts_inputs else 0
             )
         )
+
+    def _build_cotangent_vjp(self, argnums: int | tuple[int, int]) -> Any:
+        import jax
+        import jax.numpy as jnp
+
+        def derivative(parameters: Any, inputs: Any, upstream: Any) -> Any:
+            def objective(values: Any, features: Any) -> Any:
+                return jnp.sum(self._jax_loss(values, features) * upstream)
+
+            return jax.grad(objective, argnums=argnums)(parameters, inputs)
+
+        return jax.jit(derivative) if self.jit else derivative
 
     def _compile(self, function: Any) -> Any:
         import jax
@@ -310,79 +405,67 @@ class JAXQuantumKernel:
                 if self.accepts_inputs
                 else self.circuit_builder(_JAXParameterProxy(parameters))
             )
-            if self.mode == "statevector":
-                state = _jax_statevector_from_circuit(
-                    circuit,
-                    int(self.n_qubits),
-                    parameters,
-                    matmul_precision=self.matmul_precision,
-                )
-            elif self.mode == "mps":
-                tensors = _jax_mps_from_circuit(
-                    circuit,
-                    int(self.n_qubits),
-                    parameters,
-                    max_bond=self.max_bond,
-                    cutoff=self.cutoff,
-                    matmul_precision=self.matmul_precision,
-                )
-                if self.observable == "z_sum":
-                    qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
-                    return _jax_mps_z_sum(tensors, qubits, self.matmul_precision)
-                if self.observable == "z":
-                    qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
-                    return _jax_mps_z_values(
-                        tensors, qubits, self.matmul_precision
-                    ).sum()
-                if self.observable == "hamiltonian":
-                    return _jax_mps_hamiltonian_expectation(
-                        tensors,
-                        self.hamiltonian_terms,
-                        self.matmul_precision,
-                    )
-                raise ValueError(
-                    "JAXQuantumKernel observable must be 'z_sum', 'z', or 'hamiltonian'."
-                )
-            elif self.mode in {"tensor_network", "tn"}:
-                if self.observable == "z_sum":
-                    qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
-                    return _jax_tensor_network_z_sum(
-                        circuit,
-                        int(self.n_qubits),
-                        qubits,
-                        self.matmul_precision,
-                    )
-                if self.observable == "z":
-                    qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
-                    return _jax_tensor_network_z_values(
-                        circuit,
-                        int(self.n_qubits),
-                        qubits,
-                        self.matmul_precision,
-                    ).sum()
-                if self.observable == "hamiltonian":
-                    return _jax_tensor_network_hamiltonian_expectation(
-                        circuit,
-                        int(self.n_qubits),
-                        self.hamiltonian_terms,
-                        self.matmul_precision,
-                    )
-                raise ValueError(
-                    "JAXQuantumKernel observable must be 'z_sum', 'z', or 'hamiltonian'."
-                )
-            else:
-                raise ValueError(
-                    "JAXQuantumKernel mode must be 'statevector', 'mps', or 'tensor_network'."
-                )
+            return jax_evaluate_declared_batch(
+                circuit, lambda: self._jax_circuit_value(circuit, parameters)
+            )
+        finally:
+            _set_active_jax_compute_dtype(previous_dtype)
+
+    def _jax_circuit_value(self, circuit: Any, parameters: Any) -> Any:
+        import jax.numpy as jnp
+
+        if self.mode == "statevector":
+            state = _jax_statevector_from_circuit(
+                circuit,
+                int(self.n_qubits),
+                parameters,
+                matmul_precision=self.matmul_precision,
+                diagnostics=self._statevector_diagnostics,
+            )
+        elif self.mode == "mps":
+            tensors = _jax_mps_from_circuit(
+                circuit,
+                int(self.n_qubits),
+                parameters,
+                max_bond=self.max_bond,
+                cutoff=self.cutoff,
+                matmul_precision=self.matmul_precision,
+            )
             if self.observable == "z_sum":
                 qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
-                return _jax_z_sum(state, int(self.n_qubits), qubits)
+                return _jax_mps_z_sum(tensors, qubits, self.matmul_precision)
             if self.observable == "z":
                 qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
-                return jnp.sum(_jax_z_values(state, int(self.n_qubits), qubits))
+                return _jax_mps_z_values(tensors, qubits, self.matmul_precision).sum()
             if self.observable == "hamiltonian":
-                return _jax_hamiltonian_expectation(
-                    state,
+                return _jax_mps_hamiltonian_expectation(
+                    tensors,
+                    self.hamiltonian_terms,
+                    self.matmul_precision,
+                )
+            raise ValueError(
+                "JAXQuantumKernel observable must be 'z_sum', 'z', or 'hamiltonian'."
+            )
+        elif self.mode in {"tensor_network", "tn"}:
+            if self.observable == "z_sum":
+                qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
+                return _jax_tensor_network_z_sum(
+                    circuit,
+                    int(self.n_qubits),
+                    qubits,
+                    self.matmul_precision,
+                )
+            if self.observable == "z":
+                qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
+                return _jax_tensor_network_z_values(
+                    circuit,
+                    int(self.n_qubits),
+                    qubits,
+                    self.matmul_precision,
+                ).sum()
+            if self.observable == "hamiltonian":
+                return _jax_tensor_network_hamiltonian_expectation(
+                    circuit,
                     int(self.n_qubits),
                     self.hamiltonian_terms,
                     self.matmul_precision,
@@ -390,8 +473,26 @@ class JAXQuantumKernel:
             raise ValueError(
                 "JAXQuantumKernel observable must be 'z_sum', 'z', or 'hamiltonian'."
             )
-        finally:
-            _set_active_jax_compute_dtype(previous_dtype)
+        else:
+            raise ValueError(
+                "JAXQuantumKernel mode must be 'statevector', 'mps', or 'tensor_network'."
+            )
+        if self.observable == "z_sum":
+            qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
+            return _jax_z_sum(state, int(self.n_qubits), qubits)
+        if self.observable == "z":
+            qubits = self.observable_qubits or tuple(range(int(self.n_qubits)))
+            return jnp.sum(_jax_z_values(state, int(self.n_qubits), qubits))
+        if self.observable == "hamiltonian":
+            return _jax_hamiltonian_expectation(
+                state,
+                int(self.n_qubits),
+                self.hamiltonian_terms,
+                self.matmul_precision,
+            )
+        raise ValueError(
+            "JAXQuantumKernel observable must be 'z_sum', 'z', or 'hamiltonian'."
+        )
 
 
 class _JAXParameterProxy:

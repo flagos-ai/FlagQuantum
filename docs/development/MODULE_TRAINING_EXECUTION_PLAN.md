@@ -56,7 +56,7 @@ bounded; no cache keyed by every parameter value or training step is acceptable.
 | --- | --- | --- | --- |
 | A: derivative demand and matrix | Simulation; shared benchmark tests | Replace unconditional JAX value-and-gradient execution at the existing kernel boundary | All four parameter/input gradient masks, no_grad/inference, changing values, scalar and existing parameter-batch shapes preserve values/VJPs. Public Module inherits the behavior. |
 | B: one reusable IR-derived program | Compiler, followed by Runtime/Simulation | Replace duplicated Torch FX capture plus re-invocation of a Torch-shaped Python builder inside JAX tracing | Same public consumer runs with old and replacement implementation. General static gate recipes work without a JAX-specific builder rewrite. Cold trace/build counts, hot binding cost, checkpoint hashes and invalidation are measured. |
-| C: input batches and observable VJPs | API-owner contract first; then Simulation/Runtime | Extend existing Module semantics and executor VJP, rather than exposing a new batch class | Shared-parameter input batch matches a serial oracle in values, parameter/input gradients, Adam updates and checkpoint recovery. Nonuniform output cotangents are tested. |
+| C: input batches and observable VJPs | Existing frozen Proposal 005; Simulation/Runtime conformance | Implement existing explicit Circuit.bsz semantics and executor VJP, rather than exposing a new batch class | Shared-parameter input batch matches a serial oracle in values, parameter/input gradients, Adam updates and checkpoint recovery. Nonuniform output cotangents are tested. |
 | D: effective route selection | API-owner contract first; then Runtime | Extend existing policy/planning selection | Explicit requests stay authoritative. Automatic selection only considers supported implementations and explains choice, derivative, precision, device and exclusions. Missing optional dependencies and unsupported operations have tested outcomes. |
 | E: adoption and performance acceptance | Runtime; shared benchmark/docs | Existing quick starts, examples and performance catalog | Public entry points pass the reviewed hardware/workload matrix; every remaining loss has an owner. No claim is based solely on an internal kernel. |
 
@@ -154,3 +154,15 @@ run on actual hardware. All local evidence remains single_device_fast_path and
 does not authorize a scalability claim. Track finite-angle binding refusal in
 [#925](https://github.com/flagos-ai/FlagQuantum/issues/925); this work does not
 weaken or certify that existing validation boundary.
+
+## Declared-batch implementation
+
+The optional JAX Module route now executes explicitly declared Circuit.bsz batches
+with scalar, length-one or length-bsz gate angles in statevector, MPS and TN.
+It uses cotangent-weighted VJPs rather than full Jacobians. Tests cover all four
+gradient-demand masks, nonuniform cotangents, changing and noncontiguous inputs,
+Adam recovery and retained consumed values. Forward and backward compile
+separately; backward recomputes numerical work. Automatic input-axis inference,
+default backend selection and whole-training compilation remain unimplemented.
+See API_CHANGE_PROPOSAL_MODULE_JAX_DECLARED_BATCH.md for the compatibility
+assessment under Proposal 005; it introduces no new public contract.

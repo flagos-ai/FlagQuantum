@@ -12,6 +12,9 @@ TorchCircuitBuilder = Callable[..., Any]
 _ACTIVE_JAX_COMPUTE_DTYPE: ContextVar[str] = ContextVar(
     "flagquantum_jax_compute_dtype", default="complex64"
 )
+_ACTIVE_JAX_BATCH_INDEX: ContextVar[Any] = ContextVar(
+    "flagquantum_jax_batch_index", default=None
+)
 
 
 def _set_active_jax_compute_dtype(compute_dtype: str) -> str:
@@ -41,7 +44,41 @@ def _jax_real_dtype() -> Any:
 def _jax_scalar_param(value: Any) -> Any:
     import jax.numpy as jnp
 
-    return jnp.asarray(value).reshape(())
+    tensor = jnp.asarray(value)
+    index = _ACTIVE_JAX_BATCH_INDEX.get()
+    if index is not None and tensor.ndim == 1:
+        tensor = tensor[0 if tensor.shape[0] == 1 else index]
+    return tensor.reshape(())
+
+
+def jax_evaluate_declared_batch(circuit: Any, evaluate: Callable[[], Any]) -> Any:
+    """Vectorize only the explicit Circuit batch and its declared angle rows."""
+    import jax
+    import jax.numpy as jnp
+
+    from ...errors import ValidationError
+
+    size = int(circuit.bsz)
+    if size == 1:
+        return evaluate()
+    for instruction in circuit.to_ir():
+        for name, value in instruction.params.items():
+            shape = jnp.shape(value)
+            if len(shape) > 1 or (shape and shape[0] not in (1, size)):
+                raise ValidationError(
+                    f"Gate {instruction.name!r} parameter {name!r} has shape {shape}; "
+                    f"expected a scalar, a vector of length 1, or a vector of length "
+                    f"{size} for a batch of {size}"
+                )
+
+    def entry(index: Any) -> Any:
+        token = _ACTIVE_JAX_BATCH_INDEX.set(index)
+        try:
+            return evaluate()
+        finally:
+            _ACTIVE_JAX_BATCH_INDEX.reset(token)
+
+    return jax.vmap(entry)(jnp.arange(size))
 
 
 def _jax_apply_matrix(
@@ -54,6 +91,17 @@ def _jax_apply_matrix(
     import jax.numpy as jnp
 
     k = len(wires)
+    if k == 1:
+        wire = wires[0]
+        paired = state.reshape(2**wire, 2, 2 ** (n_wires - wire - 1))
+        zero, one = paired[:, 0, :], paired[:, 1, :]
+        return jnp.stack(
+            (
+                matrix[0, 0] * zero + matrix[0, 1] * one,
+                matrix[1, 0] * zero + matrix[1, 1] * one,
+            ),
+            axis=1,
+        ).reshape(-1)
     dim = 2**k
     rest = tuple(wire for wire in range(n_wires) if wire not in wires)
     perm = tuple(wires) + rest
@@ -82,7 +130,16 @@ def _jax_z_values(state: Any, n_wires: int, wires: Iterable[int]) -> Any:
 def _jax_z_sum(state: Any, n_wires: int, wires: Iterable[int]) -> Any:
     import jax.numpy as jnp
 
-    return jnp.sum(_jax_z_values(state, n_wires, wires))
+    selected = tuple(wires)
+    if not selected:
+        return jnp.sum(_jax_z_values(state, n_wires, selected))
+    probabilities = jnp.abs(state) ** 2
+    indices = jnp.arange(2**n_wires)
+    diagonal = jnp.zeros_like(probabilities)
+    for wire in selected:
+        bits = (indices >> (n_wires - 1 - int(wire))) & 1
+        diagonal = diagonal + 1 - 2 * bits.astype(probabilities.dtype)
+    return jnp.sum(probabilities * diagonal)
 
 
 def _jax_pauli_string_expectation(
@@ -448,36 +505,67 @@ def _jax_instruction_matrix(instruction: Any) -> Any:
     raise NotImplementedError(f"JAX quantum kernel does not support gate {name!r} yet.")
 
 
-def _apply_jax_instruction(
-    state: Any,
-    instruction: Any,
-    n_wires: int,
-    parameters: Any,
-    matmul_precision: str | None = "highest",
-) -> Any:
-    wires = tuple(int(wire) for wire in instruction.wires)
-    matrix = _jax_instruction_matrix(instruction)
-    del parameters
-    return _jax_apply_matrix(state, matrix, wires, n_wires, matmul_precision)
-
-
-def _jax_statevector_from_circuit(
+def jax_circuit_tensor_nodes(
     circuit: Any,
-    n_wires: int,
-    parameters: Any,
+    n_qubits: int,
     *,
+    start_label: int = 0,
+    conjugate: bool = False,
     matmul_precision: str | None = "highest",
+) -> tuple[list[tuple[Any, tuple[int, ...]]], list[int], int]:
+    import jax.numpy as jnp
+
+    next_label = int(start_label)
+    current_labels = []
+    nodes: list[tuple[Any, tuple[int, ...]]] = []
+    producers: list[int] = []
+    zero = jnp.asarray([1.0 + 0.0j, 0.0 + 0.0j], dtype=_jax_complex_dtype())
+    for _qubit in range(int(n_qubits)):
+        label = next_label
+        next_label += 1
+        current_labels.append(label)
+        nodes.append((zero, (label,)))
+        producers.append(len(nodes) - 1)
+    for instruction in circuit.to_ir():
+        if instruction.metadata.get("is_channel"):
+            raise NotImplementedError(
+                "JAX tensor_network mode currently supports unitary circuit instructions."
+            )
+        qubits = tuple(int(qubit) for qubit in instruction.wires)
+        matrix = _jax_instruction_matrix(instruction).reshape((2,) * (2 * len(qubits)))
+        if conjugate:
+            matrix = jnp.conj(matrix)
+        if len(qubits) == 1:
+            producer = producers[qubits[0]]
+            previous, labels = nodes[producer]
+            if len(labels) <= 2:
+                nodes[producer] = (
+                    jnp.matmul(matrix, previous, precision=matmul_precision),
+                    labels,
+                )
+                continue
+        input_labels = tuple(current_labels[qubit] for qubit in qubits)
+        output_labels = tuple(range(next_label, next_label + len(qubits)))
+        next_label += len(qubits)
+        for qubit, label in zip(qubits, output_labels, strict=True):
+            current_labels[qubit] = label
+        nodes.append((matrix, output_labels + input_labels))
+        for qubit in qubits:
+            producers[qubit] = len(nodes) - 1
+    return nodes, current_labels, next_label
+
+
+def jax_contract_tensor_nodes(
+    nodes: list[tuple[Any, tuple[int, ...]]],
+    output_labels: tuple[int, ...],
+    matmul_precision: str | None,
+    *,
+    path: Any = "greedy",
 ) -> Any:
     import jax.numpy as jnp
 
-    state = jnp.zeros((2 ** int(n_wires),), dtype=_jax_complex_dtype())
-    state = state.at[0].set(1.0 + 0.0j)
-    for instruction in circuit.to_ir():
-        state = _apply_jax_instruction(
-            state,
-            instruction,
-            int(n_wires),
-            parameters,
-            matmul_precision,
-        )
-    return state
+    operands: list[Any] = []
+    for tensor, labels in nodes:
+        operands.extend((tensor, labels))
+    operands.append(tuple(output_labels))
+    return jnp.einsum(*operands, optimize=path, precision=matmul_precision)

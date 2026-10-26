@@ -157,6 +157,17 @@ def can_defer_ir_snapshot(program: Any, template: CircuitIR) -> bool:
     return True
 
 
+def ir_snapshot_input_budget(template: CircuitIR) -> int:
+    """Bound retained inputs by the actual scalar or batched consumed slots."""
+    slot_bytes = sum(
+        value.numel() * value.element_size()
+        for instruction in template.instructions
+        for value in instruction.params.values()
+        if isinstance(value, torch.Tensor)
+    )
+    return max(512, 4 * slot_bytes)
+
+
 def deferred_ir_snapshot(
     program: Callable[..., Any],
     template: CircuitIR,
