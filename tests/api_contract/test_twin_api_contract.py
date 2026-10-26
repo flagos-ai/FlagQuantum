@@ -113,6 +113,20 @@ def test_twin_v1_contract_is_formally_frozen() -> None:
     assert contract["public_schema_defaults"]["TwinCandidateFit"] == (
         "flagquantum.twin_candidate_fit.v1"
     )
+    assert contract["public_schema_defaults"]["TwinEvolutionCycle"] == (
+        "flagquantum.twin_evolution_cycle.v1"
+    )
+    assert contract["public_literal_values"]["TwinEvolutionCycleStage"] == [
+        "prepared",
+        "parameter_estimated",
+        "candidate_fitted",
+        "holdout_evaluated",
+    ]
+    assert contract["public_literal_values"]["TwinEvolutionRecommendation"] == [
+        "retain_incumbent",
+        "collect_more_evidence",
+        "release_candidate",
+    ]
     assert contract["public_literal_values"]["TwinProbeBankStatus"] == [
         "identifiable",
         "underdetermined",
@@ -328,6 +342,37 @@ def test_fitted_candidate_records_provenance_without_execution_authority() -> No
         "provider",
         "submission",
         "promotion",
+        "routing_authorized",
+        "retry_policy",
+    }
+
+
+def test_evolution_cycle_is_reference_only_and_non_authoritative() -> None:
+    fields = {field.name for field in dataclasses.fields(fq.twin.TwinEvolutionCycle)}
+
+    assert fq.twin.TwinEvolutionCycle.__dataclass_params__.frozen is True
+    assert fields == {
+        "incumbent_snapshot_identity",
+        "freshness_identity",
+        "freshness_status",
+        "probe_plan_identity",
+        "target",
+        "physical_qubits",
+        "stage",
+        "parameter_estimate_identity",
+        "probe_bank_identity",
+        "candidate_snapshot_identity",
+        "candidate_fit_identity",
+        "holdout_evaluation_identity",
+        "holdout_suite_identity",
+        "holdout_decision",
+        "recommended_action",
+        "schema",
+    }
+    assert not fields & {
+        "provider",
+        "submission",
+        "promotion_authorized",
         "routing_authorized",
         "retry_policy",
     }

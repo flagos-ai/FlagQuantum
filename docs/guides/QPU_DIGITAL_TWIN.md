@@ -489,6 +489,38 @@ The resulting `TwinFittedCandidate` is accepted by existing candidate-suite
 and holdout APIs, but it has no execution or promotion authority. Prospective
 hardware validation remains a later explicit workflow.
 
+## Resume a complete evolution cycle
+
+Applications can record the prospective refresh sequence as small immutable
+states rather than copying the underlying evidence:
+
+```python
+cycle = fq.twin.prepare_evolution_cycle(
+    incumbent=incumbent,
+    freshness=freshness,
+    probe_plan=plan,
+)
+cycle = cycle.with_parameter_estimate(estimate)
+fq.twin.dump_evolution_cycle(cycle, "twin-evolution-estimated.json")
+
+# Resume later without collecting or submitting the same probes again.
+cycle = fq.twin.load_evolution_cycle("twin-evolution-estimated.json")
+cycle = cycle.with_candidate(candidate)
+cycle = cycle.with_holdout_evaluation(evaluation)
+
+print(cycle.stage)
+print(cycle.recommended_action)
+```
+
+The record binds each source artifact by deterministic identity and permits no
+skipped or repeated transition. `release_candidate` is recommendation-only;
+the explicit release API remains the sole release boundary. The cycle itself
+has no provider, task, retry, routing, notification, promotion, or hardware
+control operation.
+
+Run `python examples/twin_evolution_cycle.py` for a complete synthetic,
+offline example that persists and resumes after parameter estimation.
+
 To incorporate one newly validated calibration, extend the saved history
 immutably and write a new versioned artifact:
 
