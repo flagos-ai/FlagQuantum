@@ -74,7 +74,10 @@ following are true:
 6. no other classical bit is read or written;
 7. `outputs` is absent or requests one full-register `fq.counts()` result; and
 8. the selected static provider route can preserve and report the measurement
-   mapping and final bit order.
+   mapping and final bit order; and
+9. the Quafu V1 bridge uses SDK service compilation (`compiler=None`), whose
+   raw `c0_rightmost` result is already normalized into FlagQuantum's public
+   qubit order before the declared classical permutation is applied.
 
 The qubit-to-classical-bit mapping may be a permutation. For example,
 `measure(1, classical_bit=0)` followed by `measure(0, classical_bit=1)` is
@@ -138,6 +141,12 @@ supports terminal measurement metadata and final counts but not true dynamic
 execution. The implementation must use offline SDK fixtures to prove the exact
 request and result mapping before enabling the positive Quafu path. This
 proposal does not authorize a live request.
+
+The first Quafu bridge does not admit `compiler="qsteed"`. Its physical result
+path binds a separate logical-to-physical measurement receipt and therefore
+needs its own three-way logical, physical, and classical mapping contract.
+Until that contract exists, an explicit compiler keeps the program on dynamic
+preflight and fail-closed behavior.
 
 No provider is enabled merely because it returns bit strings. Azure or another
 provider requires its own mapping fixture in the implementation PR before the
