@@ -352,9 +352,9 @@ def prepare_probe_refresh(
     candidate_circuits: Sequence[Any],
     *,
     calibration_history: TwinCalibrationHistory | None = None,
-    validation_history: TwinValidationHistory
-    | TwinRegionValidationHistory
-    | None = None,
+    validation_history: (
+        TwinValidationHistory | TwinRegionValidationHistory | None
+    ) = None,
     maximum_tasks: int,
     shots: int,
 ) -> TwinProbeRefreshPlan:
