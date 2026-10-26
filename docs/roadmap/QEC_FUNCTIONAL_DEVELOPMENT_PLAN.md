@@ -141,3 +141,26 @@ and this entry point, preserving pending checks and scope boundaries.
 | 007 | Example statistics delivered; concrete public experiment design under review | [Decision C refinement](../development/QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) proposes explicit batch size, default-only decoder configuration and caller-owned evidence without persistence. #784/#788 sampling and fixed-shot counts/Wilson intervals do not activate this public API or adaptive stopping. Implementation remains deferred. |
 | 008–009 | Pending respective contracts | No threshold, broad experiment API or performance claim follows from the partial deliveries above. |
 | 010–012 | Candidate tranche | Separate contract review required. |
+
+## Decision C contract preparation after design delivery
+
+[#912](https://github.com/flagos-ai/FlagQuantum/pull/912) delivered the design
+review as merge `b9b4f51963a4ab85e9253b3d070e798423082ee8`. Exact-head full CI
+`40289425554` passed all 54 jobs; GPU `40289425526` attempt 3 passed three jobs
+with three original optional skips. All 60 checks were 57 success / 3 original
+skips. Its exact merge Main smoke `40300707460` succeeded; that is not full
+main CI. Earlier GPU variance failures remain preserved; thresholds were not
+changed. The owner specifically authorized cancelling one blocked Scheduled
+hardware run to release the shared queue; no general cancellation permission
+follows.
+
+The owner then requested proceeding with the recommended three choices:
+required explicit batch size, default-only registered decoder selection and
+caller-owned evidence without initial persistence. The
+[complete C/007 contract draft](../development/QEC_FUNCTIONAL_007_EXPERIMENT_CONTRACT.md)
+now makes the signature, result, strict actual-law source path, support and
+exception tables concrete for review. This is document preparation, not
+approval of the complete contract or implementation. Older design-choice
+wording above records the #912 publication snapshot. Decision B/005 remains
+complete; C implementation, adaptive stopping, threshold fitting and persistence
+remain deferred. No new experiment, performance study or hardware run was done.
