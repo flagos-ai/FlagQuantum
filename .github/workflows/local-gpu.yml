@@ -48,12 +48,10 @@ jobs:
         run: |
           set -o pipefail
           echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-          test ! -e "$RUNNER_TEMP/ci-source"
           mkdir "$RUNNER_TEMP/ci-source"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
-          test ! -e "$RUNNER_TEMP/ci-source-incremental"
           mkdir "$RUNNER_TEMP/ci-source-incremental"
           cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
           base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
