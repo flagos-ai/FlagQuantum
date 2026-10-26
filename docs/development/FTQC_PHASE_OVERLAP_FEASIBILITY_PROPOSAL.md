@@ -231,7 +231,7 @@ structural review bounds, not measured time/RSS or capacity conclusions.
 The approved input words have at most 22 instructions, derived from the literal
 three-qubit A-D branch. Reject a longer word, invalid width/wire/gate or non-unit
 scalar before constructing state. Internal CZ is only the C-layer Hadamard
-factorization rule, not a newly accepted input instruction. The public input set
+factorization rule, not a newly accepted input instruction. The accepted prototype input set
 and 64 retained states/850 queries/ten executions remain as proposed above.
 
 The finite implementation reuses the approved scalar fixtures once, captures
