@@ -39,6 +39,7 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request(workflow: str) -
     for job in routed:
         assert job["runs-on"] in (
             expected,
+            expected.replace("flagquantum-a100-cpu", "flagquantum-a100-cpu-entry"),
             expected.replace("flagquantum-a100-cpu", "flagquantum-cpu-general"),
             *(
                 expected.replace("flagquantum-a100-cpu", label)
@@ -293,7 +294,11 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
         "github.event.pull_request.head.repo.full_name == github.repository) "
         "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
     )
-    assert job["runs-on"] == route
+    assert job["runs-on"] == (
+        route
+        if workflow == "main-smoke.yml"
+        else route.replace("flagquantum-a100-cpu", "flagquantum-a100-cpu-entry")
+    )
     assert "pull_request_target" not in document.get("on", document.get(True, {}))
     assert "github.run_id" in job["concurrency"]["group"]
     assert job["concurrency"]["queue"] == "max"

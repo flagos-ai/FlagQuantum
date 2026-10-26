@@ -2,11 +2,14 @@
 
 The dedicated A100 node serves this repository with sixteen CPU runners named
 `fq-a100-cpu01` through `fq-a100-cpu16`, and one GPU runner named
-`fq-a100-gpu08`. The CPU pool has the `flagquantum-a100-cpu` label. The GPU runner
+`fq-a100-gpu08`. Fourteen ordinary CPU registrations have the `flagquantum-a100-cpu` label.
+Slots `cpu15` and `cpu16` instead have `flagquantum-a100-cpu-entry`.
+All sixteen retain the existing `a100-cpu` host and individual slot labels
+for explicitly requested pool certification. The GPU runner
 has `gpu`, `flagquantum-local`, `flagquantum-a100`, and `a100-8gpu` labels.
 
-Portable optional-dependency, dependency-bound and supply-chain checks use `flagquantum-cpu-general`, registered on all sixteen
-A100 and sixteen A800 CPU runners, alongside other accepted general-pool hosts. GitHub can assign the same PR's ready jobs to
+Portable optional-dependency, dependency-bound and supply-chain checks use `flagquantum-cpu-general`, registered on fourteen ordinary
+A100 and sixteen A800 CPU runners after entry-pool deployment, alongside other accepted general-pool hosts. GitHub can assign the same PR's ready jobs to
 both hosts' pools without an A100-only backlog while A800 slots are idle. Each
 job restores the producer's digest-verified source artifact and checks its exact
 commit, including when only failed jobs are rerun. This avoids A800's unreliable
@@ -14,8 +17,7 @@ HTTPS Git route without adding checkout credentials. Source restoration clears
 sparse checkout state, dirty files and files left by preceding jobs.
 
 Quality checks need full Git history for evidence provenance and retain the A100
-pool's existing authenticated Git transport. Manual pre-commit and coverage
-aggregation also retain that pool. A800 CPU compatibility, smoke/unit, runtime, coverage and distributed contract
+pool's existing authenticated Git transport. Coverage aggregation also retains that pool; manual source hygiene uses the entry pool. A800 CPU compatibility, smoke/unit, runtime, coverage and distributed contract
 jobs retain their dedicated label and verified source transport. The long suites
 use the measured A800 service budget rather than a two-worker general-pool slot;
 the eight A800 services per host each expose 12 CPU time units and 64 GiB,
@@ -53,8 +55,9 @@ A800 dedicated labels: those jobs depend on their original host environments.
 ## Linux prerequisites without hosted capacity
 
 For same-repository pull requests and trusted push/manual runs, the CI source
-producer, GPU source producer, source-hygiene check and installed-wheel main
-smoke use `flagquantum-a100-cpu`. This pool already supplies private Unix
+producer, GPU source producer and source-hygiene checks use
+`flagquantum-a100-cpu-entry`. Installed-wheel main smoke, quality and coverage
+aggregation continue to use the fourteen ordinary `flagquantum-a100-cpu` slots. This pool already supplies private Unix
 accounts, workspaces, temporary directories and tool caches, and the Git
 transport needed for checkout. The general pool includes hosts whose HTTPS Git
 route is unreliable, so source checkout is not routed to that broader pool.
@@ -108,6 +111,58 @@ This user example checks the unchanged CPU workflow. The routing and isolation
 claims additionally require exact-head CI, real source-artifact round trips,
 installed-wheel smoke and required GPU validation; the example alone does not
 certify runner isolation or performance.
+
+## Two reserved entry registrations
+
+The reservation partitions existing registrations; it creates no runner, Unix
+account, host, CPU affinity, memory quota, GPU access, or additional capacity.
+Keep all existing isolation and `MAX_JOBS=2`. Only the two source producers and
+CI/manual source hygiene target the entry label in routine workflows. Ordinary
+builds, long tests, main wheel smoke, and general-pool jobs cannot match it.
+Forks retain hosted fallback; native macOS/Windows, CUDA-Q and Linux package
+certification retain their existing hosted contracts. This is coexistence, not
+replacement of the hosted platform gates, and no measured speedup is claimed.
+
+The existing explicit `validate_pool=true` maintenance certification remains an
+exception to routine routing: all sixteen slots still run the same account,
+affinity, private-directory and native/backend regressions on their neutral
+`a100-cpu` host label and individual slot labels. No validation slot or assertion
+is removed to reserve capacity. This maintenance run deliberately occupies the
+entry slots while certifying them; do not dispatch it as routine PR work.
+
+After reviewing this PR, inspect the repository-scoped label plan with the
+existing authenticated `gh` CLI and Python 3.10 or later:
+
+```bash
+python tools/configure_a100_entry_pool.py
+python tools/configure_a100_entry_pool.py --apply
+```
+
+Both reserved registrations must be online and idle. The default command only
+prints the plan. Applying replaces only their custom label sets: preserve all
+identity/slot labels, add `flagquantum-a100-cpu-entry`, remove
+`flagquantum-a100-cpu` and `flagquantum-cpu-general`. The other fourteen
+registrations remain unchanged. Each API call is bounded and each mutation
+rechecks the full inventory. GitHub does not provide an atomic scheduling lock
+for label updates: an old queued job may be assigned between inspection and the
+label update. Labels do not interrupt that job; let it finish and verify the
+assigned jobs before certifying the entry pool. If a registration is observed
+busy or a request fails,
+stop and inspect the inventory; a partially applied split is reported as a
+failure, not certified as a deployed pool. Reapplying when both are idle is
+idempotent. Do not restart services, alter quotas, or interrupt existing jobs.
+
+Publish the concrete PR before changing labels. Then apply the reviewed label
+plan once the slots are idle so the PR's automatically triggered source/hygiene
+jobs can run. Do not start another CI run to make them pick up labels. Admission
+requires those actual jobs on the reserved registrations, all ordinary/platform
+checks, required single/two-GPU checks, review, and actual-main installation and
+public example acceptance. For rollback, first restore the workflow baseline;
+when both slots are idle restore their two ordinary labels and remove only the
+entry label. Keep the neutral validation/slot labels throughout.
+
+The executable Bell example and exact expected output above remain the public
+user acceptance example; label inspection alone does not certify functionality.
 
 ## Validate the deployed pool
 

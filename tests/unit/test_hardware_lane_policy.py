@@ -36,6 +36,10 @@ TRUSTED_CPU_ROUTE = (
     "&& 'flagquantum-a100-cpu' || 'ubuntu-latest' }}"
 )
 
+ENTRY_CPU_ROUTE = TRUSTED_CPU_ROUTE.replace(
+    "flagquantum-a100-cpu", "flagquantum-a100-cpu-entry"
+)
+
 PORTABLE_CPU_ROUTE = TRUSTED_CPU_ROUTE.replace(
     "flagquantum-a100-cpu", "flagquantum-cpu-general"
 )
@@ -161,7 +165,7 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
     return not (
         reaching == frozenset({"pull_request"})
         and job.get("runs-on")
-        in (TRUSTED_CPU_ROUTE, PORTABLE_CPU_ROUTE, A800_CPU_ROUTE)
+        in (TRUSTED_CPU_ROUTE, ENTRY_CPU_ROUTE, PORTABLE_CPU_ROUTE, A800_CPU_ROUTE)
     )
 
 
