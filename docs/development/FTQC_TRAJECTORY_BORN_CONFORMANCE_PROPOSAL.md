@@ -1,9 +1,14 @@
 # FTS-11C: Finite Local Trajectory Born-Conformance Proposal
 
-Status: proposed, not approved or implemented. E-H qualified private coherent
-references and exact aggregate density, not inputs to the trajectory sampler.
-This new finite Runtime/reference boundary and its comparison values require
-specific approval. Document merge or green CI does not activate it.
+Status: the user explicitly approved the finite I-L contract and implementation
+on 2026-10-26, after proposal PR #884 became reviewable and was merged. Its
+actual main `fee4ad4cbf12b05c72f4fb2e367d3d781791d897` passed full CI, required
+GPU checks, fresh installation and public examples. The separate entry-pool
+prerequisite #894 was fully accepted on actual main
+`a6ec8e9115d429fd1177ec268505d98eb1088825` before this conformance implementation.
+Approval is limited to the 19-call/82-trajectory matrix below and its stated
+comparison values; no public API, engine, RNG/frequency certificate or collection
+budget is admitted.
 
 ## Existing owners and scope
 
@@ -29,10 +34,10 @@ open. No benchmark observer, process campaign or performance target is requested
 
 ## Decision requested: groups I-L
 
-Approve the finite matrix below and CPU complex128 state/density comparisons
+The approved finite matrix uses CPU complex128 state/density comparisons
 and float64 Born-vector comparisons with atol=1e-12, rtol=0. This value needs
 explicit admission for the Runtime observation boundary, even though it was
-approved for earlier private references. Proposed per-module invocation cap:
+approved for earlier private references. The per-module invocation cap is:
 
 | Group | Existing execution entry | Calls | Shots per call | Total trajectories |
 | --- | --- | --- | --- | --- |
@@ -123,14 +128,19 @@ These negatives validate the finite checker, not a general statistical testing
 framework. Any discovered production defect is reported before changing public
 behavior or a protected contract.
 
-## Review and remaining work
+## Implementation and remaining work
 
-First review I-L, observation independence, controlled-versus-natural labeling,
-numerical comparisons and the 19-call/82-trajectory cap. After exact-head full CI
-and review make this proposal reviewable, request specific human approval.
-Only after that answer and main admission may a separate test PR implement it.
-No new observation hook, selector, sampler conformance or matrix execution has
-been implemented for this proposal.
+The finite implementation is
+[`test_ftqc_trajectory_born_reference.py`](../../tests/integration/test_ftqc_trajectory_born_reference.py).
+It reuses the twenty E-H projected Clifford vectors once per module, executes
+exactly nineteen calls/eighty-two trajectories, restores the one-thread setting
+and sampler, and separates natural observations, controlled positive branches,
+and stable projection. Negatives reuse captured tensors without another runtime
+execution. Native final-state norms and full phase-invariant densities are
+checked separately from raw Born vectors; bad probabilities are never normalized
+into agreement. This is a finite local correctness contribution, pending the
+implementation PR's exact-head and actual-main admission, not a general sampling
+or production coherent-decomposition certificate.
 
 E-H remains a delivered private reference, not a production phase-capable
 representation. Method selection, phase/overlap cost evidence at W4 scale,
@@ -177,4 +187,4 @@ reset torch.Size([8, 2]) True
 ```
 
 This current stable user workflow is an engineering example, not execution or
-certification of the proposed I-L observation matrix or a retained study point.
+certification of the I-L observation matrix or a retained study point.
