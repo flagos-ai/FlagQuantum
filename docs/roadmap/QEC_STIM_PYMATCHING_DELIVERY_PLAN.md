@@ -140,7 +140,7 @@ numbered sequence.
    on 2026-10-26 and authorized verification/delivery. Do not request this
    approval again. Preserve all five concrete types, complete records and
    decoder-specific validation/refusals. The implementation has no speed claim.
-2. **Decision C / FUNCTIONAL-007 is design-only.** The owner asked to refine its
+2. **Decision C / FUNCTIONAL-007 is design-only.** The [concrete design review](../development/QEC_FUNCTIONAL_007_EXPERIMENT_DESIGN.md) proposes an explicit batch size, default-only decoder configuration and caller-owned evidence without a persistence schema. These remain owner-review choices, not approved implementation. The owner asked to refine its
    options, configuration/result, batching and persistence boundaries, while
    explicitly deferring implementation. A separate concrete design review must
    precede any approval of a final public experiment signature/result. Neither
