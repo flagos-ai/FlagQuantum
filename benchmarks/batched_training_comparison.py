@@ -32,7 +32,8 @@ def worker(width: int, batch: int, depth: int, rotation: int = 0) -> dict[str, A
 
     torch.set_num_threads(1)
     torch.set_num_interop_threads(1)
-    jax.config.update("jax_enable_x64", True)
+    configuration: Any = jax.config
+    configuration.update("jax_enable_x64", True)
     tc.set_backend("jax")
     tc.set_dtype("complex128")
     initial = torch.linspace(-0.2, 0.3, 2 * width * depth, dtype=torch.float64)
@@ -69,7 +70,7 @@ def worker(width: int, batch: int, depth: int, rotation: int = 0) -> dict[str, A
         identity = jnp.eye(2, dtype=jnp.complex128)
         z = jnp.diag(jnp.array([1.0, -1.0])).astype(jnp.complex128)
         zero = jnp.zeros_like(identity)
-        nodes = []
+        nodes: list[Any] = []
         for wire in range(width):
             matrix = (
                 jnp.stack((z, identity))
@@ -94,7 +95,7 @@ def worker(width: int, batch: int, depth: int, rotation: int = 0) -> dict[str, A
     records: list[dict[str, Any]] = []
     oracle_value: Any = None
     oracle_gradient: Any = None
-    routes = (
+    routes: tuple[str, ...] = (
         "fq_default",
         "fq_jax_statevector",
         "fq_jax_tensor_network",
@@ -130,8 +131,8 @@ def worker(width: int, batch: int, depth: int, rotation: int = 0) -> dict[str, A
                     ),
                 )
 
-                def prediction(values: Any, selected_model: Any = model) -> Any:
-                    return selected_model(features, parameters=values) / width
+                def prediction(values: Any, selected_executor: Any = model) -> Any:
+                    return selected_executor(features, parameters=values) / width
 
             else:
                 observable = route.split("_")[1]
@@ -148,8 +149,8 @@ def worker(width: int, batch: int, depth: int, rotation: int = 0) -> dict[str, A
                         quantum, jit=True, enable_dlpack=route.endswith("dlpack")
                     )
 
-                    def prediction(values: Any, selected_bridge: Any = bridge) -> Any:
-                        return selected_bridge(values, features)
+                    def prediction(values: Any, selected_executor: Any = bridge) -> Any:
+                        return selected_executor(values, features)
 
             if "whole_jax" in route:
                 jp = jnp.asarray(initial.numpy())
@@ -164,14 +165,14 @@ def worker(width: int, batch: int, depth: int, rotation: int = 0) -> dict[str, A
                     return value, values - 0.01 * gradient
 
                 value, next_parameters = update(jp, jx)
-                jax.block_until_ready(next_parameters)
+                next_parameters.block_until_ready()
                 current_value = float(value)
                 current_gradient = (np.asarray(jp) - np.asarray(next_parameters)) / 0.01
 
                 def step(selected_inputs: Any = jx) -> None:
                     nonlocal jp
                     _, jp = update(jp, selected_inputs)
-                    jax.block_until_ready(jp)
+                    jp.block_until_ready()
 
             else:
                 value = ((prediction(parameters) - 0.3) ** 2).mean()
@@ -179,7 +180,7 @@ def worker(width: int, batch: int, depth: int, rotation: int = 0) -> dict[str, A
                 current_value = float(value.detach())
                 current_gradient = gradient.numpy()
 
-                def step() -> None:
+                def step(selected_inputs: Any = None) -> None:
                     nonlocal parameters
                     value = ((prediction(parameters) - 0.3) ** 2).mean()
                     gradient = torch.autograd.grad(value, parameters)[0]
@@ -315,6 +316,26 @@ def main() -> None:
                         if process.returncode == 0
                         else None
                     )
+                    if payload is not None:
+                        completed = [
+                            item
+                            for item in payload["records"]
+                            if item["status"] == "ok"
+                        ]
+                        if completed:
+                            reference = completed[0]["final_parameters"]
+                            for item in completed:
+                                item["final_parameter_max_abs_error"] = max(
+                                    abs(actual - expected)
+                                    for actual, expected in zip(
+                                        item["final_parameters"], reference, strict=True
+                                    )
+                                )
+                                if item["final_parameter_max_abs_error"] > 1e-9:
+                                    item.update(
+                                        status="error",
+                                        error="103-update trajectory mismatch",
+                                    )
                     run = dict(
                         payload=payload,
                         repeat=repeat,
@@ -344,6 +365,16 @@ def main() -> None:
                 print(
                     f"repeat={repeat} width={width} batch={batch} complete", flush=True
                 )
+    failed = any(
+        run.get("status") == "timeout"
+        or run.get("returncode") != 0
+        or any(item["status"] != "ok" for item in run["payload"]["records"])
+        for run in result["runs"]
+    )
+    result["status"] = "failed" if failed else "ok"
+    args.output.write_text(json.dumps(result, indent=2) + "\n")
+    if failed:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
