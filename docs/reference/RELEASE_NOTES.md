@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Complete API Change 098 with typed `ch`, `csx`, `csxdg`, `dcx`, and
+  `ecr` methods on both `Circuit` and `DynamicCircuit`. Each gate has a
+  canonical matrix, closed adjoint behavior, exact basis lowering, static
+  exporter behavior, IR round-trip coverage, and an explicit ecosystem support
+  boundary. This does not claim native provider or QPU support.
+
 - Add typed `iswap` and `iswapdg` methods to both `Circuit` and
   `DynamicCircuit`. The pair has exact dense semantics, closes under
   `adjoint()`, lowers through the existing fixed basis for OpenQASM, QIR, and

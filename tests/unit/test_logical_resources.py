@@ -180,8 +180,8 @@ def test_the_families_are_pairwise_disjoint() -> None:
 def test_no_compound_or_parametric_opcode_is_counted_as_clifford() -> None:
     """The error this catches is silent, and it flatters the T-count."""
 
-    assert frozenset({"ccx", "cswap"}) == DECOMPOSITION_OPCODES
-    assert CLIFFORD_T_OPCODES.isdisjoint({"ccx", "cswap"})
+    assert frozenset({"ccx", "ch", "cswap", "csx", "csxdg"}) == (DECOMPOSITION_OPCODES)
+    assert CLIFFORD_T_OPCODES.isdisjoint(DECOMPOSITION_OPCODES)
     assert "ccx" not in CLIFFORD_OPCODES
     assert "cswap" not in CLIFFORD_OPCODES
 

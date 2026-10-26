@@ -924,15 +924,19 @@ def _census_errors(contract: dict[str, Any]) -> list[str]:
     )
     declared = sorted(controlled - set(undeclared))
     control_census = contract.get("verification", {}).get("control_census", "")
-    control_refusals = sorted(
+    channel_refusals = sorted(
         opcode
         for opcode in undeclared
         if OPERATOR_SCHEMAS[opcode].semantic_kind == "channel"
     )
-    if control_refusals != undeclared:
+    contracted_unitary_refusals = sorted(
+        contract.get("control", {}).get("unitary_absence_opcodes", ())
+    )
+    actual_unitary_refusals = sorted(set(undeclared) - set(channel_refusals))
+    if contracted_unitary_refusals != actual_unitary_refusals:
         errors.append(
-            "circuit control opcodes without a controlled form are not all channels: "
-            f"{sorted(set(undeclared) - set(control_refusals))}"
+            "circuit control unitary absence opcodes drifted: "
+            f"{actual_unitary_refusals}"
         )
     if (
         f"{len(declared)} of {len(OPERATOR_SCHEMAS)} registered opcodes declare a "

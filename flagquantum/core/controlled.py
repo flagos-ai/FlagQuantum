@@ -100,6 +100,9 @@ _LADDER_ANGLE: Mapping[str, float] = {
     "cy": _PI,
     "cz": _PI,
     "ccx": _PI,
+    "ch": _PI,
+    "csx": _PI / 2,
+    "csxdg": -_PI / 2,
 }
 
 
